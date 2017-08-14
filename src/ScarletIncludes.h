@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
+#include <string>
 
 
 //reserved for supporting
