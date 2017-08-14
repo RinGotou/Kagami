@@ -12,14 +12,29 @@ namespace SEngine {
 
 	class MsgBridge;
 	class DataCell;
-	class Call;
-	class Array;
+	class Token;
+	class Dict;
 
 	const string STR_EMPTY = "";
 	const string STR_TRUE = "true";
 	const string STR_FALSE = "false";
 
-	typedef MsgBridge(*funcPointer)(Call &, Array &);
+	typedef MsgBridge(*funcPointer)(Token &, Dict &);
+
+	class CodeUnit {
+	protected:
+		string key;
+	public:
+		string getKey() const { return key; }
+	};
+
+	class DataSet {
+	private:
+		string key;
+	public:
+		virtual size_t getSize() const = 0;
+		string getKey() const { return key; }
+	};
 
 	class MsgBridge {
 	private:
@@ -40,7 +55,7 @@ namespace SEngine {
 			return code;
 		}
 
-		int Report(bool onError = false,string ExtraMsg = STR_EMPTY) const {
+		void Report(bool onError = false,string ExtraMsg = STR_EMPTY) const {
 			if (onError) {
 				cout << "Error occured:";
 			}
@@ -56,16 +71,12 @@ namespace SEngine {
 			this->buf = bSrc;
 			this->code = cSrc;
 		}
-
-		MsgBridge(MsgBridge &src) {
-			this->buf = src.buf;
-			this->code = src.code;
-		}
 	};
 
 	const MsgBridge MSG_SUB_OUT_OF_RANGE("Subscript out of range", 1);
 	const MsgBridge MSG_KEY_NOT_MATCH("Key is not matching any token", 2);
 	const MsgBridge MSG_CELL_CONFLICT("DataCell is already existed", 3);
+	const MsgBridge MSG_TOO_MANY_PARAM("Too many parameters", 4);
 
 	class DataCell {
 	private:
@@ -95,14 +106,6 @@ namespace SEngine {
 		}
 	};
 
-	class DataSet {
-	private:
-		string key;
-	public:
-		virtual DataCell getCell() const = 0;
-		virtual size_t getSize() const = 0;
-		virtual string getKey() const { return key; }
-	};
 
 	class Array : public DataSet {
 	protected:
@@ -128,6 +131,7 @@ namespace SEngine {
 		DataCell getCell(const size_t subscr) const;
 		DataCell getCell(const string cellKey) const;
 		size_t append(DataCell);
+		size_t pop();
 		size_t eraseByKey(string);
 		size_t eraseByValue(string);
 		size_t eraseBySub(size_t);
@@ -137,8 +141,6 @@ namespace SEngine {
 	public:
 		string append(string);
 		string pop();
-		size_t erase(size_t);
-		size_t erase(string);
 	};
 
 	class EnumSet : public Stack {
@@ -148,20 +150,46 @@ namespace SEngine {
 		string replace(const string) {}
 	};
 
-	class Activity {
-	private:
-		string key;
-		funcPointer dest;
-	public:
-		string getKey() const { return key; }
+	//for resizable parameter dict, ParamCount should be -1.
 
-		MsgBridge operator()(Call &call, Array &dataSet) {
-			return dest(call, dataSet);
+	class Activity : public CodeUnit {
+	private:
+		funcPointer dest;
+		size_t ParamCount;
+	public:
+		MsgBridge operator()(Token &, Dict &);
+
+		Activity(string kSrc, funcPointer pSrc, size_t cSrc = -1) {
+			this->key = kSrc;
+			this->dest = pSrc;
+			this->ParamCount = cSrc;
+		}
+
+		Activity() {
+			dest = nullptr;
+			ParamCount = -1;
 		}
 	};
 
-	class Call {
-		string key;
+	class Token : public CodeUnit {
+	private:
+		void *destPtr;
+	public:
+		template<class AnyType>
+		MsgBridge Chainloader(int);
 
+		Token(string kSrc) { this->key = kSrc; }
+	};
+
+	class Function : public CodeUnit {
+	private:
+
+	};
+
+	class CodeBlock {
+	private:
+		vector<Token> Origins;
+	public:
+		MsgBridge Chainloader(int);
 	};
 }

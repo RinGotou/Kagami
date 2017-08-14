@@ -5,7 +5,6 @@ using namespace SEngine;
 namespace SEngine {
 	size_t CurrentLine;
 
-
 }
 
 string Array::getCell(const size_t subscr) const {
@@ -86,6 +85,11 @@ size_t Dict::append(DataCell src) {
 	return set.size();
 }
 
+size_t Dict::pop() {
+	set.pop_back();
+	return set.size();
+}
+
 size_t Dict::eraseByKey(string dest) {
 	vector<DataCell>::iterator t, destPtr;
 	bool result = false;
@@ -154,3 +158,16 @@ string Stack::pop() {
 	return set.back();
 }
 
+MsgBridge Activity::operator()(Token &call, Dict &dataSet) {
+	if (dataSet.getSize() > ParamCount || ParamCount != -1) {
+		MSG_TOO_MANY_PARAM.Report(true);
+		return MSG_TOO_MANY_PARAM;
+	}
+
+	return dest(call, dataSet);
+}
+
+template<class AnyType>
+MsgBridge Token::Chainloader(int Mode) {
+	
+}
