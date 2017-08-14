@@ -65,6 +65,7 @@ namespace SEngine {
 
 	const MsgBridge MSG_SUB_OUT_OF_RANGE("Subscript out of range", 1);
 	const MsgBridge MSG_KEY_NOT_MATCH("Key is not matching any token", 2);
+	const MsgBridge MSG_CELL_CONFLICT("DataCell is already existed", 3);
 
 	class DataCell {
 	private:
@@ -104,16 +105,16 @@ namespace SEngine {
 	};
 
 	class Array : public DataSet {
-	private:
+	protected:
 		vector<string> set;
-		size_t ArraySize;
 	public:
-		size_t getSize() const { return ArraySize; }
-		Array() { ArraySize = 0; }
-		Array(vector<string> &);
-		Array(string);
+		size_t getSize() const { return set.size(); }
+		Array() {}
+		Array(vector<string> &src) { set = src; }
+		Array(string unit) { set.push_back(unit); }
 		string getCell(const size_t) const;
-
+		string setCell(const size_t, const string);
+		size_t replace(const string, const string);
 	};
 
 	class Dict : public DataSet {
@@ -126,10 +127,25 @@ namespace SEngine {
 		Dict(DataCell unit) { set.push_back(unit); }
 		DataCell getCell(const size_t subscr) const;
 		DataCell getCell(const string cellKey) const;
+		size_t append(DataCell);
+		size_t eraseByKey(string);
+		size_t eraseByValue(string);
+		size_t eraseBySub(size_t);
 	};
 
-	class Stack : public DataSet {
+	class Stack : public Array {
+	public:
+		string append(string);
+		string pop();
+		size_t erase(size_t);
+		size_t erase(string);
+	};
 
+	class EnumSet : public Stack {
+	private:
+		vector<string> set;
+		string setCell(const size_t, const string) {}
+		string replace(const string) {}
 	};
 
 	class Activity {
