@@ -1,6 +1,9 @@
 /*
 *	Suzu on SVM (C)2016-2017 DandelionDIMN
 *	licensed under LGPL 2.1
+*	
+*	SVM.cpp - Processor Core Code.
+*	TIP:You can find some comments in header files,not all comments here.
 */
 #include "SVM.h"
 
@@ -8,35 +11,36 @@ using namespace SVM;
 
 //basic integer and double string 
 inline bool isNumber(string src) {
-	const regex Pattern(R"(\d+|\d+\.?\d*)");
-
-	return std::regex_match(src, Pattern);
+	return std::regex_match(src, PatternNum);
 }
 
 //boolean string
 inline bool isBoolean(string src) {
-	return (src == "true" || src == "false");
+	return std::regex_match(src, PatternBool);
 }
 
 size_t SVM::FindTwinBracket(const string &src, size_t left) {
 	const size_t SrcSize = src.size();
+
 	size_t result, i;
+	size_t BracketA = 1, BracketB = 0;
 
-	if (src[left] == '(') {
-		i = SrcSize;
-		--i;
-
-		while (src[i] != ')' && i != left) {
-			--i;
+	for (i = left; i < SrcSize; ++i) {
+		if (BracketA == BracketB) {
+			break;
 		}
-
-		result = i;
+		if (src[i] == ')') {
+			++BracketB;
+			result = i;
+		}
+		if (src[i] == '(') {
+			++BracketA;
+		}
 	}
-	else {
+
+	if (BracketA > BracketB) {
 		result = left;
 	}
-
-	return result;
 }
 
 vector<string> SpiltByComma(const string &src) {
@@ -68,11 +72,44 @@ string Token::GetTokenContentString(const string &src) {
 	return result;
 }
 
-MsgBridge Token::InitTokenTree(string buf) {
+MsgBridge Token::InitTokenTree(const string &buf) {
+	const size_t BufSize = buf.size();
+	size_t i = 0;
 	MsgBridge msg;
-	const regex PatternA(R"([a-zA-Z_][a-zA-Z_0-9]*|==|<=|>=|&&|\|\||p{Punct})"),
-		PatternStr(R"("(\"|\\|\n|\t|[^"])*")"),
-		PatternDict(R"(\(([a-zA-Z0-9_()=<>|&]*)\))");
+	vector<string> TokenBufPool;
+
+	//Init Pool
+	TokenBufPool.push_back(STR_EMPTY);
+	string *BufPtr = &(TokenBufPool.back());
+
+	//Init Identity Switches
+	struct {
+		char value;
+		
+	}LastChar;
+
+	//lambda function 
+	//SwitchPointer - refresh BufPtr to read latest unit in pool.
+	//PushBack - Fill char to latest unit
+	//PatternCheck - Check char with custom pattern
+	auto SwitchPointer = [&BufPtr, &TokenBufPool]() {
+		BufPtr = &(TokenBufPool.back());
+	};
+
+	auto PushBack = [&TokenBufPool](const char &unit) {
+		return TokenBufPool.back().append(1, unit);
+	};
+
+	auto CharCheck = [&BufPtr](const regex &Pat) {
+		return std::regex_match(*BufPtr, Pat);
+	};
+
+	//Walkup
+	for (i = 0; i < BufSize; ++i) {
+		PushBack(buf[i]);
+
+		LastChar.value = buf[i];
+	}
 }
 
 MsgBridge Token::ExecToken(int mode) {
