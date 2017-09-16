@@ -1,3 +1,3 @@
-# Suzune Script Project
-Script Host for a small script language Suzune.
-It's a rebuilding project from ScarletMoon and ScarletMoon-rev,in order to make a funtion-based script language,Suzune,and a script host for it. 
+# Suzu
+Fully rebuilt script processor based on C++ Standard Library and SDL.Suzu aims to be friendly for word processing and create simple graphic user interface.
+Lesser GNU Public License 2.1.
