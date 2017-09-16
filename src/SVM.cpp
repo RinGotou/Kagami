@@ -6,6 +6,18 @@
 
 using namespace SVM;
 
+//basic integer and double string 
+inline bool isNumber(string src) {
+	const regex Pattern(R"(\d+|\d+\.?\d*)");
+
+	return std::regex_match(src, Pattern);
+}
+
+//boolean string
+inline bool isBoolean(string src) {
+	return (src == "true" || src == "false");
+}
+
 size_t SVM::FindTwinBracket(const string &src, size_t left) {
 	const size_t SrcSize = src.size();
 	size_t result, i;
@@ -58,19 +70,9 @@ string Token::GetTokenContentString(const string &src) {
 
 MsgBridge Token::InitTokenTree(string buf) {
 	MsgBridge msg;
-	const regex TokenPatternA(R"(\D+\w*\([a-zA-Z0,()]*\))"); //token with brackets
-	const regex TokenPatternB(R"(\D+\w*)"); //token without brackets
-
-	if (std::regex_match(buf, TokenPatternB)) {
-		msg.setCode(0);
-	}
-	else if (std::regex_match(buf, TokenPatternA)) {
-
-	}
-	else {
-		msg.setCode(-1);
-		msg.setBuf(MSG_ILLEGAL_TOKEN);
-	}
+	const regex PatternA(R"([a-zA-Z_][a-zA-Z_0-9]*|==|<=|>=|&&|\|\||p{Punct})"),
+		PatternStr(R"("(\"|\\|\n|\t|[^"])*")"),
+		PatternDict(R"(\(([a-zA-Z0-9_()=<>|&]*)\))");
 }
 
 MsgBridge Token::ExecToken(int mode) {

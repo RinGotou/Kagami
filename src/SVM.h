@@ -24,18 +24,6 @@ namespace SVM {
 
 	typedef MsgBridge(*VMInterface)(Token &);
 
-	//basic integer and double string 
-	inline bool isNumber(string src) {
-		const regex Pattern(R"(\d+|\d+\.?\d*)");
-
-		return std::regex_match(src, Pattern);
-	}
-
-	//boolean string
-	inline bool isBoolean(string src) {
-		return (src == "true" || src == "false");
-	}
-
 	//find right bracket symbol for the left one.
 	//if there's nothing found,it will return the original left bracket value.
 	size_t FindTwinBracket(const string &src, size_t left);
