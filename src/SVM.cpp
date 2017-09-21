@@ -101,14 +101,13 @@ MsgBridge Token::InitTokenTree(const string &buf) {
 	};
 
 	auto CharCheck = [&BufPtr](const regex &Pat) {
-		return std::regex_match(*BufPtr, Pat);
+		return std::regex_match(TokenBufPool.back(), Pat);
 	};
 
 	//Walkup
 	for (i = 0; i < BufSize; ++i) {
 		PushBack(buf[i]);
 
-		LastChar.value = buf[i];
 	}
 }
 
