@@ -10,6 +10,7 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
+#include <deque>
 #include <list>
 
 //reserved for supporting

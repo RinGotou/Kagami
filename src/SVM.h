@@ -14,6 +14,7 @@ namespace SVM {
 	using std::flush;
 	using std::string;
 	using std::vector;
+	using std::deque;
 	using std::list;
 	using std::regex;
 
@@ -45,9 +46,15 @@ namespace SVM {
 		string buf;
 		int code;
 	public:
-		string getBuf() const { return buf; }
-		int getCode() const { return code; }
-		MsgBridge() : buf(STR_EMPTY) { code = 0; }
+		string getBuf() const { 
+			return buf; 
+		}
+		int getCode() const { 
+			return code; 
+		}
+		MsgBridge() : buf(STR_EMPTY) { 
+			code = 0; 
+		}
 
 		string setBuf(const string src) {
 			this->buf = src;
@@ -78,28 +85,61 @@ namespace SVM {
 		}
 	};
 
-	//Token Class.
-	class Token {
+	class ScriptStorage {
 	private:
-		string key;
-		vector<Token> TokenContent;
-		size_t Subscript;
-		bool HealthState;
-
-		//get string inside the token's brackets.
-		//automatically,no need to provide left bracket.
-		string GetTokenContentString(const string &src);
+		size_t CurrentLine;
+		deque<string> PrimevalString;
 	public:
-		Token() : key(STR_EMPTY) { 
-			Subscript = 0;
-			HealthState = false;
+		bool Build(string src, bool ForceOverride = false);
+
+		string Read() {
+			const size_t EOS = PrimevalString.size() - 1;
+			if (CurrentLine <= EOS) {
+				return PrimevalString.at(CurrentLine);
+			}
+			else {
+				return STR_EMPTY;
+			}
 		}
-		string getKey() const { return key; }
-		bool getHealthState() const { return HealthState; }
-		bool setHealthState(const bool state) { HealthState = state; }
-		MsgBridge InitTokenTree(const string &buf);
-		MsgBridge ExecToken(int mode);
-		Token &getContent(size_t sub);
+
+		void Reset() {
+			CurrentLine = -1;
+			PrimevalString.clear();
+			deque<string>(PrimevalString).swap(PrimevalString);
+		}
+
+		void Back() {
+			if (CurrentLine > 0 && CurrentLine != -1) {
+				CurrentLine--;
+			}
+		}
+
+		void BackToHead() {
+			if (CurrentLine != -1) {
+				CurrentLine = 0;
+			}
+		}
+
+		ScriptStorage() {
+			CurrentLine = -1;
+		}
+
+		ScriptStorage(string src) {
+			if (Build(src)) {
+				CurrentLine = 0;
+			}
+			else {
+				this->Reset();
+			}
+		}
+	};
+
+	class Token {
+
+	};
+
+	class TreeBuilder {
+
 	};
 
 	//Common Parent of Memory Unit Types.
@@ -108,6 +148,8 @@ namespace SVM {
 	protected:
 		string key;
 	public:
-		string getKey() const { return key; }
+		string getKey() const { 
+			return key; 
+		}
 	};
 }

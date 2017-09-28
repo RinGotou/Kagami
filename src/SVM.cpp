@@ -41,80 +41,10 @@ size_t SVM::FindTwinBracket(const string &src, size_t left) {
 	if (BracketA > BracketB) {
 		result = left;
 	}
-}
-
-vector<string> SpiltByComma(const string &src) {
-
-}
-
-string Token::GetTokenContentString(const string &src) {
-	const size_t SrcSize = src.size();
-	const size_t right = SrcSize - 1;
-	size_t left = 0;
-	string result;
-
-	if (src.at(right) == ')') {
-		while (src[left] != '(' && left < SrcSize) {
-			++left;
-		}
-
-		if (left < SrcSize) {
-			result = src.substr(left + 1, right - left);
-		}
-		else {
-			result = STR_EMPTY;
-		}
-	}
-	else {
-		result = STR_EMPTY;
-	}
 
 	return result;
 }
 
-MsgBridge Token::InitTokenTree(const string &buf) {
-	const size_t BufSize = buf.size();
-	size_t i = 0;
-	MsgBridge msg;
-	vector<string> TokenBufPool;
-
-	//Init Pool
-	TokenBufPool.push_back(STR_EMPTY);
-	string *BufPtr = &(TokenBufPool.back());
-
-	//Init Identity Switches
-	struct {
-		char value;
-		
-	}LastChar;
-
-	//lambda function 
-	//SwitchPointer - refresh BufPtr to read latest unit in pool.
-	//PushBack - Fill char to latest unit
-	//PatternCheck - Check char with custom pattern
-	auto SwitchPointer = [&BufPtr, &TokenBufPool]() {
-		BufPtr = &(TokenBufPool.back());
-	};
-
-	auto PushBack = [&TokenBufPool](const char &unit) {
-		return TokenBufPool.back().append(1, unit);
-	};
-
-	auto CharCheck = [&BufPtr](const regex &Pat) {
-		return std::regex_match(TokenBufPool.back(), Pat);
-	};
-
-	//Walkup
-	for (i = 0; i < BufSize; ++i) {
-		PushBack(buf[i]);
-
-	}
-}
-
-MsgBridge Token::ExecToken(int mode) {
-
-}
-
-Token &Token::getContent(size_t sub) {
+bool ScriptStorage::Build(string src, bool ForceOverride = false) {
 
 }
