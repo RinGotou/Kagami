@@ -19,24 +19,30 @@ namespace SVM {
 	using std::regex;
 
 	const string STR_EMPTY = "";
+	const string STR_EOL = "\n";
 	const string MSG_ILLEGAL_TOKEN = "__MSG_ILLEGAL_TOKEN";
+	const size_t SSTOR_MAX_BUF_SIZE = 2000;
 	const regex PatternA(R"([a-zA-Z_][a-zA-Z_0-9]*|==|<=|>=|&&|\|\||p{Punct})");
-	const regex PatternRegChar(R"([a-zA-Z_][a-zA-Z_0-9])");
+	const regex PatternRegChar(R"([a-zA-Z_][a-zA-Z_0-9]*)");
 	const regex PatternOperator(R"([=<>+-*/\|])");
 	const regex PatternStr(R"("(\"|\\|\n|\t|[^"])*")");
 	const regex PatternDict(R"(\(([a-zA-Z0-9_()=<>|&]*)\))");
-	const regex PatternNum(R"(\d+|\d+\.?\d*)");
+	const regex PatternNum(R"(\d+\.?\d*)");
 	const regex PatternBool(R"(\btrue\b|\bfalse\b)");
-
+	
 	class MsgBridge;
 	class Token;
-	class Dict;
 
 	typedef MsgBridge(*VMInterface)(Token &);
-
-	//find right bracket symbol for the left one.
-	//if there's nothing found,it will return the original left bracket value.
-	size_t FindTwinBracket(const string &src, size_t left);
+	typedef enum {
+		TypeInt = 0,
+		TypeDouble,
+		TypeArray,
+		TypeDict,
+		TypeSet,
+		TypeStr,
+		TypeOper
+	} TypeEnum;
 
 
 	//Message Bridge Class
@@ -46,14 +52,14 @@ namespace SVM {
 		string buf;
 		int code;
 	public:
-		string getBuf() const { 
-			return buf; 
+		string getBuf() const {
+			return buf;
 		}
-		int getCode() const { 
-			return code; 
+		int getCode() const {
+			return code;
 		}
-		MsgBridge() : buf(STR_EMPTY) { 
-			code = 0; 
+		MsgBridge() : buf(STR_EMPTY) {
+			code = 0;
 		}
 
 		string setBuf(const string src) {
@@ -85,71 +91,85 @@ namespace SVM {
 		}
 	};
 
+	//Script storage will not analyse any words in script.
+	//It will buffer strings and provide source code string to treebuilder.
 	class ScriptStorage {
 	private:
+		std::ifstream ifs;
 		size_t CurrentLine;
 		deque<string> PrimevalString;
-	public:
-		bool Build(string src, bool ForceOverride = false);
 
-		string Read() {
-			const size_t EOS = PrimevalString.size() - 1;
-			if (CurrentLine <= EOS) {
-				return PrimevalString.at(CurrentLine);
-			}
-			else {
-				return STR_EMPTY;
-			}
+		//buffering main function
+		size_t Build();
+
+		ScriptStorage() {
+			CurrentLine = -1;
+		}
+	public:
+		//start buffering and provide current string
+		string Read();
+
+		bool getHealth() const{
+			return ifs.good();
 		}
 
 		void Reset() {
+			ifs.close();
 			CurrentLine = -1;
 			PrimevalString.clear();
 			deque<string>(PrimevalString).swap(PrimevalString);
 		}
 
 		void Back() {
-			if (CurrentLine > 0 && CurrentLine != -1) {
+			if (CurrentLine > 0) {
 				CurrentLine--;
 			}
 		}
 
 		void BackToHead() {
-			if (CurrentLine != -1) {
 				CurrentLine = 0;
-			}
-		}
-
-		ScriptStorage() {
-			CurrentLine = -1;
 		}
 
 		ScriptStorage(string src) {
-			if (Build(src)) {
+				ifs.open(src.c_str(), std::ios::in);
 				CurrentLine = 0;
-			}
-			else {
-				this->Reset();
-			}
 		}
 	};
 
+	//The basic word unit in Grammar Tree.
+	//This is a weak type language,so it contains a identifer function
+	//to judge word's type and return to treebuilder.
 	class Token {
+	private:
+		string value;
+	public:
+		string getValue() const {
+			return this->value;
+		}
 
+		string setValue(string value) {
+			this->value = value;
+			return this->value;
+		}
+
+		string operator()(string value) {
+			this->value = value;
+			return this->value;
+		}
+
+		bool compare(Token& src) const {
+			return (src.value == this->value);
+		}
+
+		bool compare(string src) const {
+			return (this->value == src);
+		}
+
+		TypeEnum getType(int Mode = 0) const;
 	};
 
 	class TreeBuilder {
+		size_t Subscript;
 
-	};
-
-	//Common Parent of Memory Unit Types.
-	//DO NOT use it directly.
-	class MemUnit {
-	protected:
-		string key;
-	public:
-		string getKey() const { 
-			return key; 
-		}
 	};
 }

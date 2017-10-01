@@ -7,8 +7,14 @@
 
 #include "SVM.h"
 
-int main(int argc, char **argv) {
-	std::cin.sync_with_stdio(false);
+using namespace SVM;
 
+void ScriptStorageTest() {
+	//PENDING
+}
+
+int main(int argc, char **argv) {
+	cin.sync_with_stdio(false);
+	
 	return 0;
 }

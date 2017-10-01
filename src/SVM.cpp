@@ -9,42 +9,73 @@
 
 using namespace SVM;
 
-//basic integer and double string 
-inline bool isNumber(string src) {
-	return std::regex_match(src, PatternNum);
-}
+size_t ScriptStorage::Build() {
+	size_t CurrentSize = 0;
+	string StringCache = STR_EMPTY;
+	MsgBridge msg;
 
-//boolean string
-inline bool isBoolean(string src) {
-	return std::regex_match(src, PatternBool);
-}
-
-size_t SVM::FindTwinBracket(const string &src, size_t left) {
-	const size_t SrcSize = src.size();
-
-	size_t result, i;
-	size_t BracketA = 1, BracketB = 0;
-
-	for (i = left; i < SrcSize; ++i) {
-		if (BracketA == BracketB) {
-			break;
+	if (ifs.good()) {
+		while (ifs.eof() != true && CurrentSize < SSTOR_MAX_BUF_SIZE) {
+			std::getline(ifs, StringCache);
+			PrimevalString.push_back(StringCache);
+			CurrentSize++;
 		}
-		if (src[i] == ')') {
-			++BracketB;
-			result = i;
-		}
-		if (src[i] == '(') {
-			++BracketA;
+
+		if (ifs.eof()) {
+			ifs.close();
+			CurrentSize = 0;
 		}
 	}
+	else {
+		CurrentSize = 0;
+	}
 
-	if (BracketA > BracketB) {
-		result = left;
+
+	return CurrentSize;
+}
+
+string ScriptStorage::Read() {
+	string result = STR_EMPTY;
+	size_t EOS = PrimevalString.size() - 1;
+
+	if (CurrentLine <= EOS) {
+		result = PrimevalString.at(CurrentLine);
+		CurrentLine++;
+	}
+	else {
+		if (ifs.eof() != true) {
+			Build();
+			EOS = PrimevalString.size() - 1;
+			if (CurrentLine <= EOS) {
+				result = PrimevalString.at(CurrentLine);
+				CurrentLine++;
+			}
+		}
+		else {
+			result = STR_EMPTY;
+		}
 	}
 
 	return result;
 }
 
-bool ScriptStorage::Build(string src, bool ForceOverride = false) {
+TypeEnum SVM::Token::getType(int Mode) const {
+	//PENDING
+	using std::regex_match;
+	if (regex_match(value, PatternRegChar)) {
+		//TODO:Finding Registered Token(function,variable,etc.)
 
+
+	}
+	if (regex_match(value, PatternNum)) {
+
+	}
+	if (regex_match(value, PatternBool)) {
+
+	}
+	if (regex_match(value, PatternStr)) {
+
+	}
+
+	return TypeStr;
 }
