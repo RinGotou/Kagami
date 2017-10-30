@@ -22,12 +22,15 @@ namespace SVM {
 	const string STR_EOL = "\n";
 	const string MSG_ILLEGAL_TOKEN = "__MSG_ILLEGAL_TOKEN";
 	const size_t SSTOR_MAX_BUF_SIZE = 2000;
+	//regular name/==/<=/>=/&&/||/symbol
 	const regex PatternA(R"([a-zA-Z_][a-zA-Z_0-9]*|==|<=|>=|&&|\|\||p{Punct})");
+
 	const regex PatternRegChar(R"([a-zA-Z_][a-zA-Z_0-9]*)");
-	const regex PatternOperator(R"([=<>+-*/\|])");
 	const regex PatternStr(R"("(\"|\\|\n|\t|[^"])*")");
-	const regex PatternDict(R"(\(([a-zA-Z0-9_()=<>|&]*)\))");
+
 	const regex PatternNum(R"(\d+\.?\d*)");
+	const regex PatternInt(R"(\d+)");
+	const regex PatternDouble(R"(\d+\.\d+)");
 	const regex PatternBool(R"(\btrue\b|\bfalse\b)");
 	
 	class MsgBridge;
@@ -35,12 +38,15 @@ namespace SVM {
 
 	typedef MsgBridge(*VMInterface)(Token &);
 	typedef enum {
+		TypeNull = -1,
 		TypeInt = 0,
 		TypeDouble,
 		TypeArray,
+		TypeBool,
 		TypeDict,
 		TypeSet,
 		TypeStr,
+		TypeRegChar,
 		TypeOper
 	} TypeEnum;
 
@@ -166,10 +172,5 @@ namespace SVM {
 		}
 
 		TypeEnum getType(int Mode = 0) const;
-	};
+	}
 
-	class TreeBuilder {
-		size_t Subscript;
-
-	};
-}

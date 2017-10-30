@@ -62,20 +62,30 @@ string ScriptStorage::Read() {
 TypeEnum SVM::Token::getType(int Mode) const {
 	//PENDING
 	using std::regex_match;
-	if (regex_match(value, PatternRegChar)) {
-		//TODO:Finding Registered Token(function,variable,etc.)
+	TypeEnum result = TypeNull;
+	bool isJudged = false;
 
-
-	}
-	if (regex_match(value, PatternNum)) {
-
-	}
 	if (regex_match(value, PatternBool)) {
-
+		result = TypeBool;
+		isJudged = true;
 	}
-	if (regex_match(value, PatternStr)) {
-
+	if (regex_match(value, PatternRegChar) && !isJudged) {
+		result = TypeRegChar;
+		isJudged = true;
+	}
+	if (regex_match(value, PatternInt) && !isJudged) {
+		result = TypeInt;
+		isJudged = true;
+	}
+	if (regex_match(value, PatternDouble) && !isJudged) {
+		result = TypeDouble;
+		isJudged = true;
+	}
+	if (regex_match(value, PatternStr) && !isJudged) {
+		result = TypeStr;
+		isJudged = true;
 	}
 
-	return TypeStr;
+
+	return result;
 }
