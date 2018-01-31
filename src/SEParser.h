@@ -20,6 +20,8 @@ namespace suzu {
 	const string kStrPass = "__PASS";
 	const string kStrNothing = "__NOTHING";
 	const string kStrRedirect = "__*";
+	const string kstrDefine = "def";
+	const string kStrVar = "var";
 
 	const int kCodeSuccess = 0;
 	const int kCodeStandby = 1;
