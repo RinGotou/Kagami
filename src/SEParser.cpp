@@ -58,19 +58,26 @@ string InputSource::GetString() {
 	return result;
 }
 
-Messege Chainloader::build(string target) {
+Chainloader Chainloader::build(string target) {
 	Util util;
-	stack<string> operations;
 	vector<string> output;
+	char binaryoptchar;
 	size_t size = target.size();
 	size_t type;
 	size_t i;
 	string current = kStrEmpty;
+	//headlock:blank characters at head of raw string,false - enable
+	//allowblank:blank characters at string value and left/right of operating symbols
 	bool headlock = false;
-	
+	bool allowblank = false;
 
-	if (target == kStrEmpty) return Messege(kStrWarning, kCodeIllegalArgs);
+	const enum {str,sym} lasttype = str;
 
+	if (target == kStrEmpty) {
+		resources::eventbase::base.push_back(
+			Messege(kStrWarning, kCodeIllegalArgs));
+		return *this;
+	}
 
 	//--------------!!WORKING!!---------------------//
 	for (i = 0; i < size; i++) {
@@ -83,12 +90,67 @@ Messege Chainloader::build(string target) {
 			headlock == true;
 		}
 
+		if (target[i] == '"') allowblank = !allowblank;
+
 
 		if (!(current.empty())) {
-			//TODO:identify
+			switch (target[i]) {
+			case '(':
+			case ',':
+			case ')':
+			case '"':
+				output.push_back(current);
+				output.push_back(string().append(1, target[i]));
+				current = kStrEmpty;
+				break;
+			case '=':
+			case '>':
+			case '<':
+				if (i + 1 < size && target[i + 1] == '=') {
+					binaryoptchar = target[i];
+					output.push_back(current);
+					current = kStrEmpty;
+					continue;
+				}
+				else if (binaryoptchar != NULL) {
+					string binaryopt = { binaryoptchar, target[i] };
+					if (util.GetDataType(binaryopt).GetCode() == kTypeSymbol) {
+						output.push_back(binaryopt);
+						binaryoptchar = NULL;
+					}
+				}
+				else {
+					output.push_back(current);
+					output.push_back(string().append(1, target[i]));
+					current = kStrEmpty;
+				}
+				break;
+			case ' ':
+				if (allowblank) {
+					current.append(1, target[i]);
+				}
+				else {
+					if (i + 1 < size) {
+						if (std::regex_match(string().append(1, target[i + 1]), kPatternSymbol)) {
+
+						}
+					}
+					resources::eventbase::base.push_back(
+						Messege(kStrFatalError, kCodeIllegalArgs));
+
+				}
+				break;
+			default:
+				current.append(1, target[i]);
+				break;
+			}
 		}
 		else if (current.empty()) {
 			current.append(1, target[i]);
 		}
 	}
+
+	raw = output;
+
+	return *this;
 }
