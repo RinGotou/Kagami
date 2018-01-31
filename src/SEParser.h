@@ -41,10 +41,40 @@ namespace suzu {
 	const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
 	const regex kPatternSymbol(R"(==|<=|>=|&&|\|\||[[:Punct:]]|len)");
 	const regex kPatternBlank(R"([[:blank:]])");
-	class Messege;
 	class Token;
 
 	//preserve for function pointer
+
+	class Messege {
+	private:
+		string value;
+		int code;
+	public:
+		Messege() : value(kStrEmpty), code(kCodeStandby) {}
+
+		Messege(string value, int code) {
+			this->value = value;
+			this->code = code;
+		}
+
+		Messege SetValue(const string &value) {
+			this->value = value;
+			return *this;
+		}
+
+		string GetValue() const {
+			return this->value;
+		}
+
+		Messege SetCode(const int &code) {
+			this->code = code;
+			return *this;
+		}
+
+		int GetCode() const {
+			return this->code;
+		}
+	};
 
 	class Util {
 	public:
@@ -98,36 +128,7 @@ namespace suzu {
 		}
 	};
 
-	class Messege {
-	private:
-		string value;
-		int code;
-	public:
-		Messege() : value(kStrEmpty), code(kCodeStandby) {}
-		
-		Messege(string value, int code) {
-			this->value = value;
-			this->code = code;
-		}
 
-		Messege SetValue(const string &value) {
-			this->value = value;
-			return *this;
-		}
-
-		string GetValue() const {
-			return this->value;
-		}
-
-		Messege SetCode(const int &code) {
-			this->code = code;
-			return *this;
-		}
-
-		int GetCode() const {
-			return this->code;
-		}
-	};
 
 	class InputSource {
 	private:

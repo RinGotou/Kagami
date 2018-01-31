@@ -61,17 +61,14 @@ string InputSource::GetString() {
 Chainloader Chainloader::build(string target) {
 	Util util;
 	vector<string> output;
-	char binaryoptchar;
+	char binaryoptchar = NULL;
 	size_t size = target.size();
-	size_t type;
 	size_t i;
 	string current = kStrEmpty;
 	//headlock:blank characters at head of raw string,false - enable
 	//allowblank:blank characters at string value and left/right of operating symbols
 	bool headlock = false;
 	bool allowblank = false;
-
-	enum {str,sym} lasttype = str;
 
 	if (target == kStrEmpty) {
 		resources::eventbase::base.push_back(
@@ -93,67 +90,59 @@ Chainloader Chainloader::build(string target) {
 		if (target[i] == '"') allowblank = !allowblank;
 
 
-		if (!(current.empty())) {
-			switch (target[i]) {
-			case '(':
-			case ',':
-			case ')':
-			case '"':
+		switch (target[i]) {
+		case '(':
+		case ',':
+		case ')':
+		case '"':
+			output.push_back(current);
+			output.push_back(string().append(1, target[i]));
+			current = kStrEmpty;
+			break;
+		case '=':
+		case '>':
+		case '<':
+			if (i + 1 < size && target[i + 1] == '=') {
+				binaryoptchar = target[i];
+				output.push_back(current);
+				current = kStrEmpty;
+				continue;
+			}
+			else if (binaryoptchar != NULL) {
+				string binaryopt = { binaryoptchar, target[i] };
+				if (util.GetDataType(binaryopt).GetCode() == kTypeSymbol) {
+					output.push_back(binaryopt);
+					binaryoptchar = NULL;
+				}
+			}
+			else {
 				output.push_back(current);
 				output.push_back(string().append(1, target[i]));
 				current = kStrEmpty;
-				lasttype = sym;
-				break;
-			case '=':
-			case '>':
-			case '<':
-				if (i + 1 < size && target[i + 1] == '=') {
-					binaryoptchar = target[i];
-					output.push_back(current);
-					current = kStrEmpty;
+			}
+			break;
+		case ' ':
+		case '\t':
+			if (allowblank) {
+				current.append(1, target[i]);
+			}
+			else {
+				if (i + 1 < size) {
+					if (std::regex_match(string().append(1, target[i + 1]), kPatternSymbol)
+						|| std::regex_match(string().append(1, target[i - 1]), kPatternSymbol)
+						|| target[i - 1] == ' ' || target[i - 1] == '\t') {
+						continue;
+					}
+				}
+				else {
 					continue;
 				}
-				else if (binaryoptchar != NULL) {
-					string binaryopt = { binaryoptchar, target[i] };
-					if (util.GetDataType(binaryopt).GetCode() == kTypeSymbol) {
-						output.push_back(binaryopt);
-						binaryoptchar = NULL;
-					}
-				}
-				else {
-					output.push_back(current);
-					output.push_back(string().append(1, target[i]));
-					current = kStrEmpty;
-				}
-				lasttype = sym;
-				break;
-			case ' ':
-				if (allowblank) {
-					current.append(1, target[i]);
-				}
-				else {
-					if (i + 1 < size) {
-						if (std::regex_match(string().append(1, target[i + 1]), kPatternSymbol)) {
-
-						}
-					}
-					resources::eventbase::base.push_back(
-						Messege(kStrFatalError, kCodeIllegalArgs));
-
-				}
-				//TODO:lasttype
-				break;
-			default:
-				current.append(1, target[i]);
-				lasttype = str;
-				break;
 			}
-		}
-		else if (current.empty()) {
+
+			break;
+		default:
 			current.append(1, target[i]);
-			std::regex_match(string().append(1, target[i]), kPatternSymbol) ?
-				lasttype = sym :
-				lasttype = str;
+			break;
 		}
 	}
 
