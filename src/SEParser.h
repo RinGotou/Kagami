@@ -21,10 +21,10 @@ namespace suzu {
 	const string kStrNothing = "__NOTHING";
 	const string kStrRedirect = "__*";
 
-	const size_t kCodeSuccess = 0;
-	const size_t kCodeStandby = 1;
-	const size_t kCodeOverflow = -1;
-	const size_t kCodeIllegalArgs = -2;
+	const int kCodeSuccess = 0;
+	const int kCodeStandby = 1;
+	const int kCodeOverflow = -1;
+	const int kCodeIllegalArgs = -2;
 
 	const size_t kTypeFunction = 0;
 	const size_t kTypeString = 1;
@@ -101,7 +101,7 @@ namespace suzu {
 	class Messege {
 	private:
 		string value;
-		size_t code;
+		int code;
 	public:
 		Messege() : value(kStrEmpty), code(kCodeStandby) {}
 		
@@ -119,12 +119,12 @@ namespace suzu {
 			return this->value;
 		}
 
-		Messege SetCode(const size_t &code) {
+		Messege SetCode(const int &code) {
 			this->code = code;
 			return *this;
 		}
 
-		size_t GetCode() const {
+		int GetCode() const {
 			return this->code;
 		}
 	};
@@ -239,11 +239,11 @@ namespace suzu {
 
 	class Chainloader {
 	private:
-		Token topnode;
+		vector<string> raw;
 	public:
-		Chainloader() : topnode() {}
+		Chainloader() {}
 
-		Messege build(string target);
+		Chainloader build(string target);
 
 		Messege execute();
 	};
