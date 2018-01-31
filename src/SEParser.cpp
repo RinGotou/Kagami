@@ -76,7 +76,7 @@ Chainloader Chainloader::build(string target) {
 		return *this;
 	}
 
-	//--------------!!WORKING!!---------------------//
+	//--------------!!DEBUGGING!!---------------------//
 	for (i = 0; i < size; i++) {
 		if (headlock == false && std::regex_match(string().append(1, target[i]),
 			kPatternBlank)) {
@@ -125,6 +125,13 @@ Chainloader Chainloader::build(string target) {
 		case '\t':
 			if (allowblank) {
 				current.append(1, target[i]);
+			}
+			else if ((current == kStrVar || current == kstrDefine) && output.empty() == true) {
+				if (i + 1 < size && target[i + 1] != ' ' && target[i + 1] != '\t') {
+					output.push_back(current);
+					current = kStrEmpty;
+				}
+				continue;
 			}
 			else {
 				if (i + 1 < size) {
