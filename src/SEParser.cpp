@@ -71,7 +71,7 @@ Chainloader Chainloader::build(string target) {
 	bool headlock = false;
 	bool allowblank = false;
 
-	const enum {str,sym} lasttype = str;
+	enum {str,sym} lasttype = str;
 
 	if (target == kStrEmpty) {
 		resources::eventbase::base.push_back(
@@ -102,6 +102,7 @@ Chainloader Chainloader::build(string target) {
 				output.push_back(current);
 				output.push_back(string().append(1, target[i]));
 				current = kStrEmpty;
+				lasttype = sym;
 				break;
 			case '=':
 			case '>':
@@ -124,6 +125,7 @@ Chainloader Chainloader::build(string target) {
 					output.push_back(string().append(1, target[i]));
 					current = kStrEmpty;
 				}
+				lasttype = sym;
 				break;
 			case ' ':
 				if (allowblank) {
@@ -139,14 +141,19 @@ Chainloader Chainloader::build(string target) {
 						Messege(kStrFatalError, kCodeIllegalArgs));
 
 				}
+				//TODO:lasttype
 				break;
 			default:
 				current.append(1, target[i]);
+				lasttype = str;
 				break;
 			}
 		}
 		else if (current.empty()) {
 			current.append(1, target[i]);
+			std::regex_match(string().append(1, target[i]), kPatternSymbol) ?
+				lasttype = sym :
+				lasttype = str;
 		}
 	}
 
