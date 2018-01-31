@@ -95,7 +95,7 @@ Chainloader Chainloader::build(string target) {
 		case ',':
 		case ')':
 		case '"':
-			output.push_back(current);
+			if (current != kStrEmpty) output.push_back(current);
 			output.push_back(string().append(1, target[i]));
 			current = kStrEmpty;
 			break;
@@ -104,7 +104,7 @@ Chainloader Chainloader::build(string target) {
 		case '<':
 			if (i + 1 < size && target[i + 1] == '=') {
 				binaryoptchar = target[i];
-				output.push_back(current);
+				if (current != kStrEmpty) output.push_back(current);
 				current = kStrEmpty;
 				continue;
 			}
@@ -116,7 +116,7 @@ Chainloader Chainloader::build(string target) {
 				}
 			}
 			else {
-				output.push_back(current);
+				if (current != kStrEmpty) output.push_back(current);
 				output.push_back(string().append(1, target[i]));
 				current = kStrEmpty;
 			}
