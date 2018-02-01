@@ -103,6 +103,15 @@ Chainloader Chainloader::build(string target) {
 		case '(':
 		case ',':
 		case ')':
+			if (allowblank) {
+				current.append(1, target[i]);
+			}
+			else {
+				if (current != kStrEmpty) output.push_back(current);
+				output.push_back(string().append(1, target[i]));
+				current = kStrEmpty;
+			}
+			break;
 		case '"':
 			if (allowblank && target[i - 1] == '\\' && i - 1 >= 0) {
 				current.append(1, target[i]);
@@ -173,11 +182,17 @@ Chainloader Chainloader::build(string target) {
 	}
 
 	raw = output;
+	util.CleanupVector(output);
 
 	return *this;
 }
 
 Messege Chainloader::execute() {
 
-	return Messege();
+	Util util;
+	Messege result(kStrNothing, kCodeStandby);
+
+
+
+	return result;
 }

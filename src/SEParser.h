@@ -20,9 +20,13 @@ namespace suzu {
 	const string kStrPass = "__PASS";
 	const string kStrNothing = "__NOTHING";
 	const string kStrRedirect = "__*";
+
 	const string kstrDefine = "def";
 	const string kStrVar = "var";
 	const string kStrReturn = "return";
+	const string kStrFor = "for";
+	const string kStrWhile = "while";
+
 
 	const int kCodeSuccess = 0;
 	const int kCodeStandby = 1;
@@ -45,8 +49,10 @@ namespace suzu {
 	const regex kPatternSymbol(R"(==|<=|>=|&&|\|\||[[:Punct:]]|len)");
 	const regex kPatternBlank(R"([[:blank:]])");
 	class Token;
+	class Messege;
 
 	//preserve for function pointer
+	typedef Messege (*Activity)(vector<string> &);
 
 	class Messege {
 	private:
@@ -186,61 +192,6 @@ namespace suzu {
 		string GetString();
 	};
 
-	class Token {
-	private:
-		string leftitem;
-		string rightitem;
-		string operation;
-		Token *lefttoken;
-		Token *righttoken;
-	public:
-		Token() {
-			leftitem = kStrNothing;
-			rightitem = kStrNothing;
-			operation = kStrPass;
-			lefttoken = nullptr;
-			righttoken = nullptr;
-		}
-
-		string SetOperation(string &operation) {
-			this->operation = operation;
-		}
-
-		string GetOperation() const {
-			return this->operation;
-		}
-
-		bool SetLeftItem(string leftitem, Token *lefttoken = nullptr) {
-			if (leftitem == kStrRedirect) {
-				this->leftitem = kStrEmpty;
-				this->lefttoken = lefttoken;
-			}
-			else {
-				this->leftitem = leftitem;
-				this->lefttoken = nullptr;
-			}
-		}
-
-		bool SetRightItem(string rightitem, Token *righttoken = nullptr) {
-			if (rightitem == kStrRedirect) {
-				this->rightitem = kStrEmpty;
-				this->righttoken = lefttoken;
-			}
-			else {
-				this->rightitem = leftitem;
-				this->righttoken = nullptr;
-			}
-		}
-
-		bool IsLeaf() const {
-			bool result;
-			result = (leftitem == kStrNothing && rightitem == kStrNothing)
-				|| ((leftitem == kStrRedirect && lefttoken == nullptr) &&
-					(rightitem == kStrRedirect && righttoken == nullptr));
-		}
-
-	};
-
 	class Chainloader {
 	private:
 		vector<string> raw;
@@ -255,8 +206,17 @@ namespace suzu {
 	class FunctionNode {
 	private:
 		string name;
+		vector<string> symbols;
+		Activity activity;
+	public:
+		FunctionNode() : name(kStrNothing), activity(nullptr) {}
+	};
+
+	class JSONSource {
+	private:
 
 	public:
+
 	};
 }
 
