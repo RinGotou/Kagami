@@ -22,6 +22,7 @@ namespace suzu {
 	const string kStrRedirect = "__*";
 	const string kstrDefine = "def";
 	const string kStrVar = "var";
+	const string kStrReturn = "return";
 
 	const int kCodeSuccess = 0;
 	const int kCodeStandby = 1;
