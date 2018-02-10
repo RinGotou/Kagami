@@ -12,6 +12,7 @@ namespace suzu {
 	using std::stack;
 	using std::deque;
 	using std::regex;
+	using std::regex_match;
 
 	const string kStrEmpty = "";
 	const string kStrFatalError = "__FATAL";
@@ -30,8 +31,9 @@ namespace suzu {
 
 	const int kCodeSuccess = 0;
 	const int kCodeStandby = 1;
-	const int kCodeOverflow = -1;
-	const int kCodeIllegalArgs = -2;
+	const int kCodeBrokenEngine = -1;
+	const int kCodeOverflow = -2;
+	const int kCodeIllegalArgs = -3;
 
 	const size_t kTypeFunction = 0;
 	const size_t kTypeString = 1;
@@ -39,6 +41,7 @@ namespace suzu {
 	const size_t KTypeDouble = 3;
 	const size_t kTypeBoolean = 4;
 	const size_t kTypeSymbol = 5;
+	const size_t kTypeNull = 100;
 
 	const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
 	const regex kPatternString(R"("(\"|\\|\n|\t|[^"])*")");
@@ -48,16 +51,15 @@ namespace suzu {
 	const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
 	const regex kPatternSymbol(R"(==|<=|>=|&&|\|\||[[:Punct:]]|len)");
 	const regex kPatternBlank(R"([[:blank:]])");
-	class Token;
-	class Messege;
 
-	//preserve for function pointer
+	class Messege;
 	typedef Messege (*Activity)(vector<string> &);
 
 	class Messege {
 	private:
 		string value;
 		int code;
+		deque<string> details;
 	public:
 		Messege() : value(kStrEmpty), code(kCodeStandby) {}
 
@@ -78,6 +80,10 @@ namespace suzu {
 		Messege SetCode(const int &code) {
 			this->code = code;
 			return *this;
+		}
+
+		deque<string> &GetDetails() {
+			return this->details;
 		}
 
 		int GetCode() const {
@@ -105,63 +111,34 @@ namespace suzu {
 			deque<Type>(target).swap(target);
 		}
 
-		Messege GetDataType(string target) {
-			using std::regex_match;
-			//default error messege
-			Messege result(kStrRedirect, kCodeIllegalArgs);
-
-			auto match = [&] (const regex &pat) -> bool {
-				return regex_match(target, pat);
-			};
-
-			if (match(kPatternFunction)) {
-				result.SetCode(kTypeFunction);
-			}
-			else if (match(kPatternString)) {
-				result.SetCode(kTypeString);
-			}
-			else if (match(kPatternBoolean)) {
-				result.SetCode(kTypeBoolean);
-			}
-			else if (match(kPatternInteger)) {
-				result.SetCode(kTypeInteger);
-			}
-			else if (match(kPatternDouble)) {
-				result.SetCode(KTypeDouble);
-			}
-			else if (match(kPatternSymbol)) {
-				result.SetCode(kTypeSymbol);
-			}
-			
-			return result;
-		}
+		Messege GetDataType(string target);
 	};
 
 
 
-	class InputSource {
+	class ScriptProvider {
 	private:
 		std::ifstream stream;
 		size_t current;
 		vector<string> pool;
 
-		InputSource() {}
+		ScriptProvider() {}
 
 		bool IsStreamReady() const {
 			return (stream.is_open() && stream.good());
 		}
 	public:
-		InputSource(string target) {
+		ScriptProvider(string target) {
 			stream.open(target.c_str(), std::ios::in);
 			current = 0;
 		}
 
-		InputSource(char *target) {
+		ScriptProvider(char *target) {
 			stream.open(target, std::ios::in);
 			current = 0;
 		}
 
-		~InputSource() {
+		~ScriptProvider() {
 			stream.close();
 			Util().CleanupVector(pool);
 		}
@@ -197,22 +174,51 @@ namespace suzu {
 		vector<string> raw;
 	public:
 		Chainloader() {}
+		Chainloader Build(vector<string> raw) {
+			this->raw = raw;
+			return *this;
+		}
 
-		Chainloader build(string target);
-
-		Messege execute();
+		Chainloader Build(string target);
+		Messege Execute();
 	};
 
-	class FunctionNode {
+	class Register {
 	private:
 		string name;
-		vector<string> symbols;
 		Activity activity;
+		int requiredcount;
 	public:
-		FunctionNode() : name(kStrNothing), activity(nullptr) {}
+		Register() : name(kStrNothing), activity(nullptr) {
+			requiredcount = -1;
+		}
+		Register(string n, Activity a, int r = 0) : name(n){
+			requiredcount = r;
+		}
+
+
+		string GetName() const {
+			return this->name;
+		}
+
+		Activity GetActivity() const {
+			return this->activity;
+		}
+
+		int GetRequiredCount() const {
+			return this->requiredcount;
+		}
+
+		bool Good() const {
+			return (activity != nullptr && requiredcount != -1);
+		}
+
+		Messege StartActivity(vector<string> p);
 	};
 
-	class JSONSource {
+	//TODO:JSON Mini Parser
+	//--------------!!WORKING!!-----------------//
+	class JSONProvider {
 	private:
 
 	public:
