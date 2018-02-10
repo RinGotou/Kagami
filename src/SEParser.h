@@ -59,7 +59,6 @@ namespace suzu {
 	private:
 		string value;
 		int code;
-		deque<string> details;
 	public:
 		Messege() : value(kStrEmpty), code(kCodeStandby) {}
 
@@ -80,10 +79,6 @@ namespace suzu {
 		Messege SetCode(const int &code) {
 			this->code = code;
 			return *this;
-		}
-
-		deque<string> &GetDetails() {
-			return this->details;
 		}
 
 		int GetCode() const {
@@ -183,16 +178,16 @@ namespace suzu {
 		Messege Execute();
 	};
 
-	class Register {
+	class EntryProvider {
 	private:
 		string name;
 		Activity activity;
 		int requiredcount;
 	public:
-		Register() : name(kStrNothing), activity(nullptr) {
+		EntryProvider() : name(kStrNothing), activity(nullptr) {
 			requiredcount = -1;
 		}
-		Register(string n, Activity a, int r = 0) : name(n){
+		EntryProvider(string n, Activity a, int r = 0) : name(n){
 			requiredcount = r;
 		}
 
@@ -211,6 +206,12 @@ namespace suzu {
 
 		bool Good() const {
 			return (activity != nullptr && requiredcount != -1);
+		}
+
+		bool operator==(EntryProvider &target) {
+			return (target.name == this->name &&
+				target.activity == this->activity &&
+				target.requiredcount == this->requiredcount);
 		}
 
 		Messege StartActivity(vector<string> p);
