@@ -11,21 +11,22 @@ namespace resources {
 		}
 	}
 
-	namespace registry {
-		deque<Register> base;
+	namespace entry {
+		deque<EntryProvider> base;
 
-		bool Init() {
-
+		void Init() {
+			//
 		}
 
-		Register &Query(string target) {
+		EntryProvider Query(string target) {
+			EntryProvider result;
 			for (auto &unit : base) {
-				if (unit.GetName == target) {
-					return unit;
+				if (unit.GetName() == target) {
+					result = unit;
 				}
 			}
 
-			return Register();
+			return result;
 		}
 	}
 }
@@ -128,7 +129,7 @@ Chainloader Chainloader::Build(string target) {
 		}
 		else if (headlock == false && std::regex_match(string().append(1, target[i]),
 			kPatternBlank) == false) {
-			headlock == true;
+			headlock = true;
 		}
 
 		if (target[i] == '"') {
@@ -233,19 +234,55 @@ Messege Chainloader::Execute() {
 
 	Util util;
 	Messege result(kStrNothing, kCodeStandby);
-	int i;
+	Messege temp(kStrNothing, kCodeSuccess);
+	size_t i;
 	size_t size = raw.size();
 	size_t forwardtype = kTypeNull;
+	size_t top;
 
 	stack<string> symbols;
-	stack<int> tracer;
+	stack<size_t> tracer;
 	vector<string> elements;
+	vector<string> container;
 
 	//TODO:analyzing and execute
 	//-----------------!!WORKING!!-----------------------//
 	for (i = 0; i < size; i++) {
 		if (regex_match(raw[i], kPatternSymbol)) {
+			if (raw[i] == "(") {
+				if (forwardtype == kTypeSymbol) {
+					//TODO:brackets that not belong to any function
+				}
+				else {
+					tracer.push(i);
+					symbols.push(raw[i]);
+				}
+			}
+			else if (raw[i] == ")") {
+				//TODO:some expression inside the call?
+				//TODO:last choice is creating temp chainloader
+				//these codes may need to modify
+				top = tracer.top();
+				while (elements.size() > top + 1) {
+					container.push_back(elements.back());
+					elements.pop_back();
+				}
+				EntryProvider provider = entry::Query(raw[top]);
+				if (provider.Good()) {
+					temp = provider.StartActivity(container);
+				}
+				else {
 
+				}
+			}
+			else if (raw[i] == ",") {
+				//Do nothing here
+			}
+			else {
+
+			}
+
+			forwardtype = kTypeSymbol;
 		}
 		else {
 			forwardtype = util.GetDataType(raw[i]).GetCode();
@@ -263,7 +300,7 @@ Messege Chainloader::Execute() {
 	return result;
 }
 
-Messege Register::StartActivity(vector<string> p) {
+Messege EntryProvider::StartActivity(vector<string> p) {
 	Messege result;
 
 	size_t size = p.size();
