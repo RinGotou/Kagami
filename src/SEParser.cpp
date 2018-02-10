@@ -11,16 +11,57 @@ namespace resources {
 		}
 	}
 
-	namespace functions {
-		vector<FunctionNode> registry;
+	namespace registry {
+		deque<Register> base;
 
 		bool Init() {
 
 		}
+
+		Register &Query(string target) {
+			for (auto &unit : base) {
+				if (unit.GetName == target) {
+					return unit;
+				}
+			}
+
+			return Register();
+		}
 	}
 }
 
-string InputSource::GetString() {
+Messege Util::GetDataType(string target) {
+	using std::regex_match;
+	//default error messege
+	Messege result(kStrRedirect, kCodeIllegalArgs);
+
+	auto match = [&](const regex &pat) -> bool {
+		return regex_match(target, pat);
+	};
+
+	if (match(kPatternFunction)) {
+		result.SetCode(kTypeFunction);
+	}
+	else if (match(kPatternString)) {
+		result.SetCode(kTypeString);
+	}
+	else if (match(kPatternBoolean)) {
+		result.SetCode(kTypeBoolean);
+	}
+	else if (match(kPatternInteger)) {
+		result.SetCode(kTypeInteger);
+	}
+	else if (match(kPatternDouble)) {
+		result.SetCode(KTypeDouble);
+	}
+	else if (match(kPatternSymbol)) {
+		result.SetCode(kTypeSymbol);
+	}
+
+	return result;
+}
+
+string ScriptProvider::GetString() {
 	string currentstr, result;
 
 	auto IsBlankStr = [] (string target) -> bool { 
@@ -60,7 +101,7 @@ string InputSource::GetString() {
 	return result;
 }
 
-Chainloader Chainloader::build(string target) {
+Chainloader Chainloader::Build(string target) {
 	Util util;
 	vector<string> output;
 	char binaryoptchar = NULL;
@@ -154,7 +195,7 @@ Chainloader Chainloader::build(string target) {
 			if (allowblank) {
 				current.append(1, target[i]);
 			}
-			else if ((current == kStrVar || current == kstrDefine || current == kStrReturn) 
+			else if ((current == kStrVar || current == kstrDefine || current == kStrReturn)
 				&& output.empty() == true) {
 				if (i + 1 < size && target[i + 1] != ' ' && target[i + 1] != '\t') {
 					output.push_back(current);
@@ -187,12 +228,56 @@ Chainloader Chainloader::build(string target) {
 	return *this;
 }
 
-Messege Chainloader::execute() {
+Messege Chainloader::Execute() {
+	using namespace resources;
 
 	Util util;
 	Messege result(kStrNothing, kCodeStandby);
+	int i;
+	size_t size = raw.size();
+	size_t forwardtype = kTypeNull;
+
+	stack<string> symbols;
+	stack<int> tracer;
+	vector<string> elements;
+
+	//TODO:analyzing and execute
+	//-----------------!!WORKING!!-----------------------//
+	for (i = 0; i < size; i++) {
+		if (regex_match(raw[i], kPatternSymbol)) {
+
+		}
+		else {
+			forwardtype = util.GetDataType(raw[i]).GetCode();
+			if (forwardtype == kCodeIllegalArgs) {
+				result.SetCode(kCodeIllegalArgs).SetValue(kStrFatalError);
+				eventbase::base.push_back(result);
+				break;
+			}
+			elements.push_back(raw[i]);
+		}
+
+	}
 
 
+	return result;
+}
+
+Messege Register::StartActivity(vector<string> p) {
+	Messege result;
+
+	size_t size = p.size();
+	if (size != requiredcount) {
+		if (requiredcount = -1) {
+			result.SetCode(kCodeBrokenEngine).SetValue(kStrFatalError);
+		}
+		else {
+			result.SetCode(kCodeIllegalArgs).SetValue(kStrFatalError);
+		}
+	}
+	else {
+		result = activity(p);
+	}
 
 	return result;
 }
