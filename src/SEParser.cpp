@@ -14,8 +14,8 @@ namespace resources {
 	namespace entry {
 		deque<EntryProvider> base;
 
-		void Init() {
-			//
+		void Inject(EntryProvider &provider) {
+			base.push_back(provider);
 		}
 
 		EntryProvider Query(string target) {
@@ -281,7 +281,8 @@ Messege Chainloader::Execute() {
 	size_t size = raw.size();
 	size_t forwardtype = kTypeNull;
 	size_t top;
-	bool rv;
+	bool rv = true;
+	bool commaexpression = false;
 
 	stack<string> symbols;
 	stack<size_t> tracer;
@@ -300,16 +301,21 @@ Messege Chainloader::Execute() {
 	for (i = 0; i < size; i++) {
 		if (regex_match(raw[i], kPatternSymbol)) {
 			if (raw[i] == "(") {
-				if (forwardtype == kTypeSymbol) {
+				if (forwardtype == kTypeSymbol || forwardtype == kTypeNull) {
 					//TODO:brackets that not belong to any function
+					tracer.push(i - 1);
+					symbols.push(raw[i]);
+					commaexpression = true;
 				}
 				else {
-					tracer.push(i);
+					tracer.push(i - 1);
 					symbols.push(raw[i]);
 				}
 			}
 			else if (raw[i] == ")") {
-				//these codes may need to modify
+				//TODO:bracket without any function
+				top = tracer.top();
+
 				if (symbols.empty()) {
 					ErrorTracking(kCodeIllegalSymbol, kStrFatalError);
 					break;
@@ -344,26 +350,32 @@ Messege Chainloader::Execute() {
 						j = 0;
 					}
 				}
-				top = tracer.top();
+
 				util.CleanupVector(container);
 
 				while (elements.size() > top + 1) {
 					container.push_back(elements.back());
 					elements.pop_back();
 				}
-				provider = entry::Query(raw[top]);
+				if (commaexpression) {
+					provider = entry::Query("_COMMAEXP");
+				}
+				else {
+					provider = entry::Query(raw[top]);
+				}
+				
 				rv = util.ActivityStart(provider, container, elements, top, result);
 				if (rv == false) break;
 			}
 			else if (raw[i] == ",") {
-				if (i = raw.size() - 1) {
+				if (i == raw.size() - 1) {
 					ErrorTracking(kCodeIllegalSymbol, kStrWarning);
 				}
 				forwardtype = kTypeSymbol;
 				continue;
 			}
 			else {
-				//
+				symbols.push(raw[i]);
 			}
 
 			forwardtype = kTypeSymbol;
@@ -432,4 +444,22 @@ Messege EntryProvider::StartActivity(vector<string> p) {
 	}
 
 	return result;
+}
+
+Messege CommaExpression(vector<string> &res) {
+	Messege result;
+	if (res.empty()) {
+		result.SetCode(kCodeRedirect).SetValue(kStrEmpty);
+	}
+	else {
+		result.SetCode(kCodeRedirect).SetValue(res.back());
+	}
+
+	return result;
+}
+
+void TotalInjection() {
+	using namespace resources::entry;
+
+	Inject(EntryProvider("_COMMAEXP", CommaExpression));
 }
