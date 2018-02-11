@@ -28,12 +28,15 @@ namespace suzu {
 	const string kStrFor = "for";
 	const string kStrWhile = "while";
 
-
-	const int kCodeSuccess = 0;
+	const int kCodeRedirect = 2;
 	const int kCodeStandby = 1;
+	const int kCodeNothing = 1;
+	const int kCodeSuccess = 0;
 	const int kCodeBrokenEngine = -1;
 	const int kCodeOverflow = -2;
 	const int kCodeIllegalArgs = -3;
+	const int kCodeIllegalCall = -4;
+	const int kCodeIllegalSymbol = -5;
 
 	const size_t kTypeFunction = 0;
 	const size_t kTypeString = 1;

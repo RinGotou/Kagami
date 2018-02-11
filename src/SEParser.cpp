@@ -3,7 +3,7 @@
 using namespace suzu;
 
 namespace resources {
-	namespace eventbase {
+	namespace tracking {
 		deque<Messege> base;
 
 		void Reset() {
@@ -95,7 +95,7 @@ string ScriptProvider::GetString() {
 	}
 	else {
 		result = kStrFatalError;
-		resources::eventbase::base.push_back(Messege(kStrFatalError, kCodeOverflow));
+		resources::tracking::base.push_back(Messege(kStrFatalError, kCodeOverflow));
 		//TODO:Something else?
 	}
 
@@ -116,7 +116,7 @@ Chainloader Chainloader::Build(string target) {
 	bool allowblank = false;
 
 	if (target == kStrEmpty) {
-		resources::eventbase::base.push_back(
+		resources::tracking::base.push_back(
 			Messege(kStrWarning, kCodeIllegalArgs));
 		return *this;
 	}
@@ -233,17 +233,49 @@ Messege Chainloader::Execute() {
 	using namespace resources;
 
 	Util util;
-	Messege result(kStrNothing, kCodeStandby);
+	EntryProvider provider;
+	Messege result(kStrNothing, kCodeSuccess);
 	Messege temp(kStrNothing, kCodeSuccess);
-	size_t i;
+	size_t i, j;
 	size_t size = raw.size();
 	size_t forwardtype = kTypeNull;
 	size_t top;
+	bool rv;
 
 	stack<string> symbols;
 	stack<size_t> tracer;
 	vector<string> elements;
 	vector<string> container;
+
+	auto ErrorTracking = [&result](int code, string value) {
+		tracking::base.push_back(Messege(kStrFatalError, code));
+		result.SetCode(code).SetValue(kStrFatalError);
+	};
+
+	auto ActivityStart = [&](EntryProvider &provider) -> bool {
+		bool rv = true;
+		if (provider.Good()) {
+			temp = provider.StartActivity(container);
+
+			if (temp.GetCode() != kCodeSuccess) {
+				tracking::base.push_back(temp);
+				result = temp;
+				rv = false;
+			}
+			else if (temp.GetCode() == kCodeRedirect) {
+				raw[top] = temp.GetValue();
+			}
+			else {
+				raw[top] = kStrEmpty;
+			}
+		}
+		else {
+			ErrorTracking(kCodeIllegalCall, kStrFatalError);
+			rv = false;
+		}
+
+		return rv;
+	};
 
 	//TODO:analyzing and execute
 	//-----------------!!WORKING!!-----------------------//
@@ -263,23 +295,25 @@ Messege Chainloader::Execute() {
 				//TODO:last choice is creating temp chainloader
 				//these codes may need to modify
 				top = tracer.top();
+				util.CleanupVector(container);
+
 				while (elements.size() > top + 1) {
 					container.push_back(elements.back());
 					elements.pop_back();
 				}
-				EntryProvider provider = entry::Query(raw[top]);
-				if (provider.Good()) {
-					temp = provider.StartActivity(container);
-				}
-				else {
-
-				}
+				provider = entry::Query(raw[top]);
+				rv = ActivityStart(provider);
+				if (rv == false) break;
 			}
 			else if (raw[i] == ",") {
-				//Do nothing here
+				if (i = raw.size() - 1) {
+					ErrorTracking(kCodeIllegalSymbol, kStrWarning);
+				}
+				forwardtype = kTypeSymbol;
+				continue;
 			}
 			else {
-
+				//
 			}
 
 			forwardtype = kTypeSymbol;
@@ -288,14 +322,41 @@ Messege Chainloader::Execute() {
 			forwardtype = util.GetDataType(raw[i]).GetCode();
 			if (forwardtype == kCodeIllegalArgs) {
 				result.SetCode(kCodeIllegalArgs).SetValue(kStrFatalError);
-				eventbase::base.push_back(result);
+				tracking::base.push_back(result);
 				break;
 			}
 			elements.push_back(raw[i]);
 		}
 
-	}
+		while (!symbols.empty()) {
+			util.CleanupVector(container);
 
+			if (!symbols.empty() && elements.empty()) {
+				ErrorTracking(kCodeIllegalSymbol, kStrFatalError);
+				break;
+			}
+			if (symbols.top() == "(" || symbols.top() == ")") {
+				ErrorTracking(kCodeIllegalSymbol, kStrFatalError);
+				break;
+			}
+
+			provider = entry::Query(symbols.top());
+			j = provider.GetRequiredCount();
+
+			if (j > elements.size() - 1) {
+				ErrorTracking(kCodeIllegalArgs, kStrFatalError);
+				break;
+			}
+
+			while (j != 0) {
+				container.push_back(elements.back());
+				elements.pop_back();
+			}
+			
+			rv = ActivityStart(provider);
+			if (rv == false) break;
+		}
+	}
 
 	return result;
 }
