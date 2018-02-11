@@ -327,8 +327,8 @@ Messege Chainloader::Execute() {
 	vector<string> container;
 
 	auto ErrorTracking = [&result](int code, string value, string detail) {
-		tracking::log(Messege(kStrFatalError, code).SetDetail(detail), "Chainloader::Execute() ");
-		result.SetCode(code).SetValue(kStrFatalError).SetDetail(detail);
+		tracking::log(Messege(value, code).SetDetail(detail), "Chainloader::Execute() ");
+		result.SetCode(code).SetValue(value).SetDetail(detail);
 	};
 
 	//-----------------!!DEBUGGING!!-----------------------//
