@@ -62,6 +62,47 @@ Messege Util::GetDataType(string target) {
 	return result;
 }
 
+bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vector<string> &elements, 
+	size_t top, Messege &msg) {
+	using namespace resources;
+
+	bool rv = true;
+	Messege temp(kStrNothing, kCodeSuccess);
+
+	if (provider.Good()) {
+		temp = provider.StartActivity(container);
+
+		if (temp.GetCode() != kCodeSuccess) {
+			tracking::base.push_back(temp);
+			msg = temp;
+			rv = false;
+		}
+		else if (temp.GetCode() == kCodeRedirect) {
+			if (top == elements.size()) {
+				elements.push_back(temp.GetValue());
+			}
+			else {
+				elements[top] = temp.GetValue();
+			}
+		}
+		else {
+			if (top == elements.size()) {
+				elements.push_back(kStrEmpty);
+			}
+			else {
+				elements[top] = kStrEmpty;
+			}
+		}
+	}
+	else {
+		msg.SetCode(kCodeIllegalCall).SetValue(kStrFatalError);
+		tracking::base.push_back(msg);
+		rv = false;
+	}
+
+	return rv;
+}
+
 string ScriptProvider::GetString() {
 	string currentstr, result;
 
@@ -252,31 +293,6 @@ Messege Chainloader::Execute() {
 		result.SetCode(code).SetValue(kStrFatalError);
 	};
 
-	auto ActivityStart = [&](EntryProvider &provider) -> bool {
-		bool rv = true;
-		if (provider.Good()) {
-			temp = provider.StartActivity(container);
-
-			if (temp.GetCode() != kCodeSuccess) {
-				tracking::base.push_back(temp);
-				result = temp;
-				rv = false;
-			}
-			else if (temp.GetCode() == kCodeRedirect) {
-				raw[top] = temp.GetValue();
-			}
-			else {
-				raw[top] = kStrEmpty;
-			}
-		}
-		else {
-			ErrorTracking(kCodeIllegalCall, kStrFatalError);
-			rv = false;
-		}
-
-		return rv;
-	};
-
 	//TODO:analyzing and execute
 	//-----------------!!WORKING!!-----------------------//
 	for (i = 0; i < size; i++) {
@@ -302,7 +318,7 @@ Messege Chainloader::Execute() {
 					elements.pop_back();
 				}
 				provider = entry::Query(raw[top]);
-				rv = ActivityStart(provider);
+				rv = util.ActivityStart(provider, container, elements, top, result);
 				if (rv == false) break;
 			}
 			else if (raw[i] == ",") {
@@ -353,7 +369,8 @@ Messege Chainloader::Execute() {
 				elements.pop_back();
 			}
 			
-			rv = ActivityStart(provider);
+			//rv = ActivityStart(provider);
+			rv = util.ActivityStart(provider, container, elements, elements.size(), result);
 			if (rv == false) break;
 		}
 	}
