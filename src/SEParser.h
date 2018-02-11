@@ -56,6 +56,7 @@ namespace suzu {
 	const regex kPatternBlank(R"([[:blank:]])");
 
 	class Messege;
+	class EntryProvider;
 	typedef Messege (*Activity)(vector<string> &);
 
 	class Messege {
@@ -110,6 +111,8 @@ namespace suzu {
 		}
 
 		Messege GetDataType(string target);
+		bool ActivityStart(EntryProvider &provider, vector<string> container,
+			vector<string> &raw, size_t top, Messege &msg);
 	};
 
 
