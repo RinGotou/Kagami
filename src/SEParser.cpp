@@ -288,6 +288,8 @@ Messege Chainloader::Execute() {
 	vector<string> elements;
 	vector<string> container;
 
+	
+
 	auto ErrorTracking = [&result](int code, string value) {
 		tracking::base.push_back(Messege(kStrFatalError, code));
 		result.SetCode(code).SetValue(kStrFatalError);
@@ -307,9 +309,41 @@ Messege Chainloader::Execute() {
 				}
 			}
 			else if (raw[i] == ")") {
-				//TODO:some expression inside the call?
-				//TODO:last choice is creating temp chainloader
 				//these codes may need to modify
+				if (symbols.empty()) {
+					ErrorTracking(kCodeIllegalSymbol, kStrFatalError);
+					break;
+				}
+				if (symbols.top() != "(") {
+					util.CleanupVector(container);
+					
+					while (symbols.top() != "(") {
+
+						EntryProvider provider = entry::Query(symbols.top());
+						j = provider.GetRequiredCount();
+
+						if (j > elements.size()) {
+							ErrorTracking(kCodeIllegalArgs, kStrFatalError);
+							break;
+						}
+
+						while (j != 0) {
+							container.push_back(elements.back());
+							elements.pop_back();
+							--j;
+						}
+						rv = util.ActivityStart(provider, container, elements, elements.size(), result);
+						if (rv == false) break;
+						else symbols.pop();
+
+						if (symbols.empty()) {
+							ErrorTracking(kCodeIllegalSymbol, kStrFatalError);
+							break;
+						}
+
+						j = 0;
+					}
+				}
 				top = tracer.top();
 				util.CleanupVector(container);
 
@@ -359,7 +393,7 @@ Messege Chainloader::Execute() {
 			provider = entry::Query(symbols.top());
 			j = provider.GetRequiredCount();
 
-			if (j > elements.size() - 1) {
+			if (j > elements.size()) {
 				ErrorTracking(kCodeIllegalArgs, kStrFatalError);
 				break;
 			}
@@ -367,11 +401,14 @@ Messege Chainloader::Execute() {
 			while (j != 0) {
 				container.push_back(elements.back());
 				elements.pop_back();
+				--j;
 			}
 			
-			//rv = ActivityStart(provider);
 			rv = util.ActivityStart(provider, container, elements, elements.size(), result);
 			if (rv == false) break;
+			else symbols.pop();
+
+			j = 0;
 		}
 	}
 
