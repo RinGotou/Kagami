@@ -9,6 +9,13 @@ namespace resources {
 		void Reset() {
 			Util().CleanupDeque(base);
 		}
+
+		void log(Messege &msg, string res) {
+#ifdef _TRACKING_
+			std::cout << "report from " << res << " code " << msg.GetCode() << std::endl;
+#endif
+			base.push_back(msg);
+		}
 	}
 
 	namespace entry {
@@ -62,22 +69,24 @@ Messege Util::GetDataType(string target) {
 	return result;
 }
 
-bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vector<string> &elements, 
+bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vector<string> &elements,
 	size_t top, Messege &msg) {
 	using namespace resources;
 
 	bool rv = true;
+	int code = kCodeSuccess;
 	Messege temp(kStrNothing, kCodeSuccess);
 
 	if (provider.Good()) {
 		temp = provider.StartActivity(container);
+		code = temp.GetCode();
 
-		if (temp.GetCode() != kCodeSuccess) {
-			tracking::base.push_back(temp);
+		if (code < kCodeSuccess) {
+			tracking::log(temp,"ActivityStart 1");
 			msg = temp;
 			rv = false;
 		}
-		else if (temp.GetCode() == kCodeRedirect) {
+		else if (code == kCodeRedirect) {
 			if (top == elements.size()) {
 				elements.push_back(temp.GetValue());
 			}
@@ -96,15 +105,35 @@ bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vect
 	}
 	else {
 		msg.SetCode(kCodeIllegalCall).SetValue(kStrFatalError);
-		tracking::base.push_back(msg);
+		tracking::log(msg, "ActivityStart 2");
 		rv = false;
 	}
 
 	return rv;
 }
 
-string ScriptProvider::GetString() {
-	string currentstr, result;
+void Util::PrintEvents() {
+	using namespace resources::tracking;
+	using std::cout;
+	using std::endl;
+
+	if (!base.empty()){
+		for (auto unit : base) {
+			cout << "Code:" << unit.GetCode() << endl;
+			cout << "Value:" << unit.GetValue() << endl;
+			cout << "Detail:" << unit.GetDetail() << endl;
+			cout << "~" << endl;
+		}
+	}
+	else {
+		cout << "no events" << endl;
+	}
+}
+
+Messege ScriptProvider::Get() {
+	using resources::tracking::log;
+	string currentstr;
+	Messege result(kStrEmpty,kCodeSuccess);
 
 	auto IsBlankStr = [] (string target) -> bool { 
 		if (target == kStrEmpty || target.size() == 0) return true;
@@ -125,25 +154,32 @@ string ScriptProvider::GetString() {
 		}
 		stream.close();
 	}
+	else {
+		result.SetValue(kStrFatalError).SetCode(kCodeBadStream);
+
+		log(result,"ScriptProvder::Get() 1");
+
+		return result;
+	}
 
 	size_t size = pool.size();
 	if (current < size) {
-		result = pool.at(current);
+		result.SetValue(pool[current]);
 		current++;
 	}
 	else if (current == size) {
-		result = kStrEOF;
+		result.SetValue(kStrEOF);
 	}
 	else {
-		result = kStrFatalError;
-		resources::tracking::base.push_back(Messege(kStrFatalError, kCodeOverflow));
-		//TODO:Something else?
+		result.SetValue(kStrFatalError).SetCode(kCodeOverflow);
+		log(result, "ScriptProvder::Get() 2");
 	}
 
 	return result;
 }
 
-Chainloader Chainloader::Build(string target) {
+Chainloader &Chainloader::Build(string target) {
+	using resources::tracking::log;
 	Util util;
 	vector<string> output;
 	char binaryoptchar = NULL;
@@ -157,8 +193,7 @@ Chainloader Chainloader::Build(string target) {
 	bool allowblank = false;
 
 	if (target == kStrEmpty) {
-		resources::tracking::base.push_back(
-			Messege(kStrWarning, kCodeIllegalArgs));
+		log(Messege(kStrWarning, kCodeIllegalArgs), "Chainloader::Build() 1");
 		return *this;
 	}
 
@@ -172,6 +207,7 @@ Chainloader Chainloader::Build(string target) {
 			kPatternBlank) == false) {
 			headlock = true;
 		}
+
 
 		if (target[i] == '"') {
 			if (allowblank && target[i - 1] != '\\' && i - 1 >= 0) {
@@ -283,164 +319,171 @@ Messege Chainloader::Execute() {
 	size_t top;
 	bool rv = true;
 	bool commaexpression = false;
+	bool directappend = false; //temp fix for string type
 
-	stack<string> symbols;
-	stack<size_t> tracer;
+	vector<string> symbols;
+	vector<size_t> tracer;
 	vector<string> elements;
 	vector<string> container;
 
-	
-
-	auto ErrorTracking = [&result](int code, string value) {
-		tracking::base.push_back(Messege(kStrFatalError, code));
-		result.SetCode(code).SetValue(kStrFatalError);
+	auto ErrorTracking = [&result](int code, string value, string detail) {
+		tracking::log(Messege(kStrFatalError, code).SetDetail(detail), "Chainloader::Execute() ");
+		result.SetCode(code).SetValue(kStrFatalError).SetDetail(detail);
 	};
 
-	//TODO:analyzing and execute
-	//-----------------!!WORKING!!-----------------------//
+	//-----------------!!DEBUGGING!!-----------------------//
 	for (i = 0; i < size; i++) {
 		if (regex_match(raw[i], kPatternSymbol)) {
 			if (raw[i] == "(") {
 				if (forwardtype == kTypeSymbol || forwardtype == kTypeNull) {
-					//TODO:brackets that not belong to any function
-					tracer.push(i - 1);
-					symbols.push(raw[i]);
 					commaexpression = true;
 				}
-				else {
-					tracer.push(i - 1);
-					symbols.push(raw[i]);
-				}
+				tracer.push_back(i - 1);
+				symbols.push_back(raw[i]);
 			}
 			else if (raw[i] == ")") {
-				//TODO:bracket without any function
-				top = tracer.top();
+				top = tracer.back();
 
 				if (symbols.empty()) {
-					ErrorTracking(kCodeIllegalSymbol, kStrFatalError);
+					ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "can't find left bracket");
 					break;
 				}
-				if (symbols.top() != "(") {
+
+				while (symbols.back() != "(") {
 					util.CleanupVector(container);
-					
-					while (symbols.top() != "(") {
+					provider = entry::Query(symbols.back());
+					j = provider.GetRequiredCount();
 
-						EntryProvider provider = entry::Query(symbols.top());
-						j = provider.GetRequiredCount();
 
-						if (j > elements.size()) {
-							ErrorTracking(kCodeIllegalArgs, kStrFatalError);
-							break;
-						}
-
+					if (j > elements.size()) {
+						ErrorTracking(kCodeIllegalArgs, kStrFatalError, "too few parameters");
+						break;
+					}
+					else {
 						while (j != 0) {
 							container.push_back(elements.back());
 							elements.pop_back();
 							--j;
 						}
-						rv = util.ActivityStart(provider, container, elements, elements.size(), result);
-						if (rv == false) break;
-						else symbols.pop();
-
-						if (symbols.empty()) {
-							ErrorTracking(kCodeIllegalSymbol, kStrFatalError);
-							break;
-						}
-
-						j = 0;
 					}
+
+					rv = util.ActivityStart(provider, container, elements, elements.size(), result);
+					if (rv == false) break;
+					symbols.pop_back();
+
+					j = 0;
 				}
 
 				util.CleanupVector(container);
-
 				while (elements.size() > top + 1) {
 					container.push_back(elements.back());
 					elements.pop_back();
 				}
 				if (commaexpression) {
-					provider = entry::Query("_COMMAEXP");
+					provider = entry::Query("__COMMAEXP");
 				}
 				else {
 					provider = entry::Query(raw[top]);
 				}
-				
+
 				rv = util.ActivityStart(provider, container, elements, top, result);
-				if (rv == false) break;
+				symbols.pop_back();
+				tracer.pop_back();
+	
+				if (rv == false) {
+					break;
+				}
+					
+				forwardtype = kTypeSymbol;
 			}
 			else if (raw[i] == ",") {
 				if (i == raw.size() - 1) {
-					ErrorTracking(kCodeIllegalSymbol, kStrWarning);
+					ErrorTracking(kCodeIllegalSymbol, kStrWarning, "illegal comma location");
 				}
 				forwardtype = kTypeSymbol;
-				continue;
+			}
+			else if (raw[i] == "\"") {
+				if (directappend) {
+					elements.back().append(raw[i]);
+				}
+				else {
+					elements.push_back(raw[i]);
+
+				}
+				directappend = !directappend;
 			}
 			else {
-				symbols.push(raw[i]);
+				symbols.push_back(raw[i]);
 			}
 
 			forwardtype = kTypeSymbol;
 		}
 		else {
-			forwardtype = util.GetDataType(raw[i]).GetCode();
-			if (forwardtype == kCodeIllegalArgs) {
-				result.SetCode(kCodeIllegalArgs).SetValue(kStrFatalError);
-				tracking::base.push_back(result);
-				break;
+			if (directappend) {
+				elements.back().append(raw[i]);
 			}
-			elements.push_back(raw[i]);
-		}
-
-		while (!symbols.empty()) {
-			util.CleanupVector(container);
-
-			if (!symbols.empty() && elements.empty()) {
-				ErrorTracking(kCodeIllegalSymbol, kStrFatalError);
-				break;
-			}
-			if (symbols.top() == "(" || symbols.top() == ")") {
-				ErrorTracking(kCodeIllegalSymbol, kStrFatalError);
-				break;
+			else {
+				elements.push_back(raw[i]);
 			}
 
-			provider = entry::Query(symbols.top());
-			j = provider.GetRequiredCount();
-
-			if (j > elements.size()) {
-				ErrorTracking(kCodeIllegalArgs, kStrFatalError);
-				break;
-			}
-
-			while (j != 0) {
-				container.push_back(elements.back());
-				elements.pop_back();
-				--j;
-			}
-			
-			rv = util.ActivityStart(provider, container, elements, elements.size(), result);
-			if (rv == false) break;
-			else symbols.pop();
-
-			j = 0;
+			forwardtype = kTypePreserved;
 		}
 	}
+
+	//--------------------------------------------------------
+
+	while (!symbols.empty()) {
+		util.CleanupVector(container);
+
+		if (elements.empty()) {
+			ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "entry expected");
+			break;
+		}
+		if (symbols.back() == "(" || symbols.back() == ")") {
+			ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "another bracket expected");
+			break;
+		}
+
+		provider = entry::Query(symbols.back());
+		j = provider.GetRequiredCount();
+
+		if (j > elements.size()) {
+			ErrorTracking(kCodeIllegalArgs, kStrFatalError, "more entry expected");
+			break;
+		}
+
+		while (j != 0) {
+			container.push_back(elements.back());
+			elements.pop_back();
+			--j;
+		}
+
+		rv = util.ActivityStart(provider, container, elements, elements.size(), result);
+
+		if (rv == false) {
+			break;
+		}
+
+		symbols.pop_back();
+
+		j = 0;
+	}
+	//--------------------------------------------------------
 
 	return result;
 }
 
 Messege EntryProvider::StartActivity(vector<string> p) {
 	Messege result;
-
 	size_t size = p.size();
-	if (size != requiredcount) {
-		if (requiredcount = -1) {
-			result.SetCode(kCodeBrokenEngine).SetValue(kStrFatalError);
-		}
-		else {
-			result.SetCode(kCodeIllegalArgs).SetValue(kStrFatalError);
-		}
+
+	if (size == requiredcount || requiredcount == kFlagAutoSize) {
+		result = activity(p);
 	}
 	else {
-		result = activity(p);
+		if (requiredcount == kFlagNotDefined) {
+			result.SetCode(kCodeBrokenEngine).SetValue(kStrFatalError);
+		}
 	}
 
 	return result;
@@ -458,8 +501,95 @@ Messege CommaExpression(vector<string> &res) {
 	return result;
 }
 
-void TotalInjection() {
+Messege PrintOnScreen(vector<string> &res) {
+	using std::cout;
+	using std::endl;
+
+	Messege result(kStrEmpty, kCodeSuccess);
+	size_t i;
+	size_t size = res.size();
+	string temp;
+
+	if (size == 1){
+		if (regex_match(res.back(), kPatternString)) {
+			temp = res.back();
+			temp = temp.substr(1, temp.size() - 2);
+			cout << temp << endl;
+		}
+		else {
+			//TODO:not a string type entry?
+		}
+	}
+	else if (size > 1) {
+		for (i = 0; i < size; i++) {
+			cout << res[i] << endl;
+		}
+	}
+	else {
+		result.SetCode(kCodeNothing).SetValue(kStrWarning);
+	}
+
+	return result;
+}
+
+Messege EmptyCall(vector<string> &res) {
+	Messege result;
+	std::cout << "You just call me right?" << std::endl;
+	return result;
+}
+
+void suzu::TotalInjection() {
 	using namespace resources::entry;
 
-	Inject(EntryProvider("_COMMAEXP", CommaExpression));
+	Inject(EntryProvider("__COMMAEXP", CommaExpression, kFlagAutoSize));
+	Inject(EntryProvider("print", PrintOnScreen, kFlagAutoSize));
+	Inject(EntryProvider("hi_suzu", EmptyCall, 1));
 }
+
+Messege Util::ScriptStart(string target) {
+	using namespace resources;
+	Messege result;
+	Messege temp;
+	size_t i;
+	size_t size;
+	vector<Chainloader> loaders;
+	Chainloader cache;
+
+	if (target == kStrEmpty) {
+		result.SetCode(kCodeIllegalArgs).SetValue(kStrFatalError);
+		tracking::log(result, "Util::ScriptStart() 1");
+	}
+	else {
+		TotalInjection();
+
+		ScriptProvider sp(target);
+
+		while (!sp.eof()) {
+			temp = sp.Get();
+			if (temp.GetCode() == kCodeSuccess) {
+				cache.Reset().Build(temp.GetValue());
+				loaders.push_back(cache);
+			}
+			else {
+				result.SetCode(kCodeIllegalArgs).SetValue(kStrFatalError);
+				tracking::log(result, "Util::ScriptStart() 2");
+				break;
+			}
+		}
+		
+		if (!loaders.empty()) {
+			size = loaders.size();
+
+			for (i = 0; i < size; i++) {
+				temp = loaders[i].Execute();
+
+				if (temp.GetCode() != kCodeSuccess) {
+					if (temp.GetValue() == kStrFatalError) break;
+				}
+			}
+		}
+	}
+
+	return result;
+}
+

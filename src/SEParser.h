@@ -29,7 +29,6 @@ namespace suzu {
 	const string kStrWhile = "while";
 
 	const int kCodeRedirect = 2;
-	const int kCodeStandby = 1;
 	const int kCodeNothing = 1;
 	const int kCodeSuccess = 0;
 	const int kCodeBrokenEngine = -1;
@@ -37,6 +36,10 @@ namespace suzu {
 	const int kCodeIllegalArgs = -3;
 	const int kCodeIllegalCall = -4;
 	const int kCodeIllegalSymbol = -5;
+	const int kCodeBadStream = -6;
+
+	const int kFlagAutoSize = -1;
+	const int kFlagNotDefined = -2;
 
 	const size_t kTypeFunction = 0;
 	const size_t kTypeString = 1;
@@ -45,6 +48,7 @@ namespace suzu {
 	const size_t kTypeBoolean = 4;
 	const size_t kTypeSymbol = 5;
 	const size_t kTypeNull = 100;
+	const size_t kTypePreserved = 101;
 
 	const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
 	const regex kPatternString(R"("(\"|\\|\n|\t|[^"])*")");
@@ -62,11 +66,13 @@ namespace suzu {
 	class Messege {
 	private:
 		string value;
+		string detail;
 		int code;
 	public:
 		Messege() {
 			value = kStrEmpty;
-			code = kCodeStandby;
+			code = kCodeSuccess;
+			detail = kStrEmpty;
 		}
 
 		Messege(string value, int code) {
@@ -91,20 +97,25 @@ namespace suzu {
 		int GetCode() const {
 			return this->code;
 		}
+
+		Messege SetDetail(const string &detail) {
+			this->detail = detail;
+			return *this;
+		}
+
+		string GetDetail() const {
+			return this->detail;
+		}
 	};
 
 	class Util {
+	private:
+		//vector<string> flags;
 	public:
 		template <class Type>
 		void CleanupVector(vector<Type> &target) {
 			target.clear();
 			vector<Type>(target).swap(target);
-		}
-
-		template <class Type>
-		void CleanupStack(stack<Type> &target) {
-			target.clear();
-			stack<Type>(target).swap(target);
 		}
 
 		template <class Type>
@@ -116,6 +127,8 @@ namespace suzu {
 		Messege GetDataType(string target);
 		bool ActivityStart(EntryProvider &provider, vector<string> container,
 			vector<string> &raw, size_t top, Messege &msg);
+		Messege ScriptStart(string target);
+		void PrintEvents();
 	};
 
 
@@ -166,11 +179,15 @@ namespace suzu {
 			current = 0;
 		}
 
+		bool eof() const {
+			return stream.eof();
+		}
+
 		void ResetPool() {
 			Util().CleanupVector(pool);
 		}
 
-		string GetString();
+		Messege Get();
 	};
 
 	class Chainloader {
@@ -178,12 +195,17 @@ namespace suzu {
 		vector<string> raw;
 	public:
 		Chainloader() {}
-		Chainloader Build(vector<string> raw) {
+		Chainloader &Build(vector<string> raw) {
 			this->raw = raw;
 			return *this;
 		}
 
-		Chainloader Build(string target);
+		Chainloader &Build(string target);
+		Chainloader &Reset() {
+			Util().CleanupVector(raw);
+			return *this;
+		}
+
 		Messege Execute();
 	};
 
@@ -194,10 +216,11 @@ namespace suzu {
 		int requiredcount;
 	public:
 		EntryProvider() : name(kStrNothing), activity(nullptr) {
-			requiredcount = -1;
+			requiredcount = kFlagNotDefined;
 		}
-		EntryProvider(string n, Activity a, int r = 0) : name(n){
+		EntryProvider(string n, Activity a, int r) : name(n){
 			requiredcount = r;
+			activity = a;
 		}
 
 
@@ -214,7 +237,7 @@ namespace suzu {
 		}
 
 		bool Good() const {
-			return (activity != nullptr && requiredcount != -1);
+			return (activity != nullptr && requiredcount != -2);
 		}
 
 		bool operator==(EntryProvider &target) {
