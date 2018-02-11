@@ -64,7 +64,10 @@ namespace suzu {
 		string value;
 		int code;
 	public:
-		Messege() : value(kStrEmpty), code(kCodeStandby) {}
+		Messege() {
+			value = kStrEmpty;
+			code = kCodeStandby;
+		}
 
 		Messege(string value, int code) {
 			this->value = value;
@@ -231,6 +234,8 @@ namespace suzu {
 	public:
 
 	};
+
+	void TotalInjection();
 }
 
 #endif // !_SE_PARSER_
