@@ -14,12 +14,16 @@ using std::regex;
 using std::regex_match;
 
 const string kStrEmpty = "";
-const string kStrFatalError = "__FATAL";
-const string kStrWarning = "__WARNING";
-const string kStrEOF = "__EOF";
-const string kStrPass = "__PASS";
-const string kStrNothing = "__NOTHING";
-const string kStrRedirect = "__*";
+
+const string kStrFatalError = "__FATAL__";
+const string kStrWarning = "__WARNING__";
+const string kStrSuccess = "__SUCCESS__";
+const string kStrEOF = "__EOF__";
+const string kStrPass = "__PASS__";
+const string kStrNull = "__NULL__";
+const string kStrRedirect = "__*__";
+
+const string kArgOnce = "@ONCE__";
 
 const string kstrDefine = "def";
 const string kStrVar = "var";
@@ -30,13 +34,14 @@ const string kStrWhile = "while";
 const int kCodeRedirect = 2;
 const int kCodeNothing = 1;
 const int kCodeSuccess = 0;
-const int kCodeBrokenEngine = -1;
+const int kCodeBrokenEntry = -1;
 const int kCodeOverflow = -2;
 const int kCodeIllegalArgs = -3;
 const int kCodeIllegalCall = -4;
 const int kCodeIllegalSymbol = -5;
 const int kCodeBadStream = -6;
 
+const int kFlagCoreEntry = 0;
 const int kFlagAutoSize = -1;
 const int kFlagNotDefined = -2;
 
@@ -93,14 +98,14 @@ public:
 		return this->value;
 	}
 
-	DictUnit SetValue(string v) {
+	DictUnit &SetValue(string v) {
 		if (readonly != true) {
 			this->value = v;
 		}
 		return *this;
 	}
 
-	DictUnit SetName(string n) {
+	DictUnit &SetName(string n) {
 		if (name == kStrEmpty) {
 			this->name = n;
 		}
@@ -112,7 +117,7 @@ public:
 		return this->readonly;
 	}
 
-	DictUnit SetReadOnly(bool r) {
+	DictUnit &SetReadOnly(bool r) {
 		this->readonly = r;
 	}
 };
@@ -163,8 +168,6 @@ public:
 };
 
 class Util {
-private:
-	//vector<string> flags;
 public:
 	template <class Type>
 	void CleanUpVector(vector<Type> &target) {
@@ -271,13 +274,15 @@ private:
 	string name;
 	Activity activity;
 	int requiredcount;
+	int priority;
 public:
-	EntryProvider() : name(kStrNothing), activity(nullptr) {
+	EntryProvider() : name(kStrNull), activity(nullptr) {
 		requiredcount = kFlagNotDefined;
 	}
-	EntryProvider(string n, Activity a, int r) : name(n){
+	EntryProvider(string n, Activity a, int r, int p = 1) : name(n){
 		requiredcount = r;
 		activity = a;
+		priority = p;
 	}
 
 
@@ -291,6 +296,10 @@ public:
 
 	int GetRequiredCount() const {
 		return this->requiredcount;
+	}
+
+	int GetPriority() const {
+		return this->priority;
 	}
 
 	bool Good() const {
@@ -311,6 +320,10 @@ private:
 	deque<DictUnit> dict;
 	MemoryProvider *parent;
 public:
+	MemoryProvider() {
+		parent = nullptr;
+	}
+
 	bool empty() const {
 		return dict.empty();
 	}
@@ -346,6 +359,31 @@ public:
 		
 		return result;
 	}
+
+	string query(string name) {
+		string result;
+		deque<DictUnit>::iterator it;
+		if (dict.empty() == false) {
+			it = dict.begin();
+			while (it != dict.end() && it->GetName() != name) ++it;
+			if (it == dict.end() && it->GetName() != name) result = kStrNull;
+			else {
+				result = it->GetValue();
+			}
+		}
+
+		return result;
+	}
+
+	MemoryProvider &SetParent(MemoryProvider *ptr) {
+		this->parent = ptr;
+		return *this;
+	}
+
+	MemoryProvider *GetParent() const {
+		return parent;
+	}
+
 };
 
 //TODO:JSON Mini Parser
