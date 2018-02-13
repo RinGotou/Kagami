@@ -34,10 +34,10 @@ namespace entry {
 	}
 
 	Messege Order(string name, vector<string> &res) {
-		Messege result;
+		Messege result(kStrFatalError, kCodeIllegalCall,"Entry Not Found");
 		for (auto &unit : base) {
 			if (unit.GetName() == name) {
-
+				result = unit.StartActivity(res);
 			}
 		}
 
@@ -255,6 +255,8 @@ Chainloader &Chainloader::Build(string target) {
 		case '(':
 		case ',':
 		case ')':
+		case '{':
+		case '}':
 			if (allowblank) {
 				current.append(1, target[i]);
 			}
@@ -339,156 +341,159 @@ Chainloader &Chainloader::Build(string target) {
 	return *this;
 }
 
-Messege Chainloader::Execute() {
-	Util util;
-	EntryProvider provider;
-	Messege result(kStrSuccess, kCodeSuccess);
-	Messege temp(kStrSuccess, kCodeSuccess);
-	size_t i, j, top;
-	size_t size = raw.size();
-	size_t forwardtype = kTypeNull;
-	bool rv = true;
-	bool commaexpression = false;
-	bool directappend = false; //temp fix for string type
-
-	vector<string> symbols;
-	vector<size_t> tracer;
-	vector<string> elements;
-	vector<string> container;
-	//string deposit;
-
-	auto ErrorTracking = [&result](int code, string value, string detail) {
-		tracking::log(result.SetCode(code).SetValue(value).SetDetail(detail));
-	};
-
-	for (i = 0; i < size; i++) {
-		if (regex_match(raw[i], kPatternSymbol)) {
-			if (raw[i] == "(") {
-				if (forwardtype == kTypeSymbol || forwardtype == kTypeNull) {
-					commaexpression = true;
-				}
-				tracer.push_back(i - 1);
-				symbols.push_back(raw[i]);
-			}
-			else if (raw[i] == ")") {
-				top = tracer.back();
-
-				if (symbols.empty()) {
-					ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "can't find left bracket (01)");
-					break;
-				}
-
-				while (symbols.back() != "(") {
-					util.CleanUpVector(container);
-					provider = entry::Query(symbols.back());
-					j = provider.GetRequiredCount();
-
-					
-					while (j != 0 && !elements.empty()) {
-						container.push_back(elements.back());
-						elements.pop_back();
-						--j;
-					}
-					
-
-					rv = util.ActivityStart(provider, container, elements, elements.size(), result);
-					if (rv == false) break;
-					symbols.pop_back();
-				}
-
-				util.CleanUpVector(container);
-				while (elements.size() > top + 1) {
-					container.push_back(elements.back());
-					elements.pop_back();
-				}
-				if (commaexpression) {
-					provider = entry::Query("COMMAEXP");
-				}
-				else {
-					provider = entry::Query(raw[top]);
-				}
-
-				rv = util.ActivityStart(provider, container, elements, top, result);
-				symbols.pop_back();
-				tracer.pop_back();
-	
-				if (rv == false) {
-					break;
-				}
-					
-				forwardtype = kTypeSymbol;
-			}
-			else if (raw[i] == ",") {
-				if (i == raw.size() - 1) {
-					ErrorTracking(kCodeIllegalSymbol, kStrWarning, "illegal comma location (03)");
-				}
-				forwardtype = kTypeSymbol;
-			}
-			else if (raw[i] == "\"") {
-				if (directappend) {
-					elements.back().append(raw[i]);
-				}
-				else {
-					elements.push_back(raw[i]);
-
-				}
-				directappend = !directappend;
-			}
-			else {
-				symbols.push_back(raw[i]);
-			}
-
-			forwardtype = kTypeSymbol;
-		}
-		else {
-			if (directappend) {
-				elements.back().append(raw[i]);
-			}
-			else {
-				elements.push_back(raw[i]);
-			}
-
-			forwardtype = kTypePreserved;
-		}
-	}
-
-	//--------------------------------------------------------
-
-	while (!symbols.empty()) {
-		util.CleanUpVector(container);
-
-		if (elements.empty()) {
-			ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "entries expected (04)");
-			break;
-		}
-		if (symbols.back() == "(" || symbols.back() == ")") {
-			ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "another bracket expected (05)");
-			break;
-		}
-
-		provider = entry::Query(symbols.back());
-		j = provider.GetRequiredCount();
-
-		while (j != 0 && !elements.empty()) {
-			container.push_back(elements.back());
-			elements.pop_back();
-			--j;
-		}
-
-		rv = util.ActivityStart(provider, container, elements, elements.size(), result);
-
-		if (rv == false) {
-			break;
-		}
-
-		symbols.pop_back();
-
-		j = 0;
-	}
-	//--------------------------------------------------------
-
-	return result;
-}
+//Messege Chainloader::Execute() {
+//	Util util;
+//	EntryProvider provider;
+//	Messege result(kStrSuccess, kCodeSuccess);
+//	Messege temp(kStrSuccess, kCodeSuccess);
+//	size_t i, j, top;
+//	size_t size = raw.size();
+//	size_t forwardtype = kTypeNull;
+//	bool rv = true;
+//	bool commaexpression = false;
+//	bool directappend = false; //temp fix for string type
+//
+//	vector<string> symbols;
+//	vector<size_t> tracer;
+//	vector<string> elements;
+//	vector<string> container;
+//	//string deposit;
+//
+//	auto ErrorTracking = [&result](int code, string value, string detail) {
+//		tracking::log(result.SetCode(code).SetValue(value).SetDetail(detail));
+//	};
+//
+//	for (i = 0; i < size; i++) {
+//		if (regex_match(raw[i], kPatternSymbol)) {
+//			if (raw[i] == "(") {
+//				if (forwardtype == kTypeSymbol || forwardtype == kTypeNull) {
+//					commaexpression = true;
+//				}
+//				tracer.push_back(i - 1);
+//				symbols.push_back(raw[i]);
+//			}
+//			else if (raw[i] == ")") {
+//				top = tracer.back();
+//
+//				if (symbols.empty()) {
+//					ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "can't find left bracket (01)");
+//					break;
+//				}
+//
+//				while (symbols.back() != "(") {
+//					util.CleanUpVector(container);
+//					provider = entry::Query(symbols.back());
+//					j = provider.GetRequiredCount();
+//
+//					
+//					while (j != 0 && !elements.empty()) {
+//						container.push_back(elements.back());
+//						elements.pop_back();
+//						--j;
+//					}
+//					
+//
+//					rv = util.ActivityStart(provider, container, elements, elements.size(), result);
+//					if (rv == false) break;
+//					symbols.pop_back();
+//				}
+//
+//				util.CleanUpVector(container);
+//				while (elements.size() > top + 1) {
+//					container.push_back(elements.back());
+//					elements.pop_back();
+//				}
+//				if (commaexpression) {
+//					//provider = entry::Query("");
+//					temp = entry::Order("commaexp", container);
+//					temp.GetCode() == kCodeSuccess?
+//				}
+//				else {
+//					provider = entry::Query(raw[top]);
+//					rv = util.ActivityStart(provider, container, elements, top, result);
+//				}
+//
+//				
+//				symbols.pop_back();
+//				tracer.pop_back();
+//	
+//				if (rv == false) {
+//					break;
+//				}
+//					
+//				forwardtype = kTypeSymbol;
+//			}
+//			else if (raw[i] == ",") {
+//				if (i == raw.size() - 1) {
+//					ErrorTracking(kCodeIllegalSymbol, kStrWarning, "illegal comma location (03)");
+//				}
+//				forwardtype = kTypeSymbol;
+//			}
+//			else if (raw[i] == "\"") {
+//				if (directappend) {
+//					elements.back().append(raw[i]);
+//				}
+//				else {
+//					elements.push_back(raw[i]);
+//
+//				}
+//				directappend = !directappend;
+//			}
+//			else {
+//				symbols.push_back(raw[i]);
+//			}
+//
+//			forwardtype = kTypeSymbol;
+//		}
+//		else {
+//			if (directappend) {
+//				elements.back().append(raw[i]);
+//			}
+//			else {
+//				elements.push_back(raw[i]);
+//			}
+//
+//			forwardtype = kTypePreserved;
+//		}
+//	}
+//
+//	//--------------------------------------------------------
+//
+//	while (!symbols.empty()) {
+//		util.CleanUpVector(container);
+//
+//		if (elements.empty()) {
+//			ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "entries expected (04)");
+//			break;
+//		}
+//		if (symbols.back() == "(" || symbols.back() == ")") {
+//			ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "another bracket expected (05)");
+//			break;
+//		}
+//
+//		provider = entry::Query(symbols.back());
+//		j = provider.GetRequiredCount();
+//
+//		while (j != 0 && !elements.empty()) {
+//			container.push_back(elements.back());
+//			elements.pop_back();
+//			--j;
+//		}
+//
+//		rv = util.ActivityStart(provider, container, elements, elements.size(), result);
+//
+//		if (rv == false) {
+//			break;
+//		}
+//
+//		symbols.pop_back();
+//
+//		j = 0;
+//	}
+//	//--------------------------------------------------------
+//
+//	return result;
+//}
 
 //private
 int Chainloader::GetPriority(string target) {
@@ -505,33 +510,65 @@ Messege Chainloader::Start() {
 	Messege result, tempresult;
 	size_t i, j, k;
 
-	int forwardtype = kTypeNull;
 	bool entryresult = true;
 	bool commaexp = false;
 	bool directappend = false;
 
-	vector<size_t> tracer; //seems we can work without this?
-	vector<size_t> item;
-	vector<string> symbol;
+	//vector<size_t> tracer; //seems we can work without this?
+	deque<string> item;
+	deque<string> symbol;
 	vector<string> container0;
 
 	i = 0;
 	while (i < size) {
-		//TODO:fuction is symbol too.
+
 		if (regex_match(raw[i], kPatternSymbol)) {
 
 
 			//pending
 			symbol.push_back(raw[i]);
 		}
-		else {
 
+		else if (regex_match(raw[i], kPatternFunction)) {
+			provider = entry::Query(raw[i]);
+			if (provider.Good()) {
+				symbol.push_back(raw[i]);
+			}
+			else {
+				container0.push_back(raw[i]);
+				container0.push_back(kArgOnce);
+				tempresult = entry::Order("memquery", container0);
+
+				if (tempresult.GetCode() == kCodeSuccess) {
+					item.push_back(tempresult.GetDetail());
+				}
+				else {
+					result = tempresult;
+					break;
+				}
+			}
 		}
 
+		else {
+			//String/Intege/Double/Boolean
+			switch (directappend) {
+			case true:item.back().append(raw[i]); break;
+			case false:item.push_back(raw[i]); break;
+			}
+		}
 
-		//step in
-		++i;
+		
+
+		++i; // step in
 	}
+
+	while (!symbol.empty()) {
+		//pending
+	}
+
+	util.CleanUpDeque(item);
+	util.CleanUpDeque(symbol);
+	util.CleanUpVector(container0);
 
 	return result;
 }
@@ -571,24 +608,25 @@ Messege CommaExpression(vector<string> &res) {
 	return result;
 }
 
-Messege QueryMemory(vector<string> &res) {
+Messege MemoryQuery(vector<string> &res) {
 	using namespace entry;
 	Messege result;
 	string temp;
-	vector<MemoryProvider>::reverse_iterator rit;
+	size_t begin = childbase.size() - 1;
+	size_t i = 0;
 
 	if (childbase.empty()) {
 		tracking::log(result.SetValue(kStrWarning)
 			.SetCode(kCodeIllegalArgs)
-			.SetDetail("QueryMemory() 1"));
+			.SetDetail("MemoryQuery() 1"));
 	}
 	else {
 		if (childbase.size() == 1 || res[1] == kArgOnce) {
 			temp = childbase.back().query(res[0]);
 		}
 		else if (childbase.size() > 1 && res[1] != kArgOnce) {
-			for (rit = childbase.rbegin(); rit != childbase.rend(); rit++) {
-				temp = rit->query(res[0]);
+			for (i = begin; i >= 0; --i) {
+				temp = childbase[i].query(res[0]);
 				if (temp != kStrNull) break;
 			}
 		}
@@ -599,9 +637,17 @@ Messege QueryMemory(vector<string> &res) {
 		else {
 			tracking::log(result.SetCode(kCodeIllegalCall)
 				.SetValue(kStrFatalError)
-				.SetDetail("QueryMemory() 2"));
+				.SetDetail("MemoryQuery() 2"));
 		}
 	}
+
+	return result;
+}
+
+Messege Calculate(vector<string> &res) {
+	Messege result;
+
+	//pending
 
 	return result;
 }
@@ -615,8 +661,9 @@ void TotalInjection() {
 	childbase.back().SetParent(&(childbase.back()));
 
 	//inject basic entry provider
-	Inject(EntryProvider("COMMAEXP", CommaExpression, kFlagAutoSize, kFlagCoreEntry));
-	Inject(EntryProvider("QUERYMEM", QueryMemory, 2, kFlagCoreEntry));
+	Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize, kFlagCoreEntry));
+	Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
+
 }
 
 Messege Util::ScriptStart(string target) {
@@ -655,7 +702,7 @@ Messege Util::ScriptStart(string target) {
 			size = loaders.size();
 
 			for (i = 0; i < size; i++) {
-				temp = loaders[i].Execute();
+				temp = loaders[i].Start();
 
 				if (temp.GetCode() != kCodeSuccess) {
 					if (temp.GetValue() == kStrFatalError) break;
