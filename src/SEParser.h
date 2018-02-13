@@ -62,6 +62,61 @@ class Messege;
 class EntryProvider;
 typedef Messege (*Activity)(vector<string> &);
 
+class DictUnit {
+private:
+	string name;
+	string value;
+	bool readonly;
+public:
+	DictUnit() {
+		name = kStrEmpty;
+		value = kStrEmpty;
+		readonly = false;
+	}
+
+	DictUnit(string n, string v, bool r) {
+		this->name = n;
+		this->value = v;
+		this->readonly = r;
+	}
+
+	DictUnit(string n, string v) {
+		this->name = n;
+		this->value = v;
+	}
+
+	string GetName() const {
+		return this->name;
+	}
+
+	string GetValue() const {
+		return this->value;
+	}
+
+	DictUnit SetValue(string v) {
+		if (readonly != true) {
+			this->value = v;
+		}
+		return *this;
+	}
+
+	DictUnit SetName(string n) {
+		if (name == kStrEmpty) {
+			this->name = n;
+		}
+
+		return *this;
+	}
+
+	bool IsReadOnly() const {
+		return this->readonly;
+	}
+
+	DictUnit SetReadOnly(bool r) {
+		this->readonly = r;
+	}
+};
+
 class Messege {
 private:
 	string value;
@@ -112,13 +167,13 @@ private:
 	//vector<string> flags;
 public:
 	template <class Type>
-	void CleanupVector(vector<Type> &target) {
+	void CleanUpVector(vector<Type> &target) {
 		target.clear();
 		vector<Type>(target).swap(target);
 	}
 
 	template <class Type>
-	void CleanupDeque(deque<Type> &target) {
+	void CleanUpDeque(deque<Type> &target) {
 		target.clear();
 		deque<Type>(target).swap(target);
 	}
@@ -128,6 +183,7 @@ public:
 		vector<string> &raw, size_t top, Messege &msg);
 	Messege ScriptStart(string target);
 	void PrintEvents();
+	void Cleanup();
 };
 
 
@@ -156,7 +212,7 @@ public:
 
 	~ScriptProvider() {
 		stream.close();
-		Util().CleanupVector(pool);
+		Util().CleanUpVector(pool);
 	}
 
 	bool IsPoolReady() const {
@@ -183,7 +239,7 @@ public:
 	}
 
 	void ResetPool() {
-		Util().CleanupVector(pool);
+		Util().CleanUpVector(pool);
 	}
 
 	Messege Get();
@@ -192,6 +248,7 @@ public:
 class Chainloader {
 private:
 	vector<string> raw;
+	int GetPriority(string target);
 public:
 	Chainloader() {}
 	Chainloader &Build(vector<string> raw) {
@@ -201,11 +258,12 @@ public:
 
 	Chainloader &Build(string target);
 	Chainloader &Reset() {
-		Util().CleanupVector(raw);
+		Util().CleanUpVector(raw);
 		return *this;
 	}
 
 	Messege Execute();
+	Messege Start(); //Execute() will be deleted in future version
 };
 
 class EntryProvider {
@@ -248,6 +306,48 @@ public:
 	Messege StartActivity(vector<string> p);
 };
 
+class MemoryProvider {
+private:
+	deque<DictUnit> dict;
+	MemoryProvider *parent;
+public:
+	bool empty() const {
+		return dict.empty();
+	}
+
+	size_t size() const {
+		return dict.size();
+	}
+
+	void cleanup() {
+		Util().CleanUpDeque(dict);
+	}
+
+	void create(DictUnit unit) {
+		if (unit.IsReadOnly()) {
+			dict.push_front(unit);
+		}
+		else {
+			dict.push_back(unit);
+		}
+	}
+
+	bool dispose(string name) {
+		bool result = true;
+		deque<DictUnit>::iterator it;
+		if (dict.empty() == false) {
+			 it = dict.begin();
+			 while (it != dict.end() && it->GetName() != name) ++it;
+			 if (it == dict.end() && it->GetName() != name) result = false;
+			 else {
+				 dict.erase(it);
+			 }
+		}
+		
+		return result;
+	}
+};
+
 //TODO:JSON Mini Parser
 //--------------!!WORKING!!-----------------//
 class JSONProvider {
@@ -256,6 +356,8 @@ private:
 public:
 
 };
+
+
 
 void TotalInjection();
 

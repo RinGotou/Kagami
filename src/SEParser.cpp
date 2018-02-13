@@ -1,12 +1,10 @@
 #include "SEParser.h"
 
-using namespace suzu;
-
 namespace tracking {
-	deque<Messege> base;
+	vector<Messege> base;
 
 	void Reset() {
-		Util().CleanupDeque(base);
+		Util().CleanUpVector(base);
 	}
 
 	void log(Messege &msg, string res) {
@@ -16,6 +14,7 @@ namespace tracking {
 
 namespace entry {
 	deque<EntryProvider> base;
+	deque<MemoryProvider> childbase;
 
 	void Inject(EntryProvider &provider) {
 		base.push_back(provider);
@@ -107,22 +106,43 @@ bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vect
 }
 
 void Util::PrintEvents() {
-	//PENDING
-	//using namespace tracking;
-	//using std::cout;
-	//using std::endl;
+	using tracking::base;
+	ofstream ofs("event.log",std::ios::trunc);
+	size_t i = 0;
+	if (ofs.good()) {
 
-	//if (!base.empty()){
-	//	for (auto unit : base) {
-	//		cout << "Code:" << unit.GetCode() << endl;
-	//		cout << "Value:" << unit.GetValue() << endl;
-	//		cout << "Detail:" << unit.GetDetail() << endl;
-	//		cout << "~" << endl;
-	//	}
-	//}
-	//else {
-	//	cout << "no events" << endl;
-	//}
+		if (base.empty()) {
+			ofs << "No Events\n";
+		}
+		else{
+			for (auto unit : base) {
+				++i;
+				ofs << "Count:" << i << "\n"
+					<< "Code:" << unit.GetCode() << "\n";
+
+				if (unit.GetValue() == kStrFatalError) {
+					ofs << "Priority:Fatal\n";
+				}
+				else {
+					ofs << "Priority:Warning\n";
+				}
+
+				if (unit.GetDetail() != kStrEmpty) {
+					ofs << "Detail:" << unit.GetDetail() << "\n";
+				}
+
+				ofs << "-----------------------\n";
+			}
+		}
+
+		ofs << "Event Output End\n";
+	}
+
+	ofs.close();
+}
+
+void Util::Cleanup() {
+
 }
 
 Messege ScriptProvider::Get() {
@@ -296,7 +316,7 @@ Chainloader &Chainloader::Build(string target) {
 	}
 
 	raw = output;
-	util.CleanupVector(output);
+	util.CleanUpVector(output);
 
 	return *this;
 }
@@ -331,8 +351,7 @@ Messege Chainloader::Execute() {
 		return 2;
 	};
 
-
-	//TODO:Rebuild algorithm,
+	//TODO:Rebuild algorithm
 	//-----------------!!WORKING!!-----------------------//
 	for (i = 0; i < size; i++) {
 		if (regex_match(raw[i], kPatternSymbol)) {
@@ -352,7 +371,7 @@ Messege Chainloader::Execute() {
 				}
 
 				while (symbols.back() != "(") {
-					util.CleanupVector(container);
+					util.CleanUpVector(container);
 					provider = entry::Query(symbols.back());
 					j = provider.GetRequiredCount();
 
@@ -376,7 +395,7 @@ Messege Chainloader::Execute() {
 					j = 0;
 				}
 
-				util.CleanupVector(container);
+				util.CleanUpVector(container);
 				while (elements.size() > top + 1) {
 					container.push_back(elements.back());
 					elements.pop_back();
@@ -435,7 +454,7 @@ Messege Chainloader::Execute() {
 	//--------------------------------------------------------
 
 	while (!symbols.empty()) {
-		util.CleanupVector(container);
+		util.CleanUpVector(container);
 
 		if (elements.empty()) {
 			ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "entries expected");
@@ -471,6 +490,49 @@ Messege Chainloader::Execute() {
 		j = 0;
 	}
 	//--------------------------------------------------------
+
+	return result;
+}
+
+//private
+int Chainloader::GetPriority(string target) {
+	if (target == "+" || target == "-") return 1;
+	if (target == "*" || target == "/" || target == "\\" || target == "mod") return 2;
+	return 3;
+}
+
+Messege Chainloader::Start() {
+	const size_t size = raw.size();
+
+	Util util;
+	EntryProvider provider;
+	Messege result, tempresult;
+	size_t i, j, k;
+
+	int forwardtype = kTypeNull;
+	bool entryresult = true;
+	bool commaexp = false;
+	bool directappend = false;
+
+	vector<size_t> tracer; //seems we can work without this?
+	vector<size_t> item;
+	stack<string> symbol;
+	vector<string> container0;
+
+	i = 0;
+	while (i < size) {
+		//TODO:fuction is symbol too.
+		if (regex_match(raw[i], kPatternSymbol)) {
+
+		}
+		else {
+
+		}
+
+
+		//step in
+		++i;
+	}
 
 	return result;
 }
@@ -511,7 +573,7 @@ Messege EmptyCall(vector<string> &res) {
 }
 #endif
 
-void suzu::TotalInjection() {
+void TotalInjection() {
 	using namespace entry;
 
 	Inject(EntryProvider("__COMMAEXP", CommaExpression, kFlagAutoSize));
