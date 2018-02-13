@@ -5,7 +5,7 @@ int main(int argc, char **argv) {
 
 	Util util;
 
-	
+	util.PrintEvents();
 
 	return 0;
 }
