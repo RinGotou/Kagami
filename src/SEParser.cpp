@@ -10,9 +10,6 @@ namespace tracking {
 	}
 
 	void log(Messege &msg, string res) {
-#ifdef _TRACKING_
-		std::cout << "report from " << res << " code " << msg.GetCode() << std::endl;
-#endif
 		base.push_back(msg);
 	}
 }
@@ -110,21 +107,22 @@ bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vect
 }
 
 void Util::PrintEvents() {
-	using namespace tracking;
-	using std::cout;
-	using std::endl;
+	//PENDING
+	//using namespace tracking;
+	//using std::cout;
+	//using std::endl;
 
-	if (!base.empty()){
-		for (auto unit : base) {
-			cout << "Code:" << unit.GetCode() << endl;
-			cout << "Value:" << unit.GetValue() << endl;
-			cout << "Detail:" << unit.GetDetail() << endl;
-			cout << "~" << endl;
-		}
-	}
-	else {
-		cout << "no events" << endl;
-	}
+	//if (!base.empty()){
+	//	for (auto unit : base) {
+	//		cout << "Code:" << unit.GetCode() << endl;
+	//		cout << "Value:" << unit.GetValue() << endl;
+	//		cout << "Detail:" << unit.GetDetail() << endl;
+	//		cout << "~" << endl;
+	//	}
+	//}
+	//else {
+	//	cout << "no events" << endl;
+	//}
 }
 
 Messege ScriptProvider::Get() {
@@ -505,37 +503,6 @@ Messege CommaExpression(vector<string> &res) {
 	return result;
 }
 
-Messege PrintOnScreen(vector<string> &res) {
-	using std::cout;
-	using std::endl;
-
-	Messege result(kStrEmpty, kCodeSuccess);
-	size_t i;
-	size_t size = res.size();
-	string temp;
-
-	if (size == 1){
-		if (regex_match(res.back(), kPatternString)) {
-			temp = res.back();
-			temp = temp.substr(1, temp.size() - 2);
-			cout << temp << endl;
-		}
-		else {
-			//TODO:not a string type entry?
-		}
-	}
-	else if (size > 1) {
-		for (i = 0; i < size; i++) {
-			cout << res[i] << endl;
-		}
-	}
-	else {
-		result.SetCode(kCodeNothing).SetValue(kStrWarning);
-	}
-
-	return result;
-}
-
 #ifdef _DEV_
 Messege EmptyCall(vector<string> &res) {
 	Messege result;
@@ -548,7 +515,6 @@ void suzu::TotalInjection() {
 	using namespace entry;
 
 	Inject(EntryProvider("__COMMAEXP", CommaExpression, kFlagAutoSize));
-	Inject(EntryProvider("print", PrintOnScreen, kFlagAutoSize));
 #ifdef _DEV_
 	Inject(EntryProvider("hi_suzu", EmptyCall, 1));
 #endif
