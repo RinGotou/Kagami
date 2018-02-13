@@ -2,41 +2,40 @@
 
 using namespace suzu;
 
-namespace resources {
-	namespace tracking {
-		deque<Messege> base;
+namespace tracking {
+	deque<Messege> base;
 
-		void Reset() {
-			Util().CleanupDeque(base);
-		}
-
-		void log(Messege &msg, string res) {
-#ifdef _TRACKING_
-			std::cout << "report from " << res << " code " << msg.GetCode() << std::endl;
-#endif
-			base.push_back(msg);
-		}
+	void Reset() {
+		Util().CleanupDeque(base);
 	}
 
-	namespace entry {
-		deque<EntryProvider> base;
-
-		void Inject(EntryProvider &provider) {
-			base.push_back(provider);
-		}
-
-		EntryProvider Query(string target) {
-			EntryProvider result;
-			for (auto &unit : base) {
-				if (unit.GetName() == target) {
-					result = unit;
-				}
-			}
-
-			return result;
-		}
+	void log(Messege &msg, string res) {
+#ifdef _TRACKING_
+		std::cout << "report from " << res << " code " << msg.GetCode() << std::endl;
+#endif
+		base.push_back(msg);
 	}
 }
+
+namespace entry {
+	deque<EntryProvider> base;
+
+	void Inject(EntryProvider &provider) {
+		base.push_back(provider);
+	}
+
+	EntryProvider Query(string target) {
+		EntryProvider result;
+		for (auto &unit : base) {
+			if (unit.GetName() == target) {
+				result = unit;
+			}
+		}
+
+		return result;
+	}
+}
+
 
 Messege Util::GetDataType(string target) {
 	using std::regex_match;
@@ -71,8 +70,6 @@ Messege Util::GetDataType(string target) {
 
 bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vector<string> &elements,
 	size_t top, Messege &msg) {
-	using namespace resources;
-
 	bool rv = true;
 	int code = kCodeSuccess;
 	Messege temp(kStrNothing, kCodeSuccess);
@@ -113,7 +110,7 @@ bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vect
 }
 
 void Util::PrintEvents() {
-	using namespace resources::tracking;
+	using namespace tracking;
 	using std::cout;
 	using std::endl;
 
@@ -131,7 +128,7 @@ void Util::PrintEvents() {
 }
 
 Messege ScriptProvider::Get() {
-	using resources::tracking::log;
+	using tracking::log;
 	string currentstr;
 	Messege result(kStrEmpty,kCodeSuccess);
 
@@ -179,7 +176,7 @@ Messege ScriptProvider::Get() {
 }
 
 Chainloader &Chainloader::Build(string target) {
-	using resources::tracking::log;
+	using tracking::log;
 	Util util;
 	vector<string> output;
 	char binaryoptchar = NULL;
@@ -307,16 +304,14 @@ Chainloader &Chainloader::Build(string target) {
 }
 
 Messege Chainloader::Execute() {
-	using namespace resources;
-
 	Util util;
 	EntryProvider provider;
 	Messege result(kStrNothing, kCodeSuccess);
 	Messege temp(kStrNothing, kCodeSuccess);
-	size_t i, j;
+	size_t i, j, top;
 	size_t size = raw.size();
 	size_t forwardtype = kTypeNull;
-	size_t top;
+	//size_t StopCode = 0;
 	bool rv = true;
 	bool commaexpression = false;
 	bool directappend = false; //temp fix for string type
@@ -325,13 +320,22 @@ Messege Chainloader::Execute() {
 	vector<size_t> tracer;
 	vector<string> elements;
 	vector<string> container;
+	//string deposit;
 
 	auto ErrorTracking = [&result](int code, string value, string detail) {
 		tracking::log(Messege(value, code).SetDetail(detail), "Chainloader::Execute() ");
 		result.SetCode(code).SetValue(value).SetDetail(detail);
 	};
 
-	//-----------------!!DEBUGGING!!-----------------------//
+	auto GetPriority = [](string value) -> int {
+		if (value == "+" || value == "-") return 1;
+		//if (value == "**") return 3;
+		return 2;
+	};
+
+
+	//TODO:Rebuild algorithm,
+	//-----------------!!WORKING!!-----------------------//
 	for (i = 0; i < size; i++) {
 		if (regex_match(raw[i], kPatternSymbol)) {
 			if (raw[i] == "(") {
@@ -436,7 +440,7 @@ Messege Chainloader::Execute() {
 		util.CleanupVector(container);
 
 		if (elements.empty()) {
-			ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "entry expected");
+			ErrorTracking(kCodeIllegalSymbol, kStrFatalError, "entries expected");
 			break;
 		}
 		if (symbols.back() == "(" || symbols.back() == ")") {
@@ -448,7 +452,7 @@ Messege Chainloader::Execute() {
 		j = provider.GetRequiredCount();
 
 		if (j > elements.size()) {
-			ErrorTracking(kCodeIllegalArgs, kStrFatalError, "more entry expected");
+			ErrorTracking(kCodeIllegalArgs, kStrFatalError, "more entries expected");
 			break;
 		}
 
@@ -532,22 +536,25 @@ Messege PrintOnScreen(vector<string> &res) {
 	return result;
 }
 
+#ifdef _DEV_
 Messege EmptyCall(vector<string> &res) {
 	Messege result;
 	std::cout << "You just call me right?" << std::endl;
 	return result;
 }
+#endif
 
 void suzu::TotalInjection() {
-	using namespace resources::entry;
+	using namespace entry;
 
 	Inject(EntryProvider("__COMMAEXP", CommaExpression, kFlagAutoSize));
 	Inject(EntryProvider("print", PrintOnScreen, kFlagAutoSize));
+#ifdef _DEV_
 	Inject(EntryProvider("hi_suzu", EmptyCall, 1));
+#endif
 }
 
 Messege Util::ScriptStart(string target) {
-	using namespace resources;
 	Messege result;
 	Messege temp;
 	size_t i;
