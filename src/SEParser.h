@@ -139,6 +139,12 @@ public:
 		this->code = code;
 	}
 
+	Messege(string value, int code, string detial) {
+		this->value = value;
+		this->code = code;
+		this->detail = detail;
+	}
+
 	Messege SetValue(const string &value) {
 		this->value = value;
 		return *this;
@@ -265,7 +271,7 @@ public:
 		return *this;
 	}
 
-	Messege Execute();
+	//Messege Execute();
 	Messege Start(); //Execute() will be deleted in future version
 };
 
