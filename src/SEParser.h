@@ -11,6 +11,10 @@ using std::vector;
 using std::stack;
 using std::deque;
 using std::regex;
+using std::to_string;
+using std::stoi;
+using std::stof;
+using std::stod;
 using std::regex_match;
 
 const string kStrEmpty = "";
