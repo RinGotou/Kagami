@@ -663,6 +663,7 @@ void TotalInjection() {
 	//inject basic entry provider
 	Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize, kFlagCoreEntry));
 	Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
+	Inject(EntryProvider("claculat", Calculate, kFlagAutoSize, kFlagCoreEntry));
 
 }
 
