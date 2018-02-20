@@ -522,8 +522,9 @@ Messege Chainloader::Start() {
 	while (i < size) {
 
 		if (regex_match(raw[i], kPatternSymbol)) {
-			if (GetPriority(raw[i]) < GetProirity(symbol.back())) {
+			if (GetPriority(raw[i]) < GetPriority(symbol.back())) {
 				//TODO:move to the front of nearest symbol which has same or low priority
+
 			}
 			if (raw[i] == "(") {
 				if (forwardtype == kTypeSymbol) {
@@ -536,7 +537,7 @@ Messege Chainloader::Start() {
 					util.CleanUpVector(container0);
 					//TODO:COMMAEXP
 					provider = entry::Query(symbol.back());
-					if (provider.GetCode() != kCodeIllegalCall) {
+					if (provider.Good()) {
 						j = provider.GetRequiredCount();
 						while (j != 0 && !item.empty()) {
 							container0.push_back(item.back());
@@ -552,10 +553,11 @@ Messege Chainloader::Start() {
 					}
 				}
 				if (symbol.empty()) {
-					tracking::log(result.SetCode(kCodeIllegalSymbol, kStrFatalError, "Left bracket expected (01)"));
+					tracking::log(result.SetCode(kCodeIllegalSymbol)
+						.SetValue(kStrFatalError)
+						.SetDetail("Left bracket expected (01)"));
 					break;
 				}
-
 			}
 			if (raw[i] == ",") {
 				continue;
