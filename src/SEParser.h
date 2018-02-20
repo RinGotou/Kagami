@@ -64,7 +64,7 @@ const regex kPatternNumber(R"(\d+\.?\d*)");
 const regex kPatternInteger(R"(\d+)");
 const regex kPatternDouble(R"(\d+\.\d+)");
 const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
-const regex kPatternSymbol(R"(==|<=|>=|&&|\|\||[[:Punct:]]|len)");
+const regex kPatternSymbol(R"(==|<=|>=|&&|\|\||[[:Punct:]])");
 const regex kPatternBlank(R"([[:blank:]])");
 
 class Messege;

@@ -3,7 +3,6 @@
 
 namespace tracking {
 	vector<Messege> base;
-	ofstream *rtofs = nullptr;
 
 	void log(Messege &msg) {
 		base.push_back(msg);
@@ -230,7 +229,6 @@ Chainloader &Chainloader::Build(string target) {
 		return *this;
 	}
 
-	//--------------!!DEBUGGING!!---------------------//
 	for (i = 0; i < size; i++) {
 		if (headlock == false && std::regex_match(string().append(1, target[i]),
 			kPatternBlank)) {
@@ -513,6 +511,7 @@ Messege Chainloader::Start() {
 	bool entryresult = true;
 	bool commaexp = false;
 	bool directappend = false;
+	size_t forwardtype = kTypeNull;
 
 	//vector<size_t> tracer; //seems we can work without this?
 	deque<string> item;
@@ -523,10 +522,47 @@ Messege Chainloader::Start() {
 	while (i < size) {
 
 		if (regex_match(raw[i], kPatternSymbol)) {
+			if (GetPriority(raw[i]) < GetProirity(symbol.back())) {
+				//TODO:move to the front of nearest symbol which has same or low priority
+			}
+			if (raw[i] == "(") {
+				if (forwardtype == kTypeSymbol) {
+					commaexp = true;
+				}
+				symbol.push_back(raw[i]);
+			}
+			if (raw[i] == ")") {
+				while (symbol.back() != "(" && !symbol.empty()) {
+					util.CleanUpVector(container0);
+					//TODO:COMMAEXP
+					provider = entry::Query(symbol.back());
+					if (provider.GetCode() != kCodeIllegalCall) {
+						j = provider.GetRequiredCount();
+						while (j != 0 && !item.empty()) {
+							container0.push_back(item.back());
+							item.pop_back();
+							--j;
+						}
+						tempresult = provider.StartActivity(container0);
+						if (tempresult.GetCode() < kCodeSuccess) {
+							result = tempresult;
+							break;
+						}
+						symbol.pop_back();
+					}
+				}
+				if (symbol.empty()) {
+					tracking::log(result.SetCode(kCodeIllegalSymbol, kStrFatalError, "Left bracket expected (01)"));
+					break;
+				}
 
-
-			//pending
+			}
+			if (raw[i] == ",") {
+				continue;
+			}
 			symbol.push_back(raw[i]);
+
+			forwardtype = kTypeSymbol;
 		}
 
 		else if (regex_match(raw[i], kPatternFunction)) {
@@ -547,14 +583,16 @@ Messege Chainloader::Start() {
 					break;
 				}
 			}
-		}
 
+			forwardtype = kTypeSymbol;
+		}
 		else {
 			//String/Intege/Double/Boolean
 			switch (directappend) {
 			case true:item.back().append(raw[i]); break;
 			case false:item.push_back(raw[i]); break;
 			}
+			forwardtype = kTypePreserved;
 		}
 
 		
@@ -584,12 +622,14 @@ Messege EntryProvider::StartActivity(vector<string> p) {
 		if (requiredcount == kFlagNotDefined) {
 			tracking::log(result.SetCode(kCodeBrokenEntry)
 				.SetValue(kStrFatalError)
-				.SetDetail(string("Illegal Entry - ").append(this->name)));
+				.SetDetail(string("Illegal Entry - ")
+				.append(this->name)));
 		}
 		else {
 			tracking::log(result.SetCode(kCodeIllegalArgs)
 				.SetValue(kStrFatalError)
-				.SetDetail(string("Parameter count doesn't match - ").append(this->name)));
+				.SetDetail(string("Parameter count doesn't match - ")
+				.append(this->name)));
 		}
 	}
 
