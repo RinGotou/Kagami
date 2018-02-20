@@ -6,11 +6,15 @@ It cannot work now and there's no time for me to write any documents about desig
 (feel so sorry for my broken English)
 
 ## How to use
-You can simply download these codes and compile it by GCC/CLANG.
-Please enable C++11 in compiling parameters.
+Complie them in Visual Studio 2010 or later verison.Please add SDL2 includes and librarires into your
+project parameters.If you want to process script and don't want to modify inside codes,just using Util
+class,all necessary goods are here.
 
 ## Support
 
 Just post issues anytime in Chinese or English.
+
+## License
+Lincensed under BSD 2-Clause.Do anything you like by following this license.
 
 
