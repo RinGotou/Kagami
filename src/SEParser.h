@@ -261,7 +261,7 @@ public:
 class Chainloader {
 private:
 	vector<string> raw;
-	int GetPriority(string target);
+	int GetPriority(string target) const;
 public:
 	Chainloader() {}
 	Chainloader &Build(vector<string> raw) {
