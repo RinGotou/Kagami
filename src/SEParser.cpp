@@ -494,7 +494,7 @@ Chainloader &Chainloader::Build(string target) {
 //}
 
 //private
-int Chainloader::GetPriority(string target) {
+int Chainloader::GetPriority(string target) const {
 	if (target == "+" || target == "-") return 1;
 	if (target == "*" || target == "/" || target == "\\" || target == "mod") return 2;
 	return 3;
@@ -507,6 +507,7 @@ Messege Chainloader::Start() {
 	EntryProvider provider;
 	Messege result, tempresult;
 	size_t i, j, k;
+	//vector<string>::reverse_iterator rit;
 
 	bool entryresult = true;
 	bool commaexp = false;
@@ -519,12 +520,45 @@ Messege Chainloader::Start() {
 	vector<string> container0;
 
 	i = 0;
+
+	auto TakeAction = [&result, &item, &util] (string target) -> Messege {
+		Messege temp;
+		vector<string> container;
+		EntryProvider provider = entry::Query(target);
+		size_t i = 0;
+		util.CleanUpVector(container);
+		if (provider.Good()) {
+			i = provider.GetRequiredCount();
+			while (i != 0 && !item.empty()) {
+				container.push_back(item.back());
+				item.pop_back();
+				--i;
+			}
+			temp = provider.StartActivity(container);
+			if (temp.GetCode() < kCodeSuccess) {
+				tracking::log(temp);
+			}
+		}
+		else {
+			tracking::log(temp.SetCode(kCodeIllegalCall)
+				.SetValue(kStrFatalError)
+				.SetDetail("Illegal entry"));
+		}
+
+		return temp;
+	};
+
 	while (i < size) {
 
 		if (regex_match(raw[i], kPatternSymbol)) {
 			if (GetPriority(raw[i]) < GetPriority(symbol.back())) {
 				//TODO:move to the front of nearest symbol which has same or low priority
-
+				//need debugging
+				j = symbol.size() - 1;
+				while(symbol.at(j)!="(" || GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
+					--j;
+				}
+				symbol.insert(symbol.begin()+j,raw[i]);
 			}
 			if (raw[i] == "(") {
 				if (forwardtype == kTypeSymbol) {
@@ -533,9 +567,8 @@ Messege Chainloader::Start() {
 				symbol.push_back(raw[i]);
 			}
 			if (raw[i] == ")") {
-				while (symbol.back() != "(" && !symbol.empty()) {
+				while (symbol.back() != "(" || !symbol.empty()) {
 					util.CleanUpVector(container0);
-					//TODO:COMMAEXP
 					provider = entry::Query(symbol.back());
 					if (provider.Good()) {
 						j = provider.GetRequiredCount();
@@ -557,6 +590,18 @@ Messege Chainloader::Start() {
 						.SetValue(kStrFatalError)
 						.SetDetail("Left bracket expected (01)"));
 					break;
+				}
+				//TODO execute entry
+				//if processing result is right,the top of symbol vector will be "("
+				symbol.pop_back();
+				switch(commaexp){
+				case true:provider = entry::Query("commaexp");break;
+				case false:provider = entry::Query(symbol.back());break;
+				}
+
+				if (provider.Good()) {
+					j = provider.GetRequiredCount();
+
 				}
 			}
 			if (raw[i] == ",") {
@@ -703,7 +748,7 @@ void TotalInjection() {
 	childbase.back().SetParent(&(childbase.back()));
 
 	//inject basic entry provider
-	Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize, kFlagCoreEntry));
+	Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
 	Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
 	Inject(EntryProvider("claculat", Calculate, kFlagAutoSize, kFlagCoreEntry));
 
