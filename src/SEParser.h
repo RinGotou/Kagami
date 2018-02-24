@@ -67,9 +67,9 @@ const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
 const regex kPatternSymbol(R"(==|<=|>=|&&|\|\||[[:Punct:]])");
 const regex kPatternBlank(R"([[:blank:]])");
 
-class Messege;
+class Message;
 class EntryProvider;
-typedef Messege (*Activity)(vector<string> &);
+typedef Message (*Activity)(vector<string> &);
 
 class DictUnit {
 private:
@@ -126,30 +126,30 @@ public:
 	}
 };
 
-class Messege {
+class Message {
 private:
 	string value;
 	string detail;
 	int code;
 public:
-	Messege() {
+	Message() {
 		value = kStrEmpty;
 		code = kCodeSuccess;
 		detail = kStrEmpty;
 	}
 
-	Messege(string value, int code) {
+	Message(string value, int code) {
 		this->value = value;
 		this->code = code;
 	}
 
-	Messege(string value, int code, string detial) {
+	Message(string value, int code, string detial) {
 		this->value = value;
 		this->code = code;
 		this->detail = detail;
 	}
 
-	Messege SetValue(const string &value) {
+	Message SetValue(const string &value) {
 		this->value = value;
 		return *this;
 	}
@@ -158,7 +158,7 @@ public:
 		return this->value;
 	}
 
-	Messege SetCode(const int &code) {
+	Message SetCode(const int &code) {
 		this->code = code;
 		return *this;
 	}
@@ -167,7 +167,7 @@ public:
 		return this->code;
 	}
 
-	Messege SetDetail(const string &detail) {
+	Message SetDetail(const string &detail) {
 		this->detail = detail;
 		return *this;
 	}
@@ -191,10 +191,10 @@ public:
 		deque<Type>(target).swap(target);
 	}
 
-	Messege GetDataType(string target);
+	Message GetDataType(string target);
 	bool ActivityStart(EntryProvider &provider, vector<string> container,
-		vector<string> &raw, size_t top, Messege &msg);
-	Messege ScriptStart(string target);
+		vector<string> &raw, size_t top, Message &msg);
+	Message ScriptStart(string target);
 	void PrintEvents();
 	void Cleanup();
 };
@@ -255,7 +255,7 @@ public:
 		Util().CleanUpVector(pool);
 	}
 
-	Messege Get();
+	Message Get();
 };
 
 class Chainloader {
@@ -275,8 +275,8 @@ public:
 		return *this;
 	}
 
-	//Messege Execute();
-	Messege Start(); //Execute() will be deleted in future version
+	//Message Execute();
+	Message Start(); //Execute() will be deleted in future version
 };
 
 class EntryProvider {
@@ -322,7 +322,7 @@ public:
 			target.requiredcount == this->requiredcount);
 	}
 
-	Messege StartActivity(vector<string> p);
+	Message StartActivity(vector<string> p);
 };
 
 class MemoryProvider {
