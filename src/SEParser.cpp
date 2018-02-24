@@ -2,9 +2,9 @@
 
 
 namespace tracking {
-	vector<Messege> base;
+	vector<Message> base;
 
-	void log(Messege &msg) {
+	void log(Message &msg) {
 		base.push_back(msg);
 	}
 
@@ -32,8 +32,8 @@ namespace entry {
 		return result;
 	}
 
-	Messege Order(string name, vector<string> &res) {
-		Messege result(kStrFatalError, kCodeIllegalCall,"Entry Not Found");
+	Message Order(string name, vector<string> &res) {
+		Message result(kStrFatalError, kCodeIllegalCall,"Entry Not Found");
 		for (auto &unit : base) {
 			if (unit.GetName() == name) {
 				result = unit.StartActivity(res);
@@ -45,10 +45,10 @@ namespace entry {
 }
 
 
-Messege Util::GetDataType(string target) {
+Message Util::GetDataType(string target) {
 	using std::regex_match;
-	//default error messege
-	Messege result(kStrRedirect, kCodeIllegalArgs);
+	//default error Message
+	Message result(kStrRedirect, kCodeIllegalArgs);
 
 	auto match = [&](const regex &pat) -> bool {
 		return regex_match(target, pat);
@@ -77,10 +77,10 @@ Messege Util::GetDataType(string target) {
 }
 
 bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vector<string> &elements,
-	size_t top, Messege &msg) {
+	size_t top, Message &msg) {
 	bool rv = true;
 	int code = kCodeSuccess;
-	Messege temp;
+	Message temp;
 
 	if (provider.Good()) {
 		temp = provider.StartActivity(container);
@@ -161,10 +161,10 @@ void Util::Cleanup() {
 	//nothing to dispose here
 }
 
-Messege ScriptProvider::Get() {
+Message ScriptProvider::Get() {
 	using tracking::log;
 	string currentstr;
-	Messege result(kStrEmpty,kCodeSuccess);
+	Message result(kStrEmpty,kCodeSuccess);
 
 	auto IsBlankStr = [] (string target) -> bool { 
 		if (target == kStrEmpty || target.size() == 0) return true;
@@ -225,7 +225,7 @@ Chainloader &Chainloader::Build(string target) {
 	bool allowblank = false;
 
 	if (target == kStrEmpty) {
-		log(Messege(kStrWarning, kCodeIllegalArgs).SetDetail("Chainloader::Build() 1"));
+		log(Message(kStrWarning, kCodeIllegalArgs).SetDetail("Chainloader::Build() 1"));
 		return *this;
 	}
 
@@ -339,11 +339,11 @@ Chainloader &Chainloader::Build(string target) {
 	return *this;
 }
 
-//Messege Chainloader::Execute() {
+//Message Chainloader::Execute() {
 //	Util util;
 //	EntryProvider provider;
-//	Messege result(kStrSuccess, kCodeSuccess);
-//	Messege temp(kStrSuccess, kCodeSuccess);
+//	Message result(kStrSuccess, kCodeSuccess);
+//	Message temp(kStrSuccess, kCodeSuccess);
 //	size_t i, j, top;
 //	size_t size = raw.size();
 //	size_t forwardtype = kTypeNull;
@@ -500,12 +500,12 @@ int Chainloader::GetPriority(string target) const {
 	return 3;
 }
 
-Messege Chainloader::Start() {
+Message Chainloader::Start() {
 	const size_t size = raw.size();
 
 	Util util;
 	EntryProvider provider;
-	Messege result, tempresult;
+	Message result, tempresult;
 	size_t i, j, k;
 	//vector<string>::reverse_iterator rit;
 
@@ -521,8 +521,8 @@ Messege Chainloader::Start() {
 
 	i = 0;
 
-	auto TakeAction = [&result, &item, &util] (string target) -> Messege {
-		Messege temp;
+	auto TakeAction = [&result, &item, &util] (string target) -> Message {
+		Message temp;
 		vector<string> container;
 		EntryProvider provider = entry::Query(target);
 		size_t i = 0;
@@ -568,22 +568,23 @@ Messege Chainloader::Start() {
 			}
 			if (raw[i] == ")") {
 				while (symbol.back() != "(" || !symbol.empty()) {
-					util.CleanUpVector(container0);
-					provider = entry::Query(symbol.back());
-					if (provider.Good()) {
-						j = provider.GetRequiredCount();
-						while (j != 0 && !item.empty()) {
-							container0.push_back(item.back());
-							item.pop_back();
-							--j;
-						}
-						tempresult = provider.StartActivity(container0);
-						if (tempresult.GetCode() < kCodeSuccess) {
-							result = tempresult;
-							break;
-						}
-						symbol.pop_back();
-					}
+					//util.CleanUpVector(container0);
+					//provider = entry::Query(symbol.back());
+					//if (provider.Good()) {
+					//	j = provider.GetRequiredCount();
+					//	while (j != 0 && !item.empty()) {
+					//		container0.push_back(item.back());
+					//		item.pop_back();
+					//		--j;
+					//	}
+					//	tempresult = provider.StartActivity(container0);
+					//	if (tempresult.GetCode() < kCodeSuccess) {
+					//		result = tempresult;
+					//		break;
+					//	}
+					//	symbol.pop_back();
+					//}
+					
 				}
 				if (symbol.empty()) {
 					tracking::log(result.SetCode(kCodeIllegalSymbol)
@@ -658,8 +659,8 @@ Messege Chainloader::Start() {
 	return result;
 }
 
-Messege EntryProvider::StartActivity(vector<string> p) {
-	Messege result;
+Message EntryProvider::StartActivity(vector<string> p) {
+	Message result;
 	size_t size = p.size();
 
 	if (size == requiredcount || requiredcount == kFlagAutoSize) {
@@ -683,8 +684,8 @@ Messege EntryProvider::StartActivity(vector<string> p) {
 	return result;
 }
 
-Messege CommaExpression(vector<string> &res) {
-	Messege result;
+Message CommaExpression(vector<string> &res) {
+	Message result;
 	if (res.empty()) {
 		result.SetCode(kCodeRedirect).SetValue(kStrEmpty);
 	}
@@ -695,9 +696,9 @@ Messege CommaExpression(vector<string> &res) {
 	return result;
 }
 
-Messege MemoryQuery(vector<string> &res) {
+Message MemoryQuery(vector<string> &res) {
 	using namespace entry;
-	Messege result;
+	Message result;
 	string temp;
 	size_t begin = childbase.size() - 1;
 	size_t i = 0;
@@ -731,8 +732,8 @@ Messege MemoryQuery(vector<string> &res) {
 	return result;
 }
 
-Messege Calculate(vector<string> &res) {
-	Messege result;
+Message Calculate(vector<string> &res) {
+	Message result;
 
 	//pending
 
@@ -754,9 +755,9 @@ void TotalInjection() {
 
 }
 
-Messege Util::ScriptStart(string target) {
-	Messege result;
-	Messege temp;
+Message Util::ScriptStart(string target) {
+	Message result;
+	Message temp;
 	size_t i;
 	size_t size;
 	vector<Chainloader> loaders;
