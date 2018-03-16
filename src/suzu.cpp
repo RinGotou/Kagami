@@ -3,9 +3,9 @@
 
 int main(int argc, char **argv) {
 
-	Suzu::Util util;
+ Suzu::Util util;
 
-	util.PrintEvents();
+ util.PrintEvents();
 
-	return 0;
+ return 0;
 }
