@@ -5,7 +5,7 @@ It's a simple **scripting processor**.It's design for simple graphic building,ba
 
 ## How to use these codes
 Complie them in Visual Studio 2010 or later verison.
-Please add SDL2 includes and librarires into yourproject parameters.If you want to process script and don't want to modify inside codes,just using Utilclass,all necessary goods are here(for example,Util::ScriptStart()).
+Please add SDL2 includes and librarires into your project parameters.If you want to process script and don't want to modify inside codes,just using Utilclass,all necessary goods are here(for example,Util::ScriptStart()).
 
 ## How to run 
 download SDL2 library and extract SDL2.dll to the path of suzu binary.(Err...I didn't write the code for
