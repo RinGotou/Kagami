@@ -1,8 +1,7 @@
 #include "parser.h"
 
-using namespace Suzu;
-
 namespace Tracking {
+  using namespace Suzu;
   vector<Message> base;
 
   void log(Message msg) {
@@ -15,8 +14,8 @@ namespace Tracking {
 }
 
 namespace Entry {
+  using namespace Suzu;
   deque<EntryProvider> base;
-  deque<MemoryProvider> childbase;
 
   void Inject(EntryProvider provider) {
     base.push_back(provider);
@@ -25,22 +24,16 @@ namespace Entry {
   EntryProvider Query(string target) {
     EntryProvider result;
     for (auto &unit : base) {
-      if (unit.GetName() == target && unit.GetPriority() == 1) {
-        result = unit;
-      }
+      if (unit.GetName() == target && unit.GetPriority() == 1) result = unit;
     }
-
     return result;
   }
 
   Message Order(string name, vector<string> &res) {
     Message result(kStrFatalError, kCodeIllegalCall, "Entry Not Found");
     for (auto &unit : base) {
-      if (unit.GetName() == name) {
-        result = unit.StartActivity(res);
-      }
+      if (unit.GetName() == name) result = unit.StartActivity(res);
     }
-
     return result;
   }
 }
@@ -48,31 +41,17 @@ namespace Entry {
 namespace Suzu {
   Message Util::GetDataType(string target) {
     using std::regex_match;
-    //default error Message
     Message result(kStrRedirect, kCodeIllegalArgs);
-
     auto match = [&](const regex &pat) -> bool {
       return regex_match(target, pat);
     };
 
-    if (match(kPatternFunction)) {
-      result.SetCode(kTypeFunction);
-    }
-    else if (match(kPatternString)) {
-      result.SetCode(kTypeString);
-    }
-    else if (match(kPatternBoolean)) {
-      result.SetCode(kTypeBoolean);
-    }
-    else if (match(kPatternInteger)) {
-      result.SetCode(kTypeInteger);
-    }
-    else if (match(kPatternDouble)) {
-      result.SetCode(KTypeDouble);
-    }
-    else if (match(kPatternSymbol)) {
-      result.SetCode(kTypeSymbol);
-    }
+    if (match(kPatternFunction)) result.SetCode(kTypeFunction);
+    else if (match(kPatternString)) result.SetCode(kTypeString);
+    else if (match(kPatternBoolean)) result.SetCode(kTypeBoolean);
+    else if (match(kPatternInteger)) result.SetCode(kTypeInteger);
+    else if (match(kPatternDouble)) result.SetCode(KTypeDouble);
+    else if (match(kPatternSymbol)) result.SetCode(kTypeSymbol);
 
     return result;
   }
@@ -121,41 +100,26 @@ namespace Suzu {
 
   void Util::PrintEvents() {
     using namespace Tracking;
-
     ofstream ofs("event.log", std::ios::trunc);
     size_t i = 0;
     if (ofs.good()) {
-
       if (base.empty()) {
         ofs << "No Events\n";
       }
       else {
         for (auto unit : base) {
           ++i;
-          ofs << "Count:" << i << "\n"
-            << "Code:" << unit.GetCode() << "\n";
-
-          if (unit.GetValue() == kStrFatalError) {
+          ofs << "Count:" << i << "\n" << "Code:" << unit.GetCode() << "\n";
+          if (unit.GetValue() == kStrFatalError) 
             ofs << "Priority:Fatal\n";
-          }
-          else {
+          else if (unit.GetValue() == kStrWarning)
             ofs << "Priority:Warning\n";
-          }
-
-          if (unit.GetDetail() != kStrEmpty) {
+          if (unit.GetDetail() != kStrEmpty) 
             ofs << "Detail:" << unit.GetDetail() << "\n";
-          }
-
-          ofs << "-----------------------\n";
         }
       }
-
-      ofs << "Event Output End\n";
     }
-
     ofs.close();
-
-
   }
 
   void Util::Cleanup() {
@@ -224,6 +188,10 @@ namespace Suzu {
     //not only blanks(some special character included)
     bool headlock = false;
     bool allowblank = false;
+    vector<string> list = { kStrVar,kstrDefine,kStrReturn };
+    auto ToString = [](char c) -> string {
+      return string().append(1, c);
+    };
 
     if (target == kStrEmpty) {
       log(Message(kStrWarning, kCodeIllegalArgs).SetDetail("Chainloader::Build() 1"));
@@ -231,11 +199,11 @@ namespace Suzu {
     }
 
     for (i = 0; i < size; i++) {
-      if (headlock == false && std::regex_match(string().append(1, target[i]),
+      if (headlock == false && std::regex_match(ToString(target[i]),
         kPatternBlank)) {
         continue;
       }
-      else if (headlock == false && std::regex_match(string().append(1, target[i]),
+      else if (headlock == false && std::regex_match(ToString(target[i]),
         kPatternBlank) == false) {
         headlock = true;
       }
@@ -250,18 +218,20 @@ namespace Suzu {
         }
       }
 
+      //In this verison comma is preserved for next execution processing.
       switch (target[i]) {
       case '(':
       case ',':
       case ')':
       case '{':
       case '}':
+      case ':':
         if (allowblank) {
           current.append(1, target[i]);
         }
         else {
           if (current != kStrEmpty) output.push_back(current);
-          output.push_back(string().append(1, target[i]));
+          output.push_back(ToString(target[i]));
           current = kStrEmpty;
         }
         break;
@@ -271,7 +241,7 @@ namespace Suzu {
         }
         else {
           if (current != kStrEmpty) output.push_back(current);
-          output.push_back(string().append(1, target[i]));
+          output.push_back(ToString(target[i]));
           current = kStrEmpty;
         }
         break;
@@ -297,7 +267,7 @@ namespace Suzu {
           }
           else {
             if (current != kStrEmpty) output.push_back(current);
-            output.push_back(string().append(1, target[i]));
+            output.push_back(ToString(target[i]));
             current = kStrEmpty;
           }
         }
@@ -307,8 +277,7 @@ namespace Suzu {
         if (allowblank) {
           current.append(1, target[i]);
         }
-        else if ((current == kStrVar || current == kstrDefine || current == kStrReturn)
-          && output.empty() == true) {
+        else if (util.Compare(current,list) && output.empty()){
           if (i + 1 < size && target[i + 1] != ' ' && target[i + 1] != '\t') {
             output.push_back(current);
             current = kStrEmpty;
@@ -316,8 +285,8 @@ namespace Suzu {
           continue;
         }
         else {
-          if ((std::regex_match(string().append(1, target[i + 1]), kPatternSymbol)
-            || std::regex_match(string().append(1, target[i - 1]), kPatternSymbol)
+          if ((std::regex_match(ToString(target[i + 1]), kPatternSymbol)
+            || std::regex_match(ToString(target[i - 1]), kPatternSymbol)
             || target[i - 1] == ' ' || target[i - 1] == '\t')
             && i + 1 < size) {
             continue;
@@ -353,7 +322,7 @@ namespace Suzu {
     Util util;
     EntryProvider provider;
     Message result, tempresult;
-    size_t i, j, k;
+    size_t i, j, k, m;
     bool entryresult = true;
     bool commaexp = false;
     bool directappend = false;
@@ -364,6 +333,9 @@ namespace Suzu {
 
     for (i = 0; i < size; ++i) {
       if (regex_match(raw[i], kPatternSymbol)) {
+        if (raw[i] == ",") {
+          symbol.push_back(raw[i]);
+        }
         if (raw[i] == "(") {
           if (forwardtype == kTypeNull || forwardtype == kTypeSymbol) {
             commaexp = true;
@@ -373,11 +345,13 @@ namespace Suzu {
         else if (raw[i] == ")") {
           while (symbol.back() != "(" && symbol.empty() != true) {
             util.CleanUpVector(container0);
+            //TODO:Executions??
           }
         }
         else {
           if (GetPriority(raw[i]) < GetPriority(symbol.back())) {
             j = symbol.size() - 1;
+            k = item.size() - 1;
             while (symbol.at(j) != "(" || GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
               --j;
             }
@@ -401,9 +375,7 @@ namespace Suzu {
       }
     }
 
-    util.CleanUpVector(container0);
-    util.CleanUpDeque(item);
-    util.CleanUpDeque(symbol);
+    util.CleanUpVector(container0).CleanUpDeque(item).CleanUpDeque(symbol);
 
     return result;
   }
@@ -431,77 +403,6 @@ namespace Suzu {
     }
 		
     return result;
-  }
-
-  Message CommaExpression(vector<string> &res) {
-    Message result;
-    if (res.empty()) {
-      result.SetCode(kCodeRedirect).SetValue(kStrEmpty);
-    }
-    else {
-      result.SetCode(kCodeRedirect).SetValue(res.back());
-    }
-
-    return result;
-  }
-
-  Message MemoryQuery(vector<string> &res) {
-    using namespace Entry;
-    Message result;
-    string temp;
-    size_t begin = childbase.size() - 1;
-    size_t i = 0;
-
-    if (childbase.empty()) {
-      Tracking::log(result.SetValue(kStrWarning)
-        .SetCode(kCodeIllegalArgs)
-        .SetDetail("MemoryQuery() 1"));
-    }
-    else {
-      if (childbase.size() == 1 || res[1] == kArgOnce) {
-        temp = childbase.back().query(res[0]);
-      }
-      else if (childbase.size() > 1 && res[1] != kArgOnce) {
-        for (i = begin; i >= 0; --i) {
-          temp = childbase[i].query(res[0]);
-          if (temp != kStrNull) break;
-        }
-      }
-
-      if (temp != kStrNull) {
-        result.SetCode(kCodeSuccess).SetValue(kStrSuccess).SetDetail(temp);
-      }
-      else {
-        Tracking::log(result.SetCode(kCodeIllegalCall)
-          .SetValue(kStrFatalError)
-          .SetDetail("MemoryQuery() 2"));
-      }
-    }
-
-    return result;
-  }
-
-  Message Calculate(vector<string> &res) {
-    Message result;
-
-    //pending
-
-    return result;
-  }
-
-
-  void TotalInjection() {
-    using namespace Entry;
-
-    //set root memory provider
-    childbase.push_back(MemoryProvider());
-    childbase.back().SetParent(&(childbase.back()));
-
-    //inject basic Entry provider
-    Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
-    Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
-    Inject(EntryProvider("claculat", Calculate, kFlagAutoSize, kFlagCoreEntry));
-
   }
 
   Message Util::ScriptStart(string target) {

@@ -52,57 +52,15 @@ namespace Suzu {
   class EntryProvider;
   typedef Message(*Activity)(vector<string> &);
 
-  class DictUnit {
+  class MemUnit :public pair<string, string> {
   private:
-    string name;
-    string value;
     bool readonly;
   public:
-    DictUnit() {
-      name = kStrEmpty;
-      value = kStrEmpty;
-      readonly = false;
-    }
-
-    DictUnit(string n, string v, bool r) {
-      this->name = n;
-      this->value = v;
-      this->readonly = r;
-    }
-
-    DictUnit(string n, string v) {
-      this->name = n;
-      this->value = v;
-    }
-
-    string GetName() const {
-      return this->name;
-    }
-
-    string GetValue() const {
-      return this->value;
-    }
-
-    DictUnit &SetValue(string v) {
-      if (readonly != true) {
-        this->value = v;
-      }
-      return *this;
-    }
-
-    DictUnit &SetName(string n) {
-      if (name == kStrEmpty) {
-        this->name = n;
-      }
-
-      return *this;
-    }
-
     bool IsReadOnly() const {
       return this->readonly;
     }
 
-    DictUnit &SetReadOnly(bool r) {
+    MemUnit &SetReadOnly(bool r) {
       this->readonly = r;
     }
   };
@@ -161,15 +119,29 @@ namespace Suzu {
   class Util {
   public:
     template <class Type>
-    void CleanUpVector(vector<Type> &target) {
+    Util CleanUpVector(vector<Type> &target) {
       target.clear();
       vector<Type>(target).swap(target);
+      return *this;
     }
 
     template <class Type>
-    void CleanUpDeque(deque<Type> &target) {
+    Util CleanUpDeque(deque<Type> &target) {
       target.clear();
       deque<Type>(target).swap(target);
+      return *this;
+    }
+
+    template <class Type>
+    bool Compare(Type source, vector<Type> list) {
+      bool result = false;
+      for (auto unit : list) {
+        if (unit == source) {
+          result = true;
+          break;
+        }
+      }
+      return result;
     }
 
     Message GetDataType(string target);
@@ -305,9 +277,14 @@ namespace Suzu {
     Message StartActivity(vector<string> p);
   };
 
+  class MemoryProvider2 {
+  private:
+    
+  };
+
   class MemoryProvider {
   private:
-    deque<DictUnit> dict;
+    deque<MemUnit> dict;
     MemoryProvider *parent;
   public:
     MemoryProvider() {
@@ -326,7 +303,7 @@ namespace Suzu {
       Util().CleanUpDeque(dict);
     }
 
-    void create(DictUnit unit) {
+    void create(MemUnit unit) {
       if (unit.IsReadOnly()) {
         dict.push_front(unit);
       }
@@ -337,11 +314,11 @@ namespace Suzu {
 
     bool dispose(string name) {
       bool result = true;
-      deque<DictUnit>::iterator it;
+      deque<MemUnit>::iterator it;
       if (dict.empty() == false) {
         it = dict.begin();
-        while (it != dict.end() && it->GetName() != name) ++it;
-        if (it == dict.end() && it->GetName() != name) result = false;
+        while (it != dict.end() && it->first != name) ++it;
+        if (it == dict.end() && it->first != name) result = false;
         else {
           dict.erase(it);
         }
@@ -352,13 +329,13 @@ namespace Suzu {
 
     string query(string name) {
       string result;
-      deque<DictUnit>::iterator it;
+      deque<MemUnit>::iterator it;
       if (dict.empty() == false) {
         it = dict.begin();
-        while (it != dict.end() && it->GetName() != name) ++it;
-        if (it == dict.end() && it->GetName() != name) result = kStrNull;
+        while (it != dict.end() && it->first != name) ++it;
+        if (it == dict.end() && it->first != name) result = kStrNull;
         else {
-          result = it->GetValue();
+          result = it->second;
         }
       }
 
@@ -385,17 +362,16 @@ namespace Suzu {
 
   };
 
-  //class StrElement : public string {
-  //public:
-  //  bool match(regex pattern) const {
-  //    return regex_match(string::data(), pattern);
-  //  }
-
-
-  //};
-
   void TotalInjection();
 
+}
+
+namespace Tracking {
+  void log(Suzu::Message msg);
+}
+
+namespace Entry {
+  void Inject(Suzu::EntryProvider provider);
 }
 #endif // !_SE_PARSER_
 
