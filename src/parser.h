@@ -77,11 +77,6 @@ namespace Suzu {
       detail = kStrEmpty;
     }
 
-    Message(string value, int code) {
-      this->value = value;
-      this->code = code;
-    }
-
     Message(string value, int code, string detial) {
       this->value = value;
       this->code = code;
@@ -252,10 +247,6 @@ namespace Suzu {
       return this->name;
     }
 
-    Activity GetActivity() const {
-      return this->activity;
-    }
-
     int GetRequiredCount() const {
       return this->requiredcount;
     }
@@ -275,11 +266,6 @@ namespace Suzu {
     }
 
     Message StartActivity(vector<string> p);
-  };
-
-  class MemoryProvider2 {
-  private:
-    
   };
 
   class MemoryProvider {
@@ -312,36 +298,6 @@ namespace Suzu {
       }
     }
 
-    bool dispose(string name) {
-      bool result = true;
-      deque<MemUnit>::iterator it;
-      if (dict.empty() == false) {
-        it = dict.begin();
-        while (it != dict.end() && it->first != name) ++it;
-        if (it == dict.end() && it->first != name) result = false;
-        else {
-          dict.erase(it);
-        }
-      }
-
-      return result;
-    }
-
-    string query(string name) {
-      string result;
-      deque<MemUnit>::iterator it;
-      if (dict.empty() == false) {
-        it = dict.begin();
-        while (it != dict.end() && it->first != name) ++it;
-        if (it == dict.end() && it->first != name) result = kStrNull;
-        else {
-          result = it->second;
-        }
-      }
-
-      return result;
-    }
-
     MemoryProvider &SetParent(MemoryProvider *ptr) {
       this->parent = ptr;
       return *this;
@@ -351,6 +307,9 @@ namespace Suzu {
       return parent;
     }
 
+    bool dispose(string name);
+    string query(string name);
+    string set(string name, string value);
   };
 
   //TODO:JSON Mini Parser
