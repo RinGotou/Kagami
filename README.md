@@ -1,8 +1,6 @@
-# Suzu
+# Reborn Script Project
 ## What's this?
-It's a simple **scripting processor**,a weak type language.
-The name of this project is from "鈴(すず)" in Japanese.
-It's design for word processing and simple graphic support,based on C++ STL and STL2.
+It's a simple **scripting processor**.It's design for simple graphic building,based on C++ STL and SDL2.
 (feel so sorry for my broken English)
 
 ## How to use these codes
