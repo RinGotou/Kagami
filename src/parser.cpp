@@ -30,7 +30,7 @@ namespace Entry {
   }
 
   Message Order(string name, vector<string> &res) {
-    Message result(kStrFatalError, kCodeIllegalCall, "Entry Not Found");
+    Message result(kStrFatalError, kCodeIllegalCall, "Entry Not Found.");
     for (auto &unit : base) {
       if (unit.GetName() == name) result = unit.StartActivity(res);
     }
@@ -41,7 +41,7 @@ namespace Entry {
 namespace Suzu {
   Message Util::GetDataType(string target) {
     using std::regex_match;
-    Message result(kStrRedirect, kCodeIllegalArgs);
+    Message result(kStrRedirect, kCodeIllegalArgs,"");
     auto match = [&](const regex &pat) -> bool {
       return regex_match(target, pat);
     };
@@ -52,7 +52,7 @@ namespace Suzu {
     else if (match(kPatternInteger)) result.SetCode(kTypeInteger);
     else if (match(kPatternDouble)) result.SetCode(KTypeDouble);
     else if (match(kPatternSymbol)) result.SetCode(kTypeSymbol);
-
+    else result.SetDetail("No match type.");
     return result;
   }
 
@@ -129,7 +129,7 @@ namespace Suzu {
   Message ScriptProvider::Get() {
     using Tracking::log;
     string currentstr;
-    Message result(kStrEmpty, kCodeSuccess);
+    Message result(kStrEmpty, kCodeSuccess, "");
 
     auto IsBlankStr = [](string target) -> bool {
       if (target == kStrEmpty || target.size() == 0) return true;
@@ -194,7 +194,7 @@ namespace Suzu {
     };
 
     if (target == kStrEmpty) {
-      log(Message(kStrWarning, kCodeIllegalArgs).SetDetail("Chainloader::Build() 1"));
+      log(Message(kStrWarning, kCodeIllegalArgs,"Chainloader::Build() 1"));
       return *this;
     }
 
@@ -447,6 +447,36 @@ namespace Suzu {
             if (temp.GetValue() == kStrFatalError) break;
           }
         }
+      }
+    }
+
+    return result;
+  }
+
+  bool MemoryProvider::dispose(string name) {
+    bool result = true;
+    deque<MemUnit>::iterator it;
+    if (dict.empty() == false) {
+      it = dict.begin();
+      while (it != dict.end() && it->first != name) ++it;
+      if (it == dict.end() && it->first != name) result = false;
+      else {
+        dict.erase(it);
+      }
+    }
+
+    return result;
+  }
+
+  string MemoryProvider::query(string name) {
+    string result;
+    deque<MemUnit>::iterator it;
+    if (dict.empty() == false) {
+      it = dict.begin();
+      while (it != dict.end() && it->first != name) ++it;
+      if (it == dict.end() && it->first != name) result = kStrNull;
+      else {
+        result = it->second;
       }
     }
 
