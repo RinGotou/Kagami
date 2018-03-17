@@ -77,10 +77,17 @@ namespace Suzu {
       detail = kStrEmpty;
     }
 
-    Message(string value, int code, string detial) {
+    Message(string value, int code, string detail) {
       this->value = value;
       this->code = code;
       this->detail = detail;
+    }
+
+    Message combo(string value, int code, string detail) {
+      this->value = value;
+      this->code = code;
+      this->detail = detail;
+      return *this;
     }
 
     Message SetValue(const string &value) {

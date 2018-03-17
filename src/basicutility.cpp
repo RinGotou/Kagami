@@ -67,6 +67,5 @@ namespace Suzu {
     Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
     Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
     Inject(EntryProvider("calculat", Calculate, kFlagAutoSize, kFlagCoreEntry));
-
   }
 }

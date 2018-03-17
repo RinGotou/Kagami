@@ -21,6 +21,14 @@ namespace Entry {
     base.push_back(provider);
   }
 
+  Message Order(string name, vector<string> &res) {
+    Message result(kStrFatalError, kCodeIllegalCall, "Entry Not Found.");
+    for (auto &unit : base) {
+      if (unit.GetName() == name) result = unit.StartActivity(res);
+    }
+    return result;
+  }
+
   EntryProvider Query(string target) {
     EntryProvider result;
     for (auto &unit : base) {
@@ -29,12 +37,13 @@ namespace Entry {
     return result;
   }
 
-  Message Order(string name, vector<string> &res) {
-    Message result(kStrFatalError, kCodeIllegalCall, "Entry Not Found.");
+  int FastGetCount(string target) {
     for (auto &unit : base) {
-      if (unit.GetName() == name) result = unit.StartActivity(res);
+      if (unit.GetName() == target) {
+        return unit.GetRequiredCount();
+      }
     }
-    return result;
+    return kFlagNotDefined;
   }
 }
 
@@ -56,7 +65,7 @@ namespace Suzu {
     return result;
   }
 
-  bool Util::ActivityStart(EntryProvider &provider, vector<string> container, vector<string> &elements,
+  bool Util::ActivityStart(EntryProvider &provider, vector<string> container, deque<string> &item,
     size_t top, Message &msg) {
     bool rv = true;
     int code = kCodeSuccess;
@@ -72,26 +81,24 @@ namespace Suzu {
         rv = false;
       }
       else if (code == kCodeRedirect) {
-        if (top == elements.size()) {
-          elements.push_back(temp.GetValue());
+        if (top == item.size()) {
+          item.push_back(temp.GetValue());
         }
         else {
-          elements[top] = temp.GetValue();
+          item[top] = temp.GetValue();
         }
       }
       else {
-        if (top == elements.size()) {
-          elements.push_back(kStrEmpty);
+        if (top == item.size()) {
+          item.push_back(kStrEmpty);
         }
         else {
-          elements[top] = kStrEmpty;
+          item[top] = kStrEmpty;
         }
       }
     }
     else {
-      Tracking::log(msg.SetCode(kCodeIllegalCall)
-        .SetValue(kStrFatalError).
-        SetDetail("ActivityStart 2"));
+      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "ActivityStart 2"));
       rv = false;
     }
 
@@ -151,10 +158,7 @@ namespace Suzu {
       stream.close();
     }
     else {
-      log(result.SetValue(kStrFatalError)
-        .SetCode(kCodeBadStream)
-        .SetDetail("ScriptProvder::Get() 1"));
-
+      log(result.combo(kStrFatalError, kCodeBadStream, "ScriptProvder::Get() 1"));
       return result;
     }
 
@@ -167,9 +171,7 @@ namespace Suzu {
       result.SetValue(kStrEOF);
     }
     else {
-      log(result.SetValue(kStrFatalError)
-        .SetCode(kCodeOverflow)
-        .SetDetail("ScriptProvder::Get() 2"));
+      log(result.combo(kStrFatalError, kCodeOverflow, "ScriptProvder::Get() 2"));
     }
 
     return result;
@@ -323,6 +325,8 @@ namespace Suzu {
     EntryProvider provider;
     Message result, tempresult;
     size_t i, j, k, m;
+    size_t nextinspoint = 0;
+    string tempstr;
     bool entryresult = true;
     bool commaexp = false;
     bool directappend = false;
@@ -330,6 +334,13 @@ namespace Suzu {
     deque<string> item;
     deque<string> symbol;
     vector<string> container0;
+    auto StartCode = [&provider, &j, &item, &container0, &util, &result]()->bool {
+      j = provider.GetRequiredCount();
+      while (j != 0 && item.empty() != true) {
+        container0.push_back(item.at(j));
+      }
+      return util.ActivityStart(provider, container0, item, item.size(), result);
+    };
 
     for (i = 0; i < size; ++i) {
       if (regex_match(raw[i], kPatternSymbol)) {
@@ -345,7 +356,10 @@ namespace Suzu {
         else if (raw[i] == ")") {
           while (symbol.back() != "(" && symbol.empty() != true) {
             util.CleanUpVector(container0);
-            //TODO:Executions??
+            provider = Entry::Query(symbol.back());
+            entryresult = StartCode();
+            if (entryresult == false) break;
+            symbol.pop_back();
           }
         }
         else {
@@ -353,11 +367,18 @@ namespace Suzu {
             j = symbol.size() - 1;
             k = item.size() - 1;
             while (symbol.at(j) != "(" || GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
-              --j;
+              if (k = item.size() - 1) k -= Entry::FastGetCount(symbol.at(j));
+              else k -= Entry::FastGetCount(symbol.at(j)) - 1;
+                --j;
             }
             symbol.insert(symbol.begin() + j, raw[i]);
+            nextinspoint = k;
 
-            //TODO:Insert parameters!
+            j = 0;
+            k = 0;
+          }
+          else {
+            symbol.push_back(raw[i]);
           }
         }
       }
@@ -371,8 +392,30 @@ namespace Suzu {
         }
       }
       else {
-
+        if (nextinspoint != 0) {
+          item.insert(item.begin() + nextinspoint, raw[i]);
+          nextinspoint = 0;
+        }
+        else {
+          item.push_back(raw[i]);
+        }
       }
+    }
+
+    while (symbol.empty() != true) {
+      util.CleanUpVector(container0);
+      if (item.empty()) {
+        result.combo(kStrFatalError, kCodeIllegalSymbol, "Parameters expected.");
+        break;
+      }
+      if (symbol.back() == "(" || symbol.back() == ")") {
+        result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
+        break;
+      }
+      provider = Entry::Query(symbol.back());
+      entryresult = StartCode();
+      if (entryresult == false) break;
+      symbol.pop_back();
     }
 
     util.CleanUpVector(container0).CleanUpDeque(item).CleanUpDeque(symbol);
@@ -389,16 +432,12 @@ namespace Suzu {
     }
     else {
       if (requiredcount == kFlagNotDefined) {
-        Tracking::log(result.SetCode(kCodeBrokenEntry)
-          .SetValue(kStrFatalError)
-          .SetDetail(string("Illegal Entry - ")
-            .append(this->name)));
+        Tracking::log(result.combo(kStrFatalError, kCodeBrokenEntry, 
+          string("Illegal Entry - ").append(this->name)));
       }
       else {
-        Tracking::log(result.SetCode(kCodeIllegalArgs)
-          .SetValue(kStrFatalError)
-          .SetDetail(string("Parameter count doesn't match - ")
-            .append(this->name)));
+        Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs,
+          string("Parameter count doesn't match - ").append(this->name)));
       }
     }
 		
@@ -414,9 +453,7 @@ namespace Suzu {
     Chainloader cache;
 
     if (target == kStrEmpty) {
-      Tracking::log(result.SetCode(kCodeIllegalArgs)
-        .SetValue(kStrFatalError)
-        .SetDetail("Util::ScriptStart() 1"));
+      Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Util::ScriptStart() 1"));
     }
     else {
       TotalInjection();
@@ -430,9 +467,7 @@ namespace Suzu {
           loaders.push_back(cache);
         }
         else {
-          Tracking::log(result.SetCode(kCodeIllegalArgs)
-            .SetValue(kStrFatalError)
-            .SetDetail("Util::ScriptStart() 2"));
+          Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Util::ScriptStart() 2"));
           break;
         }
       }
