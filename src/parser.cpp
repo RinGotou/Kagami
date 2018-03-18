@@ -457,9 +457,7 @@ namespace Suzu {
     }
     else {
       TotalInjection();
-
       ScriptProvider sp(target);
-
       while (!sp.eof()) {
         temp = sp.Get();
         if (temp.GetCode() == kCodeSuccess) {
@@ -474,10 +472,8 @@ namespace Suzu {
 
       if (!loaders.empty()) {
         size = loaders.size();
-
         for (i = 0; i < size; i++) {
           temp = loaders[i].Start();
-
           if (temp.GetCode() != kCodeSuccess) {
             if (temp.GetValue() == kStrFatalError) break;
           }
@@ -488,15 +484,26 @@ namespace Suzu {
     return result;
   }
 
+  StrPair *MemoryProvider::find(string name) {
+    StrPair *result = nullptr;
+    for (auto &unit : dict) {
+      if (unit.first == name) {
+        result = &unit;
+        break;
+      }
+    }
+    return result;
+  }
+
   bool MemoryProvider::dispose(string name) {
     bool result = true;
-    deque<MemUnit>::iterator it;
+    MemPtr ptr;
     if (dict.empty() == false) {
-      it = dict.begin();
-      while (it != dict.end() && it->first != name) ++it;
-      if (it == dict.end() && it->first != name) result = false;
+      ptr = dict.begin();
+      while (ptr != dict.end() && ptr->first != name) ++ptr;
+      if (ptr == dict.end() && ptr->first != name) result = false;
       else {
-        dict.erase(it);
+        dict.erase(ptr);
       }
     }
 
@@ -505,16 +512,22 @@ namespace Suzu {
 
   string MemoryProvider::query(string name) {
     string result;
-    deque<MemUnit>::iterator it;
-    if (dict.empty() == false) {
-      it = dict.begin();
-      while (it != dict.end() && it->first != name) ++it;
-      if (it == dict.end() && it->first != name) result = kStrNull;
-      else {
-        result = it->second;
-      }
-    }
+    StrPair *ptr = find(name);
+    if (ptr != nullptr) result = ptr->second;
+    else result = kStrNull;
+    return result;
+  }
 
+  string MemoryProvider::set(string name, string value) {
+    string result;
+    StrPair *ptr = find(name);
+    if (ptr != nullptr) {
+      result = ptr->second;
+      ptr->second = value;
+    }
+    else {
+      result = kStrNull;
+    }
     return result;
   }
 }

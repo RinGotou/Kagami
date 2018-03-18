@@ -52,7 +52,7 @@ namespace Suzu {
   class EntryProvider;
   typedef Message(*Activity)(vector<string> &);
 
-  class MemUnit :public pair<string, string> {
+  class StrPair :public pair<string, string> {
   private:
     bool readonly;
   public:
@@ -60,8 +60,18 @@ namespace Suzu {
       return this->readonly;
     }
 
-    MemUnit &SetReadOnly(bool r) {
+    StrPair &SetReadOnly(bool r) {
       this->readonly = r;
+    }
+
+    StrPair() {
+      this->first = kStrNull;
+      this->second = kStrNull;
+    }
+
+    StrPair(string f, string s) {
+      this->first = f;
+      this->second = s;
     }
   };
 
@@ -148,7 +158,7 @@ namespace Suzu {
 
     Message GetDataType(string target);
     bool ActivityStart(EntryProvider &provider, vector<string> container,
-      vector<string> &raw, size_t top, Message &msg);
+      deque<string> &item, size_t top, Message &msg);
     Message ScriptStart(string target);
     void PrintEvents();
     void Cleanup();
@@ -277,8 +287,10 @@ namespace Suzu {
 
   class MemoryProvider {
   private:
-    deque<MemUnit> dict;
+    deque<StrPair> dict;
     MemoryProvider *parent;
+    typedef deque<StrPair>::iterator MemPtr;
+    StrPair *find(string name);
   public:
     MemoryProvider() {
       parent = nullptr;
@@ -296,7 +308,7 @@ namespace Suzu {
       Util().CleanUpDeque(dict);
     }
 
-    void create(MemUnit unit) {
+    void create(StrPair unit) {
       if (unit.IsReadOnly()) {
         dict.push_front(unit);
       }
