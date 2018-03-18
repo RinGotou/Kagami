@@ -50,11 +50,12 @@ namespace Suzu {
     return result;
   }
 
-  Message Calculate(vector<string> &res) {
+  Message LogPrint(vector<string> &res) {
+    using namespace Tracking;
     Message result;
-
-    //pending
-
+    ofstream ofs("event.log", std::ios::trunc);
+    ofs << res.at(0) << '\n';
+    ofs.close();
     return result;
   }
 
@@ -66,6 +67,6 @@ namespace Suzu {
     //inject basic Entry provider
     Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
     Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
-    Inject(EntryProvider("calculat", Calculate, kFlagAutoSize, kFlagCoreEntry));
+    Inject(EntryProvider("log", LogPrint, 2));
   }
 }

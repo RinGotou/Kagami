@@ -9,6 +9,7 @@
 #include <fstream>
 #include <deque>
 #include <regex>
+#include <utility>
 #include "SDL.h"
 #pragma comment(lib,"SDL2.lib")
 #pragma comment(lib,"SDL2main.lib")
@@ -21,6 +22,7 @@ namespace Suzu {
   using std::stack;
   using std::deque;
   using std::regex;
+  using std::pair;
   using std::to_string;
   using std::stoi;
   using std::stof;
