@@ -30,7 +30,7 @@ namespace Suzu {
   using std::regex_match;
 }
 
-#define _DEV_
+#define _CANARY_FLAG_
 
 #endif // !_SE_INCLUDES_
 

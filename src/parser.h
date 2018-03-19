@@ -156,6 +156,16 @@ namespace Suzu {
       return result;
     }
 
+    template <class Type>
+    Type Calc(Type A, Type B, string opercode) {
+      Type result = 0;
+      if (opercode == "+") result = A + B;
+      if (opercode == "-") result = A - B;
+      if (opercode == "*") result = A * B;
+      if (opercode == "/") result = A / B;
+      return result;
+    }
+
     Message GetDataType(string target);
     bool ActivityStart(EntryProvider &provider, vector<string> container,
       deque<string> &item, size_t top, Message &msg);

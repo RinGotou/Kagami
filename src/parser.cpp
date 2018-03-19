@@ -31,6 +31,8 @@ namespace Entry {
 
   EntryProvider Query(string target) {
     EntryProvider result;
+    //TODO:math operation redirect
+
     for (auto &unit : base) {
       if (unit.GetName() == target && unit.GetPriority() == 1) result = unit;
     }
@@ -506,7 +508,6 @@ namespace Suzu {
         dict.erase(ptr);
       }
     }
-
     return result;
   }
 
@@ -521,7 +522,7 @@ namespace Suzu {
   string MemoryProvider::set(string name, string value) {
     string result;
     StrPair *ptr = find(name);
-    if (ptr != nullptr) {
+    if (ptr != nullptr && ptr->IsReadOnly() != true) {
       result = ptr->second;
       ptr->second = value;
     }

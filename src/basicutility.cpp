@@ -59,6 +59,62 @@ namespace Suzu {
     return result;
   }
 
+  Message TwoFactorCalc(vector<string> &res) {
+    int intA = 0, intB = 0;
+    double doubleA = 0.0, doubleB = 0.0;
+    enum { EnumDouble, EnumInt, EnumNull }type = EnumNull;
+    Message result;
+    auto CheckingOr = [&](regex pat) -> bool {
+      return (regex_match(res.at(0), pat) || regex_match(res.at(1), pat));
+    };
+    auto CheckingAnd = [&](regex pat) -> bool {
+      return (regex_match(res.at(0), pat) && regex_match(res.at(1), pat));
+    };
+
+    if (res.size() < 3) {
+      result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 1");
+      return result;
+    }
+    //may not need at there?
+    //Setup filter on query may be better
+    if (!regex_match(res.at(2), kPatternSymbol)
+      ||!regex_match(res.at(0),kPatternNumber)
+      || !regex_match(res.at(1), kPatternNumber)) {
+      result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 2");
+    }
+
+    //start converting
+    //vector data format:number number operator
+    if (CheckingOr(kPatternDouble)) {
+      type = EnumDouble;
+    }
+    else if (CheckingAnd(kPatternInteger)) {
+      type = EnumInt;
+    }
+    else {
+      //TODO:query childbase
+      //TODO:return on query failed
+    }
+
+    switch (type) {
+    case EnumInt: 
+      intA = stoi(res.at(0));
+      intB = stoi(res.at(1));
+      result.SetValue(to_string(Util().Calc(intA, intB, res.at(2))));
+      break;
+    case EnumDouble:
+      doubleA = stoi(res.at(0));
+      doubleB = stoi(res.at(1));
+      result.SetValue(to_string(Util().Calc(intA, intB, res.at(2))));
+      break;
+    default:
+
+      break;
+    }
+
+    return result;
+  }
+
   void TotalInjection() {
     using namespace Entry;
     //set root memory provider
@@ -67,6 +123,7 @@ namespace Suzu {
     //inject basic Entry provider
     Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
     Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
+    Inject(EntryProvider("twofacto", TwoFactorCalc, 3, kFlagCoreEntry));
     Inject(EntryProvider("log", LogPrint, 2));
   }
 }
