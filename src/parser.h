@@ -56,13 +56,8 @@ namespace Suzu {
   private:
     bool readonly;
   public:
-    bool IsReadOnly() const {
-      return this->readonly;
-    }
-
-    StrPair &SetReadOnly(bool r) {
-      this->readonly = r;
-    }
+    bool IsReadOnly() const { return this->readonly; }
+    void SetReadOnly(bool r) { this->readonly = r; }
 
     StrPair() {
       this->first = kStrNull;
@@ -105,17 +100,9 @@ namespace Suzu {
       return *this;
     }
 
-    string GetValue() const {
-      return this->value;
-    }
-
     Message SetCode(const int &code) {
       this->code = code;
       return *this;
-    }
-
-    int GetCode() const {
-      return this->code;
     }
 
     Message SetDetail(const string &detail) {
@@ -123,9 +110,9 @@ namespace Suzu {
       return *this;
     }
 
-    string GetDetail() const {
-      return this->detail;
-    }
+    string GetValue() const { return this->value; }
+    int GetCode() const { return this->code; }
+    string GetDetail() const { return this->detail; }
   };
 
   class Util {
@@ -184,9 +171,7 @@ namespace Suzu {
 
     ScriptProvider() {}
 
-    bool IsStreamReady() const {
-      return (stream.is_open() && stream.good());
-    }
+    bool IsStreamReady() const { return (stream.is_open() && stream.good()); }
   public:
     ScriptProvider(string target) {
       stream.open(target.c_str(), std::ios::in);
@@ -203,33 +188,16 @@ namespace Suzu {
       Util().CleanUpVector(pool);
     }
 
-    bool IsPoolReady() const {
-      return !(pool.empty());
-    }
-
     size_t WalkBack(size_t step = 1) {
-      if (step > current) {
-        current = 0;
-      }
-      else {
-        current -= step;
-      }
-
+      if (step > current) current = 0;
+      else current -= step;
       return current;
     }
 
-    void ResetReader() {
-      current = 0;
-    }
-
-    bool eof() const {
-      return stream.eof();
-    }
-
-    void ResetPool() {
-      Util().CleanUpVector(pool);
-    }
-
+    bool IsPoolReady() const { return !(pool.empty()); }
+    void ResetReader() { current = 0; }
+    bool eof() const { return stream.eof(); }
+    void ResetPool() { Util().CleanUpVector(pool); }
     Message Get();
   };
 
@@ -269,29 +237,16 @@ namespace Suzu {
       priority = p;
     }
 
-
-    string GetName() const {
-      return this->name;
-    }
-
-    int GetRequiredCount() const {
-      return this->requiredcount;
-    }
-
-    int GetPriority() const {
-      return this->priority;
-    }
-
-    bool Good() const {
-      return (activity != nullptr && requiredcount != -2);
-    }
-
     bool operator==(EntryProvider &target) {
       return (target.name == this->name &&
         target.activity == this->activity &&
         target.requiredcount == this->requiredcount);
     }
 
+    string GetName() const { return this->name; }
+    int GetRequiredCount() const { return this->requiredcount; }
+    int GetPriority() const { return this->priority; }
+    bool Good() const { return (activity != nullptr && requiredcount != -2); }
     Message StartActivity(vector<string> p);
   };
 
@@ -302,22 +257,6 @@ namespace Suzu {
     typedef deque<StrPair>::iterator MemPtr;
     StrPair *find(string name);
   public:
-    MemoryProvider() {
-      parent = nullptr;
-    }
-
-    bool empty() const {
-      return dict.empty();
-    }
-
-    size_t size() const {
-      return dict.size();
-    }
-
-    void cleanup() {
-      Util().CleanUpDeque(dict);
-    }
-
     void create(StrPair unit) {
       if (unit.IsReadOnly()) {
         dict.push_front(unit);
@@ -336,6 +275,10 @@ namespace Suzu {
       return parent;
     }
 
+    MemoryProvider() { parent = nullptr; }
+    bool empty() const { return dict.empty(); }
+    size_t size() const { return dict.size(); }
+    void cleanup() { Util().CleanUpDeque(dict); }
     bool dispose(string name);
     string query(string name);
     string set(string name, string value);
@@ -351,7 +294,6 @@ namespace Suzu {
   };
 
   void TotalInjection();
-
 }
 
 namespace Tracking {

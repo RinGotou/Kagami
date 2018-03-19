@@ -21,7 +21,7 @@ namespace Entry {
     base.push_back(provider);
   }
 
-  Message Order(string name, vector<string> &res) {
+  Message FastOrder(string name, vector<string> &res) {
     Message result(kStrFatalError, kCodeIllegalCall, "Entry Not Found.");
     for (auto &unit : base) {
       if (unit.GetName() == name) result = unit.StartActivity(res);
@@ -29,12 +29,23 @@ namespace Entry {
     return result;
   }
 
+  EntryProvider Order(string name) {
+    EntryProvider result;
+    for (auto &unit : base) {
+      if (unit.GetName() == name) result = unit;
+    }
+    return result;
+  }
+
   EntryProvider Query(string target) {
     EntryProvider result;
-    //TODO:math operation redirect
-
-    for (auto &unit : base) {
-      if (unit.GetName() == target && unit.GetPriority() == 1) result = unit;
+    if (target == "+" || target == "-" || target == "*" || target == "/") {
+      result = Order("binexp");
+    }
+    else {
+      for (auto &unit : base) {
+        if (unit.GetName() == target && unit.GetPriority() == 1) result = unit;
+      }
     }
     return result;
   }
