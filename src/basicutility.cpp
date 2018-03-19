@@ -60,6 +60,7 @@ namespace Suzu {
   }
 
   Message TwoFactorCalc(vector<string> &res) {
+    using Entry::childbase;
     int intA = 0, intB = 0;
     double doubleA = 0.0, doubleB = 0.0;
     enum { EnumDouble, EnumInt, EnumNull }type = EnumNull;
@@ -81,19 +82,22 @@ namespace Suzu {
       ||!regex_match(res.at(0),kPatternNumber)
       || !regex_match(res.at(1), kPatternNumber)) {
       result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 2");
+      return result;
     }
 
     //start converting
     //vector data format:number number operator
-    if (CheckingOr(kPatternDouble)) {
-      type = EnumDouble;
-    }
-    else if (CheckingAnd(kPatternInteger)) {
-      type = EnumInt;
+    else if (CheckingAnd(kPatternFunction)) {
+
     }
     else {
-      //TODO:query childbase
-      //TODO:return on query failed
+      if (CheckingOr(kPatternDouble)) {
+        type = EnumDouble;
+      }
+      else if (CheckingAnd(kPatternInteger)) {
+        type = EnumInt;
+      }
+      //TODO:dispose and return
     }
 
     switch (type) {
@@ -103,12 +107,12 @@ namespace Suzu {
       result.SetValue(to_string(Util().Calc(intA, intB, res.at(2))));
       break;
     case EnumDouble:
-      doubleA = stoi(res.at(0));
-      doubleB = stoi(res.at(1));
+      doubleA = stod(res.at(0));
+      doubleB = stod(res.at(1));
       result.SetValue(to_string(Util().Calc(intA, intB, res.at(2))));
       break;
     default:
-
+      result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 4");
       break;
     }
 
