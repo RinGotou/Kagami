@@ -49,7 +49,7 @@ namespace Suzu {
   Message LogPrint(vector<string> &res) {
     using namespace Tracking;
     Message result;
-    ofstream ofs("event.log", std::ios::trunc);
+    ofstream ofs("script.log", std::ios::trunc);
     ofs << res.at(0) << '\n';
     ofs.close();
     return result;
