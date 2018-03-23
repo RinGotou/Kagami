@@ -10,6 +10,7 @@
 #include <deque>
 #include <regex>
 #include <utility>
+#include <array>
 #include "SDL.h"
 #pragma comment(lib,"SDL2.lib")
 #pragma comment(lib,"SDL2main.lib")
@@ -20,6 +21,7 @@ namespace Suzu {
   using std::string;
   using std::vector;
   using std::stack;
+  using std::array;
   using std::deque;
   using std::regex;
   using std::pair;

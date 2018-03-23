@@ -44,7 +44,7 @@ namespace Entry {
     }
     else {
       for (auto &unit : base) {
-        if (unit.GetName() == target && unit.GetPriority() == 1) result = unit;
+        if (unit.GetName() == target && unit.GetPriority() != 0) result = unit;
       }
     }
     return result;
@@ -327,10 +327,11 @@ namespace Suzu {
   //private
   int Chainloader::GetPriority(string target) const {
     if (target == "+" || target == "-") return 1;
-    if (target == "*" || target == "/" || target == "\\" || target == "mod") return 2;
+    if (target == "*" || target == "/" || target == "\\") return 2;
     return 3;
   }
 
+  //todo:comma expression expanding
   Message Chainloader::Start() {
     const size_t size = raw.size();
 
@@ -367,6 +368,7 @@ namespace Suzu {
           symbol.push_back(raw[i]);
         }
         else if (raw[i] == ")") {
+          //Need to modify!
           while (symbol.back() != "(" && symbol.empty() != true) {
             util.CleanUpVector(container0);
             provider = Entry::Query(symbol.back());
@@ -374,6 +376,11 @@ namespace Suzu {
             if (entryresult == false) break;
             symbol.pop_back();
           }
+          //TODO:final
+          if (symbol.back() == "(") symbol.pop_back();
+          provider = Entry::Query(symbol.back());
+          entryresult = StartCode();
+
         }
         else {
           if (GetPriority(raw[i]) < GetPriority(symbol.back())) {

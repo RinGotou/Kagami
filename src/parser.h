@@ -205,6 +205,7 @@ namespace Suzu {
   private:
     vector<string> raw;
     int GetPriority(string target) const;
+
   public:
     Chainloader() {}
     Chainloader &Build(vector<string> raw) {
