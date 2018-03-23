@@ -348,10 +348,15 @@ namespace Suzu {
     deque<string> item;
     deque<string> symbol;
     vector<string> container0;
+    stack<string> container1;
+
     auto StartCode = [&provider, &j, &item, &container0, &util, &result]()->bool {
       j = provider.GetRequiredCount();
       while (j != 0 && item.empty() != true) {
-        container0.push_back(item.at(j));
+        container0.push_back(item.back());
+        item.pop_back();
+        --j;
+
       }
       return util.ActivityStart(provider, container0, item, item.size(), result);
     };
@@ -370,17 +375,41 @@ namespace Suzu {
         else if (raw[i] == ")") {
           //Need to modify!
           while (symbol.back() != "(" && symbol.empty() != true) {
+            if (symbol.back() == ",") {
+              //backup current item
+              container1.push(item.back());
+              item.pop_back();
+              symbol.pop_back();
+            }
             util.CleanUpVector(container0);
             provider = Entry::Query(symbol.back());
             entryresult = StartCode();
             if (entryresult == false) break;
+
+            if (result.GetValue() == kStrRedirect) {
+              //TODO:push function result back to item deque
+              item.push_back(result.GetDetail);
+            }
+            else {
+              switch (result.GetCode()) {
+              case kCodeSuccess:
+                item.push_back(kStrTrue);
+                break;
+              default:
+                item.push_back(kStrFalse);
+              }
+            }
             symbol.pop_back();
           }
-          //TODO:final
+          
           if (symbol.back() == "(") symbol.pop_back();
+          if (container1.empty() != true) {
+            item.push_back(container1.top());
+            container1.pop();
+          }
           provider = Entry::Query(symbol.back());
           entryresult = StartCode();
-
+          if (entryresult == false) break;
         }
         else {
           if (GetPriority(raw[i]) < GetPriority(symbol.back())) {
