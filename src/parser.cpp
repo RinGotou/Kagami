@@ -184,7 +184,8 @@ namespace Suzu {
       result.SetValue(kStrEOF);
     }
     else {
-      log(result.combo(kStrFatalError, kCodeOverflow, "ScriptProvder::Get() 2"));
+      log(result.combo(kStrFatalError, kCodeOverflow, "Current line is " + to_string(current) +
+      ",but max line number is " + to_string(size)));
     }
 
     return result;
@@ -343,7 +344,7 @@ namespace Suzu {
     string tempstr;
     bool entryresult = true;
     bool commaexp = false;
-    bool directappend = false;
+    bool directappend = false, directappend2 = false;
     size_t forwardtype = kTypeNull;
     deque<string> item;
     deque<string> symbol;
@@ -363,10 +364,24 @@ namespace Suzu {
 
     for (i = 0; i < size; ++i) {
       if (regex_match(raw[i], kPatternSymbol)) {
-        if (raw[i] == ",") {
+        //if (raw[i] == "\\" && directappend == true) {
+        //  directappend2 = true;
+        //}
+        if (raw[i] == "\"") {
+          switch (directappend) {
+          case true:
+            item.back().append(raw[i]);
+            break;
+          case false:
+            item.push_back(raw[i]);
+            break;
+          }
+          directappend = !directappend;
+        }
+        else if (raw[i] == ",") {
           symbol.push_back(raw[i]);
         }
-        if (raw[i] == "(") {
+        else if (raw[i] == "(") {
           if (forwardtype == kTypeNull || forwardtype == kTypeSymbol) {
             commaexp = true;
           }
@@ -383,12 +398,13 @@ namespace Suzu {
             }
             util.CleanUpVector(container0);
             provider = Entry::Query(symbol.back());
+
             entryresult = StartCode();
             if (entryresult == false) break;
 
             if (result.GetValue() == kStrRedirect) {
               //TODO:push function result back to item deque
-              item.push_back(result.GetDetail);
+              item.push_back(result.GetDetail());
             }
             else {
               switch (result.GetCode()) {
@@ -409,6 +425,7 @@ namespace Suzu {
           }
           provider = Entry::Query(symbol.back());
           entryresult = StartCode();
+          symbol.pop_back();
           if (entryresult == false) break;
         }
         else {
@@ -446,7 +463,13 @@ namespace Suzu {
           nextinspoint = 0;
         }
         else {
-          item.push_back(raw[i]);
+          switch (directappend) {
+          case true:
+            item.back().append(raw[i]);
+            break;
+          case false:
+            item.push_back(raw[i]);
+          }
         }
       }
     }
@@ -463,6 +486,20 @@ namespace Suzu {
       }
       provider = Entry::Query(symbol.back());
       entryresult = StartCode();
+
+      if (result.GetValue() == kStrRedirect) {
+        item.push_back(result.GetDetail());
+      }
+      else {
+        switch (result.GetCode()) {
+        case kCodeSuccess:
+          item.push_back(kStrTrue);
+          break;
+        default:
+          item.push_back(kStrFalse);
+        }
+      }
+
       if (entryresult == false) break;
       symbol.pop_back();
     }

@@ -19,6 +19,8 @@ namespace Suzu {
   const string kStrReturn = "return";
   const string kStrFor = "for";
   const string kStrWhile = "while";
+  const string kStrTrue = "true";
+  const string kStrFalse = "false";
   const int kCodeRedirect = 2;
   const int kCodeNothing = 1;
   const int kCodeSuccess = 0;
@@ -40,7 +42,7 @@ namespace Suzu {
   const size_t kTypeNull = 100;
   const size_t kTypePreserved = 101;
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
-  const regex kPatternString(R"("(\"|\\|\n|\t|[^"])*")");
+  const regex kPatternString(R"("(\"|\\|\n|\t|[^"]|[[:Punct:]])*")");
   const regex kPatternNumber(R"(\d+\.?\d*)");
   const regex kPatternInteger(R"(\d+)");
   const regex kPatternDouble(R"(\d+\.\d+)");
