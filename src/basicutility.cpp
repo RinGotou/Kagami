@@ -50,7 +50,7 @@ namespace Suzu {
     using namespace Tracking;
     Message result;
     ofstream ofs("script.log", std::ios::trunc);
-    ofs << res.at(0) << '\n';
+    ofs << "LOG:" << res.at(0).substr(1, res.at(0).size() - 2) << "\n";
     ofs.close();
     return result;
   }
@@ -145,6 +145,6 @@ namespace Suzu {
     Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
     Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
     Inject(EntryProvider("binexp", BinaryExp, 3, kFlagCoreEntry));
-    Inject(EntryProvider("log", LogPrint, 2));
+    Inject(EntryProvider("log", LogPrint, 1));
   }
 }
