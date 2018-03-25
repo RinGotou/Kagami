@@ -44,7 +44,8 @@ namespace Entry {
     }
     else {
       for (auto &unit : base) {
-        if (unit.GetName() == target && unit.GetPriority() != 0) result = unit;
+        if (unit.GetName() == target && unit.GetPriority() == kFlagNormalEntry) 
+          result = unit;
       }
     }
     return result;
@@ -82,36 +83,35 @@ namespace Suzu {
     size_t top, Message &msg) {
     bool rv = true;
     int code = kCodeSuccess;
+    string value = kStrEmpty;
     Message temp;
 
     if (provider.Good()) {
       temp = provider.StartActivity(container);
       code = temp.GetCode();
+      value = temp.GetValue();
 
       if (code < kCodeSuccess) {
-        Tracking::log(temp.SetDetail("ActivityStart 1"));
+        Tracking::log(temp);
         msg = temp;
-        rv = false;
       }
-      else if (code == kCodeRedirect) {
-        if (top == item.size()) {
-          item.push_back(temp.GetValue());
-        }
-        else {
-          item[top] = temp.GetValue();
-        }
+
+      if (value == kStrRedirect) {
+        item.push_back(temp.GetDetail());
       }
       else {
-        if (top == item.size()) {
-          item.push_back(kStrEmpty);
-        }
-        else {
-          item[top] = kStrEmpty;
+        switch (temp.GetCode()) {
+        case kCodeSuccess:
+        case kCodeNothing:
+          item.push_back(kStrTrue);
+          break;
+        default:
+          item.push_back(kStrFalse);
         }
       }
     }
     else {
-      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "ActivityStart 2"));
+      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found"));
       rv = false;
     }
 
@@ -161,18 +161,21 @@ namespace Suzu {
       return true;
     };
 
-    if (pool.empty() && IsStreamReady()) {
-      while (!(stream.eof())) {
-        std::getline(stream, currentstr);
-        if (IsBlankStr(currentstr) != true) {
-          pool.push_back(currentstr);
+    if (cached == false) {
+      if (pool.empty() && IsStreamReady()) {
+        while (!(stream.eof())) {
+          std::getline(stream, currentstr);
+          if (IsBlankStr(currentstr) != true) {
+            pool.push_back(currentstr);
+          }
         }
+        stream.close();
+        cached = true;
       }
-      stream.close();
-    }
-    else {
-      log(result.combo(kStrFatalError, kCodeBadStream, "ScriptProvder::Get() 1"));
-      return result;
+      else {
+        log(result.combo(kStrFatalError, kCodeBadStream, "Cannot open script file"));
+        return result;
+      }
     }
 
     size_t size = pool.size();
@@ -184,8 +187,7 @@ namespace Suzu {
       result.SetValue(kStrEOF);
     }
     else {
-      log(result.combo(kStrFatalError, kCodeOverflow, "Current line is " + to_string(current) +
-      ",but max line number is " + to_string(size)));
+      log(result.combo(kStrFatalError, kCodeOverflow, "Script counter overflow"));
     }
 
     return result;
@@ -242,6 +244,10 @@ namespace Suzu {
       case '{':
       case '}':
       case ':':
+      case '+':
+      case '-':
+      case '*':
+      case '/':
         if (allowblank) {
           current.append(1, target[i]);
         }
@@ -311,7 +317,6 @@ namespace Suzu {
             continue;
           }
         }
-
         break;
       default:
         current.append(1, target[i]);
@@ -351,14 +356,19 @@ namespace Suzu {
     vector<string> container0;
     stack<string> container1;
 
-    auto StartCode = [&provider, &j, &item, &container0, &util, &result]()->bool {
+    auto StartCode = [&provider, &j, &item, &container0, &util, &result, &symbol]() -> bool {
+      util.CleanUpVector(container0);
       j = provider.GetRequiredCount();
+      if (provider.GetPriority() == kFlagBinEntry) j -= 1;
       while (j != 0 && item.empty() != true) {
         container0.push_back(item.back());
         item.pop_back();
         --j;
-
       }
+      if (provider.GetPriority() == kFlagBinEntry) {
+        container0.push_back(symbol.back());
+      }
+
       return util.ActivityStart(provider, container0, item, item.size(), result);
     };
 
@@ -401,20 +411,6 @@ namespace Suzu {
 
             entryresult = StartCode();
             if (entryresult == false) break;
-
-            if (result.GetValue() == kStrRedirect) {
-              //TODO:push function result back to item deque
-              item.push_back(result.GetDetail());
-            }
-            else {
-              switch (result.GetCode()) {
-              case kCodeSuccess:
-                item.push_back(kStrTrue);
-                break;
-              default:
-                item.push_back(kStrFalse);
-              }
-            }
             symbol.pop_back();
           }
           
@@ -429,7 +425,8 @@ namespace Suzu {
           if (entryresult == false) break;
         }
         else {
-          if (GetPriority(raw[i]) < GetPriority(symbol.back())) {
+
+          if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back()!="(") {
             j = symbol.size() - 1;
             k = item.size() - 1;
             while (symbol.at(j) != "(" || GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
@@ -437,7 +434,7 @@ namespace Suzu {
               else k -= Entry::FastGetCount(symbol.at(j)) - 1;
                 --j;
             }
-            symbol.insert(symbol.begin() + j, raw[i]);
+            symbol.insert(symbol.begin() + j + 1, raw[i]);
             nextinspoint = k;
 
             j = 0;
@@ -487,19 +484,6 @@ namespace Suzu {
       provider = Entry::Query(symbol.back());
       entryresult = StartCode();
 
-      if (result.GetValue() == kStrRedirect) {
-        item.push_back(result.GetDetail());
-      }
-      else {
-        switch (result.GetCode()) {
-        case kCodeSuccess:
-          item.push_back(kStrTrue);
-          break;
-        default:
-          item.push_back(kStrFalse);
-        }
-      }
-
       if (entryresult == false) break;
       symbol.pop_back();
     }
@@ -544,7 +528,7 @@ namespace Suzu {
     else {
       TotalInjection();
       ScriptProvider sp(target);
-      while (!sp.eof()) {
+      while (temp.GetValue() != kStrEOF) {
         temp = sp.Get();
         if (temp.GetCode() == kCodeSuccess) {
           cache.Reset().Build(temp.GetValue());

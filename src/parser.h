@@ -31,6 +31,8 @@ namespace Suzu {
   const int kCodeIllegalSymbol = -5;
   const int kCodeBadStream = -6;
   const int kFlagCoreEntry = 0;
+  const int kFlagNormalEntry = 1;
+  const int kFlagBinEntry = 2;
   const int kFlagAutoSize = -1;
   const int kFlagNotDefined = -2;
   const size_t kTypeFunction = 0;
@@ -170,18 +172,20 @@ namespace Suzu {
     std::ifstream stream;
     size_t current;
     vector<string> pool;
-
+    bool cached;
     ScriptProvider() {}
 
-    bool IsStreamReady() const { return (stream.is_open() && stream.good()); }
+    bool IsStreamReady() const { return stream.good(); }
   public:
     ScriptProvider(string target) {
       stream.open(target.c_str(), std::ios::in);
+      cached = false;
       current = 0;
     }
 
     ScriptProvider(char *target) {
       stream.open(target, std::ios::in);
+      cached = false;
       current = 0;
     }
 
@@ -198,7 +202,6 @@ namespace Suzu {
 
     bool IsPoolReady() const { return !(pool.empty()); }
     void ResetReader() { current = 0; }
-    bool eof() const { return stream.eof(); }
     void ResetPool() { Util().CleanUpVector(pool); }
     Message Get();
   };
@@ -234,7 +237,7 @@ namespace Suzu {
     EntryProvider() : name(kStrNull), activity(nullptr) {
       requiredcount = kFlagNotDefined;
     }
-    EntryProvider(string n, Activity a, int r, int p = 1) : name(n) {
+    EntryProvider(string n, Activity a, int r, int p = kFlagNormalEntry) : name(n) {
       requiredcount = r;
       activity = a;
       priority = p;
