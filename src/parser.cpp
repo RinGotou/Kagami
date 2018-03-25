@@ -52,6 +52,9 @@ namespace Entry {
   }
 
   int FastGetCount(string target) {
+    if (target == "+" || target == "-" || target == "*" || target == "/") {
+      return Order("binexp").GetRequiredCount() - 1;
+    }
     for (auto &unit : base) {
       if (unit.GetName() == target) {
         return unit.GetRequiredCount();
@@ -350,6 +353,7 @@ namespace Suzu {
     bool entryresult = true;
     bool commaexp = false;
     bool directappend = false, directappend2 = false;
+    bool forwardinsert = false;
     size_t forwardtype = kTypeNull;
     deque<string> item;
     deque<string> symbol;
@@ -428,14 +432,16 @@ namespace Suzu {
 
           if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back()!="(") {
             j = symbol.size() - 1;
-            k = item.size() - 1;
-            while (symbol.at(j) != "(" || GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
-              if (k = item.size() - 1) k -= Entry::FastGetCount(symbol.at(j));
+            k = item.size();
+
+            while (symbol.at(j) != "(" && GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
+              if (k = item.size()) k -= Entry::FastGetCount(symbol.at(j));
               else k -= Entry::FastGetCount(symbol.at(j)) - 1;
                 --j;
             }
             symbol.insert(symbol.begin() + j + 1, raw[i]);
             nextinspoint = k;
+            forwardinsert = true;
 
             j = 0;
             k = 0;
@@ -455,9 +461,9 @@ namespace Suzu {
         }
       }
       else {
-        if (nextinspoint != 0) {
+        if (forwardinsert) {
           item.insert(item.begin() + nextinspoint, raw[i]);
-          nextinspoint = 0;
+          forwardinsert = false;
         }
         else {
           switch (directappend) {
