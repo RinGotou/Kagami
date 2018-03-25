@@ -12,6 +12,7 @@
 #include <utility>
 #include <array>
 #include "SDL.h"
+#include "rebornkit.h"
 #pragma comment(lib,"SDL2.lib")
 #pragma comment(lib,"SDL2main.lib")
 
