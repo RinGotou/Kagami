@@ -165,8 +165,6 @@ namespace Suzu {
     void Cleanup();
   };
 
-
-
   class ScriptProvider {
   private:
     std::ifstream stream;
