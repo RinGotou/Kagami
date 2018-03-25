@@ -146,6 +146,12 @@ namespace Suzu {
     return result;
   }
 
+  Message CreateVariable(vector<string> &res) {
+    Message result;
+
+    return result;
+  }
+
   void TotalInjection() {
     using namespace Entry;
     //set root memory provider

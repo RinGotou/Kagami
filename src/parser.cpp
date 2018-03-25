@@ -396,8 +396,8 @@ namespace Suzu {
           symbol.push_back(raw[i]);
         }
         else if (raw[i] == "(") {
-          if (forwardtype == kTypeNull || forwardtype == kTypeSymbol) {
-            commaexp = true;
+          if (symbol.empty() || regex_match(symbol.back(), kPatternSymbol)) {
+            symbol.push_back("commaexp");
           }
           symbol.push_back(raw[i]);
         }
