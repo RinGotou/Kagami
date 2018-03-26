@@ -3,14 +3,11 @@
 #include "windows.h"
 
 namespace Entry {
-  void ResetPlugin();
-}
-
-namespace Suzu {
+  using std::string;
   typedef vector<string> *(*Attachment)(void);
-
   //from MSDN
   std::wstring s2ws(const std::string& s);
+  void ResetPlugin();
 
   class Instance : public pair<string, HINSTANCE> {
   private:
@@ -22,6 +19,7 @@ namespace Suzu {
       this->second = LoadLibrary(s2ws(path).c_str());
       if (second != nullptr) {
         health = true;
+
       }
       else {
         health = false;
@@ -31,3 +29,4 @@ namespace Suzu {
     bool GetHealth() const { return health; }
   };
 }
+
