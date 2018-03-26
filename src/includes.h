@@ -3,13 +3,11 @@
 #define _SE_INCLUDES_
 
 #include <algorithm>
-#include <string>
 #include <vector>
 #include <stack>
 #include <fstream>
 #include <deque>
 #include <regex>
-#include <utility>
 #include <array>
 #include "SDL.h"
 #include "rebornkit.h"
@@ -19,7 +17,6 @@
 namespace Suzu {
   using std::ifstream;
   using std::ofstream;
-  using std::string;
   using std::vector;
   using std::stack;
   using std::array;

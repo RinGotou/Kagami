@@ -62,6 +62,10 @@ namespace Entry {
     }
     return kFlagNotDefined;
   }
+
+  void Delete(string name) {
+
+  }
 }
 
 namespace Suzu {
@@ -457,6 +461,7 @@ namespace Suzu {
           symbol.push_back(raw[i]);
         }
         else {
+
           item.push_back(raw[i]);
         }
       }
@@ -502,21 +507,27 @@ namespace Suzu {
   Message EntryProvider::StartActivity(vector<string> p) {
     Message result;
     size_t size = p.size();
-
-    if (size == requiredcount || requiredcount == kFlagAutoSize) {
-      result = activity(p);
+    if (priority == kFlagPluginEntry) {
+      Message *msgptr = activity2(p);
+      result = *msgptr;
+      delete(msgptr);
     }
     else {
-      if (requiredcount == kFlagNotDefined) {
-        Tracking::log(result.combo(kStrFatalError, kCodeBrokenEntry, 
-          string("Illegal Entry - ").append(this->name)));
+      if (size == requiredcount || requiredcount == kFlagAutoSize) {
+        result = activity(p);
       }
       else {
-        Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs,
-          string("Parameter count doesn't match - ").append(this->name)));
+        if (requiredcount == kFlagNotDefined) {
+          Tracking::log(result.combo(kStrFatalError, kCodeBrokenEntry,
+            string("Illegal Entry - ").append(this->name)));
+        }
+        else {
+          Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs,
+            string("Parameter count doesn't match - ").append(this->name)));
+        }
       }
     }
-		
+
     return result;
   }
 
