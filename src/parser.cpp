@@ -64,7 +64,26 @@ namespace Entry {
   }
 
   void Delete(string name) {
+    deque<EntryProvider>::iterator entry_i = base.begin();
+    while (entry_i != base.end()) {
+      if (entry_i->GetName() == name)break;
+      entry_i++;
+    }
+    if (entry_i->GetName() == name) {
+      base.erase(entry_i);
+    }
+  }
 
+  void ResetPluginEntry() {
+    deque<EntryProvider>::iterator entry_i;
+    for (entry_i = base.begin(); entry_i != base.end();) {
+      if (entry_i->GetPriority() == kFlagPluginEntry) {
+        base.erase(entry_i);
+      }
+      else {
+        entry_i++;
+      }
+    }
   }
 }
 
@@ -351,7 +370,7 @@ namespace Suzu {
     Util util;
     EntryProvider provider;
     Message result, tempresult;
-    size_t i, j, k, m;
+    size_t i, j, k;
     size_t nextinspoint = 0;
     string tempstr;
     bool entryresult = true;

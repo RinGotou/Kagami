@@ -3,8 +3,9 @@
 #include "windows.h"
 
 namespace Entry {
-  using std::string;
-  typedef vector<string> *(*Attachment)(void);
+  using namespace Suzu;
+  typedef vector<string>* StrListPtr;
+  typedef StrListPtr(*Attachment)(void);
   //from MSDN
   std::wstring s2ws(const std::string& s);
   void ResetPlugin();
@@ -14,19 +15,9 @@ namespace Entry {
     bool health;
     vector<string> entrylist;
   public:
-    Instance(string name, string path) {
-      this->first = name;
-      this->second = LoadLibrary(s2ws(path).c_str());
-      if (second != nullptr) {
-        health = true;
-
-      }
-      else {
-        health = false;
-      }
-    }
-
+    Instance(string name, string path);
     bool GetHealth() const { return health; }
+    vector<string> &GetList() { return entrylist; }
   };
 }
 

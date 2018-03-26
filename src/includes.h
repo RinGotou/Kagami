@@ -9,10 +9,10 @@
 #include <deque>
 #include <regex>
 #include <array>
-#include "SDL.h"
+//#include "SDL.h"
 #include "rebornkit.h"
-#pragma comment(lib,"SDL2.lib")
-#pragma comment(lib,"SDL2main.lib")
+//#pragma comment(lib,"SDL2.lib")
+//#pragma comment(lib,"SDL2main.lib")
 
 namespace Suzu {
   using std::ifstream;
