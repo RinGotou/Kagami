@@ -7,6 +7,29 @@ namespace Entry {
   deque<MemoryProvider> childbase;
   vector<Instance> InstanceList;
 
+  Instance::Instance(string name, string path) {
+    Attachment attachment = nullptr;
+    StrListPtr listptr = nullptr;
+    this->first = name;
+    this->second = LoadLibrary(s2ws(path).c_str());
+    if (second != nullptr) {
+      attachment = (Attachment)GetProcAddress(this->second, "Attachment");
+      if (attachment != nullptr) {
+        listptr = attachment();
+        entrylist = vector<string>(*listptr);
+        delete(listptr);
+        health = true;
+      }
+      else {
+        health = false;
+      }
+    }
+    else {
+      health = false;
+      Tracking::log(Message(kStrFatalError, kCodeIllegalCall, "Cannot get entry,please contact plugin's author"));
+    }
+  }
+
   //from MSDN
   std::wstring s2ws(const std::string& s)
   {
@@ -23,24 +46,16 @@ namespace Entry {
   void AddInstance(string path, string name) {
     PluginActivity activity = nullptr;
     Attachment attachment = nullptr;
-    vector<string> *listptr = nullptr;
+    StrListPtr listptr = nullptr;
     EntryProvider provider;
     InstanceList.push_back(Instance(name, path));
     if (InstanceList.back().GetHealth() == true) {
       HINSTANCE &instance = InstanceList.back().second;
-      attachment = (Attachment)GetProcAddress(instance, "Attachment");
-      if (attachment != nullptr) {
-        listptr = attachment();
-        delete(listptr);
-        for (auto unit : *listptr) {
-          activity = (PluginActivity)GetProcAddress(instance, unit.c_str());
-          if (activity != nullptr) {
-            //autosize for default
-            Inject(EntryProvider(unit, activity));
-          }
-          else {
-            Tracking::log(Message(kStrFatalError, kCodeIllegalCall, "Cannot get entry,please contact plugin's author"));
-          }
+      vector<string> &list = InstanceList.back().GetList();
+      for (auto unit : list) {
+        activity = (PluginActivity)GetProcAddress(instance, unit.c_str());
+        if (activity != nullptr) {
+          Inject(EntryProvider(unit, activity));
         }
       }
     }
@@ -48,29 +63,28 @@ namespace Entry {
   }
 
   void UnloadInstance(string name) {
-    //TODO:Enum all entry name and delete from base
-    //Instance *instance = nullptr;
     Attachment attachment = nullptr;
-    vector<string> *listptr = nullptr;
+    HINSTANCE *hinstance = nullptr;
+    StrListPtr listptr = nullptr;
+
     vector<Instance>::iterator instance_i = InstanceList.begin();
     while (instance_i != InstanceList.end()) {
       if (instance_i->first == name) break;
+      instance_i++;
     }
     if (instance_i == InstanceList.end() && instance_i->first != name) {
-      Tracking::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not existed"));
+      Tracking::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found,is it loaded?"));
       return;
     }
 
-    HINSTANCE *hinstance = &(instance_i->second);
-    attachment = (Attachment)GetProcAddress(*hinstance, "Attachment");
-    if (attachment != nullptr) {
-      listptr = attachment();
+    if (instance_i->GetHealth() == true) {
+      hinstance = &(instance_i->second);
+      listptr = &(instance_i->GetList());
       for (auto unit : *listptr) {
         Delete(unit);
       }
     }
     InstanceList.erase(instance_i);
-    delete(listptr);
   }
 
   void ResetPlugin() {
