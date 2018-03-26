@@ -5,6 +5,66 @@
 namespace Entry {
   using namespace Suzu;
   deque<MemoryProvider> childbase;
+  vector<Instance> InstanceList;
+
+  void AddInstance(string path, string name) {
+    PluginActivity activity = nullptr;
+    Attachment attachment = nullptr;
+    vector<string> *listptr = nullptr;
+    EntryProvider provider;
+    InstanceList.push_back(Instance(name, path));
+    if (InstanceList.back().GetHealth() == true) {
+      HINSTANCE &instance = InstanceList.back().second;
+      attachment = (Attachment)GetProcAddress(instance, "Attachment");
+      if (attachment != nullptr) {
+        listptr = attachment();
+        delete(listptr);
+        for (auto unit : *listptr) {
+          activity = (PluginActivity)GetProcAddress(instance, unit.c_str());
+          if (activity != nullptr) {
+            //autosize for default
+            Inject(EntryProvider(unit, activity));
+          }
+          else {
+            Tracking::log(Message(kStrFatalError, kCodeIllegalCall, "Cannot get entry,please contact plugin's author"));
+          }
+        }
+      }
+    }
+    delete(listptr);
+  }
+
+  void UnloadInstance(string name) {
+    //TODO:Enum all entry name and delete from base
+    //Instance *instance = nullptr;
+    Attachment attachment = nullptr;
+    vector<string> *listptr = nullptr;
+    vector<Instance>::iterator instance_i = InstanceList.begin();
+    while (instance_i != InstanceList.end()) {
+      if (instance_i->first == name) break;
+    }
+    if (instance_i == InstanceList.end() && instance_i->first != name) {
+      Tracking::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not existed"));
+      return;
+    }
+
+    HINSTANCE *hinstance = &(instance_i->second);
+    attachment = (Attachment)GetProcAddress(*hinstance, "Attachment");
+    if (attachment != nullptr) {
+      listptr = attachment();
+      for (auto unit : *listptr) {
+        Delete(unit);
+      }
+    }
+    InstanceList.erase(instance_i);
+    delete(listptr);
+  }
+
+  void ResetPlugin() {
+    while (InstanceList.empty() != true) {
+      
+    }
+  }
 }
 
 namespace Suzu {
@@ -152,6 +212,34 @@ namespace Suzu {
     return result;
   }
 
+  Message LoadPlugin(vector<string> &res) {
+    using namespace Entry;
+    Message result;
+    Attachment attachment = nullptr;
+    Activity activity = nullptr;
+    
+    HINSTANCE *hinstance = new HINSTANCE(LoadLibrary(s2ws(res.at(0)).c_str()));
+    if (*hinstance != nullptr) {
+      attachment = (Attachment)GetProcAddress(*hinstance, "Attachment");
+      if (attachment != nullptr) {
+        FreeLibrary(*hinstance);
+        delete(hinstance);
+        attachment = nullptr;
+        AddInstance(res.at(0), res.at(1));
+      }
+    }
+    else {
+      result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found");
+    }
+    return result;
+  }
+
+  Message UnloadPlugin(vector<string> &res) {
+    Message result;
+
+    return result;
+  }
+
   void TotalInjection() {
     using namespace Entry;
     //set root memory provider
@@ -162,5 +250,19 @@ namespace Suzu {
     Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
     Inject(EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry));
     Inject(EntryProvider("log", LogPrint, 1));
+    Inject(EntryProvider("import", LoadPlugin, 2));
+  }
+
+  //from MSDN
+  std::wstring s2ws(const std::string& s)
+  {
+    int len;
+    int slength = (int)s.length() + 1;
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    wchar_t *buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
   }
 }

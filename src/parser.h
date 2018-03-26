@@ -5,44 +5,6 @@
 #include "includes.h"
 
 namespace Suzu {
-  const string kStrEmpty = "";
-  const string kStrFatalError = "__FATAL__";
-  const string kStrWarning = "__WARNING__";
-  const string kStrSuccess = "__SUCCESS__";
-  const string kStrEOF = "__EOF__";
-  const string kStrPass = "__PASS__";
-  const string kStrNull = "__NULL__";
-  const string kStrRedirect = "__*__";
-  const string kArgOnce = "@ONCE__";
-  const string kstrDefine = "def";
-  const string kStrVar = "var";
-  const string kStrReturn = "return";
-  const string kStrFor = "for";
-  const string kStrWhile = "while";
-  const string kStrTrue = "true";
-  const string kStrFalse = "false";
-  const int kCodeRedirect = 2;
-  const int kCodeNothing = 1;
-  const int kCodeSuccess = 0;
-  const int kCodeBrokenEntry = -1;
-  const int kCodeOverflow = -2;
-  const int kCodeIllegalArgs = -3;
-  const int kCodeIllegalCall = -4;
-  const int kCodeIllegalSymbol = -5;
-  const int kCodeBadStream = -6;
-  const int kFlagCoreEntry = 0;
-  const int kFlagNormalEntry = 1;
-  const int kFlagBinEntry = 2;
-  const int kFlagAutoSize = -1;
-  const int kFlagNotDefined = -2;
-  const size_t kTypeFunction = 0;
-  const size_t kTypeString = 1;
-  const size_t kTypeInteger = 2;
-  const size_t KTypeDouble = 3;
-  const size_t kTypeBoolean = 4;
-  const size_t kTypeSymbol = 5;
-  const size_t kTypeNull = 100;
-  const size_t kTypePreserved = 101;
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternString(R"("(\"|\\|\n|\t|[^"]|[[:Punct:]])*")");
   const regex kPatternNumber(R"(\d+\.?\d*)");
@@ -55,7 +17,7 @@ namespace Suzu {
 
   class EntryProvider;
   typedef Message(*Activity)(vector<string> &);
-
+  typedef Message *(*PluginActivity)(vector<string> &);
   class Util {
   public:
     template <class Type>
@@ -163,19 +125,30 @@ namespace Suzu {
   };
 
   class EntryProvider {
-  private:
+  protected:
     string name;
     Activity activity;
+    PluginActivity activity2;
     int requiredcount;
     int priority;
+    //bool needempty;
   public:
     EntryProvider() : name(kStrNull), activity(nullptr) {
       requiredcount = kFlagNotDefined;
     }
+
     EntryProvider(string n, Activity a, int r, int p = kFlagNormalEntry) : name(n) {
       requiredcount = r;
       activity = a;
       priority = p;
+      activity2 = nullptr;
+    }
+
+    EntryProvider(string n,PluginActivity p) : name(n) {
+      priority = kFlagPluginEntry;
+      requiredcount = kFlagAutoSize;
+      activity2 = p;
+      activity = nullptr;
     }
 
     bool operator==(EntryProvider &target) {
@@ -229,9 +202,20 @@ namespace Suzu {
   //--------------!!WORKING!!-----------------//
   class JSONProvider {
   private:
-
+    vector<StrPair> base;
+    JSONProvider *childbase;
   public:
+    JSONProvider(string path) {
 
+    }
+
+    string GetValue(string key) {
+
+    }
+
+    string GetChild(string key) {
+
+    }
   };
 
   void TotalInjection();
@@ -243,6 +227,7 @@ namespace Tracking {
 
 namespace Entry {
   void Inject(Suzu::EntryProvider provider);
+  void Delete(std::string name);
 }
 #endif // !_SE_PARSER_
 
