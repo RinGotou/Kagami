@@ -1,3 +1,4 @@
+//basic function,variable,plugin etc.
 //This is a part of processor core,If you don't want to change
 //processor's action,do not edit.
 #include "basicutility.h"
@@ -6,6 +7,39 @@ namespace Entry {
   using namespace Suzu;
   deque<MemoryProvider> childbase;
   vector<Instance> InstanceList;
+
+  StrPair *FindChild(string name, bool Reversed = false) {
+    StrPair *pair = nullptr;
+    size_t mem_i = childbase.size() - 1;
+    if (childbase.empty()) {
+      return nullptr;
+    }
+    if (childbase.size() == 1 || !Reversed) {
+      pair = childbase.back().find(name);
+    }
+    else if (Reversed && childbase.size() > 1) {
+      while (mem_i >= 0) {
+        pair = childbase.at(mem_i).find(name);
+        if (pair != nullptr) {
+          break;
+        }
+        mem_i--;
+      }
+    }
+    return pair;
+  }
+
+  StrPair CreateChild(string name, string value = kStrNull) {
+    StrPair result(kStrNull, kStrNull);
+    if (regex_match(name, kPatternFunction) == false) {
+      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
+      return result;
+    }
+    result.first = name;
+    result.second = value;
+    childbase.back().create(result);
+    return result;
+  }
 
   Instance::Instance(string name, string path) {
     Attachment attachment = nullptr;
@@ -31,8 +65,7 @@ namespace Entry {
   }
 
   //from MSDN
-  std::wstring s2ws(const std::string& s)
-  {
+  std::wstring s2ws(const std::string& s) {
     int len;
     int slength = (int)s.length() + 1;
     len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
@@ -84,54 +117,64 @@ namespace Entry {
         Delete(unit);
       }
     }
+    FreeLibrary(*hinstance);
     InstanceList.erase(instance_i);
+    delete(hinstance);
   }
 
   void ResetPlugin() {
+    HINSTANCE *hinstance = nullptr;
     while (InstanceList.empty() != true) {
-      
+      if (InstanceList.back().GetHealth()) {
+        hinstance = &(InstanceList.back().second);
+        FreeLibrary(*hinstance);
+      }
+      InstanceList.pop_back();
     }
+    ResetPluginEntry();
   }
 }
 
 namespace Suzu {
+  bool MemoryProvider::dispose(string name) {
+    bool result = true;
+    MemPtr ptr;
+    if (dict.empty() == false) {
+      ptr = dict.begin();
+      while (ptr != dict.end() && ptr->first != name) ++ptr;
+      if (ptr == dict.end() && ptr->first != name) result = false;
+      else {
+        dict.erase(ptr);
+      }
+    }
+    return result;
+  }
+
+  string MemoryProvider::query(string name) {
+    string result;
+    StrPair *ptr = find(name);
+    if (ptr != nullptr) result = ptr->second;
+    else result = kStrNull;
+    return result;
+  }
+
+  string MemoryProvider::set(string name, string value) {
+    string result;
+    StrPair *ptr = find(name);
+    if (ptr != nullptr && ptr->IsReadOnly() != true) {
+      result = ptr->second;
+      ptr->second = value;
+    }
+    else {
+      result = kStrNull;
+    }
+    return result;
+  }
 
   Message CommaExpression(vector<string> &res) {
     Message result;
     if (res.empty()) result.SetCode(kCodeRedirect).SetValue(kStrEmpty);
     else result.SetCode(kCodeRedirect).SetValue(res.back());
-    return result;
-  }
-
-  Message MemoryQuery(vector<string> &res) {
-    using namespace Entry;
-    Message result;
-    string temp;
-    size_t begin = childbase.size() - 1;
-    size_t i = 0;
-
-    if (childbase.empty()) {
-      result.combo(kStrFatalError, kCodeIllegalArgs, "MemoryQuery() 1");
-    }
-    else {
-      if (childbase.size() == 1 || res[1] == kArgOnce) {
-        temp = childbase.back().query(res[0]);
-      }
-      else if (childbase.size() > 1 && res[1] != kArgOnce) {
-        for (i = begin; i >= 0; --i) {
-          temp = childbase[i].query(res[0]);
-          if (temp != kStrNull) break;
-        }
-      }
-
-      if (temp != kStrNull) {
-        result.SetCode(kCodeSuccess).SetValue(kStrSuccess).SetDetail(temp);
-      }
-      else {
-        result.combo(kStrFatalError, kCodeIllegalArgs, "MemoryQuery() 2");
-      }
-    }
-
     return result;
   }
 
@@ -232,10 +275,48 @@ namespace Suzu {
 
     return result;
   }
+  
+  Message FindVariable2(vector<string> &res) {
+    using namespace Entry;
+    Message result(kStrSuccess, kCodeSuccess, kStrEmpty);
+    StrPair *pairptr = FindChild(res.at(0), (res.at(1) == kStrTrue));
+    if (pairptr != nullptr) {
+      result.combo(kStrRedirect, kCodeSuccess, pairptr->second);
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale is not found");
+    }
+
+    return result;
+  }
+
+  Message SetVariable(vector<string> &res) {
+    using namespace Entry;
+    Message result(kStrSuccess, kCodeSuccess, kStrEmpty);
+    StrPair *pairptr = FindChild(res.at(0));
+    if (pairptr != nullptr) {
+      pairptr->second = res.at(1);
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale is not found");
+    }
+    return result;
+  }
 
   Message CreateVariable(vector<string> &res) {
+    using namespace Entry;
     Message result;
-
+    StrPair *pairptr = FindChild(res.at(0));
+    if (pairptr == nullptr) {
+      switch (res.size()) {
+      case 1:CreateChild(res.at(0)); break;
+      case 2:CreateChild(res.at(0), res.at(1)); break;
+      default:break;
+      }
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, res.at(0) + "is defined");
+    }
     return result;
   }
 
@@ -262,8 +343,9 @@ namespace Suzu {
   }
 
   Message UnloadPlugin(vector<string> &res) {
+    using namespace Entry;
     Message result;
-
+    UnloadInstance(res.at(0));
     return result;
   }
 
@@ -274,11 +356,13 @@ namespace Suzu {
     childbase.back().SetParent(&(childbase.back()));
     //inject basic Entry provider
     Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
-    Inject(EntryProvider("memquery", MemoryQuery, 2, kFlagCoreEntry));
+    Inject(EntryProvider("vfind", FindVariable2, 2, kFlagCoreEntry));
     Inject(EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry));
     Inject(EntryProvider("log", LogPrint, 1));
     Inject(EntryProvider("import", LoadPlugin, 2));
+    Inject(EntryProvider("release", UnloadPlugin, 1));
+    Inject(EntryProvider("var",CreateVariable,kFlagAutoSize));
+    Inject(EntryProvider("set", SetVariable, 2));
+
   }
-
-
 }

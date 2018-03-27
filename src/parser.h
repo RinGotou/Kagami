@@ -5,6 +5,20 @@
 #include "includes.h"
 
 namespace Suzu {
+  using std::ifstream;
+  using std::ofstream;
+  using std::vector;
+  using std::stack;
+  using std::array;
+  using std::deque;
+  using std::regex;
+  using std::pair;
+  using std::to_string;
+  using std::stoi;
+  using std::stof;
+  using std::stod;
+  using std::regex_match;
+
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternString(R"("(\"|\\|\n|\t|[^"]|[[:Punct:]])*")");
   const regex kPatternNumber(R"(\d+\.?\d*)");
@@ -14,10 +28,10 @@ namespace Suzu {
   const regex kPatternSymbol(R"(==|<=|>=|&&|\|\||[[:Punct:]])");
   const regex kPatternBlank(R"([[:blank:]])");
 
-
   class EntryProvider;
   typedef Message(*Activity)(vector<string> &);
   typedef Message *(*PluginActivity)(vector<string> &);
+
   class Util {
   public:
     template <class Type>
@@ -164,70 +178,40 @@ namespace Suzu {
     Message StartActivity(vector<string> p);
   };
 
-  class MemoryProvider {
-  private:
-    deque<StrPair> dict;
-    MemoryProvider *parent;
-    typedef deque<StrPair>::iterator MemPtr;
-    StrPair *find(string name);
-  public:
-    void create(StrPair unit) {
-      if (unit.IsReadOnly()) {
-        dict.push_front(unit);
-      }
-      else {
-        dict.push_back(unit);
-      }
-    }
-
-    MemoryProvider &SetParent(MemoryProvider *ptr) {
-      this->parent = ptr;
-      return *this;
-    }
-
-    MemoryProvider *GetParent() const {
-      return parent;
-    }
-
-    MemoryProvider() { parent = nullptr; }
-    bool empty() const { return dict.empty(); }
-    size_t size() const { return dict.size(); }
-    void cleanup() { Util().CleanUpDeque(dict); }
-    bool dispose(string name);
-    string query(string name);
-    string set(string name, string value);
-  };
-
   //TODO:JSON Mini Parser
   //--------------!!WORKING!!-----------------//
-  class JSONProvider {
-  private:
-    vector<StrPair> base;
-    JSONProvider *childbase;
-  public:
-    JSONProvider(string path) {
+  //class JSONProvider {
+  //private:
+  //  vector<StrPair> base;
+  //  JSONProvider *childbase;
+  //public:
+  //  JSONProvider(string path) {
 
-    }
+  //  }
 
-    string GetValue(string key) {
+  //  string GetValue(string key) {
 
-    }
+  //  }
 
-    string GetChild(string key) {
+  //  string GetChild(string key) {
 
-    }
-  };
+  //  }
+  //};
 
   void TotalInjection();
 }
 
 namespace Tracking {
+  using Suzu::Message;
+  using std::vector;
   void log(Suzu::Message msg);
 }
 
 namespace Entry {
+  using namespace Suzu;
   void Inject(Suzu::EntryProvider provider);
   void Delete(std::string name);
+  void ResetPluginEntry();
 }
 #endif // !_SE_PARSER_
 

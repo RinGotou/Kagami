@@ -7,7 +7,8 @@
 
 namespace Suzu {
   using std::string;
-  
+  using std::pair;
+
   const string kStrEmpty = "";
   const string kStrFatalError = "__FATAL__";
   const string kStrWarning = "__WARNING__";
@@ -16,12 +17,6 @@ namespace Suzu {
   const string kStrPass = "__PASS__";
   const string kStrNull = "__NULL__";
   const string kStrRedirect = "__*__";
-  const string kArgOnce = "@ONCE__";
-  const string kstrDefine = "def";
-  const string kStrVar = "var";
-  const string kStrReturn = "return";
-  const string kStrFor = "for";
-  const string kStrWhile = "while";
   const string kStrTrue = "true";
   const string kStrFalse = "false";
   const int kCodeRedirect = 2;
@@ -47,9 +42,6 @@ namespace Suzu {
   const size_t kTypeSymbol = 5;
   const size_t kTypeNull = 100;
   const size_t kTypePreserved = 101;
-
-  using std::string;
-  using std::pair;
 
   typedef struct {
     char *value;

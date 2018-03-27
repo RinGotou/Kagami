@@ -1,7 +1,6 @@
 #include "parser.h"
 
 namespace Tracking {
-  using namespace Suzu;
   vector<Message> base;
 
   void log(Message msg) {
@@ -14,7 +13,7 @@ namespace Tracking {
 }
 
 namespace Entry {
-  using namespace Suzu;
+  //using namespace Suzu;
   deque<EntryProvider> base;
 
   void Inject(EntryProvider provider) {
@@ -41,6 +40,9 @@ namespace Entry {
     EntryProvider result;
     if (target == "+" || target == "-" || target == "*" || target == "/") {
       result = Order("binexp");
+    }
+    if (target == "=") {
+      result = Order("set");
     }
     else {
       for (auto &unit : base) {
@@ -232,7 +234,7 @@ namespace Suzu {
     //not only blanks(some special character included)
     bool headlock = false;
     bool allowblank = false;
-    vector<string> list = { kStrVar,kstrDefine,kStrReturn };
+    vector<string> list = { "var", "def", "return" };
     auto ToString = [](char c) -> string {
       return string().append(1, c);
     };
@@ -401,9 +403,11 @@ namespace Suzu {
 
     for (i = 0; i < size; ++i) {
       if (regex_match(raw[i], kPatternSymbol)) {
-        //if (raw[i] == "\\" && directappend == true) {
-        //  directappend2 = true;
-        //}
+        if (raw[i] == "=") {
+          if (symbol.back() != "var") {
+            symbol.push_back(raw[i]);
+          }
+        }
         if (raw[i] == "\"") {
           switch (directappend) {
           case true:
@@ -480,8 +484,17 @@ namespace Suzu {
           symbol.push_back(raw[i]);
         }
         else {
-
-          item.push_back(raw[i]);
+          util.CleanUpVector(container0);
+          container0.push_back(raw[i]);
+          container0.push_back(kStrFalse);
+          tempresult = Entry::FastOrder("vfind", container0);
+          if (tempresult.GetCode() != kCodeIllegalCall) {
+            item.push_back(tempresult.GetDetail());
+          }
+          else {
+            result = tempresult;
+            break;
+          }
         }
       }
       else {
@@ -587,52 +600,6 @@ namespace Suzu {
       }
     }
 
-    return result;
-  }
-
-  StrPair *MemoryProvider::find(string name) {
-    StrPair *result = nullptr;
-    for (auto &unit : dict) {
-      if (unit.first == name) {
-        result = &unit;
-        break;
-      }
-    }
-    return result;
-  }
-
-  bool MemoryProvider::dispose(string name) {
-    bool result = true;
-    MemPtr ptr;
-    if (dict.empty() == false) {
-      ptr = dict.begin();
-      while (ptr != dict.end() && ptr->first != name) ++ptr;
-      if (ptr == dict.end() && ptr->first != name) result = false;
-      else {
-        dict.erase(ptr);
-      }
-    }
-    return result;
-  }
-
-  string MemoryProvider::query(string name) {
-    string result;
-    StrPair *ptr = find(name);
-    if (ptr != nullptr) result = ptr->second;
-    else result = kStrNull;
-    return result;
-  }
-
-  string MemoryProvider::set(string name, string value) {
-    string result;
-    StrPair *ptr = find(name);
-    if (ptr != nullptr && ptr->IsReadOnly() != true) {
-      result = ptr->second;
-      ptr->second = value;
-    }
-    else {
-      result = kStrNull;
-    }
     return result;
   }
 }

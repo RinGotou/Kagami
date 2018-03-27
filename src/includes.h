@@ -10,25 +10,10 @@
 #include <regex>
 #include <array>
 //#include "SDL.h"
+#include "windows.h"
 #include "rebornkit.h"
 //#pragma comment(lib,"SDL2.lib")
 //#pragma comment(lib,"SDL2main.lib")
-
-namespace Suzu {
-  using std::ifstream;
-  using std::ofstream;
-  using std::vector;
-  using std::stack;
-  using std::array;
-  using std::deque;
-  using std::regex;
-  using std::pair;
-  using std::to_string;
-  using std::stoi;
-  using std::stof;
-  using std::stod;
-  using std::regex_match;
-}
 
 #define _CANARY_FLAG_
 
