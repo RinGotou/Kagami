@@ -20,7 +20,7 @@ namespace Entry {
     base.push_back(provider);
   }
 
-  Message FastOrder(string name, vector<string> &res) {
+  Message FastOrder(string name, deque<string> &res) {
     Message result(kStrFatalError, kCodeIllegalCall, "Entry Not Found.");
     for (auto &unit : base) {
       if (unit.GetName() == name) result = unit.StartActivity(res);
@@ -107,7 +107,7 @@ namespace Suzu {
     return result;
   }
 
-  bool Util::ActivityStart(EntryProvider &provider, vector<string> container, deque<string> &item,
+  bool Util::ActivityStart(EntryProvider &provider, deque<string> container, deque<string> &item,
     size_t top, Message &msg) {
     bool rv = true;
     int code = kCodeSuccess;
@@ -174,11 +174,11 @@ namespace Suzu {
     //nothing to dispose here
   }
 
-  Message ScriptProvider::Get() {
+  ScriptProvider2::ScriptProvider2(const char *target) {
     using Tracking::log;
-    string currentstr;
-    Message result(kStrEmpty, kCodeSuccess, "");
-
+    string temp;
+    current = 0;
+    end = false;
     auto IsBlankStr = [](string target) -> bool {
       if (target == kStrEmpty || target.size() == 0) return true;
       for (const auto unit : target) {
@@ -188,36 +188,35 @@ namespace Suzu {
       }
       return true;
     };
-
-    if (cached == false) {
-      if (pool.empty() && IsStreamReady()) {
-        while (!(stream.eof())) {
-          std::getline(stream, currentstr);
-          if (IsBlankStr(currentstr) != true) {
-            pool.push_back(currentstr);
-          }
+    
+    stream.open(target, std::ios::in);
+    if (stream.good()) {
+      while (!stream.eof()) {
+        std::getline(stream, temp);
+        if (!IsBlankStr(temp)) {
+          base.push_back(temp);
         }
-        stream.close();
-        cached = true;
       }
-      else {
-        log(result.combo(kStrFatalError, kCodeBadStream, "Cannot open script file"));
-        return result;
-      }
-    }
-
-    size_t size = pool.size();
-    if (current < size) {
-      result.SetValue(pool[current]);
-      current++;
-    }
-    else if (current == size) {
-      result.SetValue(kStrEOF);
+      if (!base.empty()) health = true;
+      else health = false;
     }
     else {
-      log(result.combo(kStrFatalError, kCodeOverflow, "Script counter overflow"));
+      health = false;
     }
+    stream.close();
+  }
 
+  Message ScriptProvider2::Get() {
+    Message result(kStrEmpty, kCodeSuccess, "");
+    size_t size = base.size();
+    
+    if (current < size) {
+      result.SetDetail(base.at(current));
+      current++;
+      if (current == size) {
+        end = true;
+      }
+    }
     return result;
   }
 
@@ -238,6 +237,8 @@ namespace Suzu {
     auto ToString = [](char c) -> string {
       return string().append(1, c);
     };
+
+    //Tracking::log(Message(kStrEmpty, kCodeNothing, "target is " + target));
 
     if (target == kStrEmpty) {
       log(Message(kStrWarning, kCodeIllegalArgs,"Chainloader::Build() 1"));
@@ -298,6 +299,7 @@ namespace Suzu {
       case '=':
       case '>':
       case '<':
+
         if (allowblank) {
           current.append(1, target[i]);
         }
@@ -352,6 +354,7 @@ namespace Suzu {
       }
     }
 
+    if (current != kStrEmpty) output.push_back(current);
     raw = output;
     util.CleanUpVector(output);
 
@@ -382,15 +385,15 @@ namespace Suzu {
     size_t forwardtype = kTypeNull;
     deque<string> item;
     deque<string> symbol;
-    vector<string> container0;
+    deque<string> container0;
     stack<string> container1;
 
     auto StartCode = [&provider, &j, &item, &container0, &util, &result, &symbol]() -> bool {
-      util.CleanUpVector(container0);
+      util.CleanUpDeque(container0);
       j = provider.GetRequiredCount();
       if (provider.GetPriority() == kFlagBinEntry) j -= 1;
       while (j != 0 && item.empty() != true) {
-        container0.push_back(item.back());
+        container0.push_front(item.back());
         item.pop_back();
         --j;
       }
@@ -403,11 +406,6 @@ namespace Suzu {
 
     for (i = 0; i < size; ++i) {
       if (regex_match(raw[i], kPatternSymbol)) {
-        if (raw[i] == "=") {
-          if (symbol.back() != "var") {
-            symbol.push_back(raw[i]);
-          }
-        }
         if (raw[i] == "\"") {
           switch (directappend) {
           case true:
@@ -418,6 +416,11 @@ namespace Suzu {
             break;
           }
           directappend = !directappend;
+        }
+        else if (raw[i] == "=") {
+          if (symbol.back() != "var") {
+            symbol.push_back(raw[i]);
+          }
         }
         else if (raw[i] == ",") {
           symbol.push_back(raw[i]);
@@ -437,7 +440,7 @@ namespace Suzu {
               item.pop_back();
               symbol.pop_back();
             }
-            util.CleanUpVector(container0);
+            util.CleanUpDeque(container0);
             provider = Entry::Query(symbol.back());
 
             entryresult = StartCode();
@@ -484,16 +487,21 @@ namespace Suzu {
           symbol.push_back(raw[i]);
         }
         else {
-          util.CleanUpVector(container0);
-          container0.push_back(raw[i]);
-          container0.push_back(kStrFalse);
-          tempresult = Entry::FastOrder("vfind", container0);
-          if (tempresult.GetCode() != kCodeIllegalCall) {
-            item.push_back(tempresult.GetDetail());
+          if (symbol.back() == "var") {
+            item.push_back(raw[i]);
           }
           else {
-            result = tempresult;
-            break;
+            util.CleanUpDeque(container0);
+            container0.push_back(raw[i]);
+            container0.push_back(kStrFalse);
+            tempresult = Entry::FastOrder("vfind", container0);
+            if (tempresult.GetCode() != kCodeIllegalCall) {
+              item.push_back(tempresult.GetDetail());
+            }
+            else {
+              result = tempresult;
+              break;
+            }
           }
         }
       }
@@ -515,7 +523,7 @@ namespace Suzu {
     }
 
     while (symbol.empty() != true) {
-      util.CleanUpVector(container0);
+      util.CleanUpDeque(container0);
       if (item.empty()) {
         result.combo(kStrFatalError, kCodeIllegalSymbol, "Parameters expected.");
         break;
@@ -531,12 +539,12 @@ namespace Suzu {
       symbol.pop_back();
     }
 
-    util.CleanUpVector(container0).CleanUpDeque(item).CleanUpDeque(symbol);
+    util.CleanUpDeque(container0).CleanUpDeque(item).CleanUpDeque(symbol);
 
     return result;
   }
 
-  Message EntryProvider::StartActivity(vector<string> p) {
+  Message EntryProvider::StartActivity(deque<string> p) {
     Message result;
     size_t size = p.size();
     if (priority == kFlagPluginEntry) {
@@ -572,20 +580,16 @@ namespace Suzu {
     Chainloader cache;
 
     if (target == kStrEmpty) {
-      Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Util::ScriptStart() 1"));
+      Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Missing path"));
     }
     else {
       TotalInjection();
-      ScriptProvider sp(target);
-      while (temp.GetValue() != kStrEOF) {
+      ScriptProvider2 sp(target.c_str());
+      while (sp.eof() != true) {
         temp = sp.Get();
         if (temp.GetCode() == kCodeSuccess) {
-          cache.Reset().Build(temp.GetValue());
+          cache.Reset().Build(temp.GetDetail());
           loaders.push_back(cache);
-        }
-        else {
-          Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Util::ScriptStart() 2"));
-          break;
         }
       }
 
