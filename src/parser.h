@@ -29,8 +29,8 @@ namespace Suzu {
   const regex kPatternBlank(R"([[:blank:]])");
 
   class EntryProvider;
-  typedef Message(*Activity)(vector<string> &);
-  typedef Message *(*PluginActivity)(vector<string> &);
+  typedef Message(*Activity)(deque<string> &);
+  typedef Message *(*PluginActivity)(deque<string> &);
 
   class Util {
   public:
@@ -71,49 +71,32 @@ namespace Suzu {
     }
 
     Message GetDataType(string target);
-    bool ActivityStart(EntryProvider &provider, vector<string> container,
+    bool ActivityStart(EntryProvider &provider, deque<string> container,
       deque<string> &item, size_t top, Message &msg);
     Message ScriptStart(string target);
     void PrintEvents();
     void Cleanup();
   };
 
-  class ScriptProvider {
+  class ScriptProvider2 {
   private:
     std::ifstream stream;
     size_t current;
-    vector<string> pool;
-    bool cached;
-    ScriptProvider() {}
-
-    bool IsStreamReady() const { return stream.good(); }
+    vector<string> base;
+    bool health;
+    bool end;
+    ScriptProvider2() {}
   public:
-    ScriptProvider(string target) {
-      stream.open(target.c_str(), std::ios::in);
-      cached = false;
-      current = 0;
-    }
-
-    ScriptProvider(char *target) {
-      stream.open(target, std::ios::in);
-      cached = false;
-      current = 0;
-    }
-
-    ~ScriptProvider() {
+    ~ScriptProvider2() {
       stream.close();
-      Util().CleanUpVector(pool);
+      Util().CleanUpVector(base);
     }
 
-    size_t WalkBack(size_t step = 1) {
-      if (step > current) current = 0;
-      else current -= step;
-      return current;
-    }
-
-    bool IsPoolReady() const { return !(pool.empty()); }
-    void ResetReader() { current = 0; }
-    void ResetPool() { Util().CleanUpVector(pool); }
+    //size_t ReverseTo(size_t step);
+    bool GetHealth() const { return health; }
+    bool eof() const { return end; }
+    void ResetCounter() { current = 0; }
+    ScriptProvider2(const char *target);
     Message Get();
   };
 
@@ -175,28 +158,8 @@ namespace Suzu {
     int GetRequiredCount() const { return this->requiredcount; }
     int GetPriority() const { return this->priority; }
     bool Good() const { return (activity != nullptr && requiredcount != -2); }
-    Message StartActivity(vector<string> p);
+    Message StartActivity(deque<string> p);
   };
-
-  //TODO:JSON Mini Parser
-  //--------------!!WORKING!!-----------------//
-  //class JSONProvider {
-  //private:
-  //  vector<StrPair> base;
-  //  JSONProvider *childbase;
-  //public:
-  //  JSONProvider(string path) {
-
-  //  }
-
-  //  string GetValue(string key) {
-
-  //  }
-
-  //  string GetChild(string key) {
-
-  //  }
-  //};
 
   void TotalInjection();
 }

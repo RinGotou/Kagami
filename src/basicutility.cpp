@@ -171,14 +171,14 @@ namespace Suzu {
     return result;
   }
 
-  Message CommaExpression(vector<string> &res) {
+  Message CommaExpression(deque<string> &res) {
     Message result;
     if (res.empty()) result.SetCode(kCodeRedirect).SetValue(kStrEmpty);
     else result.SetCode(kCodeRedirect).SetValue(res.back());
     return result;
   }
 
-  Message LogPrint(vector<string> &res) {
+  Message LogPrint(deque<string> &res) {
     using namespace Tracking;
     Message result;
     string r = res.at(0);
@@ -195,7 +195,7 @@ namespace Suzu {
     return result;
   }
 
-  Message BinaryExp(vector<string> &res) {
+  Message BinaryExp(deque<string> &res) {
     using Entry::childbase;
     int intA = 0, intB = 0;
     double doubleA = 0.0, doubleB = 0.0;
@@ -276,7 +276,7 @@ namespace Suzu {
     return result;
   }
   
-  Message FindVariable2(vector<string> &res) {
+  Message FindVariable2(deque<string> &res) {
     using namespace Entry;
     Message result(kStrSuccess, kCodeSuccess, kStrEmpty);
     StrPair *pairptr = FindChild(res.at(0), (res.at(1) == kStrTrue));
@@ -290,7 +290,7 @@ namespace Suzu {
     return result;
   }
 
-  Message SetVariable(vector<string> &res) {
+  Message SetVariable(deque<string> &res) {
     using namespace Entry;
     Message result(kStrSuccess, kCodeSuccess, kStrEmpty);
     StrPair *pairptr = FindChild(res.at(0));
@@ -303,7 +303,7 @@ namespace Suzu {
     return result;
   }
 
-  Message CreateVariable(vector<string> &res) {
+  Message CreateVariable(deque<string> &res) {
     using namespace Entry;
     Message result;
     StrPair *pairptr = FindChild(res.at(0));
@@ -320,7 +320,7 @@ namespace Suzu {
     return result;
   }
 
-  Message LoadPlugin(vector<string> &res) {
+  Message LoadPlugin(deque<string> &res) {
     using namespace Entry;
     Message result;
     Attachment attachment = nullptr;
@@ -342,7 +342,7 @@ namespace Suzu {
     return result;
   }
 
-  Message UnloadPlugin(vector<string> &res) {
+  Message UnloadPlugin(deque<string> &res) {
     using namespace Entry;
     Message result;
     UnloadInstance(res.at(0));
