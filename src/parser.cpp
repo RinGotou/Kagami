@@ -121,9 +121,8 @@ namespace Suzu {
 
       if (code < kCodeSuccess) {
         Tracking::log(temp);
-        msg = temp;
       }
-
+      msg = temp;
       if (value == kStrRedirect) {
         item.push_back(temp.GetDetail());
       }
@@ -363,6 +362,7 @@ namespace Suzu {
 
   //private
   int Chainloader::GetPriority(string target) const {
+    if (target == "=" || target == "var")return 0;
     if (target == "+" || target == "-") return 1;
     if (target == "*" || target == "/" || target == "\\") return 2;
     return 3;
@@ -389,11 +389,19 @@ namespace Suzu {
     stack<string> container1;
 
     auto StartCode = [&provider, &j, &item, &container0, &util, &result, &symbol]() -> bool {
+      bool reverse = true;
       util.CleanUpDeque(container0);
       j = provider.GetRequiredCount();
-      if (provider.GetPriority() == kFlagBinEntry) j -= 1;
+      if (provider.GetPriority() == kFlagBinEntry) {
+        j -= 1;
+        reverse = false;
+      }
       while (j != 0 && item.empty() != true) {
-        container0.push_front(item.back());
+        switch (reverse) {
+        case true:container0.push_front(item.back()); break;
+        case false:container0.push_back(item.back()); break;
+        }
+        
         item.pop_back();
         --j;
       }
@@ -402,6 +410,21 @@ namespace Suzu {
       }
 
       return util.ActivityStart(provider, container0, item, item.size(), result);
+    };
+
+    auto CheckVariable = [&]() -> bool {
+      util.CleanUpDeque(container0);
+      container0.push_back(raw[i]);
+      container0.push_back(kStrFalse);
+      tempresult = Entry::FastOrder("vfind", container0);
+      if (tempresult.GetCode() != kCodeIllegalCall) {
+        item.push_back(tempresult.GetDetail());
+        return true;
+      }
+      else {
+        result = tempresult;
+        return false;
+      }
     };
 
     for (i = 0; i < size; ++i) {
@@ -418,7 +441,12 @@ namespace Suzu {
           directappend = !directappend;
         }
         else if (raw[i] == "=") {
-          if (symbol.back() != "var") {
+          if (!symbol.empty()) {
+            if (symbol.back() != "var") {
+              symbol.push_back(raw[i]);
+            }
+          }
+          else {
             symbol.push_back(raw[i]);
           }
         }
@@ -459,15 +487,17 @@ namespace Suzu {
           if (entryresult == false) break;
         }
         else {
-
           if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back()!="(") {
             j = symbol.size() - 1;
             k = item.size();
-
             while (symbol.at(j) != "(" && GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
-              if (k = item.size()) k -= Entry::FastGetCount(symbol.at(j));
-              else k -= Entry::FastGetCount(symbol.at(j)) - 1;
-                --j;
+              if (k = item.size()) {
+                k -= Entry::FastGetCount(symbol.at(j));
+              }
+              else {
+                k -= Entry::FastGetCount(symbol.at(j)) - 1;
+              }
+              --j;
             }
             symbol.insert(symbol.begin() + j + 1, raw[i]);
             nextinspoint = k;
@@ -487,21 +517,27 @@ namespace Suzu {
           symbol.push_back(raw[i]);
         }
         else {
-          if (symbol.back() == "var") {
-            item.push_back(raw[i]);
-          }
-          else {
-            util.CleanUpDeque(container0);
-            container0.push_back(raw[i]);
-            container0.push_back(kStrFalse);
-            tempresult = Entry::FastOrder("vfind", container0);
-            if (tempresult.GetCode() != kCodeIllegalCall) {
-              item.push_back(tempresult.GetDetail());
+          if (!symbol.empty()) {
+            if (symbol.back() == "var") {
+              item.push_back(raw[i]);
             }
             else {
-              result = tempresult;
-              break;
+              if(!CheckVariable()) break;
             }
+          }
+          else {
+            if (raw.size() - 1 > i) {
+              if (raw[i + 1] == "=") {
+                item.push_back(raw[i]);
+              }
+              else {
+                if (!CheckVariable()) break;
+              }
+            }
+            else {
+              if(!CheckVariable()) break;
+            }
+            
           }
         }
       }
@@ -535,7 +571,9 @@ namespace Suzu {
       provider = Entry::Query(symbol.back());
       entryresult = StartCode();
 
-      if (entryresult == false) break;
+      if (entryresult == false) {
+        break;
+      }
       symbol.pop_back();
     }
 
@@ -558,12 +596,10 @@ namespace Suzu {
       }
       else {
         if (requiredcount == kFlagNotDefined) {
-          Tracking::log(result.combo(kStrFatalError, kCodeBrokenEntry,
-            string("Illegal Entry - ").append(this->name)));
+          result.combo(kStrFatalError, kCodeBrokenEntry, string("Illegal Entry - ").append(this->name));
         }
         else {
-          Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs,
-            string("Parameter count doesn't match - ").append(this->name)));
+          result.combo(kStrFatalError, kCodeIllegalArgs, string("Parameter count doesn't match - ").append(this->name));
         }
       }
     }

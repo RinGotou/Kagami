@@ -22,8 +22,8 @@ namespace Suzu {
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternString(R"("(\"|\\|\n|\t|[^"]|[[:Punct:]])*")");
   const regex kPatternNumber(R"(\d+\.?\d*)");
-  const regex kPatternInteger(R"(\d+)");
-  const regex kPatternDouble(R"(\d+\.\d+)");
+  const regex kPatternInteger(R"([-]?\d+)");
+  const regex kPatternDouble(R"([-]?\d+\.\d+)");
   const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
   const regex kPatternSymbol(R"(==|<=|>=|&&|\|\||[[:Punct:]])");
   const regex kPatternBlank(R"([[:blank:]])");

@@ -217,16 +217,6 @@ namespace Suzu {
 
     buf = { res.at(0),res.at(1),res.at(2) };
 
-    //may not need at there?
-    //Setup filter on query may be better
-    if (!regex_match(res.at(2), kPatternSymbol)
-      || !regex_match(res.at(0), kPatternNumber)
-      || !regex_match(res.at(1), kPatternNumber)) {
-      result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 2");
-      return result;
-    }
-
-    //start converting
     //array data format rule:number number operator
     if (regex_match(buf.at(0), kPatternFunction)) {
       temp = childbase.back().query(buf.at(0));
@@ -265,7 +255,24 @@ namespace Suzu {
       result.SetDetail(to_string(Util().Calc(intA, intB, buf.at(2))));
       break;
     case EnumStr:
-      result.SetDetail(temp = buf.at(0) + buf.at(1));
+      //it's reversed!
+      if (buf.at(1).back() == '"') {
+        temp = buf.at(1).substr(0, buf.at(1).size() - 1);
+        buf.at(1) = temp;
+        temp = kStrEmpty;
+      }
+      if (buf.at(0).front() == '"') {
+        temp = buf.at(0).substr(1, buf.at(0).size() - 1);
+        buf.at(1) = temp;
+        temp = kStrEmpty;
+      }
+      if (buf.at(1).front() != '"') {
+        buf.at(1) = "\"" + buf.at(1);
+      }
+      if (buf.at(0).back() != '"') {
+        buf.at(0) = buf.at(0) + "\"";
+      }
+      result.SetDetail(temp = buf.at(1) + buf.at(0));
       break;
     case EnumNull:
     default:
@@ -298,7 +305,7 @@ namespace Suzu {
       pairptr->second = res.at(1);
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale is not found");
+      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale is not found and cannot be set");
     }
     return result;
   }
