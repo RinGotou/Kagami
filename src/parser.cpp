@@ -126,7 +126,7 @@ namespace Suzu {
       if (value == kStrRedirect) {
         item.push_back(temp.GetDetail());
       }
-      else {
+      else if (provider.GetName() != kStrVar){
         switch (temp.GetCode()) {
         case kCodeSuccess:
         case kCodeNothing:
@@ -232,7 +232,7 @@ namespace Suzu {
     //not only blanks(some special character included)
     bool headlock = false;
     bool allowblank = false;
-    vector<string> list = { "var", "def", "return" };
+    vector<string> list = { kStrVar, "def", "return" };
     auto ToString = [](char c) -> string {
       return string().append(1, c);
     };
@@ -362,7 +362,7 @@ namespace Suzu {
 
   //private
   int Chainloader::GetPriority(string target) const {
-    if (target == "=" || target == "var")return 0;
+    if (target == "=" || target == kStrVar)return 0;
     if (target == "+" || target == "-") return 1;
     if (target == "*" || target == "/" || target == "\\") return 2;
     return 3;
@@ -376,38 +376,48 @@ namespace Suzu {
     EntryProvider provider;
     Message result, tempresult;
     size_t i, j, k;
+    int m;
     size_t nextinspoint = 0;
     string tempstr;
     bool entryresult = true;
     bool commaexp = false;
     bool directappend = false, directappend2 = false;
     bool forwardinsert = false;
+    bool arrayinit = false;
     size_t forwardtype = kTypeNull;
     deque<string> item;
     deque<string> symbol;
     deque<string> container0;
     stack<string> container1;
 
-    auto StartCode = [&provider, &j, &item, &container0, &util, &result, &symbol]() -> bool {
+    auto StartCode = [&]() -> bool {
       bool reverse = true;
       util.CleanUpDeque(container0);
-      j = provider.GetRequiredCount();
+
+      if (arrayinit) {
+        m = 2;
+      }
+      else {
+        m = provider.GetRequiredCount();
+      }
+     
       if (provider.GetPriority() == kFlagBinEntry) {
-        j -= 1;
+        m -= 1;
         reverse = false;
       }
-      while (j != 0 && item.empty() != true) {
+
+      while (m != 0 && item.empty() != true) {
         switch (reverse) {
         case true:container0.push_front(item.back()); break;
         case false:container0.push_back(item.back()); break;
         }
-        
         item.pop_back();
-        --j;
+        --m;
       }
       if (provider.GetPriority() == kFlagBinEntry) {
         container0.push_back(symbol.back());
       }
+      
 
       return util.ActivityStart(provider, container0, item, item.size(), result);
     };
@@ -442,7 +452,7 @@ namespace Suzu {
         }
         else if (raw[i] == "=") {
           if (!symbol.empty()) {
-            if (symbol.back() != "var") {
+            if (symbol.back() != kStrVar) {
               symbol.push_back(raw[i]);
             }
           }
@@ -451,7 +461,15 @@ namespace Suzu {
           }
         }
         else if (raw[i] == ",") {
-          symbol.push_back(raw[i]);
+          if (symbol.back() == kStrVar) {
+            arrayinit = true;
+          }
+          if (arrayinit) {
+            symbol.push_back(kStrVar);
+          }
+          else {
+            symbol.push_back(raw[i]);
+          }
         }
         else if (raw[i] == "(") {
           if (symbol.empty() || regex_match(symbol.back(), kPatternSymbol)) {
@@ -460,7 +478,6 @@ namespace Suzu {
           symbol.push_back(raw[i]);
         }
         else if (raw[i] == ")") {
-          //Need to modify!
           while (symbol.back() != "(" && symbol.empty() != true) {
             if (symbol.back() == ",") {
               //backup current item
@@ -518,7 +535,7 @@ namespace Suzu {
         }
         else {
           if (!symbol.empty()) {
-            if (symbol.back() == "var") {
+            if (symbol.back() == kStrVar) {
               item.push_back(raw[i]);
             }
             else {
