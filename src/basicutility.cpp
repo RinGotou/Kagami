@@ -291,7 +291,7 @@ namespace Suzu {
       result.combo(kStrRedirect, kCodeSuccess, pairptr->second);
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale is not found");
+      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + res.at(0) + "is not found");
     }
 
     return result;
@@ -313,17 +313,34 @@ namespace Suzu {
   Message CreateVariable(deque<string> &res) {
     using namespace Entry;
     Message result;
+    string temp = kStrEmpty;
     StrPair *pairptr = FindChild(res.at(0));
+
     if (pairptr == nullptr) {
-      switch (res.size()) {
-      case 1:CreateChild(res.at(0)); break;
-      case 2:CreateChild(res.at(0), res.at(1)); break;
-      default:break;
+      if (res.size() == 2) {
+        if (regex_match(res.at(1), kPatternFunction)) {
+          pairptr = FindChild(res.at(1));
+          if (pairptr != nullptr) {
+            temp = pairptr->second;
+            CreateChild(res.at(0), temp);
+          }
+          else {
+            result.combo(kStrFatalError, kCodeIllegalCall, "variable " + res.at(1) + " is not found");
+          }
+          pairptr = nullptr;
+        }
+        else {
+          CreateChild(res.at(0), res.at(1));
+        }
+      }
+      else if (res.size() == 1) {
+        CreateChild(res.at(0), kStrNull);
       }
     }
     else {
       result.combo(kStrFatalError, kCodeIllegalCall, res.at(0) + "is defined");
     }
+
     return result;
   }
 
