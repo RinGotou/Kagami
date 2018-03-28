@@ -18,7 +18,7 @@ namespace Suzu {
   using std::stof;
   using std::stod;
   using std::regex_match;
-
+  const string kStrVar = "var";
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternString(R"("(\"|\\|\n|\t|[^"]|[[:Punct:]])*")");
   const regex kPatternNumber(R"(\d+\.?\d*)");
