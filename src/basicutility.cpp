@@ -300,12 +300,27 @@ namespace Suzu {
   Message SetVariable(deque<string> &res) {
     using namespace Entry;
     Message result(kStrSuccess, kCodeSuccess, kStrEmpty);
+    //string temp;
     StrPair *pairptr = FindChild(res.at(0));
+    StrPair pair(res.at(0), res.at(1));
+
+    if (regex_match(res.at(1), kPatternFunction)) {
+      pairptr = FindChild(res.at(1));
+      if (pairptr != nullptr) {
+        pair.second = pairptr->second;
+      }
+      else {
+        result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + res.at(0) + "is not found");
+        return result;
+      }
+    }
+
+    pairptr = FindChild(pair.first);
     if (pairptr != nullptr) {
-      pairptr->second = res.at(1);
+      pairptr->second = pair.second;
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale is not found and cannot be set");
+      result.combo(kStrFatalError, kCodeIllegalCall, pair.first + " is not found and cannot be set");
     }
     return result;
   }
