@@ -148,21 +148,19 @@ namespace Suzu {
   void Util::PrintEvents() {
     using namespace Tracking;
     ofstream ofs("event.log", std::ios::trunc);
-    size_t i = 0;
+    string prioritystr;
     if (ofs.good()) {
       if (base.empty()) {
-        ofs << "No Events\n";
+        ofs << "No Events.\n";
       }
       else {
         for (auto unit : base) {
-          ++i;
-          ofs << "Count:" << i << "\n" << "Code:" << unit.GetCode() << "\n";
-          if (unit.GetValue() == kStrFatalError) 
-            ofs << "Priority:Fatal\n";
-          else if (unit.GetValue() == kStrWarning)
-            ofs << "Priority:Warning\n";
-          if (unit.GetDetail() != kStrEmpty) 
-            ofs << "Detail:" << unit.GetDetail() << "\n";
+          if (unit.GetValue() == kStrFatalError) prioritystr = "Fatal:";
+          else if (unit.GetValue() == kStrWarning) prioritystr = "Warning:";
+          if (unit.GetDetail() != kStrEmpty) {
+            ofs << prioritystr << unit.GetDetail() << "\n";
+          }
+            
         }
       }
     }
@@ -393,27 +391,32 @@ namespace Suzu {
     auto StartCode = [&]() -> bool {
       bool reverse = true;
       util.CleanUpDeque(container0);
-
-      if (arrayinit) {
-        m = 2;
-      }
-      else {
-        m = provider.GetRequiredCount();
-      }
+      m = provider.GetRequiredCount();
      
       if (provider.GetPriority() == kFlagBinEntry) {
         m -= 1;
         reverse = false;
       }
 
-      while (m != 0 && item.empty() != true) {
-        switch (reverse) {
-        case true:container0.push_front(item.back()); break;
-        case false:container0.push_back(item.back()); break;
+      if (arrayinit) {
+        while (item.back() != ",") {
+          container0.push_front(item.back());
+          item.pop_back();
         }
         item.pop_back();
-        --m;
       }
+      else {
+        while (m != 0 && item.empty() != true) {
+          switch (reverse) {
+          case true:container0.push_front(item.back()); break;
+          case false:container0.push_back(item.back()); break;
+          }
+          item.pop_back();
+          --m;
+        }
+      }
+
+
       if (provider.GetPriority() == kFlagBinEntry) {
         container0.push_back(symbol.back());
       }
@@ -466,6 +469,7 @@ namespace Suzu {
           }
           if (arrayinit) {
             symbol.push_back(kStrVar);
+            item.push_back(raw[i]);
           }
           else {
             symbol.push_back(raw[i]);
