@@ -77,6 +77,9 @@ namespace Suzu {
     void PrintEvents();
     void Cleanup();
     void Terminal();
+    string GetRawString(string target) {
+      return target.substr(1, target.size() - 2);
+    }
   };
 
   class ScriptProvider2 {
@@ -158,7 +161,7 @@ namespace Suzu {
     string GetName() const { return this->name; }
     int GetRequiredCount() const { return this->requiredcount; }
     int GetPriority() const { return this->priority; }
-    bool Good() const { return (activity != nullptr && requiredcount != -2); }
+    bool Good() const { return ((activity != nullptr || activity2 != nullptr) && requiredcount != -2); }
     Message StartActivity(deque<string> p);
   };
 
@@ -176,6 +179,7 @@ namespace Entry {
   void Inject(Suzu::EntryProvider provider);
   void Delete(std::string name);
   void ResetPluginEntry();
+  void ResetPlugin();
 }
 #endif // !_SE_PARSER_
 

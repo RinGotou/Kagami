@@ -116,6 +116,5 @@ namespace Suzu {
     string GetValue() const { return this->value; }
     int GetCode() const { return this->code; }
     string GetDetail() const { return this->detail; }
-    MsgValue Export();
   };
 }

@@ -47,8 +47,12 @@ namespace Entry {
     }
     else {
       for (auto &unit : base) {
-        if (unit.GetName() == target && unit.GetPriority() == kFlagNormalEntry) 
-          result = unit;
+        if (unit.GetName() == target) {
+          if (unit.GetPriority() == kFlagNormalEntry || unit.GetPriority() == kFlagPluginEntry) {
+            result = unit;
+          }
+        }
+
       }
     }
     return result;
@@ -490,6 +494,8 @@ namespace Suzu {
               item.pop_back();
               symbol.pop_back();
             }
+            if (symbol.back() == "(") break;
+
             util.CleanUpDeque(container0);
             provider = Entry::Query(symbol.back());
 
@@ -661,7 +667,7 @@ namespace Suzu {
         }
       }
     }
-
+    Entry::ResetPlugin();
     return result;
   }
 
@@ -706,7 +712,7 @@ namespace Suzu {
         }
       }
     }
-
+    ResetPlugin();
   }
 }
 
