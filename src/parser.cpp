@@ -1,3 +1,4 @@
+#include <iostream>
 #include "parser.h"
 
 namespace Tracking {
@@ -92,7 +93,7 @@ namespace Entry {
 namespace Suzu {
   Message Util::GetDataType(string target) {
     using std::regex_match;
-    Message result(kStrRedirect, kCodeIllegalArgs,"");
+    Message result(kStrRedirect, kCodeIllegalArgs, "");
     auto match = [&](const regex &pat) -> bool {
       return regex_match(target, pat);
     };
@@ -126,7 +127,7 @@ namespace Suzu {
       if (value == kStrRedirect) {
         item.push_back(temp.GetDetail());
       }
-      else if (provider.GetName() != kStrVar){
+      else if (provider.GetName() != kStrVar) {
         switch (temp.GetCode()) {
         case kCodeSuccess:
         case kCodeNothing:
@@ -160,7 +161,7 @@ namespace Suzu {
           if (unit.GetDetail() != kStrEmpty) {
             ofs << prioritystr << unit.GetDetail() << "\n";
           }
-            
+
         }
       }
     }
@@ -185,7 +186,7 @@ namespace Suzu {
       }
       return true;
     };
-    
+
     stream.open(target, std::ios::in);
     if (stream.good()) {
       while (!stream.eof()) {
@@ -206,7 +207,7 @@ namespace Suzu {
   Message ScriptProvider2::Get() {
     Message result(kStrEmpty, kCodeSuccess, "");
     size_t size = base.size();
-    
+
     if (current < size) {
       result.SetDetail(base.at(current));
       current++;
@@ -238,7 +239,7 @@ namespace Suzu {
     //Tracking::log(Message(kStrEmpty, kCodeNothing, "target is " + target));
 
     if (target == kStrEmpty) {
-      log(Message(kStrWarning, kCodeIllegalArgs,"Chainloader::Build() 1"));
+      log(Message(kStrWarning, kCodeIllegalArgs, "Chainloader::Build() 1"));
       return *this;
     }
 
@@ -326,7 +327,7 @@ namespace Suzu {
         if (allowblank) {
           current.append(1, target[i]);
         }
-        else if (util.Compare(current,list) && output.empty()){
+        else if (util.Compare(current, list) && output.empty()) {
           if (i + 1 < size && target[i + 1] != ' ' && target[i + 1] != '\t') {
             output.push_back(current);
             current = kStrEmpty;
@@ -392,7 +393,7 @@ namespace Suzu {
       bool reverse = true;
       util.CleanUpDeque(container0);
       m = provider.GetRequiredCount();
-     
+
       if (provider.GetPriority() == kFlagBinEntry) {
         m -= 1;
         reverse = false;
@@ -420,7 +421,7 @@ namespace Suzu {
       if (provider.GetPriority() == kFlagBinEntry) {
         container0.push_back(symbol.back());
       }
-      
+
 
       return util.ActivityStart(provider, container0, item, item.size(), result);
     };
@@ -496,7 +497,7 @@ namespace Suzu {
             if (entryresult == false) break;
             symbol.pop_back();
           }
-          
+
           if (symbol.back() == "(") symbol.pop_back();
           if (container1.empty() != true) {
             item.push_back(container1.top());
@@ -508,7 +509,7 @@ namespace Suzu {
           if (entryresult == false) break;
         }
         else {
-          if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back()!="(") {
+          if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back() != "(") {
             j = symbol.size() - 1;
             k = item.size();
             while (symbol.at(j) != "(" && GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
@@ -543,7 +544,7 @@ namespace Suzu {
               item.push_back(raw[i]);
             }
             else {
-              if(!CheckVariable()) break;
+              if (!CheckVariable()) break;
             }
           }
           else {
@@ -556,9 +557,9 @@ namespace Suzu {
               }
             }
             else {
-              if(!CheckVariable()) break;
+              if (!CheckVariable()) break;
             }
-            
+
           }
         }
       }
@@ -662,6 +663,43 @@ namespace Suzu {
     }
 
     return result;
+  }
+
+  Message VersionInfo(deque<string> &res) {
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    std::cout << kEngineVersion << std::endl;
+    return result;
+  }
+
+  Message QuitTerminal(deque<string> &res){
+    Message result(kStrEmpty, kCodeQuit, kStrEmpty);
+    return result;
+  }
+
+  void Util::Terminal() {
+    using namespace Entry;
+    string buf = kStrEmpty;
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    Chainloader loader;
+
+    std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
+    std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
+
+    TotalInjection();
+    Inject(EntryProvider("version", VersionInfo, 0));
+    Inject(EntryProvider("quit", QuitTerminal, 0));
+    
+    while (result.GetCode() != kCodeQuit) {
+      std::cout << '>';
+      std::cin >> buf;
+      if (buf != kStrEmpty) {
+        result = loader.Reset().Build(buf).Start();
+        if (result.GetCode() < kCodeSuccess) {
+          std::cout << result.GetDetail() << std::endl;
+        }
+      }
+    }
+
   }
 }
 

@@ -64,5 +64,7 @@ namespace Suzu {
     string query(string name);
     string set(string name, string value);
   };
+
+  void TotalInjection();
 }
 

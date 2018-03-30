@@ -9,6 +9,10 @@ namespace Suzu {
   using std::string;
   using std::pair;
 
+  const string kEngineVersion = "version 0.1 'anzu'";
+  const string kEngineName = "RebornScripter";
+  const string kEngineAuthor = "Suzu Nakamura";
+  const string kCopyright = "(C) 2017-2018";
   const string kStrEmpty = "";
   const string kStrFatalError = "__FATAL__";
   const string kStrWarning = "__WARNING__";
@@ -19,6 +23,7 @@ namespace Suzu {
   const string kStrRedirect = "__*__";
   const string kStrTrue = "true";
   const string kStrFalse = "false";
+  const int kCodeQuit = 3;
   const int kCodeRedirect = 2;
   const int kCodeNothing = 1;
   const int kCodeSuccess = 0;

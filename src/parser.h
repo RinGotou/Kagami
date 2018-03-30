@@ -76,6 +76,7 @@ namespace Suzu {
     Message ScriptStart(string target);
     void PrintEvents();
     void Cleanup();
+    void Terminal();
   };
 
   class ScriptProvider2 {
