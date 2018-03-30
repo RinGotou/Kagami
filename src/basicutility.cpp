@@ -263,7 +263,7 @@ namespace Suzu {
       }
       if (buf.at(0).front() == '"') {
         temp = buf.at(0).substr(1, buf.at(0).size() - 1);
-        buf.at(1) = temp;
+        buf.at(0) = temp;
         temp = kStrEmpty;
       }
       if (buf.at(1).front() != '"') {
@@ -272,7 +272,8 @@ namespace Suzu {
       if (buf.at(0).back() != '"') {
         buf.at(0) = buf.at(0) + "\"";
       }
-      result.SetDetail(temp = buf.at(1) + buf.at(0));
+
+      result.SetDetail(buf.at(1) + buf.at(0));
       break;
     case EnumNull:
     default:

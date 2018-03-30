@@ -6,10 +6,11 @@ int main(int argc, char **argv) {
 
   Suzu::Util util;
 #ifdef _DEBUG_STATE_
+  //direct load a external script
   util.ScriptStart("C:\\Apps\\main.rs");
 #else
   if (argc > 1) {
-    //load extern script
+    //load external script from command argments
     util.ScriptStart(argv[1]);
   }
   else {
