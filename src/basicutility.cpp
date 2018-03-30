@@ -198,6 +198,7 @@ namespace Suzu {
     Message result(kStrRedirect,kCodeSuccess,"0");
     array<string, 3> buf;
     string temp = kStrEmpty;
+    bool tempresult = false;
     
     auto CheckingOr = [&](regex pat) -> bool {
       return (regex_match(res.at(0), pat) || regex_match(res.at(1), pat));
@@ -228,17 +229,7 @@ namespace Suzu {
     else if (CheckingAnd(kPatternInteger)) type = EnumInt;
     else if (CheckString(res.at(0)) || CheckString(res.at(1))) type = EnumStr;
 
-    if (*opercode == "==" || *opercode == "<=" || *opercode == ">=") {
-      switch (util.Logic(buf.at(0), buf.at(1), *opercode)) {
-      case true:
-        temp = kStrTrue;
-        break;
-      case false:
-        temp = kStrFalse;
-        break;
-      }
-    }
-    else if (type == EnumInt || type == EnumDouble) {
+    if (type == EnumInt || type == EnumDouble) {
       if (*opercode == "+" || *opercode == "-" || *opercode == "*" || *opercode == "/") {
         switch (type) {
         case EnumInt:
@@ -246,6 +237,24 @@ namespace Suzu {
           break;
         case EnumDouble:
           temp = to_string(util.Calc(stod(buf.at(0)), stod(buf.at(1)), *opercode));
+          break;
+        }
+      }
+      else if (*opercode == "==" || *opercode == ">=" || *opercode == "<=" || *opercode == "!=") {
+        switch (type) {
+        case EnumInt:
+          tempresult = util.Logic(stoi(buf.at(0)), stoi(buf.at(1)), *opercode);
+          break;
+        case EnumDouble:
+          tempresult = util.Logic(stod(buf.at(0)), stod(buf.at(1)), *opercode);
+          break;
+        }
+        switch (tempresult) {
+        case true:
+          temp = kStrTrue;
+          break;
+        case false:
+          temp = kStrFalse;
           break;
         }
       }
@@ -269,6 +278,17 @@ namespace Suzu {
           buf.at(0) = buf.at(0) + "\"";
         }
         temp = buf.at(1) + buf.at(0);
+      }
+      else if (*opercode == "==" || *opercode == "!=") {
+        tempresult = util.Logic(buf.at(1), buf.at(0), *opercode);
+        switch (tempresult) {
+        case true:
+          temp = kStrTrue;
+          break;
+        case false:
+          temp = kStrFalse;
+          break;
+        }
       }
       else {
         temp = "Illegal operation";

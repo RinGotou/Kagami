@@ -3,11 +3,12 @@
 
 
 namespace Entry {
+  using std::shared_ptr;
   typedef vector<string>* StrListPtr;
   typedef StrListPtr(*Attachment)(void);
   //from MSDN
   std::wstring s2ws(const std::string& s);
-  void ResetPlugin();
+  //void ResetPlugin();
 
   class Instance : public pair<string, HINSTANCE> {
   private:

@@ -39,7 +39,8 @@ namespace Entry {
 
   EntryProvider Query(string target) {
     EntryProvider result;
-    if (target == "+" || target == "-" || target == "*" || target == "/") {
+    if (target == "+" || target == "-" || target == "*" || target == "/"
+      || target == "==" || target == "<=" || target == ">=") {
       result = Order("binexp");
     }
     if (target == "=") {
@@ -59,7 +60,8 @@ namespace Entry {
   }
 
   int FastGetCount(string target) {
-    if (target == "+" || target == "-" || target == "*" || target == "/") {
+    if (target == "+" || target == "-" || target == "*" || target == "/"
+      || target == "==" || target == "<=" || target == ">=") {
       return Order("binexp").GetRequiredCount() - 1;
     }
     for (auto &unit : base) {
@@ -257,6 +259,10 @@ namespace Suzu {
       if (target[i] == '"') {
         if (allowblank && target[i - 1] != '\\' && i - 1 >= 0) {
           allowblank = !allowblank;
+          current.append(1, target.at(i));
+          output.push_back(current);
+          current = kStrEmpty;
+          continue;
         }
         else if (!allowblank) {
           allowblank = !allowblank;
@@ -285,8 +291,13 @@ namespace Suzu {
         }
         break;
       case '"':
-        if (allowblank && target[i - 1] == '\\' && i - 1 >= 0) {
-          current.append(1, target[i]);
+        if (allowblank) {
+          current.append(1, target.at(i));
+        }
+        else if (i > 0) {
+          if (target.at(i - 1) == '\\') {
+            current.append(1, target.at(i));
+          }
         }
         else {
           if (current != kStrEmpty) output.push_back(current);
@@ -361,10 +372,13 @@ namespace Suzu {
 
   //private
   int Chainloader::GetPriority(string target) const {
-    if (target == "=" || target == kStrVar)return 0;
-    if (target == "+" || target == "-") return 1;
-    if (target == "*" || target == "/" || target == "\\") return 2;
-    return 3;
+    int priority;
+    if (target == "=" || target == kStrVar) priority = 0;
+    else if (target == "==" || target == ">=" || target == "<=") priority = 1;
+    else if (target == "+" || target == "-") priority = 2;
+    else if (target == "*" || target == "/" || target == "\\") priority = 3;
+    else priority = 4;
+    return priority;
   }
 
   //todo:comma expression expanding
@@ -416,7 +430,6 @@ namespace Suzu {
           --m;
         }
       }
-
 
       if (provider.GetPriority() == kFlagBinEntry) {
         container0.push_back(symbol.back());
@@ -510,7 +523,10 @@ namespace Suzu {
           if (entryresult == false) break;
         }
         else {
-          if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back() != "(") {
+          if (symbol.empty() || util.GetDataType(raw[i]).GetCode() != kTypeFunction) {
+            symbol.push_back(raw[i]);
+          }
+          else if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back() != "(") {
             j = symbol.size() - 1;
             k = item.size();
             while (symbol.at(j) != "(" && GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
