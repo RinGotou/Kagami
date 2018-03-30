@@ -192,12 +192,13 @@ namespace Suzu {
 
   Message BinaryExp(deque<string> &res) {
     using Entry::childbase;
-    int intA = 0, intB = 0;
-    double doubleA = 0.0, doubleB = 0.0;
+    Util util;
+    string *opercode = nullptr;
     enum { EnumDouble, EnumInt, EnumStr, EnumNull }type = EnumNull;
     Message result(kStrRedirect,kCodeSuccess,"0");
     array<string, 3> buf;
     string temp = kStrEmpty;
+    
     auto CheckingOr = [&](regex pat) -> bool {
       return (regex_match(res.at(0), pat) || regex_match(res.at(1), pat));
     };
@@ -208,12 +209,8 @@ namespace Suzu {
       return (str.front() == '"' && str.back() == '"');
     };
 
-    if (res.size() < 3) {
-      result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 1");
-      return result;
-    }
-
     buf = { res.at(0),res.at(1),res.at(2) };
+    opercode = &(buf.at(2));
 
     //array data format rule:number number operator
     if (regex_match(buf.at(0), kPatternFunction)) {
@@ -227,59 +224,62 @@ namespace Suzu {
       temp = kStrNull;
     }
 
+    if (CheckingOr(kPatternDouble)) type = EnumDouble;
+    else if (CheckingAnd(kPatternInteger)) type = EnumInt;
+    else if (CheckString(res.at(0)) || CheckString(res.at(1))) type = EnumStr;
 
-    if (CheckingOr(kPatternDouble)) {
-      type = EnumDouble;
+    if (*opercode == "==" || *opercode == "<=" || *opercode == ">=") {
+      switch (util.Logic(buf.at(0), buf.at(1), *opercode)) {
+      case true:
+        temp = kStrTrue;
+        break;
+      case false:
+        temp = kStrFalse;
+        break;
+      }
     }
-    else if (CheckingAnd(kPatternInteger)) {
-      type = EnumInt;
+    else if (type == EnumInt || type == EnumDouble) {
+      if (*opercode == "+" || *opercode == "-" || *opercode == "*" || *opercode == "/") {
+        switch (type) {
+        case EnumInt:
+          temp = to_string(util.Calc(stoi(buf.at(0)), stoi(buf.at(1)), *opercode));
+          break;
+        case EnumDouble:
+          temp = to_string(util.Calc(stod(buf.at(0)), stod(buf.at(1)), *opercode));
+          break;
+        }
+      }
     }
-    else if (CheckString(res.at(0)) || CheckString(res.at(1))) {
-      type = EnumStr;
+    else if (type == EnumStr) {
+      if (*opercode == "+") {
+        if (buf.at(1).back() == '"') {
+          temp = buf.at(1).substr(0, buf.at(1).size() - 1);
+          buf.at(1) = temp;
+          temp = kStrEmpty;
+        }
+        if (buf.at(0).front() == '"') {
+          temp = buf.at(0).substr(1, buf.at(0).size() - 1);
+          buf.at(0) = temp;
+          temp = kStrEmpty;
+        }
+        if (buf.at(1).front() != '"') {
+          buf.at(1) = "\"" + buf.at(1);
+        }
+        if (buf.at(0).back() != '"') {
+          buf.at(0) = buf.at(0) + "\"";
+        }
+        temp = buf.at(1) + buf.at(0);
+      }
+      else {
+        temp = "Illegal operation";
+        result.SetCode(kCodeIllegalArgs).SetDetail(kStrFatalError);
+      }
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 3");
-      return result;
+      temp = "Illegal data type";
+      result.SetCode(kCodeIllegalArgs).SetDetail(kStrFatalError);
     }
-  
-    switch (type) {
-    case EnumInt: 
-      intA = stoi(res.at(0));
-      intB = stoi(res.at(1));
-      result.SetDetail(to_string(Util().Calc(intA, intB, buf.at(2))));
-      break;
-    case EnumDouble:
-      doubleA = stod(res.at(0));
-      doubleB = stod(res.at(1));
-      result.SetDetail(to_string(Util().Calc(intA, intB, buf.at(2))));
-      break;
-    case EnumStr:
-      //it's reversed!
-      if (buf.at(1).back() == '"') {
-        temp = buf.at(1).substr(0, buf.at(1).size() - 1);
-        buf.at(1) = temp;
-        temp = kStrEmpty;
-      }
-      if (buf.at(0).front() == '"') {
-        temp = buf.at(0).substr(1, buf.at(0).size() - 1);
-        buf.at(0) = temp;
-        temp = kStrEmpty;
-      }
-      if (buf.at(1).front() != '"') {
-        buf.at(1) = "\"" + buf.at(1);
-      }
-      if (buf.at(0).back() != '"') {
-        buf.at(0) = buf.at(0) + "\"";
-      }
-
-      result.SetDetail(buf.at(1) + buf.at(0));
-      break;
-    case EnumNull:
-    default:
-      result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 4");
-      break;
-    }
-
+    result.SetDetail(temp);
     return result;
   }
   
@@ -397,6 +397,5 @@ namespace Suzu {
     Inject(EntryProvider("release", UnloadPlugin, 1));
     Inject(EntryProvider("var",CreateVariable,kFlagAutoSize));
     Inject(EntryProvider("set", SetVariable, 2));
-
   }
 }

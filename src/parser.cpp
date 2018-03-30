@@ -253,15 +253,6 @@ namespace Suzu {
           headlock = true;
         }
       }
-      //if (headlock == false && std::regex_match(ToString(target[i]),
-      //  kPatternBlank)) {
-      //  continue;
-      //}
-      //else if (headlock == false && std::regex_match(ToString(target[i]),
-      //  kPatternBlank) == false) {
-      //  headlock = true;
-      //}
-
 
       if (target[i] == '"') {
         if (allowblank && target[i - 1] != '\\' && i - 1 >= 0) {
@@ -494,7 +485,6 @@ namespace Suzu {
         else if (raw[i] == ")") {
           while (symbol.back() != "(" && symbol.empty() != true) {
             if (symbol.back() == ",") {
-              //backup current item
               container1.push(item.back());
               item.pop_back();
               symbol.pop_back();

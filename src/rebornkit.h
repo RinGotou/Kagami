@@ -49,13 +49,6 @@ namespace Suzu {
   const size_t kTypeNull = 100;
   const size_t kTypePreserved = 101;
 
-  typedef struct {
-    char *value;
-    int code;
-    char *detail;
-  }MsgValue;
-
-
   class StrPair :public pair<string, string> {
   private:
     bool readonly;
