@@ -533,7 +533,7 @@ namespace Suzu {
           }
         }
       }
-      else if (regex_match(raw[i], kPatternFunction)) {
+      else if (regex_match(raw[i], kPatternFunction) && !directappend) {
         provider = Entry::Query(raw[i]);
         if (provider.Good()) {
           symbol.push_back(raw[i]);
@@ -676,6 +676,12 @@ namespace Suzu {
     return result;
   }
 
+  Message PrintStr(deque<string> &res) {
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    std::cout << res.at(0) << std::endl;
+    return result;
+  }
+
   void Util::Terminal() {
     using namespace Entry;
     string buf = kStrEmpty;
@@ -688,10 +694,11 @@ namespace Suzu {
     TotalInjection();
     Inject(EntryProvider("version", VersionInfo, 0));
     Inject(EntryProvider("quit", QuitTerminal, 0));
+    Inject(EntryProvider("print", PrintStr, 1));
     
     while (result.GetCode() != kCodeQuit) {
       std::cout << '>';
-      std::cin >> buf;
+      std::getline(std::cin, buf);
       if (buf != kStrEmpty) {
         result = loader.Reset().Build(buf).Start();
         if (result.GetCode() < kCodeSuccess) {
