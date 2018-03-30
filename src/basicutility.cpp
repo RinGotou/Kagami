@@ -291,7 +291,7 @@ namespace Suzu {
       result.combo(kStrRedirect, kCodeSuccess, pairptr->second);
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + res.at(0) + "is not found");
+      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + res.at(0) + " is not found");
     }
 
     return result;
@@ -310,7 +310,7 @@ namespace Suzu {
         pair.second = pairptr->second;
       }
       else {
-        result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + res.at(0) + "is not found");
+        result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + res.at(0) + " is not found");
         return result;
       }
     }
