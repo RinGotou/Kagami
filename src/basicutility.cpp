@@ -41,27 +41,24 @@ namespace Entry {
     return result;
   }
 
-  Instance::Instance(string name, string path) {
+  bool Instance::Load(string name, HINSTANCE h) {
     Attachment attachment = nullptr;
     StrListPtr listptr = nullptr;
     this->first = name;
-    this->second = LoadLibrary(s2ws(path).c_str());
-    if (second != nullptr) {
-      attachment = (Attachment)GetProcAddress(this->second, "Attachment");
-      if (attachment != nullptr) {
-        listptr = attachment();
-        entrylist = vector<string>(*listptr);
-        delete(listptr);
-        health = true;
-      }
-      else {
-        health = false;
-      }
+    this->second = h;
+
+    attachment = (Attachment)GetProcAddress(this->second, "Attachment");
+    if (attachment != nullptr) {
+      listptr = attachment();
+      entrylist = vector<string>(*listptr);
+      delete(listptr);
+      health = true;
     }
     else {
       health = false;
-      Tracking::log(Message(kStrFatalError, kCodeIllegalCall, "Cannot get entry,please contact plugin's author"));
     }
+
+    return health;
   }
 
   //from MSDN
@@ -76,23 +73,22 @@ namespace Entry {
     return r;
   }
 
-  void AddInstance(string path, string name) {
+  void AddInstance(string name, HINSTANCE h) {
     PluginActivity activity = nullptr;
     Attachment attachment = nullptr;
     StrListPtr listptr = nullptr;
-    EntryProvider provider;
-    InstanceList.push_back(Instance(name, path));
-    if (InstanceList.back().GetHealth() == true) {
-      HINSTANCE &instance = InstanceList.back().second;
-      vector<string> &list = InstanceList.back().GetList();
-      for (auto unit : list) {
-        activity = (PluginActivity)GetProcAddress(instance, unit.c_str());
+    InstanceList.push_back(Instance());
+    InstanceList.back().Load(name, h);
+    if (InstanceList.back().GetHealth()) {
+      HINSTANCE &ins = InstanceList.back().second;
+      vector<string> &lst = InstanceList.back().GetList();
+      for (auto unit : lst) {
+        activity = (PluginActivity)GetProcAddress(ins, unit.c_str());
         if (activity != nullptr) {
           Inject(EntryProvider(unit, activity));
         }
       }
     }
-    delete(listptr);
   }
 
   void UnloadInstance(string name) {
@@ -119,7 +115,6 @@ namespace Entry {
     }
     FreeLibrary(*hinstance);
     InstanceList.erase(instance_i);
-    delete(hinstance);
   }
 
   void ResetPlugin() {
@@ -365,16 +360,11 @@ namespace Suzu {
     Message result;
     Attachment attachment = nullptr;
     Activity activity = nullptr;
+    StrPair pair(Util().GetRawString(res.at(0)), Util().GetRawString(res.at(1)));
     
-    HINSTANCE *hinstance = new HINSTANCE(LoadLibrary(s2ws(res.at(0)).c_str()));
-    if (*hinstance != nullptr) {
-      attachment = (Attachment)GetProcAddress(*hinstance, "Attachment");
-      if (attachment != nullptr) {
-        FreeLibrary(*hinstance);
-        delete(hinstance);
-        attachment = nullptr;
-        AddInstance(res.at(0), res.at(1));
-      }
+    HINSTANCE hinstance = LoadLibrary(s2ws(pair.second).c_str());
+    if (hinstance != nullptr) {
+      AddInstance(pair.first, hinstance);
     }
     else {
       result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found");

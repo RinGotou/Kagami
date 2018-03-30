@@ -14,9 +14,11 @@ namespace Entry {
     bool health;
     vector<string> entrylist;
   public:
-    Instance(string name, string path);
+    Instance() { health = false; }
+    bool Load(string name, HINSTANCE h);
     bool GetHealth() const { return health; }
     vector<string> &GetList() { return entrylist; }
+
   };
 }
 
@@ -64,7 +66,5 @@ namespace Suzu {
     string query(string name);
     string set(string name, string value);
   };
-
-  void TotalInjection();
 }
 
