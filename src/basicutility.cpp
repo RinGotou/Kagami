@@ -117,7 +117,7 @@ namespace Entry {
     InstanceList.erase(instance_i);
   }
 
-  void ResetPlugin() {
+  void ResetPlugin(bool OnExit) {
     HINSTANCE *hinstance = nullptr;
     while (InstanceList.empty() != true) {
       if (InstanceList.back().GetHealth()) {
@@ -126,7 +126,7 @@ namespace Entry {
       }
       InstanceList.pop_back();
     }
-    ResetPluginEntry();
+    if (!OnExit) ResetPluginEntry();
   }
 }
 
@@ -204,6 +204,9 @@ namespace Suzu {
     auto CheckingAnd = [&](regex pat) -> bool {
       return (regex_match(res.at(0), pat) && regex_match(res.at(1), pat));
     };
+    auto CheckString = [&](string str) -> bool {
+      return (str.front() == '"' && str.back() == '"');
+    };
 
     if (res.size() < 3) {
       result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 1");
@@ -224,14 +227,15 @@ namespace Suzu {
       temp = kStrNull;
     }
 
-    if (CheckingOr(kPatternString)) {
-      type = EnumStr;
-    }
-    else if (CheckingOr(kPatternDouble)) {
+
+    if (CheckingOr(kPatternDouble)) {
       type = EnumDouble;
     }
     else if (CheckingAnd(kPatternInteger)) {
       type = EnumInt;
+    }
+    else if (CheckString(res.at(0)) || CheckString(res.at(1))) {
+      type = EnumStr;
     }
     else {
       result.combo(kStrFatalError, kCodeIllegalArgs, "Calculating() 3");
@@ -375,7 +379,7 @@ namespace Suzu {
   Message UnloadPlugin(deque<string> &res) {
     using namespace Entry;
     Message result;
-    UnloadInstance(res.at(0));
+    UnloadInstance(Util().GetRawString(res.at(0)));
     return result;
   }
 

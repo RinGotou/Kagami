@@ -82,15 +82,12 @@ namespace Entry {
   }
 
   void ResetPluginEntry() {
-    deque<EntryProvider>::iterator entry_i;
-    for (entry_i = base.begin(); entry_i != base.end();) {
-      if (entry_i->GetPriority() == kFlagPluginEntry) {
-        base.erase(entry_i);
-      }
-      else {
-        entry_i++;
-      }
+    deque<EntryProvider> cache;
+    for (auto unit : base) {
+      if (unit.GetPriority() != kFlagPluginEntry) cache.push_back(unit);
     }
+    base.swap(cache);
+    Util().CleanUpDeque(cache);
   }
 }
 
@@ -103,11 +100,13 @@ namespace Suzu {
     };
 
     if (match(kPatternFunction)) result.SetCode(kTypeFunction);
-    else if (match(kPatternString)) result.SetCode(kTypeString);
     else if (match(kPatternBoolean)) result.SetCode(kTypeBoolean);
     else if (match(kPatternInteger)) result.SetCode(kTypeInteger);
     else if (match(kPatternDouble)) result.SetCode(KTypeDouble);
     else if (match(kPatternSymbol)) result.SetCode(kTypeSymbol);
+    else if (match(kPatternBlank)) result.SetCode(kTypeBlank);
+    //temporary fix for string ploblem
+    else if (target.front() == '"' && target.back() == '"') result.SetCode(kTypeString);
     else result.SetDetail("No match type.");
     return result;
   }
@@ -240,22 +239,28 @@ namespace Suzu {
       return string().append(1, c);
     };
 
-    //Tracking::log(Message(kStrEmpty, kCodeNothing, "target is " + target));
-
     if (target == kStrEmpty) {
       log(Message(kStrWarning, kCodeIllegalArgs, "Chainloader::Build() 1"));
       return *this;
     }
 
     for (i = 0; i < size; i++) {
-      if (headlock == false && std::regex_match(ToString(target[i]),
-        kPatternBlank)) {
-        continue;
+      if (!headlock) {
+        if (util.GetDataType(ToString(target[i])).GetCode() == kTypeBlank) {
+          continue;
+        }
+        else if (util.GetDataType(ToString(target[i])).GetCode() != kTypeBlank) {
+          headlock = true;
+        }
       }
-      else if (headlock == false && std::regex_match(ToString(target[i]),
-        kPatternBlank) == false) {
-        headlock = true;
-      }
+      //if (headlock == false && std::regex_match(ToString(target[i]),
+      //  kPatternBlank)) {
+      //  continue;
+      //}
+      //else if (headlock == false && std::regex_match(ToString(target[i]),
+      //  kPatternBlank) == false) {
+      //  headlock = true;
+      //}
 
 
       if (target[i] == '"') {
