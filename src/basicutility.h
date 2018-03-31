@@ -24,6 +24,10 @@ namespace Entry {
 }
 
 namespace Suzu {
+  class MemoryWrapper {
+
+  };
+
   class MemoryProvider {
   private:
     deque<StrPair> dict;

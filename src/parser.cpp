@@ -15,48 +15,46 @@ namespace Tracking {
 }
 
 namespace Entry {
-  deque<EntryProvider> base;
+  EntryMap EntryMapBase;
 
-  void Inject(EntryProvider provider) {
-    base.push_back(provider);
+  void Inject(string name, EntryProvider provider) {
+    EntryMapBase.insert(EntryMapUnit(name, provider));
   }
 
-  Message FastOrder(string name, deque<string> &res) {
-    Message result(kStrFatalError, kCodeIllegalCall, "Entry Not Found.");
-    for (auto &unit : base) {
-      if (unit.GetName() == name) result = unit.StartActivity(res);
+  Message FastOrder(string name, deque<string> res) {
+    Message result(kStrFatalError, kCodeIllegalCall, "Entry is not found.");
+    EntryMap::iterator it = EntryMapBase.find(name);
+    if (it->first == name) {
+      result = it->second.StartActivity(res);
     }
     return result;
   }
 
   EntryProvider Order(string name) {
     EntryProvider result;
-    for (auto &unit : base) {
-      if (unit.GetName() == name) result = unit;
+    EntryMap::iterator it = EntryMapBase.find(name);
+    if (it->first == name) {
+      result = it->second;
     }
     return result;
   }
 
-  EntryProvider Query(string target) {
+  EntryProvider Find(string target) {
     EntryProvider result;
     if (target == "+" || target == "-" || target == "*" || target == "/"
       || target == "==" || target == "<=" || target == ">=") {
       result = Order("binexp");
     }
-    if (target == kStrFor || target == kStrWhile || target == kStrEnd) {
+    else if (target == kStrFor || target == kStrWhile || target == kStrEnd) {
       result = Order("cycle");
     }
-    if (target == "=") {
+    else if (target == "=") {
       result = Order("set");
     }
     else {
-      for (auto &unit : base) {
-        if (unit.GetName() == target) {
-          if (unit.GetPriority() == kFlagNormalEntry || unit.GetPriority() == kFlagPluginEntry) {
-            result = unit;
-          }
-        }
-
+      EntryMap::iterator it = EntryMapBase.find(target);
+      if (it->first == target) {
+        result = it->second;
       }
     }
     return result;
@@ -67,32 +65,28 @@ namespace Entry {
       || target == "==" || target == "<=" || target == ">=") {
       return Order("binexp").GetRequiredCount() - 1;
     }
-    for (auto &unit : base) {
-      if (unit.GetName() == target) {
-        return unit.GetRequiredCount();
-      }
+    EntryMap::iterator it = EntryMapBase.find(target);
+    if (it->first == target) {
+      return it->second.GetRequiredCount();
     }
     return kFlagNotDefined;
   }
 
   void Delete(string name) {
-    deque<EntryProvider>::iterator entry_i = base.begin();
-    while (entry_i != base.end()) {
-      if (entry_i->GetName() == name)break;
-      entry_i++;
-    }
-    if (entry_i->GetName() == name) {
-      base.erase(entry_i);
+    EntryMap::iterator it = EntryMapBase.find(name);
+    if (it->first == name) {
+      EntryMapBase.erase(it);
     }
   }
 
   void ResetPluginEntry() {
-    deque<EntryProvider> cache;
-    for (auto unit : base) {
-      if (unit.GetPriority() != kFlagPluginEntry) cache.push_back(unit);
+    EntryMap tempbase;
+    for (auto unit : EntryMapBase) {
+      if (unit.second.GetPriority() != kFlagPluginEntry) tempbase.insert(unit);
     }
-    base.swap(cache);
-    Util().CleanUpDeque(cache);
+    EntryMapBase.swap(tempbase);
+    tempbase.clear();
+    EntryMap().swap(tempbase);
   }
 }
 
@@ -505,7 +499,7 @@ namespace Suzu {
             if (symbol.back() == "(") break;
 
             util.CleanUpDeque(container0);
-            provider = Entry::Query(symbol.back());
+            provider = Entry::Find(symbol.back());
 
             entryresult = StartCode();
             if (entryresult == false) break;
@@ -517,7 +511,7 @@ namespace Suzu {
             item.push_back(container1.top());
             container1.pop();
           }
-          provider = Entry::Query(symbol.back());
+          provider = Entry::Find(symbol.back());
           entryresult = StartCode();
           symbol.pop_back();
           if (entryresult == false) break;
@@ -551,7 +545,7 @@ namespace Suzu {
         }
       }
       else if (regex_match(raw[i], kPatternFunction) && !directappend) {
-        provider = Entry::Query(raw[i]);
+        provider = Entry::Find(raw[i]);
         if (provider.Good()) {
           symbol.push_back(raw[i]);
         }
@@ -603,7 +597,7 @@ namespace Suzu {
         result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
         break;
       }
-      provider = Entry::Query(symbol.back());
+      provider = Entry::Find(symbol.back());
       entryresult = StartCode();
 
       if (entryresult == false) {
@@ -721,9 +715,9 @@ namespace Suzu {
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
     TotalInjection();
-    Inject(EntryProvider("version", VersionInfo, 0));
-    Inject(EntryProvider("quit", QuitTerminal, 0));
-    Inject(EntryProvider("print", PrintStr, 1));
+    Inject("version", EntryProvider("version", VersionInfo, 0));
+    Inject("quit", EntryProvider("quit", QuitTerminal, 0));
+    Inject("print", EntryProvider("print", PrintStr, 1));
     
     while (result.GetCode() != kCodeQuit) {
       std::cout << '>';

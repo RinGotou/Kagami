@@ -50,6 +50,8 @@ namespace Suzu {
   const size_t kTypeBlank = 6;
   const size_t kTypeNull = 100;
   const size_t kTypePreserved = 101;
+  const size_t kModeAnonymus = 0;
+  const size_t kModeStringPtr = 1;
 
   class StrPair :public pair<string, string> {
   private:
