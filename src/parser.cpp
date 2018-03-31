@@ -129,16 +129,6 @@ namespace Suzu {
       if (value == kStrRedirect) {
         item.push_back(temp.GetDetail());
       }
-      else if (provider.GetName() != kStrVar) {
-        switch (temp.GetCode()) {
-        case kCodeSuccess:
-        case kCodeNothing:
-          item.push_back(kStrTrue);
-          break;
-        default:
-          item.push_back(kStrFalse);
-        }
-      }
     }
     else {
       Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found"));
@@ -168,10 +158,6 @@ namespace Suzu {
       }
     }
     ofs.close();
-  }
-
-  void Util::Cleanup() {
-    //nothing to dispose here
   }
 
   ScriptProvider2::ScriptProvider2(const char *target) {
@@ -659,6 +645,7 @@ namespace Suzu {
     vector<Chainloader> loaders;
     Chainloader cache;
     vector<size_t> nest;
+    size_t tail = 0;
 
     if (target == kStrEmpty) {
       Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Missing path"));
@@ -681,14 +668,21 @@ namespace Suzu {
       while (i < size) {
         temp = loaders.at(i).Start();
         if (temp.GetCode() != kCodeSuccess) {
-          if (temp.GetValue() == kStrFatalError) break;
+          if (temp.GetValue() == kStrFatalError) {
+            break;
+          }
+          
         }
         if (temp.GetCode() == kCodeHeadSign && temp.GetValue() == kStrTrue) {
           if (nest.empty()) nest.push_back(i);
           if (nest.back() != i) nest.push_back(i);
         }
-        if (temp.GetCode() == kCodeHeadSign && temp.GetValue() == kStrFalse) nest.pop_back();
+        if (temp.GetCode() == kCodeHeadSign && temp.GetValue() == kStrFalse) {
+          nest.pop_back();
+          i = tail;
+        } 
         if (temp.GetCode() == kCodeTailSign && !nest.empty()) {
+          tail = i;
           i = nest.back();
           continue;
         }
