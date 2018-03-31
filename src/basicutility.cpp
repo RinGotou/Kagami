@@ -208,8 +208,10 @@ namespace Suzu {
     opercode = &(buf.at(2));
 
     for (i = 0; i <= 1; i++) {
-      wrapper = FindWrapper(buf.at(i));
-      if (wrapper->GetString() != kStrNull) buf.at(i) = wrapper->GetString();
+      if (util.GetDataType(buf.at(i)) == kTypeFunction) {
+        wrapper = FindWrapper(buf.at(i));
+        if (wrapper->GetString() != kStrNull) buf.at(i) = wrapper->GetString();
+      }
     }
 
     if (CheckingOr(kPatternDouble)) type = EnumDouble;
@@ -230,10 +232,10 @@ namespace Suzu {
       else if (*opercode == "==" || *opercode == ">=" || *opercode == "<=" || *opercode == "!=") {
         switch (type) {
         case EnumInt:
-          tempresult = util.Logic(stoi(buf.at(0)), stoi(buf.at(1)), *opercode);
+          tempresult = util.Logic(stoi(buf.at(1)), stoi(buf.at(0)), *opercode);
           break;
         case EnumDouble:
-          tempresult = util.Logic(stod(buf.at(0)), stod(buf.at(1)), *opercode);
+          tempresult = util.Logic(stod(buf.at(1)), stod(buf.at(0)), *opercode);
           break;
         }
         switch (tempresult) {
@@ -298,6 +300,7 @@ namespace Suzu {
 
     //I'm cosidering about for and foreach now.
     if (buf.back() == kStrFor) {
+      //start end step
 
     }
     if (buf.back() == kStrWhile) {
