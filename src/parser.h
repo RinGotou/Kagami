@@ -266,8 +266,9 @@ namespace Suzu {
       if (MapBase.empty()) {
         insert();
       }
-      else if (MapBase.find(name)->first != name) {
-        insert();
+      else {
+        map<string, MemoryWrapper>::iterator it = MapBase.find(name);
+        if (it == MapBase.end()) insert();
       }
     }
 
@@ -279,8 +280,9 @@ namespace Suzu {
       if (MapBase.empty()) {
         insert();
       }
-      else if (MapBase.find(name)->first != name) {
-        insert();
+      else {
+        map<string, MemoryWrapper>::iterator it = MapBase.find(name);
+        if (it == MapBase.end()) insert();
       }
     }
 
@@ -292,8 +294,9 @@ namespace Suzu {
       if (MapBase.empty()) {
         insert();
       }
-      else if (MapBase.find(name)->first != name) {
-        insert();
+      else {
+        map<string, MemoryWrapper>::iterator it = MapBase.find(name);
+        if (it == MapBase.end()) insert();
       }
     }
 
