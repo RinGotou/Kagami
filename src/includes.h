@@ -9,6 +9,7 @@
 #include <deque>
 #include <regex>
 #include <array>
+#include <map>
 #include <memory>
 //#include "SDL.h"
 #include "windows.h"

@@ -98,7 +98,7 @@ namespace Entry {
       for (auto unit : lst) {
         activity = (PluginActivity)GetProcAddress(ins, unit.c_str());
         if (activity != nullptr) {
-          Inject(EntryProvider(unit, activity));
+          Inject(unit, EntryProvider(unit, activity));
         }
       }
     }
@@ -448,14 +448,14 @@ namespace Suzu {
     childbase.push_back(MemoryProvider());
     childbase.back().SetParent(&(childbase.back()));
     //inject basic Entry provider
-    Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
-    Inject(EntryProvider("vfind", FindVariable2, 2, kFlagCoreEntry));
-    Inject(EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry));
-    Inject(EntryProvider("cycle", CycleExp, kFlagAutoSize, kFlagBinEntry));
-    Inject(EntryProvider("log", LogPrint, 1));
-    Inject(EntryProvider("import", LoadPlugin, 2));
-    Inject(EntryProvider("release", UnloadPlugin, 1));
-    Inject(EntryProvider("var",CreateVariable,kFlagAutoSize));
-    Inject(EntryProvider("set", SetVariable, 2));
+    Inject("commaexp", EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
+    Inject("vfind", EntryProvider("vfind", FindVariable2, 2, kFlagCoreEntry));
+    Inject("binexp", EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry));
+    Inject("cycle", EntryProvider("cycle", CycleExp, kFlagAutoSize, kFlagBinEntry));
+    Inject("log", EntryProvider("log", LogPrint, 1));
+    Inject("import", EntryProvider("import", LoadPlugin, 2));
+    Inject("release", EntryProvider("release", UnloadPlugin, 1));
+    Inject("var", EntryProvider("var",CreateVariable,kFlagAutoSize));
+    Inject("set", EntryProvider("set", SetVariable, 2));
   }
 }

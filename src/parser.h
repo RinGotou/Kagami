@@ -13,6 +13,7 @@ namespace Suzu {
   using std::deque;
   using std::regex;
   using std::pair;
+  using std::map;
   using std::to_string;
   using std::stoi;
   using std::stof;
@@ -33,6 +34,8 @@ namespace Suzu {
   const regex kPatternBlank(R"([[:blank:]])");
 
   class EntryProvider;
+  typedef map<string, EntryProvider> EntryMap;
+  typedef map<string, EntryProvider>::value_type EntryMapUnit;
   typedef Message(*Activity)(deque<string> &);
   typedef Message *(*PluginActivity)(deque<string> &);
 
@@ -138,6 +141,8 @@ namespace Suzu {
     Message Start(); 
   };
 
+
+
   class EntryProvider {
   protected:
     string name;
@@ -151,14 +156,16 @@ namespace Suzu {
       requiredcount = kFlagNotDefined;
     }
 
-    EntryProvider(string n, Activity a, int r, int p = kFlagNormalEntry) : name(n) {
+    EntryProvider(string n, Activity a, int r, int p = kFlagNormalEntry) {
+      name = n;
       requiredcount = r;
       activity = a;
       priority = p;
       activity2 = nullptr;
     }
 
-    EntryProvider(string n,PluginActivity p) : name(n) {
+    EntryProvider(string n, PluginActivity p) {
+      name = n;
       priority = kFlagPluginEntry;
       requiredcount = kFlagAutoSize;
       activity2 = p;
@@ -189,7 +196,7 @@ namespace Tracking {
 
 namespace Entry {
   using namespace Suzu;
-  void Inject(Suzu::EntryProvider provider);
+  void Inject(std::string name, Suzu::EntryProvider provider);
   void Delete(std::string name);
   void ResetPluginEntry();
   void ResetPlugin(bool OnExit = false);
