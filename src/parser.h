@@ -87,6 +87,10 @@ namespace Suzu {
       return result;
     }
 
+    string GetRawString(string target) {
+      return target.substr(1, target.size() - 2);
+    }
+
     int GetDataType(string target);
     bool ActivityStart(EntryProvider &provider, deque<string> container,
       deque<string> &item, size_t top, Message &msg);
@@ -94,9 +98,6 @@ namespace Suzu {
     void PrintEvents();
     void Cleanup();
     void Terminal();
-    string GetRawString(string target) {
-      return target.substr(1, target.size() - 2);
-    }
   };
 
   class ScriptProvider2 {
@@ -141,8 +142,6 @@ namespace Suzu {
     Message Start(); 
   };
 
-
-
   class EntryProvider {
   protected:
     string name;
@@ -185,6 +184,146 @@ namespace Suzu {
     Message StartActivity(deque<string> p);
   };
 
+  class MemoryWrapper {
+  private:
+    int StorageMode;
+    void *memory;
+    MemoryWrapper() {}
+  public:
+    MemoryWrapper(int mode, void *ptr) {
+      StorageMode = mode;
+      memory = ptr;
+    }
+
+    MemoryWrapper(string data) {
+      StorageMode = kModeStringPtr;
+      memory = new string(data);
+    }
+
+    void free() {
+      switch (StorageMode) {
+      case kModeAnonymus:
+      case kModeStringPtr:
+        delete(memory);
+        break;
+      case kModeArray:
+        delete[](memory);
+        break;
+      default:
+        delete(memory);
+        break;
+      }
+      memory = nullptr;
+    }
+
+    void set(void *data, int mode, bool cleanup = false) {
+      if (cleanup) free();
+      this->memory = data;
+      this->StorageMode = mode;
+    }
+
+    void set(string data, bool cleanup = false) {
+      if (cleanup) free();
+      this->memory = new string(data);
+    }
+
+    void *GetPointer() {
+      return memory;
+    }
+
+    string GetString() {
+      if (StorageMode == kModeStringPtr) return *static_cast<string *>(memory);
+      return kStrNull;
+    }
+
+    int GetMode() const {
+      return StorageMode;
+    }
+  };
+
+  class MemoryMapper {
+  private:
+    map<string, MemoryWrapper> MapBase;
+    vector<string> ReadOnlyList;
+
+    bool CheckPriority(string name) {
+      if (ReadOnlyList.empty()) {
+        return true;
+      }
+      else {
+        for (auto unit : ReadOnlyList) {
+          if (unit == name) return true;
+        }
+      }
+      return false;
+    }
+  public:
+    void create(string name, string data, bool readonly = false) {
+      auto insert = [&]() {
+        MapBase.insert(map<string, MemoryWrapper>::value_type(name, data));
+        if (readonly) ReadOnlyList.push_back(name);
+      };
+      if (MapBase.empty()) {
+        insert();
+      }
+      else if (MapBase.find(name)->first != name) {
+        insert();
+      }
+    }
+
+    void create(string name, void *data, int mode, bool readonly = false) {
+      auto insert = [&]() {
+        MapBase.insert(map<string, MemoryWrapper>::value_type(name, MemoryWrapper(mode, data)));
+        if (readonly) ReadOnlyList.push_back(name);
+      };
+      if (MapBase.empty()) {
+        insert();
+      }
+      else if (MapBase.find(name)->first != name) {
+        insert();
+      }
+    }
+
+    void create(string name, MemoryWrapper &wrapper, bool readonly = false) {
+      auto insert = [&]() {
+        MapBase.insert(map<string, MemoryWrapper>::value_type(name, wrapper));
+        if (readonly) ReadOnlyList.push_back(name);
+      };
+      if (MapBase.empty()) {
+        insert();
+      }
+      else if (MapBase.find(name)->first != name) {
+        insert();
+      }
+    }
+
+    MemoryWrapper *find(string name) {
+      MemoryWrapper *wrapper = nullptr;
+      for (auto &unit : MapBase) {
+        if (unit.first == name) {
+          wrapper = &(unit.second);
+        }
+      }
+      return wrapper;
+    }
+
+    void empty() {
+      MapBase.clear();
+      map<string, MemoryWrapper>().swap(MapBase);
+      Util().CleanUpVector(ReadOnlyList);
+    }
+
+    ~MemoryMapper() {
+      for (auto &unit : MapBase) {
+        unit.second.free();
+      }
+    }
+
+    MemoryMapper() {}
+    size_t size() { return MapBase.size(); }
+    bool dispose(string name);
+  };
+
   void TotalInjection();
 }
 
@@ -200,6 +339,7 @@ namespace Entry {
   void Delete(std::string name);
   void ResetPluginEntry();
   void ResetPlugin(bool OnExit = false);
+  void CleanupWrapper();
 }
 #endif // !_SE_PARSER_
 

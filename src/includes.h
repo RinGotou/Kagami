@@ -10,6 +10,7 @@
 #include <regex>
 #include <array>
 #include <map>
+#include <set>
 #include <memory>
 //#include "SDL.h"
 #include "windows.h"

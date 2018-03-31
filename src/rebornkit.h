@@ -1,13 +1,13 @@
 #pragma once
 #include <string>
 #include <utility>
+#include <vector>
 #include <cstring>
-
-#define _CRT_SECURE_NO_WARNINGS
 
 namespace Suzu {
   using std::string;
   using std::pair;
+  using std::vector;
 
   const string kEngineVersion = "version 0.1 'anzu'";
   const string kEngineName = "RebornScripter";
@@ -52,33 +52,17 @@ namespace Suzu {
   const size_t kTypePreserved = 101;
   const size_t kModeAnonymus = 0;
   const size_t kModeStringPtr = 1;
-
-  class StrPair :public pair<string, string> {
-  private:
-    bool readonly;
-  public:
-    bool IsReadOnly() const { return this->readonly; }
-    void SetReadOnly(bool r) { this->readonly = r; }
-
-    StrPair() {
-      this->first = kStrNull;
-      this->second = kStrNull;
-    }
-
-    StrPair(string f, string s) {
-      this->first = f;
-      this->second = s;
-    }
-  };
+  const size_t kModeArray = 2;
 
   class Message {
   private:
     string value;
     string detail;
     int code;
+    vector<int> path;
   public:
     Message() {
-      value = kStrEmpty; 
+      value = kStrEmpty;
       code = kCodeSuccess;
       detail = kStrEmpty;
     }
@@ -114,5 +98,6 @@ namespace Suzu {
     string GetValue() const { return this->value; }
     int GetCode() const { return this->code; }
     string GetDetail() const { return this->detail; }
+    vector<int> &GetPath() { return this->path; }
   };
 }
