@@ -24,7 +24,7 @@ namespace Entry {
   Message FastOrder(string name, deque<string> res) {
     Message result(kStrFatalError, kCodeIllegalCall, "Entry is not found.");
     EntryMap::iterator it = EntryMapBase.find(name);
-    if (it->first == name) {
+    if (it != EntryMapBase.end()) {
       result = it->second.StartActivity(res);
     }
     return result;
@@ -33,7 +33,7 @@ namespace Entry {
   EntryProvider Order(string name) {
     EntryProvider result;
     EntryMap::iterator it = EntryMapBase.find(name);
-    if (it->first == name) {
+    if (it != EntryMapBase.end()) {
       result = it->second;
     }
     return result;
@@ -53,7 +53,7 @@ namespace Entry {
     }
     else {
       EntryMap::iterator it = EntryMapBase.find(target);
-      if (it->first == target) {
+      if (it != EntryMapBase.end()) {
         result = it->second;
       }
     }
@@ -66,7 +66,7 @@ namespace Entry {
       return Order("binexp").GetRequiredCount() - 1;
     }
     EntryMap::iterator it = EntryMapBase.find(target);
-    if (it->first == target) {
+    if (it != EntryMapBase.end()) {
       return it->second.GetRequiredCount();
     }
     return kFlagNotDefined;
@@ -74,7 +74,7 @@ namespace Entry {
 
   void Delete(string name) {
     EntryMap::iterator it = EntryMapBase.find(name);
-    if (it->first == name) {
+    if (it != EntryMapBase.end()) {
       EntryMapBase.erase(it);
     }
   }
@@ -636,6 +636,19 @@ namespace Suzu {
     return result;
   }
 
+  bool MemoryMapper::dispose(string name) {
+    bool result = true;
+    if (!MapBase.empty()) {
+      map<string, MemoryWrapper>::iterator it = MapBase.find(name);
+      if (it != MapBase.end()) {
+        it->second.free();
+        MapBase.erase(it);
+      }
+      else result = false;
+    }
+    return result;
+  }
+
   //TODO:for/while loop
   //walk back sign:kcodebacksign
   Message Util::ScriptStart(string target) {
@@ -685,6 +698,7 @@ namespace Suzu {
       
     }
     Entry::ResetPlugin();
+    Entry::CleanupWrapper();
     return result;
   }
 
@@ -730,6 +744,7 @@ namespace Suzu {
       }
     }
     ResetPlugin();
+    CleanupWrapper();
   }
 }
 

@@ -5,53 +5,66 @@
 
 namespace Entry {
   using namespace Suzu;
-  deque<MemoryProvider> childbase;
+
+  vector<MemoryMapper> MemoryAdapter;
   vector<Instance> InstanceList;
 
-  StrPair *FindChild(string name, bool Reversed = false) {
-    StrPair *pair = nullptr;
-    size_t mem_i = childbase.size() - 1;
-
-    if (childbase.empty()) {
-      return pair;
+  MemoryWrapper *FindWrapper(string name, bool reserved = false) {
+    MemoryWrapper *wrapper = nullptr;
+    size_t i = MemoryAdapter.size();
+    if ((MemoryAdapter.size() == 1 || !reserved) && !MemoryAdapter.empty()) {
+      wrapper = MemoryAdapter.back().find(name);
     }
-    if (childbase.size() == 1 || !Reversed) {
-      pair = childbase.back().find(name);
-    }
-    else if (Reversed && childbase.size() > 1) {
-      while (mem_i >= 0 && pair != nullptr) {
-        pair = childbase.at(mem_i).find(name);
-        mem_i--;
+    else if (MemoryAdapter.size() > 1 && reserved) {
+      while (i > 0 && wrapper == nullptr) {
+        wrapper = MemoryAdapter.at(i - 1).find(name);
+        i--;
       }
     }
-    return pair;
+    return wrapper;
   }
 
-  StrPair CreateChild(string name, string value = kStrNull) {
-    StrPair result(kStrNull, kStrNull);
-    if (regex_match(name, kPatternFunction) == false) {
+  template <class Type>
+  MemoryWrapper *CreateWrapper(string name, Type data, bool readonly = false) {
+    MemoryWrapper *wrapper = nullptr;
+    if (Util().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
-      return result;
+      return wrapper;
     }
-    result.first = name;
-    result.second = value;
-    childbase.back().create(result);
-    return result;
+    MemoryAdapter.back().create(name, data, readonly);
+    wrapper = MemoryAdapter.back().find(name);
+    return wrapper;
   }
 
-  bool DisposeChild(string name, bool Reserved = false) {
-    bool result = false;
-    size_t mem_i = childbase.size() - 1;
-    if (childbase.size() == 1 || !Reserved) {
-      result = childbase.back().dispose(name);
+  MemoryWrapper CreateWrapper(string name, MemoryWrapper wrapper) {
+    MemoryWrapper *wpr = nullptr;
+    if (Util().GetDataType(name) != kTypeFunction) {
+      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
+      return wrapper;
     }
-    else if (Reserved && childbase.size() > 1) {
-      while (!result && mem_i >= 0) {
-        result = childbase.at(mem_i).dispose(name);
-        mem_i--;
+    MemoryAdapter.back().create(name, wrapper);
+    wpr = MemoryAdapter.back().find(name);
+    return *wpr;
+  }
+
+  void DisposeWrapper(string name, bool reserved = false) {
+    bool result = false;
+    size_t i = MemoryAdapter.size();
+    if (MemoryAdapter.size() == 1 || !reserved) {
+      MemoryAdapter.back().dispose(name);
+    }
+    else if (MemoryAdapter.size() > 1 && reserved) {
+      while (result != true && i > 0) {
+        result = MemoryAdapter.at(i - 1).dispose(name);
+        i--;
       }
     }
-    return result;
+  }
+  
+  void CleanupWrapper() {
+    while (!MemoryAdapter.empty()) {
+      MemoryAdapter.pop_back();
+    }
   }
 
   bool Instance::Load(string name, HINSTANCE h) {
@@ -144,41 +157,6 @@ namespace Entry {
 }
 
 namespace Suzu {
-  bool MemoryProvider::dispose(string name) {
-    bool result = true;
-    MemPtr ptr;
-    if (dict.empty() == false) {
-      ptr = dict.begin();
-      while (ptr != dict.end() && ptr->first != name) ++ptr;
-      if (ptr == dict.end() && ptr->first != name) result = false;
-      else {
-        dict.erase(ptr);
-      }
-    }
-    return result;
-  }
-
-  string MemoryProvider::query(string name) {
-    string result;
-    StrPair *ptr = find(name);
-    if (ptr != nullptr) result = ptr->second;
-    else result = kStrNull;
-    return result;
-  }
-
-  string MemoryProvider::set(string name, string value) {
-    string result;
-    StrPair *ptr = find(name);
-    if (ptr != nullptr && ptr->IsReadOnly() != true) {
-      result = ptr->second;
-      ptr->second = value;
-    }
-    else {
-      result = kStrNull;
-    }
-    return result;
-  }
-
   Message CommaExpression(deque<string> &res) {
     Message result;
     if (res.empty()) result.SetCode(kCodeRedirect).SetValue(kStrEmpty);
@@ -204,14 +182,16 @@ namespace Suzu {
   }
 
   Message BinaryExp(deque<string> &res) {
-    using Entry::childbase;
+    using namespace Entry;
     Util util;
     string *opercode = nullptr;
+    MemoryWrapper *wrapper = nullptr;
     enum { EnumDouble, EnumInt, EnumStr, EnumNull }type = EnumNull;
     Message result(kStrRedirect,kCodeSuccess,"0");
     array<string, 3> buf;
     string temp = kStrEmpty;
     bool tempresult = false;
+    size_t i = 0;
     
     auto CheckingOr = [&](regex pat) -> bool {
       return (regex_match(res.at(0), pat) || regex_match(res.at(1), pat));
@@ -223,19 +203,13 @@ namespace Suzu {
       return (str.front() == '"' && str.back() == '"');
     };
 
+    //array data format rule:number number operator
     buf = { res.at(0),res.at(1),res.at(2) };
     opercode = &(buf.at(2));
 
-    //array data format rule:number number operator
-    if (regex_match(buf.at(0), kPatternFunction)) {
-      temp = childbase.back().query(buf.at(0));
-      if (temp != kStrNull) buf.at(0) = temp;
-      temp = kStrNull;
-    }
-    if (regex_match(buf.at(1), kPatternFunction)) {
-      temp = childbase.back().query(buf.at(1));
-      if (temp != kStrNull)buf.at(1) = temp;
-      temp = kStrNull;
+    for (i = 0; i <= 1; i++) {
+      wrapper = FindWrapper(buf.at(i));
+      if (wrapper->GetString() != kStrNull) buf.at(i) = wrapper->GetString();
     }
 
     if (CheckingOr(kPatternDouble)) type = EnumDouble;
@@ -317,9 +291,7 @@ namespace Suzu {
   }
 
   Message CycleExp(deque<string> &res) {
-    using Entry::childbase;
     Message result;
-    Util util;
     int i = 0;
     string temp = kStrEmpty;
     deque<string> buf = res;
@@ -341,80 +313,89 @@ namespace Suzu {
     }
     return result;
   }
-  
-  Message FindVariable2(deque<string> &res) {
+
+  Message FindVariable(deque<string> &res) {
     using namespace Entry;
-    Message result(kStrSuccess, kCodeSuccess, kStrEmpty);
-    StrPair *pairptr = FindChild(res.at(0), (res.at(1) == kStrTrue));
-    if (pairptr != nullptr) {
-      result.combo(kStrRedirect, kCodeSuccess, pairptr->second);
+    Message result(kStrRedirect, kCodeSuccess, kStrEmpty);
+    MemoryWrapper *wrapper = FindWrapper(res.at(0), (res.at(1) == kStrTrue));
+    if (wrapper != nullptr) {
+      result.combo(kStrRedirect, kCodeSuccess, wrapper->GetString());
     }
     else {
       result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + res.at(0) + " is not found");
     }
-
     return result;
   }
 
   Message SetVariable(deque<string> &res) {
     using namespace Entry;
-    Message result(kStrSuccess, kCodeSuccess, kStrEmpty);
-    //string temp;
-    StrPair *pairptr = FindChild(res.at(0));
-    StrPair pair(res.at(0), res.at(1));
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    array<string, 2> buf = { res.at(0),res.at(1) };
+    MemoryWrapper *wrapper0 = FindWrapper(buf.at(0), true), *wrapper1 = nullptr;
+    auto OnError = [&](string s) {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + s + " is not found");
+    };
 
-    if (regex_match(res.at(1), kPatternFunction)) {
-      pairptr = FindChild(res.at(1));
-      if (pairptr != nullptr) {
-        pair.second = pairptr->second;
+    if (wrapper0 == nullptr) {
+      OnError(buf.at(0));
+      return result;
+    }
+    if (Util().GetDataType(buf.at(1)) == kTypeFunction) {
+      wrapper1 = FindWrapper(buf.at(1), true);
+      if (wrapper1 != nullptr) {
+        switch (wrapper1->GetMode()) {
+        case kModeStringPtr:wrapper0->set(wrapper1->GetString()); break;
+        default:wrapper0->set(wrapper1->GetString()); break;
+        }
       }
       else {
-        result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + res.at(0) + " is not found");
-        return result;
+        OnError(buf.at(1));
       }
     }
-
-    pairptr = FindChild(pair.first);
-    if (pairptr != nullptr) {
-      pairptr->second = pair.second;
-    }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, pair.first + " is not found and cannot be set");
+      wrapper0->set(buf.at(1));
     }
+
     return result;
   }
+
 
   Message CreateVariable(deque<string> &res) {
     using namespace Entry;
     Message result;
+    MemoryWrapper *wrapper = FindWrapper(res.at(0));
+    MemoryWrapper *wrapper2 = nullptr;
     string temp = kStrEmpty;
-    StrPair *pairptr = FindChild(res.at(0));
+    int type;
+    auto OnError = [&](string s) {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + s + " is not found");
+    };
 
-    if (pairptr == nullptr) {
+    if (wrapper == nullptr) {
       if (res.size() == 2) {
-        if (regex_match(res.at(1), kPatternFunction)) {
-          pairptr = FindChild(res.at(1));
-          if (pairptr != nullptr) {
-            temp = pairptr->second;
-            CreateChild(res.at(0), temp);
+        type = Util().GetDataType(res.at(1));
+        if (type == kTypeFunction) {
+          wrapper2 = FindWrapper(res.at(1));
+          if (wrapper2 != nullptr) {
+            wrapper = new MemoryWrapper(*wrapper2);
+            CreateWrapper(res.at(0), *wrapper);
           }
           else {
-            result.combo(kStrFatalError, kCodeIllegalCall, "variable " + res.at(1) + " is not found");
+            OnError(res.at(1));
           }
-          pairptr = nullptr;
         }
-        else {
-          CreateChild(res.at(0), res.at(1));
+        else if (type != kTypeNull) {
+          CreateWrapper(res.at(0), res.at(1));
         }
       }
       else if (res.size() == 1) {
-        CreateChild(res.at(0), kStrNull);
+        wrapper = new MemoryWrapper(kModeAnonymus, nullptr);
+        CreateWrapper(res.at(0), *wrapper);
+      }
+      else {
+        result.combo(kStrFatalError, kCodeIllegalCall, res.at(0) + "is defined");
       }
     }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, res.at(0) + "is defined");
-    }
-
     return result;
   }
 
@@ -423,7 +404,7 @@ namespace Suzu {
     Message result;
     Attachment attachment = nullptr;
     Activity activity = nullptr;
-    StrPair pair(Util().GetRawString(res.at(0)), Util().GetRawString(res.at(1)));
+    pair<string, string> pair(Util().GetRawString(res.at(0)), Util().GetRawString(res.at(1)));
     
     HINSTANCE hinstance = LoadLibrary(s2ws(pair.second).c_str());
     if (hinstance != nullptr) {
@@ -445,11 +426,10 @@ namespace Suzu {
   void TotalInjection() {
     using namespace Entry;
     //set root memory provider
-    childbase.push_back(MemoryProvider());
-    childbase.back().SetParent(&(childbase.back()));
+    MemoryAdapter.push_back(MemoryMapper());
     //inject basic Entry provider
     Inject("commaexp", EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
-    Inject("vfind", EntryProvider("vfind", FindVariable2, 2, kFlagCoreEntry));
+    Inject("vfind", EntryProvider("vfind", FindVariable, 2, kFlagCoreEntry));
     Inject("binexp", EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry));
     Inject("cycle", EntryProvider("cycle", CycleExp, kFlagAutoSize, kFlagBinEntry));
     Inject("log", EntryProvider("log", LogPrint, 1));
