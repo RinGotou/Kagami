@@ -19,6 +19,10 @@ namespace Suzu {
   using std::stod;
   using std::regex_match;
   const string kStrVar = "var";
+  const string kStrFor = "for";
+  const string kStrForeach = "foreach";
+  const string kStrWhile = "while";
+  const string kStrEnd = "end";
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   //const regex kPatternString(R"("(\"|\\|\n|\t|[^"]|[[:Punct:]])*")");
   const regex kPatternNumber(R"(\d+\.?\d*)");
@@ -76,6 +80,7 @@ namespace Suzu {
       if (opercode == "==") result = (A == B);
       if (opercode == "<=") result = (A <= B);
       if (opercode == ">=") result = (A >= B);
+      if (opercode == "!=") result = (A != B);
       return result;
     }
 
@@ -105,7 +110,6 @@ namespace Suzu {
       Util().CleanUpVector(base);
     }
 
-    //size_t ReverseTo(size_t step);
     bool GetHealth() const { return health; }
     bool eof() const { return end; }
     void ResetCounter() { current = 0; }

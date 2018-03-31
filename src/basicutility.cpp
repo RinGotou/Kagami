@@ -302,6 +302,37 @@ namespace Suzu {
     result.SetDetail(temp);
     return result;
   }
+
+  Message CycleExp(deque<string> &res) {
+    Message result;
+    if (res.back() == kStrFor) {
+      switch (res.size()) {
+      case 3:
+
+        break;
+      case 4:
+
+        break;
+      default:
+        break;
+      }
+    }
+    if (res.back() == kStrForeach) {
+      //this will be completed after array feature
+    }
+    if (res.back() == kStrWhile) {
+      if (res.at(0) == kStrTrue) {
+        result.combo(kStrTrue, kCodeHeadSign, kStrEmpty);
+      }
+      if (res.at(0) == kStrFalse) {
+        result.combo(kStrFalse, kCodeHeadSign, kStrEmpty);
+      }
+    }
+    if (res.back() == kStrEnd) {
+      result.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
+    }
+    return result;
+  }
   
   Message FindVariable2(deque<string> &res) {
     using namespace Entry;
@@ -412,6 +443,7 @@ namespace Suzu {
     Inject(EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
     Inject(EntryProvider("vfind", FindVariable2, 2, kFlagCoreEntry));
     Inject(EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry));
+    Inject(EntryProvider("cycle", CycleExp, kFlagAutoSize, kFlagBinEntry));
     Inject(EntryProvider("log", LogPrint, 1));
     Inject(EntryProvider("import", LoadPlugin, 2));
     Inject(EntryProvider("release", UnloadPlugin, 1));

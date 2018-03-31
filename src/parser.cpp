@@ -1,3 +1,4 @@
+//engine core
 #include <iostream>
 #include "parser.h"
 
@@ -14,7 +15,6 @@ namespace Tracking {
 }
 
 namespace Entry {
-  //using namespace Suzu;
   deque<EntryProvider> base;
 
   void Inject(EntryProvider provider) {
@@ -42,6 +42,9 @@ namespace Entry {
     if (target == "+" || target == "-" || target == "*" || target == "/"
       || target == "==" || target == "<=" || target == ">=") {
       result = Order("binexp");
+    }
+    if (target == kStrFor || target == kStrWhile || target == kStrEnd) {
+      result = Order("cycle");
     }
     if (target == "=") {
       result = Order("set");
@@ -269,7 +272,6 @@ namespace Suzu {
         }
       }
 
-      //In this verison comma is preserved for next execution processing.
       switch (target[i]) {
       case '(':
       case ',':
@@ -370,7 +372,6 @@ namespace Suzu {
     return *this;
   }
 
-  //private
   int Chainloader::GetPriority(string target) const {
     int priority;
     if (target == "=" || target == kStrVar) priority = 0;
@@ -381,7 +382,6 @@ namespace Suzu {
     return priority;
   }
 
-  //todo:comma expression expanding
   Message Chainloader::Start() {
     const size_t size = raw.size();
 
@@ -389,15 +389,16 @@ namespace Suzu {
     EntryProvider provider;
     Message result, tempresult;
     size_t i, j, k;
-    int m;
     size_t nextinspoint = 0;
+    size_t forwardtype = kTypeNull;
+    int m;
     string tempstr;
     bool entryresult = true;
     bool commaexp = false;
-    bool directappend = false, directappend2 = false;
+    bool directappend = false;
     bool forwardinsert = false;
-    bool arrayinit = false;
-    size_t forwardtype = kTypeNull;
+    bool disableset = false;
+
     deque<string> item;
     deque<string> symbol;
     deque<string> container0;
@@ -409,11 +410,11 @@ namespace Suzu {
       m = provider.GetRequiredCount();
 
       if (provider.GetPriority() == kFlagBinEntry) {
-        m -= 1;
+        if (m != kFlagAutoSize) m -= 1;
         reverse = false;
       }
 
-      if (arrayinit) {
+      if (disableset) {
         while (item.back() != ",") {
           container0.push_front(item.back());
           item.pop_back();
@@ -434,7 +435,6 @@ namespace Suzu {
       if (provider.GetPriority() == kFlagBinEntry) {
         container0.push_back(symbol.back());
       }
-
 
       return util.ActivityStart(provider, container0, item, item.size(), result);
     };
@@ -479,9 +479,9 @@ namespace Suzu {
         }
         else if (raw[i] == ",") {
           if (symbol.back() == kStrVar) {
-            arrayinit = true;
+            disableset = true;
           }
-          if (arrayinit) {
+          if (disableset) {
             symbol.push_back(kStrVar);
             item.push_back(raw[i]);
           }
@@ -599,10 +599,6 @@ namespace Suzu {
 
     while (symbol.empty() != true) {
       util.CleanUpDeque(container0);
-      if (item.empty()) {
-        result.combo(kStrFatalError, kCodeIllegalSymbol, "Parameters expected.");
-        break;
-      }
       if (symbol.back() == "(" || symbol.back() == ")") {
         result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
         break;
@@ -646,6 +642,8 @@ namespace Suzu {
     return result;
   }
 
+  //TODO:for/while loop
+  //walk back sign:kcodebacksign
   Message Util::ScriptStart(string target) {
     Message result;
     Message temp;
@@ -653,30 +651,44 @@ namespace Suzu {
     size_t size;
     vector<Chainloader> loaders;
     Chainloader cache;
+    vector<size_t> nest;
 
     if (target == kStrEmpty) {
       Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Missing path"));
+      return result;
     }
-    else {
-      TotalInjection();
-      ScriptProvider2 sp(target.c_str());
-      while (sp.eof() != true) {
-        temp = sp.Get();
-        if (temp.GetCode() == kCodeSuccess) {
-          cache.Reset().Build(temp.GetDetail());
-          loaders.push_back(cache);
-        }
+    
+    TotalInjection();
+    ScriptProvider2 sp(target.c_str());
+    while (sp.eof() != true) {
+      temp = sp.Get();
+      if (temp.GetCode() == kCodeSuccess) {
+        cache.Reset().Build(temp.GetDetail());
+        loaders.push_back(cache);
       }
+    }
 
-      if (!loaders.empty()) {
-        size = loaders.size();
-        for (i = 0; i < size; i++) {
-          temp = loaders[i].Start();
-          if (temp.GetCode() != kCodeSuccess) {
-            if (temp.GetValue() == kStrFatalError) break;
-          }
+    if (!loaders.empty()) {
+      size = loaders.size();
+      i = 0;
+      while (i < size) {
+        temp = loaders.at(i).Start();
+        if (temp.GetCode() != kCodeSuccess) {
+          if (temp.GetValue() == kStrFatalError) break;
         }
+        if (temp.GetCode() == kCodeHeadSign && temp.GetValue() == kStrTrue) {
+          if (nest.empty()) nest.push_back(i);
+          if (nest.back() != i) nest.push_back(i);
+        }
+        if (temp.GetCode() == kCodeHeadSign && temp.GetValue() == kStrFalse) nest.pop_back();
+        if (temp.GetCode() == kCodeTailSign && !nest.empty()) {
+          i = nest.back();
+          continue;
+        }
+
+        i++;
       }
+      
     }
     Entry::ResetPlugin();
     return result;

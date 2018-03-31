@@ -23,6 +23,8 @@ namespace Suzu {
   const string kStrRedirect = "__*__";
   const string kStrTrue = "true";
   const string kStrFalse = "false";
+  const int kCodeTailSign = 5;
+  const int kCodeHeadSign = 4;
   const int kCodeQuit = 3;
   const int kCodeRedirect = 2;
   const int kCodeNothing = 1;
