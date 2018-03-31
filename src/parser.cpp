@@ -97,22 +97,22 @@ namespace Entry {
 }
 
 namespace Suzu {
-  Message Util::GetDataType(string target) {
+  int Util::GetDataType(string target) {
     using std::regex_match;
-    Message result(kStrRedirect, kCodeIllegalArgs, "");
+    int result = kTypeNull;
     auto match = [&](const regex &pat) -> bool {
       return regex_match(target, pat);
     };
 
-    if (match(kPatternFunction)) result.SetCode(kTypeFunction);
-    else if (match(kPatternBoolean)) result.SetCode(kTypeBoolean);
-    else if (match(kPatternInteger)) result.SetCode(kTypeInteger);
-    else if (match(kPatternDouble)) result.SetCode(KTypeDouble);
-    else if (match(kPatternSymbol)) result.SetCode(kTypeSymbol);
-    else if (match(kPatternBlank)) result.SetCode(kTypeBlank);
-    //temporary fix for string ploblem
-    else if (target.front() == '"' && target.back() == '"') result.SetCode(kTypeString);
-    else result.SetDetail("No match type.");
+    if (match(kPatternFunction)) result = kTypeFunction;
+    else if (match(kPatternBoolean)) result = kTypeBoolean;
+    else if (match(kPatternInteger)) result = kTypeInteger;
+    else if (match(kPatternDouble)) result = KTypeDouble;
+    else if (match(kPatternSymbol)) result = kTypeSymbol;
+    else if (match(kPatternBlank)) result = kTypeBlank;
+    else if (target.front() == '"' && target.back() == '"') result = kTypeString; //temporary fix for string ploblem
+    else result = kTypeNull;
+
     return result;
   }
 
@@ -251,10 +251,10 @@ namespace Suzu {
 
     for (i = 0; i < size; i++) {
       if (!headlock) {
-        if (util.GetDataType(ToString(target[i])).GetCode() == kTypeBlank) {
+        if (util.GetDataType(ToString(target[i])) == kTypeBlank) {
           continue;
         }
-        else if (util.GetDataType(ToString(target[i])).GetCode() != kTypeBlank) {
+        else if (util.GetDataType(ToString(target[i])) != kTypeBlank) {
           headlock = true;
         }
       }
@@ -323,7 +323,7 @@ namespace Suzu {
           }
           else if (binaryoptchar != NULL) {
             string binaryopt = { binaryoptchar, target[i] };
-            if (util.GetDataType(binaryopt).GetCode() == kTypeSymbol) {
+            if (util.GetDataType(binaryopt) == kTypeSymbol) {
               output.push_back(binaryopt);
               binaryoptchar = NULL;
             }
@@ -523,7 +523,7 @@ namespace Suzu {
           if (entryresult == false) break;
         }
         else {
-          if (symbol.empty() || util.GetDataType(raw[i]).GetCode() != kTypeFunction) {
+          if (symbol.empty() || util.GetDataType(raw[i]) != kTypeFunction) {
             symbol.push_back(raw[i]);
           }
           else if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back() != "(") {

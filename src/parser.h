@@ -84,7 +84,7 @@ namespace Suzu {
       return result;
     }
 
-    Message GetDataType(string target);
+    int GetDataType(string target);
     bool ActivityStart(EntryProvider &provider, deque<string> container,
       deque<string> &item, size_t top, Message &msg);
     Message ScriptStart(string target);

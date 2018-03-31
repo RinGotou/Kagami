@@ -11,18 +11,16 @@ namespace Entry {
   StrPair *FindChild(string name, bool Reversed = false) {
     StrPair *pair = nullptr;
     size_t mem_i = childbase.size() - 1;
+
     if (childbase.empty()) {
-      return nullptr;
+      return pair;
     }
     if (childbase.size() == 1 || !Reversed) {
       pair = childbase.back().find(name);
     }
     else if (Reversed && childbase.size() > 1) {
-      while (mem_i >= 0) {
+      while (mem_i >= 0 && pair != nullptr) {
         pair = childbase.at(mem_i).find(name);
-        if (pair != nullptr) {
-          break;
-        }
         mem_i--;
       }
     }
@@ -38,6 +36,21 @@ namespace Entry {
     result.first = name;
     result.second = value;
     childbase.back().create(result);
+    return result;
+  }
+
+  bool DisposeChild(string name, bool Reserved = false) {
+    bool result = false;
+    size_t mem_i = childbase.size() - 1;
+    if (childbase.size() == 1 || !Reserved) {
+      result = childbase.back().dispose(name);
+    }
+    else if (Reserved && childbase.size() > 1) {
+      while (!result && mem_i >= 0) {
+        result = childbase.at(mem_i).dispose(name);
+        mem_i--;
+      }
+    }
     return result;
   }
 
@@ -304,31 +317,26 @@ namespace Suzu {
   }
 
   Message CycleExp(deque<string> &res) {
+    using Entry::childbase;
     Message result;
-    if (res.back() == kStrFor) {
-      switch (res.size()) {
-      case 3:
+    Util util;
+    int i = 0;
+    string temp = kStrEmpty;
+    deque<string> buf = res;
 
-        break;
-      case 4:
+    //I'm cosidering about for and foreach now.
+    if (buf.back() == kStrFor) {
 
-        break;
-      default:
-        break;
-      }
     }
-    if (res.back() == kStrForeach) {
-      //this will be completed after array feature
-    }
-    if (res.back() == kStrWhile) {
-      if (res.at(0) == kStrTrue) {
+    if (buf.back() == kStrWhile) {
+      if (buf.at(0) == kStrTrue) {
         result.combo(kStrTrue, kCodeHeadSign, kStrEmpty);
       }
-      if (res.at(0) == kStrFalse) {
+      if (buf.at(0) == kStrFalse) {
         result.combo(kStrFalse, kCodeHeadSign, kStrEmpty);
       }
     }
-    if (res.back() == kStrEnd) {
+    if (buf.back() == kStrEnd) {
       result.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
     }
     return result;
