@@ -4,8 +4,8 @@ import("test","TestLibrary.dll")
 
 while(intA <= 5)
   while(intB <= 3)
-      log(GetOps())
-	  intB = intB + 1
+    log(GetOps())
+    intB = intB + 1
   end
   log("value of intA " + intA)
   intA = intA + 1
