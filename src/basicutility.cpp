@@ -407,11 +407,11 @@ namespace Suzu {
     Message result;
     Attachment attachment = nullptr;
     Activity activity = nullptr;
-    pair<string, string> pair(Util().GetRawString(res.at(0)), Util().GetRawString(res.at(1)));
+    pair<string, string> p(Util().GetRawString(res.at(0)), Util().GetRawString(res.at(1)));
     
-    HINSTANCE hinstance = LoadLibrary(s2ws(pair.second).c_str());
+    HINSTANCE hinstance = LoadLibrary(s2ws(p.second).c_str());
     if (hinstance != nullptr) {
-      AddInstance(pair.first, hinstance);
+      AddInstance(p.first, hinstance);
     }
     else {
       result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found");
