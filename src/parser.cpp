@@ -153,7 +153,6 @@ namespace Suzu {
           if (unit.GetDetail() != kStrEmpty) {
             ofs << prioritystr << unit.GetDetail() << "\n";
           }
-
         }
       }
     }
