@@ -178,7 +178,7 @@ namespace Suzu {
   public:
     ChainStorage(ScriptProvider2 &provider) {
       Message temp;
-      if (provider.eof() != true) {
+      while (provider.eof() != true) {
         temp = provider.Get();
         if (temp.GetCode() == kCodeSuccess) AddLoader(temp.GetDetail());
       }
