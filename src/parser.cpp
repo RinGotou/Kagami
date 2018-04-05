@@ -386,16 +386,16 @@ namespace Suzu {
   }
 
   Message Chainloader::Start() {
+    using namespace Entry;
     const size_t size = raw.size();
-
     Util util;
-    EntryProvider provider;
     Message result, tempresult;
     size_t i, j, k;
     size_t nextinspoint = 0;
     size_t forwardtype = kTypeNull;
-    int m;
-    string tempstr;
+    string tempstr = kStrEmpty;
+    int unitType = kTypeNull;
+    int m = 0;
     bool entryresult = true;
     bool commaexp = false;
     bool directappend = false;
@@ -408,15 +408,15 @@ namespace Suzu {
     stack<string> container1;
 
     auto StartCode = [&]() -> bool {
+      EntryProvider provider;
       bool reverse = true;
       util.CleanUpDeque(container0);
+      provider = Entry::Find(symbol.back());
       m = provider.GetRequiredCount();
-
       if (provider.GetPriority() == kFlagBinEntry) {
         if (m != kFlagAutoSize) m -= 1;
         reverse = false;
       }
-
       if (disableset) {
         while (item.back() != ",") {
           container0.push_front(item.back());
@@ -434,51 +434,43 @@ namespace Suzu {
           --m;
         }
       }
-
       if (provider.GetPriority() == kFlagBinEntry) {
         container0.push_back(symbol.back());
       }
-
       return util.ActivityStart(provider, container0, item, item.size(), result);
     };
 
     for (i = 0; i < size; ++i) {
-      if (regex_match(raw[i], kPatternSymbol)) {
+      unitType = util.GetDataType(raw.at(i));
+      /////////////////////////////////////////////////////////////////////////////////
+      if (unitType == kTypeSymbol) {
         if (raw[i] == "\"") {
           switch (directappend) {
-          case true:
-            item.back().append(raw[i]);
-            break;
-          case false:
-            item.push_back(raw[i]);
-            break;
+          case true:item.back().append(raw[i]);break;
+          case false:item.push_back(raw[i]);break;
           }
           directappend = !directappend;
         }
         else if (raw[i] == "=") {
-          if (!symbol.empty()) {
-            if (symbol.back() != kStrVar) {
-              symbol.push_back(raw[i]);
-            }
-          }
-          else {
-            symbol.push_back(raw[i]);
+          switch (symbol.empty()) {
+          case true:symbol.push_back(raw[i]); break;
+          case false:if (symbol.back() != kStrVar) symbol.push_back(raw[i]); break;
           }
         }
         else if (raw[i] == ",") {
-          if (symbol.back() == kStrVar) {
-            disableset = true;
-          }
-          if (disableset) {
+          if (symbol.back() == kStrVar) disableset = true;
+          switch (disableset) {
+          case true:
             symbol.push_back(kStrVar);
             item.push_back(raw[i]);
-          }
-          else {
+            break;
+          case false:
             symbol.push_back(raw[i]);
+            break;
           }
         }
         else if (raw[i] == "(") {
-          if (symbol.empty() || regex_match(symbol.back(), kPatternSymbol)) {
+          if (symbol.empty() || util.GetDataType(symbol.back()) == kTypeSymbol) {
             symbol.push_back("commaexp");
           }
           symbol.push_back(raw[i]);
@@ -490,41 +482,29 @@ namespace Suzu {
               item.pop_back();
               symbol.pop_back();
             }
-            if (symbol.back() == "(") break;
 
-            util.CleanUpDeque(container0);
-            provider = Entry::Find(symbol.back());
-
-            entryresult = StartCode();
-            if (entryresult == false) break;
+            if (!StartCode()) break;
             symbol.pop_back();
           }
 
           if (symbol.back() == "(") symbol.pop_back();
-          if (container1.empty() != true) {
+          while (!container1.empty()) {
             item.push_back(container1.top());
             container1.pop();
           }
-          provider = Entry::Find(symbol.back());
-          entryresult = StartCode();
+          if (!StartCode()) break;
           symbol.pop_back();
-          if (entryresult == false) break;
         }
         else {
-          //operator input
-          if (symbol.empty() || util.GetDataType(raw[i]) != kTypeFunction) {
+          if (symbol.empty()) {
             symbol.push_back(raw[i]);
           }
           else if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back() != "(") {
             j = symbol.size() - 1;
             k = item.size();
             while (symbol.at(j) != "(" && GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
-              if (k = item.size()) {
-                k -= Entry::FastGetCount(symbol.at(j));
-              }
-              else {
-                k -= Entry::FastGetCount(symbol.at(j)) - 1;
-              }
+              if (k = item.size()) { k -= Entry::FastGetCount(symbol.at(j)); }
+              else { k -= Entry::FastGetCount(symbol.at(j)) - 1; }
               --j;
             }
             symbol.insert(symbol.begin() + j + 1, raw[i]);
@@ -539,46 +519,40 @@ namespace Suzu {
           }
         }
       }
-      //function input
-      else if (regex_match(raw[i], kPatternFunction) && !directappend) {
-        provider = Entry::Find(raw[i]);
-        if (provider.Good()) {
-          symbol.push_back(raw[i]);
-        }
-        else {
-          item.push_back(raw[i]);
+      /////////////////////////////////////////////////////////////////////////////////
+      else if (unitType == kTypeFunction && !directappend) {
+        switch (Find(raw[i]).Good()) {
+        case true:symbol.push_back(raw[i]); break;
+        case false:item.push_back(raw[i]); break;
         }
       }
+      /////////////////////////////////////////////////////////////////////////////////
       else {
-        if (forwardinsert) {
+        switch (forwardinsert) {
+        case true:
           item.insert(item.begin() + nextinspoint, raw[i]);
           forwardinsert = false;
-        }
-        else {
+          break;
+        case false:
           switch (directappend) {
-          case true:
-            item.back().append(raw[i]);
-            break;
-          case false:
-            item.push_back(raw[i]);
+          case true:item.back().append(raw[i]); break;
+          case false:item.push_back(raw[i]); break;
           }
+          break;
         }
       }
     }
 
-    while (symbol.empty() != true) {
-      util.CleanUpDeque(container0);
-      if (symbol.back() == "(" || symbol.back() == ")") {
-        result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
-        break;
+    if (result.GetValue() != kStrFatalError) {
+      while (symbol.empty() != true) {
+        util.CleanUpDeque(container0);
+        if (symbol.back() == "(" || symbol.back() == ")") {
+          result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
+          break;
+        }
+        if (!StartCode()) break;
+        symbol.pop_back();
       }
-      provider = Entry::Find(symbol.back());
-      entryresult = StartCode();
-
-      if (entryresult == false) {
-        break;
-      }
-      symbol.pop_back();
     }
 
     util.CleanUpDeque(container0).CleanUpDeque(item).CleanUpDeque(symbol);
@@ -624,26 +598,63 @@ namespace Suzu {
     return result;
   }
 
+  vector<string> Util::BuildStrVec(string source) {
+    vector<string> result;
+    string temp = kStrEmpty;
+    for (auto unit : source) {
+      if (unit == '|') {
+        result.push_back(temp);
+        temp.clear();
+        continue;
+      }
+      temp.append(1, unit);
+    }
+    if (!temp.empty())result.push_back(temp);
+    return result;
+  }
+
   Message ChainStorage::Run(deque<string> res = deque<string>()) {
     Message result;
     size_t i = 0;
+    size_t size = 0;
+    size_t tail = 0;
+    stack<size_t> nest;
+    
     Entry::CreateMapper();
     if (!res.empty()) {
-      //TODO:make map
       if (res.size() != parameter.size()) {
         result.combo(kStrFatalError, kCodeIllegalCall, "wrong parameter count.");
         return result;
       }
       for (i = 0; i < parameter.size(); i++) {
-        //Entry::CreateWrapper(parameter.at(i),res.at(i),)
+        Entry::CreateWrapper(parameter.at(i), res.at(i), false);
       }
     }
     //todo:start chainloaders
+    if (!storage.empty()) {
+      size = storage.size();
+      i = 0;
+      while (i < size) {
+        result = storage.at(i).Start();
+        if (result.GetValue() == kStrFatalError) break;
+        if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrTrue) {
+          if (nest.empty()) nest.push(i);
+          if (nest.top() == i) nest.push(i);
+        }
+        if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrFalse) {
+          nest.pop();
+          i = tail;
+        }
+        if (result.GetCode() == kCodeTailSign && !nest.empty()) {
+          tail = i;
+          i = nest.top();
+        }
+      }
+    }
+    Entry::DisposeMapper();
     return result;
   }
 
-  //TODO:for/while loop
-  //walk back sign:kcodebacksign
   Message Util::ScriptStart(string target) {
     Message result;
     Message temp;
@@ -661,43 +672,9 @@ namespace Suzu {
     
     TotalInjection();
     ScriptProvider2 sp(target.c_str());
-    while (sp.eof() != true) {
-      temp = sp.Get();
-      if (temp.GetCode() == kCodeSuccess) {
-        cache.Reset().Build(temp.GetDetail());
-        loaders.push_back(cache);
-      }
-    }
-
-    if (!loaders.empty()) {
-      size = loaders.size();
-      i = 0;
-      while (i < size) {
-        temp = loaders.at(i).Start();
-        if (temp.GetCode() != kCodeSuccess) {
-          if (temp.GetValue() == kStrFatalError) {
-            break;
-          }
-          
-        }
-        if (temp.GetCode() == kCodeHeadSign && temp.GetValue() == kStrTrue) {
-          if (nest.empty()) nest.push_back(i);
-          if (nest.back() != i) nest.push_back(i);
-        }
-        if (temp.GetCode() == kCodeHeadSign && temp.GetValue() == kStrFalse) {
-          nest.pop_back();
-          i = tail;
-        } 
-        if (temp.GetCode() == kCodeTailSign && !nest.empty()) {
-          tail = i;
-          i = nest.back();
-          continue;
-        }
-
-        i++;
-      }
-      
-    }
+    ChainStorage cs(sp);
+    cs.Run();
+    
     Entry::ResetPlugin();
     Entry::CleanupWrapper();
     return result;

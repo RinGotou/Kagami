@@ -461,17 +461,19 @@ namespace Suzu {
 
   void TotalInjection() {
     using namespace Entry;
+    Util util;
+    vector<string>(*Build)(string) = util.BuildStrVec;
     //set root memory provider
     MemoryAdapter.push_back(MemoryMapper());
     //inject basic Entry provider
     Inject("commaexp", EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
-    Inject("vfind", EntryProvider("vfind", FindVariable, 2, kFlagCoreEntry));
-    Inject("binexp", EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry));
-    Inject("cycle", EntryProvider("cycle", CycleExp, kFlagAutoSize, kFlagBinEntry));
-    Inject("log", EntryProvider("log", LogPrint, 1));
-    Inject("import", EntryProvider("import", LoadPlugin, 2));
-    Inject("release", EntryProvider("release", UnloadPlugin, 1));
-    Inject("var", EntryProvider("var",CreateVariable,kFlagAutoSize));
-    Inject("set", EntryProvider("set", SetVariable, 2));
+    Inject("cycle",    EntryProvider("cycle"   , CycleExp       , kFlagAutoSize, kFlagBinEntry));
+    Inject("var",      EntryProvider("var"     , CreateVariable , kFlagAutoSize));
+    Inject("vfind",    EntryProvider("vfind"   , FindVariable   , 2, kFlagCoreEntry, Build("name|reserved")));
+    Inject("binexp",   EntryProvider("binexp"  , BinaryExp      , 3, kFlagBinEntry, Build("first|second|operator")));
+    Inject("log",      EntryProvider("log"     , LogPrint       , 1, kFlagNormalEntry, Build("data")));
+    Inject("import",   EntryProvider("import"  , LoadPlugin     , 2, kFlagNormalEntry, Build("name|path")));
+    Inject("release",  EntryProvider("release" , UnloadPlugin   , 1, kFlagNormalEntry, Build("name")));
+    Inject("set",      EntryProvider("set"     , SetVariable    , 2, kFlagNormalEntry, Build("name|source")));
   }
 }
