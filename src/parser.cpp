@@ -674,7 +674,6 @@ namespace Suzu {
     ScriptProvider2 sp(target.c_str());
     ChainStorage cs(sp);
     cs.Run();
-    
     Entry::ResetPlugin();
     Entry::CleanupWrapper();
     return result;
