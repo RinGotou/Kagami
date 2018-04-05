@@ -121,8 +121,9 @@ namespace Suzu {
       deque<string> &item, size_t top, Message &msg);
     Message ScriptStart(string target);
     void PrintEvents();
-    void Cleanup();
+    //void Cleanup();
     void Terminal();
+    vector<string> BuildStrVec(string source);
   };
 
   class ScriptProvider2 {
@@ -197,26 +198,21 @@ namespace Suzu {
     PluginActivity activity2;
     int requiredcount;
     int priority;
-    //bool needempty;
+    vector<string> parameters;
   public:
-    EntryProvider() : name(kStrNull), activity(nullptr) {
+    EntryProvider() : name(kStrNull), activity(nullptr), activity2(nullptr) {
       requiredcount = kFlagNotDefined;
     }
 
-    EntryProvider(string n, Activity a, int r, int p = kFlagNormalEntry) {
-      name = n;
+    EntryProvider(string n, Activity a, int r, int p = kFlagNormalEntry, vector<string> pa = vector<string>()) :
+    name(n), parameters(pa), activity(a), activity2(nullptr) {
       requiredcount = r;
-      activity = a;
       priority = p;
-      activity2 = nullptr;
     }
 
-    EntryProvider(string n, PluginActivity p) {
-      name = n;
+    EntryProvider(string n, PluginActivity p): name(n), activity(nullptr), activity2(p) {
       priority = kFlagPluginEntry;
       requiredcount = kFlagAutoSize;
-      activity2 = p;
-      activity = nullptr;
     }
 
     bool operator==(EntryProvider &target) {
