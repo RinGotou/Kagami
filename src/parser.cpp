@@ -232,8 +232,7 @@ namespace Suzu {
     //headlock:blank characters at head of raw string,false - enable
     //allowblank:blank characters at string value and left/right of operating symbols
     //not only blanks(some special character included)
-    bool headlock = false;
-    bool allowblank = false;
+    bool headlock = false, allowblank = false;
     vector<string> list = { kStrVar, "def", "return" };
     auto ToString = [](char c) -> string {
       return string().append(1, c);
@@ -305,7 +304,7 @@ namespace Suzu {
       case '=':
       case '>':
       case '<':
-
+      case '!':
         if (allowblank) {
           current.append(1, target[i]);
         }
@@ -376,7 +375,7 @@ namespace Suzu {
     else priority = 4;
     return priority;
   }
-  
+
   bool Chainloader::StartCode(bool disableset, deque<string> &item, deque<string> &symbol,
     Message &msg) {
     using namespace Entry;
@@ -384,7 +383,7 @@ namespace Suzu {
     bool result = false, reversed = true;
     int count = provider.GetRequiredCount();
     deque<string> container;
-    
+
     if (provider.GetPriority() == kFlagBinEntry) {
       if (count != kFlagAutoSize) count -= 1;
       reversed = false;
@@ -426,25 +425,7 @@ namespace Suzu {
     bool commaexp = false, directappend = false, forwardinsert = false, disableset = false;
 
     deque<string> item, symbol;
-    deque<string> container0;
-    stack<string> container1;
-
-    auto GetVariable = [&]() -> string {
-      Message tempresult;
-      string value;
-      util.CleanUpDeque(container0);
-      container0.push_back(raw[i]);
-      container0.push_back(kStrTrue);
-      tempresult = Entry::FastOrder("vfind", container0);
-      if (tempresult.GetCode() != kCodeIllegalCall) {
-        value = tempresult.GetDetail();
-      }
-      else {
-        value = kStrNull;
-      }
-      result = tempresult;
-      return value;
-    };
+    deque<string> container;
 
     for (i = 0; i < size; ++i) {
       unitType = util.GetDataType(raw.at(i));
@@ -452,8 +433,8 @@ namespace Suzu {
       if (unitType == kTypeSymbol) {
         if (raw[i] == "\"") {
           switch (directappend) {
-          case true:item.back().append(raw[i]);break;
-          case false:item.push_back(raw[i]);break;
+          case true:item.back().append(raw[i]); break;
+          case false:item.push_back(raw[i]); break;
           }
           directappend = !directappend;
         }
@@ -484,7 +465,7 @@ namespace Suzu {
         else if (raw[i] == ")") {
           while (symbol.back() != "(" && symbol.empty() != true) {
             if (symbol.back() == ",") {
-              container1.push(item.back());
+              container.push_back(item.back());
               item.pop_back();
               symbol.pop_back();
             }
@@ -494,9 +475,9 @@ namespace Suzu {
           }
 
           if (symbol.back() == "(") symbol.pop_back();
-          while (!container1.empty()) {
-            item.push_back(container1.top());
-            container1.pop();
+          while (!container.empty()) {
+            item.push_back(container.back());
+            container.pop_back();
           }
           if (!StartCode(disableset, item, symbol, result)) break;
           symbol.pop_back();
@@ -555,7 +536,6 @@ namespace Suzu {
 
     if (result.GetValue() != kStrFatalError) {
       while (symbol.empty() != true) {
-        util.CleanUpDeque(container0);
         if (symbol.back() == "(" || symbol.back() == ")") {
           result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
           break;
@@ -565,7 +545,7 @@ namespace Suzu {
       }
     }
 
-    util.CleanUpDeque(container0).CleanUpDeque(item).CleanUpDeque(symbol);
+    util.CleanUpDeque(container).CleanUpDeque(item).CleanUpDeque(symbol);
 
     return result;
   }
@@ -650,7 +630,7 @@ namespace Suzu {
     size_t size = 0;
     size_t tail = 0;
     stack<size_t> nest;
-    
+
     CreateMap();
     if (!res.empty()) {
       if (res.size() != parameter.size()) {
@@ -696,7 +676,7 @@ namespace Suzu {
       Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Missing path"));
       return result;
     }
-    
+
     TotalInjection();
     ScriptProvider2 sp(target.c_str());
     ChainStorage cs(sp);
@@ -706,50 +686,45 @@ namespace Suzu {
     return result;
   }
 
-  //Message VersionInfo(deque<string> &res) {
-  //  Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-  //  std::cout << kEngineVersion << std::endl;
-  //  return result;
-  //}
+  Message VersionInfo(PathMap &p) {
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    std::cout << kEngineVersion << std::endl;
+    return result;
+  }
 
-  //Message QuitTerminal(deque<string> &res){
-  //  Message result(kStrEmpty, kCodeQuit, kStrEmpty);
-  //  return result;
-  //}
+  Message Quit(PathMap &p) {
+    Message result(kStrEmpty, kCodeQuit, kStrEmpty);
+    return result;
+  }
 
-  //Message PrintStr(deque<string> &res) {
-  //  Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-  //  std::cout << res.at(0) << std::endl;
-  //  return result;
-  //}
+  Message PrintOnScreen(PathMap &p) {
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    string msg = CastToString(p.at("msg"));
+    std::cout << msg << std::endl;
+    return result;
+  }
 
-  //void Util::Terminal() {
-  //  using namespace Entry;
-  //  string buf = kStrEmpty;
-  //  Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-  //  Chainloader loader;
+  void Util::Terminal() {
+    using namespace Entry;
+    string buf = kStrEmpty;
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    Chainloader loader;
 
-  //  std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
-  //  std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
+    std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
+    std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
-  //  TotalInjection();
-  //  Inject("version", EntryProvider("version", VersionInfo, 0));
-  //  Inject("quit", EntryProvider("quit", QuitTerminal, 0));
-  //  Inject("print", EntryProvider("print", PrintStr, 1));
-  //  
-  //  while (result.GetCode() != kCodeQuit) {
-  //    std::cout << '>';
-  //    std::getline(std::cin, buf);
-  //    if (buf != kStrEmpty) {
-  //      result = loader.Reset().Build(buf).Start();
-  //      if (result.GetCode() < kCodeSuccess) {
-  //        std::cout << result.GetDetail() << std::endl;
-  //      }
-  //    }
-  //  }
-  //  ResetPlugin();
-  //  CleanupWrapper();
-  //}
+    while (result.GetCode() != kCodeQuit) {
+      std::cout << '>';
+      std::getline(std::cin, buf);
+      if (buf != kStrEmpty) {
+        result = loader.Reset().Build(buf).Start();
+        if (result.GetCode() < kCodeSuccess) {
+          std::cout << result.GetDetail() << std::endl;
+        }
+      }
+    }
+    ResetPlugin();
+    CleanupWrapper();
+  }
 }
-
 
