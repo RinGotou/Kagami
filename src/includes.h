@@ -28,7 +28,6 @@
 #define _SE_INCLUDES_
 
 //#include <algorithm>
-#include <vector>
 #include <stack>
 #include <fstream>
 #include <deque>
@@ -36,7 +35,6 @@
 #include <array>
 #include <map>
 #include <set>
-#include <memory>
 //#include "SDL.h"
 #include "windows.h"
 #include "rebornkit.h"

@@ -26,47 +26,34 @@
 #include "basicutility.h"
 
 namespace Entry {
-  using namespace Suzu;
-
-  vector<MemoryMapper> MemoryAdapter;
+  vector<PointMap> MemoryAdapter;
   vector<Instance> InstanceList;
 
-  MemoryWrapper *FindWrapper(string name, bool reserved = false) {
-    MemoryWrapper *wrapper = nullptr;
+  PointWrapper FindWrapper(string name, bool reserved = false) {
+    PointWrapper wrapper;
     size_t i = MemoryAdapter.size();
     if ((MemoryAdapter.size() == 1 || !reserved) && !MemoryAdapter.empty()) {
-      wrapper = MemoryAdapter.back().find(name);
+      wrapper = MemoryAdapter.back().Find(name);
     }
     else if (MemoryAdapter.size() > 1 && reserved) {
-      while (i > 0 && wrapper == nullptr) {
-        wrapper = MemoryAdapter.at(i - 1).find(name);
+      while (i > 0 && wrapper.get() == nullptr) {
+        wrapper = MemoryAdapter.at(i - 1).Find(name);
         i--;
       }
     }
     return wrapper;
   }
 
-  template <class Type>
-  MemoryWrapper *CreateWrapper(string name, Type data, bool readonly = false) {
-    MemoryWrapper *wrapper = nullptr;
+  PointWrapper CreateWrapperByPointer(string name, shared_ptr<void> ptr) {
+    PointWrapper wrapper, temp;
     if (Util().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
       return wrapper;
     }
-    MemoryAdapter.back().create(name, data, readonly);
-    wrapper = MemoryAdapter.back().find(name);
+    temp.set(ptr);
+    MemoryAdapter.back().CreateByWrapper(name, temp, false);
+    wrapper = MemoryAdapter.back().Find(name);
     return wrapper;
-  }
-
-  MemoryWrapper CreateWrapper(string name, MemoryWrapper wrapper) {
-    MemoryWrapper *wpr = nullptr;
-    if (Util().GetDataType(name) != kTypeFunction) {
-      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
-      return wrapper;
-    }
-    MemoryAdapter.back().create(name, wrapper);
-    wpr = MemoryAdapter.back().find(name);
-    return *wpr;
   }
 
   void DisposeWrapper(string name, bool reserved) {
@@ -77,7 +64,7 @@ namespace Entry {
     }
     else if (MemoryAdapter.size() > 1 && reserved) {
       while (result != true && i > 0) {
-        result = MemoryAdapter.at(i - 1).dispose(name);
+        MemoryAdapter.at(i - 1).dispose(name);
         i--;
       }
     }
@@ -89,29 +76,30 @@ namespace Entry {
     }
   }
 
-  MemoryMapper CreateMapper() {
-    MemoryAdapter.push_back(MemoryMapper());
+  PointMap CreateMap() {
+    MemoryAdapter.push_back(PointMap());
     return MemoryAdapter.back();
   }
 
-  bool DisposeMapper() {
+  bool DisposeMap() {
     if (!MemoryAdapter.empty()) {
       MemoryAdapter.pop_back();
     }
     return MemoryAdapter.empty();
   }
 
+
   bool Instance::Load(string name, HINSTANCE h) {
     Attachment attachment = nullptr;
-    StrListPtr listptr = nullptr;
+    StrMap *targetmap = nullptr;
     this->first = name;
     this->second = h;
 
     attachment = (Attachment)GetProcAddress(this->second, "Attachment");
     if (attachment != nullptr) {
-      listptr = attachment();
-      entrylist = vector<string>(*listptr);
-      delete(listptr);
+      targetmap = attachment();
+      linkmap = StrMap(*targetmap);
+      delete(targetmap);
       health = true;
     }
     else {
@@ -135,17 +123,17 @@ namespace Entry {
 
   void AddInstance(string name, HINSTANCE h) {
     PluginActivity activity = nullptr;
-    Attachment attachment = nullptr;
-    StrListPtr listptr = nullptr;
     InstanceList.push_back(Instance());
     InstanceList.back().Load(name, h);
+
     if (InstanceList.back().GetHealth()) {
       HINSTANCE &ins = InstanceList.back().second;
-      vector<string> &lst = InstanceList.back().GetList();
-      for (auto unit : lst) {
-        activity = (PluginActivity)GetProcAddress(ins, unit.c_str());
+      StrMap map = InstanceList.back().GetMap();
+      //vector<string> &lst = InstanceList.back().GetList();
+      for (auto unit : map) {
+        activity = (PluginActivity)GetProcAddress(ins, unit.first.c_str());
         if (activity != nullptr) {
-          Inject(unit, EntryProvider(unit, activity));
+          Inject(unit.first, EntryProvider(unit.first, activity, Util().BuildStrVec(unit.second)));
         }
       }
     }
@@ -154,7 +142,8 @@ namespace Entry {
   void UnloadInstance(string name) {
     Attachment attachment = nullptr;
     HINSTANCE *hinstance = nullptr;
-    StrListPtr listptr = nullptr;
+    StrMap map;
+    //StrListPtr listptr = nullptr;
 
     vector<Instance>::iterator instance_i = InstanceList.begin();
     while (instance_i != InstanceList.end()) {
@@ -168,9 +157,10 @@ namespace Entry {
 
     if (instance_i->GetHealth() == true) {
       hinstance = &(instance_i->second);
-      listptr = &(instance_i->GetList());
-      for (auto unit : *listptr) {
-        Delete(unit);
+      map = instance_i->GetMap();
+      //listptr = &(instance_i->GetList());
+      for (auto unit : map) {
+        Delete(unit.first);
       }
     }
     FreeLibrary(*hinstance);
@@ -191,66 +181,76 @@ namespace Entry {
 }
 
 namespace Suzu {
-  Message CommaExpression(deque<string> &res) {
+
+
+  Message CommaExp(PathMap &p) {
     Message result;
-    if (res.empty()) result.SetCode(kCodeRedirect).SetValue(kStrEmpty);
-    else result.SetCode(kCodeRedirect).SetValue(res.back());
+    string res = CastToString(p.at(to_string(p.size() - 1)));
+    switch (p.empty()) {
+    case true:result.SetCode(kCodeRedirect).SetValue(kStrEmpty); break;
+    case false:result.SetCode(kCodeRedirect).SetValue(res); break;
+    }
     return result;
   }
 
-  Message LogPrint(deque<string> &res) {
-    using namespace Tracking;
+  Message LogPrint(PathMap &p) {
     Message result;
-    string r = res.at(0);
+    string r = CastToString(p.at("data"));
+    //string r = *static_pointer_cast<string>(p.at("data"));
     ofstream ofs("script.log", std::ios::out | std::ios::app);
 
     if (r.at(0) == '"' && r.back() == '"') {
-      ofs << res.at(0).substr(1, res.at(0).size() - 2) << "\n";
+      ofs << r.substr(1, r.size() - 2) << "\n";
     }
     else {
       ofs << r << "\n";
     }
-    
+      
     ofs.close();
     return result;
   }
 
-  Message BinaryExp(deque<string> &res) {
+  Message BinaryExp(PathMap &p) {
     using namespace Entry;
     Util util;
+    PointWrapper wrapper;
     string *opercode = nullptr;
-    MemoryWrapper *wrapper = nullptr;
     enum { EnumDouble, EnumInt, EnumStr, EnumNull }type = EnumNull;
     Message result(kStrRedirect,kCodeSuccess,"0");
-    array<string, 3> buf;
+    array<string, 3> buf = { CastToString(p["0"]),
+      CastToString(p["1"]),
+      CastToString(p["2"])
+    };
     string temp = kStrEmpty;
     bool tempresult = false;
     size_t i = 0;
     
     auto CheckingOr = [&](regex pat) -> bool {
-      return (regex_match(res.at(0), pat) || regex_match(res.at(1), pat));
+      return (regex_match(buf.at(0), pat) || regex_match(buf.at(1), pat));
     };
     auto CheckingAnd = [&](regex pat) -> bool {
-      return (regex_match(res.at(0), pat) && regex_match(res.at(1), pat));
+      return (regex_match(buf.at(0), pat) && regex_match(buf.at(1), pat));
     };
     auto CheckString = [&](string str) -> bool {
       return (str.front() == '"' && str.back() == '"');
     };
 
     //array data format rule:number number operator
-    buf = { res.at(0),res.at(1),res.at(2) };
     opercode = &(buf.at(2));
 
     for (i = 0; i <= 1; i++) {
       if (util.GetDataType(buf.at(i)) == kTypeFunction) {
-        wrapper = FindWrapper(buf.at(i));
-        if (wrapper->GetString() != kStrNull) buf.at(i) = wrapper->GetString();
+        wrapper = FindWrapper(buf.at(i), true);
+        if (wrapper.get() != nullptr) {
+          temp = *std::static_pointer_cast<string>(wrapper.get());
+          buf.at(i) = temp;
+        }
       }
     }
 
     if (CheckingOr(kPatternDouble)) type = EnumDouble;
     else if (CheckingAnd(kPatternInteger)) type = EnumInt;
-    else if (CheckString(res.at(0)) || CheckString(res.at(1))) type = EnumStr;
+    else if (CheckString(buf.at(0)) || CheckString(buf.at(1))) type = EnumStr;
 
     if (type == EnumInt || type == EnumDouble) {
       if (*opercode == "+" || *opercode == "-" || *opercode == "*" || *opercode == "/") {
@@ -326,125 +326,96 @@ namespace Suzu {
     return result;
   }
 
-  Message CycleExp(deque<string> &res) {
-    Message result;
-    int i = 0;
-    string temp = kStrEmpty;
-    deque<string> buf = res;
-
-    //I'm cosidering about for and foreach now.
-    if (buf.back() == kStrFor) {
-      //start end step
-
-    }
-    if (buf.back() == kStrWhile) {
-      if (buf.at(0) == kStrTrue) {
-        result.combo(kStrTrue, kCodeHeadSign, kStrEmpty);
-      }
-      if (buf.at(0) == kStrFalse) {
-        result.combo(kStrFalse, kCodeHeadSign, kStrEmpty);
-      }
-    }
-    if (buf.back() == kStrEnd) {
-      result.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
-    }
+  Message WhileCycle(PathMap &p) {
+    Message result(CastToString(p.at("state")), kCodeHeadSign, kStrEmpty);
     return result;
   }
 
-  Message FindVariable(deque<string> &res) {
+  Message TailSign(PathMap &p) {
+    Message result(kStrEmpty, kCodeTailSign, kStrEmpty);
+    return result;
+  }
+
+  Message FindVariable(PathMap &p) {
     using namespace Entry;
     Message result(kStrRedirect, kCodeSuccess, kStrEmpty);
-    MemoryWrapper *wrapper = FindWrapper(res.at(0), (res.at(1) == kStrTrue));
-    if (wrapper != nullptr) {
-      result.combo(kStrRedirect, kCodeSuccess, wrapper->GetString());
+    const string name = CastToString(p.at("name"));
+    const string reserved = CastToString(p.at("reserved"));
+    PointWrapper wrapper = FindWrapper(name, reserved == kStrTrue);
+    if (wrapper.get() != nullptr) {
+      result.combo(kStrRedirect, kCodeRedirect, "__" + CastToString(p.at("name")));
+      result.GetCastPath() = wrapper.get();
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + res.at(0) + " is not found");
+      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + name + " is not found");
     }
     return result;
   }
 
-  Message SetVariable(deque<string> &res) {
+  Message SetVariable(PathMap &p) {
     using namespace Entry;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    array<string, 2> buf = { res.at(0),res.at(1) };
-    MemoryWrapper *wrapper0 = FindWrapper(buf.at(0), true), *wrapper1 = nullptr;
+    const string name = CastToString(p.at("name"));
+    const string source = CastToString(p.at("source"));
+    PointWrapper wrapper0 = FindWrapper(name, true);
+    PointWrapper wrapper1;
     auto OnError = [&](string s) {
       result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + s + " is not found");
     };
 
-    if (wrapper0 == nullptr) {
-      OnError(buf.at(0));
+    if (wrapper0.get() == nullptr) {
+      OnError(name);
       return result;
     }
-    if (Util().GetDataType(buf.at(1)) == kTypeFunction) {
-      wrapper1 = FindWrapper(buf.at(1), true);
-      if (wrapper1 != nullptr) {
-        switch (wrapper1->GetMode()) {
-        case kModeStringPtr:wrapper0->set(wrapper1->GetString()); break;
-        default:wrapper0->set(wrapper1->GetString()); break;
-        }
+    if (Util().GetDataType(source) == kTypeFunction) {
+      wrapper1 = FindWrapper(source, true);
+      if (wrapper1.get() != nullptr) {
+        wrapper0.set(wrapper1.get());
       }
       else {
-        OnError(buf.at(1));
+        OnError(source);
       }
     }
     else {
-      wrapper0->set(buf.at(1));
+      wrapper0.set(p.at("source"));
     }
 
     return result;
   }
 
-  Message CreateVariable(deque<string> &res) {
+  Message CreateVariable(PathMap &p) {
     using namespace Entry;
     Message result;
-    MemoryWrapper *wrapper = FindWrapper(res.at(0));
-    MemoryWrapper *wrapper2 = nullptr;
+    const string name = CastToString(p.at("name"));
+    shared_ptr<void> source = p.at("source");
+    PointWrapper wrapper1 = FindWrapper(name);
+    PointWrapper wrapper2;
     string temp = kStrEmpty;
-    int type;
-    auto OnError = [&](string s) {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + s + " is not found");
-    };
 
-    if (wrapper == nullptr) {
-      if (res.size() == 2) {
-        type = Util().GetDataType(res.at(1));
-        if (type == kTypeFunction) {
-          wrapper2 = FindWrapper(res.at(1));
-          if (wrapper2 != nullptr) {
-            wrapper = new MemoryWrapper(*wrapper2);
-            CreateWrapper(res.at(0), *wrapper);
-          }
-          else {
-            OnError(res.at(1));
-          }
-        }
-        else if (type != kTypeNull) {
-          CreateWrapper(res.at(0), res.at(1));
-        }
+    if (wrapper1.get() == nullptr) {
+      wrapper1 = CreateWrapperByPointer(name, source);
+      if (wrapper1.get() == nullptr) {
+        result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
       }
-      else if (res.size() == 1) {
-        wrapper = new MemoryWrapper(kModeAnonymus, nullptr);
-        CreateWrapper(res.at(0), *wrapper);
-      }
-      else {
-        result.combo(kStrFatalError, kCodeIllegalCall, res.at(0) + "is defined");
-      }
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, name + "is defined");
     }
     return result;
   }
 
-  Message LoadPlugin(deque<string> &res) {
+  Message LoadPlugin(PathMap &p) {
     using namespace Entry;
+    const string name = CastToString(p.at("name"));
+    const string path = CastToString(p.at("path"));
     Message result;
     Attachment attachment = nullptr;
     Activity activity = nullptr;
-    pair<string, string> p(Util().GetRawString(res.at(0)), Util().GetRawString(res.at(1)));
+    std::wstring wpath = s2ws(Util().GetRawString(path));
     
-    HINSTANCE hinstance = LoadLibrary(s2ws(p.second).c_str());
+    HINSTANCE hinstance = LoadLibrary(wpath.c_str());
     if (hinstance != nullptr) {
-      AddInstance(p.first, hinstance);
+      AddInstance(name, hinstance);
     }
     else {
       result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found");
@@ -452,28 +423,27 @@ namespace Suzu {
     return result;
   }
 
-  Message UnloadPlugin(deque<string> &res) {
+  Message UnloadPlugin(PathMap &p) {
     using namespace Entry;
     Message result;
-    UnloadInstance(Util().GetRawString(res.at(0)));
+    UnloadInstance(Util().GetRawString(CastToString(p.at("name"))));
     return result;
   }
 
   void TotalInjection() {
     using namespace Entry;
     Util util;
-    vector<string>(*Build)(string) = util.BuildStrVec;
-    //set root memory provider
-    MemoryAdapter.push_back(MemoryMapper());
-    //inject basic Entry provider
-    Inject("commaexp", EntryProvider("commaexp", CommaExpression, kFlagAutoSize));
-    Inject("cycle",    EntryProvider("cycle"   , CycleExp       , kFlagAutoSize, kFlagBinEntry));
-    Inject("var",      EntryProvider("var"     , CreateVariable , kFlagAutoSize));
-    Inject("vfind",    EntryProvider("vfind"   , FindVariable   , 2, kFlagCoreEntry, Build("name|reserved")));
-    Inject("binexp",   EntryProvider("binexp"  , BinaryExp      , 3, kFlagBinEntry, Build("first|second|operator")));
-    Inject("log",      EntryProvider("log"     , LogPrint       , 1, kFlagNormalEntry, Build("data")));
-    Inject("import",   EntryProvider("import"  , LoadPlugin     , 2, kFlagNormalEntry, Build("name|path")));
-    Inject("release",  EntryProvider("release" , UnloadPlugin   , 1, kFlagNormalEntry, Build("name")));
-    Inject("set",      EntryProvider("set"     , SetVariable    , 2, kFlagNormalEntry, Build("name|source")));
+    auto Build = [&](string target) {return util.BuildStrVec(target); };
+    vector<string> temp = util.BuildStrVec("name");
+    Inject("end", EntryProvider("end", TailSign, 0));
+    Inject("commaexp", EntryProvider("commaexp", CommaExp, kFlagAutoSize));
+    Inject("var", EntryProvider("var", CreateVariable, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
+    Inject("while", EntryProvider("while", WhileCycle, 1, kFlagNormalEntry, Build("state")));
+    Inject("vfind", EntryProvider("vfind", FindVariable, 2, kFlagCoreEntry, Build("name|reserved")));
+    Inject("binexp", EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry, Build("first|second|operator")));
+    Inject("log", EntryProvider("log", LogPrint, 1, kFlagNormalEntry, Build("data")));
+    Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
+    Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
+    Inject("set", EntryProvider("set", SetVariable, 2, kFlagNormalEntry, Build("name|source")));
   }
 }

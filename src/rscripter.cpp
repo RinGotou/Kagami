@@ -25,7 +25,7 @@
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "parser.h"
 //#define SDL_MAIN_HANDLED
-//#define _DEBUG_STATE_
+#define _DEBUG_STATE_
 
 int main(int argc, char **argv) {
 
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
   }
   else {
     //open terminal mode
-    util.Terminal();
+    //util.Terminal();
   }
 #endif
   util.PrintEvents();

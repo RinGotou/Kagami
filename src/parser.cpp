@@ -49,7 +49,7 @@ namespace Entry {
     Message result(kStrFatalError, kCodeIllegalCall, "Entry is not found.");
     EntryMap::iterator it = EntryMapBase.find(name);
     if (it != EntryMapBase.end()) {
-      result = it->second.StartActivity(res);
+      result = it->second.StartActivity(res, nullptr);
     }
     return result;
   }
@@ -68,9 +68,6 @@ namespace Entry {
     if (target == "+" || target == "-" || target == "*" || target == "/"
       || target == "==" || target == "<=" || target == ">=") {
       result = Order("binexp");
-    }
-    else if (target == kStrFor || target == kStrWhile || target == kStrEnd) {
-      result = Order("cycle");
     }
     else if (target == "=") {
       result = Order("set");
@@ -122,7 +119,8 @@ namespace Suzu {
       return regex_match(target, pat);
     };
 
-    if (match(kPatternFunction)) result = kTypeFunction;
+    if (target == kStrNull) result = kTypeNull;
+    else if (match(kPatternFunction)) result = kTypeFunction;
     else if (match(kPatternBoolean)) result = kTypeBoolean;
     else if (match(kPatternInteger)) result = kTypeInteger;
     else if (match(kPatternDouble)) result = KTypeDouble;
@@ -132,34 +130,6 @@ namespace Suzu {
     else result = kTypeNull;
 
     return result;
-  }
-
-  bool Util::ActivityStart(EntryProvider &provider, deque<string> container, deque<string> &item,
-    size_t top, Message &msg) {
-    bool rv = true;
-    int code = kCodeSuccess;
-    string value = kStrEmpty;
-    Message temp;
-
-    if (provider.Good()) {
-      temp = provider.StartActivity(container);
-      code = temp.GetCode();
-      value = temp.GetValue();
-
-      if (code < kCodeSuccess) {
-        Tracking::log(temp);
-      }
-      msg = temp;
-      if (value == kStrRedirect) {
-        item.push_back(temp.GetDetail());
-      }
-    }
-    else {
-      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found"));
-      rv = false;
-    }
-
-    return rv;
   }
 
   void Util::PrintEvents() {
@@ -227,6 +197,28 @@ namespace Suzu {
       }
     }
     return result;
+  }
+
+  bool Chainloader::ActivityStart(EntryProvider &provider, deque<string> container, deque<string> &item,
+    size_t top, Message &msg, Chainloader *loader) {
+    bool rv = true;
+    int code = kCodeSuccess;
+    string value = kStrEmpty;
+    Message temp;
+
+    if (provider.Good()) {
+      temp = provider.StartActivity(container, loader);
+      code = temp.GetCode();
+      value = temp.GetValue();
+      if (code < kCodeSuccess) Tracking::log(temp);
+      msg = temp;
+    }
+    else {
+      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found"));
+      rv = false;
+    }
+
+    return rv;
   }
 
   Chainloader &Chainloader::Build(string target) {
@@ -384,60 +376,74 @@ namespace Suzu {
     else priority = 4;
     return priority;
   }
+  
+  bool Chainloader::StartCode(bool disableset, deque<string> &item, deque<string> &symbol,
+    Message &msg) {
+    using namespace Entry;
+    EntryProvider provider = Find(symbol.back());
+    bool result = false, reversed = true;
+    int count = provider.GetRequiredCount();
+    deque<string> container;
+    
+    if (provider.GetPriority() == kFlagBinEntry) {
+      if (count != kFlagAutoSize) count -= 1;
+      reversed = false;
+    }
+    if (disableset == true) {
+      while (item.back() != "," && item.empty() == false) {
+        container.push_back(item.back());
+        item.pop_back();
+      }
+      if (!item.empty()) item.pop_back(); //pop ","
+    }
+    else {
+      while (count != 0 && item.empty() != true) {
+        switch (reversed) {
+        case true:container.push_front(item.back()); break;
+        case false:container.push_back(item.back()); break;
+        }
+        item.pop_back();
+      }
+      count--;
+    }
+    if (provider.GetPriority() == kFlagBinEntry) container.push_back(symbol.back());
+    result = ActivityStart(provider, container, item, item.size(), msg, this);
+    if (msg.GetCode() == kCodeRedirect && msg.GetValue() == kStrRedirect) {
+      item.push_back(msg.GetDetail());
+      lambdamap.insert(pair<string, shared_ptr<void>>(msg.GetDetail(), msg.GetCastPath()));
+    }
+    return result;
+  }
 
   Message Chainloader::Start() {
     using namespace Entry;
     const size_t size = raw.size();
     Util util;
-    Message result, tempresult;
-    size_t i, j, k;
-    size_t nextinspoint = 0;
-    size_t forwardtype = kTypeNull;
+    Message result;
+    size_t i = 0, j = 0, k = 0, nextinspoint = 0, forwardtype = kTypeNull;
     string tempstr = kStrEmpty;
     int unitType = kTypeNull;
-    int m = 0;
-    bool entryresult = true;
-    bool commaexp = false;
-    bool directappend = false;
-    bool forwardinsert = false;
-    bool disableset = false;
+    bool commaexp = false, directappend = false, forwardinsert = false, disableset = false;
 
-    deque<string> item;
-    deque<string> symbol;
+    deque<string> item, symbol;
     deque<string> container0;
     stack<string> container1;
 
-    auto StartCode = [&]() -> bool {
-      EntryProvider provider;
-      bool reverse = true;
+    auto GetVariable = [&]() -> string {
+      Message tempresult;
+      string value;
       util.CleanUpDeque(container0);
-      provider = Entry::Find(symbol.back());
-      m = provider.GetRequiredCount();
-      if (provider.GetPriority() == kFlagBinEntry) {
-        if (m != kFlagAutoSize) m -= 1;
-        reverse = false;
-      }
-      if (disableset) {
-        while (item.back() != ",") {
-          container0.push_front(item.back());
-          item.pop_back();
-        }
-        item.pop_back();
+      container0.push_back(raw[i]);
+      container0.push_back(kStrTrue);
+      tempresult = Entry::FastOrder("vfind", container0);
+      if (tempresult.GetCode() != kCodeIllegalCall) {
+        value = tempresult.GetDetail();
       }
       else {
-        while (m != 0 && item.empty() != true) {
-          switch (reverse) {
-          case true:container0.push_front(item.back()); break;
-          case false:container0.push_back(item.back()); break;
-          }
-          item.pop_back();
-          --m;
-        }
+        value = kStrNull;
       }
-      if (provider.GetPriority() == kFlagBinEntry) {
-        container0.push_back(symbol.back());
-      }
-      return util.ActivityStart(provider, container0, item, item.size(), result);
+      result = tempresult;
+      return value;
     };
 
     for (i = 0; i < size; ++i) {
@@ -483,7 +489,7 @@ namespace Suzu {
               symbol.pop_back();
             }
 
-            if (!StartCode()) break;
+            if (!StartCode(disableset, item, symbol, result)) break;
             symbol.pop_back();
           }
 
@@ -492,7 +498,7 @@ namespace Suzu {
             item.push_back(container1.top());
             container1.pop();
           }
-          if (!StartCode()) break;
+          if (!StartCode(disableset, item, symbol, result)) break;
           symbol.pop_back();
         }
         else {
@@ -522,8 +528,12 @@ namespace Suzu {
       /////////////////////////////////////////////////////////////////////////////////
       else if (unitType == kTypeFunction && !directappend) {
         switch (Find(raw[i]).Good()) {
-        case true:symbol.push_back(raw[i]); break;
-        case false:item.push_back(raw[i]); break;
+        case true:
+          symbol.push_back(raw[i]);
+          break;
+        case false:
+          item.push_back(raw[i]);
+          break;
         }
       }
       /////////////////////////////////////////////////////////////////////////////////
@@ -550,7 +560,7 @@ namespace Suzu {
           result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
           break;
         }
-        if (!StartCode()) break;
+        if (!StartCode(disableset, item, symbol, result)) break;
         symbol.pop_back();
       }
     }
@@ -560,41 +570,61 @@ namespace Suzu {
     return result;
   }
 
-  Message EntryProvider::StartActivity(deque<string> p) {
+  Message EntryProvider::StartActivity(deque<string> p, Chainloader *parent) {
+    using namespace Entry;
+    Util util;
     Message result;
-    size_t size = p.size();
+    size_t size = p.size(), i = 0;
+    PathMap map;
+    shared_ptr<void> ptr;
+
+    auto Filling = [&](bool number = false) {
+      if (util.GetDataType(p.at(i)) == kTypeFunction) {
+        if (p.at(i).substr(0, 2) == "__") ptr = parent->GetVariable(p.at(i));
+        else ptr = FindWrapper(p.at(i), true).get();
+      }
+      else {
+        ptr = make_shared<string>(string(p.at(i)));
+      }
+      switch (number) {
+      case true:map.insert(PathMap::value_type(to_string(i), ptr)); break;
+      case false:map.insert(PathMap::value_type(parameters[i], ptr)); break;
+      }
+    };
+
     if (priority == kFlagPluginEntry) {
-      Message *msgptr = activity2(p);
+      for (i = 0; i < parameters.size(); i++) {
+        if (i >= size) map.insert(PathMap::value_type(parameters[i], nullptr));
+        else Filling();
+      }
+      Message *msgptr = activity2(map);
       result = *msgptr;
       delete(msgptr);
     }
     else {
-      if (size == requiredcount || requiredcount == kFlagAutoSize) {
-        result = activity(p);
+      if (size == parameters.size()) {
+        for (i = 0; i < size; i++) { Filling(); }
+        result = activity(map);
+      }
+      else if (size == kFlagAutoFill) {
+        for (i = 0; i < parameters.size(); i++) {
+          if (i >= size) map.insert(PathMap::value_type(parameters[i], nullptr));
+          else Filling();
+          result = activity(map);
+        }
+      }
+      else if (parameters.empty() && requiredcount == kFlagAutoSize) {
+        for (i = 0; i < size; i++) { Filling(true); }
+        result = activity(map);
       }
       else {
-        if (requiredcount == kFlagNotDefined) {
-          result.combo(kStrFatalError, kCodeBrokenEntry, string("Illegal Entry - ").append(this->name));
-        }
-        else {
-          result.combo(kStrFatalError, kCodeIllegalArgs, string("Parameter count doesn't match - ").append(this->name));
+        switch (requiredcount) {
+        case kFlagNotDefined:result.combo(kStrFatalError, kCodeBrokenEntry, string("Illegal Entry - ").append(this->name)); break;
+        default:result.combo(kStrFatalError, kCodeIllegalArgs, string("Parameter count doesn't match - ").append(this->name)); break;
         }
       }
     }
 
-    return result;
-  }
-
-  bool MemoryMapper::dispose(string name) {
-    bool result = true;
-    if (!MapBase.empty()) {
-      map<string, MemoryWrapper>::iterator it = MapBase.find(name);
-      if (it != MapBase.end()) {
-        it->second.free();
-        MapBase.erase(it);
-      }
-      else result = false;
-    }
     return result;
   }
 
@@ -609,25 +639,26 @@ namespace Suzu {
       }
       temp.append(1, unit);
     }
-    if (!temp.empty())result.push_back(temp);
+    if (!temp.empty()) result.push_back(temp);
     return result;
   }
 
   Message ChainStorage::Run(deque<string> res = deque<string>()) {
+    using namespace Entry;
     Message result;
     size_t i = 0;
     size_t size = 0;
     size_t tail = 0;
     stack<size_t> nest;
     
-    Entry::CreateMapper();
+    CreateMap();
     if (!res.empty()) {
       if (res.size() != parameter.size()) {
         result.combo(kStrFatalError, kCodeIllegalCall, "wrong parameter count.");
         return result;
       }
       for (i = 0; i < parameter.size(); i++) {
-        Entry::CreateWrapper(parameter.at(i), res.at(i), false);
+        CreateWrapper(parameter.at(i), res.at(i), false);
       }
     }
     //todo:start chainloaders
@@ -649,20 +680,16 @@ namespace Suzu {
           tail = i;
           i = nest.top();
         }
+        i++;
       }
     }
-    Entry::DisposeMapper();
+    DisposeMap();
     return result;
   }
 
   Message Util::ScriptStart(string target) {
     Message result;
-    Message temp;
-    size_t i;
-    size_t size;
     vector<Chainloader> loaders;
-    Chainloader cache;
-    vector<size_t> nest;
     size_t tail = 0;
 
     if (target == kStrEmpty) {
@@ -679,50 +706,50 @@ namespace Suzu {
     return result;
   }
 
-  Message VersionInfo(deque<string> &res) {
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    std::cout << kEngineVersion << std::endl;
-    return result;
-  }
+  //Message VersionInfo(deque<string> &res) {
+  //  Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+  //  std::cout << kEngineVersion << std::endl;
+  //  return result;
+  //}
 
-  Message QuitTerminal(deque<string> &res){
-    Message result(kStrEmpty, kCodeQuit, kStrEmpty);
-    return result;
-  }
+  //Message QuitTerminal(deque<string> &res){
+  //  Message result(kStrEmpty, kCodeQuit, kStrEmpty);
+  //  return result;
+  //}
 
-  Message PrintStr(deque<string> &res) {
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    std::cout << res.at(0) << std::endl;
-    return result;
-  }
+  //Message PrintStr(deque<string> &res) {
+  //  Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+  //  std::cout << res.at(0) << std::endl;
+  //  return result;
+  //}
 
-  void Util::Terminal() {
-    using namespace Entry;
-    string buf = kStrEmpty;
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    Chainloader loader;
+  //void Util::Terminal() {
+  //  using namespace Entry;
+  //  string buf = kStrEmpty;
+  //  Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+  //  Chainloader loader;
 
-    std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
-    std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
+  //  std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
+  //  std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
-    TotalInjection();
-    Inject("version", EntryProvider("version", VersionInfo, 0));
-    Inject("quit", EntryProvider("quit", QuitTerminal, 0));
-    Inject("print", EntryProvider("print", PrintStr, 1));
-    
-    while (result.GetCode() != kCodeQuit) {
-      std::cout << '>';
-      std::getline(std::cin, buf);
-      if (buf != kStrEmpty) {
-        result = loader.Reset().Build(buf).Start();
-        if (result.GetCode() < kCodeSuccess) {
-          std::cout << result.GetDetail() << std::endl;
-        }
-      }
-    }
-    ResetPlugin();
-    CleanupWrapper();
-  }
+  //  TotalInjection();
+  //  Inject("version", EntryProvider("version", VersionInfo, 0));
+  //  Inject("quit", EntryProvider("quit", QuitTerminal, 0));
+  //  Inject("print", EntryProvider("print", PrintStr, 1));
+  //  
+  //  while (result.GetCode() != kCodeQuit) {
+  //    std::cout << '>';
+  //    std::getline(std::cin, buf);
+  //    if (buf != kStrEmpty) {
+  //      result = loader.Reset().Build(buf).Start();
+  //      if (result.GetCode() < kCodeSuccess) {
+  //        std::cout << result.GetDetail() << std::endl;
+  //      }
+  //    }
+  //  }
+  //  ResetPlugin();
+  //  CleanupWrapper();
+  //}
 }
 
 
