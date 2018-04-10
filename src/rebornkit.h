@@ -28,11 +28,14 @@
 #include <utility>
 #include <vector>
 #include <cstring>
+#include <memory>
 
 namespace Suzu {
   using std::string;
   using std::pair;
   using std::vector;
+  using std::shared_ptr;
+  using std::static_pointer_cast;
 
   const string kEngineVersion = "version 0.1 'anzu'";
   const string kEngineName = "RebornScripter";
@@ -48,6 +51,7 @@ namespace Suzu {
   const string kStrRedirect = "__*__";
   const string kStrTrue = "true";
   const string kStrFalse = "false";
+
   const int kCodeTailSign = 5;
   const int kCodeHeadSign = 4;
   const int kCodeQuit = 3;
@@ -65,7 +69,9 @@ namespace Suzu {
   const int kFlagBinEntry = 2;
   const int kFlagPluginEntry = 3;
   const int kFlagAutoSize = -1;
-  const int kFlagNotDefined = -2;
+  const int kFlagAutoFill = -2;
+  const int kFlagNotDefined = -3;
+
   const size_t kTypeFunction = 0;
   const size_t kTypeString = 1;
   const size_t kTypeInteger = 2;
@@ -75,15 +81,20 @@ namespace Suzu {
   const size_t kTypeBlank = 6;
   const size_t kTypeNull = 100;
   const size_t kTypePreserved = 101;
-  const size_t kModeAnonymus = 0;
-  const size_t kModeStringPtr = 1;
-  const size_t kModeArray = 2;
+
+  const int kModeNormal = 1;
+  const int kModeArray = 2;
+  const int kModeObject = 3;
+  const int kModeAnonymus = 4;
+  const int kModeStringPtr = 5;
+  //const int kModeArray = 6;
 
   class Message {
   private:
     string value;
     string detail;
     int code;
+    shared_ptr<void> castpath;
   public:
     Message() {
       value = kStrEmpty;
@@ -122,5 +133,6 @@ namespace Suzu {
     string GetValue() const { return this->value; }
     int GetCode() const { return this->code; }
     string GetDetail() const { return this->detail; }
+    shared_ptr<void> &GetCastPath() { return castpath; }
   };
 }

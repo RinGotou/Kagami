@@ -44,6 +44,9 @@ namespace Suzu {
   using std::stof;
   using std::stod;
   using std::regex_match;
+  using std::shared_ptr;
+  using std::static_pointer_cast;
+  using std::make_shared;
   const string kStrVar = "var";
   const string kStrFor = "for";
   const string kStrForeach = "foreach";
@@ -59,10 +62,11 @@ namespace Suzu {
   const regex kPatternBlank(R"([[:blank:]])");
 
   class EntryProvider;
-  typedef map<string, EntryProvider> EntryMap;
-  typedef map<string, EntryProvider>::value_type EntryMapUnit;
-  typedef Message(*Activity)(deque<string> &);
-  typedef Message *(*PluginActivity)(deque<string> &);
+  class Chainloader;
+  typedef map<string, string> StrMap;
+  typedef map<string, shared_ptr<void>> PathMap;
+  typedef Message(*Activity)(PathMap &);
+  typedef Message *(*PluginActivity)(PathMap &);
 
   class Util {
   public:
@@ -117,8 +121,7 @@ namespace Suzu {
     }
 
     int GetDataType(string target);
-    bool ActivityStart(EntryProvider &provider, deque<string> container,
-      deque<string> &item, size_t top, Message &msg);
+
     Message ScriptStart(string target);
     void PrintEvents();
     //void Cleanup();
@@ -150,8 +153,12 @@ namespace Suzu {
   class Chainloader {
   private:
     vector<string> raw;
+    map<string, shared_ptr<void>> lambdamap;
     int GetPriority(string target) const;
-
+    bool ActivityStart(EntryProvider &provider, deque<string> container,
+      deque<string> &item, size_t top, Message &msg, Chainloader *loader);
+    bool StartCode(bool disableset, deque<string> &item, deque<string> &symbol, 
+      Message &msg);
   public:
     Chainloader() {}
     Chainloader &Build(vector<string> raw) {
@@ -160,6 +167,12 @@ namespace Suzu {
     }
 
     Chainloader &Build(string target);
+    shared_ptr<void> GetVariable(string name) {
+      shared_ptr<void> result;
+      map<string, shared_ptr<void>>::iterator it = lambdamap.find(name);
+      if (it != lambdamap.end()) result = it->second;
+      return result;
+    }
     Chainloader &Reset() {
       Util().CleanUpVector(raw);
       return *this;
@@ -210,166 +223,102 @@ namespace Suzu {
       priority = p;
     }
 
-    EntryProvider(string n, PluginActivity p): name(n), activity(nullptr), activity2(p) {
+    EntryProvider(string n, PluginActivity p, vector<string> pa): 
+      name(n), parameters(pa), activity(nullptr), activity2(p) {
       priority = kFlagPluginEntry;
-      requiredcount = kFlagAutoSize;
+      requiredcount = kFlagAutoFill;
     }
 
     bool operator==(EntryProvider &target) {
       return (target.name == this->name &&
         target.activity == this->activity &&
-        target.requiredcount == this->requiredcount);
+        target.requiredcount == this->requiredcount &&
+        target.activity2 == this->activity2 &&
+        target.priority == this->priority &&
+        target.parameters == this->parameters);
     }
 
     string GetName() const { return this->name; }
     int GetRequiredCount() const { return this->requiredcount; }
     int GetPriority() const { return this->priority; }
-    bool Good() const { return ((activity != nullptr || activity2 != nullptr) && requiredcount != -2); }
-    Message StartActivity(deque<string> p);
+    bool Good() const { return ((activity != nullptr || activity2 != nullptr) && requiredcount != kFlagNotDefined); }
+    Message StartActivity(deque<string> p, Chainloader *parent);
   };
 
-  class MemoryWrapper {
+  class PointWrapper {
   private:
-    int StorageMode;
-    void *memory;
-    MemoryWrapper() {}
+    std::shared_ptr<void> ptr;
   public:
-    MemoryWrapper(int mode, void *ptr) {
-      StorageMode = mode;
-      memory = ptr;
-    }
-
-    MemoryWrapper(string data) {
-      StorageMode = kModeStringPtr;
-      memory = new string(data);
-    }
-
-    void free() {
-      switch (StorageMode) {
-      case kModeAnonymus:
-      case kModeStringPtr:
-        delete(memory);
-        break;
-      case kModeArray:
-        delete[](memory);
-        break;
-      default:
-        delete(memory);
-        break;
-      }
-      memory = nullptr;
-    }
-
-    void set(void *data, int mode, bool cleanup = false) {
-      if (cleanup) free();
-      this->memory = data;
-      this->StorageMode = mode;
-    }
-
-    void set(string data, bool cleanup = false) {
-      if (cleanup) free();
-      this->memory = new string(data);
-    }
-
-    void *GetPointer() {
-      return memory;
-    }
-
-    string GetString() {
-      if (StorageMode == kModeStringPtr) return *static_cast<string *>(memory);
-      return kStrNull;
-    }
-
-    int GetMode() const {
-      return StorageMode;
-    }
+    PointWrapper() { ptr = nullptr; }
+    template <class T> PointWrapper(T &t) { ptr = std::make_shared<T>(t); }
+    void set(shared_ptr<void> ptr) { this->ptr = ptr; }
+    shared_ptr<void> get() { return ptr; }
   };
 
-  class MemoryMapper {
+  class PointMap {
   private:
-    map<string, MemoryWrapper> MapBase;
-    vector<string> ReadOnlyList;
+    typedef map<string, PointWrapper> PointBase;
+    PointBase base;
+    vector<string> rolist;
 
     bool CheckPriority(string name) {
-      if (ReadOnlyList.empty()) {
+      if (rolist.empty()) {
         return true;
       }
       else {
-        for (auto unit : ReadOnlyList) {
+        for (auto unit : rolist) {
           if (unit == name) return true;
         }
       }
       return false;
     }
   public:
-    void create(string name, string data, bool readonly = false) {
+    template <class T> void CreateByObject(string name, T &t, bool ro) {
       auto insert = [&]() {
-        MapBase.insert(map<string, MemoryWrapper>::value_type(name, data));
-        if (readonly) ReadOnlyList.push_back(name);
+        base.insert(PointBase::value_type(name, PointWrapper(t)));
+        if (ro) rolist.emplace_back(name);
       };
-      if (MapBase.empty()) {
-        insert();
-      }
-      else {
-        map<string, MemoryWrapper>::iterator it = MapBase.find(name);
-        if (it == MapBase.end()) insert();
+      switch (base.empty()) {
+      case true:insert(); break;
+      case false:
+        PointBase::iterator i = base.find(name);
+        if (i == base.end()) insert();
       }
     }
 
-    void create(string name, void *data, int mode, bool readonly = false) {
+    void CreateByWrapper(string name, PointWrapper source, bool ro) {
       auto insert = [&]() {
-        MapBase.insert(map<string, MemoryWrapper>::value_type(name, MemoryWrapper(mode, data)));
-        if (readonly) ReadOnlyList.push_back(name);
+        base.insert(PointBase::value_type(name, source));
+        if (ro) rolist.emplace_back(name);
       };
-      if (MapBase.empty()) {
-        insert();
-      }
-      else {
-        map<string, MemoryWrapper>::iterator it = MapBase.find(name);
-        if (it == MapBase.end()) insert();
+      switch (base.empty()) {
+      case true:insert(); break;
+      case false:
+        PointBase::iterator i = base.find(name);
+        if (i == base.end()) insert();
       }
     }
 
-    void create(string name, MemoryWrapper &wrapper, bool readonly = false) {
-      auto insert = [&]() {
-        MapBase.insert(map<string, MemoryWrapper>::value_type(name, wrapper));
-        if (readonly) ReadOnlyList.push_back(name);
-      };
-      if (MapBase.empty()) {
-        insert();
-      }
-      else {
-        map<string, MemoryWrapper>::iterator it = MapBase.find(name);
-        if (it == MapBase.end()) insert();
-      }
-    }
-
-    MemoryWrapper *find(string name) {
-      MemoryWrapper *wrapper = nullptr;
-      for (auto &unit : MapBase) {
+    PointWrapper Find(string name) {
+      PointWrapper wrapper;
+      for (auto unit : base) {
         if (unit.first == name) {
-          wrapper = &(unit.second);
+          wrapper = unit.second;
+          break;
         }
       }
       return wrapper;
     }
 
-    void empty() {
-      MapBase.clear();
-      map<string, MemoryWrapper>().swap(MapBase);
-      Util().CleanUpVector(ReadOnlyList);
+    void dispose(string name) {
+      PointBase::iterator it = base.find(name);
+      if (it != base.end()) base.erase(it);
     }
-
-    ~MemoryMapper() {
-      for (auto &unit : MapBase) {
-        unit.second.free();
-      }
-    }
-
-    MemoryMapper() {}
-    size_t size() { return MapBase.size(); }
-    bool dispose(string name);
   };
+
+  inline string CastToString(shared_ptr<void> ptr) {
+    return *static_pointer_cast<string>(ptr);
+  }
 
   void TotalInjection();
 }
@@ -382,17 +331,31 @@ namespace Tracking {
 
 namespace Entry {
   using namespace Suzu;
-  void Inject(std::string name, Suzu::EntryProvider provider);
-  void Delete(std::string name);
+  typedef map<string, EntryProvider> EntryMap;
+  typedef map<string, EntryProvider>::value_type EntryMapUnit;
+  extern vector<PointMap> MemoryAdapter;
+
+  void Inject(string name, EntryProvider provider);
+  void Delete(string name);
   void ResetPluginEntry();
   void ResetPlugin(bool OnExit = false);
-  template <class Type>
-  MemoryWrapper *CreateWrapper(string name, Type data, bool readonly);
-  MemoryWrapper CreateWrapper(string name, MemoryWrapper wrapper);
   void DisposeWrapper(string name, bool reserved);
   void CleanupWrapper();
-  MemoryMapper CreateMapper();
-  bool DisposeMapper();
+  PointWrapper FindWrapper(string name, bool reserved);
+  PointMap CreateMap();
+  bool DisposeMap();
+
+  template <class T>
+  PointWrapper CreateWrapper(string name, T t, bool readonly = false) {
+    PointWrapper wrapper;
+    if (Util().GetDataType(name) != kTypeFunction) {
+      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
+      return wrapper;
+    }
+    MemoryAdapter.back().CreateByObject(name, t, false);
+    wrapper = MemoryAdapter.back().Find(name);
+    return wrapper;
+  }
 }
 #endif // !_SE_PARSER_
 
