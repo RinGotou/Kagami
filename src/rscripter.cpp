@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
   }
   else {
     //open terminal mode
-    //util.Terminal();
+    util.Terminal();
   }
 #endif
   util.PrintEvents();

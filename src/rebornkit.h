@@ -37,7 +37,7 @@ namespace Suzu {
   using std::shared_ptr;
   using std::static_pointer_cast;
 
-  const string kEngineVersion = "version 0.1 'anzu'";
+  const string kEngineVersion = "version 0.2 'haruki'";
   const string kEngineName = "RebornScripter";
   const string kEngineAuthor = "Suzu Nakamura";
   const string kCopyright = "(C) 2017-2018";
