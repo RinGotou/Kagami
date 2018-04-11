@@ -250,8 +250,14 @@ namespace Suzu {
     std::shared_ptr<void> ptr;
   public:
     PointWrapper() { ptr = nullptr; }
-    template <class T> PointWrapper(T &t) { ptr = std::make_shared<T>(t); }
-    void set(shared_ptr<void> ptr) { this->ptr = ptr; }
+    template <class T> PointWrapper &manage(T &t) { 
+        ptr = std::make_shared<T>(t);
+        return *this;
+    }
+    PointWrapper &set(shared_ptr<void> ptr) { 
+      this->ptr = ptr;
+      return *this;
+    }
     shared_ptr<void> get() { return ptr; }
   };
 
@@ -275,7 +281,7 @@ namespace Suzu {
   public:
     template <class T> void CreateByObject(string name, T &t, bool ro) {
       auto insert = [&]() {
-        base.insert(PointBase::value_type(name, PointWrapper(t)));
+        base.insert(PointBase::value_type(name, PointWrapper().manage(t)));
         if (ro) rolist.emplace_back(name);
       };
       switch (base.empty()) {
