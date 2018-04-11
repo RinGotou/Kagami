@@ -41,6 +41,7 @@ namespace Suzu {
   const string kEngineName = "RebornScripter";
   const string kEngineAuthor = "Suzu Nakamura";
   const string kCopyright = "(C) 2017-2018";
+  const string kStrDefineCmd = "var";
   const string kStrEmpty = "";
   const string kStrFatalError = "__FATAL__";
   const string kStrWarning = "__WARNING__";
@@ -80,14 +81,6 @@ namespace Suzu {
   const size_t kTypeSymbol = 5;
   const size_t kTypeBlank = 6;
   const size_t kTypeNull = 100;
-  const size_t kTypePreserved = 101;
-
-  const int kModeNormal = 1;
-  const int kModeArray = 2;
-  const int kModeObject = 3;
-  const int kModeAnonymus = 4;
-  const int kModeStringPtr = 5;
-  //const int kModeArray = 6;
 
   class Message {
   private:

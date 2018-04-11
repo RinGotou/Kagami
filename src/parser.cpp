@@ -557,11 +557,18 @@ namespace Suzu {
     size_t size = p.size(), i = 0;
     PathMap map;
     shared_ptr<void> ptr;
+    bool skipahead = false;
 
     auto Filling = [&](bool number = false) {
       if (util.GetDataType(p.at(i)) == kTypeFunction) {
-        if (p.at(i).substr(0, 2) == "__") ptr = parent->GetVariable(p.at(i));
-        else ptr = FindWrapper(p.at(i), true).get();
+        if (this->GetName() == kStrDefineCmd && !skipahead) {
+          ptr = make_shared<string>(string(p.at(i)));
+          skipahead = true;
+        }
+        else {
+          if (p.at(i).substr(0, 2) == "__") ptr = parent->GetVariable(p.at(i));
+          else ptr = FindWrapper(p.at(i), true).get();
+        }
       }
       else {
         ptr = make_shared<string>(string(p.at(i)));
@@ -706,12 +713,19 @@ namespace Suzu {
 
   void Util::Terminal() {
     using namespace Entry;
+    Util util;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Chainloader loader;
-
+    auto Build = [&](string target) {return util.BuildStrVec(target); };
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
+
+    CreateMap();
+    TotalInjection();
+    Inject("version", EntryProvider("version", VersionInfo, 0));
+    Inject("quit", EntryProvider("quit", Quit, 0));
+    Inject("print", EntryProvider("print", PrintOnScreen, 1, kFlagNormalEntry, Build("msg")));
 
     while (result.GetCode() != kCodeQuit) {
       std::cout << '>';
