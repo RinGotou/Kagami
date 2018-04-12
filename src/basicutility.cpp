@@ -88,7 +88,6 @@ namespace Entry {
     return MemoryAdapter.empty();
   }
 
-
   bool Instance::Load(string name, HINSTANCE h) {
     Attachment attachment = nullptr;
     StrMap *targetmap = nullptr;
@@ -181,8 +180,6 @@ namespace Entry {
 }
 
 namespace Suzu {
-
-
   Message CommaExp(PathMap &p) {
     Message result;
     string res = CastToString(p.at(to_string(p.size() - 1)));
@@ -217,9 +214,9 @@ namespace Suzu {
     string *opercode = nullptr;
     enum { EnumDouble, EnumInt, EnumStr, EnumNull }type = EnumNull;
     Message result(kStrRedirect,kCodeSuccess,"0");
-    array<string, 3> buf = { CastToString(p["0"]),
-      CastToString(p["1"]),
-      CastToString(p["2"])
+    array<string, 3> buf = { CastToString(p["first"]),
+      CastToString(p["second"]),
+      CastToString(p["operator"])
     };
     string temp = kStrEmpty;
     bool tempresult = false;
@@ -238,15 +235,15 @@ namespace Suzu {
     //array data format rule:number number operator
     opercode = &(buf.at(2));
 
-    for (i = 0; i <= 1; i++) {
-      if (util.GetDataType(buf.at(i)) == kTypeFunction) {
-        wrapper = FindWrapper(buf.at(i), true);
-        if (wrapper.get() != nullptr) {
-          temp = *std::static_pointer_cast<string>(wrapper.get());
-          buf.at(i) = temp;
-        }
-      }
-    }
+    //for (i = 0; i <= 1; i++) {
+    //  if (util.GetDataType(buf.at(i)) == kTypeFunction) {
+    //    wrapper = FindWrapper(buf.at(i), true);
+    //    if (wrapper.get() != nullptr) {
+    //      temp = *std::static_pointer_cast<string>(wrapper.get());
+    //      buf.at(i) = temp;
+    //    }
+    //  }
+    //}
 
     if (CheckingOr(kPatternDouble)) type = EnumDouble;
     else if (CheckingAnd(kPatternInteger)) type = EnumInt;

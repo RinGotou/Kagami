@@ -411,6 +411,9 @@ namespace Suzu {
       item.push_back(msg.GetDetail());
       lambdamap.insert(pair<string, shared_ptr<void>>(msg.GetDetail(), msg.GetCastPath()));
     }
+    else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
+      item.push_back(msg.GetDetail());
+    }
     return result;
   }
 
@@ -589,7 +592,7 @@ namespace Suzu {
       delete(msgptr);
     }
     else {
-      if (size == parameters.size()) {
+      if (size == parameters.size() ) {
         for (i = 0; i < size; i++) { Filling(); }
         result = activity(map);
       }
