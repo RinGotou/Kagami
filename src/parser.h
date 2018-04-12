@@ -64,7 +64,6 @@ namespace Suzu {
   class EntryProvider;
   class Chainloader;
   typedef map<string, string> StrMap;
-  typedef map<string, shared_ptr<void>> PathMap;
   typedef Message(*Activity)(PathMap &);
   typedef Message *(*PluginActivity)(PathMap &);
 

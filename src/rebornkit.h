@@ -29,6 +29,7 @@
 #include <vector>
 #include <cstring>
 #include <memory>
+#include <map>
 
 namespace Suzu {
   using std::string;
@@ -36,6 +37,9 @@ namespace Suzu {
   using std::vector;
   using std::shared_ptr;
   using std::static_pointer_cast;
+  using std::map;
+
+  typedef map<string, shared_ptr<void>> PathMap;
 
   const string kEngineVersion = "version 0.2 'haruki'";
   const string kEngineName = "RebornScripter";
