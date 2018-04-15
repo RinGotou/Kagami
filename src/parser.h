@@ -47,11 +47,17 @@ namespace Suzu {
   using std::shared_ptr;
   using std::static_pointer_cast;
   using std::make_shared;
+
   const string kStrVar = "var";
   const string kStrFor = "for";
   const string kStrForeach = "foreach";
   const string kStrWhile = "while";
   const string kStrEnd = "end";
+  
+  const string kCastNull = "null";
+  const string kCastInt = "int";
+  const string kCastString = "string";
+
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   //const regex kPatternString(R"("(\"|\\|\n|\t|[^"]|[[:Punct:]])*")");
   const regex kPatternNumber(R"(\d+\.?\d*)");
@@ -128,6 +134,86 @@ namespace Suzu {
     vector<string> BuildStrVec(string source);
   };
 
+  class PointWrapper {
+  private:
+    std::shared_ptr<void> ptr;
+    string castoption;
+  public:
+    PointWrapper() { ptr = nullptr; castoption = kCastNull; }
+    template <class T> PointWrapper &manage(T &t, string castoption) {
+      ptr = std::make_shared<T>(t);
+      return *this;
+    }
+    PointWrapper &set(shared_ptr<void> ptr, string castoption) {
+      this->ptr = ptr;
+      this->castoption = castoption;
+      return *this;
+    }
+    shared_ptr<void> get() { return ptr; }
+    string getOption() const { return castoption; }
+  };
+
+  class PointMap {
+  private:
+    typedef map<string, PointWrapper> PointBase;
+    PointBase base;
+    vector<string> rolist;
+
+    bool CheckPriority(string name) {
+      if (rolist.empty()) {
+        return true;
+      }
+      else {
+        for (auto unit : rolist) {
+          if (unit == name) return true;
+        }
+      }
+      return false;
+    }
+  public:
+    template <class T> void CreateByObject(string name, T &t, string castoption, bool ro) {
+      auto insert = [&]() {
+        base.insert(PointBase::value_type(name, PointWrapper().manage(t)));
+        if (ro) rolist.emplace_back(name);
+      };
+      switch (base.empty()) {
+      case true:insert(); break;
+      case false:
+        PointBase::iterator i = base.find(name);
+        if (i == base.end()) insert();
+      }
+    }
+
+    void CreateByWrapper(string name, PointWrapper source, bool ro) {
+      auto insert = [&]() {
+        base.insert(PointBase::value_type(name, source));
+        if (ro) rolist.emplace_back(name);
+      };
+      switch (base.empty()) {
+      case true:insert(); break;
+      case false:
+        PointBase::iterator i = base.find(name);
+        if (i == base.end()) insert();
+      }
+    }
+
+    PointWrapper Find(string name) {
+      PointWrapper wrapper;
+      for (auto unit : base) {
+        if (unit.first == name) {
+          wrapper = unit.second;
+          break;
+        }
+      }
+      return wrapper;
+    }
+
+    void dispose(string name) {
+      PointBase::iterator it = base.find(name);
+      if (it != base.end()) base.erase(it);
+    }
+  };
+
   class ScriptProvider2 {
   private:
     std::ifstream stream;
@@ -152,7 +238,7 @@ namespace Suzu {
   class Chainloader {
   private:
     vector<string> raw;
-    map<string, shared_ptr<void>> lambdamap;
+    map<string, PointWrapper> lambdamap;
     int GetPriority(string target) const;
     bool ActivityStart(EntryProvider &provider, deque<string> container,
       deque<string> &item, size_t top, Message &msg, Chainloader *loader);
@@ -165,19 +251,20 @@ namespace Suzu {
       return *this;
     }
 
-    Chainloader &Build(string target);
-    shared_ptr<void> GetVariable(string name) {
-      shared_ptr<void> result;
-      map<string, shared_ptr<void>>::iterator it = lambdamap.find(name);
+    PointWrapper GetVariable(string name) {
+      PointWrapper result;
+      map<string, PointWrapper>::iterator it = lambdamap.find(name);
       if (it != lambdamap.end()) result = it->second;
       return result;
     }
+
     Chainloader &Reset() {
       Util().CleanUpVector(raw);
       return *this;
     }
 
     Message Start(); 
+    Chainloader &Build(string target);
   };
 
   class ChainStorage {
@@ -244,82 +331,7 @@ namespace Suzu {
     Message StartActivity(deque<string> p, Chainloader *parent);
   };
 
-  class PointWrapper {
-  private:
-    std::shared_ptr<void> ptr;
-  public:
-    PointWrapper() { ptr = nullptr; }
-    template <class T> PointWrapper &manage(T &t) { 
-        ptr = std::make_shared<T>(t);
-        return *this;
-    }
-    PointWrapper &set(shared_ptr<void> ptr) { 
-      this->ptr = ptr;
-      return *this;
-    }
-    shared_ptr<void> get() { return ptr; }
-  };
 
-  class PointMap {
-  private:
-    typedef map<string, PointWrapper> PointBase;
-    PointBase base;
-    vector<string> rolist;
-
-    bool CheckPriority(string name) {
-      if (rolist.empty()) {
-        return true;
-      }
-      else {
-        for (auto unit : rolist) {
-          if (unit == name) return true;
-        }
-      }
-      return false;
-    }
-  public:
-    template <class T> void CreateByObject(string name, T &t, bool ro) {
-      auto insert = [&]() {
-        base.insert(PointBase::value_type(name, PointWrapper().manage(t)));
-        if (ro) rolist.emplace_back(name);
-      };
-      switch (base.empty()) {
-      case true:insert(); break;
-      case false:
-        PointBase::iterator i = base.find(name);
-        if (i == base.end()) insert();
-      }
-    }
-
-    void CreateByWrapper(string name, PointWrapper source, bool ro) {
-      auto insert = [&]() {
-        base.insert(PointBase::value_type(name, source));
-        if (ro) rolist.emplace_back(name);
-      };
-      switch (base.empty()) {
-      case true:insert(); break;
-      case false:
-        PointBase::iterator i = base.find(name);
-        if (i == base.end()) insert();
-      }
-    }
-
-    PointWrapper Find(string name) {
-      PointWrapper wrapper;
-      for (auto unit : base) {
-        if (unit.first == name) {
-          wrapper = unit.second;
-          break;
-        }
-      }
-      return wrapper;
-    }
-
-    void dispose(string name) {
-      PointBase::iterator it = base.find(name);
-      if (it != base.end()) base.erase(it);
-    }
-  };
 
   inline string CastToString(shared_ptr<void> ptr) {
     return *static_pointer_cast<string>(ptr);
@@ -351,13 +363,13 @@ namespace Entry {
   bool DisposeMap();
 
   template <class T>
-  PointWrapper CreateWrapper(string name, T t, bool readonly = false) {
+  PointWrapper &CreateWrapper(string name, T t, string castoption, bool readonly = false) {
     PointWrapper wrapper;
     if (Util().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
       return wrapper;
     }
-    MemoryAdapter.back().CreateByObject(name, t, false);
+    MemoryAdapter.back().CreateByObject(name, t, castoption, false);
     wrapper = MemoryAdapter.back().Find(name);
     return wrapper;
   }
