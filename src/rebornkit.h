@@ -40,12 +40,16 @@ namespace Suzu {
   using std::map;
 
   typedef map<string, shared_ptr<void>> PathMap;
+  typedef shared_ptr<void>(*CastTo)(shared_ptr<void>);
+  typedef void *(CastToExtern)(void *);
+  typedef pair<string, CastTo> CastFunc;
 
   const string kEngineVersion = "version 0.2 'haruki'";
   const string kEngineName = "RebornScripter";
   const string kEngineAuthor = "Suzu Nakamura";
   const string kCopyright = "(C) 2017-2018";
   const string kStrDefineCmd = "var";
+  const string kStrSetCmd = "set";
   const string kStrEmpty = "";
   const string kStrFatalError = "__FATAL__";
   const string kStrWarning = "__WARNING__";
@@ -57,6 +61,7 @@ namespace Suzu {
   const string kStrTrue = "true";
   const string kStrFalse = "false";
 
+  const int kCodePoint = 7;
   const int kCodeTailSign = 5;
   const int kCodeHeadSign = 4;
   const int kCodeQuit = 3;

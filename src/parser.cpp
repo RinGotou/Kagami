@@ -407,9 +407,11 @@ namespace Suzu {
     }
     if (provider.GetPriority() == kFlagBinEntry) container.push_back(symbol.back());
     result = ActivityStart(provider, container, item, item.size(), msg, this);
-    if (msg.GetCode() == kCodeRedirect && msg.GetValue() == kStrRedirect) {
+    if (msg.GetCode() == kCodePoint) {
       item.push_back(msg.GetDetail());
-      lambdamap.insert(pair<string, shared_ptr<void>>(msg.GetDetail(), msg.GetCastPath()));
+      PointWrapper wrapper;
+      wrapper.set(msg.GetCastPath(), msg.GetValue());
+      lambdamap.insert(pair<string, PointWrapper>(msg.GetDetail(), wrapper));
     }
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
@@ -563,13 +565,46 @@ namespace Suzu {
     bool skipahead = false;
 
     auto Filling = [&](bool number = false) {
+      string name = kStrEmpty;
+
+      if (util.GetDataType(p.at(i)) == kTypeFunction) {
+        if (this->GetName() == kStrDefineCmd || this->GetName() == kStrSetCmd) {
+          if (!skipahead) {
+            ptr = make_shared<string>(string(p.at(i)));
+            skipahead = true;
+          }
+          else {
+            name.append("&");
+            if (p.at(i).substr(0, 2) == "__") {
+              ptr = make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
+            }
+            else {
+              ptr = make_shared<PointWrapper>(FindWrapper(p.at(i), true));
+            }
+          }
+        }
+      }
+      else {
+        ptr = make_shared<string>(string(p.at(i)));
+      }
+
       if (util.GetDataType(p.at(i)) == kTypeFunction) {
         if (this->GetName() == kStrDefineCmd && !skipahead) {
           ptr = make_shared<string>(string(p.at(i)));
           skipahead = true;
         }
+        else if (this->GetName() == kStrSetCmd) {
+          if (!skipahead) {
+            ptr = make_shared<string>(string(p.at(i)));
+            skipahead = true;
+          }
+          else {
+            if (p.at(i).substr(0, 2) == "__") name.append("&");
+            ptr = make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
+          }
+        }
         else {
-          if (p.at(i).substr(0, 2) == "__") ptr = parent->GetVariable(p.at(i));
+          if (p.at(i).substr(0, 2) == "__") ptr = parent->GetVariable(p.at(i)).get();
           else ptr = FindWrapper(p.at(i), true).get();
         }
       }
@@ -577,9 +612,10 @@ namespace Suzu {
         ptr = make_shared<string>(string(p.at(i)));
       }
       switch (number) {
-      case true:map.insert(PathMap::value_type(to_string(i), ptr)); break;
-      case false:map.insert(PathMap::value_type(parameters[i], ptr)); break;
+      case true:name.append(to_string(i)); break;
+      case false:name.append(parameters.at(i)); break;
       }
+      map.insert(PathMap::value_type(name, ptr));
     };
 
     if (priority == kFlagPluginEntry) {

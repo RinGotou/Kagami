@@ -25,6 +25,38 @@
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "basicutility.h"
 
+namespace Cast {
+  using namespace Suzu;
+
+  map<string, CastTo> CastMap;
+  map<string, CastToExtern> CastMapEx;
+
+  shared_ptr<void> spToString(shared_ptr<void> ptr) {
+    string temp(*static_pointer_cast<string>(ptr));
+    return make_shared<string>(temp);
+  }
+
+  shared_ptr<void> spToInt(shared_ptr<void> ptr) {
+    int temp = *static_pointer_cast<int>(ptr);
+    return make_shared<int>(temp);
+  }
+
+  shared_ptr<void> ExternProcessing(shared_ptr<void> ptr) {
+
+  }
+
+  CastTo FindCastOption(string option) {
+    map<string, CastTo>::iterator it = CastMap.find(option);
+    if (it != CastMap.end()) return it->second;
+    else return nullptr;
+  }
+
+  void InitDefaultType() {
+    CastMap.insert(CastFunc(kCastString, spToString));
+    CastMap.insert(CastFunc(kCastInt, spToInt));
+  }
+}
+
 namespace Entry {
   vector<PointMap> MemoryAdapter;
   vector<Instance> InstanceList;
@@ -44,13 +76,24 @@ namespace Entry {
     return wrapper;
   }
 
-  PointWrapper CreateWrapperByPointer(string name, shared_ptr<void> ptr) {
+  PointWrapper CreateWrapperByString(string name, string str, bool readonly = false) {
+    PointWrapper wrapper;
+    if (Util().GetDataType(name) != kTypeFunction) {
+      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
+      return wrapper;
+    }
+    MemoryAdapter.back().CreateByObject(name, str, kCastString, false);
+    wrapper = MemoryAdapter.back().Find(name);
+    return wrapper;
+  }
+
+  PointWrapper CreateWrapperByPointer(string name, shared_ptr<void> ptr, string castoption) {
     PointWrapper wrapper, temp;
     if (Util().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
       return wrapper;
     }
-    temp.set(ptr);
+    temp.set(ptr, castoption);
     MemoryAdapter.back().CreateByWrapper(name, temp, false);
     wrapper = MemoryAdapter.back().Find(name);
     return wrapper;
@@ -235,16 +278,6 @@ namespace Suzu {
     //array data format rule:number number operator
     opercode = &(buf.at(2));
 
-    //for (i = 0; i <= 1; i++) {
-    //  if (util.GetDataType(buf.at(i)) == kTypeFunction) {
-    //    wrapper = FindWrapper(buf.at(i), true);
-    //    if (wrapper.get() != nullptr) {
-    //      temp = *std::static_pointer_cast<string>(wrapper.get());
-    //      buf.at(i) = temp;
-    //    }
-    //  }
-    //}
-
     if (CheckingOr(kPatternDouble)) type = EnumDouble;
     else if (CheckingAnd(kPatternInteger)) type = EnumInt;
     else if (CheckString(buf.at(0)) || CheckString(buf.at(1))) type = EnumStr;
@@ -340,7 +373,7 @@ namespace Suzu {
     const string reserved = CastToString(p.at("reserved"));
     PointWrapper wrapper = FindWrapper(name, reserved == kStrTrue);
     if (wrapper.get() != nullptr) {
-      result.combo(kStrRedirect, kCodeRedirect, "__" + CastToString(p.at("name")));
+      result.combo(wrapper.getOption(), kCodePoint, "__" + CastToString(p.at("name")));
       result.GetCastPath() = wrapper.get();
     }
     else {
@@ -351,30 +384,42 @@ namespace Suzu {
 
   Message SetVariable(PathMap &p) {
     using namespace Entry;
+
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    bool usewrapper = false;
     const string name = CastToString(p.at("name"));
-    const string source = CastToString(p.at("source"));
+    shared_ptr<void> source = nullptr;
     PointWrapper wrapper0 = FindWrapper(name, true);
     PointWrapper wrapper1;
-    auto OnError = [&](string s) {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + s + " is not found");
-    };
+    PathMap::iterator it = p.find("source");
 
-    if (wrapper0.get() == nullptr) {
-      OnError(name);
-      return result;
-    }
-    if (Util().GetDataType(source) == kTypeFunction) {
-      wrapper1 = FindWrapper(source, true);
-      if (wrapper1.get() != nullptr) {
-        wrapper0.set(wrapper1.get());
-      }
-      else {
-        OnError(source);
+    if (it == p.end()) {
+      it = p.find("&source");
+      if (it != p.end()) {
+        source = it->second;
+        usewrapper = true;
       }
     }
     else {
-      wrapper0.set(p.at("source"));
+      source = it->second;
+    }
+
+    if (wrapper0.get() != nullptr) {
+      if (!usewrapper) {
+        string temp = *static_pointer_cast<string>(source);
+        wrapper0.manage(temp, kCastString);
+      }
+      else {
+        wrapper1 = *static_pointer_cast<PointWrapper>(source);
+        CastTo castTo = Cast::FindCastOption(wrapper1.getOption());
+        if (castTo != nullptr) {
+          wrapper0.set(castTo(wrapper1.get()), wrapper1.getOption());
+        }
+      }
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, "cannot found variable " + name);
+      return result;
     }
 
     return result;
@@ -383,20 +428,33 @@ namespace Suzu {
   Message CreateVariable(PathMap &p) {
     using namespace Entry;
     Message result;
+    bool usewrapper = false;
     const string name = CastToString(p.at("name"));
-    shared_ptr<void> source = p.at("source");
-    PointWrapper wrapper1 = FindWrapper(name);
-    PointWrapper wrapper2;
+    shared_ptr<void> source;
+    PointWrapper wrapper = FindWrapper(name);
     string temp = kStrEmpty;
+    PathMap::iterator it = p.find("source");
 
-    if (wrapper1.get() == nullptr) {
-      wrapper1 = CreateWrapperByPointer(name, source);
-      if (wrapper1.get() == nullptr) {
-        result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
+    if (it == p.end()) {
+      it = p.find("&source");
+      if (it != p.end()) {
+        source = it->second;
+        usewrapper = true;
       }
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, name + "is defined");
+      source = it->second;
+    }
+
+    if (wrapper.get() == nullptr) {
+      
+      //wrapper1 = CreateWrapperByPointer(name, source);
+      //if (wrapper1.get() == nullptr) {
+      //  result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation failed");
+      //}
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, name + "is already existed");
     }
     return result;
   }
@@ -434,13 +492,13 @@ namespace Suzu {
     vector<string> temp = util.BuildStrVec("name");
     Inject("end", EntryProvider("end", TailSign, 0));
     Inject("commaexp", EntryProvider("commaexp", CommaExp, kFlagAutoSize));
-    Inject("var", EntryProvider("var", CreateVariable, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
+    Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateVariable, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
     Inject("while", EntryProvider("while", WhileCycle, 1, kFlagNormalEntry, Build("state")));
     Inject("vfind", EntryProvider("vfind", FindVariable, 2, kFlagCoreEntry, Build("name|reserved")));
     Inject("binexp", EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry, Build("first|second|operator")));
     Inject("log", EntryProvider("log", LogPrint, 1, kFlagNormalEntry, Build("data")));
     Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
     Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
-    Inject("set", EntryProvider("set", SetVariable, 2, kFlagNormalEntry, Build("name|source")));
+    Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetVariable, 2, kFlagNormalEntry, Build("name|source")));
   }
 }
