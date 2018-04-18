@@ -1,6 +1,6 @@
 //BSD 2 - Clause License
 //
-//Copyright(c) 2017 - 2018, Suzu Nakamura
+//Copyright(c) 2017 - 2018, Kagami Nakamura
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
 #include <memory>
 #include <map>
 
-namespace Suzu {
+namespace Kagami {
   using std::string;
   using std::pair;
   using std::vector;
@@ -39,9 +39,9 @@ namespace Suzu {
   using std::static_pointer_cast;
   using std::map;
 
-  const string kEngineVersion = "version 0.3¡°;
+  const string kEngineVersion = "version 0.3";
   const string kEngineName = "Kagami";
-  const string kEngineAuthor = "Suzu Nakamura";
+  const string kEngineAuthor = "Kagami Nakamura";
   const string kCopyright = "(C) 2017-2018";
   const string kStrDefineCmd = "var";
   const string kStrSetCmd = "set";

@@ -1,6 +1,6 @@
 //BSD 2 - Clause License
 //
-//Copyright(c) 2017 - 2018, Suzu Nakamura
+//Copyright(c) 2017 - 2018, Kagami Nakamura
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,7 @@
 #pragma once
 #include "includes.h"
 
-namespace Suzu {
+namespace Kagami {
   using std::ifstream;
   using std::ofstream;
   using std::vector;
@@ -153,6 +153,9 @@ namespace Suzu {
     string getOption() const { return castoption; }
   };
 
+  /*
+  
+  */
   class MemoryManager {
   private:
     typedef map<string, PointWrapper> PointBase;
@@ -340,13 +343,13 @@ namespace Suzu {
 }
 
 namespace Tracking {
-  using Suzu::Message;
+  using Kagami::Message;
   using std::vector;
-  void log(Suzu::Message msg);
+  void log(Kagami::Message msg);
 }
 
 namespace Entry {
-  using namespace Suzu;
+  using namespace Kagami;
   typedef map<string, EntryProvider> EntryMap;
   typedef map<string, EntryProvider>::value_type EntryMapUnit;
   extern vector<MemoryManager> MemoryAdapter;

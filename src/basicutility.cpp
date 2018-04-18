@@ -1,6 +1,6 @@
 //BSD 2 - Clause License
 //
-//Copyright(c) 2017 - 2018, Suzu Nakamura
+//Copyright(c) 2017 - 2018, Kagami Nakamura
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,7 @@
 #include "basicutility.h"
 
 namespace Cast {
-  using namespace Suzu;
+  using namespace Kagami;
 
   map<string, CastTo> CastMap;
   map<string, CastToEx> CastMapEx;
@@ -244,7 +244,7 @@ namespace Entry {
   }
 }
 
-namespace Suzu {
+namespace Kagami {
   Message CommaExp(PathMap &p) {
     Message result;
     string res = CastToString(p.at(to_string(p.size() - 1)));
