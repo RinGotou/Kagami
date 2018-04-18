@@ -2,8 +2,7 @@
 
 ## What's this?
 It's a simple and tiny script language.Angustifolia is originally designed for compiling principle studying, but I'm
-rebuilding and revising it, in order to make it can be used for writing visual novel.The name of this project is from 
-Lavandula angustifolia.
+rebuilding and revising it, in order to make it can be used for writing visual novel.The scipt processor is implemented with shunting yard algorithm.The name of this project is from Lavandula angustifolia.
 
 ## How to use these codes?
 Strongly recommend to compile them in Visual Studio 2010 or later version.It can run on Windows only, becuase I write
