@@ -39,8 +39,8 @@ namespace Suzu {
   using std::static_pointer_cast;
   using std::map;
 
-  const string kEngineVersion = "core version 0.3 'kagami' / script version 1";
-  const string kEngineName = "Angustifolia";
+  const string kEngineVersion = "version 0.3¡°;
+  const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
   const string kCopyright = "(C) 2017-2018";
   const string kStrDefineCmd = "var";
@@ -93,6 +93,12 @@ namespace Suzu {
   const size_t kModeNormal = 0;
   const size_t kModeNextCondition = 1;
 
+  /*Message Class
+    It's the basic message tunnel of this script processor.
+    According to my design,processor will check value or detail or
+    both of them to find out warnings or errors.Some function use 
+    value,detail and castpath to deliver PointWrapper class.
+  */
   class Message {
   private:
     string value;
