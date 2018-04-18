@@ -35,12 +35,12 @@ namespace Entry {
   class Instance : public pair<string, HINSTANCE> {
   private:
     bool health;
-    StrMap linkmap;
+    StrMap link_map;
   public:
     Instance() { health = false; }
     bool Load(string name, HINSTANCE h);
     bool GetHealth() const { return health; }
-    StrMap GetMap() const { return linkmap; }
+    StrMap GetMap() const { return link_map; }
     MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
   };
 }

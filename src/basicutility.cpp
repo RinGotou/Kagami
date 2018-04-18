@@ -89,7 +89,7 @@ namespace Entry {
 
   PointWrapper CreateWrapperByString(string name, string str, bool readonly = false) {
     PointWrapper wrapper;
-    if (Util().GetDataType(name) != kTypeFunction) {
+    if (Kit().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return wrapper;
     }
@@ -100,7 +100,7 @@ namespace Entry {
 
   PointWrapper CreateWrapperByPointer(string name, shared_ptr<void> ptr, string castoption) {
     PointWrapper wrapper, temp;
-    if (Util().GetDataType(name) != kTypeFunction) {
+    if (Kit().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return wrapper;
     }
@@ -151,7 +151,7 @@ namespace Entry {
     attachment = (Attachment)GetProcAddress(this->second, "Attachment");
     if (attachment != nullptr) {
       targetmap = attachment();
-      linkmap = StrMap(*targetmap);
+      link_map = StrMap(*targetmap);
       delete(targetmap);
       health = true;
     }
@@ -191,7 +191,7 @@ namespace Entry {
       for (auto unit : map) {
         activity = (PluginActivity)GetProcAddress(ins, unit.first.c_str());
         if (activity != nullptr) {
-          Inject(unit.first, EntryProvider(unit.first, activity, Util().BuildStringVector(unit.second), deleter));
+          Inject(unit.first, EntryProvider(unit.first, activity, Kit().BuildStringVector(unit.second), deleter));
         }
       }
       c_attachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
@@ -274,7 +274,7 @@ namespace Suzu {
 
   Message BinaryOperands(PathMap &p) {
     using namespace Entry;
-    Util util;
+    Kit Kit;
     PointWrapper wrapper;
     string *opercode = nullptr;
     enum { EnumDouble, EnumInt, EnumStr, EnumNull }type = EnumNull;
@@ -308,20 +308,20 @@ namespace Suzu {
       if (*opercode == "+" || *opercode == "-" || *opercode == "*" || *opercode == "/") {
         switch (type) {
         case EnumInt:
-          temp = to_string(util.Calc(stoi(buf.at(0)), stoi(buf.at(1)), *opercode));
+          temp = to_string(Kit.Calc(stoi(buf.at(0)), stoi(buf.at(1)), *opercode));
           break;
         case EnumDouble:
-          temp = to_string(util.Calc(stod(buf.at(0)), stod(buf.at(1)), *opercode));
+          temp = to_string(Kit.Calc(stod(buf.at(0)), stod(buf.at(1)), *opercode));
           break;
         }
       }
       else if (*opercode == "==" || *opercode == ">=" || *opercode == "<=" || *opercode == "!=") {
         switch (type) {
         case EnumInt:
-          tempresult = util.Logic(stoi(buf.at(1)), stoi(buf.at(0)), *opercode);
+          tempresult = Kit.Logic(stoi(buf.at(1)), stoi(buf.at(0)), *opercode);
           break;
         case EnumDouble:
-          tempresult = util.Logic(stod(buf.at(1)), stod(buf.at(0)), *opercode);
+          tempresult = Kit.Logic(stod(buf.at(1)), stod(buf.at(0)), *opercode);
           break;
         }
         switch (tempresult) {
@@ -355,7 +355,7 @@ namespace Suzu {
         temp = buf.at(1) + buf.at(0);
       }
       else if (*opercode == "==" || *opercode == "!=") {
-        tempresult = util.Logic(buf.at(1), buf.at(0), *opercode);
+        tempresult = Kit.Logic(buf.at(1), buf.at(0), *opercode);
         switch (tempresult) {
         case true:
           temp = kStrTrue;
@@ -519,7 +519,7 @@ namespace Suzu {
     Message result;
     Attachment attachment = nullptr;
     Activity activity = nullptr;
-    std::wstring wpath = s2ws(Util().GetRawString(path));
+    std::wstring wpath = s2ws(Kit().GetRawString(path));
     
     HINSTANCE hinstance = LoadLibrary(wpath.c_str());
     if (hinstance != nullptr) {
@@ -534,15 +534,15 @@ namespace Suzu {
   Message UnloadPlugin(PathMap &p) {
     using namespace Entry;
     Message result;
-    UnloadInstance(Util().GetRawString(CastToString(p.at("name"))));
+    UnloadInstance(Kit().GetRawString(CastToString(p.at("name"))));
     return result;
   }
 
   void InjectBasicEntries() {
     using namespace Entry;
-    Util util;
-    auto Build = [&](string target) {return util.BuildStringVector(target); };
-    vector<string> temp = util.BuildStringVector("name");
+    Kit Kit;
+    auto Build = [&](string target) {return Kit.BuildStringVector(target); };
+    vector<string> temp = Kit.BuildStringVector("name");
 
     //if elif else
     Inject("end", EntryProvider("end", TailSign, 0));
