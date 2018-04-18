@@ -201,7 +201,7 @@ namespace Kagami {
 
   bool Chainloader::StartActivity(EntryProvider &provider, deque<string> container, deque<string> &item,
     size_t top, Message &msg, Chainloader *loader) {
-    bool rv = true;
+    bool return_state = true;
     int code = kCodeSuccess;
     string value = kStrEmpty;
     Message temp;
@@ -215,10 +215,10 @@ namespace Kagami {
     }
     else {
       Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found"));
-      rv = false;
+      return_state = false;
     }
 
-    return rv;
+    return return_state;
   }
 
   Chainloader &Chainloader::Build(string target) {
@@ -373,7 +373,7 @@ namespace Kagami {
     return priority;
   }
 
-  bool Chainloader::ShuntingYardProcessing(bool disableset, deque<string> &item, deque<string> &symbol,
+  bool Chainloader::ShuntingYardProcessing(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
     Message &msg, bool next_condition = false) {
     using namespace Entry;
     EntryProvider provider = Find(symbol.back());
@@ -385,7 +385,7 @@ namespace Kagami {
       if (count != kFlagAutoSize) count -= 1;
       reversed = false;
     }
-    if (disableset == true) {
+    if (disable_set_entry == true) {
       while (item.back() != "," && item.empty() == false) {
         container.push_back(item.back());
         item.pop_back();
@@ -419,12 +419,14 @@ namespace Kagami {
   Message Chainloader::Start(int mode = kModeNormal) {
     using namespace Entry;
     const size_t size = raw.size();
+    size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
+    string temp_str = kStrEmpty;
+    int unit_type = kTypeNull;
+    bool comma_exp_func = false, 
+      string_token_proc = false, insert_btn_symbols = false, 
+      disable_set_entry = false, next_condition = false;
     Kit Kit;
     Message result;
-    size_t i = 0, j = 0, k = 0, nextinspoint = 0, forwardtype = kTypeNull;
-    string tempstr = kStrEmpty;
-    int unitType = kTypeNull;
-    bool commaexp = false, directappend = false, forwardinsert = false, disableset = false, next_condition = false;
 
     deque<string> item, symbol;
     deque<string> container;
@@ -432,14 +434,14 @@ namespace Kagami {
     if (mode == kModeNextCondition) next_condition = true;
 
     for (i = 0; i < size; ++i) {
-      unitType = Kit.GetDataType(raw.at(i));
-      if (unitType == kTypeSymbol) {
+      unit_type = Kit.GetDataType(raw.at(i));
+      if (unit_type == kTypeSymbol) {
         if (raw[i] == "\"") {
-          switch (directappend) {
+          switch (string_token_proc) {
           case true:item.back().append(raw[i]); break;
           case false:item.push_back(raw[i]); break;
           }
-          directappend = !directappend;
+          string_token_proc = !string_token_proc;
         }
         else if (raw[i] == "=") {
           switch (symbol.empty()) {
@@ -448,8 +450,8 @@ namespace Kagami {
           }
         }
         else if (raw[i] == ",") {
-          if (symbol.back() == kStrVar) disableset = true;
-          switch (disableset) {
+          if (symbol.back() == kStrVar) disable_set_entry = true;
+          switch (disable_set_entry) {
           case true:
             symbol.push_back(kStrVar);
             item.push_back(raw[i]);
@@ -473,7 +475,7 @@ namespace Kagami {
               symbol.pop_back();
             }
             //Start point 1
-            if (!ShuntingYardProcessing(disableset, item, symbol, result,next_condition)) break;
+            if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result,next_condition)) break;
             symbol.pop_back();
           }
 
@@ -483,7 +485,7 @@ namespace Kagami {
             container.pop_back();
           }
           //Start point 2
-          if (!ShuntingYardProcessing(disableset, item, symbol, result, next_condition)) break;
+          if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, next_condition)) break;
           symbol.pop_back();
         }
         else {
@@ -499,8 +501,8 @@ namespace Kagami {
               --j;
             }
             symbol.insert(symbol.begin() + j + 1, raw[i]);
-            nextinspoint = k;
-            forwardinsert = true;
+            next_ins_point = k;
+            insert_btn_symbols = true;
 
             j = 0;
             k = 0;
@@ -510,7 +512,7 @@ namespace Kagami {
           }
         }
       }
-      else if (unitType == kTypeFunction && !directappend) {
+      else if (unit_type == kTypeFunction && !string_token_proc) {
         switch (Find(raw[i]).Good()) {
         case true:
           symbol.push_back(raw[i]);
@@ -521,13 +523,13 @@ namespace Kagami {
         }
       }
       else {
-        switch (forwardinsert) {
+        switch (insert_btn_symbols) {
         case true:
-          item.insert(item.begin() + nextinspoint, raw[i]);
-          forwardinsert = false;
+          item.insert(item.begin() + next_ins_point, raw[i]);
+          insert_btn_symbols = false;
           break;
         case false:
-          switch (directappend) {
+          switch (string_token_proc) {
           case true:item.back().append(raw[i]); break;
           case false:item.push_back(raw[i]); break;
           }
@@ -543,7 +545,7 @@ namespace Kagami {
           break;
         }
         //Start point 3
-        if (!ShuntingYardProcessing(disableset, item, symbol, result, next_condition)) break;
+        if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, next_condition)) break;
         symbol.pop_back();
       }
     }
