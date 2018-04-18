@@ -1,5 +1,5 @@
 #include "rebornkit.h"
 
-namespace Suzu {
+namespace Kagami {
 
 }

@@ -1,5 +1,5 @@
 #include "audio.h"
 
-namespace Suzu {
+namespace Kagami {
 
 }

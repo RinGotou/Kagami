@@ -1,6 +1,6 @@
 //BSD 2 - Clause License
 //
-//Copyright(c) 2017 - 2018, Suzu Nakamura
+//Copyright(c) 2017 - 2018, Kagami Nakamura
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 
 int main(int argc, char **argv) {
 
-  Suzu::Kit Kit;
+  Kagami::Kit Kit;
 #ifdef _DEBUG_STATE_
   //direct load a external script
   Kit.ExecScriptFile("C:\\Apps\\main.rs");

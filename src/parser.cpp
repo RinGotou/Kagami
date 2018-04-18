@@ -1,6 +1,6 @@
 //BSD 2 - Clause License
 //
-//Copyright(c) 2017 - 2018, Suzu Nakamura
+//Copyright(c) 2017 - 2018, Kagami Nakamura
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
@@ -111,7 +111,7 @@ namespace Entry {
   }
 }
 
-namespace Suzu {
+namespace Kagami {
   int Kit::GetDataType(string target) {
     using std::regex_match;
     int result = kTypeNull;
