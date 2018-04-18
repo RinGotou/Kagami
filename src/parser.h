@@ -65,6 +65,10 @@ namespace Suzu {
   class EntryProvider;
   class Chainloader;
 
+  /*Kit Class
+   this class contains many useful template or tiny function, and
+   create script processing workspace.
+  */
   class Kit {
   public:
     template <class Type>
@@ -125,6 +129,11 @@ namespace Suzu {
     vector<string> BuildStringVector(string source);
   };
 
+  /*PointWrapper Class
+   A shared void pointer is packaged in this.Almost all varibales and
+   constants are managed by shared pointers.This class will be packaged
+   in MemoryManager class.
+  */
   class PointWrapper {
   private:
     std::shared_ptr<void> ptr;
