@@ -153,8 +153,9 @@ namespace Kagami {
     string getOption() const { return castoption; }
   };
 
-  /*
-  
+  /*MemoryManager Class
+  MemoryManger will be filled with PointWrapper and manage life cycle of variables
+  and constants.
   */
   class MemoryManager {
   private:
@@ -217,6 +218,9 @@ namespace Kagami {
     }
   };
 
+  /*ScriptProvider class
+  Script provider caches original string data from script file.
+  */
   class ScriptProvider {
   private:
     std::ifstream stream;
@@ -238,6 +242,10 @@ namespace Kagami {
     Message Get();
   };
 
+  /*Chainloader Class
+  The most important part of script processor.Original string will be tokenized and
+  parsed here.Processed data will be delivered to entry provider.
+  */
   class Chainloader {
   private:
     vector<string> raw;
@@ -270,6 +278,9 @@ namespace Kagami {
     Chainloader &Build(string target);
   };
 
+  /*ChainStorage Class
+  A set of packaged chainloader.Loop and condition judging is processed here.
+  */
   class ChainStorage {
   private:
     vector<Chainloader> storage;
@@ -292,7 +303,12 @@ namespace Kagami {
 
     Message Run(deque<string> res);
   };
-
+  
+  /*EntryProvider Class
+  contains function pointer.Processed argument tokens are used for building
+  new argument map.Entry provider have two mode:internal function and plugin
+  function.
+  */
   class EntryProvider {
   private:
     string name;
@@ -342,12 +358,14 @@ namespace Kagami {
   void InjectBasicEntries();
 }
 
+/*stuff of event tracking*/
 namespace Tracking {
   using Kagami::Message;
   using std::vector;
   void log(Kagami::Message msg);
 }
 
+/*stuff of entry storage,plugin instance managing and etc.*/
 namespace Entry {
   using namespace Kagami;
   typedef map<string, EntryProvider> EntryMap;
