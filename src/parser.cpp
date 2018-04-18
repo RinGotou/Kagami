@@ -112,7 +112,7 @@ namespace Entry {
 }
 
 namespace Suzu {
-  int Util::GetDataType(string target) {
+  int Kit::GetDataType(string target) {
     using std::regex_match;
     int result = kTypeNull;
     auto match = [&](const regex &pat) -> bool {
@@ -132,7 +132,7 @@ namespace Suzu {
     return result;
   }
 
-  void Util::PrintEvents() {
+  void Kit::PrintEvents() {
     using namespace Tracking;
     ofstream ofs("event.log", std::ios::trunc);
     string prioritystr;
@@ -153,7 +153,7 @@ namespace Suzu {
     ofs.close();
   }
 
-  ScriptProvider2::ScriptProvider2(const char *target) {
+  ScriptProvider::ScriptProvider(const char *target) {
     using Tracking::log;
     string temp;
     current = 0;
@@ -185,7 +185,7 @@ namespace Suzu {
     stream.close();
   }
 
-  Message ScriptProvider2::Get() {
+  Message ScriptProvider::Get() {
     Message result(kStrEmpty, kCodeSuccess, "");
     size_t size = base.size();
 
@@ -223,7 +223,7 @@ namespace Suzu {
 
   Chainloader &Chainloader::Build(string target) {
     using Tracking::log;
-    Util util;
+    Kit Kit;
     vector<string> output;
     char bin_oper = NULL;
     size_t size = target.size();
@@ -242,10 +242,10 @@ namespace Suzu {
 #endif
     for (i = 0; i < size; i++) {
       if (!exempt_blank_char) {
-        if (util.GetDataType(ToString(target[i])) == kTypeBlank) {
+        if (Kit.GetDataType(ToString(target[i])) == kTypeBlank) {
           continue;
         }
-        else if (util.GetDataType(ToString(target[i])) != kTypeBlank) {
+        else if (Kit.GetDataType(ToString(target[i])) != kTypeBlank) {
           exempt_blank_char = true;
         }
       }
@@ -314,7 +314,7 @@ namespace Suzu {
           }
           else if (bin_oper != NULL) {
             string binaryopt = { bin_oper, target[i] };
-            if (util.GetDataType(binaryopt) == kTypeSymbol) {
+            if (Kit.GetDataType(binaryopt) == kTypeSymbol) {
               output.push_back(binaryopt);
               bin_oper = NULL;
             }
@@ -331,7 +331,7 @@ namespace Suzu {
         if (string_processing) {
           current.append(1, target[i]);
         }
-        else if (util.Compare(current, list) && output.empty()) {
+        else if (Kit.Compare(current, list) && output.empty()) {
           if (i + 1 < size && target[i + 1] != ' ' && target[i + 1] != '\t') {
             output.push_back(current);
             current = kStrEmpty;
@@ -358,7 +358,7 @@ namespace Suzu {
 
     if (current != kStrEmpty) output.push_back(current);
     raw = output;
-    util.CleanupVector(output);
+    Kit.CleanupVector(output);
 
     return *this;
   }
@@ -419,7 +419,7 @@ namespace Suzu {
   Message Chainloader::Start(int mode = kModeNormal) {
     using namespace Entry;
     const size_t size = raw.size();
-    Util util;
+    Kit Kit;
     Message result;
     size_t i = 0, j = 0, k = 0, nextinspoint = 0, forwardtype = kTypeNull;
     string tempstr = kStrEmpty;
@@ -432,7 +432,7 @@ namespace Suzu {
     if (mode == kModeNextCondition) next_condition = true;
 
     for (i = 0; i < size; ++i) {
-      unitType = util.GetDataType(raw.at(i));
+      unitType = Kit.GetDataType(raw.at(i));
       if (unitType == kTypeSymbol) {
         if (raw[i] == "\"") {
           switch (directappend) {
@@ -460,7 +460,7 @@ namespace Suzu {
           }
         }
         else if (raw[i] == "(") {
-          if (symbol.empty() || util.GetDataType(symbol.back()) == kTypeSymbol) {
+          if (symbol.empty() || Kit.GetDataType(symbol.back()) == kTypeSymbol) {
             symbol.push_back("commaexp");
           }
           symbol.push_back(raw[i]);
@@ -548,14 +548,14 @@ namespace Suzu {
       }
     }
 
-    util.CleanupDeque(container).CleanupDeque(item).CleanupDeque(symbol);
+    Kit.CleanupDeque(container).CleanupDeque(item).CleanupDeque(symbol);
 
     return result;
   }
 
   Message EntryProvider::StartActivity(deque<string> p, Chainloader *parent) {
     using namespace Entry;
-    Util util;
+    Kit Kit;
     Message result;
     size_t size = p.size(), i = 0;
     PathMap map;
@@ -565,7 +565,7 @@ namespace Suzu {
     auto Filling = [&](bool number = false) {
       string name = kStrEmpty;
 
-      if (util.GetDataType(p.at(i)) == kTypeFunction) {
+      if (Kit.GetDataType(p.at(i)) == kTypeFunction) {
         if (this->GetName() == kStrDefineCmd || this->GetName() == kStrSetCmd) {
           if (!ignore_first_arg) {
             ptr = make_shared<string>(string(p.at(i)));
@@ -586,7 +586,7 @@ namespace Suzu {
         ptr = make_shared<string>(string(p.at(i)));
       }
 
-      if (util.GetDataType(p.at(i)) == kTypeFunction) {
+      if (Kit.GetDataType(p.at(i)) == kTypeFunction) {
         if (this->GetName() == kStrDefineCmd && !ignore_first_arg) {
           ptr = make_shared<string>(string(p.at(i)));
           ignore_first_arg = true;
@@ -652,7 +652,7 @@ namespace Suzu {
     return result;
   }
 
-  vector<string> Util::BuildStringVector(string source) {
+  vector<string> Kit::BuildStringVector(string source) {
     vector<string> result;
     string temp = kStrEmpty;
     for (auto unit : source) {
@@ -736,11 +736,11 @@ namespace Suzu {
     return result;
   }
 
-  Message Util::ExecScriptFile(string target) {
+  Message Kit::ExecScriptFile(string target) {
     Message result;
     vector<Chainloader> loaders;
     size_t tail = 0;
-    ScriptProvider2 sp(target.c_str());
+    ScriptProvider sp(target.c_str());
     ChainStorage cs(sp);
 
     if (target == kStrEmpty) {
@@ -772,13 +772,13 @@ namespace Suzu {
     return result;
   }
 
-  void Util::Terminal() {
+  void Kit::Terminal() {
     using namespace Entry;
-    Util util;
+    Kit Kit;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Chainloader loader;
-    auto Build = [&](string target) {return util.BuildStringVector(target); };
+    auto Build = [&](string target) {return Kit.BuildStringVector(target); };
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
