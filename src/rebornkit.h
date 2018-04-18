@@ -39,13 +39,8 @@ namespace Suzu {
   using std::static_pointer_cast;
   using std::map;
 
-  typedef map<string, shared_ptr<void>> PathMap;
-  typedef shared_ptr<void>(*CastTo)(shared_ptr<void>);
-  typedef void *(CastToExtern)(void *);
-  typedef pair<string, CastTo> CastFunc;
-
-  const string kEngineVersion = "version 0.2 'haruki'";
-  const string kEngineName = "RebornScripter";
+  const string kEngineVersion = "core version 0.3 'kagami' / script version 1";
+  const string kEngineName = "Angustifolia";
   const string kEngineAuthor = "Suzu Nakamura";
   const string kCopyright = "(C) 2017-2018";
   const string kStrDefineCmd = "var";
@@ -61,6 +56,10 @@ namespace Suzu {
   const string kStrTrue = "true";
   const string kStrFalse = "false";
 
+  const int kCodeReturn = 11;
+  const int kCodeConditionLeaf = 10;
+  const int kCodeConditionBranch = 9;
+  const int kCodeConditionRoot = 8;
   const int kCodePoint = 7;
   const int kCodeTailSign = 5;
   const int kCodeHeadSign = 4;
@@ -90,6 +89,9 @@ namespace Suzu {
   const size_t kTypeSymbol = 5;
   const size_t kTypeBlank = 6;
   const size_t kTypeNull = 100;
+
+  const size_t kModeNormal = 0;
+  const size_t kModeNextCondition = 1;
 
   class Message {
   private:
@@ -137,4 +139,14 @@ namespace Suzu {
     string GetDetail() const { return this->detail; }
     shared_ptr<void> &GetCastPath() { return castpath; }
   };
+
+  typedef map<string, shared_ptr<void>> PathMap;
+  typedef map<string, string> StrMap;
+  typedef shared_ptr<void>(*CastTo)(shared_ptr<void>);
+  typedef pair<string, CastTo> CastFunc;
+  typedef void *(*CastToEx)(shared_ptr<void> &);
+  typedef Message(*Activity)(PathMap &);
+  typedef Message *(*PluginActivity)(PathMap &);
+  typedef map<string, CastToEx> *(*CastAttachment)();
+  typedef void(*MemoryDeleter)(void *);
 }

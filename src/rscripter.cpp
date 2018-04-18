@@ -32,11 +32,11 @@ int main(int argc, char **argv) {
   Suzu::Util util;
 #ifdef _DEBUG_STATE_
   //direct load a external script
-  util.ScriptStart("C:\\Apps\\main.rs");
+  util.ExecScriptFile("C:\\Apps\\main.rs");
 #else
   if (argc > 1) {
     //load external script from command arguments
-    util.ScriptStart(argv[1]);
+    util.ExecScriptFile(argv[1]);
   }
   else {
     //open terminal mode
