@@ -9,10 +9,10 @@ Lavandula angustifolia.
 Strongly recommend to compile them in Visual Studio 2010 or later version.It can run on Windows only, becuase I write
 specific codes for Windows only now.
 
-##Something is wrong?
+## Something is wrong?
 I will be glad if anyone post issues.
 
-##License
+## License
 This application is licensed under BSD - 2 clause, just do anything you like.
 
 ## 这是什么?
