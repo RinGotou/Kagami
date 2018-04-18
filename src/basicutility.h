@@ -29,23 +29,19 @@
 
 namespace Entry {
   using std::shared_ptr;
-  //typedef vector<string>* StrListPtr;
   typedef StrMap *(*Attachment)(void);
-  //from MSDN
   std::wstring s2ws(const std::string& s);
-  //void ResetPlugin();
 
   class Instance : public pair<string, HINSTANCE> {
   private:
     bool health;
-    //vector<string> entrylist;
     StrMap linkmap;
   public:
     Instance() { health = false; }
     bool Load(string name, HINSTANCE h);
     bool GetHealth() const { return health; }
     StrMap GetMap() const { return linkmap; }
-    //vector<string> &GetList() { return entrylist; }
+    MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
   };
 }
 

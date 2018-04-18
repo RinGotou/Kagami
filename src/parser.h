@@ -24,9 +24,6 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
-#ifndef _SE_PARSER_
-#define _SE_PARSER_
-
 #include "includes.h"
 
 namespace Suzu {
@@ -53,13 +50,11 @@ namespace Suzu {
   const string kStrForeach = "foreach";
   const string kStrWhile = "while";
   const string kStrEnd = "end";
-  
   const string kCastNull = "null";
   const string kCastInt = "int";
   const string kCastString = "string";
 
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
-  //const regex kPatternString(R"("(\"|\\|\n|\t|[^"]|[[:Punct:]])*")");
   const regex kPatternNumber(R"(\d+\.?\d*)");
   const regex kPatternInteger(R"([-]?\d+)");
   const regex kPatternDouble(R"([-]?\d+\.\d+)");
@@ -69,9 +64,6 @@ namespace Suzu {
 
   class EntryProvider;
   class Chainloader;
-  typedef map<string, string> StrMap;
-  typedef Message(*Activity)(PathMap &);
-  typedef Message *(*PluginActivity)(PathMap &);
 
   class Util {
   public:
@@ -127,11 +119,11 @@ namespace Suzu {
 
     int GetDataType(string target);
 
-    Message ScriptStart(string target);
+    Message ExecScriptFile(string target);
     void PrintEvents();
     //void Cleanup();
     void Terminal();
-    vector<string> BuildStrVec(string source);
+    vector<string> BuildStringVector(string source);
   };
 
   class PointWrapper {
@@ -153,7 +145,7 @@ namespace Suzu {
     string getOption() const { return castoption; }
   };
 
-  class PointMap {
+  class MemoryManager {
   private:
     typedef map<string, PointWrapper> PointBase;
     PointBase base;
@@ -173,7 +165,7 @@ namespace Suzu {
   public:
     template <class T> void CreateByObject(string name, T &t, string castoption, bool ro) {
       auto insert = [&]() {
-        base.insert(PointBase::value_type(name, PointWrapper().manage(t)));
+        base.insert(PointBase::value_type(name, PointWrapper().manage(t, castoption)));
         if (ro) rolist.emplace_back(name);
       };
       switch (base.empty()) {
@@ -240,10 +232,10 @@ namespace Suzu {
     vector<string> raw;
     map<string, PointWrapper> lambdamap;
     int GetPriority(string target) const;
-    bool ActivityStart(EntryProvider &provider, deque<string> container,
+    bool StartActivity(EntryProvider &provider, deque<string> container,
       deque<string> &item, size_t top, Message &msg, Chainloader *loader);
-    bool StartCode(bool disableset, deque<string> &item, deque<string> &symbol, 
-      Message &msg);
+    bool ShuntingYardProcessing(bool disableset, deque<string> &item, deque<string> &symbol, 
+      Message &msg, bool next_condition);
   public:
     Chainloader() {}
     Chainloader &Build(vector<string> raw) {
@@ -263,7 +255,7 @@ namespace Suzu {
       return *this;
     }
 
-    Message Start(); 
+    Message Start(int mode); 
     Chainloader &Build(string target);
   };
 
@@ -291,26 +283,27 @@ namespace Suzu {
   };
 
   class EntryProvider {
-  protected:
+  private:
     string name;
-    Activity activity;
-    PluginActivity activity2;
     int requiredcount;
     int priority;
     vector<string> parameters;
+    Activity activity;
+    PluginActivity activity2;
+    MemoryDeleter deleter;
   public:
-    EntryProvider() : name(kStrNull), activity(nullptr), activity2(nullptr) {
+    EntryProvider() : name(kStrNull), activity(nullptr), activity2(nullptr), deleter(nullptr) {
       requiredcount = kFlagNotDefined;
     }
 
     EntryProvider(string n, Activity a, int r, int p = kFlagNormalEntry, vector<string> pa = vector<string>()) :
-    name(n), parameters(pa), activity(a), activity2(nullptr) {
+    name(n), parameters(pa), activity(a), activity2(nullptr), deleter(nullptr) {
       requiredcount = r;
       priority = p;
     }
 
-    EntryProvider(string n, PluginActivity p, vector<string> pa): 
-      name(n), parameters(pa), activity(nullptr), activity2(p) {
+    EntryProvider(string n, PluginActivity p, vector<string> pa, MemoryDeleter d) : 
+      name(n), parameters(pa), activity(nullptr), activity2(p), deleter(d) {
       priority = kFlagPluginEntry;
       requiredcount = kFlagAutoFill;
     }
@@ -331,13 +324,11 @@ namespace Suzu {
     Message StartActivity(deque<string> p, Chainloader *parent);
   };
 
-
-
   inline string CastToString(shared_ptr<void> ptr) {
     return *static_pointer_cast<string>(ptr);
   }
 
-  void TotalInjection();
+  void InjectBasicEntries();
 }
 
 namespace Tracking {
@@ -350,7 +341,7 @@ namespace Entry {
   using namespace Suzu;
   typedef map<string, EntryProvider> EntryMap;
   typedef map<string, EntryProvider>::value_type EntryMapUnit;
-  extern vector<PointMap> MemoryAdapter;
+  extern vector<MemoryManager> MemoryAdapter;
 
   void Inject(string name, EntryProvider provider);
   void Delete(string name);
@@ -359,11 +350,11 @@ namespace Entry {
   void DisposeWrapper(string name, bool reserved);
   void CleanupWrapper();
   PointWrapper FindWrapper(string name, bool reserved);
-  PointMap CreateMap();
+  MemoryManager CreateMap();
   bool DisposeMap();
 
   template <class T>
-  PointWrapper &CreateWrapper(string name, T t, string castoption, bool readonly = false) {
+  PointWrapper CreateWrapper(string name, T t, string castoption, bool readonly = false) {
     PointWrapper wrapper;
     if (Util().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
@@ -374,5 +365,3 @@ namespace Entry {
     return wrapper;
   }
 }
-#endif // !_SE_PARSER_
-

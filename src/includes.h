@@ -24,20 +24,14 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
-#ifndef _SE_INCLUDES_
-#define _SE_INCLUDES_
-
-//#include <algorithm>
 #include <stack>
 #include <fstream>
 #include <deque>
 #include <regex>
 #include <array>
 #include <set>
-//#include "SDL.h"
-#include "windows.h"
 #include "rebornkit.h"
-//#pragma comment(lib,"SDL2.lib")
-//#pragma comment(lib,"SDL2main.lib")
-#endif // !_SE_INCLUDES_
+#if defined(_WIN32)
+#include "windows.h"
+#endif
 

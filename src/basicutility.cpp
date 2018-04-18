@@ -29,7 +29,7 @@ namespace Cast {
   using namespace Suzu;
 
   map<string, CastTo> CastMap;
-  map<string, CastToExtern> CastMapEx;
+  map<string, CastToEx> CastMapEx;
 
   shared_ptr<void> spToString(shared_ptr<void> ptr) {
     string temp(*static_pointer_cast<string>(ptr));
@@ -41,14 +41,25 @@ namespace Cast {
     return make_shared<int>(temp);
   }
 
-  shared_ptr<void> ExternProcessing(shared_ptr<void> ptr) {
-
+  shared_ptr<void> ExternProcessing(shared_ptr<void> ptr, CastToEx castTo) {
+    shared_ptr<void> result = nullptr;
+    if (ptr != nullptr && castTo != nullptr) {
+      result.reset(castTo(ptr));
+    }
+    return result;
   }
 
-  CastTo FindCastOption(string option) {
-    map<string, CastTo>::iterator it = CastMap.find(option);
-    if (it != CastMap.end()) return it->second;
-    else return nullptr;
+  shared_ptr<void> CastToNewPtr(PointWrapper &wrapper) {
+    shared_ptr<void> result = nullptr;
+    map<string, CastTo>::iterator it = CastMap.find(wrapper.getOption());
+    map<string, CastToEx>::iterator it_ex = CastMapEx.find(wrapper.getOption());
+    if (it != CastMap.end()) {
+      result = it->second(wrapper.get());
+    }
+    else if (it_ex != CastMapEx.end()) {
+      result = ExternProcessing(wrapper.get(), it_ex->second);
+    }
+    return result;
   }
 
   void InitDefaultType() {
@@ -58,7 +69,7 @@ namespace Cast {
 }
 
 namespace Entry {
-  vector<PointMap> MemoryAdapter;
+  vector<MemoryManager> MemoryAdapter;
   vector<Instance> InstanceList;
 
   PointWrapper FindWrapper(string name, bool reserved = false) {
@@ -79,7 +90,7 @@ namespace Entry {
   PointWrapper CreateWrapperByString(string name, string str, bool readonly = false) {
     PointWrapper wrapper;
     if (Util().GetDataType(name) != kTypeFunction) {
-      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
+      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return wrapper;
     }
     MemoryAdapter.back().CreateByObject(name, str, kCastString, false);
@@ -90,7 +101,7 @@ namespace Entry {
   PointWrapper CreateWrapperByPointer(string name, shared_ptr<void> ptr, string castoption) {
     PointWrapper wrapper, temp;
     if (Util().GetDataType(name) != kTypeFunction) {
-      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
+      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return wrapper;
     }
     temp.set(ptr, castoption);
@@ -119,8 +130,8 @@ namespace Entry {
     }
   }
 
-  PointMap CreateMap() {
-    MemoryAdapter.push_back(PointMap());
+  MemoryManager CreateMap() {
+    MemoryAdapter.push_back(MemoryManager());
     return MemoryAdapter.back();
   }
 
@@ -165,27 +176,39 @@ namespace Entry {
 
   void AddInstance(string name, HINSTANCE h) {
     PluginActivity activity = nullptr;
+    CastAttachment c_attachment = nullptr;
+    map<string, CastToEx> *castmap = nullptr;
+    MemoryDeleter deleter = nullptr;
+
     InstanceList.push_back(Instance());
     InstanceList.back().Load(name, h);
 
     if (InstanceList.back().GetHealth()) {
       HINSTANCE &ins = InstanceList.back().second;
       StrMap map = InstanceList.back().GetMap();
-      //vector<string> &lst = InstanceList.back().GetList();
+      deleter = InstanceList.back().getDeleter();
+
       for (auto unit : map) {
         activity = (PluginActivity)GetProcAddress(ins, unit.first.c_str());
         if (activity != nullptr) {
-          Inject(unit.first, EntryProvider(unit.first, activity, Util().BuildStrVec(unit.second)));
+          Inject(unit.first, EntryProvider(unit.first, activity, Util().BuildStringVector(unit.second), deleter));
+        }
+      }
+      c_attachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
+      if (c_attachment != nullptr) {
+        castmap = c_attachment();
+        for (auto unit : *castmap) {
+          Cast::CastMapEx.insert(unit);
         }
       }
     }
+    deleter(c_attachment);
   }
 
   void UnloadInstance(string name) {
     Attachment attachment = nullptr;
     HINSTANCE *hinstance = nullptr;
     StrMap map;
-    //StrListPtr listptr = nullptr;
 
     vector<Instance>::iterator instance_i = InstanceList.begin();
     while (instance_i != InstanceList.end()) {
@@ -193,14 +216,13 @@ namespace Entry {
       instance_i++;
     }
     if (instance_i == InstanceList.end() && instance_i->first != name) {
-      Tracking::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found,is it loaded?"));
+      Tracking::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
       return;
     }
 
     if (instance_i->GetHealth() == true) {
       hinstance = &(instance_i->second);
       map = instance_i->GetMap();
-      //listptr = &(instance_i->GetList());
       for (auto unit : map) {
         Delete(unit.first);
       }
@@ -233,7 +255,7 @@ namespace Suzu {
     return result;
   }
 
-  Message LogPrint(PathMap &p) {
+  Message WriteLog(PathMap &p) {
     Message result;
     string r = CastToString(p.at("data"));
     //string r = *static_pointer_cast<string>(p.at("data"));
@@ -250,7 +272,7 @@ namespace Suzu {
     return result;
   }
 
-  Message BinaryExp(PathMap &p) {
+  Message BinaryOperands(PathMap &p) {
     using namespace Entry;
     Util util;
     PointWrapper wrapper;
@@ -344,15 +366,30 @@ namespace Suzu {
         }
       }
       else {
-        temp = "Illegal operation";
+        temp = "Illegal operation symbol.";
         result.SetCode(kCodeIllegalArgs).SetDetail(kStrFatalError);
       }
     }
     else {
-      temp = "Illegal data type";
+      temp = "Illegal data type.";
       result.SetCode(kCodeIllegalArgs).SetDetail(kStrFatalError);
     }
     result.SetDetail(temp);
+    return result;
+  }
+
+  Message ConditionRoot(PathMap &p) {
+    Message result(CastToString(p.at("state")), kCodeConditionRoot, kStrEmpty);
+    return result;
+  }
+
+  Message ConditionBranch(PathMap &p) {
+    Message result(CastToString(p.at("state")), kCodeConditionBranch, kStrEmpty);
+    return result;
+  }
+
+  Message ConditionLeaf(PathMap &p) {
+    Message result(kStrTrue, kCodeConditionLeaf, kStrEmpty);
     return result;
   }
 
@@ -366,7 +403,13 @@ namespace Suzu {
     return result;
   }
 
-  Message FindVariable(PathMap &p) {
+  Message ReturnSign(PathMap &p) {
+    Message result;
+
+    return result;
+  }
+
+  Message FindOperand(PathMap &p) {
     using namespace Entry;
     Message result(kStrRedirect, kCodeSuccess, kStrEmpty);
     const string name = CastToString(p.at("name"));
@@ -382,7 +425,7 @@ namespace Suzu {
     return result;
   }
 
-  Message SetVariable(PathMap &p) {
+  Message SetOperand(PathMap &p) {
     using namespace Entry;
 
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
@@ -406,33 +449,31 @@ namespace Suzu {
 
     if (wrapper0.get() != nullptr) {
       if (!usewrapper) {
-        string temp = *static_pointer_cast<string>(source);
+        string temp = CastToString(source);
         wrapper0.manage(temp, kCastString);
       }
       else {
+        shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
         wrapper1 = *static_pointer_cast<PointWrapper>(source);
-        CastTo castTo = Cast::FindCastOption(wrapper1.getOption());
-        if (castTo != nullptr) {
-          wrapper0.set(castTo(wrapper1.get()), wrapper1.getOption());
+        if (ptr != nullptr) {
+          wrapper0.set(ptr, wrapper1.getOption());
         }
       }
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "cannot found variable " + name);
-      return result;
+      result.combo(kStrFatalError, kCodeIllegalCall, name + " is not existed,check definitions");
     }
 
     return result;
   }
 
-  Message CreateVariable(PathMap &p) {
+  Message CreateOperand(PathMap &p) {
     using namespace Entry;
     Message result;
     bool usewrapper = false;
     const string name = CastToString(p.at("name"));
     shared_ptr<void> source;
     PointWrapper wrapper = FindWrapper(name);
-    string temp = kStrEmpty;
     PathMap::iterator it = p.find("source");
 
     if (it == p.end()) {
@@ -447,11 +488,23 @@ namespace Suzu {
     }
 
     if (wrapper.get() == nullptr) {
-      
-      //wrapper1 = CreateWrapperByPointer(name, source);
-      //if (wrapper1.get() == nullptr) {
-      //  result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation failed");
-      //}
+      if (usewrapper) {
+        shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
+        PointWrapper sourcewrapper = *static_pointer_cast<PointWrapper>(source);
+        if (ptr != nullptr) {
+          wrapper = CreateWrapperByPointer(name, ptr, sourcewrapper.getOption());
+          if (wrapper.get() == nullptr) {
+            result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
+          }
+        }
+      }
+      else {
+        string temp = CastToString(source);
+        wrapper = CreateWrapperByString(name, temp);
+        if (wrapper.get() == nullptr) {
+          result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
+        }
+      }
     }
     else {
       result.combo(kStrFatalError, kCodeIllegalCall, name + "is already existed");
@@ -485,20 +538,22 @@ namespace Suzu {
     return result;
   }
 
-  void TotalInjection() {
+  void InjectBasicEntries() {
     using namespace Entry;
     Util util;
-    auto Build = [&](string target) {return util.BuildStrVec(target); };
-    vector<string> temp = util.BuildStrVec("name");
+    auto Build = [&](string target) {return util.BuildStringVector(target); };
+    vector<string> temp = util.BuildStringVector("name");
+
+    //if elif else
     Inject("end", EntryProvider("end", TailSign, 0));
     Inject("commaexp", EntryProvider("commaexp", CommaExp, kFlagAutoSize));
-    Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateVariable, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
+    Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateOperand, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
     Inject("while", EntryProvider("while", WhileCycle, 1, kFlagNormalEntry, Build("state")));
-    Inject("vfind", EntryProvider("vfind", FindVariable, 2, kFlagCoreEntry, Build("name|reserved")));
-    Inject("binexp", EntryProvider("binexp", BinaryExp, 3, kFlagBinEntry, Build("first|second|operator")));
-    Inject("log", EntryProvider("log", LogPrint, 1, kFlagNormalEntry, Build("data")));
+    Inject("vfind", EntryProvider("vfind", FindOperand, 2, kFlagCoreEntry, Build("name|reserved")));
+    Inject("binexp", EntryProvider("binexp", BinaryOperands, 3, kFlagBinEntry, Build("first|second|operator")));
+    Inject("log", EntryProvider("log", WriteLog, 1, kFlagNormalEntry, Build("data")));
     Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
     Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
-    Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetVariable, 2, kFlagNormalEntry, Build("name|source")));
+    Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("name|source")));
   }
 }

@@ -45,7 +45,7 @@ namespace Entry {
     EntryMapBase.insert(EntryMapUnit(name, provider));
   }
 
-  Message FastOrder(string name, deque<string> res) {
+  Message FindAndExec(string name, deque<string> res) {
     Message result(kStrFatalError, kCodeIllegalCall, "Entry is not found.");
     EntryMap::iterator it = EntryMapBase.find(name);
     if (it != EntryMapBase.end()) {
@@ -81,7 +81,7 @@ namespace Entry {
     return result;
   }
 
-  int FastGetCount(string target) {
+  int GetRequiredCount(string target) {
     if (target == "+" || target == "-" || target == "*" || target == "/"
       || target == "==" || target == "<=" || target == ">=") {
       return Order("binexp").GetRequiredCount() - 1;
@@ -199,7 +199,7 @@ namespace Suzu {
     return result;
   }
 
-  bool Chainloader::ActivityStart(EntryProvider &provider, deque<string> container, deque<string> &item,
+  bool Chainloader::StartActivity(EntryProvider &provider, deque<string> container, deque<string> &item,
     size_t top, Message &msg, Chainloader *loader) {
     bool rv = true;
     int code = kCodeSuccess;
@@ -225,14 +225,11 @@ namespace Suzu {
     using Tracking::log;
     Util util;
     vector<string> output;
-    char binaryoptchar = NULL;
+    char bin_oper = NULL;
     size_t size = target.size();
     size_t i;
     string current = kStrEmpty;
-    //headlock:blank characters at head of raw string,false - enable
-    //allowblank:blank characters at string value and left/right of operating symbols
-    //not only blanks(some special character included)
-    bool headlock = false, allowblank = false;
+    bool exempt_blank_char = false, string_processing = false;
     vector<string> list = { kStrVar, "def", "return" };
     auto ToString = [](char c) -> string {
       return string().append(1, c);
@@ -244,25 +241,25 @@ namespace Suzu {
     }
 
     for (i = 0; i < size; i++) {
-      if (!headlock) {
+      if (!exempt_blank_char) {
         if (util.GetDataType(ToString(target[i])) == kTypeBlank) {
           continue;
         }
         else if (util.GetDataType(ToString(target[i])) != kTypeBlank) {
-          headlock = true;
+          exempt_blank_char = true;
         }
       }
 
       if (target[i] == '"') {
-        if (allowblank && target[i - 1] != '\\' && i - 1 >= 0) {
-          allowblank = !allowblank;
+        if (string_processing && target[i - 1] != '\\' && i - 1 >= 0) {
+          string_processing = !string_processing;
           current.append(1, target.at(i));
           output.push_back(current);
           current = kStrEmpty;
           continue;
         }
-        else if (!allowblank) {
-          allowblank = !allowblank;
+        else if (!string_processing) {
+          string_processing = !string_processing;
         }
       }
 
@@ -277,7 +274,7 @@ namespace Suzu {
       case '-':
       case '*':
       case '/':
-        if (allowblank) {
+        if (string_processing) {
           current.append(1, target[i]);
         }
         else {
@@ -287,7 +284,7 @@ namespace Suzu {
         }
         break;
       case '"':
-        if (allowblank) {
+        if (string_processing) {
           current.append(1, target.at(i));
         }
         else if (i > 0) {
@@ -305,21 +302,21 @@ namespace Suzu {
       case '>':
       case '<':
       case '!':
-        if (allowblank) {
+        if (string_processing) {
           current.append(1, target[i]);
         }
         else {
           if (i + 1 < size && target[i + 1] == '=') {
-            binaryoptchar = target[i];
+            bin_oper = target[i];
             if (current != kStrEmpty) output.push_back(current);
             current = kStrEmpty;
             continue;
           }
-          else if (binaryoptchar != NULL) {
-            string binaryopt = { binaryoptchar, target[i] };
+          else if (bin_oper != NULL) {
+            string binaryopt = { bin_oper, target[i] };
             if (util.GetDataType(binaryopt) == kTypeSymbol) {
               output.push_back(binaryopt);
-              binaryoptchar = NULL;
+              bin_oper = NULL;
             }
           }
           else {
@@ -331,7 +328,7 @@ namespace Suzu {
         break;
       case ' ':
       case '\t':
-        if (allowblank) {
+        if (string_processing) {
           current.append(1, target[i]);
         }
         else if (util.Compare(current, list) && output.empty()) {
@@ -376,8 +373,8 @@ namespace Suzu {
     return priority;
   }
 
-  bool Chainloader::StartCode(bool disableset, deque<string> &item, deque<string> &symbol,
-    Message &msg) {
+  bool Chainloader::ShuntingYardProcessing(bool disableset, deque<string> &item, deque<string> &symbol,
+    Message &msg, bool next_condition = false) {
     using namespace Entry;
     EntryProvider provider = Find(symbol.back());
     bool result = false, reversed = true;
@@ -406,7 +403,7 @@ namespace Suzu {
       count--;
     }
     if (provider.GetPriority() == kFlagBinEntry) container.push_back(symbol.back());
-    result = ActivityStart(provider, container, item, item.size(), msg, this);
+    result = StartActivity(provider, container, item, item.size(), msg, this);
     if (msg.GetCode() == kCodePoint) {
       item.push_back(msg.GetDetail());
       PointWrapper wrapper;
@@ -419,7 +416,7 @@ namespace Suzu {
     return result;
   }
 
-  Message Chainloader::Start() {
+  Message Chainloader::Start(int mode = kModeNormal) {
     using namespace Entry;
     const size_t size = raw.size();
     Util util;
@@ -427,10 +424,12 @@ namespace Suzu {
     size_t i = 0, j = 0, k = 0, nextinspoint = 0, forwardtype = kTypeNull;
     string tempstr = kStrEmpty;
     int unitType = kTypeNull;
-    bool commaexp = false, directappend = false, forwardinsert = false, disableset = false;
+    bool commaexp = false, directappend = false, forwardinsert = false, disableset = false, next_condition = false;
 
     deque<string> item, symbol;
     deque<string> container;
+
+    if (mode == kModeNextCondition) next_condition = true;
 
     for (i = 0; i < size; ++i) {
       unitType = util.GetDataType(raw.at(i));
@@ -474,8 +473,8 @@ namespace Suzu {
               item.pop_back();
               symbol.pop_back();
             }
-
-            if (!StartCode(disableset, item, symbol, result)) break;
+            //Start point 1
+            if (!ShuntingYardProcessing(disableset, item, symbol, result,next_condition)) break;
             symbol.pop_back();
           }
 
@@ -484,7 +483,8 @@ namespace Suzu {
             item.push_back(container.back());
             container.pop_back();
           }
-          if (!StartCode(disableset, item, symbol, result)) break;
+          //Start point 2
+          if (!ShuntingYardProcessing(disableset, item, symbol, result, next_condition)) break;
           symbol.pop_back();
         }
         else {
@@ -495,8 +495,8 @@ namespace Suzu {
             j = symbol.size() - 1;
             k = item.size();
             while (symbol.at(j) != "(" && GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
-              if (k = item.size()) { k -= Entry::FastGetCount(symbol.at(j)); }
-              else { k -= Entry::FastGetCount(symbol.at(j)) - 1; }
+              if (k = item.size()) { k -= Entry::GetRequiredCount(symbol.at(j)); }
+              else { k -= Entry::GetRequiredCount(symbol.at(j)) - 1; }
               --j;
             }
             symbol.insert(symbol.begin() + j + 1, raw[i]);
@@ -545,7 +545,8 @@ namespace Suzu {
           result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
           break;
         }
-        if (!StartCode(disableset, item, symbol, result)) break;
+        //Start point 3
+        if (!ShuntingYardProcessing(disableset, item, symbol, result, next_condition)) break;
         symbol.pop_back();
       }
     }
@@ -562,16 +563,16 @@ namespace Suzu {
     size_t size = p.size(), i = 0;
     PathMap map;
     shared_ptr<void> ptr;
-    bool skipahead = false;
+    bool ignore_first_arg = false;
 
     auto Filling = [&](bool number = false) {
       string name = kStrEmpty;
 
       if (util.GetDataType(p.at(i)) == kTypeFunction) {
         if (this->GetName() == kStrDefineCmd || this->GetName() == kStrSetCmd) {
-          if (!skipahead) {
+          if (!ignore_first_arg) {
             ptr = make_shared<string>(string(p.at(i)));
-            skipahead = true;
+            ignore_first_arg = true;
           }
           else {
             name.append("&");
@@ -589,14 +590,14 @@ namespace Suzu {
       }
 
       if (util.GetDataType(p.at(i)) == kTypeFunction) {
-        if (this->GetName() == kStrDefineCmd && !skipahead) {
+        if (this->GetName() == kStrDefineCmd && !ignore_first_arg) {
           ptr = make_shared<string>(string(p.at(i)));
-          skipahead = true;
+          ignore_first_arg = true;
         }
         else if (this->GetName() == kStrSetCmd) {
-          if (!skipahead) {
+          if (!ignore_first_arg) {
             ptr = make_shared<string>(string(p.at(i)));
-            skipahead = true;
+            ignore_first_arg = true;
           }
           else {
             if (p.at(i).substr(0, 2) == "__") name.append("&");
@@ -625,7 +626,7 @@ namespace Suzu {
       }
       Message *msgptr = activity2(map);
       result = *msgptr;
-      delete(msgptr);
+      deleter(msgptr);
     }
     else {
       if (size == parameters.size() ) {
@@ -654,7 +655,7 @@ namespace Suzu {
     return result;
   }
 
-  vector<string> Util::BuildStrVec(string source) {
+  vector<string> Util::BuildStringVector(string source) {
     vector<string> result;
     string temp = kStrEmpty;
     for (auto unit : source) {
@@ -676,6 +677,8 @@ namespace Suzu {
     size_t size = 0;
     size_t tail = 0;
     stack<size_t> nest;
+    stack<size_t> tracer;
+    bool next_condition = false;
 
     CreateMap();
     if (!res.empty()) {
@@ -687,13 +690,34 @@ namespace Suzu {
         CreateWrapper(parameter.at(i), res.at(i), false);
       }
     }
-    //todo:start chainloaders
+
     if (!storage.empty()) {
       size = storage.size();
       i = 0;
       while (i < size) {
         result = storage.at(i).Start();
         if (result.GetValue() == kStrFatalError) break;
+        //TODO:if-elif-else
+        if (result.GetCode() == kCodeReturn) {
+          result.SetCode(kCodeSuccess);
+          break;
+        }
+        if (result.GetCode() == kCodeConditionRoot) {
+          tracer.push(i);
+          if (result.GetValue() == kStrFalse) {
+            next_condition = true;
+          }
+        }
+        if (result.GetCode() == kCodeConditionBranch) {
+          if (!next_condition) {
+
+          }
+        }
+        if (result.GetCode() == kCodeConditionLeaf) {
+          if (!next_condition) {
+
+          }
+        }
         if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrTrue) {
           if (nest.empty()) nest.push(i);
           if (nest.top() == i) nest.push(i);
@@ -709,23 +733,24 @@ namespace Suzu {
         i++;
       }
     }
+
+    
     DisposeMap();
     return result;
   }
 
-  Message Util::ScriptStart(string target) {
+  Message Util::ExecScriptFile(string target) {
     Message result;
     vector<Chainloader> loaders;
     size_t tail = 0;
-
-    if (target == kStrEmpty) {
-      Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Missing path"));
-      return result;
-    }
-
-    TotalInjection();
     ScriptProvider2 sp(target.c_str());
     ChainStorage cs(sp);
+
+    if (target == kStrEmpty) {
+      Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
+      return result;
+    }
+    InjectBasicEntries();
     cs.Run();
     Entry::ResetPlugin();
     Entry::CleanupWrapper();
@@ -756,12 +781,12 @@ namespace Suzu {
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Chainloader loader;
-    auto Build = [&](string target) {return util.BuildStrVec(target); };
+    auto Build = [&](string target) {return util.BuildStringVector(target); };
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
     CreateMap();
-    TotalInjection();
+    InjectBasicEntries();
     Inject("version", EntryProvider("version", VersionInfo, 0));
     Inject("quit", EntryProvider("quit", Quit, 0));
     Inject("print", EntryProvider("print", PrintOnScreen, 1, kFlagNormalEntry, Build("msg")));
