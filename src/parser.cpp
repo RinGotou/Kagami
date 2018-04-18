@@ -234,12 +234,12 @@ namespace Suzu {
     auto ToString = [](char c) -> string {
       return string().append(1, c);
     };
-
+#if defined(_DEBUG_FLAG_)
     if (target == kStrEmpty) {
       log(Message(kStrWarning, kCodeIllegalArgs, "Chainloader::Build() 1"));
       return *this;
     }
-
+#endif
     for (i = 0; i < size; i++) {
       if (!exempt_blank_char) {
         if (util.GetDataType(ToString(target[i])) == kTypeBlank) {
@@ -358,7 +358,7 @@ namespace Suzu {
 
     if (current != kStrEmpty) output.push_back(current);
     raw = output;
-    util.CleanUpVector(output);
+    util.CleanupVector(output);
 
     return *this;
   }
@@ -433,7 +433,6 @@ namespace Suzu {
 
     for (i = 0; i < size; ++i) {
       unitType = util.GetDataType(raw.at(i));
-      /////////////////////////////////////////////////////////////////////////////////
       if (unitType == kTypeSymbol) {
         if (raw[i] == "\"") {
           switch (directappend) {
@@ -511,7 +510,6 @@ namespace Suzu {
           }
         }
       }
-      /////////////////////////////////////////////////////////////////////////////////
       else if (unitType == kTypeFunction && !directappend) {
         switch (Find(raw[i]).Good()) {
         case true:
@@ -522,7 +520,6 @@ namespace Suzu {
           break;
         }
       }
-      /////////////////////////////////////////////////////////////////////////////////
       else {
         switch (forwardinsert) {
         case true:
@@ -551,7 +548,7 @@ namespace Suzu {
       }
     }
 
-    util.CleanUpDeque(container).CleanUpDeque(item).CleanUpDeque(symbol);
+    util.CleanupDeque(container).CleanupDeque(item).CleanupDeque(symbol);
 
     return result;
   }

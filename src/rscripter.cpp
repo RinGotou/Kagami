@@ -29,21 +29,21 @@
 
 int main(int argc, char **argv) {
 
-  Suzu::Util util;
+  Suzu::Kit Kit;
 #ifdef _DEBUG_STATE_
   //direct load a external script
-  util.ExecScriptFile("C:\\Apps\\main.rs");
+  Kit.ExecScriptFile("C:\\Apps\\main.rs");
 #else
   if (argc > 1) {
     //load external script from command arguments
-    util.ExecScriptFile(argv[1]);
+    Kit.ExecScriptFile(argv[1]);
   }
   else {
     //open terminal mode
-    util.Terminal();
+    Kit.Terminal();
   }
 #endif
-  util.PrintEvents();
+  Kit.PrintEvents();
 
   return 0;
 }

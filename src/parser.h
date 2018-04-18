@@ -65,17 +65,17 @@ namespace Suzu {
   class EntryProvider;
   class Chainloader;
 
-  class Util {
+  class Kit {
   public:
     template <class Type>
-    Util CleanUpVector(vector<Type> &target) {
+    Kit CleanupVector(vector<Type> &target) {
       target.clear();
       vector<Type>(target).swap(target);
       return *this;
     }
 
     template <class Type>
-    Util CleanUpDeque(deque<Type> &target) {
+    Kit CleanupDeque(deque<Type> &target) {
       target.clear();
       deque<Type>(target).swap(target);
       return *this;
@@ -121,7 +121,6 @@ namespace Suzu {
 
     Message ExecScriptFile(string target);
     void PrintEvents();
-    //void Cleanup();
     void Terminal();
     vector<string> BuildStringVector(string source);
   };
@@ -206,24 +205,24 @@ namespace Suzu {
     }
   };
 
-  class ScriptProvider2 {
+  class ScriptProvider {
   private:
     std::ifstream stream;
     size_t current;
     vector<string> base;
     bool health;
     bool end;
-    ScriptProvider2() {}
+    ScriptProvider() {}
   public:
-    ~ScriptProvider2() {
+    ~ScriptProvider() {
       stream.close();
-      Util().CleanUpVector(base);
+      Kit().CleanupVector(base);
     }
 
     bool GetHealth() const { return health; }
     bool eof() const { return end; }
     void ResetCounter() { current = 0; }
-    ScriptProvider2(const char *target);
+    ScriptProvider(const char *target);
     Message Get();
   };
 
@@ -251,7 +250,7 @@ namespace Suzu {
     }
 
     Chainloader &Reset() {
-      Util().CleanUpVector(raw);
+      Kit().CleanupVector(raw);
       return *this;
     }
 
@@ -267,7 +266,7 @@ namespace Suzu {
       storage.push_back(Chainloader().Reset().Build(raw));
     }
   public:
-    ChainStorage(ScriptProvider2 &provider) {
+    ChainStorage(ScriptProvider &provider) {
       Message temp;
       while (provider.eof() != true) {
         temp = provider.Get();
@@ -356,7 +355,7 @@ namespace Entry {
   template <class T>
   PointWrapper CreateWrapper(string name, T t, string castoption, bool readonly = false) {
     PointWrapper wrapper;
-    if (Util().GetDataType(name) != kTypeFunction) {
+    if (Kit().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
       return wrapper;
     }
