@@ -1,6 +1,6 @@
 //BSD 2 - Clause License
 //
-//Copyright(c) 2017 - 2018, Kagami Nakamura
+//Copyright(c) 2017 - 2018, Suzu Nakamura
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
@@ -676,8 +676,10 @@ namespace Kagami {
     size_t size = 0;
     size_t tail = 0;
     stack<size_t> nest;
-    stack<size_t> tracer;
+    stack<bool> state_stack;
     bool next_condition = false;
+    bool already_executed = false;
+    int current_mode = kModeNormal;
 
     CreateMap();
     if (!res.empty()) {
@@ -694,27 +696,36 @@ namespace Kagami {
       size = storage.size();
       i = 0;
       while (i < size) {
-        result = storage.at(i).Start();
+        result = storage.at(i).Start(current_mode);
         if (result.GetValue() == kStrFatalError) break;
-        //TODO:if-elif-else
         if (result.GetCode() == kCodeReturn) {
           result.SetCode(kCodeSuccess);
           break;
         }
         if (result.GetCode() == kCodeConditionRoot) {
-          tracer.push(i);
           if (result.GetValue() == kStrFalse) {
             next_condition = true;
+            current_mode = kModeNextCondition;
+          }
+          else {
+            already_executed = true;
+            next_condition = false;
+
           }
         }
         if (result.GetCode() == kCodeConditionBranch) {
-          if (!next_condition) {
-
+          if (already_executed && result.GetValue() == kStrTrue) {
+            current_mode = kModeNormal;
+            state_stack.push(true);
+            //already_executed
           }
         }
         if (result.GetCode() == kCodeConditionLeaf) {
           if (!next_condition) {
-
+            next_condition = true;
+          }
+          else {
+            //TODO:execute
           }
         }
         if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrTrue) {
@@ -729,11 +740,16 @@ namespace Kagami {
           tail = i;
           i = nest.top();
         }
+        if (result.GetCode() == kCodeTailSign && next_condition) {
+          if (!state_stack.empty()) {
+            already_executed = state_stack.top();
+            state_stack.pop();
+          }
+        }
         i++;
       }
     }
 
-    
     DisposeMap();
     return result;
   }

@@ -1,6 +1,6 @@
 //BSD 2 - Clause License
 //
-//Copyright(c) 2017 - 2018, Kagami Nakamura
+//Copyright(c) 2017 - 2018, Suzu Nakamura
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
@@ -405,7 +405,7 @@ namespace Kagami {
 
   Message ReturnSign(PathMap &p) {
     Message result;
-
+    //TODO:return specific value
     return result;
   }
 
@@ -427,7 +427,6 @@ namespace Kagami {
 
   Message SetOperand(PathMap &p) {
     using namespace Entry;
-
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     bool usewrapper = false;
     const string name = CastToString(p.at("name"));
@@ -540,11 +539,10 @@ namespace Kagami {
 
   void InjectBasicEntries() {
     using namespace Entry;
-    Kit Kit;
-    auto Build = [&](string target) {return Kit.BuildStringVector(target); };
-    vector<string> temp = Kit.BuildStringVector("name");
+    Kit kit;
+    auto Build = [&](string target) {return kit.BuildStringVector(target); };
+    vector<string> temp = kit.BuildStringVector("name");
 
-    //if elif else
     Inject("end", EntryProvider("end", TailSign, 0));
     Inject("commaexp", EntryProvider("commaexp", CommaExp, kFlagAutoSize));
     Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateOperand, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
@@ -555,5 +553,8 @@ namespace Kagami {
     Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
     Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
     Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("name|source")));
+    Inject("if", EntryProvider("if", ConditionRoot, 1, kFlagNormalEntry, Build("state")));
+    Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
+    Inject("else", EntryProvider("else", ConditionLeaf, 0));
   }
 }
