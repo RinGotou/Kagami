@@ -23,16 +23,8 @@
 //  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-#define _DEBUG_FLAG_
-#include <stack>
-#include <fstream>
-#include <deque>
-#include <regex>
-#include <array>
-#include <set>
-#include "kagamicommon.h"
-#if defined(_WIN32)
-#include "windows.h"
-#endif
+#include "rebornkit.h"
 
+namespace Kagami {
+
+}
