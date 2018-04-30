@@ -72,14 +72,14 @@ namespace Entry {
   vector<MemoryManager> MemoryAdapter;
   vector<Instance> InstanceList;
 
-  PointWrapper FindWrapper(string name, bool reserved = false) {
-    PointWrapper wrapper;
+  PointWrapper *FindWrapper(string name, bool reserved = false) {
+    PointWrapper *wrapper = nullptr;
     size_t i = MemoryAdapter.size();
     if ((MemoryAdapter.size() == 1 || !reserved) && !MemoryAdapter.empty()) {
       wrapper = MemoryAdapter.back().Find(name);
     }
     else if (MemoryAdapter.size() > 1 && reserved) {
-      while (i > 0 && wrapper.get() == nullptr) {
+      while (i > 0 && wrapper->get() == nullptr) {
         wrapper = MemoryAdapter.at(i - 1).Find(name);
         i--;
       }
@@ -87,8 +87,8 @@ namespace Entry {
     return wrapper;
   }
 
-  PointWrapper CreateWrapperByString(string name, string str, bool readonly = false) {
-    PointWrapper wrapper;
+  PointWrapper *CreateWrapperByString(string name, string str, bool readonly = false) {
+    PointWrapper *wrapper = nullptr;
     if (Kit().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return wrapper;
@@ -98,8 +98,9 @@ namespace Entry {
     return wrapper;
   }
 
-  PointWrapper CreateWrapperByPointer(string name, shared_ptr<void> ptr, string castoption) {
-    PointWrapper wrapper, temp;
+  PointWrapper *CreateWrapperByPointer(string name, shared_ptr<void> ptr, string castoption) {
+    PointWrapper *wrapper = nullptr;
+    PointWrapper temp;
     if (Kit().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return wrapper;
@@ -414,10 +415,10 @@ namespace Kagami {
     Message result(kStrRedirect, kCodeSuccess, kStrEmpty);
     const string name = CastToString(p.at("name"));
     const string reserved = CastToString(p.at("reserved"));
-    PointWrapper wrapper = FindWrapper(name, reserved == kStrTrue);
-    if (wrapper.get() != nullptr) {
-      result.combo(wrapper.getOption(), kCodePoint, "__" + CastToString(p.at("name")));
-      result.GetCastPath() = wrapper.get();
+    PointWrapper *wrapper = FindWrapper(name, reserved == kStrTrue);
+    if (wrapper != nullptr) {
+      result.combo(wrapper->getOption(), kCodePoint, "__" + CastToString(p.at("name")));
+      result.GetCastPath() = wrapper->get();
     }
     else {
       result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + name + " is not found");
@@ -431,8 +432,8 @@ namespace Kagami {
     bool usewrapper = false;
     const string name = CastToString(p.at("name"));
     shared_ptr<void> source = nullptr;
-    PointWrapper wrapper0 = FindWrapper(name, true);
-    PointWrapper wrapper1;
+    PointWrapper *wrapper0 = FindWrapper(name, true);
+    //PointWrapper wrapper1;
     PathMap::iterator it = p.find("source");
 
     if (it == p.end()) {
@@ -446,16 +447,15 @@ namespace Kagami {
       source = it->second;
     }
 
-    if (wrapper0.get() != nullptr) {
+    if (wrapper0 != nullptr) {
       if (!usewrapper) {
         string temp = CastToString(source);
-        wrapper0.manage(temp, kCastString);
+        wrapper0->manage(temp, kCastString);
       }
       else {
         shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
-        wrapper1 = *static_pointer_cast<PointWrapper>(source);
         if (ptr != nullptr) {
-          wrapper0.set(ptr, wrapper1.getOption());
+          wrapper0->set(ptr, static_pointer_cast<PointWrapper>(source)->getOption());
         }
       }
     }
@@ -472,7 +472,7 @@ namespace Kagami {
     bool usewrapper = false;
     const string name = CastToString(p.at("name"));
     shared_ptr<void> source;
-    PointWrapper wrapper = FindWrapper(name);
+    PointWrapper *wrapper = FindWrapper(name);
     PathMap::iterator it = p.find("source");
 
     if (it == p.end()) {
@@ -486,13 +486,13 @@ namespace Kagami {
       source = it->second;
     }
 
-    if (wrapper.get() == nullptr) {
+    if (wrapper == nullptr) {
       if (usewrapper) {
         shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
         PointWrapper sourcewrapper = *static_pointer_cast<PointWrapper>(source);
         if (ptr != nullptr) {
           wrapper = CreateWrapperByPointer(name, ptr, sourcewrapper.getOption());
-          if (wrapper.get() == nullptr) {
+          if (wrapper == nullptr) {
             result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
           }
         }
@@ -500,7 +500,7 @@ namespace Kagami {
       else {
         string temp = CastToString(source);
         wrapper = CreateWrapperByString(name, temp);
-        if (wrapper.get() == nullptr) {
+        if (wrapper == nullptr) {
           result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
         }
       }
