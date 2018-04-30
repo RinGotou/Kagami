@@ -31,7 +31,7 @@
 #include <regex>
 #include <array>
 #include <set>
-#include "rebornkit.h"
+#include "kagamicommon.h"
 #if defined(_WIN32)
 #include "windows.h"
 #endif
