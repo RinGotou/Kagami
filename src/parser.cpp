@@ -395,13 +395,13 @@ namespace Kagami {
         case false:container.push_back(item.back()); break;
         }
         item.pop_back();
+        count--;
       }
-      count--;
     }
 
     if (provider.GetPriority() == kFlagBinEntry) container.push_back(symbol.back());
 
-    if (mode != kModeNextCondition || mode != kModeCycleJump) {
+    if (mode != kModeNextCondition && mode != kModeCycleJump) {
       result = StartActivity(provider, container, item, item.size(), msg, this);
     }
     else {
@@ -602,7 +602,7 @@ namespace Kagami {
               ptr = make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
             }
             else {
-              ptr = make_shared<PointWrapper>(FindWrapper(p.at(i), true));
+              ptr = make_shared<PointWrapper>(*FindWrapper(p.at(i), true));
             }
           }
         }
@@ -611,7 +611,7 @@ namespace Kagami {
             ptr = make_shared<string>(string(p.at(i)));
           }
           else {
-            ptr = FindWrapper(p.at(i), true).get();
+            ptr = FindWrapper(p.at(i), true)->get();
           }
         }
       }

@@ -202,11 +202,11 @@ namespace Kagami {
       }
     }
 
-    PointWrapper Find(string name) {
-      PointWrapper wrapper;
-      for (auto unit : base) {
+    PointWrapper *Find(string name) {
+      PointWrapper *wrapper = nullptr;
+      for (auto &unit : base) {
         if (unit.first == name) {
-          wrapper = unit.second;
+          wrapper = &(unit.second);
           break;
         }
       }
@@ -379,16 +379,16 @@ namespace Entry {
   void ResetPlugin(bool OnExit = false);
   void DisposeWrapper(string name, bool reserved);
   void CleanupWrapper();
-  PointWrapper FindWrapper(string name, bool reserved);
+  PointWrapper *FindWrapper(string name, bool reserved);
   MemoryManager CreateMap();
   bool DisposeMap();
 
   template <class T>
-  PointWrapper CreateWrapper(string name, T t, string castoption, bool readonly = false) {
-    PointWrapper wrapper;
+  PointWrapper *CreateWrapper(string name, T t, string castoption, bool readonly = false) {
+    PointWrapper *wrapper = nullptr;
     if (Kit().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
-      return wrapper;
+      return nullptr;
     }
     MemoryAdapter.back().CreateByObject(name, t, castoption, false);
     wrapper = MemoryAdapter.back().Find(name);
