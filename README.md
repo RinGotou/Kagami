@@ -1,7 +1,7 @@
 # Kagami
 
 ## What's this?
-It's a simple and tiny script language.Angustifolia is originally designed for compiling principle studying, but I'm
+It's a simple and tiny script language.Kagami is originally designed for compiling principle studying, but I'm
 rebuilding and revising it, in order to make it can be used for writing visual novel.The script processor is implemented with shunting yard algorithm.The name of this project is from japanese kanji "鏡（かがみ）".
 
 ## How to use these codes?
