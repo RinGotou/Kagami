@@ -214,7 +214,7 @@ namespace Kagami {
       msg = temp;
     }
     else {
-      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found"));
+      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found."));
       return_state = false;
     }
 
@@ -403,11 +403,22 @@ namespace Kagami {
       }
       count--;
     }
+
     if (provider.GetPriority() == kFlagBinEntry) container.push_back(symbol.back());
-    if (!next_condition || 
-      (next_condition && (name == "if" || name == "elif" || name == "else" || name == "end"))) {
+
+    if (!next_condition) {
       result = StartActivity(provider, container, item, item.size(), msg, this);
     }
+    else {
+      if (name == "if" || name == "elif" || name == "else" || name == "end") {
+        result = StartActivity(provider, container, item, item.size(), msg, this);
+      }
+      else {
+        result = true;
+        msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
+      }
+    }
+
     if (msg.GetCode() == kCodePoint) {
       item.push_back(msg.GetDetail());
       PointWrapper wrapper;
@@ -417,7 +428,6 @@ namespace Kagami {
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
     }
-    
 
     return result;
   }
@@ -569,28 +579,15 @@ namespace Kagami {
     size_t size = p.size(), i = 0;
     PathMap map;
     shared_ptr<void> ptr;
-    bool ignore_first_arg = false;
+    bool ignore_first_arg = true;
 
     auto Filling = [&](bool number = false) {
       string name = kStrEmpty;
-
-      //new
       if (kit.GetDataType(p.at(i)) == kTypeFunction) {
         if (this->GetName() == kStrDefineCmd || this->GetName() == kStrSetCmd) {
-          ignore_first_arg = true;
-          
-        }
-        else {
-
-        }
-      }
-
-      //Need to correct!
-      if (kit.GetDataType(p.at(i)) == kTypeFunction) {
-        if (this->GetName() == kStrDefineCmd || this->GetName() == kStrSetCmd) {
-          if (!ignore_first_arg) {
+          if (ignore_first_arg) {
             ptr = make_shared<string>(string(p.at(i)));
-            ignore_first_arg = true;
+            ignore_first_arg = false;
           }
           else {
             name.append("&");
@@ -602,36 +599,13 @@ namespace Kagami {
             }
           }
         }
+        else {
+          ptr = FindWrapper(p.at(i), true).get();
+        }
       }
       else {
         ptr = make_shared<string>(string(p.at(i)));
       }
-
-      //combining
-      //if (Kit.GetDataType(p.at(i)) == kTypeFunction) {
-      //  if (this->GetName() == kStrDefineCmd && !ignore_first_arg) {
-      //    ptr = make_shared<string>(string(p.at(i)));
-      //    ignore_first_arg = true;
-      //  }
-      //  else if (this->GetName() == kStrSetCmd) {
-      //    if (!ignore_first_arg) {
-      //      ptr = make_shared<string>(string(p.at(i)));
-      //      ignore_first_arg = true;
-      //    }
-      //    else {
-      //      if (p.at(i).substr(0, 2) == "__") name.append("&");
-      //      ptr = make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
-      //    }
-      //  }
-      //  else {
-      //    if (p.at(i).substr(0, 2) == "__") ptr = parent->GetVariable(p.at(i)).get();
-      //    else ptr = FindWrapper(p.at(i), true).get();
-      //  }
-      //}
-      //else {
-      //  ptr = make_shared<string>(string(p.at(i)));
-      //}
-      //end
 
       switch (number) {
       case true:name.append(to_string(i)); break;
@@ -639,6 +613,7 @@ namespace Kagami {
       }
       map.insert(PathMap::value_type(name, ptr));
     };
+
 
     if (priority == kFlagPluginEntry) {
       for (i = 0; i < parameters.size(); i++) {
@@ -700,7 +675,6 @@ namespace Kagami {
     stack<size_t> nest;
     stack<bool> state_stack;
     stack<size_t> mode_stack;
-    //bool next_condition = false;
     bool already_executed = false;
     size_t current_mode = kModeNormal;
 
@@ -726,8 +700,12 @@ namespace Kagami {
           break;
         }
         if (result.GetCode() == kCodeConditionRoot) {
+          state_stack.push(already_executed);
+          mode_stack.push(current_mode);
+
           if (result.GetValue() == kStrFalse) {
             current_mode = kModeNextCondition;
+            already_executed = false;
           }
           else {
             state_stack.push(already_executed);
@@ -735,14 +713,13 @@ namespace Kagami {
           }
         }
         if (result.GetCode() == kCodeConditionBranch) {
-          if (!already_executed && result.GetValue() == kStrTrue) {
+          if (!already_executed && current_mode == kModeNextCondition && result.GetValue() == kStrTrue) {
             current_mode = kModeNormal;
-            state_stack.push(true);
             already_executed = true;
           }
         }
         if (result.GetCode() == kCodeConditionLeaf) {
-          if (already_executed == false && current_mode == kModeNextCondition) {
+          if (!already_executed && current_mode == kModeNextCondition) {
             current_mode = kModeNormal;
           }
         }
