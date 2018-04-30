@@ -66,7 +66,7 @@ namespace Entry {
   EntryProvider Find(string target) {
     EntryProvider result;
     if (target == "+" || target == "-" || target == "*" || target == "/"
-      || target == "==" || target == "<=" || target == ">=") {
+      || target == "==" || target == "<=" || target == ">=" || target == "!=") {
       result = Order("binexp");
     }
     else if (target == "=") {
@@ -83,7 +83,7 @@ namespace Entry {
 
   int GetRequiredCount(string target) {
     if (target == "+" || target == "-" || target == "*" || target == "/"
-      || target == "==" || target == "<=" || target == ">=") {
+      || target == "==" || target == "<=" || target == ">=" || target == "!=") {
       return Order("binexp").GetRequiredCount() - 1;
     }
     EntryMap::iterator it = EntryMapBase.find(target);
@@ -234,12 +234,7 @@ namespace Kagami {
     auto ToString = [](char c) -> string {
       return string().append(1, c);
     };
-#if defined(_DEBUG_FLAG_)
-    if (target == kStrEmpty) {
-      log(Message(kStrWarning, kCodeIllegalArgs, "Chainloader::Build() 1"));
-      return *this;
-    }
-#endif
+
     for (i = 0; i < size; i++) {
       if (!exempt_blank_char) {
         if (kit.GetDataType(ToString(target[i])) == kTypeBlank) {
@@ -600,7 +595,12 @@ namespace Kagami {
           }
         }
         else {
-          ptr = FindWrapper(p.at(i), true).get();
+          if (p.at(i) == kStrTrue || p.at(i) == kStrFalse) {
+            ptr = make_shared<string>(string(p.at(i)));
+          }
+          else {
+            ptr = FindWrapper(p.at(i), true).get();
+          }
         }
       }
       else {
@@ -708,7 +708,6 @@ namespace Kagami {
             already_executed = false;
           }
           else {
-            state_stack.push(already_executed);
             already_executed = true;
           }
         }
@@ -717,10 +716,16 @@ namespace Kagami {
             current_mode = kModeNormal;
             already_executed = true;
           }
+          else if (already_executed && current_mode == kModeNormal) {
+            current_mode = kModeNextCondition;
+          }
         }
         if (result.GetCode() == kCodeConditionLeaf) {
           if (!already_executed && current_mode == kModeNextCondition) {
             current_mode = kModeNormal;
+          }
+          else if (already_executed && current_mode == kModeNormal) {
+            current_mode = kModeNextCondition;
           }
         }
         if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrTrue) {
