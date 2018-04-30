@@ -262,6 +262,8 @@ namespace Kagami {
       case '(':
       case ',':
       case ')':
+      case '[':
+      case ']':
       case '{':
       case '}':
       case ':':
@@ -774,6 +776,7 @@ namespace Kagami {
             if (!nest.empty()) {
               tail = i;
               i = nest.top();
+              continue;
             }
           }
           else if (current_mode = kModeNextCondition) {
@@ -783,20 +786,15 @@ namespace Kagami {
             }
           }
           else if (current_mode == kModeCycleJump) {
-            if (mode_stack.top() == kModeCycleJump) {
+            if (mode_stack.empty()) {
+              current_mode = kModeNormal;
+            }
+            else if (mode_stack.top() == kModeCycleJump) {
               mode_stack.pop();
             }
             else {
               current_mode = kModeNormal;
             }
-          }
-
-          if (!mode_stack.empty()) {
-            current_mode = mode_stack.top();
-            mode_stack.pop();
-          }
-          else {
-            current_mode = kModeNormal;
           }
         }
 

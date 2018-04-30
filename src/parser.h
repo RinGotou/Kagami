@@ -53,6 +53,7 @@ namespace Kagami {
   const string kCastNull = "null";
   const string kCastInt = "int";
   const string kCastString = "string";
+  const string kCastDeque = "deque";
 
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternNumber(R"(\d+\.?\d*)");

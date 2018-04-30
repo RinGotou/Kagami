@@ -489,9 +489,8 @@ namespace Kagami {
     if (wrapper == nullptr) {
       if (usewrapper) {
         shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
-        PointWrapper sourcewrapper = *static_pointer_cast<PointWrapper>(source);
         if (ptr != nullptr) {
-          wrapper = CreateWrapperByPointer(name, ptr, sourcewrapper.getOption());
+          wrapper = CreateWrapperByPointer(name, ptr, static_pointer_cast<PointWrapper>(source)->getOption());
           if (wrapper == nullptr) {
             result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
           }
@@ -537,11 +536,40 @@ namespace Kagami {
     return result;
   }
 
+  Message LoadArray(PathMap &p) {
+    Message result;
+    const size_t size = stoi(CastToString(p.at("size")));
+    shared_ptr<void> init_value = p.at("init_value");
+    shared_ptr<void> &cast_path = result.GetCastPath();
+    size_t count = 0;
+    
+    if (size == 0) {
+      result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
+      cast_path = nullptr;
+    }
+    else {
+      deque<shared_ptr<void>> temp_base;
+      for (count = 0; count < size; count++) {
+        temp_base.push_back(init_value);
+      }
+
+      result.combo(kCastDeque, kCodePoint, "__result");
+      cast_path = make_shared<deque<shared_ptr<void>>>(temp_base);
+    }
+
+    return result;
+  }
+
+  Message GetElementInArray(PathMap &p) {
+    Message result;
+    
+    return result;
+  }
+
   void InjectBasicEntries() {
     using namespace Entry;
     Kit kit;
-    auto Build = [&](string target) {return kit.BuildStringVector(target); };
-    vector<string> temp = kit.BuildStringVector("name");
+    auto Build = [&](string target) { return kit.BuildStringVector(target); };
 
     Inject("end", EntryProvider("end", TailSign, 0));
     Inject("commaexp", EntryProvider("commaexp", CommaExp, kFlagAutoSize));
@@ -556,5 +584,7 @@ namespace Kagami {
     Inject("if", EntryProvider("if", ConditionRoot, 1, kFlagNormalEntry, Build("state")));
     Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
     Inject("else", EntryProvider("else", ConditionLeaf, 0));
+    Inject("array", EntryProvider("array", LoadArray, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
+    Inject("afind", EntryProvider("afind", GetElementInArray, 2, kFlagCoreEntry, Build("name|subscript")));
   }
 }
