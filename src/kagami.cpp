@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
   Kagami::Kit kit;
 #ifdef _DEBUG_STATE_
   //direct load a external script
-  kit.ExecScriptFile("C:\\Apps\\main.rs");
+  kit.ExecScriptFile("C:\\Apps\\kagami\\main.kagami");
 #else
 #ifndef _NO_CUI_
   if (argc > 1) {
