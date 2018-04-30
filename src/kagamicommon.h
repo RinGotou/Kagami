@@ -39,10 +39,14 @@ namespace Kagami {
   using std::static_pointer_cast;
   using std::map;
 
-  const string kEngineVersion = "version 0.3";
+#if defined(_WIN32)
+  const string kEngineVersion = "version 0.3 (Windows Platform)";
+#else
+  const string kEngineVersion = "version 0.3 (UNIX-like Platform)";
+#endif
   const string kEngineName = "Kagami";
-  const string kEngineAuthor = "Kagami Nakamura";
-  const string kCopyright = "(C) 2017-2018";
+  const string kEngineAuthor = "Suzu Nakamura";
+  const string kCopyright = "Conpyright(c) 2017-2018";
   const string kStrDefineCmd = "var";
   const string kStrSetCmd = "set";
   const string kStrEmpty = "";
@@ -92,6 +96,7 @@ namespace Kagami {
 
   const size_t kModeNormal = 0;
   const size_t kModeNextCondition = 1;
+  const size_t kModeCycle = 2;
 
   /*Message Class
     It's the basic message tunnel of this script processor.

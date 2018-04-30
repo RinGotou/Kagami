@@ -214,7 +214,7 @@ namespace Kagami {
       msg = temp;
     }
     else {
-      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found"));
+      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found."));
       return_state = false;
     }
 
@@ -223,7 +223,7 @@ namespace Kagami {
 
   Chainloader &Chainloader::Build(string target) {
     using Tracking::log;
-    Kit Kit;
+    Kit kit;
     vector<string> output;
     char bin_oper = NULL;
     size_t size = target.size();
@@ -242,10 +242,10 @@ namespace Kagami {
 #endif
     for (i = 0; i < size; i++) {
       if (!exempt_blank_char) {
-        if (Kit.GetDataType(ToString(target[i])) == kTypeBlank) {
+        if (kit.GetDataType(ToString(target[i])) == kTypeBlank) {
           continue;
         }
-        else if (Kit.GetDataType(ToString(target[i])) != kTypeBlank) {
+        else if (kit.GetDataType(ToString(target[i])) != kTypeBlank) {
           exempt_blank_char = true;
         }
       }
@@ -314,7 +314,7 @@ namespace Kagami {
           }
           else if (bin_oper != NULL) {
             string binaryopt = { bin_oper, target[i] };
-            if (Kit.GetDataType(binaryopt) == kTypeSymbol) {
+            if (kit.GetDataType(binaryopt) == kTypeSymbol) {
               output.push_back(binaryopt);
               bin_oper = NULL;
             }
@@ -331,7 +331,7 @@ namespace Kagami {
         if (string_processing) {
           current.append(1, target[i]);
         }
-        else if (Kit.Compare(current, list) && output.empty()) {
+        else if (kit.Compare(current, list) && output.empty()) {
           if (i + 1 < size && target[i + 1] != ' ' && target[i + 1] != '\t') {
             output.push_back(current);
             current = kStrEmpty;
@@ -358,7 +358,7 @@ namespace Kagami {
 
     if (current != kStrEmpty) output.push_back(current);
     raw = output;
-    Kit.CleanupVector(output);
+    kit.CleanupVector(output);
 
     return *this;
   }
@@ -380,6 +380,7 @@ namespace Kagami {
     bool result = false, reversed = true;
     int count = provider.GetRequiredCount();
     deque<string> container;
+    string name = provider.GetName();
 
     if (provider.GetPriority() == kFlagBinEntry) {
       if (count != kFlagAutoSize) count -= 1;
@@ -402,8 +403,22 @@ namespace Kagami {
       }
       count--;
     }
+
     if (provider.GetPriority() == kFlagBinEntry) container.push_back(symbol.back());
-    result = StartActivity(provider, container, item, item.size(), msg, this);
+
+    if (!next_condition) {
+      result = StartActivity(provider, container, item, item.size(), msg, this);
+    }
+    else {
+      if (name == "if" || name == "elif" || name == "else" || name == "end") {
+        result = StartActivity(provider, container, item, item.size(), msg, this);
+      }
+      else {
+        result = true;
+        msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
+      }
+    }
+
     if (msg.GetCode() == kCodePoint) {
       item.push_back(msg.GetDetail());
       PointWrapper wrapper;
@@ -413,10 +428,11 @@ namespace Kagami {
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
     }
+
     return result;
   }
 
-  Message Chainloader::Start(int mode = kModeNormal) {
+  Message Chainloader::Start(size_t mode = kModeNormal) {
     using namespace Entry;
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
@@ -425,7 +441,7 @@ namespace Kagami {
     bool comma_exp_func = false, 
       string_token_proc = false, insert_btn_symbols = false, 
       disable_set_entry = false, next_condition = false;
-    Kit Kit;
+    Kit kit;
     Message result;
 
     deque<string> item, symbol;
@@ -434,7 +450,8 @@ namespace Kagami {
     if (mode == kModeNextCondition) next_condition = true;
 
     for (i = 0; i < size; ++i) {
-      unit_type = Kit.GetDataType(raw.at(i));
+      unit_type = kit.GetDataType(raw.at(i));
+      result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
       if (unit_type == kTypeSymbol) {
         if (raw[i] == "\"") {
           switch (string_token_proc) {
@@ -462,7 +479,7 @@ namespace Kagami {
           }
         }
         else if (raw[i] == "(") {
-          if (symbol.empty() || Kit.GetDataType(symbol.back()) == kTypeSymbol) {
+          if (symbol.empty() || kit.GetDataType(symbol.back()) == kTypeSymbol) {
             symbol.push_back("commaexp");
           }
           symbol.push_back(raw[i]);
@@ -550,28 +567,27 @@ namespace Kagami {
       }
     }
 
-    Kit.CleanupDeque(container).CleanupDeque(item).CleanupDeque(symbol);
+    kit.CleanupDeque(container).CleanupDeque(item).CleanupDeque(symbol);
 
     return result;
   }
 
   Message EntryProvider::StartActivity(deque<string> p, Chainloader *parent) {
     using namespace Entry;
-    Kit Kit;
+    Kit kit;
     Message result;
     size_t size = p.size(), i = 0;
     PathMap map;
     shared_ptr<void> ptr;
-    bool ignore_first_arg = false;
+    bool ignore_first_arg = true;
 
     auto Filling = [&](bool number = false) {
       string name = kStrEmpty;
-
-      if (Kit.GetDataType(p.at(i)) == kTypeFunction) {
+      if (kit.GetDataType(p.at(i)) == kTypeFunction) {
         if (this->GetName() == kStrDefineCmd || this->GetName() == kStrSetCmd) {
-          if (!ignore_first_arg) {
+          if (ignore_first_arg) {
             ptr = make_shared<string>(string(p.at(i)));
-            ignore_first_arg = true;
+            ignore_first_arg = false;
           }
           else {
             name.append("&");
@@ -583,40 +599,21 @@ namespace Kagami {
             }
           }
         }
+        else {
+          ptr = FindWrapper(p.at(i), true).get();
+        }
       }
       else {
         ptr = make_shared<string>(string(p.at(i)));
       }
 
-      if (Kit.GetDataType(p.at(i)) == kTypeFunction) {
-        if (this->GetName() == kStrDefineCmd && !ignore_first_arg) {
-          ptr = make_shared<string>(string(p.at(i)));
-          ignore_first_arg = true;
-        }
-        else if (this->GetName() == kStrSetCmd) {
-          if (!ignore_first_arg) {
-            ptr = make_shared<string>(string(p.at(i)));
-            ignore_first_arg = true;
-          }
-          else {
-            if (p.at(i).substr(0, 2) == "__") name.append("&");
-            ptr = make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
-          }
-        }
-        else {
-          if (p.at(i).substr(0, 2) == "__") ptr = parent->GetVariable(p.at(i)).get();
-          else ptr = FindWrapper(p.at(i), true).get();
-        }
-      }
-      else {
-        ptr = make_shared<string>(string(p.at(i)));
-      }
       switch (number) {
       case true:name.append(to_string(i)); break;
       case false:name.append(parameters.at(i)); break;
       }
       map.insert(PathMap::value_type(name, ptr));
     };
+
 
     if (priority == kFlagPluginEntry) {
       for (i = 0; i < parameters.size(); i++) {
@@ -677,9 +674,9 @@ namespace Kagami {
     size_t tail = 0;
     stack<size_t> nest;
     stack<bool> state_stack;
-    bool next_condition = false;
+    stack<size_t> mode_stack;
     bool already_executed = false;
-    int current_mode = kModeNormal;
+    size_t current_mode = kModeNormal;
 
     CreateMap();
     if (!res.empty()) {
@@ -703,47 +700,58 @@ namespace Kagami {
           break;
         }
         if (result.GetCode() == kCodeConditionRoot) {
+          state_stack.push(already_executed);
+          mode_stack.push(current_mode);
+
           if (result.GetValue() == kStrFalse) {
-            next_condition = true;
             current_mode = kModeNextCondition;
+            already_executed = false;
           }
           else {
+            state_stack.push(already_executed);
             already_executed = true;
-            next_condition = false;
-
           }
         }
         if (result.GetCode() == kCodeConditionBranch) {
-          if (already_executed && result.GetValue() == kStrTrue) {
+          if (!already_executed && current_mode == kModeNextCondition && result.GetValue() == kStrTrue) {
             current_mode = kModeNormal;
-            state_stack.push(true);
-            //already_executed
+            already_executed = true;
           }
         }
         if (result.GetCode() == kCodeConditionLeaf) {
-          if (!next_condition) {
-            next_condition = true;
-          }
-          else {
-            //TODO:execute
+          if (!already_executed && current_mode == kModeNextCondition) {
+            current_mode = kModeNormal;
           }
         }
         if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrTrue) {
+          current_mode = kModeCycle;
           if (nest.empty()) nest.push(i);
           if (nest.top() == i) nest.push(i);
         }
         if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrFalse) {
+          current_mode = kModeCycle;
           nest.pop();
           i = tail;
         }
-        if (result.GetCode() == kCodeTailSign && !nest.empty()) {
-          tail = i;
-          i = nest.top();
-        }
-        if (result.GetCode() == kCodeTailSign && next_condition) {
-          if (!state_stack.empty()) {
-            already_executed = state_stack.top();
-            state_stack.pop();
+        if (result.GetCode() == kCodeTailSign) {
+          if (current_mode == kModeCycle) {
+            if (!nest.empty()) {
+              tail = i;
+              i = nest.top();
+            }
+          }
+          else if (current_mode = kModeNextCondition) {
+            if (!state_stack.empty()) {
+              already_executed = state_stack.top();
+              state_stack.pop();
+            }
+          }
+          if (!mode_stack.empty()) {
+            current_mode = mode_stack.top();
+            mode_stack.pop();
+          }
+          else {
+            current_mode = kModeNormal;
           }
         }
         i++;
@@ -756,8 +764,6 @@ namespace Kagami {
 
   Message Kit::ExecScriptFile(string target) {
     Message result;
-    vector<Chainloader> loaders;
-    size_t tail = 0;
     ScriptProvider sp(target.c_str());
     ChainStorage cs(sp);
 
@@ -792,11 +798,10 @@ namespace Kagami {
 
   void Kit::Terminal() {
     using namespace Entry;
-    Kit Kit;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Chainloader loader;
-    auto Build = [&](string target) {return Kit.BuildStringVector(target); };
+    auto Build = [&](string target) {return BuildStringVector(target); };
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
@@ -807,7 +812,7 @@ namespace Kagami {
     Inject("print", EntryProvider("print", PrintOnScreen, 1, kFlagNormalEntry, Build("msg")));
 
     while (result.GetCode() != kCodeQuit) {
-      std::cout << '>';
+      std::cout << ">>>";
       std::getline(std::cin, buf);
       if (buf != kStrEmpty) {
         result = loader.Reset().Build(buf).Start();
