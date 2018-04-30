@@ -26,24 +26,29 @@
 #include "parser.h"
 //#define SDL_MAIN_HANDLED
 //#define _DEBUG_STATE_
+//#define _NO_CUI_
 
 int main(int argc, char **argv) {
 
-  Kagami::Kit Kit;
+  Kagami::Kit kit;
 #ifdef _DEBUG_STATE_
   //direct load a external script
   Kit.ExecScriptFile("C:\\Apps\\main.rs");
 #else
+#ifndef _NO_CUI_
   if (argc > 1) {
     //load external script from command arguments
-    Kit.ExecScriptFile(argv[1]);
+    kit.ExecScriptFile(argv[1]);
   }
   else {
     //open terminal mode
-    Kit.Terminal();
+    kit.Terminal();
   }
+#else
+  Kit.ExecScriptFile(argv[1]);
 #endif
-  Kit.PrintEvents();
+#endif
+  kit.PrintEvents();
 
   return 0;
 }

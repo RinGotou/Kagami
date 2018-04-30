@@ -142,6 +142,7 @@ namespace Kagami {
     PointWrapper() { ptr = nullptr; castoption = kCastNull; }
     template <class T> PointWrapper &manage(T &t, string castoption) {
       ptr = std::make_shared<T>(t);
+      this->castoption = castoption;
       return *this;
     }
     PointWrapper &set(shared_ptr<void> ptr, string castoption) {
@@ -274,7 +275,7 @@ namespace Kagami {
       return *this;
     }
 
-    Message Start(int mode); 
+    Message Start(size_t mode); 
     Chainloader &Build(string target);
   };
 

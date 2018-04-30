@@ -223,7 +223,7 @@ namespace Kagami {
 
   Chainloader &Chainloader::Build(string target) {
     using Tracking::log;
-    Kit Kit;
+    Kit kit;
     vector<string> output;
     char bin_oper = NULL;
     size_t size = target.size();
@@ -242,10 +242,10 @@ namespace Kagami {
 #endif
     for (i = 0; i < size; i++) {
       if (!exempt_blank_char) {
-        if (Kit.GetDataType(ToString(target[i])) == kTypeBlank) {
+        if (kit.GetDataType(ToString(target[i])) == kTypeBlank) {
           continue;
         }
-        else if (Kit.GetDataType(ToString(target[i])) != kTypeBlank) {
+        else if (kit.GetDataType(ToString(target[i])) != kTypeBlank) {
           exempt_blank_char = true;
         }
       }
@@ -314,7 +314,7 @@ namespace Kagami {
           }
           else if (bin_oper != NULL) {
             string binaryopt = { bin_oper, target[i] };
-            if (Kit.GetDataType(binaryopt) == kTypeSymbol) {
+            if (kit.GetDataType(binaryopt) == kTypeSymbol) {
               output.push_back(binaryopt);
               bin_oper = NULL;
             }
@@ -331,7 +331,7 @@ namespace Kagami {
         if (string_processing) {
           current.append(1, target[i]);
         }
-        else if (Kit.Compare(current, list) && output.empty()) {
+        else if (kit.Compare(current, list) && output.empty()) {
           if (i + 1 < size && target[i + 1] != ' ' && target[i + 1] != '\t') {
             output.push_back(current);
             current = kStrEmpty;
@@ -358,7 +358,7 @@ namespace Kagami {
 
     if (current != kStrEmpty) output.push_back(current);
     raw = output;
-    Kit.CleanupVector(output);
+    kit.CleanupVector(output);
 
     return *this;
   }
@@ -422,7 +422,7 @@ namespace Kagami {
     return result;
   }
 
-  Message Chainloader::Start(int mode = kModeNormal) {
+  Message Chainloader::Start(size_t mode = kModeNormal) {
     using namespace Entry;
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
@@ -431,7 +431,7 @@ namespace Kagami {
     bool comma_exp_func = false, 
       string_token_proc = false, insert_btn_symbols = false, 
       disable_set_entry = false, next_condition = false;
-    Kit Kit;
+    Kit kit;
     Message result;
 
     deque<string> item, symbol;
@@ -440,7 +440,7 @@ namespace Kagami {
     if (mode == kModeNextCondition) next_condition = true;
 
     for (i = 0; i < size; ++i) {
-      unit_type = Kit.GetDataType(raw.at(i));
+      unit_type = kit.GetDataType(raw.at(i));
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
       if (unit_type == kTypeSymbol) {
         if (raw[i] == "\"") {
@@ -469,7 +469,7 @@ namespace Kagami {
           }
         }
         else if (raw[i] == "(") {
-          if (symbol.empty() || Kit.GetDataType(symbol.back()) == kTypeSymbol) {
+          if (symbol.empty() || kit.GetDataType(symbol.back()) == kTypeSymbol) {
             symbol.push_back("commaexp");
           }
           symbol.push_back(raw[i]);
@@ -557,14 +557,14 @@ namespace Kagami {
       }
     }
 
-    Kit.CleanupDeque(container).CleanupDeque(item).CleanupDeque(symbol);
+    kit.CleanupDeque(container).CleanupDeque(item).CleanupDeque(symbol);
 
     return result;
   }
 
   Message EntryProvider::StartActivity(deque<string> p, Chainloader *parent) {
     using namespace Entry;
-    Kit Kit;
+    Kit kit;
     Message result;
     size_t size = p.size(), i = 0;
     PathMap map;
@@ -574,7 +574,19 @@ namespace Kagami {
     auto Filling = [&](bool number = false) {
       string name = kStrEmpty;
 
-      if (Kit.GetDataType(p.at(i)) == kTypeFunction) {
+      //new
+      if (kit.GetDataType(p.at(i)) == kTypeFunction) {
+        if (this->GetName() == kStrDefineCmd || this->GetName() == kStrSetCmd) {
+          ignore_first_arg = true;
+          
+        }
+        else {
+
+        }
+      }
+
+      //Need to correct!
+      if (kit.GetDataType(p.at(i)) == kTypeFunction) {
         if (this->GetName() == kStrDefineCmd || this->GetName() == kStrSetCmd) {
           if (!ignore_first_arg) {
             ptr = make_shared<string>(string(p.at(i)));
@@ -595,29 +607,32 @@ namespace Kagami {
         ptr = make_shared<string>(string(p.at(i)));
       }
 
-      if (Kit.GetDataType(p.at(i)) == kTypeFunction) {
-        if (this->GetName() == kStrDefineCmd && !ignore_first_arg) {
-          ptr = make_shared<string>(string(p.at(i)));
-          ignore_first_arg = true;
-        }
-        else if (this->GetName() == kStrSetCmd) {
-          if (!ignore_first_arg) {
-            ptr = make_shared<string>(string(p.at(i)));
-            ignore_first_arg = true;
-          }
-          else {
-            if (p.at(i).substr(0, 2) == "__") name.append("&");
-            ptr = make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
-          }
-        }
-        else {
-          if (p.at(i).substr(0, 2) == "__") ptr = parent->GetVariable(p.at(i)).get();
-          else ptr = FindWrapper(p.at(i), true).get();
-        }
-      }
-      else {
-        ptr = make_shared<string>(string(p.at(i)));
-      }
+      //combining
+      //if (Kit.GetDataType(p.at(i)) == kTypeFunction) {
+      //  if (this->GetName() == kStrDefineCmd && !ignore_first_arg) {
+      //    ptr = make_shared<string>(string(p.at(i)));
+      //    ignore_first_arg = true;
+      //  }
+      //  else if (this->GetName() == kStrSetCmd) {
+      //    if (!ignore_first_arg) {
+      //      ptr = make_shared<string>(string(p.at(i)));
+      //      ignore_first_arg = true;
+      //    }
+      //    else {
+      //      if (p.at(i).substr(0, 2) == "__") name.append("&");
+      //      ptr = make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
+      //    }
+      //  }
+      //  else {
+      //    if (p.at(i).substr(0, 2) == "__") ptr = parent->GetVariable(p.at(i)).get();
+      //    else ptr = FindWrapper(p.at(i), true).get();
+      //  }
+      //}
+      //else {
+      //  ptr = make_shared<string>(string(p.at(i)));
+      //}
+      //end
+
       switch (number) {
       case true:name.append(to_string(i)); break;
       case false:name.append(parameters.at(i)); break;
@@ -687,7 +702,7 @@ namespace Kagami {
     stack<size_t> mode_stack;
     //bool next_condition = false;
     bool already_executed = false;
-    int current_mode = kModeNormal;
+    size_t current_mode = kModeNormal;
 
     CreateMap();
     if (!res.empty()) {
@@ -715,14 +730,15 @@ namespace Kagami {
             current_mode = kModeNextCondition;
           }
           else {
+            state_stack.push(already_executed);
             already_executed = true;
           }
         }
         if (result.GetCode() == kCodeConditionBranch) {
-          if (already_executed && result.GetValue() == kStrTrue) {
+          if (!already_executed && result.GetValue() == kStrTrue) {
             current_mode = kModeNormal;
             state_stack.push(true);
-            //already_executed
+            already_executed = true;
           }
         }
         if (result.GetCode() == kCodeConditionLeaf) {
@@ -805,11 +821,10 @@ namespace Kagami {
 
   void Kit::Terminal() {
     using namespace Entry;
-    Kit Kit;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Chainloader loader;
-    auto Build = [&](string target) {return Kit.BuildStringVector(target); };
+    auto Build = [&](string target) {return BuildStringVector(target); };
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
