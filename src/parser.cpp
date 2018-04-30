@@ -369,7 +369,7 @@ namespace Kagami {
   }
 
   bool Chainloader::ShuntingYardProcessing(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
-    Message &msg, bool next_condition = false) {
+    Message &msg, size_t mode) {
     using namespace Entry;
     EntryProvider provider = Find(symbol.back());
     bool result = false, reversed = true;
@@ -401,17 +401,31 @@ namespace Kagami {
 
     if (provider.GetPriority() == kFlagBinEntry) container.push_back(symbol.back());
 
-    if (!next_condition) {
+    if (mode != kModeNextCondition || mode != kModeCycleJump) {
       result = StartActivity(provider, container, item, item.size(), msg, this);
     }
     else {
-      if (name == "if" || name == "elif" || name == "else" || name == "end") {
-        result = StartActivity(provider, container, item, item.size(), msg, this);
+      switch (mode) {
+      case kModeCycleJump:
+        if (name == "end") {
+          result = StartActivity(provider, container, item, item.size(), msg, this);
+        }
+        else if (name == "if") {
+          msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
+        }
+        break;
+      case kModeNextCondition:
+        if (name == "if" || name == "elif" || name == "else" || name == "end") {
+          result = StartActivity(provider, container, item, item.size(), msg, this);
+        }
+        else {
+          result = true;
+          msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
+        }
+        break;
+      default:break;
       }
-      else {
-        result = true;
-        msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
-      }
+
     }
 
     if (msg.GetCode() == kCodePoint) {
@@ -433,16 +447,14 @@ namespace Kagami {
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
     string temp_str = kStrEmpty;
     int unit_type = kTypeNull;
-    bool comma_exp_func = false, 
-      string_token_proc = false, insert_btn_symbols = false, 
-      disable_set_entry = false, next_condition = false;
+    bool comma_exp_func = false,
+      string_token_proc = false, insert_btn_symbols = false,
+      disable_set_entry = false;
     Kit kit;
     Message result;
 
     deque<string> item, symbol;
     deque<string> container;
-
-    if (mode == kModeNextCondition) next_condition = true;
 
     for (i = 0; i < size; ++i) {
       unit_type = kit.GetDataType(raw.at(i));
@@ -487,7 +499,7 @@ namespace Kagami {
               symbol.pop_back();
             }
             //Start point 1
-            if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result,next_condition)) break;
+            if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, mode)) break;
             symbol.pop_back();
           }
 
@@ -497,7 +509,7 @@ namespace Kagami {
             container.pop_back();
           }
           //Start point 2
-          if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, next_condition)) break;
+          if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, mode)) break;
           symbol.pop_back();
         }
         else {
@@ -557,7 +569,7 @@ namespace Kagami {
           break;
         }
         //Start point 3
-        if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, next_condition)) break;
+        if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, mode)) break;
         symbol.pop_back();
       }
     }
@@ -694,11 +706,17 @@ namespace Kagami {
       i = 0;
       while (i < size) {
         result = storage.at(i).Start(current_mode);
+
+        //error
         if (result.GetValue() == kStrFatalError) break;
+
+        //return
         if (result.GetCode() == kCodeReturn) {
           result.SetCode(kCodeSuccess);
           break;
         }
+
+        //condition
         if (result.GetCode() == kCodeConditionRoot) {
           state_stack.push(already_executed);
           mode_stack.push(current_mode);
@@ -728,16 +746,29 @@ namespace Kagami {
             current_mode = kModeNextCondition;
           }
         }
+        if (result.GetCode() == kCodeFillingSign) {
+          mode_stack.push(kModeCycleJump);
+        }
+
+        //loop
         if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrTrue) {
           current_mode = kModeCycle;
           if (nest.empty()) nest.push(i);
-          if (nest.top() == i) nest.push(i);
+          else if (nest.top() != i) nest.push(i);
         }
         if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrFalse) {
-          current_mode = kModeCycle;
-          nest.pop();
-          i = tail;
+          if (nest.empty()) {
+            current_mode = kModeCycleJump;
+          }
+          else {
+            current_mode = kModeCycle;
+            nest.pop();
+            i = tail;
+          }
+
         }
+
+        //tail
         if (result.GetCode() == kCodeTailSign) {
           if (current_mode == kModeCycle) {
             if (!nest.empty()) {
@@ -751,6 +782,15 @@ namespace Kagami {
               state_stack.pop();
             }
           }
+          else if (current_mode == kModeCycleJump) {
+            if (mode_stack.top() == kModeCycleJump) {
+              mode_stack.pop();
+            }
+            else {
+              current_mode = kModeNormal;
+            }
+          }
+
           if (!mode_stack.empty()) {
             current_mode = mode_stack.top();
             mode_stack.pop();
@@ -759,6 +799,7 @@ namespace Kagami {
             current_mode = kModeNormal;
           }
         }
+
         i++;
       }
     }

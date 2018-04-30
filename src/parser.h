@@ -255,7 +255,7 @@ namespace Kagami {
     bool StartActivity(EntryProvider &provider, deque<string> container,
       deque<string> &item, size_t top, Message &msg, Chainloader *loader);
     bool ShuntingYardProcessing(bool disableset, deque<string> &item, deque<string> &symbol, 
-      Message &msg, bool next_condition);
+      Message &msg, size_t mode);
   public:
     Chainloader() {}
     Chainloader &Build(vector<string> raw) {
