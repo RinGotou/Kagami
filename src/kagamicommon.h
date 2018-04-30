@@ -60,6 +60,7 @@ namespace Kagami {
   const string kStrTrue = "true";
   const string kStrFalse = "false";
 
+  const int kCodeFillingSign = 12;
   const int kCodeReturn = 11;
   const int kCodeConditionLeaf = 10;
   const int kCodeConditionBranch = 9;
@@ -97,6 +98,7 @@ namespace Kagami {
   const size_t kModeNormal = 0;
   const size_t kModeNextCondition = 1;
   const size_t kModeCycle = 2;
+  const size_t kModeCycleJump = 3;
 
   /*Message Class
     It's the basic message tunnel of this script processor.
