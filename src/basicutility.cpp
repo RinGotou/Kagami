@@ -274,7 +274,7 @@ namespace Kagami {
 
   Message BinaryOperands(PathMap &p) {
     using namespace Entry;
-    Kit Kit;
+    Kit kit;
     PointWrapper wrapper;
     string *opercode = nullptr;
     enum { EnumDouble, EnumInt, EnumStr, EnumNull }type = EnumNull;
@@ -308,20 +308,20 @@ namespace Kagami {
       if (*opercode == "+" || *opercode == "-" || *opercode == "*" || *opercode == "/") {
         switch (type) {
         case EnumInt:
-          temp = to_string(Kit.Calc(stoi(buf.at(0)), stoi(buf.at(1)), *opercode));
+          temp = to_string(kit.Calc(stoi(buf.at(0)), stoi(buf.at(1)), *opercode));
           break;
         case EnumDouble:
-          temp = to_string(Kit.Calc(stod(buf.at(0)), stod(buf.at(1)), *opercode));
+          temp = to_string(kit.Calc(stod(buf.at(0)), stod(buf.at(1)), *opercode));
           break;
         }
       }
       else if (*opercode == "==" || *opercode == ">=" || *opercode == "<=" || *opercode == "!=") {
         switch (type) {
         case EnumInt:
-          tempresult = Kit.Logic(stoi(buf.at(1)), stoi(buf.at(0)), *opercode);
+          tempresult = kit.Logic(stoi(buf.at(1)), stoi(buf.at(0)), *opercode);
           break;
         case EnumDouble:
-          tempresult = Kit.Logic(stod(buf.at(1)), stod(buf.at(0)), *opercode);
+          tempresult = kit.Logic(stod(buf.at(1)), stod(buf.at(0)), *opercode);
           break;
         }
         switch (tempresult) {
@@ -355,7 +355,7 @@ namespace Kagami {
         temp = buf.at(1) + buf.at(0);
       }
       else if (*opercode == "==" || *opercode == "!=") {
-        tempresult = Kit.Logic(buf.at(1), buf.at(0), *opercode);
+        tempresult = kit.Logic(buf.at(1), buf.at(0), *opercode);
         switch (tempresult) {
         case true:
           temp = kStrTrue;
