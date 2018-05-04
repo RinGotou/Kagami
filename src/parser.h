@@ -357,7 +357,7 @@ namespace Kagami {
     return *static_pointer_cast<string>(ptr);
   }
 
-  typedef deque<PointWrapper> PointDeque;
+  //typedef deque<PointWrapper> PointDeque;
   void InjectBasicEntries();
 }
 

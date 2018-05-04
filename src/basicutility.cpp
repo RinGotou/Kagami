@@ -24,6 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "basicutility.h"
+#include "windows.h"
 
 namespace Cast {
   using namespace Kagami;
@@ -426,41 +427,55 @@ namespace Kagami {
     return result;
   }
 
-  Message SetOperand(PathMap &p) {
-    using namespace Entry;
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    bool usewrapper = false;
-    const string name = CastToString(p.at("name"));
-    shared_ptr<void> source = nullptr;
-    PointWrapper *wrapper0 = FindWrapper(name, true);
-    //PointWrapper wrapper1;
-    PathMap::iterator it = p.find("source");
 
-    if (it == p.end()) {
-      it = p.find("&source");
-      if (it != p.end()) {
-        source = it->second;
-        usewrapper = true;
-      }
+  Message SetOperand(PathMap &p) {
+    using Entry::FindWrapper;
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    bool source_is_wrapper = false;
+    shared_ptr<void> target = nullptr, source = nullptr;
+    PathMap::iterator it;
+
+    //check left parameter
+    it = p.find("target");
+    if (it != p.end()) {
+      target = it->second;
     }
     else {
+      it = p.find("&target");
+      if (it != p.end()) target = it->second;
+    }
+
+    //check right parameter
+    it = p.find("source");
+    if (it != p.end()) {
       source = it->second;
     }
-
-    if (wrapper0 != nullptr) {
-      if (!usewrapper) {
-        string temp = CastToString(source);
-        wrapper0->manage(temp, kCastString);
-      }
-      else {
-        shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
-        if (ptr != nullptr) {
-          wrapper0->set(ptr, static_pointer_cast<PointWrapper>(source)->getOption());
-        }
+    else {
+      it = p.find("&source");
+      if (it != p.end()) {
+        source_is_wrapper = true;
+        source = it->second;
       }
     }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, name + " is not existed,check definitions");
+
+    //set operations
+    if (target != nullptr) {
+      auto left = static_pointer_cast<PointWrapper>(target);
+      if (source_is_wrapper && source != nullptr) {
+        auto right = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
+        if (right != nullptr) {
+          left->set(right, static_pointer_cast<PointWrapper>(source)->getOption());
+        }
+      }
+      else if (!source_is_wrapper && source != nullptr) {
+        string temp = CastToString(source);
+        left->manage(temp, kCastString);
+      }
+      else {
+        result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
+      }
+
+      
     }
 
     return result;
@@ -510,6 +525,10 @@ namespace Kagami {
     return result;
   }
 
+
+//plugin init code for Windows/Linux
+#if defined(_WIN32)
+  //Windows Version
   Message LoadPlugin(PathMap &p) {
     using namespace Entry;
     const string name = CastToString(p.at("name"));
@@ -524,7 +543,7 @@ namespace Kagami {
       AddInstance(name, hinstance);
     }
     else {
-      result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found");
+      result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found.");
     }
     return result;
   }
@@ -535,13 +554,44 @@ namespace Kagami {
     UnloadInstance(Kit().GetRawString(CastToString(p.at("name"))));
     return result;
   }
+#else
+  //Linux Version
+#endif
 
 
   //need modify
+  //use point wrapper to store data
+  Message ArrayConstructor(PathMap &p) {
+    Message result;
+    int size = stoi(CastToString(p.at("size")));
+    shared_ptr<void> init_value = nullptr;
+    shared_ptr<void> &cast_path = result.GetCastPath();
+    auto it = p.find("init_value");
+    PointWrapper init_wrapper;
+    bool use_wrapper = false;
+
+    //if (it == p.end()) it = p.find("&init_value");
+
+    //init_wrapper.set(it->second,)
+
+    if (size == 0) {
+      result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
+      cast_path = nullptr;
+    }
+    else {
+      deque<PointWrapper> temp_base;
+
+    }
+
+    return result;
+  }
+
+
   //Message LoadArray(PathMap &p) {
   //  Message result;
   //  const size_t size = stoi(CastToString(p.at("size")));
-  //  shared_ptr<void> init_value = p.at("init_value");
+  //  //TODO:init with a point wrapper?
+  //  //shared_ptr<void> init_value = p.at("init_value");
   //  shared_ptr<void> &cast_path = result.GetCastPath();
   //  size_t count = 0;
   //  
@@ -589,16 +639,10 @@ namespace Kagami {
 
   //  //final
   //  if (target != nullptr) {
-  //    result.combo(k)
+  //    
   //  }
   //  
 
-  //  return result;
-  //}
-
-  //Message GetType(PathMap &p) {
-  //  Message result;
-  //  
   //  return result;
   //}
 
@@ -616,7 +660,7 @@ namespace Kagami {
     Inject("log", EntryProvider("log", WriteLog, 1, kFlagNormalEntry, Build("data")));
     Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
     Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
-    Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("name|source")));
+    Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("target|source")));
     Inject("if", EntryProvider("if", ConditionRoot, 1, kFlagNormalEntry, Build("state")));
     Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
     Inject("else", EntryProvider("else", ConditionLeaf, 0));
