@@ -619,7 +619,7 @@ namespace Kagami {
               ptr = make_shared<Object>(parent->GetVariable(p.at(i)));
             }
             else {
-              ptr = make_shared<Object>(*FindWrapper(p.at(i), true));
+              ptr = make_shared<Object>(*FindObject(p.at(i), true));
             }
           }
         }
@@ -628,7 +628,7 @@ namespace Kagami {
             ptr = make_shared<string>(string(p.at(i)));
           }
           else {
-            ptr = FindWrapper(p.at(i), true)->get();
+            ptr = FindObject(p.at(i), true)->get();
           }
         }
       }
@@ -714,7 +714,7 @@ namespace Kagami {
         return result;
       }
       for (i = 0; i < parameter.size(); i++) {
-        CreateWrapper(parameter.at(i), res.at(i), false);
+        CreateObject(parameter.at(i), res.at(i), false);
       }
     }
 
@@ -833,7 +833,7 @@ namespace Kagami {
     InjectBasicEntries();
     cs.Run();
     Entry::ResetPlugin();
-    Entry::CleanupWrapper();
+    Entry::CleanupObject();
     return result;
   }
 
@@ -881,7 +881,7 @@ namespace Kagami {
       }
     }
     ResetPlugin();
-    CleanupWrapper();
+    CleanupObject();
   }
 }
 
