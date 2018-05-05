@@ -64,8 +64,8 @@ namespace Cast {
   }
 
   void InitDefaultType() {
-    CastMap.insert(CastFunc(kCastString, spToString));
-    CastMap.insert(CastFunc(kCastInt, spToInt));
+    CastMap.insert(CastFunc(kTypeIdString, spToString));
+    CastMap.insert(CastFunc(kTypeIdInt, spToInt));
   }
 }
 
@@ -94,7 +94,7 @@ namespace Entry {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return wrapper;
     }
-    MemoryAdapter.back().CreateByObject(name, str, kCastString, false);
+    MemoryAdapter.back().CreateByObject(name, str, kTypeIdString, false);
     wrapper = MemoryAdapter.back().Find(name);
     return wrapper;
   }
@@ -469,13 +469,11 @@ namespace Kagami {
       }
       else if (!source_is_wrapper && source != nullptr) {
         string temp = CastToString(source);
-        left->manage(temp, kCastString);
+        left->manage(temp, kTypeIdString);
       }
       else {
         result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
       }
-
-      
     }
 
     return result;
@@ -564,53 +562,60 @@ namespace Kagami {
   Message ArrayConstructor(PathMap &p) {
     Message result;
     int size = stoi(CastToString(p.at("size")));
+    int count = 0;
     shared_ptr<void> init_value = nullptr;
     shared_ptr<void> &cast_path = result.GetCastPath();
+    shared_ptr<void> temp_ptr = nullptr;
     auto it = p.find("init_value");
     PointWrapper init_wrapper;
+    string wrapper_option = kTypeIdNull;
     bool use_wrapper = false;
-
-    //if (it == p.end()) it = p.find("&init_value");
-
-    //init_wrapper.set(it->second,)
+    deque<PointWrapper> temp_base;
 
     if (size == 0) {
       result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
-      cast_path = nullptr;
+      return result;
+    }
+
+    if (it == p.end()) {
+      it = p.find("&init_value");
+      if (it != p.end()) {
+        init_value = it->second;
+        use_wrapper = true;
+      }
     }
     else {
-      deque<PointWrapper> temp_base;
-
+      init_value = it->second;
     }
+
+    switch (use_wrapper) {
+    case true:
+      wrapper_option = static_pointer_cast<PointWrapper>(init_value)->getOption();
+      for (count = 0; count < size; count++) {
+        temp_ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(init_value));
+        temp_base.push_back(PointWrapper().set(temp_ptr, wrapper_option));
+      }
+      break;
+    case false:
+      for (count = 0; count < size; count++) {
+        init_wrapper.manage(*static_pointer_cast<string>(init_value), kTypeIdString);
+        temp_base.push_back(init_wrapper);
+      }
+      break;
+    }
+    
+    result.combo(kTypeIdArrayBase, kCodePoint, "__result");
+    cast_path = make_shared<deque<PointWrapper>>(temp_base);
 
     return result;
   }
 
+  Message GetElement(PathMap &p) {
+    using Entry::FindWrapper;
+    Message result;
 
-  //Message LoadArray(PathMap &p) {
-  //  Message result;
-  //  const size_t size = stoi(CastToString(p.at("size")));
-  //  //TODO:init with a point wrapper?
-  //  //shared_ptr<void> init_value = p.at("init_value");
-  //  shared_ptr<void> &cast_path = result.GetCastPath();
-  //  size_t count = 0;
-  //  
-  //  if (size == 0) {
-  //    result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
-  //    cast_path = nullptr;
-  //  }
-  //  else {
-  //    deque<shared_ptr<void>> temp_base;
-  //    for (count = 0; count < size; count++) {
-  //      temp_base.push_back(init_value);
-  //    }
-
-  //    result.combo(kCastDeque, kCodePoint, "__result");
-  //    cast_path = make_shared<PtrDeque>(temp_base);
-  //  }
-
-  //  return result;
-  //}
+    return result;
+  }
 
   ////need modify
   //Message GetElement(PathMap &p) {
@@ -623,7 +628,7 @@ namespace Kagami {
   //  size_t subscript_1 = 0, subscript_2 = 0;
 
   //  //array
-  //  if (wrapper->getOption() == kCastDeque) {
+  //  if (wrapper->getOption() == kTypeIdArrayBase) {
   //    PointDeque ptr = static_pointer_cast<PointDeque>(wrapper->get());
   //    if (ptr != nullptr) {
   //      it = p.find("subscript_1");
@@ -664,7 +669,7 @@ namespace Kagami {
     Inject("if", EntryProvider("if", ConditionRoot, 1, kFlagNormalEntry, Build("state")));
     Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
     Inject("else", EntryProvider("else", ConditionLeaf, 0));
-    //Inject("array", EntryProvider("array", LoadArray, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
+    Inject("array", EntryProvider("array", ArrayConstructor, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
     //Inject("afind", EntryProvider("afind", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
   }
 }
