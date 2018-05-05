@@ -50,10 +50,11 @@ namespace Kagami {
   const string kStrForeach = "foreach";
   const string kStrWhile = "while";
   const string kStrEnd = "end";
-  const string kCastNull = "null";
-  const string kCastInt = "int";
-  const string kCastString = "string";
-  const string kCastDeque = "deque";
+  const string kTypeIdNull = "null";
+  const string kTypeIdInt = "int";
+  const string kTypeIdString = "string";
+  const string kTypeIdArrayBase = "deque";
+  const string kTypeIdRef = "__ref";
 
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternNumber(R"(\d+\.?\d*)");
@@ -140,7 +141,7 @@ namespace Kagami {
     std::shared_ptr<void> ptr;
     string castoption;
   public:
-    PointWrapper() { ptr = nullptr; castoption = kCastNull; }
+    PointWrapper() { ptr = nullptr; castoption = kTypeIdNull; }
     template <class T> PointWrapper &manage(T &t, string castoption) {
       ptr = std::make_shared<T>(t);
       this->castoption = castoption;
@@ -357,6 +358,7 @@ namespace Kagami {
     return *static_pointer_cast<string>(ptr);
   }
 
+  //typedef deque<PointWrapper> PointDeque;
   void InjectBasicEntries();
 }
 

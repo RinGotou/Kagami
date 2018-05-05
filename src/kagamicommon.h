@@ -30,6 +30,7 @@
 #include <cstring>
 #include <memory>
 #include <map>
+#include <deque>
 
 namespace Kagami {
   using std::string;
@@ -49,13 +50,14 @@ namespace Kagami {
   const string kCopyright = "Conpyright(c) 2017-2018";
   const string kStrDefineCmd = "var";
   const string kStrSetCmd = "set";
+  const string kStrNull = "null";
+
   const string kStrEmpty = "";
   const string kStrFatalError = "__FATAL__";
   const string kStrWarning = "__WARNING__";
   const string kStrSuccess = "__SUCCESS__";
   const string kStrEOF = "__EOF__";
   const string kStrPass = "__PASS__";
-  const string kStrNull = "__NULL__";
   const string kStrRedirect = "__*__";
   const string kStrTrue = "true";
   const string kStrFalse = "false";
