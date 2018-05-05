@@ -613,43 +613,40 @@ namespace Kagami {
   Message GetElement(PathMap &p) {
     using Entry::FindWrapper;
     Message result;
+    string name = CastToString(p.at("name"));
+    PointWrapper *target = FindWrapper(name, true), *item = nullptr;
+    string option = kTypeIdNull;
+    size_t subscript_1 = 0, subscript_2 = 0;
+    shared_ptr<void> &cast_path = result.GetCastPath();
+    PathMap::iterator it;
+
+    if (target != nullptr) {
+      option = target->getOption();
+      if (option == kTypeIdArrayBase) {
+        shared_ptr<deque<PointWrapper>> ptr = static_pointer_cast<deque<PointWrapper>>(target->get());
+        if (ptr != nullptr) {
+          it = p.find("subscript_1");
+          if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
+          if (subscript_1 < ptr->size()) {
+            item = &(ptr->at(subscript_1));
+            result.combo(item->getOption(), kCodePoint, "__result");
+            cast_path = item->get();
+          }
+          else {
+            result.combo(kStrFatalError, kCodeOverflow, "Illegal subscript.");
+          }
+        }
+      }
+      else if (option == kTypeIdString) {
+
+      }
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Couldn't find item.");
+    }
 
     return result;
   }
-
-  ////need modify
-  //Message GetElement(PathMap &p) {
-  //  using Entry::FindWrapper;
-  //  Message result;
-  //  string name = CastToString(p.at("name"));
-  //  PointWrapper *wrapper = FindWrapper(name, true);
-  //  shared_ptr<void> target = nullptr;
-  //  PathMap::iterator it;
-  //  size_t subscript_1 = 0, subscript_2 = 0;
-
-  //  //array
-  //  if (wrapper->getOption() == kTypeIdArrayBase) {
-  //    PointDeque ptr = static_pointer_cast<PointDeque>(wrapper->get());
-  //    if (ptr != nullptr) {
-  //      it = p.find("subscript_1");
-  //      if (it->second != nullptr) {
-  //        subscript_1 = stoi(CastToString(it->second));
-  //      }
-  //      if (subscript_1 < ptr->size()) {
-  //        target = ptr->at(subscript_1);
-  //      }
-  //    }
-  //  }
-  //  //others
-
-  //  //final
-  //  if (target != nullptr) {
-  //    
-  //  }
-  //  
-
-  //  return result;
-  //}
 
   void InjectBasicEntries() {
     using namespace Entry;
@@ -670,6 +667,6 @@ namespace Kagami {
     Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
     Inject("else", EntryProvider("else", ConditionLeaf, 0));
     Inject("array", EntryProvider("array", ArrayConstructor, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
-    //Inject("afind", EntryProvider("afind", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
+    Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
   }
 }
