@@ -120,13 +120,13 @@ namespace Kagami {
     };
 
     if (target == kStrNull) result = kTypeNull;
+    else if (target.front() == '"' && target.back() == '"') result = kTypeString;
     else if (match(kPatternFunction)) result = kTypeFunction;
     else if (match(kPatternBoolean)) result = kTypeBoolean;
     else if (match(kPatternInteger)) result = kTypeInteger;
     else if (match(kPatternDouble)) result = KTypeDouble;
     else if (match(kPatternSymbol)) result = kTypeSymbol;
     else if (match(kPatternBlank)) result = kTypeBlank;
-    else if (target.front() == '"' && target.back() == '"') result = kTypeString; //temporary fix for string ploblem
     else result = kTypeNull;
 
     return result;
@@ -427,7 +427,6 @@ namespace Kagami {
         break;
       default:break;
       }
-
     }
 
     if (msg.GetCode() == kCodePoint) {
@@ -448,6 +447,7 @@ namespace Kagami {
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
     string temp_str = kStrEmpty;
+    string temp_symbol = kStrEmpty;
     int unit_type = kTypeNull;
     bool comma_exp_func = false,
       string_token_proc = false, insert_btn_symbols = false,
@@ -493,8 +493,16 @@ namespace Kagami {
           }
           symbol.push_back(raw[i]);
         }
-        else if (raw[i] == ")") {
-          while (symbol.back() != "(" && symbol.empty() != true) {
+        else if (raw[i] == "[") {
+          if (kit.GetDataType(raw.at(i - 1)) == kTypeFunction) {
+            symbol.push_back("afind");
+          }
+        }
+        else if (raw[i] == ")" || raw[i] == "]") {
+          if (raw[i] == ")") temp_symbol = "(";
+          else if (raw[i] == "]") temp_symbol = "[";
+
+          while (symbol.back() != temp_symbol && symbol.empty() != true) {
             if (symbol.back() == ",") {
               container.push_back(item.back());
               item.pop_back();
@@ -505,7 +513,7 @@ namespace Kagami {
             symbol.pop_back();
           }
 
-          if (symbol.back() == "(") symbol.pop_back();
+          if (symbol.back() == temp_symbol) symbol.pop_back();
           while (!container.empty()) {
             item.push_back(container.back());
             container.pop_back();
@@ -583,6 +591,7 @@ namespace Kagami {
 
   Message EntryProvider::StartActivity(deque<string> p, Chainloader *parent) {
     using namespace Entry;
+    const string entry_name = this->GetName();
     Kit kit;
     Message result;
     size_t size = p.size(), i = 0;
@@ -592,10 +601,16 @@ namespace Kagami {
 
     auto Filling = [&](bool number = false) {
       string name = kStrEmpty;
+      
       if (kit.GetDataType(p.at(i)) == kTypeFunction) {
-        if (this->GetName() == kStrDefineCmd || this->GetName() == kStrSetCmd) {
+        if (name == kStrDefineCmd || name == kStrSetCmd) {
           if (ignore_first_arg) {
-            ptr = make_shared<string>(string(p.at(i)));
+            if (name == kStrSetCmd && p.at(i).substr(0, 2) == "__") {
+              ptr == make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
+            }
+            else {
+              ptr = make_shared<string>(string(p.at(i)));
+            }
             ignore_first_arg = false;
           }
           else {

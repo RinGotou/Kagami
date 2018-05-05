@@ -24,6 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "basicutility.h"
+#include "windows.h"
 
 namespace Cast {
   using namespace Kagami;
@@ -63,8 +64,8 @@ namespace Cast {
   }
 
   void InitDefaultType() {
-    CastMap.insert(CastFunc(kCastString, spToString));
-    CastMap.insert(CastFunc(kCastInt, spToInt));
+    CastMap.insert(CastFunc(kTypeIdString, spToString));
+    CastMap.insert(CastFunc(kTypeIdInt, spToInt));
   }
 }
 
@@ -93,7 +94,7 @@ namespace Entry {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return wrapper;
     }
-    MemoryAdapter.back().CreateByObject(name, str, kCastString, false);
+    MemoryAdapter.back().CreateByObject(name, str, kTypeIdString, false);
     wrapper = MemoryAdapter.back().Find(name);
     return wrapper;
   }
@@ -426,41 +427,53 @@ namespace Kagami {
     return result;
   }
 
-  Message SetOperand(PathMap &p) {
-    using namespace Entry;
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    bool usewrapper = false;
-    const string name = CastToString(p.at("name"));
-    shared_ptr<void> source = nullptr;
-    PointWrapper *wrapper0 = FindWrapper(name, true);
-    //PointWrapper wrapper1;
-    PathMap::iterator it = p.find("source");
 
-    if (it == p.end()) {
-      it = p.find("&source");
-      if (it != p.end()) {
-        source = it->second;
-        usewrapper = true;
-      }
+  Message SetOperand(PathMap &p) {
+    using Entry::FindWrapper;
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    bool source_is_wrapper = false;
+    shared_ptr<void> target = nullptr, source = nullptr;
+    PathMap::iterator it;
+
+    //check left parameter
+    it = p.find("target");
+    if (it != p.end()) {
+      target = it->second;
     }
     else {
+      it = p.find("&target");
+      if (it != p.end()) target = it->second;
+    }
+
+    //check right parameter
+    it = p.find("source");
+    if (it != p.end()) {
       source = it->second;
     }
-
-    if (wrapper0 != nullptr) {
-      if (!usewrapper) {
-        string temp = CastToString(source);
-        wrapper0->manage(temp, kCastString);
-      }
-      else {
-        shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
-        if (ptr != nullptr) {
-          wrapper0->set(ptr, static_pointer_cast<PointWrapper>(source)->getOption());
-        }
+    else {
+      it = p.find("&source");
+      if (it != p.end()) {
+        source_is_wrapper = true;
+        source = it->second;
       }
     }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, name + " is not existed,check definitions");
+
+    //set operations
+    if (target != nullptr) {
+      auto left = static_pointer_cast<PointWrapper>(target);
+      if (source_is_wrapper && source != nullptr) {
+        auto right = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
+        if (right != nullptr) {
+          left->set(right, static_pointer_cast<PointWrapper>(source)->getOption());
+        }
+      }
+      else if (!source_is_wrapper && source != nullptr) {
+        string temp = CastToString(source);
+        left->manage(temp, kTypeIdString);
+      }
+      else {
+        result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
+      }
     }
 
     return result;
@@ -510,6 +523,10 @@ namespace Kagami {
     return result;
   }
 
+
+//plugin init code for Windows/Linux
+#if defined(_WIN32)
+  //Windows Version
   Message LoadPlugin(PathMap &p) {
     using namespace Entry;
     const string name = CastToString(p.at("name"));
@@ -524,7 +541,7 @@ namespace Kagami {
       AddInstance(name, hinstance);
     }
     else {
-      result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found");
+      result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found.");
     }
     return result;
   }
@@ -535,34 +552,99 @@ namespace Kagami {
     UnloadInstance(Kit().GetRawString(CastToString(p.at("name"))));
     return result;
   }
+#else
+  //Linux Version
+#endif
 
-  Message LoadArray(PathMap &p) {
+
+  //need modify
+  //use point wrapper to store data
+  Message ArrayConstructor(PathMap &p) {
     Message result;
-    const size_t size = stoi(CastToString(p.at("size")));
-    shared_ptr<void> init_value = p.at("init_value");
+    int size = stoi(CastToString(p.at("size")));
+    int count = 0;
+    shared_ptr<void> init_value = nullptr;
     shared_ptr<void> &cast_path = result.GetCastPath();
-    size_t count = 0;
-    
+    shared_ptr<void> temp_ptr = nullptr;
+    auto it = p.find("init_value");
+    PointWrapper init_wrapper;
+    string wrapper_option = kTypeIdNull;
+    bool use_wrapper = false;
+    deque<PointWrapper> temp_base;
+
     if (size == 0) {
       result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
-      cast_path = nullptr;
+      return result;
+    }
+
+    if (it == p.end()) {
+      it = p.find("&init_value");
+      if (it != p.end()) {
+        init_value = it->second;
+        use_wrapper = true;
+      }
     }
     else {
-      deque<shared_ptr<void>> temp_base;
-      for (count = 0; count < size; count++) {
-        temp_base.push_back(init_value);
-      }
-
-      result.combo(kCastDeque, kCodePoint, "__result");
-      cast_path = make_shared<deque<shared_ptr<void>>>(temp_base);
+      init_value = it->second;
     }
+
+    switch (use_wrapper) {
+    case true:
+      wrapper_option = static_pointer_cast<PointWrapper>(init_value)->getOption();
+      for (count = 0; count < size; count++) {
+        temp_ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(init_value));
+        temp_base.push_back(PointWrapper().set(temp_ptr, wrapper_option));
+      }
+      break;
+    case false:
+      for (count = 0; count < size; count++) {
+        init_wrapper.manage(*static_pointer_cast<string>(init_value), kTypeIdString);
+        temp_base.push_back(init_wrapper);
+      }
+      break;
+    }
+    
+    result.combo(kTypeIdArrayBase, kCodePoint, "__result");
+    cast_path = make_shared<deque<PointWrapper>>(temp_base);
 
     return result;
   }
 
-  Message GetElementInArray(PathMap &p) {
+  Message GetElement(PathMap &p) {
+    using Entry::FindWrapper;
     Message result;
-    
+    string name = CastToString(p.at("name"));
+    PointWrapper *target = FindWrapper(name, true), *item = nullptr;
+    string option = kTypeIdNull;
+    size_t subscript_1 = 0, subscript_2 = 0;
+    shared_ptr<void> &cast_path = result.GetCastPath();
+    PathMap::iterator it;
+
+    if (target != nullptr) {
+      option = target->getOption();
+      if (option == kTypeIdArrayBase) {
+        shared_ptr<deque<PointWrapper>> ptr = static_pointer_cast<deque<PointWrapper>>(target->get());
+        if (ptr != nullptr) {
+          it = p.find("subscript_1");
+          if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
+          if (subscript_1 < ptr->size()) {
+            item = &(ptr->at(subscript_1));
+            result.combo(item->getOption(), kCodePoint, "__result");
+            cast_path = item->get();
+          }
+          else {
+            result.combo(kStrFatalError, kCodeOverflow, "Illegal subscript.");
+          }
+        }
+      }
+      else if (option == kTypeIdString) {
+
+      }
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Couldn't find item.");
+    }
+
     return result;
   }
 
@@ -580,11 +662,11 @@ namespace Kagami {
     Inject("log", EntryProvider("log", WriteLog, 1, kFlagNormalEntry, Build("data")));
     Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
     Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
-    Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("name|source")));
+    Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("target|source")));
     Inject("if", EntryProvider("if", ConditionRoot, 1, kFlagNormalEntry, Build("state")));
     Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
     Inject("else", EntryProvider("else", ConditionLeaf, 0));
-    Inject("array", EntryProvider("array", LoadArray, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
-    Inject("afind", EntryProvider("afind", GetElementInArray, 2, kFlagCoreEntry, Build("name|subscript")));
+    Inject("array", EntryProvider("array", ArrayConstructor, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
+    Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
   }
 }

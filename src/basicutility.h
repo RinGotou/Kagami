@@ -26,7 +26,6 @@
 #pragma once
 #include "parser.h"
 
-
 namespace Entry {
   using std::shared_ptr;
   typedef StrMap *(*Attachment)(void);
