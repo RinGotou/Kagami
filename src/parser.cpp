@@ -431,9 +431,9 @@ namespace Kagami {
 
     if (msg.GetCode() == kCodePoint) {
       item.push_back(msg.GetDetail());
-      PointWrapper wrapper;
+      Object wrapper;
       wrapper.set(msg.GetCastPath(), msg.GetValue());
-      lambdamap.insert(pair<string, PointWrapper>(msg.GetDetail(), wrapper));
+      lambdamap.insert(pair<string, Object>(msg.GetDetail(), wrapper));
     }
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
@@ -606,7 +606,7 @@ namespace Kagami {
         if (name == kStrDefineCmd || name == kStrSetCmd) {
           if (ignore_first_arg) {
             if (name == kStrSetCmd && p.at(i).substr(0, 2) == "__") {
-              ptr == make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
+              ptr == make_shared<Object>(parent->GetVariable(p.at(i)));
             }
             else {
               ptr = make_shared<string>(string(p.at(i)));
@@ -616,10 +616,10 @@ namespace Kagami {
           else {
             name.append("&");
             if (p.at(i).substr(0, 2) == "__") {
-              ptr = make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
+              ptr = make_shared<Object>(parent->GetVariable(p.at(i)));
             }
             else {
-              ptr = make_shared<PointWrapper>(*FindWrapper(p.at(i), true));
+              ptr = make_shared<Object>(*FindWrapper(p.at(i), true));
             }
           }
         }

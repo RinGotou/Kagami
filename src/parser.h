@@ -131,23 +131,23 @@ namespace Kagami {
     vector<string> BuildStringVector(string source);
   };
 
-  /*PointWrapper Class
+  /*Object Class
    A shared void pointer is packaged in this.Almost all varibales and
    constants are managed by shared pointers.This class will be packaged
    in MemoryManager class.
   */
-  class PointWrapper {
+  class Object {
   private:
     std::shared_ptr<void> ptr;
     string castoption;
   public:
-    PointWrapper() { ptr = nullptr; castoption = kTypeIdNull; }
-    template <class T> PointWrapper &manage(T &t, string castoption) {
+    Object() { ptr = nullptr; castoption = kTypeIdNull; }
+    template <class T> Object &manage(T &t, string castoption) {
       ptr = std::make_shared<T>(t);
       this->castoption = castoption;
       return *this;
     }
-    PointWrapper &set(shared_ptr<void> ptr, string castoption) {
+    Object &set(shared_ptr<void> ptr, string castoption) {
       this->ptr = ptr;
       this->castoption = castoption;
       return *this;
@@ -157,12 +157,12 @@ namespace Kagami {
   };
 
   /*MemoryManager Class
-  MemoryManger will be filled with PointWrapper and manage life cycle of variables
+  MemoryManger will be filled with Object and manage life cycle of variables
   and constants.
   */
   class MemoryManager {
   private:
-    typedef map<string, PointWrapper> PointBase;
+    typedef map<string, Object> PointBase;
     PointBase base;
     vector<string> rolist;
 
@@ -180,7 +180,7 @@ namespace Kagami {
   public:
     template <class T> void CreateByObject(string name, T &t, string castoption, bool ro) {
       auto insert = [&]() {
-        base.insert(PointBase::value_type(name, PointWrapper().manage(t, castoption)));
+        base.insert(PointBase::value_type(name, Object().manage(t, castoption)));
         if (ro) rolist.emplace_back(name);
       };
       switch (base.empty()) {
@@ -191,7 +191,7 @@ namespace Kagami {
       }
     }
 
-    void CreateByWrapper(string name, PointWrapper source, bool ro) {
+    void CreateByObject(string name, Object source, bool ro) {
       auto insert = [&]() {
         base.insert(PointBase::value_type(name, source));
         if (ro) rolist.emplace_back(name);
@@ -204,8 +204,8 @@ namespace Kagami {
       }
     }
 
-    PointWrapper *Find(string name) {
-      PointWrapper *wrapper = nullptr;
+    Object *Find(string name) {
+      Object *wrapper = nullptr;
       for (auto &unit : base) {
         if (unit.first == name) {
           wrapper = &(unit.second);
@@ -252,7 +252,7 @@ namespace Kagami {
   class Chainloader {
   private:
     vector<string> raw;
-    map<string, PointWrapper> lambdamap;
+    map<string, Object> lambdamap;
     int GetPriority(string target) const;
     bool StartActivity(EntryProvider &provider, deque<string> container,
       deque<string> &item, size_t top, Message &msg, Chainloader *loader);
@@ -265,9 +265,9 @@ namespace Kagami {
       return *this;
     }
 
-    PointWrapper GetVariable(string name) {
-      PointWrapper result;
-      map<string, PointWrapper>::iterator it = lambdamap.find(name);
+    Object GetVariable(string name) {
+      Object result;
+      map<string, Object>::iterator it = lambdamap.find(name);
       if (it != lambdamap.end()) result = it->second;
       return result;
     }
@@ -358,7 +358,7 @@ namespace Kagami {
     return *static_pointer_cast<string>(ptr);
   }
 
-  //typedef deque<PointWrapper> PointDeque;
+  //typedef deque<Object> PointDeque;
   void InjectBasicEntries();
 }
 
@@ -380,15 +380,15 @@ namespace Entry {
   void Delete(string name);
   void ResetPluginEntry();
   void ResetPlugin(bool OnExit = false);
-  void DisposeWrapper(string name, bool reserved);
-  void CleanupWrapper();
-  PointWrapper *FindWrapper(string name, bool reserved);
+  void DisposeObject(string name, bool reserved);
+  void CleanupObject();
+  Object *FindObject(string name, bool reserved);
   MemoryManager CreateMap();
   bool DisposeMap();
 
   template <class T>
-  PointWrapper *CreateWrapper(string name, T t, string castoption, bool readonly = false) {
-    PointWrapper *wrapper = nullptr;
+  Object *CreateObject(string name, T t, string castoption, bool readonly = false) {
+    Object *wrapper = nullptr;
     if (Kit().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
       return nullptr;
