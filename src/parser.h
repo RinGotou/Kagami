@@ -363,16 +363,14 @@ namespace kagami {
 
   /*stuff of event tracking*/
   namespace trace {
-    using kagami::Message;
-    using std::vector;
+    using log_t = pair<string, Message>;
     void log(kagami::Message msg);
   }
 
   /*stuff of entry storage,plugin instance managing and etc.*/
   namespace entry {
-    //using namespace kagami;
-    typedef map<string, EntryProvider> EntryMap;
-    typedef map<string, EntryProvider>::value_type EntryMapUnit;
+    using EntryMap = map<string, EntryProvider>;
+    using EntryMapUnit = map<string, EntryProvider>::value_type;
     extern vector<ObjectManager> ObjectStack;
 
     void Inject(string name, EntryProvider provider);

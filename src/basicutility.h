@@ -42,6 +42,7 @@ namespace kagami {
     };
 
 #if defined(_WIN32)
+    //Windows Verison
     class Instance : public pair<string, HINSTANCE> {
     private:
       bool health;
@@ -54,7 +55,7 @@ namespace kagami {
       MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
     };
 #else
-
+    //Linux Version
 #endif
   }
 }

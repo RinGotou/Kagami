@@ -24,18 +24,21 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <ctime>
 #include "parser.h"
 
 namespace kagami {
   namespace trace {
-    vector<Message> base;
+    vector<log_t> logger;
 
-    void log(Message msg) {
-      base.push_back(msg);
+    void log(Message msg) { 
+      time_t now = time(0);
+      string nowtime(ctime(&now));
+      logger.push_back(log_t(nowtime, msg));
     }
 
     bool IsEmpty() {
-      return base.empty();
+      return logger.empty();
     }
   }
 
@@ -137,15 +140,16 @@ namespace kagami {
     ofstream ofs("event.log", std::ios::trunc);
     string prioritystr;
     if (ofs.good()) {
-      if (base.empty()) {
+      if (logger.empty()) {
         ofs << "No Events.\n";
       }
       else {
-        for (auto unit : base) {
-          if (unit.GetValue() == kStrFatalError) prioritystr = "Fatal:";
-          else if (unit.GetValue() == kStrWarning) prioritystr = "Warning:";
-          if (unit.GetDetail() != kStrEmpty) {
-            ofs << prioritystr << unit.GetDetail() << "\n";
+        for (log_t unit : logger) {
+          ofs << "[" << unit.first << "]";
+          if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
+          else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
+          if (unit.second.GetDetail() != kStrEmpty) {
+            ofs << prioritystr << unit.second.GetDetail() << "\n";
           }
         }
       }
