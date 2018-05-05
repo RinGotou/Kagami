@@ -621,38 +621,29 @@ namespace Kagami {
 
     if (target != nullptr) {
       option = target->getOption();
+      it = p.find("subscript_1");
+      if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
+      it = p.find("subscript_2");
+      if (it->second != nullptr) subscript_2 = stoi(CastToString(it->second));
+
       if (option == kTypeIdArrayBase) {
         shared_ptr<deque<Object>> ptr = static_pointer_cast<deque<Object>>(target->get());
-        if (ptr != nullptr) {
-          it = p.find("subscript_1");
-          if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
-          if (subscript_1 < ptr->size()) {
-            item = &(ptr->at(subscript_1));
-            result.combo(item->getOption(), kCodePoint, "__result");
-            cast_path = item->get();
-          }
-          else {
-            result.combo(kStrFatalError, kCodeOverflow, "Illegal subscript.");
-          }
+        if (ptr != nullptr && subscript_1 < ptr->size()) {
+          item = &(ptr->at(subscript_1));
+          result.combo(item->getOption(), kCodePoint, "__result");
+          cast_path = item->get();
+        }
+        else {
+          result.combo(kStrFatalError, kCodeOverflow, "Illegal subscript.");
         }
       }
       else if (option == kTypeIdString) {
         shared_ptr<string> ptr = static_pointer_cast<string>(target->get());
+        string data = kStrEmpty;
         switch (Kit().GetDataType(*ptr)) {
         case kTypeString:
-
-          break;
-        case kTypeInteger:
-
-          break;
-        case KTypeDouble:
-
-          break;
-        case kTypeBoolean:
-
-          break;
-        case kTypeFunction:
-
+          data = ptr->substr(1, ptr->size() - 2);
+          result.combo(kStrRedirect, kCodeSuccess, string().append(1, data.at(subscript_1)));
           break;
         default:break;
         }

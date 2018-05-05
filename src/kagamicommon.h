@@ -95,6 +95,7 @@ namespace Kagami {
   const size_t kTypeBoolean = 4;
   const size_t kTypeSymbol = 5;
   const size_t kTypeBlank = 6;
+  const size_t kTypeChar = 7;
   const size_t kTypeNull = 100;
 
   const size_t kModeNormal = 0;
