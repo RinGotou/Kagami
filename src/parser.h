@@ -134,7 +134,7 @@ namespace kagami {
   /*Object Class
    A shared void pointer is packaged in this.Almost all varibales and
    constants are managed by shared pointers.This class will be packaged
-   in MemoryManager class.
+   in ObjectManager class.
   */
   class Object {
   private:
@@ -156,11 +156,11 @@ namespace kagami {
     string getOption() const { return castoption; }
   };
 
-  /*MemoryManager Class
+  /*ObjectManager Class
   MemoryManger will be filled with Object and manage life cycle of variables
   and constants.
   */
-  class MemoryManager {
+  class ObjectManager {
   private:
     typedef map<string, Object> PointBase;
     PointBase base;
@@ -374,7 +374,7 @@ namespace entry {
   using namespace kagami;
   typedef map<string, EntryProvider> EntryMap;
   typedef map<string, EntryProvider>::value_type EntryMapUnit;
-  extern vector<MemoryManager> MemoryAdapter;
+  extern vector<ObjectManager> ObjectStack;
 
   void Inject(string name, EntryProvider provider);
   void Delete(string name);
@@ -383,18 +383,18 @@ namespace entry {
   void DisposeObject(string name, bool reserved);
   void CleanupObject();
   Object *FindObject(string name, bool reserved);
-  MemoryManager CreateMap();
+  ObjectManager CreateMap();
   bool DisposeMap();
 
   template <class T>
   Object *CreateObject(string name, T t, string castoption, bool readonly = false) {
-    Object *wrapper = nullptr;
+    Object *object = nullptr;
     if (Kit().GetDataType(name) != kTypeFunction) {
       trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
       return nullptr;
     }
-    MemoryAdapter.back().CreateByObject(name, t, castoption, false);
-    wrapper = MemoryAdapter.back().Find(name);
-    return wrapper;
+    ObjectStack.back().CreateByObject(name, t, castoption, false);
+    object = ObjectStack.back().Find(name);
+    return object;
   }
 }
