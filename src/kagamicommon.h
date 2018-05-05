@@ -47,7 +47,7 @@ namespace kagami {
 #endif
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
-  const string kCopyright = "Conpyright(c) 2017-2018";
+  const string kCopyright = "Copyright(c) 2017-2018";
   const string kStrDefineCmd = "var";
   const string kStrSetCmd = "__set";
   const string kStrNull = "null";
