@@ -70,18 +70,18 @@ namespace type {
 }
 
 namespace entry {
-  vector<MemoryManager> MemoryAdapter;
+  vector<ObjectManager> ObjectStack;
   vector<Instance> InstanceList;
 
   Object *FindObject(string name, bool reserved = false) {
     Object *object = nullptr;
-    size_t i = MemoryAdapter.size();
-    if ((MemoryAdapter.size() == 1 || !reserved) && !MemoryAdapter.empty()) {
-      object = MemoryAdapter.back().Find(name);
+    size_t i = ObjectStack.size();
+    if ((ObjectStack.size() == 1 || !reserved) && !ObjectStack.empty()) {
+      object = ObjectStack.back().Find(name);
     }
-    else if (MemoryAdapter.size() > 1 && reserved) {
+    else if (ObjectStack.size() > 1 && reserved) {
       while (i > 0 && object->get() == nullptr) {
-        object = MemoryAdapter.at(i - 1).Find(name);
+        object = ObjectStack.at(i - 1).Find(name);
         i--;
       }
     }
@@ -94,8 +94,8 @@ namespace entry {
       trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return object;
     }
-    MemoryAdapter.back().CreateByObject(name, str, kTypeIdString, false);
-    object = MemoryAdapter.back().Find(name);
+    ObjectStack.back().CreateByObject(name, str, kTypeIdString, false);
+    object = ObjectStack.back().Find(name);
     return object;
   }
 
@@ -107,41 +107,41 @@ namespace entry {
       return object;
     }
     temp.set(ptr, castoption);
-    MemoryAdapter.back().CreateByObject(name, temp, false);
-    object = MemoryAdapter.back().Find(name);
+    ObjectStack.back().CreateByObject(name, temp, false);
+    object = ObjectStack.back().Find(name);
     return object;
   }
 
   void DisposeObject(string name, bool reserved) {
     bool result = false;
-    size_t i = MemoryAdapter.size();
-    if (MemoryAdapter.size() == 1 || !reserved) {
-      MemoryAdapter.back().dispose(name);
+    size_t i = ObjectStack.size();
+    if (ObjectStack.size() == 1 || !reserved) {
+      ObjectStack.back().dispose(name);
     }
-    else if (MemoryAdapter.size() > 1 && reserved) {
+    else if (ObjectStack.size() > 1 && reserved) {
       while (result != true && i > 0) {
-        MemoryAdapter.at(i - 1).dispose(name);
+        ObjectStack.at(i - 1).dispose(name);
         i--;
       }
     }
   }
   
   void CleanupObject() {
-    while (!MemoryAdapter.empty()) {
-      MemoryAdapter.pop_back();
+    while (!ObjectStack.empty()) {
+      ObjectStack.pop_back();
     }
   }
 
-  MemoryManager CreateMap() {
-    MemoryAdapter.push_back(MemoryManager());
-    return MemoryAdapter.back();
+  ObjectManager CreateMap() {
+    ObjectStack.push_back(ObjectManager());
+    return ObjectStack.back();
   }
 
   bool DisposeMap() {
-    if (!MemoryAdapter.empty()) {
-      MemoryAdapter.pop_back();
+    if (!ObjectStack.empty()) {
+      ObjectStack.pop_back();
     }
-    return MemoryAdapter.empty();
+    return ObjectStack.empty();
   }
 
   bool Instance::Load(string name, HINSTANCE h) {
