@@ -28,8 +28,6 @@
 
 namespace kagami {
   namespace type {
-    using namespace kagami;
-
     map<string, CastTo> ObjectTypeMap;
     map<string, CastToExt> ObjectTypeMapExt;
 
