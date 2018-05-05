@@ -50,15 +50,15 @@ namespace Cast {
     return result;
   }
 
-  shared_ptr<void> CastToNewPtr(PointWrapper &wrapper) {
+  shared_ptr<void> CastToNewPtr(Object &object) {
     shared_ptr<void> result = nullptr;
-    map<string, CastTo>::iterator it = CastMap.find(wrapper.getOption());
-    map<string, CastToEx>::iterator it_ex = CastMapEx.find(wrapper.getOption());
+    map<string, CastTo>::iterator it = CastMap.find(object.getOption());
+    map<string, CastToEx>::iterator it_ex = CastMapEx.find(object.getOption());
     if (it != CastMap.end()) {
-      result = it->second(wrapper.get());
+      result = it->second(object.get());
     }
     else if (it_ex != CastMapEx.end()) {
-      result = ExternProcessing(wrapper.get(), it_ex->second);
+      result = ExternProcessing(object.get(), it_ex->second);
     }
     return result;
   }
@@ -73,46 +73,46 @@ namespace Entry {
   vector<MemoryManager> MemoryAdapter;
   vector<Instance> InstanceList;
 
-  PointWrapper *FindWrapper(string name, bool reserved = false) {
-    PointWrapper *wrapper = nullptr;
+  Object *FindObject(string name, bool reserved = false) {
+    Object *object = nullptr;
     size_t i = MemoryAdapter.size();
     if ((MemoryAdapter.size() == 1 || !reserved) && !MemoryAdapter.empty()) {
-      wrapper = MemoryAdapter.back().Find(name);
+      object = MemoryAdapter.back().Find(name);
     }
     else if (MemoryAdapter.size() > 1 && reserved) {
-      while (i > 0 && wrapper->get() == nullptr) {
-        wrapper = MemoryAdapter.at(i - 1).Find(name);
+      while (i > 0 && object->get() == nullptr) {
+        object = MemoryAdapter.at(i - 1).Find(name);
         i--;
       }
     }
-    return wrapper;
+    return object;
   }
 
-  PointWrapper *CreateWrapperByString(string name, string str, bool readonly = false) {
-    PointWrapper *wrapper = nullptr;
+  Object *CreateObjectByString(string name, string str, bool readonly = false) {
+    Object *object = nullptr;
     if (Kit().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
-      return wrapper;
+      return object;
     }
     MemoryAdapter.back().CreateByObject(name, str, kTypeIdString, false);
-    wrapper = MemoryAdapter.back().Find(name);
-    return wrapper;
+    object = MemoryAdapter.back().Find(name);
+    return object;
   }
 
-  PointWrapper *CreateWrapperByPointer(string name, shared_ptr<void> ptr, string castoption) {
-    PointWrapper *wrapper = nullptr;
-    PointWrapper temp;
+  Object *CreateObjectByPointer(string name, shared_ptr<void> ptr, string castoption) {
+    Object *object = nullptr;
+    Object temp;
     if (Kit().GetDataType(name) != kTypeFunction) {
       Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
-      return wrapper;
+      return object;
     }
     temp.set(ptr, castoption);
-    MemoryAdapter.back().CreateByWrapper(name, temp, false);
-    wrapper = MemoryAdapter.back().Find(name);
-    return wrapper;
+    MemoryAdapter.back().CreateByObject(name, temp, false);
+    object = MemoryAdapter.back().Find(name);
+    return object;
   }
 
-  void DisposeWrapper(string name, bool reserved) {
+  void DisposeObject(string name, bool reserved) {
     bool result = false;
     size_t i = MemoryAdapter.size();
     if (MemoryAdapter.size() == 1 || !reserved) {
@@ -126,7 +126,7 @@ namespace Entry {
     }
   }
   
-  void CleanupWrapper() {
+  void CleanupObject() {
     while (!MemoryAdapter.empty()) {
       MemoryAdapter.pop_back();
     }
@@ -277,7 +277,7 @@ namespace Kagami {
   Message BinaryOperands(PathMap &p) {
     using namespace Entry;
     Kit kit;
-    PointWrapper wrapper;
+    Object object;
     string *opercode = nullptr;
     enum { EnumDouble, EnumInt, EnumStr, EnumNull }type = EnumNull;
     Message result(kStrRedirect,kCodeSuccess,"0");
@@ -416,10 +416,10 @@ namespace Kagami {
   //  Message result(kStrRedirect, kCodeSuccess, kStrEmpty);
   //  const string name = CastToString(p.at("name"));
   //  const string reserved = CastToString(p.at("reserved"));
-  //  PointWrapper *wrapper = FindWrapper(name, reserved == kStrTrue);
-  //  if (wrapper != nullptr) {
-  //    result.combo(wrapper->getOption(), kCodePoint, "__" + CastToString(p.at("name")));
-  //    result.GetCastPath() = wrapper->get();
+  //  Object *object = FindObject(name, reserved == kStrTrue);
+  //  if (object != nullptr) {
+  //    result.combo(object->getOption(), kCodePoint, "__" + CastToString(p.at("name")));
+  //    result.GetCastPath() = object->get();
   //  }
   //  else {
   //    result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + name + " is not found");
@@ -428,9 +428,9 @@ namespace Kagami {
   //}
 
   Message SetOperand(PathMap &p) {
-    using Entry::FindWrapper;
+    using Entry::FindObject;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    bool source_is_wrapper = false;
+    bool source_is_object = false;
     shared_ptr<void> target = nullptr, source = nullptr;
     PathMap::iterator it;
 
@@ -452,21 +452,21 @@ namespace Kagami {
     else {
       it = p.find("&source");
       if (it != p.end()) {
-        source_is_wrapper = true;
+        source_is_object = true;
         source = it->second;
       }
     }
 
     //set operations
     if (target != nullptr) {
-      auto left = static_pointer_cast<PointWrapper>(target);
-      if (source_is_wrapper && source != nullptr) {
-        auto right = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
+      auto left = static_pointer_cast<Object>(target);
+      if (source_is_object && source != nullptr) {
+        auto right = Cast::CastToNewPtr(*static_pointer_cast<Object>(source));
         if (right != nullptr) {
-          left->set(right, static_pointer_cast<PointWrapper>(source)->getOption());
+          left->set(right, static_pointer_cast<Object>(source)->getOption());
         }
       }
-      else if (!source_is_wrapper && source != nullptr) {
+      else if (!source_is_object && source != nullptr) {
         string temp = CastToString(source);
         left->manage(temp, kTypeIdString);
       }
@@ -481,37 +481,37 @@ namespace Kagami {
   Message CreateOperand(PathMap &p) {
     using namespace Entry;
     Message result;
-    bool usewrapper = false;
+    bool useobject = false;
     const string name = CastToString(p.at("name"));
     shared_ptr<void> source;
-    PointWrapper *wrapper = FindWrapper(name);
+    Object *object = FindObject(name);
     PathMap::iterator it = p.find("source");
 
     if (it == p.end()) {
       it = p.find("&source");
       if (it != p.end()) {
         source = it->second;
-        usewrapper = true;
+        useobject = true;
       }
     }
     else {
       source = it->second;
     }
 
-    if (wrapper == nullptr) {
-      if (usewrapper) {
-        shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(source));
+    if (object == nullptr) {
+      if (useobject) {
+        shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<Object>(source));
         if (ptr != nullptr) {
-          wrapper = CreateWrapperByPointer(name, ptr, static_pointer_cast<PointWrapper>(source)->getOption());
-          if (wrapper == nullptr) {
+          object = CreateObjectByPointer(name, ptr, static_pointer_cast<Object>(source)->getOption());
+          if (object == nullptr) {
             result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
           }
         }
       }
       else {
         string temp = CastToString(source);
-        wrapper = CreateWrapperByString(name, temp);
-        if (wrapper == nullptr) {
+        object = CreateObjectByString(name, temp);
+        if (object == nullptr) {
           result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
         }
       }
@@ -557,7 +557,7 @@ namespace Kagami {
 
 
   //need modify
-  //use point wrapper to store data
+  //use point object to store data
   Message ArrayConstructor(PathMap &p) {
     Message result;
     int size = stoi(CastToString(p.at("size")));
@@ -566,10 +566,10 @@ namespace Kagami {
     shared_ptr<void> &cast_path = result.GetCastPath();
     shared_ptr<void> temp_ptr = nullptr;
     auto it = p.find("init_value");
-    PointWrapper init_wrapper;
-    string wrapper_option = kTypeIdNull;
-    bool use_wrapper = false;
-    deque<PointWrapper> temp_base;
+    Object init_object;
+    string object_option = kTypeIdNull;
+    bool use_object = false;
+    deque<Object> temp_base;
 
     if (size == 0) {
       result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
@@ -580,40 +580,40 @@ namespace Kagami {
       it = p.find("&init_value");
       if (it != p.end()) {
         init_value = it->second;
-        use_wrapper = true;
+        use_object = true;
       }
     }
     else {
       init_value = it->second;
     }
 
-    switch (use_wrapper) {
+    switch (use_object) {
     case true:
-      wrapper_option = static_pointer_cast<PointWrapper>(init_value)->getOption();
+      object_option = static_pointer_cast<Object>(init_value)->getOption();
       for (count = 0; count < size; count++) {
-        temp_ptr = Cast::CastToNewPtr(*static_pointer_cast<PointWrapper>(init_value));
-        temp_base.push_back(PointWrapper().set(temp_ptr, wrapper_option));
+        temp_ptr = Cast::CastToNewPtr(*static_pointer_cast<Object>(init_value));
+        temp_base.push_back(Object().set(temp_ptr, object_option));
       }
       break;
     case false:
       for (count = 0; count < size; count++) {
-        init_wrapper.manage(*static_pointer_cast<string>(init_value), kTypeIdString);
-        temp_base.push_back(init_wrapper);
+        init_object.manage(*static_pointer_cast<string>(init_value), kTypeIdString);
+        temp_base.push_back(init_object);
       }
       break;
     }
     
     result.combo(kTypeIdArrayBase, kCodePoint, "__result");
-    cast_path = make_shared<deque<PointWrapper>>(temp_base);
+    cast_path = make_shared<deque<Object>>(temp_base);
 
     return result;
   }
 
   Message GetElement(PathMap &p) {
-    using Entry::FindWrapper;
+    using Entry::FindObject;
     Message result;
     string name = CastToString(p.at("name"));
-    PointWrapper *target = FindWrapper(name, true), *item = nullptr;
+    Object *target = FindObject(name, true), *item = nullptr;
     string option = kTypeIdNull;
     size_t subscript_1 = 0, subscript_2 = 0;
     shared_ptr<void> &cast_path = result.GetCastPath();
@@ -622,7 +622,7 @@ namespace Kagami {
     if (target != nullptr) {
       option = target->getOption();
       if (option == kTypeIdArrayBase) {
-        shared_ptr<deque<PointWrapper>> ptr = static_pointer_cast<deque<PointWrapper>>(target->get());
+        shared_ptr<deque<Object>> ptr = static_pointer_cast<deque<Object>>(target->get());
         if (ptr != nullptr) {
           it = p.find("subscript_1");
           if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
