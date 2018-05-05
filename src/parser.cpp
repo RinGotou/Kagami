@@ -70,7 +70,7 @@ namespace Entry {
       result = Order("binexp");
     }
     else if (target == "=") {
-      result = Order("set");
+      result = Order(kStrSetCmd);
     }
     else {
       EntryMap::iterator it = EntryMapBase.find(target);
