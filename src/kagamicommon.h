@@ -32,7 +32,7 @@
 #include <map>
 #include <deque>
 
-namespace Kagami {
+namespace kagami {
   using std::string;
   using std::pair;
   using std::vector;
@@ -43,7 +43,7 @@ namespace Kagami {
 #if defined(_WIN32)
   const string kEngineVersion = "version 0.3 (Windows Platform)";
 #else
-  const string kEngineVersion = "version 0.3 (UNIX-like Platform)";
+  const string kEngineVersion = "version 0.3 (Linux Platform)";
 #endif
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
