@@ -637,7 +637,25 @@ namespace Kagami {
         }
       }
       else if (option == kTypeIdString) {
+        shared_ptr<string> ptr = static_pointer_cast<string>(target->get());
+        switch (Kit().GetDataType(*ptr)) {
+        case kTypeString:
 
+          break;
+        case kTypeInteger:
+
+          break;
+        case KTypeDouble:
+
+          break;
+        case kTypeBoolean:
+
+          break;
+        case kTypeFunction:
+
+          break;
+        default:break;
+        }
       }
     }
     else {
