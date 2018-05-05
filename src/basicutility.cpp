@@ -411,22 +411,21 @@ namespace Kagami {
     return result;
   }
 
-  Message FindOperand(PathMap &p) {
-    using namespace Entry;
-    Message result(kStrRedirect, kCodeSuccess, kStrEmpty);
-    const string name = CastToString(p.at("name"));
-    const string reserved = CastToString(p.at("reserved"));
-    PointWrapper *wrapper = FindWrapper(name, reserved == kStrTrue);
-    if (wrapper != nullptr) {
-      result.combo(wrapper->getOption(), kCodePoint, "__" + CastToString(p.at("name")));
-      result.GetCastPath() = wrapper->get();
-    }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + name + " is not found");
-    }
-    return result;
-  }
-
+  //Message FindOperand(PathMap &p) {
+  //  using namespace Entry;
+  //  Message result(kStrRedirect, kCodeSuccess, kStrEmpty);
+  //  const string name = CastToString(p.at("name"));
+  //  const string reserved = CastToString(p.at("reserved"));
+  //  PointWrapper *wrapper = FindWrapper(name, reserved == kStrTrue);
+  //  if (wrapper != nullptr) {
+  //    result.combo(wrapper->getOption(), kCodePoint, "__" + CastToString(p.at("name")));
+  //    result.GetCastPath() = wrapper->get();
+  //  }
+  //  else {
+  //    result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + name + " is not found");
+  //  }
+  //  return result;
+  //}
 
   Message SetOperand(PathMap &p) {
     using Entry::FindWrapper;
@@ -657,7 +656,7 @@ namespace Kagami {
     Inject("commaexp", EntryProvider("commaexp", CommaExp, kFlagAutoSize));
     Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateOperand, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
     Inject("while", EntryProvider("while", WhileCycle, 1, kFlagNormalEntry, Build("state")));
-    Inject("vfind", EntryProvider("vfind", FindOperand, 2, kFlagCoreEntry, Build("name|reserved")));
+    //Inject("__find_variable", EntryProvider("__find_variable", FindOperand, 2, kFlagCoreEntry, Build("name|reserved")));
     Inject("binexp", EntryProvider("binexp", BinaryOperands, 3, kFlagBinEntry, Build("first|second|operator")));
     Inject("log", EntryProvider("log", WriteLog, 1, kFlagNormalEntry, Build("data")));
     Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
