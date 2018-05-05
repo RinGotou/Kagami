@@ -26,231 +26,230 @@
 #include "basicutility.h"
 #include "windows.h"
 
-namespace type {
-  using namespace kagami;
-
-  map<string, CastTo> CastMap;
-  map<string, CastToEx> CastMapEx;
-
-  shared_ptr<void> spToString(shared_ptr<void> ptr) {
-    string temp(*static_pointer_cast<string>(ptr));
-    return make_shared<string>(temp);
-  }
-
-  shared_ptr<void> spToInt(shared_ptr<void> ptr) {
-    int temp = *static_pointer_cast<int>(ptr);
-    return make_shared<int>(temp);
-  }
-
-  shared_ptr<void> ExternProcessing(shared_ptr<void> ptr, CastToEx castTo) {
-    shared_ptr<void> result = nullptr;
-    if (ptr != nullptr && castTo != nullptr) {
-      result.reset(castTo(ptr));
-    }
-    return result;
-  }
-
-  shared_ptr<void> CastToNewPtr(Object &object) {
-    shared_ptr<void> result = nullptr;
-    map<string, CastTo>::iterator it = CastMap.find(object.getOption());
-    map<string, CastToEx>::iterator it_ex = CastMapEx.find(object.getOption());
-    if (it != CastMap.end()) {
-      result = it->second(object.get());
-    }
-    else if (it_ex != CastMapEx.end()) {
-      result = ExternProcessing(object.get(), it_ex->second);
-    }
-    return result;
-  }
-
-  void InitDefaultType() {
-    CastMap.insert(CastFunc(kTypeIdString, spToString));
-    CastMap.insert(CastFunc(kTypeIdInt, spToInt));
-  }
-}
-
-namespace entry {
-  vector<ObjectManager> ObjectStack;
-  vector<Instance> InstanceList;
-
-  Object *FindObject(string name, bool reserved = false) {
-    Object *object = nullptr;
-    size_t i = ObjectStack.size();
-    if ((ObjectStack.size() == 1 || !reserved) && !ObjectStack.empty()) {
-      object = ObjectStack.back().Find(name);
-    }
-    else if (ObjectStack.size() > 1 && reserved) {
-      while (i > 0 && object->get() == nullptr) {
-        object = ObjectStack.at(i - 1).Find(name);
-        i--;
-      }
-    }
-    return object;
-  }
-
-  Object *CreateObjectByString(string name, string str, bool readonly = false) {
-    Object *object = nullptr;
-    if (Kit().GetDataType(name) != kTypeFunction) {
-      trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
-      return object;
-    }
-    ObjectStack.back().CreateByObject(name, str, kTypeIdString, false);
-    object = ObjectStack.back().Find(name);
-    return object;
-  }
-
-  Object *CreateObjectByPointer(string name, shared_ptr<void> ptr, string castoption) {
-    Object *object = nullptr;
-    Object temp;
-    if (Kit().GetDataType(name) != kTypeFunction) {
-      trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
-      return object;
-    }
-    temp.set(ptr, castoption);
-    ObjectStack.back().CreateByObject(name, temp, false);
-    object = ObjectStack.back().Find(name);
-    return object;
-  }
-
-  void DisposeObject(string name, bool reserved) {
-    bool result = false;
-    size_t i = ObjectStack.size();
-    if (ObjectStack.size() == 1 || !reserved) {
-      ObjectStack.back().dispose(name);
-    }
-    else if (ObjectStack.size() > 1 && reserved) {
-      while (result != true && i > 0) {
-        ObjectStack.at(i - 1).dispose(name);
-        i--;
-      }
-    }
-  }
-  
-  void CleanupObject() {
-    while (!ObjectStack.empty()) {
-      ObjectStack.pop_back();
-    }
-  }
-
-  ObjectManager CreateMap() {
-    ObjectStack.push_back(ObjectManager());
-    return ObjectStack.back();
-  }
-
-  bool DisposeMap() {
-    if (!ObjectStack.empty()) {
-      ObjectStack.pop_back();
-    }
-    return ObjectStack.empty();
-  }
-
-  bool Instance::Load(string name, HINSTANCE h) {
-    Attachment attachment = nullptr;
-    StrMap *targetmap = nullptr;
-    this->first = name;
-    this->second = h;
-
-    attachment = (Attachment)GetProcAddress(this->second, "Attachment");
-    if (attachment != nullptr) {
-      targetmap = attachment();
-      link_map = StrMap(*targetmap);
-      delete(targetmap);
-      health = true;
-    }
-    else {
-      health = false;
-    }
-
-    return health;
-  }
-
-  //from MSDN
-  std::wstring s2ws(const std::string& s) {
-    int len;
-    int slength = (int)s.length() + 1;
-    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-    wchar_t *buf = new wchar_t[len];
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-    std::wstring r(buf);
-    delete[] buf;
-    return r;
-  }
-
-  void AddInstance(string name, HINSTANCE h) {
-    PluginActivity activity = nullptr;
-    CastAttachment c_attachment = nullptr;
-    map<string, CastToEx> *castmap = nullptr;
-    MemoryDeleter deleter = nullptr;
-
-    InstanceList.push_back(Instance());
-    InstanceList.back().Load(name, h);
-
-    if (InstanceList.back().GetHealth()) {
-      HINSTANCE &ins = InstanceList.back().second;
-      StrMap map = InstanceList.back().GetMap();
-      deleter = InstanceList.back().getDeleter();
-
-      for (auto unit : map) {
-        activity = (PluginActivity)GetProcAddress(ins, unit.first.c_str());
-        if (activity != nullptr) {
-          Inject(unit.first, EntryProvider(unit.first, activity, Kit().BuildStringVector(unit.second), deleter));
-        }
-      }
-      c_attachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
-      if (c_attachment != nullptr) {
-        castmap = c_attachment();
-        for (auto unit : *castmap) {
-          type::CastMapEx.insert(unit);
-        }
-      }
-    }
-    deleter(c_attachment);
-  }
-
-  void UnloadInstance(string name) {
-    Attachment attachment = nullptr;
-    HINSTANCE *hinstance = nullptr;
-    StrMap map;
-
-    vector<Instance>::iterator instance_i = InstanceList.begin();
-    while (instance_i != InstanceList.end()) {
-      if (instance_i->first == name) break;
-      instance_i++;
-    }
-    if (instance_i == InstanceList.end() && instance_i->first != name) {
-      trace::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
-      return;
-    }
-
-    if (instance_i->GetHealth() == true) {
-      hinstance = &(instance_i->second);
-      map = instance_i->GetMap();
-      for (auto unit : map) {
-        Delete(unit.first);
-      }
-    }
-    FreeLibrary(*hinstance);
-    InstanceList.erase(instance_i);
-  }
-
-  void ResetPlugin(bool OnExit) {
-    HINSTANCE *hinstance = nullptr;
-    while (InstanceList.empty() != true) {
-      if (InstanceList.back().GetHealth()) {
-        hinstance = &(InstanceList.back().second);
-        FreeLibrary(*hinstance);
-      }
-      InstanceList.pop_back();
-    }
-    if (!OnExit) ResetPluginEntry();
-  }
-}
-
 namespace kagami {
+  namespace type {
+    using namespace kagami;
+
+    map<string, CastTo> ObjectTypeMap;
+    map<string, CastToExt> ObjectTypeMapExt;
+
+    shared_ptr<void> spToString(shared_ptr<void> ptr) {
+      string temp(*static_pointer_cast<string>(ptr));
+      return make_shared<string>(temp);
+    }
+
+    shared_ptr<void> spToInt(shared_ptr<void> ptr) {
+      int temp = *static_pointer_cast<int>(ptr);
+      return make_shared<int>(temp);
+    }
+
+    shared_ptr<void> ExternProcessing(shared_ptr<void> ptr, CastToExt castTo) {
+      shared_ptr<void> result = nullptr;
+      if (ptr != nullptr && castTo != nullptr) {
+        result.reset(castTo(ptr));
+      }
+      return result;
+    }
+
+    shared_ptr<void> CastToNewPtr(Object &object) {
+      shared_ptr<void> result = nullptr;
+      map<string, CastTo>::iterator it = ObjectTypeMap.find(object.getOption());
+      map<string, CastToExt>::iterator it_ex = ObjectTypeMapExt.find(object.getOption());
+      if (it != ObjectTypeMap.end()) {
+        result = it->second(object.get());
+      }
+      else if (it_ex != ObjectTypeMapExt.end()) {
+        result = ExternProcessing(object.get(), it_ex->second);
+      }
+      return result;
+    }
+
+    void InitDefaultType() {
+      ObjectTypeMap.insert(CastFunc(kTypeIdString, spToString));
+      ObjectTypeMap.insert(CastFunc(kTypeIdInt, spToInt));
+    }
+  }
+
+  namespace entry {
+    vector<ObjectManager> ObjectStack;
+    vector<Instance> InstanceList;
+
+    Object *FindObject(string name, bool reserved = false) {
+      Object *object = nullptr;
+      size_t i = ObjectStack.size();
+      if ((ObjectStack.size() == 1 || !reserved) && !ObjectStack.empty()) {
+        object = ObjectStack.back().Find(name);
+      }
+      else if (ObjectStack.size() > 1 && reserved) {
+        while (i > 0 && object->get() == nullptr) {
+          object = ObjectStack.at(i - 1).Find(name);
+          i--;
+        }
+      }
+      return object;
+    }
+
+    Object *CreateObjectByString(string name, string str, bool readonly = false) {
+      Object *object = nullptr;
+      if (Kit().GetDataType(name) != kTypeFunction) {
+        trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
+        return object;
+      }
+      ObjectStack.back().CreateByObject(name, str, kTypeIdString, false);
+      object = ObjectStack.back().Find(name);
+      return object;
+    }
+
+    Object *CreateObjectByPointer(string name, shared_ptr<void> ptr, string castoption) {
+      Object *object = nullptr;
+      Object temp;
+      if (Kit().GetDataType(name) != kTypeFunction) {
+        trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
+        return object;
+      }
+      temp.set(ptr, castoption);
+      ObjectStack.back().CreateByObject(name, temp, false);
+      object = ObjectStack.back().Find(name);
+      return object;
+    }
+
+    void DisposeObject(string name, bool reserved) {
+      bool result = false;
+      size_t i = ObjectStack.size();
+      if (ObjectStack.size() == 1 || !reserved) {
+        ObjectStack.back().dispose(name);
+      }
+      else if (ObjectStack.size() > 1 && reserved) {
+        while (result != true && i > 0) {
+          ObjectStack.at(i - 1).dispose(name);
+          i--;
+        }
+      }
+    }
+
+    void CleanupObject() {
+      while (!ObjectStack.empty()) {
+        ObjectStack.pop_back();
+      }
+    }
+
+    ObjectManager CreateMap() {
+      ObjectStack.push_back(ObjectManager());
+      return ObjectStack.back();
+    }
+
+    bool DisposeMap() {
+      if (!ObjectStack.empty()) {
+        ObjectStack.pop_back();
+      }
+      return ObjectStack.empty();
+    }
+
+    bool Instance::Load(string name, HINSTANCE h) {
+      Attachment attachment = nullptr;
+      StrMap *targetmap = nullptr;
+      this->first = name;
+      this->second = h;
+
+      attachment = (Attachment)GetProcAddress(this->second, "Attachment");
+      if (attachment != nullptr) {
+        targetmap = attachment();
+        link_map = StrMap(*targetmap);
+        delete(targetmap);
+        health = true;
+      }
+      else {
+        health = false;
+      }
+
+      return health;
+    }
+
+    //from MSDN
+    std::wstring s2ws(const std::string& s) {
+      int len;
+      int slength = (int)s.length() + 1;
+      len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+      wchar_t *buf = new wchar_t[len];
+      MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+      std::wstring r(buf);
+      delete[] buf;
+      return r;
+    }
+
+    void AddInstance(string name, HINSTANCE h) {
+      PluginActivity activity = nullptr;
+      CastAttachment c_attachment = nullptr;
+      map<string, CastToExt> *castmap = nullptr;
+      MemoryDeleter deleter = nullptr;
+
+      InstanceList.push_back(Instance());
+      InstanceList.back().Load(name, h);
+
+      if (InstanceList.back().GetHealth()) {
+        HINSTANCE &ins = InstanceList.back().second;
+        StrMap map = InstanceList.back().GetMap();
+        deleter = InstanceList.back().getDeleter();
+
+        for (auto unit : map) {
+          activity = (PluginActivity)GetProcAddress(ins, unit.first.c_str());
+          if (activity != nullptr) {
+            Inject(unit.first, EntryProvider(unit.first, activity, Kit().BuildStringVector(unit.second), deleter));
+          }
+        }
+        c_attachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
+        if (c_attachment != nullptr) {
+          castmap = c_attachment();
+          for (auto unit : *castmap) {
+            type::ObjectTypeMapExt.insert(unit);
+          }
+        }
+      }
+      deleter(c_attachment);
+    }
+
+    void UnloadInstance(string name) {
+      Attachment attachment = nullptr;
+      HINSTANCE *hinstance = nullptr;
+      StrMap map;
+
+      vector<Instance>::iterator instance_i = InstanceList.begin();
+      while (instance_i != InstanceList.end()) {
+        if (instance_i->first == name) break;
+        instance_i++;
+      }
+      if (instance_i == InstanceList.end() && instance_i->first != name) {
+        trace::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
+        return;
+      }
+
+      if (instance_i->GetHealth() == true) {
+        hinstance = &(instance_i->second);
+        map = instance_i->GetMap();
+        for (auto unit : map) {
+          Delete(unit.first);
+        }
+      }
+      FreeLibrary(*hinstance);
+      InstanceList.erase(instance_i);
+    }
+
+    void ResetPlugin(bool OnExit) {
+      HINSTANCE *hinstance = nullptr;
+      while (InstanceList.empty() != true) {
+        if (InstanceList.back().GetHealth()) {
+          hinstance = &(InstanceList.back().second);
+          FreeLibrary(*hinstance);
+        }
+        InstanceList.pop_back();
+      }
+      if (!OnExit) ResetPluginEntry();
+    }
+  }
+
   Message WriteLog(PathMap &p) {
     Message result;
     string r = CastToString(p.at("data"));
-    //string r = *static_pointer_cast<string>(p.at("data"));
     ofstream ofs("script.log", std::ios::out | std::ios::app);
 
     if (r.at(0) == '"' && r.back() == '"') {
@@ -529,9 +528,6 @@ namespace kagami {
   //Linux Version
 #endif
 
-
-  //need modify
-  //use point object to store data
   Message ArrayConstructor(PathMap &p) {
     Message result;
     int size = stoi(CastToString(p.at("size")));
@@ -582,6 +578,20 @@ namespace kagami {
 
     return result;
   }
+
+  Message CharConstructor(PathMap &p) {
+    Message result;
+
+    return result;
+  }
+
+  Message FileStreamConstructor(PathMap &p) {
+    Message result;
+
+    return result;
+  }
+
+  
 
   Message GetElement(PathMap &p) {
     using entry::FindObject;

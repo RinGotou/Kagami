@@ -26,92 +26,92 @@
 #include <iostream>
 #include "parser.h"
 
-namespace trace {
-  vector<Message> base;
+namespace kagami {
+  namespace trace {
+    vector<Message> base;
 
-  void log(Message msg) {
-    base.push_back(msg);
-  }
-
-  bool IsEmpty() {
-    return base.empty();
-  }
-}
-
-namespace entry {
-  EntryMap EntryMapBase;
-
-  void Inject(string name, EntryProvider provider) {
-    EntryMapBase.insert(EntryMapUnit(name, provider));
-  }
-
-  Message FindAndExec(string name, deque<string> res) {
-    Message result(kStrFatalError, kCodeIllegalCall, "entry is not found.");
-    EntryMap::iterator it = EntryMapBase.find(name);
-    if (it != EntryMapBase.end()) {
-      result = it->second.StartActivity(res, nullptr);
+    void log(Message msg) {
+      base.push_back(msg);
     }
-    return result;
+
+    bool IsEmpty() {
+      return base.empty();
+    }
   }
 
-  EntryProvider Order(string name) {
-    EntryProvider result;
-    EntryMap::iterator it = EntryMapBase.find(name);
-    if (it != EntryMapBase.end()) {
-      result = it->second;
-    }
-    return result;
-  }
+  namespace entry {
+    EntryMap EntryMapBase;
 
-  EntryProvider Find(string target) {
-    EntryProvider result;
-    if (target == "+" || target == "-" || target == "*" || target == "/"
-      || target == "==" || target == "<=" || target == ">=" || target == "!=") {
-      result = Order("binexp");
+    void Inject(string name, EntryProvider provider) {
+      EntryMapBase.insert(EntryMapUnit(name, provider));
     }
-    else if (target == "=") {
-      result = Order(kStrSetCmd);
+
+    Message FindAndExec(string name, deque<string> res) {
+      Message result(kStrFatalError, kCodeIllegalCall, "entry is not found.");
+      EntryMap::iterator it = EntryMapBase.find(name);
+      if (it != EntryMapBase.end()) {
+        result = it->second.StartActivity(res, nullptr);
+      }
+      return result;
     }
-    else {
-      EntryMap::iterator it = EntryMapBase.find(target);
+
+    EntryProvider Order(string name) {
+      EntryProvider result;
+      EntryMap::iterator it = EntryMapBase.find(name);
       if (it != EntryMapBase.end()) {
         result = it->second;
       }
+      return result;
     }
-    return result;
+
+    EntryProvider Find(string target) {
+      EntryProvider result;
+      if (target == "+" || target == "-" || target == "*" || target == "/"
+        || target == "==" || target == "<=" || target == ">=" || target == "!=") {
+        result = Order("binexp");
+      }
+      else if (target == "=") {
+        result = Order(kStrSetCmd);
+      }
+      else {
+        EntryMap::iterator it = EntryMapBase.find(target);
+        if (it != EntryMapBase.end()) {
+          result = it->second;
+        }
+      }
+      return result;
+    }
+
+    int GetRequiredCount(string target) {
+      if (target == "+" || target == "-" || target == "*" || target == "/"
+        || target == "==" || target == "<=" || target == ">=" || target == "!=") {
+        return Order("binexp").GetRequiredCount() - 1;
+      }
+      EntryMap::iterator it = EntryMapBase.find(target);
+      if (it != EntryMapBase.end()) {
+        return it->second.GetRequiredCount();
+      }
+      return kFlagNotDefined;
+    }
+
+    void Delete(string name) {
+      EntryMap::iterator it = EntryMapBase.find(name);
+      if (it != EntryMapBase.end()) {
+        EntryMapBase.erase(it);
+      }
+    }
+
+    void ResetPluginEntry() {
+      EntryMap tempbase;
+      for (auto unit : EntryMapBase) {
+        if (unit.second.GetPriority() != kFlagPluginEntry) tempbase.insert(unit);
+      }
+      EntryMapBase.swap(tempbase);
+      tempbase.clear();
+      EntryMap().swap(tempbase);
+    }
   }
 
-  int GetRequiredCount(string target) {
-    if (target == "+" || target == "-" || target == "*" || target == "/"
-      || target == "==" || target == "<=" || target == ">=" || target == "!=") {
-      return Order("binexp").GetRequiredCount() - 1;
-    }
-    EntryMap::iterator it = EntryMapBase.find(target);
-    if (it != EntryMapBase.end()) {
-      return it->second.GetRequiredCount();
-    }
-    return kFlagNotDefined;
-  }
-
-  void Delete(string name) {
-    EntryMap::iterator it = EntryMapBase.find(name);
-    if (it != EntryMapBase.end()) {
-      EntryMapBase.erase(it);
-    }
-  }
-
-  void ResetPluginEntry() {
-    EntryMap tempbase;
-    for (auto unit : EntryMapBase) {
-      if (unit.second.GetPriority() != kFlagPluginEntry) tempbase.insert(unit);
-    }
-    EntryMapBase.swap(tempbase);
-    tempbase.clear();
-    EntryMap().swap(tempbase);
-  }
-}
-
-namespace kagami {
   int Kit::GetDataType(string target) {
     using std::regex_match;
     int result = kTypeNull;
