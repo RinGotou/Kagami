@@ -26,37 +26,38 @@
 #pragma once
 #include "parser.h"
 
-namespace entry {
-  using std::shared_ptr;
-  typedef StrMap *(*Attachment)(void);
-  std::wstring s2ws(const std::string& s);
+namespace kagami {
+  namespace entry {
+    using std::shared_ptr;
+    typedef StrMap *(*Attachment)(void);
+    std::wstring s2ws(const std::string& s);
 
-  struct ObjectType {
-    string name;
-    string methods;
-    vector<string> GetMethodList() const {
-      return Kit().BuildStringVector(methods);
-    }
-    ObjectType(string name, string methods) {
-      this->name = name;
-      this->methods = methods;
-    }
-  };
+    class Methods {
+    private:
+      vector<string> vec;
+    public:
+      Methods(string target) { vec = Kit().BuildStringVector(target); }
+      Methods &Set(string target) { vec = Kit().BuildStringVector(target); return *this; }
+      vector<string> Get() const { return vec; }
+    };
 
 #if defined(_WIN32)
-  class Instance : public pair<string, HINSTANCE> {
-  private:
-    bool health;
-    StrMap link_map;
-  public:
-    Instance() { health = false; }
-    bool Load(string name, HINSTANCE h);
-    bool GetHealth() const { return health; }
-    StrMap GetMap() const { return link_map; }
-    MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
-  };
+    class Instance : public pair<string, HINSTANCE> {
+    private:
+      bool health;
+      StrMap link_map;
+    public:
+      Instance() { health = false; }
+      bool Load(string name, HINSTANCE h);
+      bool GetHealth() const { return health; }
+      StrMap GetMap() const { return link_map; }
+      MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
+    };
 #else
 
 #endif
+  }
 }
+
+
 

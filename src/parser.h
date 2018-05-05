@@ -360,41 +360,43 @@ namespace kagami {
 
   //typedef deque<Object> PointDeque;
   void Activiate();
-}
 
-/*stuff of event tracking*/
-namespace trace {
-  using kagami::Message;
-  using std::vector;
-  void log(kagami::Message msg);
-}
+  /*stuff of event tracking*/
+  namespace trace {
+    using kagami::Message;
+    using std::vector;
+    void log(kagami::Message msg);
+  }
 
-/*stuff of entry storage,plugin instance managing and etc.*/
-namespace entry {
-  using namespace kagami;
-  typedef map<string, EntryProvider> EntryMap;
-  typedef map<string, EntryProvider>::value_type EntryMapUnit;
-  extern vector<ObjectManager> ObjectStack;
+  /*stuff of entry storage,plugin instance managing and etc.*/
+  namespace entry {
+    //using namespace kagami;
+    typedef map<string, EntryProvider> EntryMap;
+    typedef map<string, EntryProvider>::value_type EntryMapUnit;
+    extern vector<ObjectManager> ObjectStack;
 
-  void Inject(string name, EntryProvider provider);
-  void Delete(string name);
-  void ResetPluginEntry();
-  void ResetPlugin(bool OnExit = false);
-  void DisposeObject(string name, bool reserved);
-  void CleanupObject();
-  Object *FindObject(string name, bool reserved);
-  ObjectManager CreateMap();
-  bool DisposeMap();
+    void Inject(string name, EntryProvider provider);
+    void Delete(string name);
+    void ResetPluginEntry();
+    void ResetPlugin(bool OnExit = false);
+    void DisposeObject(string name, bool reserved);
+    void CleanupObject();
+    Object *FindObject(string name, bool reserved);
+    ObjectManager CreateMap();
+    bool DisposeMap();
 
-  template <class T>
-  Object *CreateObject(string name, T t, string castoption, bool readonly = false) {
-    Object *object = nullptr;
-    if (Kit().GetDataType(name) != kTypeFunction) {
-      trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
-      return nullptr;
+    template <class T>
+    Object *CreateObject(string name, T t, string castoption, bool readonly = false) {
+      Object *object = nullptr;
+      if (Kit().GetDataType(name) != kTypeFunction) {
+        trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
+        return nullptr;
+      }
+      ObjectStack.back().CreateByObject(name, t, castoption, false);
+      object = ObjectStack.back().Find(name);
+      return object;
     }
-    ObjectStack.back().CreateByObject(name, t, castoption, false);
-    object = ObjectStack.back().Find(name);
-    return object;
   }
 }
+
+

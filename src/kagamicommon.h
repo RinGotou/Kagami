@@ -160,9 +160,9 @@ namespace kagami {
   typedef map<string, string> StrMap;
   typedef shared_ptr<void>(*CastTo)(shared_ptr<void>);
   typedef pair<string, CastTo> CastFunc;
-  typedef void *(*CastToEx)(shared_ptr<void> &);
+  typedef void *(*CastToExt)(shared_ptr<void> &);
   typedef Message(*Activity)(PathMap &);
   typedef Message *(*PluginActivity)(PathMap &);
-  typedef map<string, CastToEx> *(*CastAttachment)();
+  typedef map<string, CastToExt> *(*CastAttachment)();
   typedef void(*MemoryDeleter)(void *);
 }
