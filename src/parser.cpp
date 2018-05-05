@@ -26,7 +26,7 @@
 #include <iostream>
 #include "parser.h"
 
-namespace Tracking {
+namespace trace {
   vector<Message> base;
 
   void log(Message msg) {
@@ -38,7 +38,7 @@ namespace Tracking {
   }
 }
 
-namespace Entry {
+namespace entry {
   EntryMap EntryMapBase;
 
   void Inject(string name, EntryProvider provider) {
@@ -46,7 +46,7 @@ namespace Entry {
   }
 
   Message FindAndExec(string name, deque<string> res) {
-    Message result(kStrFatalError, kCodeIllegalCall, "Entry is not found.");
+    Message result(kStrFatalError, kCodeIllegalCall, "entry is not found.");
     EntryMap::iterator it = EntryMapBase.find(name);
     if (it != EntryMapBase.end()) {
       result = it->second.StartActivity(res, nullptr);
@@ -111,7 +111,7 @@ namespace Entry {
   }
 }
 
-namespace Kagami {
+namespace kagami {
   int Kit::GetDataType(string target) {
     using std::regex_match;
     int result = kTypeNull;
@@ -133,7 +133,7 @@ namespace Kagami {
   }
 
   void Kit::PrintEvents() {
-    using namespace Tracking;
+    using namespace trace;
     ofstream ofs("event.log", std::ios::trunc);
     string prioritystr;
     if (ofs.good()) {
@@ -154,7 +154,7 @@ namespace Kagami {
   }
 
   ScriptProvider::ScriptProvider(const char *target) {
-    using Tracking::log;
+    using trace::log;
     string temp;
     current = 0;
     end = false;
@@ -210,11 +210,11 @@ namespace Kagami {
       temp = provider.StartActivity(container, loader);
       code = temp.GetCode();
       value = temp.GetValue();
-      if (code < kCodeSuccess) Tracking::log(temp);
+      if (code < kCodeSuccess) trace::log(temp);
       msg = temp;
     }
     else {
-      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found."));
+      trace::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found."));
       return_state = false;
     }
 
@@ -222,7 +222,7 @@ namespace Kagami {
   }
 
   Chainloader &Chainloader::Build(string target) {
-    using Tracking::log;
+    using trace::log;
     Kit kit;
     vector<string> output;
     char bin_oper = NULL;
@@ -372,7 +372,7 @@ namespace Kagami {
 
   bool Chainloader::ShuntingYardProcessing(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
     Message &msg, size_t mode) {
-    using namespace Entry;
+    using namespace entry;
     EntryProvider provider = Find(symbol.back());
     bool result = false, reversed = true;
     int count = provider.GetRequiredCount();
@@ -443,7 +443,7 @@ namespace Kagami {
   }
 
   Message Chainloader::Start(size_t mode = kModeNormal) {
-    using namespace Entry;
+    using namespace entry;
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
     string temp_str = kStrEmpty;
@@ -488,14 +488,11 @@ namespace Kagami {
           }
         }
         else if (raw[i] == "(") {
-          if (symbol.empty() || kit.GetDataType(symbol.back()) == kTypeSymbol) {
-            symbol.push_back("commaexp");
-          }
           symbol.push_back(raw[i]);
         }
         else if (raw[i] == "[") {
           if (kit.GetDataType(raw.at(i - 1)) == kTypeFunction) {
-            symbol.push_back("afind");
+            symbol.push_back("__get_element");
           }
         }
         else if (raw[i] == ")" || raw[i] == "]") {
@@ -530,8 +527,8 @@ namespace Kagami {
             j = symbol.size() - 1;
             k = item.size();
             while (symbol.at(j) != "(" && GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
-              if (k = item.size()) { k -= Entry::GetRequiredCount(symbol.at(j)); }
-              else { k -= Entry::GetRequiredCount(symbol.at(j)) - 1; }
+              if (k = item.size()) { k -= entry::GetRequiredCount(symbol.at(j)); }
+              else { k -= entry::GetRequiredCount(symbol.at(j)) - 1; }
               --j;
             }
             symbol.insert(symbol.begin() + j + 1, raw[i]);
@@ -590,7 +587,7 @@ namespace Kagami {
   }
 
   Message EntryProvider::StartActivity(deque<string> p, Chainloader *parent) {
-    using namespace Entry;
+    using namespace entry;
     const string entry_name = this->GetName();
     Kit kit;
     Message result;
@@ -671,7 +668,7 @@ namespace Kagami {
       }
       else {
         switch (requiredcount) {
-        case kFlagNotDefined:result.combo(kStrFatalError, kCodeBrokenEntry, string("Illegal Entry - ").append(this->name)); break;
+        case kFlagNotDefined:result.combo(kStrFatalError, kCodeBrokenEntry, string("Illegal entry - ").append(this->name)); break;
         default:result.combo(kStrFatalError, kCodeIllegalArgs, string("Parameter count doesn't match - ").append(this->name)); break;
         }
       }
@@ -696,7 +693,7 @@ namespace Kagami {
   }
 
   Message ChainStorage::Run(deque<string> res = deque<string>()) {
-    using namespace Entry;
+    using namespace entry;
     Message result;
     size_t i = 0;
     size_t size = 0;
@@ -827,13 +824,13 @@ namespace Kagami {
     ChainStorage cs(sp);
 
     if (target == kStrEmpty) {
-      Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
+      trace::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
       return result;
     }
-    InjectBasicEntries();
+    Activiate();
     cs.Run();
-    Entry::ResetPlugin();
-    Entry::CleanupObject();
+    entry::ResetPlugin();
+    entry::CleanupObject();
     return result;
   }
 
@@ -856,7 +853,7 @@ namespace Kagami {
   }
 
   void Kit::Terminal() {
-    using namespace Entry;
+    using namespace entry;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Chainloader loader;
@@ -865,7 +862,7 @@ namespace Kagami {
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
     CreateMap();
-    InjectBasicEntries();
+    Activiate();
     Inject("version", EntryProvider("version", VersionInfo, 0));
     Inject("quit", EntryProvider("quit", Quit, 0));
     Inject("print", EntryProvider("print", PrintOnScreen, 1, kFlagNormalEntry, Build("msg")));

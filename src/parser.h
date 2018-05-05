@@ -26,7 +26,7 @@
 #pragma once
 #include "includes.h"
 
-namespace Kagami {
+namespace kagami {
   using std::ifstream;
   using std::ofstream;
   using std::vector;
@@ -309,7 +309,7 @@ namespace Kagami {
   
   /*EntryProvider Class
   contains function pointer.Processed argument tokens are used for building
-  new argument map.Entry provider have two mode:internal function and plugin
+  new argument map.entry provider have two mode:internal function and plugin
   function.
   */
   class EntryProvider {
@@ -359,19 +359,19 @@ namespace Kagami {
   }
 
   //typedef deque<Object> PointDeque;
-  void InjectBasicEntries();
+  void Activiate();
 }
 
 /*stuff of event tracking*/
-namespace Tracking {
-  using Kagami::Message;
+namespace trace {
+  using kagami::Message;
   using std::vector;
-  void log(Kagami::Message msg);
+  void log(kagami::Message msg);
 }
 
 /*stuff of entry storage,plugin instance managing and etc.*/
-namespace Entry {
-  using namespace Kagami;
+namespace entry {
+  using namespace kagami;
   typedef map<string, EntryProvider> EntryMap;
   typedef map<string, EntryProvider>::value_type EntryMapUnit;
   extern vector<MemoryManager> MemoryAdapter;
@@ -390,7 +390,7 @@ namespace Entry {
   Object *CreateObject(string name, T t, string castoption, bool readonly = false) {
     Object *wrapper = nullptr;
     if (Kit().GetDataType(name) != kTypeFunction) {
-      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
+      trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
       return nullptr;
     }
     MemoryAdapter.back().CreateByObject(name, t, castoption, false);

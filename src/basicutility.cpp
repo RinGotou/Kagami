@@ -26,8 +26,8 @@
 #include "basicutility.h"
 #include "windows.h"
 
-namespace Cast {
-  using namespace Kagami;
+namespace type {
+  using namespace kagami;
 
   map<string, CastTo> CastMap;
   map<string, CastToEx> CastMapEx;
@@ -69,7 +69,7 @@ namespace Cast {
   }
 }
 
-namespace Entry {
+namespace entry {
   vector<MemoryManager> MemoryAdapter;
   vector<Instance> InstanceList;
 
@@ -91,7 +91,7 @@ namespace Entry {
   Object *CreateObjectByString(string name, string str, bool readonly = false) {
     Object *object = nullptr;
     if (Kit().GetDataType(name) != kTypeFunction) {
-      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
+      trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return object;
     }
     MemoryAdapter.back().CreateByObject(name, str, kTypeIdString, false);
@@ -103,7 +103,7 @@ namespace Entry {
     Object *object = nullptr;
     Object temp;
     if (Kit().GetDataType(name) != kTypeFunction) {
-      Tracking::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
+      trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
       return object;
     }
     temp.set(ptr, castoption);
@@ -200,7 +200,7 @@ namespace Entry {
       if (c_attachment != nullptr) {
         castmap = c_attachment();
         for (auto unit : *castmap) {
-          Cast::CastMapEx.insert(unit);
+          type::CastMapEx.insert(unit);
         }
       }
     }
@@ -218,7 +218,7 @@ namespace Entry {
       instance_i++;
     }
     if (instance_i == InstanceList.end() && instance_i->first != name) {
-      Tracking::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
+      trace::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
       return;
     }
 
@@ -246,17 +246,7 @@ namespace Entry {
   }
 }
 
-namespace Kagami {
-  Message CommaExp(PathMap &p) {
-    Message result;
-    string res = CastToString(p.at(to_string(p.size() - 1)));
-    switch (p.empty()) {
-    case true:result.SetCode(kCodeRedirect).SetValue(kStrEmpty); break;
-    case false:result.SetCode(kCodeRedirect).SetValue(res); break;
-    }
-    return result;
-  }
-
+namespace kagami {
   Message WriteLog(PathMap &p) {
     Message result;
     string r = CastToString(p.at("data"));
@@ -275,7 +265,7 @@ namespace Kagami {
   }
 
   Message BinaryOperands(PathMap &p) {
-    using namespace Entry;
+    using namespace entry;
     Kit kit;
     Object object;
     string *opercode = nullptr;
@@ -411,24 +401,8 @@ namespace Kagami {
     return result;
   }
 
-  //Message FindOperand(PathMap &p) {
-  //  using namespace Entry;
-  //  Message result(kStrRedirect, kCodeSuccess, kStrEmpty);
-  //  const string name = CastToString(p.at("name"));
-  //  const string reserved = CastToString(p.at("reserved"));
-  //  Object *object = FindObject(name, reserved == kStrTrue);
-  //  if (object != nullptr) {
-  //    result.combo(object->getOption(), kCodePoint, "__" + CastToString(p.at("name")));
-  //    result.GetCastPath() = object->get();
-  //  }
-  //  else {
-  //    result.combo(kStrFatalError, kCodeIllegalCall, "Varibale " + name + " is not found");
-  //  }
-  //  return result;
-  //}
-
   Message SetOperand(PathMap &p) {
-    using Entry::FindObject;
+    using entry::FindObject;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     bool source_is_object = false;
     shared_ptr<void> target = nullptr, source = nullptr;
@@ -461,7 +435,7 @@ namespace Kagami {
     if (target != nullptr) {
       auto left = static_pointer_cast<Object>(target);
       if (source_is_object && source != nullptr) {
-        auto right = Cast::CastToNewPtr(*static_pointer_cast<Object>(source));
+        auto right = type::CastToNewPtr(*static_pointer_cast<Object>(source));
         if (right != nullptr) {
           left->set(right, static_pointer_cast<Object>(source)->getOption());
         }
@@ -479,7 +453,7 @@ namespace Kagami {
   }
 
   Message CreateOperand(PathMap &p) {
-    using namespace Entry;
+    using namespace entry;
     Message result;
     bool useobject = false;
     const string name = CastToString(p.at("name"));
@@ -500,7 +474,7 @@ namespace Kagami {
 
     if (object == nullptr) {
       if (useobject) {
-        shared_ptr<void> ptr = Cast::CastToNewPtr(*static_pointer_cast<Object>(source));
+        shared_ptr<void> ptr = type::CastToNewPtr(*static_pointer_cast<Object>(source));
         if (ptr != nullptr) {
           object = CreateObjectByPointer(name, ptr, static_pointer_cast<Object>(source)->getOption());
           if (object == nullptr) {
@@ -527,7 +501,7 @@ namespace Kagami {
 #if defined(_WIN32)
   //Windows Version
   Message LoadPlugin(PathMap &p) {
-    using namespace Entry;
+    using namespace entry;
     const string name = CastToString(p.at("name"));
     const string path = CastToString(p.at("path"));
     Message result;
@@ -546,7 +520,7 @@ namespace Kagami {
   }
 
   Message UnloadPlugin(PathMap &p) {
-    using namespace Entry;
+    using namespace entry;
     Message result;
     UnloadInstance(Kit().GetRawString(CastToString(p.at("name"))));
     return result;
@@ -591,7 +565,7 @@ namespace Kagami {
     case true:
       object_option = static_pointer_cast<Object>(init_value)->getOption();
       for (count = 0; count < size; count++) {
-        temp_ptr = Cast::CastToNewPtr(*static_pointer_cast<Object>(init_value));
+        temp_ptr = type::CastToNewPtr(*static_pointer_cast<Object>(init_value));
         temp_base.push_back(Object().set(temp_ptr, object_option));
       }
       break;
@@ -610,7 +584,7 @@ namespace Kagami {
   }
 
   Message GetElement(PathMap &p) {
-    using Entry::FindObject;
+    using entry::FindObject;
     Message result;
     string name = CastToString(p.at("name"));
     Object *target = FindObject(name, true), *item = nullptr;
@@ -656,16 +630,18 @@ namespace Kagami {
     return result;
   }
 
-  void InjectBasicEntries() {
-    using namespace Entry;
+  /*
+  Init all basic objects and entries
+  Just do not edit unless you want to change processor's basic behaviors.
+  */
+  void Activiate() {
+    using namespace entry;
     Kit kit;
     auto Build = [&](string target) { return kit.BuildStringVector(target); };
 
     Inject("end", EntryProvider("end", TailSign, 0));
-    Inject("commaexp", EntryProvider("commaexp", CommaExp, kFlagAutoSize));
     Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateOperand, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
     Inject("while", EntryProvider("while", WhileCycle, 1, kFlagNormalEntry, Build("state")));
-    //Inject("__find_variable", EntryProvider("__find_variable", FindOperand, 2, kFlagCoreEntry, Build("name|reserved")));
     Inject("binexp", EntryProvider("binexp", BinaryOperands, 3, kFlagBinEntry, Build("first|second|operator")));
     Inject("log", EntryProvider("log", WriteLog, 1, kFlagNormalEntry, Build("data")));
     Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
