@@ -32,3 +32,4 @@
 *.app
 .vscode/c_cpp_properties.json
 /vsproject/Kagami/.vs/Kagami/v15
+/vsproject/Kagami/Debug
