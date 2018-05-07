@@ -33,5 +33,6 @@
 #include "kagamicommon.h"
 #if defined(_WIN32)
 #include "windows.h"
+#else
 #endif
 
