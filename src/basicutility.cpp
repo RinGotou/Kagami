@@ -25,8 +25,11 @@
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "basicutility.h"
 #include "windows.h"
+#define _ENABLE_TYPE_SYSTEM_
 
 namespace kagami {
+  //TODO:new type system
+#ifdef _ENABLE_TYPE_SYSTEM_
   namespace type {
     map<string, CastTo> ObjectTypeMap;
     map<string, CastToExt> ObjectTypeMapExt;
@@ -63,10 +66,15 @@ namespace kagami {
     }
 
     void InitDefaultType() {
-      ObjectTypeMap.insert(CastFunc(kTypeIdString, spToString));
+      ObjectTypeMap.insert(CastFunc(kTypeIdRawString, spToString));
       ObjectTypeMap.insert(CastFunc(kTypeIdInt, spToInt));
     }
   }
+#else
+  namespace type {
+
+  }
+#endif
 
   namespace entry {
     vector<ObjectManager> ObjectStack;
@@ -93,7 +101,7 @@ namespace kagami {
         trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
         return object;
       }
-      ObjectStack.back().CreateByObject(name, str, kTypeIdString, false);
+      ObjectStack.back().CreateByObject(name, str, kTypeIdRawString, false);
       object = ObjectStack.back().Find(name);
       return object;
     }
@@ -439,7 +447,7 @@ namespace kagami {
       }
       else if (!source_is_object && source != nullptr) {
         string temp = CastToString(source);
-        left->manage(temp, kTypeIdString);
+        left->manage(temp, kTypeIdRawString);
       }
       else {
         result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
@@ -565,7 +573,7 @@ namespace kagami {
       break;
     case false:
       for (count = 0; count < size; count++) {
-        init_object.manage(*static_pointer_cast<string>(init_value), kTypeIdString);
+        init_object.manage(*static_pointer_cast<string>(init_value), kTypeIdRawString);
         temp_base.push_back(init_object);
       }
       break;
@@ -619,7 +627,7 @@ namespace kagami {
           result.combo(kStrFatalError, kCodeOverflow, "Illegal subscript.");
         }
       }
-      else if (option == kTypeIdString) {
+      else if (option == kTypeIdRawString) {
         shared_ptr<string> ptr = static_pointer_cast<string>(target->get());
         string data = kStrEmpty;
         switch (Kit().GetDataType(*ptr)) {

@@ -52,7 +52,7 @@ namespace kagami {
   const string kStrEnd = "end";
   const string kTypeIdNull = "null";
   const string kTypeIdInt = "int";
-  const string kTypeIdString = "string";
+  const string kTypeIdRawString = "string";
   const string kTypeIdArrayBase = "deque";
   const string kTypeIdRef = "__ref";
 
@@ -66,6 +66,15 @@ namespace kagami {
 
   class EntryProvider;
   class Chainloader;
+
+  /*Object Tag Struct
+  no description yet.
+  */
+  struct AttrTag {
+    string parent_container;
+    string methods;
+    bool ro;
+  };
 
   /*Kit Class
    this class contains many useful template or tiny function, and
@@ -140,11 +149,13 @@ namespace kagami {
   private:
     std::shared_ptr<void> ptr;
     string castoption;
+    string tag;
   public:
     Object() { ptr = nullptr; castoption = kTypeIdNull; }
-    template <class T> Object &manage(T &t, string castoption) {
+    template <class T> Object &manage(T &t, string castoption, string tag = kStrEmpty) {
       ptr = std::make_shared<T>(t);
       this->castoption = castoption;
+      this->tag = tag;
       return *this;
     }
     Object &set(shared_ptr<void> ptr, string castoption) {

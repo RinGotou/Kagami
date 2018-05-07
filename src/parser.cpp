@@ -33,8 +33,14 @@ namespace kagami {
 
     void log(Message msg) { 
       time_t now = time(0);
+#if defined(_WIN32)
+      char nowtime[30] = { ' ' };
+      ctime_s(nowtime, sizeof(nowtime), &now);
+      logger.push_back(log_t(string(nowtime), msg));
+#else
       string nowtime(ctime(&now));
       logger.push_back(log_t(nowtime, msg));
+#endif
     }
 
     bool IsEmpty() {
@@ -275,6 +281,7 @@ namespace kagami {
       case '-':
       case '*':
       case '/':
+      case '.':
         if (string_processing) {
           current.append(1, target[i]);
         }
@@ -522,6 +529,9 @@ namespace kagami {
           //Start point 2
           if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, mode)) break;
           symbol.pop_back();
+        }
+        else if (raw[i] == ".") {
+          //TODO:
         }
         else {
           if (symbol.empty()) {
