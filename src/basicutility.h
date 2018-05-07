@@ -26,21 +26,39 @@
 #pragma once
 #include "parser.h"
 
-namespace Entry {
-  using std::shared_ptr;
-  typedef StrMap *(*Attachment)(void);
-  std::wstring s2ws(const std::string& s);
+namespace kagami {
+  namespace entry {
+    using std::shared_ptr;
+    typedef StrMap *(*Attachment)(void);
+    std::wstring s2ws(const std::string& s);
 
-  class Instance : public pair<string, HINSTANCE> {
-  private:
-    bool health;
-    StrMap link_map;
-  public:
-    Instance() { health = false; }
-    bool Load(string name, HINSTANCE h);
-    bool GetHealth() const { return health; }
-    StrMap GetMap() const { return link_map; }
-    MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
-  };
+    class Methods {
+    private:
+      vector<string> vec;
+    public:
+      Methods(string target) { vec = Kit().BuildStringVector(target); }
+      Methods &Set(string target) { vec = Kit().BuildStringVector(target); return *this; }
+      vector<string> Get() const { return vec; }
+    };
+
+#if defined(_WIN32)
+    //Windows Verison
+    class Instance : public pair<string, HINSTANCE> {
+    private:
+      bool health;
+      StrMap link_map;
+    public:
+      Instance() { health = false; }
+      bool Load(string name, HINSTANCE h);
+      bool GetHealth() const { return health; }
+      StrMap GetMap() const { return link_map; }
+      MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
+    };
+#else
+    //Linux Version
+#endif
+  }
 }
+
+
 

@@ -32,7 +32,7 @@
 #include <map>
 #include <deque>
 
-namespace Kagami {
+namespace kagami {
   using std::string;
   using std::pair;
   using std::vector;
@@ -43,13 +43,13 @@ namespace Kagami {
 #if defined(_WIN32)
   const string kEngineVersion = "version 0.3 (Windows Platform)";
 #else
-  const string kEngineVersion = "version 0.3 (UNIX-like Platform)";
+  const string kEngineVersion = "version 0.3 (Linux Platform)";
 #endif
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
-  const string kCopyright = "Conpyright(c) 2017-2018";
+  const string kCopyright = "Copyright(c) 2017-2018";
   const string kStrDefineCmd = "var";
-  const string kStrSetCmd = "set";
+  const string kStrSetCmd = "__set";
   const string kStrNull = "null";
 
   const string kStrEmpty = "";
@@ -95,6 +95,7 @@ namespace Kagami {
   const size_t kTypeBoolean = 4;
   const size_t kTypeSymbol = 5;
   const size_t kTypeBlank = 6;
+  const size_t kTypeChar = 7;
   const size_t kTypeNull = 100;
 
   const size_t kModeNormal = 0;
@@ -106,7 +107,7 @@ namespace Kagami {
     It's the basic message tunnel of this script processor.
     According to my design,processor will check value or detail or
     both of them to find out warnings or errors.Some function use 
-    value,detail and castpath to deliver PointWrapper class.
+    value,detail and castpath to deliver Object class.
   */
   class Message {
   private:
@@ -159,9 +160,9 @@ namespace Kagami {
   typedef map<string, string> StrMap;
   typedef shared_ptr<void>(*CastTo)(shared_ptr<void>);
   typedef pair<string, CastTo> CastFunc;
-  typedef void *(*CastToEx)(shared_ptr<void> &);
+  typedef void *(*CastToExt)(shared_ptr<void> &);
   typedef Message(*Activity)(PathMap &);
   typedef Message *(*PluginActivity)(PathMap &);
-  typedef map<string, CastToEx> *(*CastAttachment)();
+  typedef map<string, CastToExt> *(*CastAttachment)();
   typedef void(*MemoryDeleter)(void *);
 }

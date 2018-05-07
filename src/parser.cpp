@@ -24,94 +24,97 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <ctime>
 #include "parser.h"
 
-namespace Tracking {
-  vector<Message> base;
+namespace kagami {
+  namespace trace {
+    vector<log_t> logger;
 
-  void log(Message msg) {
-    base.push_back(msg);
-  }
-
-  bool IsEmpty() {
-    return base.empty();
-  }
-}
-
-namespace Entry {
-  EntryMap EntryMapBase;
-
-  void Inject(string name, EntryProvider provider) {
-    EntryMapBase.insert(EntryMapUnit(name, provider));
-  }
-
-  Message FindAndExec(string name, deque<string> res) {
-    Message result(kStrFatalError, kCodeIllegalCall, "Entry is not found.");
-    EntryMap::iterator it = EntryMapBase.find(name);
-    if (it != EntryMapBase.end()) {
-      result = it->second.StartActivity(res, nullptr);
+    void log(Message msg) { 
+      time_t now = time(0);
+      string nowtime(ctime(&now));
+      logger.push_back(log_t(nowtime, msg));
     }
-    return result;
+
+    bool IsEmpty() {
+      return logger.empty();
+    }
   }
 
-  EntryProvider Order(string name) {
-    EntryProvider result;
-    EntryMap::iterator it = EntryMapBase.find(name);
-    if (it != EntryMapBase.end()) {
-      result = it->second;
-    }
-    return result;
-  }
+  namespace entry {
+    EntryMap EntryMapBase;
 
-  EntryProvider Find(string target) {
-    EntryProvider result;
-    if (target == "+" || target == "-" || target == "*" || target == "/"
-      || target == "==" || target == "<=" || target == ">=" || target == "!=") {
-      result = Order("binexp");
+    void Inject(string name, EntryProvider provider) {
+      EntryMapBase.insert(EntryMapUnit(name, provider));
     }
-    else if (target == "=") {
-      result = Order("set");
+
+    Message FindAndExec(string name, deque<string> res) {
+      Message result(kStrFatalError, kCodeIllegalCall, "entry is not found.");
+      EntryMap::iterator it = EntryMapBase.find(name);
+      if (it != EntryMapBase.end()) {
+        result = it->second.StartActivity(res, nullptr);
+      }
+      return result;
     }
-    else {
-      EntryMap::iterator it = EntryMapBase.find(target);
+
+    EntryProvider Order(string name) {
+      EntryProvider result;
+      EntryMap::iterator it = EntryMapBase.find(name);
       if (it != EntryMapBase.end()) {
         result = it->second;
       }
+      return result;
     }
-    return result;
+
+    EntryProvider Find(string target) {
+      EntryProvider result;
+      if (target == "+" || target == "-" || target == "*" || target == "/"
+        || target == "==" || target == "<=" || target == ">=" || target == "!=") {
+        result = Order("binexp");
+      }
+      else if (target == "=") {
+        result = Order(kStrSetCmd);
+      }
+      else {
+        EntryMap::iterator it = EntryMapBase.find(target);
+        if (it != EntryMapBase.end()) {
+          result = it->second;
+        }
+      }
+      return result;
+    }
+
+    int GetRequiredCount(string target) {
+      if (target == "+" || target == "-" || target == "*" || target == "/"
+        || target == "==" || target == "<=" || target == ">=" || target == "!=") {
+        return Order("binexp").GetRequiredCount() - 1;
+      }
+      EntryMap::iterator it = EntryMapBase.find(target);
+      if (it != EntryMapBase.end()) {
+        return it->second.GetRequiredCount();
+      }
+      return kFlagNotDefined;
+    }
+
+    void Delete(string name) {
+      EntryMap::iterator it = EntryMapBase.find(name);
+      if (it != EntryMapBase.end()) {
+        EntryMapBase.erase(it);
+      }
+    }
+
+    void ResetPluginEntry() {
+      EntryMap tempbase;
+      for (auto unit : EntryMapBase) {
+        if (unit.second.GetPriority() != kFlagPluginEntry) tempbase.insert(unit);
+      }
+      EntryMapBase.swap(tempbase);
+      tempbase.clear();
+      EntryMap().swap(tempbase);
+    }
   }
 
-  int GetRequiredCount(string target) {
-    if (target == "+" || target == "-" || target == "*" || target == "/"
-      || target == "==" || target == "<=" || target == ">=" || target == "!=") {
-      return Order("binexp").GetRequiredCount() - 1;
-    }
-    EntryMap::iterator it = EntryMapBase.find(target);
-    if (it != EntryMapBase.end()) {
-      return it->second.GetRequiredCount();
-    }
-    return kFlagNotDefined;
-  }
-
-  void Delete(string name) {
-    EntryMap::iterator it = EntryMapBase.find(name);
-    if (it != EntryMapBase.end()) {
-      EntryMapBase.erase(it);
-    }
-  }
-
-  void ResetPluginEntry() {
-    EntryMap tempbase;
-    for (auto unit : EntryMapBase) {
-      if (unit.second.GetPriority() != kFlagPluginEntry) tempbase.insert(unit);
-    }
-    EntryMapBase.swap(tempbase);
-    tempbase.clear();
-    EntryMap().swap(tempbase);
-  }
-}
-
-namespace Kagami {
   int Kit::GetDataType(string target) {
     using std::regex_match;
     int result = kTypeNull;
@@ -133,19 +136,20 @@ namespace Kagami {
   }
 
   void Kit::PrintEvents() {
-    using namespace Tracking;
+    using namespace trace;
     ofstream ofs("event.log", std::ios::trunc);
     string prioritystr;
     if (ofs.good()) {
-      if (base.empty()) {
+      if (logger.empty()) {
         ofs << "No Events.\n";
       }
       else {
-        for (auto unit : base) {
-          if (unit.GetValue() == kStrFatalError) prioritystr = "Fatal:";
-          else if (unit.GetValue() == kStrWarning) prioritystr = "Warning:";
-          if (unit.GetDetail() != kStrEmpty) {
-            ofs << prioritystr << unit.GetDetail() << "\n";
+        for (log_t unit : logger) {
+          ofs << "[" << unit.first << "]";
+          if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
+          else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
+          if (unit.second.GetDetail() != kStrEmpty) {
+            ofs << prioritystr << unit.second.GetDetail() << "\n";
           }
         }
       }
@@ -154,7 +158,7 @@ namespace Kagami {
   }
 
   ScriptProvider::ScriptProvider(const char *target) {
-    using Tracking::log;
+    using trace::log;
     string temp;
     current = 0;
     end = false;
@@ -210,11 +214,11 @@ namespace Kagami {
       temp = provider.StartActivity(container, loader);
       code = temp.GetCode();
       value = temp.GetValue();
-      if (code < kCodeSuccess) Tracking::log(temp);
+      if (code < kCodeSuccess) trace::log(temp);
       msg = temp;
     }
     else {
-      Tracking::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found."));
+      trace::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found."));
       return_state = false;
     }
 
@@ -222,7 +226,7 @@ namespace Kagami {
   }
 
   Chainloader &Chainloader::Build(string target) {
-    using Tracking::log;
+    using trace::log;
     Kit kit;
     vector<string> output;
     char bin_oper = NULL;
@@ -372,7 +376,7 @@ namespace Kagami {
 
   bool Chainloader::ShuntingYardProcessing(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
     Message &msg, size_t mode) {
-    using namespace Entry;
+    using namespace entry;
     EntryProvider provider = Find(symbol.back());
     bool result = false, reversed = true;
     int count = provider.GetRequiredCount();
@@ -431,9 +435,9 @@ namespace Kagami {
 
     if (msg.GetCode() == kCodePoint) {
       item.push_back(msg.GetDetail());
-      PointWrapper wrapper;
+      Object wrapper;
       wrapper.set(msg.GetCastPath(), msg.GetValue());
-      lambdamap.insert(pair<string, PointWrapper>(msg.GetDetail(), wrapper));
+      lambdamap.insert(pair<string, Object>(msg.GetDetail(), wrapper));
     }
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
@@ -443,7 +447,7 @@ namespace Kagami {
   }
 
   Message Chainloader::Start(size_t mode = kModeNormal) {
-    using namespace Entry;
+    using namespace entry;
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
     string temp_str = kStrEmpty;
@@ -488,14 +492,11 @@ namespace Kagami {
           }
         }
         else if (raw[i] == "(") {
-          if (symbol.empty() || kit.GetDataType(symbol.back()) == kTypeSymbol) {
-            symbol.push_back("commaexp");
-          }
           symbol.push_back(raw[i]);
         }
         else if (raw[i] == "[") {
           if (kit.GetDataType(raw.at(i - 1)) == kTypeFunction) {
-            symbol.push_back("afind");
+            symbol.push_back("__get_element");
           }
         }
         else if (raw[i] == ")" || raw[i] == "]") {
@@ -530,8 +531,8 @@ namespace Kagami {
             j = symbol.size() - 1;
             k = item.size();
             while (symbol.at(j) != "(" && GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
-              if (k = item.size()) { k -= Entry::GetRequiredCount(symbol.at(j)); }
-              else { k -= Entry::GetRequiredCount(symbol.at(j)) - 1; }
+              if (k = item.size()) { k -= entry::GetRequiredCount(symbol.at(j)); }
+              else { k -= entry::GetRequiredCount(symbol.at(j)) - 1; }
               --j;
             }
             symbol.insert(symbol.begin() + j + 1, raw[i]);
@@ -590,7 +591,7 @@ namespace Kagami {
   }
 
   Message EntryProvider::StartActivity(deque<string> p, Chainloader *parent) {
-    using namespace Entry;
+    using namespace entry;
     const string entry_name = this->GetName();
     Kit kit;
     Message result;
@@ -606,7 +607,7 @@ namespace Kagami {
         if (name == kStrDefineCmd || name == kStrSetCmd) {
           if (ignore_first_arg) {
             if (name == kStrSetCmd && p.at(i).substr(0, 2) == "__") {
-              ptr == make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
+              ptr == make_shared<Object>(parent->GetVariable(p.at(i)));
             }
             else {
               ptr = make_shared<string>(string(p.at(i)));
@@ -616,10 +617,10 @@ namespace Kagami {
           else {
             name.append("&");
             if (p.at(i).substr(0, 2) == "__") {
-              ptr = make_shared<PointWrapper>(parent->GetVariable(p.at(i)));
+              ptr = make_shared<Object>(parent->GetVariable(p.at(i)));
             }
             else {
-              ptr = make_shared<PointWrapper>(*FindWrapper(p.at(i), true));
+              ptr = make_shared<Object>(*FindObject(p.at(i), true));
             }
           }
         }
@@ -628,7 +629,7 @@ namespace Kagami {
             ptr = make_shared<string>(string(p.at(i)));
           }
           else {
-            ptr = FindWrapper(p.at(i), true)->get();
+            ptr = FindObject(p.at(i), true)->get();
           }
         }
       }
@@ -671,7 +672,7 @@ namespace Kagami {
       }
       else {
         switch (requiredcount) {
-        case kFlagNotDefined:result.combo(kStrFatalError, kCodeBrokenEntry, string("Illegal Entry - ").append(this->name)); break;
+        case kFlagNotDefined:result.combo(kStrFatalError, kCodeBrokenEntry, string("Illegal entry - ").append(this->name)); break;
         default:result.combo(kStrFatalError, kCodeIllegalArgs, string("Parameter count doesn't match - ").append(this->name)); break;
         }
       }
@@ -696,7 +697,7 @@ namespace Kagami {
   }
 
   Message ChainStorage::Run(deque<string> res = deque<string>()) {
-    using namespace Entry;
+    using namespace entry;
     Message result;
     size_t i = 0;
     size_t size = 0;
@@ -714,7 +715,7 @@ namespace Kagami {
         return result;
       }
       for (i = 0; i < parameter.size(); i++) {
-        CreateWrapper(parameter.at(i), res.at(i), false);
+        CreateObject(parameter.at(i), res.at(i), false);
       }
     }
 
@@ -827,13 +828,13 @@ namespace Kagami {
     ChainStorage cs(sp);
 
     if (target == kStrEmpty) {
-      Tracking::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
+      trace::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
       return result;
     }
-    InjectBasicEntries();
+    Activiate();
     cs.Run();
-    Entry::ResetPlugin();
-    Entry::CleanupWrapper();
+    entry::ResetPlugin();
+    entry::CleanupObject();
     return result;
   }
 
@@ -856,7 +857,7 @@ namespace Kagami {
   }
 
   void Kit::Terminal() {
-    using namespace Entry;
+    using namespace entry;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Chainloader loader;
@@ -865,7 +866,7 @@ namespace Kagami {
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
     CreateMap();
-    InjectBasicEntries();
+    Activiate();
     Inject("version", EntryProvider("version", VersionInfo, 0));
     Inject("quit", EntryProvider("quit", Quit, 0));
     Inject("print", EntryProvider("print", PrintOnScreen, 1, kFlagNormalEntry, Build("msg")));
@@ -881,7 +882,7 @@ namespace Kagami {
       }
     }
     ResetPlugin();
-    CleanupWrapper();
+    CleanupObject();
   }
 }
 
