@@ -275,6 +275,7 @@ namespace kagami {
       case '-':
       case '*':
       case '/':
+      case '.':
         if (string_processing) {
           current.append(1, target[i]);
         }
@@ -522,6 +523,9 @@ namespace kagami {
           //Start point 2
           if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, mode)) break;
           symbol.pop_back();
+        }
+        else if (raw[i] == ".") {
+          //TODO:
         }
         else {
           if (symbol.empty()) {
