@@ -27,19 +27,16 @@
 #include "parser.h"
 
 namespace kagami {
+  namespace type {
+    class ObjType {
+    private:
+      
+    };
+  }
+
   namespace entry {
-    using std::shared_ptr;
     typedef StrMap *(*Attachment)(void);
     std::wstring s2ws(const std::string& s);
-
-    class Methods {
-    private:
-      vector<string> vec;
-    public:
-      Methods(string target) { vec = Kit().BuildStringVector(target); }
-      Methods &Set(string target) { vec = Kit().BuildStringVector(target); return *this; }
-      vector<string> Get() const { return vec; }
-    };
 
 #if defined(_WIN32)
     //Windows Verison
