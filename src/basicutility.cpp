@@ -25,11 +25,11 @@
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "basicutility.h"
 #include "windows.h"
-#define _ENABLE_TYPE_SYSTEM_
+//#define _DISABLE_TYPE_SYSTEM_
 
 namespace kagami {
   //TODO:new type system
-#ifdef _ENABLE_TYPE_SYSTEM_
+#ifdef _DISABLE_TYPE_SYSTEM_
   namespace type {
     map<string, CastTo> ObjectTypeMap;
     map<string, CastToExt> ObjectTypeMapExt;
@@ -54,8 +54,8 @@ namespace kagami {
 
     shared_ptr<void> CastToNewPtr(Object &object) {
       shared_ptr<void> result = nullptr;
-      map<string, CastTo>::iterator it = ObjectTypeMap.find(object.getOption());
-      map<string, CastToExt>::iterator it_ex = ObjectTypeMapExt.find(object.getOption());
+      map<string, CastTo>::iterator it = ObjectTypeMap.find(object.GetTypeId());
+      map<string, CastToExt>::iterator it_ex = ObjectTypeMapExt.find(object.GetTypeId());
       if (it != ObjectTypeMap.end()) {
         result = it->second(object.get());
       }
@@ -72,14 +72,44 @@ namespace kagami {
   }
 #else
   namespace type {
+    map<string, ObjTemplate> TemplateMap;
 
+    shared_ptr<void> GetObjectCopy(Object &object) {
+      shared_ptr<void> result = nullptr;
+      string option = object.GetTypeId();
+      CastTo castTo = nullptr;
+      map<string, ObjTemplate>::iterator it = TemplateMap.find(option);
+      if (it != TemplateMap.end()) {
+        result = it->second.CreateObjectCopy(object.get());
+      }
+      return result;
+    }
+
+    ObjTemplate *GetTemplate(string name) {
+      ObjTemplate *result = nullptr;
+      map<string, ObjTemplate>::iterator it = TemplateMap.find(name);
+      if (it != TemplateMap.end()) {
+        result = &(it->second);
+      }
+      return result;
+    }
+
+    void AddTemplate(string name, ObjTemplate temp) {
+      TemplateMap.insert(pair<string, ObjTemplate>(name, temp));
+    }
+
+    void DisposeTemplate(string name) {
+      map<string, ObjTemplate>::iterator it = TemplateMap.find(name);
+      if (it != TemplateMap.end()) TemplateMap.erase(it);
+    }
   }
 #endif
 
   namespace entry {
-    vector<ObjectManager> ObjectStack;
     vector<Instance> InstanceList;
+    vector<ObjectManager> ObjectStack;
 
+#if defined(_DISABLE_TYPE_SYSTEM)
     Object *FindObject(string name, bool reserved = false) {
       Object *object = nullptr;
       size_t i = ObjectStack.size();
@@ -150,6 +180,66 @@ namespace kagami {
       }
       return ObjectStack.empty();
     }
+#else
+    Object *FindObject(string sign) {
+      Object *object = nullptr;
+      size_t count = ObjectStack.size();
+
+      while (!ObjectStack.empty() && count > 0) {
+        object = ObjectStack.at(count - 1).Find(sign);
+        if (object != nullptr) {
+          break;
+        }
+      }
+      return object;
+    }
+
+    Object *CreateObject(string sign, string dat, bool constant = false) {
+      Object *object = nullptr;
+      ObjectStack.back().CreateByObject(sign, dat, kTypeIdRawString, constant);
+      object = ObjectStack.back().Find(sign);
+      return object;
+    }
+
+    Object *CreateObject(string sign, shared_ptr<void> ptr, string option, bool constant = false) {
+      Object *object = nullptr;
+      Object temp;
+
+      temp.set(ptr, option);
+      ObjectStack.back().CreateByObject(sign, temp, constant);
+      object = ObjectStack.back().Find(sign);
+      return object;
+    }
+
+    string GetTypeId(string sign) {
+      string result = kTypeIdNull;
+      Object *object = nullptr;
+      size_t count = ObjectStack.size();
+
+      while (count > 0) {
+        object = ObjectStack.at(count - 1).Find(sign);
+        if (object != nullptr) {
+          result = object->GetTypeId();
+        }
+      }
+
+      return result;
+    }
+
+    void ResetObject() {
+      while (!ObjectStack.empty()) ObjectStack.pop_back();
+    }
+
+    ObjectManager &CreateManager() {
+      ObjectStack.push_back(ObjectManager());
+      return ObjectStack.back();
+    }
+
+    bool DisposeManager() {
+      if (!ObjectStack.empty()) { ObjectStack.pop_back(); }
+      return ObjectStack.empty();
+    }
+#endif
 
     bool Instance::Load(string name, HINSTANCE h) {
       Attachment attachment = nullptr;
@@ -186,7 +276,7 @@ namespace kagami {
     void AddInstance(string name, HINSTANCE h) {
       PluginActivity activity = nullptr;
       CastAttachment c_attachment = nullptr;
-      map<string, CastToExt> *castmap = nullptr;
+      map<string, ObjTemplate> *temp_map = nullptr;
       MemoryDeleter deleter = nullptr;
 
       InstanceList.push_back(Instance());
@@ -205,9 +295,9 @@ namespace kagami {
         }
         c_attachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
         if (c_attachment != nullptr) {
-          castmap = c_attachment();
-          for (auto unit : *castmap) {
-            type::ObjectTypeMapExt.insert(unit);
+          temp_map = c_attachment();
+          for (auto &unit : *temp_map) {
+            type::AddTemplate(unit.first, unit.second);
           }
         }
       }
@@ -216,7 +306,10 @@ namespace kagami {
 
     void UnloadInstance(string name) {
       Attachment attachment = nullptr;
+      CastAttachment castAttachment = nullptr;
+      MemoryDeleter deleter = nullptr;
       HINSTANCE *hinstance = nullptr;
+      map<string, ObjTemplate> *temp_map = nullptr;
       StrMap map;
 
       vector<Instance>::iterator instance_i = InstanceList.begin();
@@ -231,10 +324,22 @@ namespace kagami {
 
       if (instance_i->GetHealth() == true) {
         hinstance = &(instance_i->second);
+        castAttachment = instance_i->getObjTemplate();
+        deleter = instance_i->getDeleter();
+        //delete entries
         map = instance_i->GetMap();
         for (auto unit : map) {
           Delete(unit.first);
         }
+        //delete object templates
+        if (castAttachment != nullptr) {
+          temp_map = castAttachment();
+          for (auto &unit : *temp_map) {
+            type::DisposeTemplate(unit.first);
+          }
+        }
+        //delete memory
+        deleter(temp_map);
       }
       FreeLibrary(*hinstance);
       InstanceList.erase(instance_i);
@@ -442,7 +547,7 @@ namespace kagami {
       if (source_is_object && source != nullptr) {
         auto right = type::CastToNewPtr(*static_pointer_cast<Object>(source));
         if (right != nullptr) {
-          left->set(right, static_pointer_cast<Object>(source)->getOption());
+          left->set(right, static_pointer_cast<Object>(source)->GetTypeId());
         }
       }
       else if (!source_is_object && source != nullptr) {
@@ -481,7 +586,7 @@ namespace kagami {
       if (useobject) {
         shared_ptr<void> ptr = type::CastToNewPtr(*static_pointer_cast<Object>(source));
         if (ptr != nullptr) {
-          object = CreateObjectByPointer(name, ptr, static_pointer_cast<Object>(source)->getOption());
+          object = CreateObjectByPointer(name, ptr, static_pointer_cast<Object>(source)->GetTypeId());
           if (object == nullptr) {
             result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
           }
@@ -565,7 +670,7 @@ namespace kagami {
 
     switch (use_object) {
     case true:
-      object_option = static_pointer_cast<Object>(init_value)->getOption();
+      object_option = static_pointer_cast<Object>(init_value)->GetTypeId();
       for (count = 0; count < size; count++) {
         temp_ptr = type::CastToNewPtr(*static_pointer_cast<Object>(init_value));
         temp_base.push_back(Object().set(temp_ptr, object_option));
@@ -585,6 +690,7 @@ namespace kagami {
     return result;
   }
 
+#if defined(_ENABLE_FASTRING_)
   Message CharConstructor(PathMap &p) {
     Message result;
 
@@ -596,7 +702,7 @@ namespace kagami {
 
     return result;
   }
-
+#endif
   
 
   Message GetElement(PathMap &p) {
@@ -610,7 +716,7 @@ namespace kagami {
     PathMap::iterator it;
 
     if (target != nullptr) {
-      option = target->getOption();
+      option = target->GetTypeId();
       it = p.find("subscript_1");
       if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
       it = p.find("subscript_2");
@@ -620,7 +726,7 @@ namespace kagami {
         shared_ptr<deque<Object>> ptr = static_pointer_cast<deque<Object>>(target->get());
         if (ptr != nullptr && subscript_1 < ptr->size()) {
           item = &(ptr->at(subscript_1));
-          result.combo(item->getOption(), kCodePoint, "__result");
+          result.combo(item->GetTypeId(), kCodePoint, "__result");
           cast_path = item->get();
         }
         else {
