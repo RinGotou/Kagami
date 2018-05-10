@@ -27,17 +27,8 @@
 #include "parser.h"
 
 namespace kagami {
-  namespace type {
-    class ObjType {
-    private:
-      
-    };
-  }
-
   namespace entry {
-    typedef StrMap *(*Attachment)(void);
     std::wstring s2ws(const std::string& s);
-
 #if defined(_WIN32)
     //Windows Verison
     class Instance : public pair<string, HINSTANCE> {
@@ -49,6 +40,7 @@ namespace kagami {
       bool Load(string name, HINSTANCE h);
       bool GetHealth() const { return health; }
       StrMap GetMap() const { return link_map; }
+      CastAttachment getObjTemplate() { return (CastAttachment)GetProcAddress(this->second, "CastAttachment"); }
       MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
     };
 #else

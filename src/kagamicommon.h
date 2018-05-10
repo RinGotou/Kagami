@@ -40,6 +40,21 @@ namespace kagami {
   using std::static_pointer_cast;
   using std::map;
 
+  class Message;
+  class ObjTemplate;
+
+  using PathMap = map<string, shared_ptr<void>>;
+  using StrMap = map<string, string>;
+  using CastTo = shared_ptr<void>(*)(shared_ptr<void>);
+  using CastFunc = pair<string, CastTo>;
+  //using CastToExt = void * (*)(shared_ptr<void> &);
+  using Activity = Message(*)(PathMap &);
+  using PluginActivity = Message * (*)(PathMap &);
+  using CastAttachment = map<string, ObjTemplate> *(*)();
+  using MemoryDeleter = void(*)(void *);
+  using Attachment = StrMap * (*)(void);
+
+
 #if defined(_WIN32)
   const string kEngineVersion = "version 0.3 (Windows Platform)";
 #else
@@ -103,6 +118,46 @@ namespace kagami {
   const size_t kModeCycle = 2;
   const size_t kModeCycleJump = 3;
 
+  /* Object Template Class
+  this class contains custom class info for script language.
+  */
+  class ObjTemplate {
+  private:
+    CastTo castTo;
+    //CastToExt castToExt;
+    //bool ext;
+    string methods;
+  public:
+    ObjTemplate() : methods(kStrEmpty) {
+      castTo = nullptr;
+    }
+    ObjTemplate(CastTo castTo, string methods) {
+      this->castTo = castTo;
+      this->methods = methods;
+      //this->ext = false;
+    }
+    //ObjTemplate(CastToExt castToExt, string methods) {
+    //  this->castToExt = castToExt;
+    //  this->methods = methods;
+    //  this->ext = true;
+    //}
+
+    shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) {
+      shared_ptr<void> result = nullptr;
+      if (target != nullptr) {
+        result = castTo(target);
+        //switch (ext) {
+        //case true:result = castTo(target); break;
+        //case false:result.reset(castToExt(target)); break;
+        //}
+      }
+      return result;
+    }
+    string GetMethods() const {
+      return methods;
+    }
+  };
+
   /*Message Class
     It's the basic message tunnel of this script processor.
     According to my design,processor will check value or detail or
@@ -156,13 +211,7 @@ namespace kagami {
     shared_ptr<void> &GetCastPath() { return castpath; }
   };
 
-  typedef map<string, shared_ptr<void>> PathMap;
-  typedef map<string, string> StrMap;
-  typedef shared_ptr<void>(*CastTo)(shared_ptr<void>);
-  typedef pair<string, CastTo> CastFunc;
-  typedef void *(*CastToExt)(shared_ptr<void> &);
-  typedef Message(*Activity)(PathMap &);
-  typedef Message *(*PluginActivity)(PathMap &);
-  typedef map<string, CastToExt> *(*CastAttachment)();
-  typedef void(*MemoryDeleter)(void *);
+
+
 }
+

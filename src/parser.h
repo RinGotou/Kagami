@@ -67,15 +67,16 @@ namespace kagami {
   class EntryProvider;
   class Chainloader;
 
+#if defined(_ENABLE_FASTRING_)
   /*Object Tag Struct
-  no description yet.
+    no description yet.
   */
   struct AttrTag {
     string parent_container;
     string methods;
     bool ro;
   };
-
+#endif
   /*Kit Class
    this class contains many useful template or tiny function, and
    create script processing workspace.
@@ -133,12 +134,14 @@ namespace kagami {
     }
 
     int GetDataType(string target);
-
+    AttrTag GetAttrTag(string target);
     Message ExecScriptFile(string target);
     void PrintEvents();
     void Terminal();
     vector<string> BuildStringVector(string source);
   };
+
+
 
   /*Object Class
    A shared void pointer is packaged in this.Almost all varibales and
@@ -148,23 +151,24 @@ namespace kagami {
   class Object {
   private:
     std::shared_ptr<void> ptr;
-    string castoption;
+    string option;
     string tag;
   public:
-    Object() { ptr = nullptr; castoption = kTypeIdNull; }
-    template <class T> Object &manage(T &t, string castoption, string tag = kStrEmpty) {
+    Object() { ptr = nullptr; option = kTypeIdNull; }
+    template <class T> Object &manage(T &t, string option, string tag = kStrEmpty) {
       ptr = std::make_shared<T>(t);
-      this->castoption = castoption;
+      this->option = option;
       this->tag = tag;
       return *this;
     }
-    Object &set(shared_ptr<void> ptr, string castoption) {
+    Object &set(shared_ptr<void> ptr, string option) {
       this->ptr = ptr;
-      this->castoption = castoption;
+      this->option = option;
       return *this;
     }
     shared_ptr<void> get() { return ptr; }
-    string getOption() const { return castoption; }
+    string GetTypeId() const { return option; }
+    AttrTag getTag() const { return Kit().GetAttrTag(tag); }
   };
 
   /*ObjectManager Class
@@ -175,24 +179,27 @@ namespace kagami {
   private:
     typedef map<string, Object> PointBase;
     PointBase base;
-    vector<string> rolist;
+    vector<string> constant_list;
 
     bool CheckPriority(string name) {
-      if (rolist.empty()) {
+      if (constant_list.empty()) {
         return true;
       }
       else {
-        for (auto unit : rolist) {
+        for (auto unit : constant_list) {
           if (unit == name) return true;
         }
       }
       return false;
     }
   public:
-    template <class T> void CreateByObject(string name, T &t, string castoption, bool ro) {
+    template <class Type> void Create(string sign, Type &t, ObjTemplate temp, bool constant) {
+
+    }
+    template <class T> void CreateByObject(string name, T &t, string option, bool ro) {
       auto insert = [&]() {
-        base.insert(PointBase::value_type(name, Object().manage(t, castoption)));
-        if (ro) rolist.emplace_back(name);
+        base.insert(PointBase::value_type(name, Object().manage(t, option)));
+        if (ro) constant_list.emplace_back(name);
       };
       switch (base.empty()) {
       case true:insert(); break;
@@ -202,10 +209,10 @@ namespace kagami {
       }
     }
 
-    void CreateByObject(string name, Object source, bool ro) {
+    void CreateByObject(string name, Object &source, bool ro) {
       auto insert = [&]() {
         base.insert(PointBase::value_type(name, source));
-        if (ro) rolist.emplace_back(name);
+        if (ro) constant_list.emplace_back(name);
       };
       switch (base.empty()) {
       case true:insert(); break;
@@ -369,39 +376,38 @@ namespace kagami {
     return *static_pointer_cast<string>(ptr);
   }
 
-  //typedef deque<Object> PointDeque;
   void Activiate();
 
-  /*stuff of event tracking*/
   namespace trace {
     using log_t = pair<string, Message>;
     void log(kagami::Message msg);
   }
 
-  /*stuff of entry storage,plugin instance managing and etc.*/
   namespace entry {
+    extern vector<ObjectManager> ObjectStack;
+
     using EntryMap = map<string, EntryProvider>;
     using EntryMapUnit = map<string, EntryProvider>::value_type;
-    extern vector<ObjectManager> ObjectStack;
+    
+    string GetTypeId(string sign);
 
     void Inject(string name, EntryProvider provider);
     void Delete(string name);
     void ResetPluginEntry();
     void ResetPlugin(bool OnExit = false);
-    void DisposeObject(string name, bool reserved);
-    void CleanupObject();
-    Object *FindObject(string name, bool reserved);
-    ObjectManager CreateMap();
-    bool DisposeMap();
+    //void CleanupObject();
+    Object *FindObject(string name);
+    ObjectManager &CreateManager();
+    bool DisposeManager();
 
     template <class T>
-    Object *CreateObject(string name, T t, string castoption, bool readonly = false) {
+    Object *CreateObject(string name, T t, string option, bool readonly = false) {
       Object *object = nullptr;
       if (Kit().GetDataType(name) != kTypeFunction) {
         trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
         return nullptr;
       }
-      ObjectStack.back().CreateByObject(name, t, castoption, false);
+      ObjectStack.back().CreateByObject(name, t, option, false);
       object = ObjectStack.back().Find(name);
       return object;
     }
