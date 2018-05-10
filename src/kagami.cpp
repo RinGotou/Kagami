@@ -24,14 +24,12 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "parser.h"
-//#define SDL_MAIN_HANDLED
-#define _DEBUG_STATE_
 //#define _NO_CUI_
 
 int main(int argc, char **argv) {
 
   kagami::Kit kit;
-#ifdef _DEBUG_STATE_
+#ifdef _DEBUG_FLAG_
   //direct load a external script
   kit.ExecScriptFile("test.kagami");
 #else

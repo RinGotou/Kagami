@@ -457,12 +457,12 @@ namespace kagami {
     using namespace entry;
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
-    string temp_str = kStrEmpty;
-    string temp_symbol = kStrEmpty;
+    string temp_str = kStrEmpty, temp_symbol = kStrEmpty, temp_sign = kStrEmpty;
     int unit_type = kTypeNull;
     bool comma_exp_func = false,
       string_token_proc = false, insert_btn_symbols = false,
-      disable_set_entry = false;
+      disable_set_entry = false, dot_operator = false;
+    bool fatal = false;
     Kit kit;
     Message result;
 
@@ -470,6 +470,7 @@ namespace kagami {
     deque<string> container;
 
     for (i = 0; i < size; ++i) {
+      if(fatal == true) break;
       unit_type = kit.GetDataType(raw.at(i));
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
       if (unit_type == kTypeSymbol) {
@@ -531,7 +532,7 @@ namespace kagami {
           symbol.pop_back();
         }
         else if (raw[i] == ".") {
-          //TODO:
+          dot_operator = true;
         }
         else {
           if (symbol.empty()) {
@@ -558,14 +559,29 @@ namespace kagami {
         }
       }
       else if (unit_type == kTypeFunction && !string_token_proc) {
-        switch (Find(raw[i]).Good()) {
-        case true:
-          symbol.push_back(raw[i]);
-          break;
-        case false:
-          item.push_back(raw[i]);
-          break;
+        //TODO:dot operator processing
+        //new
+        if (dot_operator) {
+          temp_str = entry::GetTypeId(item.back());
+          if (temp_str != kTypeIdNull) {
+            temp_sign = "__" + temp_str + "_" + raw.at(i);
+            switch (entry::Find(temp_sign).Good()) {
+            case true:symbol.push_back(temp_sign);break;
+            case false:
+              result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".");
+              fatal = true;
+              continue;
+              break;
+            }
+          }
         }
+        else {
+          switch (entry::Find(raw.at(i)).Good()) {
+          case true:symbol.push_back(raw.at(i)); break;
+          case false:item.push_back(raw.at(i)); break;
+          }
+        }
+        dot_operator = false;
       }
       else {
         switch (insert_btn_symbols) {
@@ -583,7 +599,7 @@ namespace kagami {
       }
     }
 
-    if (result.GetValue() != kStrFatalError) {
+    if (!fatal) {
       while (symbol.empty() != true) {
         if (symbol.back() == "(" || symbol.back() == ")") {
           result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
@@ -703,6 +719,41 @@ namespace kagami {
       temp.append(1, unit);
     }
     if (!temp.empty()) result.push_back(temp);
+    return result;
+  }
+
+  AttrTag Kit::GetAttrTag(string target) {
+    AttrTag result;
+    char current = ' ', symbol = ' ';
+    size_t size = target.size(), count = 0;
+    string temp = kStrEmpty;
+
+    for (count = 0; count < size; count++) {
+      current = target.at(count);
+      if (current == '@' || current == '+' || current == '%') {
+        if (symbol != current) {
+          switch (symbol) {
+          case '@':
+            result.parent_container = temp;
+            break;
+          case '+':
+            result.methods.append(temp + "|");
+            break;
+          case '%':
+            result.ro = (temp == kStrTrue);
+            break;
+          default:break;
+          }
+          temp = kStrEmpty;
+        }
+      }
+      else {
+        temp.append(1, current);
+      }
+    }
+
+    if (result.methods.back() == '|') result.methods.pop_back();
+
     return result;
   }
 
