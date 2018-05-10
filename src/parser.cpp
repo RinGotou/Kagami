@@ -646,7 +646,7 @@ namespace kagami {
               ptr = make_shared<Object>(parent->GetVariable(p.at(i)));
             }
             else {
-              ptr = make_shared<Object>(*FindObject(p.at(i), true));
+              ptr = make_shared<Object>(*FindObject(p.at(i)));
             }
           }
         }
@@ -655,7 +655,7 @@ namespace kagami {
             ptr = make_shared<string>(string(p.at(i)));
           }
           else {
-            ptr = FindObject(p.at(i), true)->get();
+            ptr = FindObject(p.at(i))->get();
           }
         }
       }
@@ -769,7 +769,7 @@ namespace kagami {
     bool already_executed = false;
     size_t current_mode = kModeNormal;
 
-    CreateMap();
+    CreateManager();
     if (!res.empty()) {
       if (res.size() != parameter.size()) {
         result.combo(kStrFatalError, kCodeIllegalCall, "wrong parameter count.");
@@ -879,7 +879,7 @@ namespace kagami {
       }
     }
 
-    DisposeMap();
+    DisposeManager();
     return result;
   }
 
@@ -895,7 +895,7 @@ namespace kagami {
     Activiate();
     cs.Run();
     entry::ResetPlugin();
-    entry::CleanupObject();
+    //entry::CleanupObject();
     return result;
   }
 
@@ -926,7 +926,7 @@ namespace kagami {
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
-    CreateMap();
+    CreateManager();
     Activiate();
     Inject("version", EntryProvider("version", VersionInfo, 0));
     Inject("quit", EntryProvider("quit", Quit, 0));
@@ -943,7 +943,7 @@ namespace kagami {
       }
     }
     ResetPlugin();
-    CleanupObject();
+    //CleanupObject();
   }
 }
 
