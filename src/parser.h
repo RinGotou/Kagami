@@ -395,10 +395,10 @@ namespace kagami {
     void Delete(string name);
     void ResetPluginEntry();
     void ResetPlugin(bool OnExit = false);
-    void CleanupObject();
-    Object *FindObject(string name, bool reserved);
-    ObjectManager CreateMap();
-    bool DisposeMap();
+    //void CleanupObject();
+    Object *FindObject(string name);
+    ObjectManager &CreateManager();
+    bool DisposeManager();
 
     template <class T>
     Object *CreateObject(string name, T t, string option, bool readonly = false) {

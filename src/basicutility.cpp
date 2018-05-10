@@ -545,7 +545,7 @@ namespace kagami {
     if (target != nullptr) {
       auto left = static_pointer_cast<Object>(target);
       if (source_is_object && source != nullptr) {
-        auto right = type::CastToNewPtr(*static_pointer_cast<Object>(source));
+        auto right = type::GetObjectCopy(*static_pointer_cast<Object>(source));
         if (right != nullptr) {
           left->set(right, static_pointer_cast<Object>(source)->GetTypeId());
         }
@@ -584,24 +584,24 @@ namespace kagami {
 
     if (object == nullptr) {
       if (useobject) {
-        shared_ptr<void> ptr = type::CastToNewPtr(*static_pointer_cast<Object>(source));
+        shared_ptr<void> ptr = type::GetObjectCopy(*static_pointer_cast<Object>(source));
         if (ptr != nullptr) {
-          object = CreateObjectByPointer(name, ptr, static_pointer_cast<Object>(source)->GetTypeId());
+          object = CreateObject(name, ptr, static_pointer_cast<Object>(source)->GetTypeId());
           if (object == nullptr) {
-            result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
+            result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail.");
           }
         }
       }
       else {
         string temp = CastToString(source);
-        object = CreateObjectByString(name, temp);
+        object = CreateObject(name, temp);
         if (object == nullptr) {
-          result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail");
+          result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail.");
         }
       }
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, name + "is already existed");
+      result.combo(kStrFatalError, kCodeIllegalCall, name + "is already existed.");
     }
     return result;
   }
@@ -672,7 +672,7 @@ namespace kagami {
     case true:
       object_option = static_pointer_cast<Object>(init_value)->GetTypeId();
       for (count = 0; count < size; count++) {
-        temp_ptr = type::CastToNewPtr(*static_pointer_cast<Object>(init_value));
+        temp_ptr = type::GetObjectCopy(*static_pointer_cast<Object>(init_value));
         temp_base.push_back(Object().set(temp_ptr, object_option));
       }
       break;
@@ -709,7 +709,7 @@ namespace kagami {
     using entry::FindObject;
     Message result;
     string name = CastToString(p.at("name"));
-    Object *target = FindObject(name, true), *item = nullptr;
+    Object *target = FindObject(name), *item = nullptr;
     string option = kTypeIdNull;
     size_t subscript_1 = 0, subscript_2 = 0;
     shared_ptr<void> &cast_path = result.GetCastPath();
