@@ -441,10 +441,10 @@ namespace kagami {
     }
 
     if (msg.GetCode() == kCodePoint) {
+      AttrTag tag(type::GetTemplate(msg.GetValue())->GetMethods(), false);
       item.push_back(msg.GetDetail());
-      Object wrapper;
-      wrapper.set(msg.GetCastPath(), msg.GetValue());
-      lambdamap.insert(pair<string, Object>(msg.GetDetail(), wrapper));
+      lambdamap.insert(pair<string, Object>(msg.GetDetail(), Object().set(msg.GetCastPath(), msg.GetValue(), 
+        Kit().MakeAttrTagStr(tag))));
     }
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
@@ -730,12 +730,9 @@ namespace kagami {
 
     for (count = 0; count < size; count++) {
       current = target.at(count);
-      if (current == '@' || current == '+' || current == '%') {
+      if (current == '+' || current == '%') {
         if (symbol != current) {
           switch (symbol) {
-          case '@':
-            result.parent_container = temp;
-            break;
           case '+':
             result.methods.append(temp + "|");
             break;
@@ -754,6 +751,19 @@ namespace kagami {
 
     if (result.methods.back() == '|') result.methods.pop_back();
 
+    return result;
+  }
+
+  string Kit::MakeAttrTagStr(AttrTag target) {
+    string result = kStrEmpty;
+    vector<string> methods = this->BuildStringVector(target.methods);
+    if (target.ro)result.append("%true");
+    else result.append("%false");
+    if (!methods.empty()) {
+      for (auto &unit : methods) {
+        result.append("+" + unit);
+      }
+    }
     return result;
   }
 
