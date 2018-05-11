@@ -139,7 +139,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\basicutility.h" />
     <ClInclude Include="..\..\src\includes.h" />
     <ClInclude Include="..\..\src\kagamicommon.h" />
     <ClInclude Include="..\..\src\parser.h" />

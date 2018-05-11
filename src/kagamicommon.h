@@ -42,14 +42,15 @@ namespace kagami {
 
   class Message;
   class ObjTemplate;
+  class Object;
 
-  using PathMap = map<string, shared_ptr<void>>;
+  using ObjectMap = map<string, Object>;
   using StrMap = map<string, string>;
   using CastTo = shared_ptr<void>(*)(shared_ptr<void>);
   using CastFunc = pair<string, CastTo>;
   //using CastToExt = void * (*)(shared_ptr<void> &);
-  using Activity = Message(*)(PathMap &);
-  using PluginActivity = Message * (*)(PathMap &);
+  using Activity = Message(*)(ObjectMap &);
+  using PluginActivity = Message * (*)(ObjectMap &);
   using CastAttachment = map<string, ObjTemplate> *(*)();
   using MemoryDeleter = void(*)(void *);
   using Attachment = StrMap * (*)(void);

@@ -23,7 +23,7 @@
 //  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "basicutility.h"
+#include "parser.h"
 #include "windows.h"
 //#define _DISABLE_TYPE_SYSTEM_
 
@@ -240,7 +240,7 @@ namespace kagami {
     }
   }
 
-  Message WriteLog(PathMap &p) {
+  Message WriteLog(ObjectMap &p) {
     Message result;
     string r = CastToString(p.at("data"));
     ofstream ofs("script.log", std::ios::out | std::ios::app);
@@ -256,7 +256,7 @@ namespace kagami {
     return result;
   }
 
-  Message BinaryOperands(PathMap &p) {
+  Message BinaryOperands(ObjectMap &p) {
     using namespace entry;
     Kit kit;
     Object object;
@@ -362,43 +362,43 @@ namespace kagami {
     return result;
   }
 
-  Message ConditionRoot(PathMap &p) {
+  Message ConditionRoot(ObjectMap &p) {
     Message result(CastToString(p.at("state")), kCodeConditionRoot, kStrEmpty);
     return result;
   }
 
-  Message ConditionBranch(PathMap &p) {
+  Message ConditionBranch(ObjectMap &p) {
     Message result(CastToString(p.at("state")), kCodeConditionBranch, kStrEmpty);
     return result;
   }
 
-  Message ConditionLeaf(PathMap &p) {
+  Message ConditionLeaf(ObjectMap &p) {
     Message result(kStrTrue, kCodeConditionLeaf, kStrEmpty);
     return result;
   }
 
-  Message WhileCycle(PathMap &p) {
+  Message WhileCycle(ObjectMap &p) {
     Message result(CastToString(p.at("state")), kCodeHeadSign, kStrEmpty);
     return result;
   }
 
-  Message TailSign(PathMap &p) {
+  Message TailSign(ObjectMap &p) {
     Message result(kStrEmpty, kCodeTailSign, kStrEmpty);
     return result;
   }
 
-  Message ReturnSign(PathMap &p) {
+  Message ReturnSign(ObjectMap &p) {
     Message result;
     //TODO:return specific value
     return result;
   }
 
-  Message SetOperand(PathMap &p) {
+  Message SetOperand(ObjectMap &p) {
     using entry::FindObject;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     bool source_is_object = false;
     shared_ptr<void> target = nullptr, source = nullptr;
-    PathMap::iterator it;
+    ObjectMap::iterator it;
 
     //check left parameter
     it = p.find("target");
@@ -452,14 +452,14 @@ namespace kagami {
     return result;
   }
 
-  Message CreateOperand(PathMap &p) {
+  Message CreateOperand(ObjectMap &p) {
     using namespace entry;
     Message result;
     bool useobject = false;
     const string name = CastToString(p.at("name"));
     shared_ptr<void> source;
     Object *object = FindObject(name);
-    PathMap::iterator it = p.find("source");
+    ObjectMap::iterator it = p.find("source");
 
     if (it == p.end()) {
       it = p.find("&source");
@@ -500,7 +500,7 @@ namespace kagami {
 //plugin init code for Windows/Linux
 #if defined(_WIN32)
   //Windows Version
-  Message LoadPlugin(PathMap &p) {
+  Message LoadPlugin(ObjectMap &p) {
     using namespace entry;
     const string name = CastToString(p.at("name"));
     const string path = CastToString(p.at("path"));
@@ -519,7 +519,7 @@ namespace kagami {
     return result;
   }
 
-  Message UnloadPlugin(PathMap &p) {
+  Message UnloadPlugin(ObjectMap &p) {
     using namespace entry;
     Message result;
     UnloadInstance(Kit().GetRawString(CastToString(p.at("name"))));
@@ -529,7 +529,7 @@ namespace kagami {
   //Linux Version
 #endif
 
-  Message ArrayConstructor(PathMap &p) {
+  Message ArrayConstructor(ObjectMap &p) {
     Message result;
     int size = stoi(CastToString(p.at("size")));
     int count = 0;
@@ -586,15 +586,13 @@ namespace kagami {
   }
 
 #if defined(_ENABLE_FASTRING_)
-
-
-  Message CharConstructor(PathMap &p) {
+  Message CharConstructor(ObjectMap &p) {
     Message result;
 
     return result;
   }
 
-  Message FileStreamConstructor(PathMap &p) {
+  Message FileStreamConstructor(ObjectMap &p) {
     Message result;
 
     return result;
@@ -602,7 +600,7 @@ namespace kagami {
 #endif
   
 
-  Message GetElement(PathMap &p) {
+  Message GetElement(ObjectMap &p) {
     using entry::FindObject;
     Message result;
     string name = CastToString(p.at("name"));
@@ -610,7 +608,7 @@ namespace kagami {
     string option = kTypeIdNull;
     size_t subscript_1 = 0, subscript_2 = 0;
     shared_ptr<void> &cast_path = result.GetCastPath();
-    PathMap::iterator it;
+    ObjectMap::iterator it;
 
     if (target != nullptr) {
       option = target->GetTypeId();
