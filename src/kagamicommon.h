@@ -124,8 +124,6 @@ namespace kagami {
   class ObjTemplate {
   private:
     CastTo castTo;
-    //CastToExt castToExt;
-    //bool ext;
     string methods;
   public:
     ObjTemplate() : methods(kStrEmpty) {
@@ -134,22 +132,12 @@ namespace kagami {
     ObjTemplate(CastTo castTo, string methods) {
       this->castTo = castTo;
       this->methods = methods;
-      //this->ext = false;
     }
-    //ObjTemplate(CastToExt castToExt, string methods) {
-    //  this->castToExt = castToExt;
-    //  this->methods = methods;
-    //  this->ext = true;
-    //}
 
     shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) {
       shared_ptr<void> result = nullptr;
       if (target != nullptr) {
         result = castTo(target);
-        //switch (ext) {
-        //case true:result = castTo(target); break;
-        //case false:result.reset(castToExt(target)); break;
-        //}
       }
       return result;
     }
@@ -161,7 +149,7 @@ namespace kagami {
   /*Message Class
     It's the basic message tunnel of this script processor.
     According to my design,processor will check value or detail or
-    both of them to find out warnings or errors.Some function use 
+    both of them to find out warnings or errors.Some functions use 
     value,detail and castpath to deliver Object class.
   */
   class Message {

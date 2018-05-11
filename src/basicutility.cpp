@@ -28,49 +28,6 @@
 //#define _DISABLE_TYPE_SYSTEM_
 
 namespace kagami {
-  //TODO:new type system
-#ifdef _DISABLE_TYPE_SYSTEM_
-  namespace type {
-    map<string, CastTo> ObjectTypeMap;
-    map<string, CastToExt> ObjectTypeMapExt;
-
-    shared_ptr<void> spToString(shared_ptr<void> ptr) {
-      string temp(*static_pointer_cast<string>(ptr));
-      return make_shared<string>(temp);
-    }
-
-    shared_ptr<void> spToInt(shared_ptr<void> ptr) {
-      int temp = *static_pointer_cast<int>(ptr);
-      return make_shared<int>(temp);
-    }
-
-    shared_ptr<void> ExternProcessing(shared_ptr<void> ptr, CastToExt castTo) {
-      shared_ptr<void> result = nullptr;
-      if (ptr != nullptr && castTo != nullptr) {
-        result.reset(castTo(ptr));
-      }
-      return result;
-    }
-
-    shared_ptr<void> CastToNewPtr(Object &object) {
-      shared_ptr<void> result = nullptr;
-      map<string, CastTo>::iterator it = ObjectTypeMap.find(object.GetTypeId());
-      map<string, CastToExt>::iterator it_ex = ObjectTypeMapExt.find(object.GetTypeId());
-      if (it != ObjectTypeMap.end()) {
-        result = it->second(object.get());
-      }
-      else if (it_ex != ObjectTypeMapExt.end()) {
-        result = ExternProcessing(object.get(), it_ex->second);
-      }
-      return result;
-    }
-
-    void InitDefaultType() {
-      ObjectTypeMap.insert(CastFunc(kTypeIdRawString, spToString));
-      ObjectTypeMap.insert(CastFunc(kTypeIdInt, spToInt));
-    }
-  }
-#else
   namespace type {
     map<string, ObjTemplate> TemplateMap;
 
@@ -103,84 +60,11 @@ namespace kagami {
       if (it != TemplateMap.end()) TemplateMap.erase(it);
     }
   }
-#endif
 
   namespace entry {
     vector<Instance> InstanceList;
     vector<ObjectManager> ObjectStack;
 
-#if defined(_DISABLE_TYPE_SYSTEM)
-    Object *FindObject(string name, bool reserved = false) {
-      Object *object = nullptr;
-      size_t i = ObjectStack.size();
-      if ((ObjectStack.size() == 1 || !reserved) && !ObjectStack.empty()) {
-        object = ObjectStack.back().Find(name);
-      }
-      else if (ObjectStack.size() > 1 && reserved) {
-        while (i > 0 && object->get() == nullptr) {
-          object = ObjectStack.at(i - 1).Find(name);
-          i--;
-        }
-      }
-      return object;
-    }
-
-    Object *CreateObjectByString(string name, string str, bool readonly = false) {
-      Object *object = nullptr;
-      if (Kit().GetDataType(name) != kTypeFunction) {
-        trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
-        return object;
-      }
-      ObjectStack.back().CreateByObject(name, str, kTypeIdRawString, false);
-      object = ObjectStack.back().Find(name);
-      return object;
-    }
-
-    Object *CreateObjectByPointer(string name, shared_ptr<void> ptr, string castoption) {
-      Object *object = nullptr;
-      Object temp;
-      if (Kit().GetDataType(name) != kTypeFunction) {
-        trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
-        return object;
-      }
-      temp.set(ptr, castoption);
-      ObjectStack.back().CreateByObject(name, temp, false);
-      object = ObjectStack.back().Find(name);
-      return object;
-    }
-
-    void DisposeObject(string name, bool reserved) {
-      bool result = false;
-      size_t i = ObjectStack.size();
-      if (ObjectStack.size() == 1 || !reserved) {
-        ObjectStack.back().dispose(name);
-      }
-      else if (ObjectStack.size() > 1 && reserved) {
-        while (result != true && i > 0) {
-          ObjectStack.at(i - 1).dispose(name);
-          i--;
-        }
-      }
-    }
-
-    void CleanupObject() {
-      while (!ObjectStack.empty()) {
-        ObjectStack.pop_back();
-      }
-    }
-
-    ObjectManager CreateMap() {
-      ObjectStack.push_back(ObjectManager());
-      return ObjectStack.back();
-    }
-
-    bool DisposeMap() {
-      if (!ObjectStack.empty()) {
-        ObjectStack.pop_back();
-      }
-      return ObjectStack.empty();
-    }
-#else
     Object *FindObject(string sign) {
       Object *object = nullptr;
       size_t count = ObjectStack.size();
@@ -239,7 +123,6 @@ namespace kagami {
       if (!ObjectStack.empty()) { ObjectStack.pop_back(); }
       return ObjectStack.empty();
     }
-#endif
 
     bool Instance::Load(string name, HINSTANCE h) {
       Attachment attachment = nullptr;
@@ -691,6 +574,8 @@ namespace kagami {
   }
 
 #if defined(_ENABLE_FASTRING_)
+
+
   Message CharConstructor(PathMap &p) {
     Message result;
 
