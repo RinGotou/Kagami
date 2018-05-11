@@ -80,17 +80,16 @@ namespace kagami {
 
     Object *CreateObject(string sign, string dat, bool constant = false) {
       Object *object = nullptr;
-      ObjectStack.back().CreateByObject(sign, dat, kTypeIdRawString, constant);
+      ObjTemplate *objtemp = type::GetTemplate(kTypeIdRawString);
+      ObjectStack.back().Create(sign, dat, kTypeIdRawString, *objtemp, constant);
       object = ObjectStack.back().Find(sign);
       return object;
     }
 
     Object *CreateObject(string sign, shared_ptr<void> ptr, string option, bool constant = false) {
       Object *object = nullptr;
-      Object temp;
-
-      temp.set(ptr, option);
-      ObjectStack.back().CreateByObject(sign, temp, constant);
+      AttrTag attrTag(type::GetTemplate(option)->GetMethods(), constant);
+      ObjectStack.back().add(sign, Object().set(ptr, option, Kit().MakeAttrTagStr(attrTag)));
       object = ObjectStack.back().Find(sign);
       return object;
     }
@@ -427,21 +426,29 @@ namespace kagami {
     //set operations
     if (target != nullptr) {
       auto left = static_pointer_cast<Object>(target);
-      if (source_is_object && source != nullptr) {
-        auto right = type::GetObjectCopy(*static_pointer_cast<Object>(source));
-        if (right != nullptr) {
-          left->set(right, static_pointer_cast<Object>(source)->GetTypeId());
-        }
-      }
-      else if (!source_is_object && source != nullptr) {
-        string temp = CastToString(source);
-        left->manage(temp, kTypeIdRawString);
+      if (left->getTag().ro) {
+        result.combo(kStrFatalError, kCodeIllegalCall, "Try to operate with a constant.");
       }
       else {
-        result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
+        if (source_is_object && source != nullptr) {
+          auto source_ptr = static_pointer_cast<Object>(source);
+          auto right = type::GetObjectCopy(*source_ptr);
+          AttrTag tag = source_ptr->getTag();
+          tag.ro = false;
+          if (right != nullptr) {
+            left->set(right, source_ptr->GetTypeId(), Kit().MakeAttrTagStr(tag));
+          }
+        }
+        else if (!source_is_object && source != nullptr) {
+          string temp = CastToString(source);
+          AttrTag tag(type::GetTemplate(kTypeIdRawString)->GetMethods(), false);
+          left->manage(temp, kTypeIdRawString,Kit().MakeAttrTagStr(tag));
+        }
       }
     }
-
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
+    }
     return result;
   }
 
@@ -526,9 +533,11 @@ namespace kagami {
     Message result;
     int size = stoi(CastToString(p.at("size")));
     int count = 0;
+    AttrTag tag("", false);
     shared_ptr<void> init_value = nullptr;
     shared_ptr<void> &cast_path = result.GetCastPath();
     shared_ptr<void> temp_ptr = nullptr;
+    shared_ptr<Object> object_ptr = nullptr;
     auto it = p.find("init_value");
     Object init_object;
     string object_option = kTypeIdNull;
@@ -553,15 +562,18 @@ namespace kagami {
 
     switch (use_object) {
     case true:
-      object_option = static_pointer_cast<Object>(init_value)->GetTypeId();
+      object_ptr = static_pointer_cast<Object>(init_value);
+      object_option = object_ptr->GetTypeId();
+      tag.methods = object_ptr->getTag().methods;
       for (count = 0; count < size; count++) {
         temp_ptr = type::GetObjectCopy(*static_pointer_cast<Object>(init_value));
-        temp_base.push_back(Object().set(temp_ptr, object_option));
+        temp_base.push_back(Object().set(temp_ptr, object_option, Kit().MakeAttrTagStr(tag)));
       }
       break;
     case false:
+      tag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
       for (count = 0; count < size; count++) {
-        init_object.manage(*static_pointer_cast<string>(init_value), kTypeIdRawString);
+        init_object.manage(*static_pointer_cast<string>(init_value), kTypeIdRawString, Kit().MakeAttrTagStr(tag));
         temp_base.push_back(init_object);
       }
       break;
@@ -659,5 +671,9 @@ namespace kagami {
     Inject("else", EntryProvider("else", ConditionLeaf, 0));
     Inject("array", EntryProvider("array", ArrayConstructor, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
     Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
+  }
+
+  void InitObjectTemplates() {
+
   }
 }
