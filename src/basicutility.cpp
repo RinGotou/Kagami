@@ -28,49 +28,6 @@
 //#define _DISABLE_TYPE_SYSTEM_
 
 namespace kagami {
-  //TODO:new type system
-#ifdef _DISABLE_TYPE_SYSTEM_
-  namespace type {
-    map<string, CastTo> ObjectTypeMap;
-    map<string, CastToExt> ObjectTypeMapExt;
-
-    shared_ptr<void> spToString(shared_ptr<void> ptr) {
-      string temp(*static_pointer_cast<string>(ptr));
-      return make_shared<string>(temp);
-    }
-
-    shared_ptr<void> spToInt(shared_ptr<void> ptr) {
-      int temp = *static_pointer_cast<int>(ptr);
-      return make_shared<int>(temp);
-    }
-
-    shared_ptr<void> ExternProcessing(shared_ptr<void> ptr, CastToExt castTo) {
-      shared_ptr<void> result = nullptr;
-      if (ptr != nullptr && castTo != nullptr) {
-        result.reset(castTo(ptr));
-      }
-      return result;
-    }
-
-    shared_ptr<void> CastToNewPtr(Object &object) {
-      shared_ptr<void> result = nullptr;
-      map<string, CastTo>::iterator it = ObjectTypeMap.find(object.GetTypeId());
-      map<string, CastToExt>::iterator it_ex = ObjectTypeMapExt.find(object.GetTypeId());
-      if (it != ObjectTypeMap.end()) {
-        result = it->second(object.get());
-      }
-      else if (it_ex != ObjectTypeMapExt.end()) {
-        result = ExternProcessing(object.get(), it_ex->second);
-      }
-      return result;
-    }
-
-    void InitDefaultType() {
-      ObjectTypeMap.insert(CastFunc(kTypeIdRawString, spToString));
-      ObjectTypeMap.insert(CastFunc(kTypeIdInt, spToInt));
-    }
-  }
-#else
   namespace type {
     map<string, ObjTemplate> TemplateMap;
 
@@ -103,84 +60,11 @@ namespace kagami {
       if (it != TemplateMap.end()) TemplateMap.erase(it);
     }
   }
-#endif
 
   namespace entry {
     vector<Instance> InstanceList;
     vector<ObjectManager> ObjectStack;
 
-#if defined(_DISABLE_TYPE_SYSTEM)
-    Object *FindObject(string name, bool reserved = false) {
-      Object *object = nullptr;
-      size_t i = ObjectStack.size();
-      if ((ObjectStack.size() == 1 || !reserved) && !ObjectStack.empty()) {
-        object = ObjectStack.back().Find(name);
-      }
-      else if (ObjectStack.size() > 1 && reserved) {
-        while (i > 0 && object->get() == nullptr) {
-          object = ObjectStack.at(i - 1).Find(name);
-          i--;
-        }
-      }
-      return object;
-    }
-
-    Object *CreateObjectByString(string name, string str, bool readonly = false) {
-      Object *object = nullptr;
-      if (Kit().GetDataType(name) != kTypeFunction) {
-        trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
-        return object;
-      }
-      ObjectStack.back().CreateByObject(name, str, kTypeIdRawString, false);
-      object = ObjectStack.back().Find(name);
-      return object;
-    }
-
-    Object *CreateObjectByPointer(string name, shared_ptr<void> ptr, string castoption) {
-      Object *object = nullptr;
-      Object temp;
-      if (Kit().GetDataType(name) != kTypeFunction) {
-        trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name."));
-        return object;
-      }
-      temp.set(ptr, castoption);
-      ObjectStack.back().CreateByObject(name, temp, false);
-      object = ObjectStack.back().Find(name);
-      return object;
-    }
-
-    void DisposeObject(string name, bool reserved) {
-      bool result = false;
-      size_t i = ObjectStack.size();
-      if (ObjectStack.size() == 1 || !reserved) {
-        ObjectStack.back().dispose(name);
-      }
-      else if (ObjectStack.size() > 1 && reserved) {
-        while (result != true && i > 0) {
-          ObjectStack.at(i - 1).dispose(name);
-          i--;
-        }
-      }
-    }
-
-    void CleanupObject() {
-      while (!ObjectStack.empty()) {
-        ObjectStack.pop_back();
-      }
-    }
-
-    ObjectManager CreateMap() {
-      ObjectStack.push_back(ObjectManager());
-      return ObjectStack.back();
-    }
-
-    bool DisposeMap() {
-      if (!ObjectStack.empty()) {
-        ObjectStack.pop_back();
-      }
-      return ObjectStack.empty();
-    }
-#else
     Object *FindObject(string sign) {
       Object *object = nullptr;
       size_t count = ObjectStack.size();
@@ -196,17 +80,16 @@ namespace kagami {
 
     Object *CreateObject(string sign, string dat, bool constant = false) {
       Object *object = nullptr;
-      ObjectStack.back().CreateByObject(sign, dat, kTypeIdRawString, constant);
+      ObjTemplate *objtemp = type::GetTemplate(kTypeIdRawString);
+      ObjectStack.back().Create(sign, dat, kTypeIdRawString, *objtemp, constant);
       object = ObjectStack.back().Find(sign);
       return object;
     }
 
     Object *CreateObject(string sign, shared_ptr<void> ptr, string option, bool constant = false) {
       Object *object = nullptr;
-      Object temp;
-
-      temp.set(ptr, option);
-      ObjectStack.back().CreateByObject(sign, temp, constant);
+      AttrTag attrTag(type::GetTemplate(option)->GetMethods(), constant);
+      ObjectStack.back().add(sign, Object().set(ptr, option, Kit().MakeAttrTagStr(attrTag)));
       object = ObjectStack.back().Find(sign);
       return object;
     }
@@ -239,7 +122,6 @@ namespace kagami {
       if (!ObjectStack.empty()) { ObjectStack.pop_back(); }
       return ObjectStack.empty();
     }
-#endif
 
     bool Instance::Load(string name, HINSTANCE h) {
       Attachment attachment = nullptr;
@@ -544,21 +426,29 @@ namespace kagami {
     //set operations
     if (target != nullptr) {
       auto left = static_pointer_cast<Object>(target);
-      if (source_is_object && source != nullptr) {
-        auto right = type::GetObjectCopy(*static_pointer_cast<Object>(source));
-        if (right != nullptr) {
-          left->set(right, static_pointer_cast<Object>(source)->GetTypeId());
-        }
-      }
-      else if (!source_is_object && source != nullptr) {
-        string temp = CastToString(source);
-        left->manage(temp, kTypeIdRawString);
+      if (left->getTag().ro) {
+        result.combo(kStrFatalError, kCodeIllegalCall, "Try to operate with a constant.");
       }
       else {
-        result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
+        if (source_is_object && source != nullptr) {
+          auto source_ptr = static_pointer_cast<Object>(source);
+          auto right = type::GetObjectCopy(*source_ptr);
+          AttrTag tag = source_ptr->getTag();
+          tag.ro = false;
+          if (right != nullptr) {
+            left->set(right, source_ptr->GetTypeId(), Kit().MakeAttrTagStr(tag));
+          }
+        }
+        else if (!source_is_object && source != nullptr) {
+          string temp = CastToString(source);
+          AttrTag tag(type::GetTemplate(kTypeIdRawString)->GetMethods(), false);
+          left->manage(temp, kTypeIdRawString,Kit().MakeAttrTagStr(tag));
+        }
       }
     }
-
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
+    }
     return result;
   }
 
@@ -643,9 +533,11 @@ namespace kagami {
     Message result;
     int size = stoi(CastToString(p.at("size")));
     int count = 0;
+    AttrTag tag("", false);
     shared_ptr<void> init_value = nullptr;
     shared_ptr<void> &cast_path = result.GetCastPath();
     shared_ptr<void> temp_ptr = nullptr;
+    shared_ptr<Object> object_ptr = nullptr;
     auto it = p.find("init_value");
     Object init_object;
     string object_option = kTypeIdNull;
@@ -670,15 +562,18 @@ namespace kagami {
 
     switch (use_object) {
     case true:
-      object_option = static_pointer_cast<Object>(init_value)->GetTypeId();
+      object_ptr = static_pointer_cast<Object>(init_value);
+      object_option = object_ptr->GetTypeId();
+      tag.methods = object_ptr->getTag().methods;
       for (count = 0; count < size; count++) {
         temp_ptr = type::GetObjectCopy(*static_pointer_cast<Object>(init_value));
-        temp_base.push_back(Object().set(temp_ptr, object_option));
+        temp_base.push_back(Object().set(temp_ptr, object_option, Kit().MakeAttrTagStr(tag)));
       }
       break;
     case false:
+      tag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
       for (count = 0; count < size; count++) {
-        init_object.manage(*static_pointer_cast<string>(init_value), kTypeIdRawString);
+        init_object.manage(*static_pointer_cast<string>(init_value), kTypeIdRawString, Kit().MakeAttrTagStr(tag));
         temp_base.push_back(init_object);
       }
       break;
@@ -691,6 +586,8 @@ namespace kagami {
   }
 
 #if defined(_ENABLE_FASTRING_)
+
+
   Message CharConstructor(PathMap &p) {
     Message result;
 
@@ -774,5 +671,9 @@ namespace kagami {
     Inject("else", EntryProvider("else", ConditionLeaf, 0));
     Inject("array", EntryProvider("array", ArrayConstructor, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
     Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
+  }
+
+  void InitObjectTemplates() {
+
   }
 }
