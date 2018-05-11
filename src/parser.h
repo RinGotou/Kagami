@@ -72,7 +72,6 @@ namespace kagami {
     no description yet.
   */
   struct AttrTag {
-    string parent_container;
     string methods;
     bool ro;
   };
@@ -135,6 +134,7 @@ namespace kagami {
 
     int GetDataType(string target);
     AttrTag GetAttrTag(string target);
+    string MakeAttrTagStr(AttrTag target);
     Message ExecScriptFile(string target);
     void PrintEvents();
     void Terminal();
@@ -155,13 +155,13 @@ namespace kagami {
     string tag;
   public:
     Object() { ptr = nullptr; option = kTypeIdNull; }
-    template <class T> Object &manage(T &t, string option, string tag = kStrEmpty) {
+    template <class T> Object &manage(T &t, string option, string tag) {
       ptr = std::make_shared<T>(t);
       this->option = option;
       this->tag = tag;
       return *this;
     }
-    Object &set(shared_ptr<void> ptr, string option) {
+    Object &set(shared_ptr<void> ptr, string option,string tag) {
       this->ptr = ptr;
       this->option = option;
       return *this;
@@ -169,6 +169,8 @@ namespace kagami {
     shared_ptr<void> get() { return ptr; }
     string GetTypeId() const { return option; }
     AttrTag getTag() const { return Kit().GetAttrTag(tag); }
+    Object &setTag(string tag) { this->tag = tag; return *this; }
+    AttrTag addTag(string target) { tag.append(target); return Kit().GetAttrTag(tag); }
   };
 
   /*ObjectManager Class
@@ -177,49 +179,49 @@ namespace kagami {
   */
   class ObjectManager {
   private:
-    typedef map<string, Object> PointBase;
-    PointBase base;
-    vector<string> constant_list;
+    using ObjectBase = map<string, Object>;
+    ObjectBase base;
 
-    bool CheckPriority(string name) {
-      if (constant_list.empty()) {
-        return true;
-      }
-      else {
-        for (auto unit : constant_list) {
-          if (unit == name) return true;
-        }
-      }
-      return false;
+    bool CheckObject(string sign) {
+      ObjectBase::iterator it = base.find(sign);
+      if (it == base.end()) return false;
+      else return true;
     }
   public:
-    template <class Type> void Create(string sign, Type &t, ObjTemplate temp, bool constant) {
+    template <class Type> bool Create(string sign, Type &t, string TypeId, ObjTemplate temp, bool constant) {
+      bool result = true;
+      string tag = kStrEmpty;
+      AttrTag attrTag;
 
-    }
-    template <class T> void CreateByObject(string name, T &t, string option, bool ro) {
-      auto insert = [&]() {
-        base.insert(PointBase::value_type(name, Object().manage(t, option)));
-        if (ro) constant_list.emplace_back(name);
-      };
-      switch (base.empty()) {
-      case true:insert(); break;
-      case false:
-        PointBase::iterator i = base.find(name);
-        if (i == base.end()) insert();
+      if (CheckObject(sign) == true) {
+        result = false;
       }
-    }
+      else {
+        if (constant) attrTag.ro = true;
+        else attrTag.ro = false;
+        attrTag.methods = temp.GetMethods();
 
-    void CreateByObject(string name, Object &source, bool ro) {
-      auto insert = [&]() {
-        base.insert(PointBase::value_type(name, source));
-        if (ro) constant_list.emplace_back(name);
-      };
-      switch (base.empty()) {
-      case true:insert(); break;
-      case false:
-        PointBase::iterator i = base.find(name);
-        if (i == base.end()) insert();
+        tag = Kit().MakeAttrTagStr(attrTag);
+
+        base.insert(pair<string, Object>(sign, Object().manage(t, TypeId, tag)));
       }
+      
+      return result;
+    }
+    bool add(string sign, Object &source, bool constant) {
+      bool result = true;
+      AttrTag attrTag = source.getTag();
+      Object object = source;
+
+      if (CheckObject(sign) == true) {
+        result = false;
+      }
+      else {
+        attrTag.ro = constant;
+        object.setTag(Kit().MakeAttrTagStr(attrTag));
+        base.insert(pair<string, Object>(sign, object));
+      }
+      return result;
     }
 
     Object *Find(string name) {
@@ -234,7 +236,7 @@ namespace kagami {
     }
 
     void dispose(string name) {
-      PointBase::iterator it = base.find(name);
+      ObjectBase::iterator it = base.find(name);
       if (it != base.end()) base.erase(it);
     }
   };
@@ -395,7 +397,6 @@ namespace kagami {
     void Delete(string name);
     void ResetPluginEntry();
     void ResetPlugin(bool OnExit = false);
-    //void CleanupObject();
     Object *FindObject(string name);
     ObjectManager &CreateManager();
     bool DisposeManager();
