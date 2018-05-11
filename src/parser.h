@@ -74,6 +74,11 @@ namespace kagami {
   struct AttrTag {
     string methods;
     bool ro;
+    AttrTag(string methods, bool ro) {
+      this->methods = methods;
+      this->ro = ro;
+    }
+    AttrTag(){}
   };
 #endif
   /*Kit Class
@@ -208,17 +213,14 @@ namespace kagami {
       
       return result;
     }
-    bool add(string sign, Object &source, bool constant) {
+    bool add(string sign, Object &source) {
       bool result = true;
-      AttrTag attrTag = source.getTag();
       Object object = source;
 
       if (CheckObject(sign) == true) {
         result = false;
       }
       else {
-        attrTag.ro = constant;
-        object.setTag(Kit().MakeAttrTagStr(attrTag));
         base.insert(pair<string, Object>(sign, object));
       }
       return result;
@@ -379,6 +381,10 @@ namespace kagami {
   }
 
   void Activiate();
+
+  namespace type {
+    ObjTemplate *GetTemplate(string name);
+  }
 
   namespace trace {
     using log_t = pair<string, Message>;

@@ -441,10 +441,10 @@ namespace kagami {
     }
 
     if (msg.GetCode() == kCodePoint) {
+      AttrTag tag(type::GetTemplate(msg.GetValue())->GetMethods(), false);
       item.push_back(msg.GetDetail());
-      Object wrapper;
-      wrapper.set(msg.GetCastPath(), msg.GetValue());
-      lambdamap.insert(pair<string, Object>(msg.GetDetail(), wrapper));
+      lambdamap.insert(pair<string, Object>(msg.GetDetail(), Object().set(msg.GetCastPath(), msg.GetValue(), 
+        Kit().MakeAttrTagStr(tag))));
     }
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
