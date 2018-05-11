@@ -622,7 +622,7 @@ namespace kagami {
     Kit kit;
     Message result;
     size_t size = p.size(), i = 0;
-    PathMap map;
+    ObjectMap map;
     shared_ptr<void> ptr;
     bool ignore_first_arg = true;
 
@@ -667,13 +667,13 @@ namespace kagami {
       case true:name.append(to_string(i)); break;
       case false:name.append(parameters.at(i)); break;
       }
-      map.insert(PathMap::value_type(name, ptr));
+      map.insert(ObjectMap::value_type(name, ptr));
     };
 
 
     if (priority == kFlagPluginEntry) {
       for (i = 0; i < parameters.size(); i++) {
-        if (i >= size) map.insert(PathMap::value_type(parameters[i], nullptr));
+        if (i >= size) map.insert(ObjectMap::value_type(parameters[i], nullptr));
         else Filling();
       }
       Message *msgptr = activity2(map);
@@ -687,7 +687,7 @@ namespace kagami {
       }
       else if (size == kFlagAutoFill) {
         for (i = 0; i < parameters.size(); i++) {
-          if (i >= size) map.insert(PathMap::value_type(parameters[i], nullptr));
+          if (i >= size) map.insert(ObjectMap::value_type(parameters[i], nullptr));
           else Filling();
           result = activity(map);
         }
@@ -767,6 +767,7 @@ namespace kagami {
     return result;
   }
 
+  //TODO:upgrade to new object system
   Message ChainStorage::Run(deque<string> res = deque<string>()) {
     using namespace entry;
     Message result;
@@ -786,7 +787,7 @@ namespace kagami {
         return result;
       }
       for (i = 0; i < parameter.size(); i++) {
-        CreateObject(parameter.at(i), res.at(i), false);
+        //CreateObject(parameter.at(i), res.at(i), false);
       }
     }
 
@@ -909,18 +910,18 @@ namespace kagami {
     return result;
   }
 
-  Message VersionInfo(PathMap &p) {
+  Message VersionInfo(ObjectMap &p) {
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     std::cout << kEngineVersion << std::endl;
     return result;
   }
 
-  Message Quit(PathMap &p) {
+  Message Quit(ObjectMap &p) {
     Message result(kStrEmpty, kCodeQuit, kStrEmpty);
     return result;
   }
 
-  Message PrintOnScreen(PathMap &p) {
+  Message PrintOnScreen(ObjectMap &p) {
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     string msg = CastToString(p.at("msg"));
     std::cout << msg << std::endl;

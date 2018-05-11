@@ -396,9 +396,27 @@ namespace kagami {
 
     using EntryMap = map<string, EntryProvider>;
     using EntryMapUnit = map<string, EntryProvider>::value_type;
+
+#if defined(_WIN32)
+    //Windows Verison
+    class Instance : public pair<string, HINSTANCE> {
+    private:
+      bool health;
+      StrMap link_map;
+    public:
+      Instance() { health = false; }
+      bool Load(string name, HINSTANCE h);
+      bool GetHealth() const { return health; }
+      StrMap GetMap() const { return link_map; }
+      CastAttachment getObjTemplate() { return (CastAttachment)GetProcAddress(this->second, "CastAttachment"); }
+      MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
+    };
+#else
+    //Linux Version
+#endif
     
     string GetTypeId(string sign);
-
+    std::wstring s2ws(const std::string& s);
     void Inject(string name, EntryProvider provider);
     void Delete(string name);
     void ResetPluginEntry();
@@ -407,17 +425,17 @@ namespace kagami {
     ObjectManager &CreateManager();
     bool DisposeManager();
 
-    template <class T>
-    Object *CreateObject(string name, T t, string option, bool readonly = false) {
-      Object *object = nullptr;
-      if (Kit().GetDataType(name) != kTypeFunction) {
-        trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
-        return nullptr;
-      }
-      ObjectStack.back().CreateByObject(name, t, option, false);
-      object = ObjectStack.back().Find(name);
-      return object;
-    }
+    //template <class T>
+    //Object *CreateObject(string name, T t, string option, bool readonly = false) {
+    //  Object *object = nullptr;
+    //  if (Kit().GetDataType(name) != kTypeFunction) {
+    //    trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
+    //    return nullptr;
+    //  }
+    //  ObjectStack.back().CreateByObject(name, t, option, false);
+    //  object = ObjectStack.back().Find(name);
+    //  return object;
+    //}
   }
 }
 
