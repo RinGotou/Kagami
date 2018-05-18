@@ -67,7 +67,6 @@ namespace kagami {
   class EntryProvider;
   class Chainloader;
 
-#if defined(_ENABLE_FASTRING_)
   /*Object Tag Struct
     no description yet.
   */
@@ -80,7 +79,7 @@ namespace kagami {
     }
     AttrTag(){}
   };
-#endif
+
   /*Kit Class
    this class contains many useful template or tiny function, and
    create script processing workspace.
@@ -159,7 +158,11 @@ namespace kagami {
     string option;
     string tag;
   public:
-    Object() { ptr = nullptr; option = kTypeIdNull; }
+    Object() { 
+      ptr = nullptr; 
+      option = kTypeIdNull;
+      tag = kStrEmpty;
+    }
     template <class T> Object &manage(T &t, string option, string tag) {
       ptr = std::make_shared<T>(t);
       this->option = option;
@@ -275,23 +278,17 @@ namespace kagami {
   private:
     vector<string> raw;
     map<string, Object> lambdamap;
+
+    Object GetObj(string name);
+
     int GetPriority(string target) const;
-    bool StartActivity(EntryProvider &provider, deque<string> container,
-      deque<string> &item, size_t top, Message &msg, Chainloader *loader);
-    bool ShuntingYardProcessing(bool disableset, deque<string> &item, deque<string> &symbol, 
+    bool Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
       Message &msg, size_t mode);
   public:
     Chainloader() {}
     Chainloader &Build(vector<string> raw) {
       this->raw = raw;
       return *this;
-    }
-
-    Object GetVariable(string name) {
-      Object result;
-      map<string, Object>::iterator it = lambdamap.find(name);
-      if (it != lambdamap.end()) result = it->second;
-      return result;
     }
 
     Chainloader &Reset() {
@@ -336,44 +333,37 @@ namespace kagami {
   */
   class EntryProvider {
   private:
-    string name;
-    int requiredcount;
+    string id;
+    int arg_mode;
     int priority;
-    vector<string> parameters;
+    vector<string> args;
     Activity activity;
-    PluginActivity activity2;
-    MemoryDeleter deleter;
   public:
-    EntryProvider() : name(kStrNull), activity(nullptr), activity2(nullptr), deleter(nullptr) {
-      requiredcount = kFlagNotDefined;
+    EntryProvider() : id(kStrNull), activity(nullptr) {
+      arg_mode = kCodeIllegalArgs;
     }
 
-    EntryProvider(string n, Activity a, int r, int p = kFlagNormalEntry, vector<string> pa = vector<string>()) :
-    name(n), parameters(pa), activity(a), activity2(nullptr), deleter(nullptr) {
-      requiredcount = r;
-      priority = p;
-    }
-
-    EntryProvider(string n, PluginActivity p, vector<string> pa, MemoryDeleter d) : 
-      name(n), parameters(pa), activity(nullptr), activity2(p), deleter(d) {
-      priority = kFlagPluginEntry;
-      requiredcount = kFlagAutoFill;
+    EntryProvider(ActivityTemplate temp) :
+    id(temp.id), args(Kit().BuildStringVector(temp.args)), 
+      activity(temp.activity) {
+      arg_mode = temp.arg_mode;
+      priority = temp.priority;
     }
 
     bool operator==(EntryProvider &target) {
-      return (target.name == this->name &&
+      return (target.id == this->id &&
         target.activity == this->activity &&
-        target.requiredcount == this->requiredcount &&
-        target.activity2 == this->activity2 &&
+        target.arg_mode == this->arg_mode &&
         target.priority == this->priority &&
-        target.parameters == this->parameters);
+        target.args == this->args);
     }
 
-    string GetName() const { return this->name; }
-    int GetRequiredCount() const { return this->requiredcount; }
+    string GetId() const { return this->id; }
+    int GetArgumentMode() const { return this->arg_mode; }
+    size_t GetArgumentSize() const { return this->args.size(); }
     int GetPriority() const { return this->priority; }
-    bool Good() const { return ((activity != nullptr || activity2 != nullptr) && requiredcount != kFlagNotDefined); }
-    Message StartActivity(deque<string> p, Chainloader *parent);
+    bool Good() const { return ((activity != nullptr) && arg_mode != kCodeIllegalArgs); }
+    Message StartActivity(deque<Object> p, Chainloader *parent);
   };
 
   inline string CastToString(shared_ptr<void> ptr) {
@@ -424,18 +414,6 @@ namespace kagami {
     Object *FindObject(string name);
     ObjectManager &CreateManager();
     bool DisposeManager();
-
-    //template <class T>
-    //Object *CreateObject(string name, T t, string option, bool readonly = false) {
-    //  Object *object = nullptr;
-    //  if (Kit().GetDataType(name) != kTypeFunction) {
-    //    trace::log(Message(kStrFatalError, kCodeIllegalArgs, "Illegal variable name"));
-    //    return nullptr;
-    //  }
-    //  ObjectStack.back().CreateByObject(name, t, option, false);
-    //  object = ObjectStack.back().Find(name);
-    //  return object;
-    //}
   }
 }
 
