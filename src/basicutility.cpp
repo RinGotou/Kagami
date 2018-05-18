@@ -25,6 +25,7 @@
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "parser.h"
 #include "windows.h"
+#include <iostream>
 //#define _DISABLE_TYPE_SYSTEM_
 
 namespace kagami {
@@ -125,15 +126,15 @@ namespace kagami {
 
     bool Instance::Load(string name, HINSTANCE h) {
       Attachment attachment = nullptr;
-      StrMap *targetmap = nullptr;
+      //StrMap *targetmap = nullptr;
       this->first = name;
       this->second = h;
 
       attachment = (Attachment)GetProcAddress(this->second, "Attachment");
       if (attachment != nullptr) {
-        targetmap = attachment();
-        link_map = StrMap(*targetmap);
-        delete(targetmap);
+        auto ptr = attachment();
+        act_temp = *ptr;
+        delete(ptr);
         health = true;
       }
       else {
@@ -156,9 +157,10 @@ namespace kagami {
     }
 
     void AddInstance(string name, HINSTANCE h) {
-      PluginActivity activity = nullptr;
-      CastAttachment c_attachment = nullptr;
-      map<string, ObjTemplate> *temp_map = nullptr;
+      //PluginActivity activity = nullptr;
+      CastAttachment castAttachment = nullptr;
+      map<string, ObjTemplate> *objtemps = nullptr;
+      vector<ActivityTemplate> *activities = nullptr;
       MemoryDeleter deleter = nullptr;
 
       InstanceList.push_back(Instance());
@@ -166,24 +168,20 @@ namespace kagami {
 
       if (InstanceList.back().GetHealth()) {
         HINSTANCE &ins = InstanceList.back().second;
-        StrMap map = InstanceList.back().GetMap();
+        vector<ActivityTemplate> temp = InstanceList.back().GetMap();
+        castAttachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
         deleter = InstanceList.back().getDeleter();
 
-        for (auto unit : map) {
-          activity = (PluginActivity)GetProcAddress(ins, unit.first.c_str());
-          if (activity != nullptr) {
-            Inject(unit.first, EntryProvider(unit.first, activity, Kit().BuildStringVector(unit.second), deleter));
-          }
+        for (auto &unit : temp) {
+          Inject(unit.id, EntryProvider(unit));
         }
-        c_attachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
-        if (c_attachment != nullptr) {
-          temp_map = c_attachment();
-          for (auto &unit : *temp_map) {
+        if (castAttachment != nullptr) {
+          objtemps = castAttachment();
+          for (auto &unit : *objtemps) {
             type::AddTemplate(unit.first, unit.second);
           }
         }
       }
-      deleter(c_attachment);
     }
 
     void UnloadInstance(string name) {
@@ -191,8 +189,9 @@ namespace kagami {
       CastAttachment castAttachment = nullptr;
       MemoryDeleter deleter = nullptr;
       HINSTANCE *hinstance = nullptr;
-      map<string, ObjTemplate> *temp_map = nullptr;
-      StrMap map;
+      map<string, ObjTemplate> *obj_temp = nullptr;
+      vector<ActivityTemplate> act_temp;
+      //StrMap map;
 
       vector<Instance>::iterator instance_i = InstanceList.begin();
       while (instance_i != InstanceList.end()) {
@@ -209,19 +208,19 @@ namespace kagami {
         castAttachment = instance_i->getObjTemplate();
         deleter = instance_i->getDeleter();
         //delete entries
-        map = instance_i->GetMap();
-        for (auto unit : map) {
-          Delete(unit.first);
+        act_temp = instance_i->GetMap();
+        for (auto unit : act_temp) {
+          Delete(unit.id);
         }
         //delete object templates
         if (castAttachment != nullptr) {
-          temp_map = castAttachment();
-          for (auto &unit : *temp_map) {
+          obj_temp = castAttachment();
+          for (auto &unit : *obj_temp) {
             type::DisposeTemplate(unit.first);
           }
         }
         //delete memory
-        deleter(temp_map);
+        deleter(obj_temp);
       }
       FreeLibrary(*hinstance);
       InstanceList.erase(instance_i);
@@ -241,17 +240,23 @@ namespace kagami {
   }
 
   Message WriteLog(ObjectMap &p) {
+    Kit kit;
     Message result;
-    string r = CastToString(p.at("data"));
+    Object data = p.at("data");
     ofstream ofs("script.log", std::ios::out | std::ios::app);
 
-    if (r.at(0) == '"' && r.back() == '"') {
-      ofs << r.substr(1, r.size() - 2) << "\n";
+    if (data.GetTypeId() == kTypeIdRawString) {
+      auto ptr = static_pointer_cast<string>(data.get());
+      if (kit.GetDataType(*ptr) == kTypeString) {
+        ofs << ptr->substr(1, ptr->size() - 2) << "\n";
+      }
+      else {
+        ofs << *ptr << "\n";
+      }
     }
     else {
-      ofs << r << "\n";
+      //TODO:query
     }
-      
     ofs.close();
     return result;
   }
@@ -363,12 +368,14 @@ namespace kagami {
   }
 
   Message ConditionRoot(ObjectMap &p) {
-    Message result(CastToString(p.at("state")), kCodeConditionRoot, kStrEmpty);
+    auto object = p.at("state");
+    Message result(CastToString(object.get()), kCodeConditionRoot, kStrEmpty);
     return result;
   }
 
   Message ConditionBranch(ObjectMap &p) {
-    Message result(CastToString(p.at("state")), kCodeConditionBranch, kStrEmpty);
+    auto object = p.at("state");
+    Message result(CastToString(object.get()), kCodeConditionBranch, kStrEmpty);
     return result;
   }
 
@@ -378,7 +385,8 @@ namespace kagami {
   }
 
   Message WhileCycle(ObjectMap &p) {
-    Message result(CastToString(p.at("state")), kCodeHeadSign, kStrEmpty);
+    auto object = p.at("state");
+    Message result(CastToString(object.get()), kCodeHeadSign, kStrEmpty);
     return result;
   }
 
@@ -502,8 +510,10 @@ namespace kagami {
   //Windows Version
   Message LoadPlugin(ObjectMap &p) {
     using namespace entry;
-    const string name = CastToString(p.at("name"));
-    const string path = CastToString(p.at("path"));
+    //TODO:type checking
+    //temp fix
+    const string name = CastToString(p.at("name").get());
+    const string path = CastToString(p.at("path").get());
     Message result;
     Attachment attachment = nullptr;
     Activity activity = nullptr;
@@ -522,7 +532,7 @@ namespace kagami {
   Message UnloadPlugin(ObjectMap &p) {
     using namespace entry;
     Message result;
-    UnloadInstance(Kit().GetRawString(CastToString(p.at("name"))));
+    UnloadInstance(Kit().GetRawString(CastToString(p.at("name").get())));
     return result;
   }
 #else
@@ -579,7 +589,7 @@ namespace kagami {
       break;
     }
     
-    result.combo(kTypeIdArrayBase, kCodePoint, "__result");
+    result.combo(kTypeIdArrayBase, kCodeObject, "__result");
     cast_path = make_shared<deque<Object>>(temp_base);
 
     return result;
@@ -621,7 +631,7 @@ namespace kagami {
         shared_ptr<deque<Object>> ptr = static_pointer_cast<deque<Object>>(target->get());
         if (ptr != nullptr && subscript_1 < ptr->size()) {
           item = &(ptr->at(subscript_1));
-          result.combo(item->GetTypeId(), kCodePoint, "__result");
+          result.combo(item->GetTypeId(), kCodeObject, "__result");
           cast_path = item->get();
         }
         else {
@@ -647,6 +657,19 @@ namespace kagami {
     return result;
   }
 
+  Message VersionInfo(ObjectMap &p) {
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    std::cout << kEngineVersion << std::endl;
+    return result;
+  }
+
+  Message PrintOnScreen(ObjectMap &p) {
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    string msg = CastToString(p.at("msg").get());
+    std::cout << msg << std::endl;
+    return result;
+  }
+
   /*
   Init all basic objects and entries
   Just do not edit unless you want to change processor's basic behaviors.
@@ -656,19 +679,19 @@ namespace kagami {
     Kit kit;
     auto Build = [&](string target) { return kit.BuildStringVector(target); };
 
-    Inject("end", EntryProvider("end", TailSign, 0));
-    Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateOperand, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
-    Inject("while", EntryProvider("while", WhileCycle, 1, kFlagNormalEntry, Build("state")));
-    Inject("binexp", EntryProvider("binexp", BinaryOperands, 3, kFlagBinEntry, Build("first|second|operator")));
-    Inject("log", EntryProvider("log", WriteLog, 1, kFlagNormalEntry, Build("data")));
-    Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
-    Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
-    Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("target|source")));
-    Inject("if", EntryProvider("if", ConditionRoot, 1, kFlagNormalEntry, Build("state")));
-    Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
-    Inject("else", EntryProvider("else", ConditionLeaf, 0));
-    Inject("array", EntryProvider("array", ArrayConstructor, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
-    Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
+    //Inject("end", EntryProvider("end", TailSign, 0));
+    //Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateOperand, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
+    //Inject("while", EntryProvider("while", WhileCycle, 1, kFlagNormalEntry, Build("state")));
+    //Inject("binexp", EntryProvider("binexp", BinaryOperands, 3, kFlagBinEntry, Build("first|second|operator")));
+    //Inject("log", EntryProvider("log", WriteLog, 1, kFlagNormalEntry, Build("data")));
+    //Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
+    //Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
+    //Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("target|source")));
+    //Inject("if", EntryProvider("if", ConditionRoot, 1, kFlagNormalEntry, Build("state")));
+    //Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
+    //Inject("else", EntryProvider("else", ConditionLeaf, 0));
+    //Inject("array", EntryProvider("array", ArrayConstructor, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
+    //Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
   }
 
   void InitObjectTemplates() {

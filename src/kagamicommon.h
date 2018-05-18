@@ -40,20 +40,18 @@ namespace kagami {
   using std::static_pointer_cast;
   using std::map;
 
+  struct ActivityTemplate;
   class Message;
   class ObjTemplate;
   class Object;
 
   using ObjectMap = map<string, Object>;
-  using StrMap = map<string, string>;
   using CastTo = shared_ptr<void>(*)(shared_ptr<void>);
   using CastFunc = pair<string, CastTo>;
-  //using CastToExt = void * (*)(shared_ptr<void> &);
   using Activity = Message(*)(ObjectMap &);
-  using PluginActivity = Message * (*)(ObjectMap &);
   using CastAttachment = map<string, ObjTemplate> *(*)();
   using MemoryDeleter = void(*)(void *);
-  using Attachment = StrMap * (*)(void);
+  using Attachment = vector<ActivityTemplate> * (*)(void);
 
 
 #if defined(_WIN32)
@@ -78,12 +76,14 @@ namespace kagami {
   const string kStrTrue = "true";
   const string kStrFalse = "false";
 
+  const int kCodeAutoFill = 14;
+  const int kCodeNormalArgs = 13;
   const int kCodeFillingSign = 12;
   const int kCodeReturn = 11;
   const int kCodeConditionLeaf = 10;
   const int kCodeConditionBranch = 9;
   const int kCodeConditionRoot = 8;
-  const int kCodePoint = 7;
+  const int kCodeObject = 7;
   const int kCodeTailSign = 5;
   const int kCodeHeadSign = 4;
   const int kCodeQuit = 3;
@@ -96,13 +96,11 @@ namespace kagami {
   const int kCodeIllegalCall = -4;
   const int kCodeIllegalSymbol = -5;
   const int kCodeBadStream = -6;
+
   const int kFlagCoreEntry = 0;
   const int kFlagNormalEntry = 1;
   const int kFlagBinEntry = 2;
   const int kFlagPluginEntry = 3;
-  const int kFlagAutoSize = -1;
-  const int kFlagAutoFill = -2;
-  const int kFlagNotDefined = -3;
 
   const size_t kTypeFunction = 0;
   const size_t kTypeString = 1;
@@ -118,6 +116,23 @@ namespace kagami {
   const size_t kModeNextCondition = 1;
   const size_t kModeCycle = 2;
   const size_t kModeCycleJump = 3;
+
+  struct ActivityTemplate {
+    string id;
+    Activity activity;
+    int priority;
+    int arg_mode;
+    string args;
+
+    ActivityTemplate &set(string id, Activity activity, int priority, int arg_mode, string args) {
+      this->id = id;
+      this->activity = activity;
+      this->priority = priority;
+      this->arg_mode = arg_mode;
+      this->args = args;
+      return *this;
+    }
+  };
 
   /* Object Template Class
   this class contains custom class info for script language.
