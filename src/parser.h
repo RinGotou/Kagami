@@ -384,15 +384,12 @@ namespace kagami {
   namespace entry {
     extern vector<ObjectManager> ObjectStack;
 
-    using EntryMap = map<string, EntryProvider>;
-    using EntryMapUnit = map<string, EntryProvider>::value_type;
-
 #if defined(_WIN32)
     //Windows Verison
     class Instance : public pair<string, HINSTANCE> {
     private:
       bool health;
-      StrMap link_map;
+      vector<ActivityTemplate> act_temp;
     public:
       Instance() { health = false; }
       bool Load(string name, HINSTANCE h);
@@ -404,6 +401,9 @@ namespace kagami {
 #else
     //Linux Version
 #endif
+
+    using EntryMap = map<string, EntryProvider>;
+    using EntryMapUnit = map<string, EntryProvider>::value_type;
     
     string GetTypeId(string sign);
     std::wstring s2ws(const std::string& s);
