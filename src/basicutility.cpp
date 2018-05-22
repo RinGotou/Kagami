@@ -262,109 +262,77 @@ namespace kagami {
   }
 
   Message BinaryOperands(ObjectMap &p) {
-    using namespace entry;
     Kit kit;
-    Object object;
-    string *opercode = nullptr;
-    enum { EnumDouble, EnumInt, EnumStr, EnumNull }type = EnumNull;
-    Message result(kStrRedirect,kCodeSuccess,"0");
-    array<string, 3> buf = { CastToString(p["first"]),
-      CastToString(p["second"]),
-      CastToString(p["operator"])
-    };
-    string temp = kStrEmpty;
-    bool tempresult = false;
-    size_t i = 0;
-    
-    auto CheckingOr = [&](regex pat) -> bool {
-      return (regex_match(buf.at(0), pat) || regex_match(buf.at(1), pat));
-    };
-    auto CheckingAnd = [&](regex pat) -> bool {
-      return (regex_match(buf.at(0), pat) && regex_match(buf.at(1), pat));
-    };
-    auto CheckString = [&](string str) -> bool {
-      return (str.front() == '"' && str.back() == '"');
-    };
+    Message result(kStrRedirect, kCodeSuccess, "0");
+    Object first = p.at("first"), second = p.at("second"), op = p.at("operator");
+    string temp = kStrEmpty, dataOP = kStrEmpty, dataA = kStrEmpty, dataB = kStrEmpty;
+    bool tempresult = false, health = true;
+    size_t count = 0;
+    enum { EnumInt, EnumDouble, EnumStr, EnumNull } enumtype = EnumNull;
+    int datatypeA = kTypeNull, datatypeB = kTypeNull;
 
-    //array data format rule:number number operator
-    opercode = &(buf.at(2));
+    if (op.get() != nullptr) dataOP = *static_pointer_cast<string>(op.get());
 
-    if (CheckingOr(kPatternDouble)) type = EnumDouble;
-    else if (CheckingAnd(kPatternInteger)) type = EnumInt;
-    else if (CheckString(buf.at(0)) || CheckString(buf.at(1))) type = EnumStr;
+    if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
+      dataA = *static_pointer_cast<string>(first.get()),
+      dataB = *static_pointer_cast<string>(second.get());
+      datatypeA = kit.GetDataType(dataA);
+      datatypeB = kit.GetDataType(dataB);
+      if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = EnumDouble;
+      if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = EnumInt;
+      if (datatypeA == kTypeString || datatypeB == kTypeString) enumtype = EnumStr;
 
-    if (type == EnumInt || type == EnumDouble) {
-      if (*opercode == "+" || *opercode == "-" || *opercode == "*" || *opercode == "/") {
-        switch (type) {
-        case EnumInt:
-          temp = to_string(kit.Calc(stoi(buf.at(0)), stoi(buf.at(1)), *opercode));
-          break;
-        case EnumDouble:
-          temp = to_string(kit.Calc(stod(buf.at(0)), stod(buf.at(1)), *opercode));
-          break;
+      if (enumtype == kTypeInteger || enumtype == kTypeDouble) {
+        if (dataOP == "+" || dataOP == "-" || dataOP == "*" || dataOP == "/") {
+          switch (enumtype) {
+          case EnumInt:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
+          case EnumDouble:temp = to_string(kit.Calc(stod(dataA), stod(dataB), dataOP)); break;
+          }
         }
-      }
-      else if (*opercode == "==" || *opercode == ">=" || *opercode == "<=" || *opercode == "!=") {
-        switch (type) {
-        case EnumInt:
-          tempresult = kit.Logic(stoi(buf.at(1)), stoi(buf.at(0)), *opercode);
-          break;
-        case EnumDouble:
-          tempresult = kit.Logic(stod(buf.at(1)), stod(buf.at(0)), *opercode);
-          break;
+        else if (dataOP == "==" || dataOP == ">=" || dataOP == "<=" || dataOP == "!=") {
+          switch (enumtype) {
+          case EnumInt:tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
+          case EnumDouble:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
+          }
+          switch (tempresult) {
+          case true:temp = kStrTrue; break;
+          case false:temp = kStrFalse; break;
+          }
         }
-        switch (tempresult) {
-        case true:
-          temp = kStrTrue;
-          break;
-        case false:
-          temp = kStrFalse;
-          break;
-        }
-      }
-    }
-    else if (type == EnumStr) {
-      if (*opercode == "+") {
-        if (buf.at(1).back() == '"') {
-          temp = buf.at(1).substr(0, buf.at(1).size() - 1);
-          buf.at(1) = temp;
-          temp = kStrEmpty;
-        }
-        if (buf.at(0).front() == '"') {
-          temp = buf.at(0).substr(1, buf.at(0).size() - 1);
-          buf.at(0) = temp;
-          temp = kStrEmpty;
-        }
-        if (buf.at(1).front() != '"') {
-          buf.at(1) = "\"" + buf.at(1);
-        }
-        if (buf.at(0).back() != '"') {
-          buf.at(0) = buf.at(0) + "\"";
-        }
-        temp = buf.at(1) + buf.at(0);
-      }
-      else if (*opercode == "==" || *opercode == "!=") {
-        tempresult = kit.Logic(buf.at(1), buf.at(0), *opercode);
-        switch (tempresult) {
-        case true:
-          temp = kStrTrue;
-          break;
-        case false:
-          temp = kStrFalse;
-          break;
+        else if (enumtype == EnumStr) {
+          if (dataOP == "+") {
+            if (dataB.back() == '"') {
+              temp = dataB.substr(0, dataB.size() - 1);
+              dataB = temp;
+              temp = kStrEmpty;
+            }
+            if (dataA.front() == '"') {
+              temp = dataA.substr(1, dataA.size() - 1);
+              dataA = temp;
+              temp = kStrEmpty;
+            }
+          }
+          else if (dataOP == "!=" || dataOP == "==") {
+            tempresult = kit.Logic(dataB, dataA, dataOP);
+            switch (tempresult) {
+            case true:temp = kStrTrue; break;
+            case false:temp = kStrFalse; break;
+            }
+          }
+          else if (dataOP == ">=" || dataOP == "<=") {
+            //TODO:add in Kit::Logic()
+          }
         }
       }
       else {
-        temp = "Illegal operation symbol.";
-        result.SetCode(kCodeIllegalArgs).SetDetail(kStrFatalError);
+        //TODO:other type
       }
+
+      if (health) {
+        result.SetDetail(temp);
+      }
+      return result;
     }
-    else {
-      temp = "Illegal data type.";
-      result.SetCode(kCodeIllegalArgs).SetDetail(kStrFatalError);
-    }
-    result.SetDetail(temp);
-    return result;
   }
 
   Message ConditionRoot(ObjectMap &p) {
@@ -402,108 +370,38 @@ namespace kagami {
   }
 
   Message SetOperand(ObjectMap &p) {
-    using entry::FindObject;
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    bool source_is_object = false;
-    shared_ptr<void> target = nullptr, source = nullptr;
-    ObjectMap::iterator it;
+    AttrTag attrTag;
+    Message result;
+    Object source = p.at("source"), target = p.at("target");
+    auto ptr = type::GetObjectCopy(target);
 
-    //check left parameter
-    it = p.find("target");
-    if (it != p.end()) {
-      target = it->second;
-    }
-    else {
-      it = p.find("&target");
-      if (it != p.end()) target = it->second;
-    }
+    attrTag.methods = type::GetTemplate(target.GetTypeId())->GetMethods();
+    attrTag.ro = false;
+    source.set(ptr, target.GetTypeId(), Kit().MakeAttrTagStr(attrTag));
 
-    //check right parameter
-    it = p.find("source");
-    if (it != p.end()) {
-      source = it->second;
-    }
-    else {
-      it = p.find("&source");
-      if (it != p.end()) {
-        source_is_object = true;
-        source = it->second;
-      }
-    }
-
-    //set operations
-    if (target != nullptr) {
-      auto left = static_pointer_cast<Object>(target);
-      if (left->getTag().ro) {
-        result.combo(kStrFatalError, kCodeIllegalCall, "Try to operate with a constant.");
-      }
-      else {
-        if (source_is_object && source != nullptr) {
-          auto source_ptr = static_pointer_cast<Object>(source);
-          auto right = type::GetObjectCopy(*source_ptr);
-          AttrTag tag = source_ptr->getTag();
-          tag.ro = false;
-          if (right != nullptr) {
-            left->set(right, source_ptr->GetTypeId(), Kit().MakeAttrTagStr(tag));
-          }
-        }
-        else if (!source_is_object && source != nullptr) {
-          string temp = CastToString(source);
-          AttrTag tag(type::GetTemplate(kTypeIdRawString)->GetMethods(), false);
-          left->manage(temp, kTypeIdRawString,Kit().MakeAttrTagStr(tag));
-        }
-      }
-    }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
-    }
     return result;
+
   }
 
   Message CreateOperand(ObjectMap &p) {
-    using namespace entry;
     Message result;
-    bool useobject = false;
-    const string name = CastToString(p.at("name"));
-    shared_ptr<void> source;
-    Object *object = FindObject(name);
-    ObjectMap::iterator it = p.find("source");
+    Object name = p.at("name"), source = p.at("source");
+    Object *ptr = entry::FindObject(CastToString(name.get()));
+    shared_ptr<void> target_ptr = nullptr;
 
-    if (it == p.end()) {
-      it = p.find("&source");
-      if (it != p.end()) {
-        source = it->second;
-        useobject = true;
+    if (ptr == nullptr) {
+      target_ptr = type::GetObjectCopy(source);
+      auto object = entry::CreateObject(CastToString(name.get()), target_ptr, source.GetTypeId(), false);
+      if (object == nullptr) {
+        result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
       }
     }
     else {
-      source = it->second;
+      result.combo(kStrFatalError, kCodeIllegalCall, "Object is already existed.");
     }
 
-    if (object == nullptr) {
-      if (useobject) {
-        shared_ptr<void> ptr = type::GetObjectCopy(*static_pointer_cast<Object>(source));
-        if (ptr != nullptr) {
-          object = CreateObject(name, ptr, static_pointer_cast<Object>(source)->GetTypeId());
-          if (object == nullptr) {
-            result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail.");
-          }
-        }
-      }
-      else {
-        string temp = CastToString(source);
-        object = CreateObject(name, temp);
-        if (object == nullptr) {
-          result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail.");
-        }
-      }
-    }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, name + "is already existed.");
-    }
     return result;
   }
-
 
 //plugin init code for Windows/Linux
 #if defined(_WIN32)
@@ -541,121 +439,79 @@ namespace kagami {
 
   Message ArrayConstructor(ObjectMap &p) {
     Message result;
-    int size = stoi(CastToString(p.at("size")));
+    AttrTag attrTag("", false);
+    Object size = p.at("size"), init_value = p.at("init_value");
+    int size_value = stoi(*static_pointer_cast<string>(size.get()));
     int count = 0;
-    AttrTag tag("", false);
-    shared_ptr<void> init_value = nullptr;
-    shared_ptr<void> &cast_path = result.GetCastPath();
-    shared_ptr<void> temp_ptr = nullptr;
-    shared_ptr<Object> object_ptr = nullptr;
-    auto it = p.find("init_value");
-    Object init_object;
-    string object_option = kTypeIdNull;
-    bool use_object = false;
-    deque<Object> temp_base;
+    shared_ptr<void> init_ptr = nullptr;
+    deque<Object> base;
 
-    if (size == 0) {
+    //error:wrong size
+    if (size_value <= 0) {
       result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
       return result;
     }
 
-    if (it == p.end()) {
-      it = p.find("&init_value");
-      if (it != p.end()) {
-        init_value = it->second;
-        use_object = true;
-      }
-    }
-    else {
-      init_value = it->second;
+    attrTag = init_value.getTag();
+    attrTag.ro = false;
+
+    for (count = 0; count < size_value; count++) {
+      init_ptr = type::GetObjectCopy(init_value);
+      base.push_back(Object().set(init_ptr, init_value.GetTypeId(), Kit().MakeAttrTagStr(attrTag)));
     }
 
-    switch (use_object) {
-    case true:
-      object_ptr = static_pointer_cast<Object>(init_value);
-      object_option = object_ptr->GetTypeId();
-      tag.methods = object_ptr->getTag().methods;
-      for (count = 0; count < size; count++) {
-        temp_ptr = type::GetObjectCopy(*static_pointer_cast<Object>(init_value));
-        temp_base.push_back(Object().set(temp_ptr, object_option, Kit().MakeAttrTagStr(tag)));
-      }
-      break;
-    case false:
-      tag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-      for (count = 0; count < size; count++) {
-        init_object.manage(*static_pointer_cast<string>(init_value), kTypeIdRawString, Kit().MakeAttrTagStr(tag));
-        temp_base.push_back(init_object);
-      }
-      break;
-    }
-    
     result.combo(kTypeIdArrayBase, kCodeObject, "__result");
-    cast_path = make_shared<deque<Object>>(temp_base);
+    result.GetPtr() = make_shared<deque<Object>>(base);
 
     return result;
   }
 
-#if defined(_ENABLE_FASTRING_)
-  Message CharConstructor(ObjectMap &p) {
-    Message result;
-
-    return result;
-  }
-
-  Message FileStreamConstructor(ObjectMap &p) {
-    Message result;
-
-    return result;
-  }
-#endif
-  
-
-  Message GetElement(ObjectMap &p) {
-    using entry::FindObject;
-    Message result;
-    string name = CastToString(p.at("name"));
-    Object *target = FindObject(name), *item = nullptr;
-    string option = kTypeIdNull;
-    size_t subscript_1 = 0, subscript_2 = 0;
-    shared_ptr<void> &cast_path = result.GetCastPath();
-    ObjectMap::iterator it;
-
-    if (target != nullptr) {
-      option = target->GetTypeId();
-      it = p.find("subscript_1");
-      if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
-      it = p.find("subscript_2");
-      if (it->second != nullptr) subscript_2 = stoi(CastToString(it->second));
-
-      if (option == kTypeIdArrayBase) {
-        shared_ptr<deque<Object>> ptr = static_pointer_cast<deque<Object>>(target->get());
-        if (ptr != nullptr && subscript_1 < ptr->size()) {
-          item = &(ptr->at(subscript_1));
-          result.combo(item->GetTypeId(), kCodeObject, "__result");
-          cast_path = item->get();
-        }
-        else {
-          result.combo(kStrFatalError, kCodeOverflow, "Illegal subscript.");
-        }
-      }
-      else if (option == kTypeIdRawString) {
-        shared_ptr<string> ptr = static_pointer_cast<string>(target->get());
-        string data = kStrEmpty;
-        switch (Kit().GetDataType(*ptr)) {
-        case kTypeString:
-          data = ptr->substr(1, ptr->size() - 2);
-          result.combo(kStrRedirect, kCodeSuccess, string().append(1, data.at(subscript_1)));
-          break;
-        default:break;
-        }
-      }
-    }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Couldn't find item.");
-    }
-
-    return result;
-  }
+//  Message GetElement(ObjectMap &p) {
+//    using entry::FindObject;
+//    Message result;
+//    string name = CastToString(p.at("name"));
+//    Object *target = FindObject(name), *item = nullptr;
+//    string option = kTypeIdNull;
+//    size_t subscript_1 = 0, subscript_2 = 0;
+//    shared_ptr<void> &cast_path = result.GetPtr();
+//    ObjectMap::iterator it;
+//
+//    if (target != nullptr) {
+//      option = target->GetTypeId();
+//      it = p.find("subscript_1");
+//      if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
+//      it = p.find("subscript_2");
+//      if (it->second != nullptr) subscript_2 = stoi(CastToString(it->second));
+//
+//      if (option == kTypeIdArrayBase) {
+//        shared_ptr<deque<Object>> ptr = static_pointer_cast<deque<Object>>(target->get());
+//        if (ptr != nullptr && subscript_1 < ptr->size()) {
+//          item = &(ptr->at(subscript_1));
+//          result.combo(item->GetTypeId(), kCodeObject, "__result");
+//          cast_path = item->get();
+//        }
+//        else {
+//          result.combo(kStrFatalError, kCodeOverflow, "Illegal subscript.");
+//        }
+//      }
+//      else if (option == kTypeIdRawString) {
+//        shared_ptr<string> ptr = static_pointer_cast<string>(target->get());
+//        string data = kStrEmpty;
+//        switch (Kit().GetDataType(*ptr)) {
+//        case kTypeString:
+//          data = ptr->substr(1, ptr->size() - 2);
+//          result.combo(kStrRedirect, kCodeSuccess, string().append(1, data.at(subscript_1)));
+//          break;
+//        default:break;
+//        }
+//      }
+//    }
+//    else {
+//      result.combo(kStrFatalError, kCodeIllegalCall, "Couldn't find item.");
+//    }
+//
+//    return result;
+//  }
 
   Message VersionInfo(ObjectMap &p) {
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
