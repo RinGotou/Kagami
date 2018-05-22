@@ -124,7 +124,7 @@ namespace kagami {
     else if (match(kPatternBoolean)) result = kTypeBoolean;
     else if (match(kPatternFunction)) result = kTypeFunction;
     else if (match(kPatternInteger)) result = kTypeInteger;
-    else if (match(kPatternDouble)) result = KTypeDouble;
+    else if (match(kPatternDouble)) result = kTypeDouble;
     else if (match(kPatternSymbol)) result = kTypeSymbol;
     else if (match(kPatternBlank)) result = kTypeBlank;
     else result = kTypeNull;
@@ -368,7 +368,7 @@ namespace kagami {
     Kit kit;
     AttrTag attrTag;
     EntryProvider provider = entry::Find(symbol.back());
-    bool reversed = true;
+    bool reversed = true, disable_query = false;
     size_t size = provider.GetArgumentSize();
     int arg_mode = provider.GetArgumentMode(), priority = provider.GetPriority();
     string id = provider.GetId();
@@ -380,6 +380,10 @@ namespace kagami {
       return false;
     }
 
+    if (provider.GetId() == kStrDefineCmd) {
+      disable_query = true;
+    }
+
     if (priority == kFlagBinEntry) {
       size--;
       reversed = false;
@@ -388,17 +392,26 @@ namespace kagami {
       while (item.back() != "," && !item.empty()) {
         if (kit.GetDataType(item.back()) == kTypeFunction) {
           //query is completed in GetObj().
-          temp = GetObj(item.back());
-          if (temp.GetTypeId() != kTypeIdNull) {
-            objects.push_back(temp);
+          if (disable_query) {
+            attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+            attrTag.ro = true;
+            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+            disable_query = false;
           }
           else {
-            //TODO:error
-            break;
+            temp = GetObj(item.back());
+            if (temp.GetTypeId() != kTypeIdNull) {
+              objects.push_back(temp);
+            }
+            else {
+              //TODO:error
+              break;
+            }
           }
         }
         else {
           attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+          attrTag.ro = true;
           temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
         }
         item.pop_back();
@@ -408,10 +421,19 @@ namespace kagami {
     else {
       while (size > 0 && !item.empty()) {
         if (kit.GetDataType(item.back()) == kTypeFunction) {
-          temp = GetObj(item.back());
+          if (disable_query) {
+            attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+            attrTag.ro = true;
+            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+            disable_query = false;
+          }
+          else {
+            temp = GetObj(item.back());
+          }
         }
         else {
           attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+          attrTag.ro = true;
           temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
         }
         if (temp.GetTypeId() != kTypeIdNull) {
@@ -452,11 +474,11 @@ namespace kagami {
       msg = provider.StartActivity(objects, this);
     }
 
-    if (msg.GetCode == kCodeObject) {
+    if (msg.GetCode() == kCodeObject) {
       attrTag.methods = type::GetTemplate(msg.GetValue())->GetMethods();
       item.push_back(msg.GetDetail()); //detail start with "__"
       lambdamap.insert(pair<string, Object>(msg.GetDetail(),
-        Object().set(msg.GetCastPath(), msg.GetValue(), kit.MakeAttrTagStr(attrTag))));
+        Object().set(msg.GetPtr(), msg.GetValue(), kit.MakeAttrTagStr(attrTag))));
     }
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
@@ -630,7 +652,6 @@ namespace kagami {
 
   Message EntryProvider::StartActivity(deque<Object> p, Chainloader *parent) {
     using namespace entry;
-    Kit kit;
     ObjectMap map;
     Message result;
     AttrTag attrTag;

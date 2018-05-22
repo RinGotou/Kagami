@@ -394,7 +394,7 @@ namespace kagami {
       Instance() { health = false; }
       bool Load(string name, HINSTANCE h);
       bool GetHealth() const { return health; }
-      StrMap GetMap() const { return link_map; }
+      vector<ActivityTemplate> GetMap() const { return act_temp; }
       CastAttachment getObjTemplate() { return (CastAttachment)GetProcAddress(this->second, "CastAttachment"); }
       MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
     };

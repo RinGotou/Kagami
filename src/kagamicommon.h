@@ -105,7 +105,7 @@ namespace kagami {
   const size_t kTypeFunction = 0;
   const size_t kTypeString = 1;
   const size_t kTypeInteger = 2;
-  const size_t KTypeDouble = 3;
+  const size_t kTypeDouble = 3;
   const size_t kTypeBoolean = 4;
   const size_t kTypeSymbol = 5;
   const size_t kTypeBlank = 6;
@@ -173,7 +173,7 @@ namespace kagami {
     string value;
     string detail;
     int code;
-    shared_ptr<void> castpath;
+    shared_ptr<void> ptr;
   public:
     Message() {
       value = kStrEmpty;
@@ -212,7 +212,7 @@ namespace kagami {
     string GetValue() const { return this->value; }
     int GetCode() const { return this->code; }
     string GetDetail() const { return this->detail; }
-    shared_ptr<void> &GetCastPath() { return castpath; }
+    shared_ptr<void> &GetPtr() { return ptr; }
   };
 
 
