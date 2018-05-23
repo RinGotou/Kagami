@@ -368,7 +368,7 @@ namespace kagami {
     Kit kit;
     AttrTag attrTag;
     EntryProvider provider = entry::Find(symbol.back());
-    bool reversed = true, disable_query = false;
+    bool reversed = true, disable_query = false, method = false;
     size_t size = provider.GetArgumentSize();
     int arg_mode = provider.GetArgumentMode(), priority = provider.GetPriority();
     string id = provider.GetId();
@@ -380,8 +380,12 @@ namespace kagami {
       return false;
     }
 
-    if (provider.GetId() == kStrDefineCmd) {
+    if (id == kStrDefineCmd) {
       disable_query = true;
+    }
+
+    if (id.substr(0, 2) == "__") {
+      method = true;
     }
 
     if (priority == kFlagBinEntry) {
@@ -450,6 +454,10 @@ namespace kagami {
     if (priority == kFlagBinEntry) {
       attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
       objects.push_back(Object().manage(symbol.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag)));
+    }
+
+    if (method) {
+      objects.push_back(GetObj(item.back()));
     }
 
     switch (mode) {
