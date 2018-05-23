@@ -23,8 +23,9 @@
 //  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "basicutility.h"
+#include "parser.h"
 #include "windows.h"
+#include <iostream>
 //#define _DISABLE_TYPE_SYSTEM_
 
 namespace kagami {
@@ -34,7 +35,7 @@ namespace kagami {
     shared_ptr<void> GetObjectCopy(Object &object) {
       shared_ptr<void> result = nullptr;
       string option = object.GetTypeId();
-      CastTo castTo = nullptr;
+      CopyCreator copyCreator = nullptr;
       map<string, ObjTemplate>::iterator it = TemplateMap.find(option);
       if (it != TemplateMap.end()) {
         result = it->second.CreateObjectCopy(object.get());
@@ -74,6 +75,7 @@ namespace kagami {
         if (object != nullptr) {
           break;
         }
+        count--;
       }
       return object;
     }
@@ -125,15 +127,15 @@ namespace kagami {
 
     bool Instance::Load(string name, HINSTANCE h) {
       Attachment attachment = nullptr;
-      StrMap *targetmap = nullptr;
+      //StrMap *targetmap = nullptr;
       this->first = name;
       this->second = h;
 
       attachment = (Attachment)GetProcAddress(this->second, "Attachment");
       if (attachment != nullptr) {
-        targetmap = attachment();
-        link_map = StrMap(*targetmap);
-        delete(targetmap);
+        auto ptr = attachment();
+        act_temp = *ptr;
+        delete(ptr);
         health = true;
       }
       else {
@@ -156,9 +158,10 @@ namespace kagami {
     }
 
     void AddInstance(string name, HINSTANCE h) {
-      PluginActivity activity = nullptr;
-      CastAttachment c_attachment = nullptr;
-      map<string, ObjTemplate> *temp_map = nullptr;
+      //PluginActivity activity = nullptr;
+      CastAttachment castAttachment = nullptr;
+      map<string, ObjTemplate> *objtemps = nullptr;
+      vector<ActivityTemplate> *activities = nullptr;
       MemoryDeleter deleter = nullptr;
 
       InstanceList.push_back(Instance());
@@ -166,24 +169,20 @@ namespace kagami {
 
       if (InstanceList.back().GetHealth()) {
         HINSTANCE &ins = InstanceList.back().second;
-        StrMap map = InstanceList.back().GetMap();
+        vector<ActivityTemplate> temp = InstanceList.back().GetMap();
+        castAttachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
         deleter = InstanceList.back().getDeleter();
 
-        for (auto unit : map) {
-          activity = (PluginActivity)GetProcAddress(ins, unit.first.c_str());
-          if (activity != nullptr) {
-            Inject(unit.first, EntryProvider(unit.first, activity, Kit().BuildStringVector(unit.second), deleter));
-          }
+        for (auto &unit : temp) {
+          Inject(unit.id, EntryProvider(unit));
         }
-        c_attachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
-        if (c_attachment != nullptr) {
-          temp_map = c_attachment();
-          for (auto &unit : *temp_map) {
+        if (castAttachment != nullptr) {
+          objtemps = castAttachment();
+          for (auto &unit : *objtemps) {
             type::AddTemplate(unit.first, unit.second);
           }
         }
       }
-      deleter(c_attachment);
     }
 
     void UnloadInstance(string name) {
@@ -191,8 +190,9 @@ namespace kagami {
       CastAttachment castAttachment = nullptr;
       MemoryDeleter deleter = nullptr;
       HINSTANCE *hinstance = nullptr;
-      map<string, ObjTemplate> *temp_map = nullptr;
-      StrMap map;
+      map<string, ObjTemplate> *obj_temp = nullptr;
+      vector<ActivityTemplate> act_temp;
+      //StrMap map;
 
       vector<Instance>::iterator instance_i = InstanceList.begin();
       while (instance_i != InstanceList.end()) {
@@ -209,19 +209,19 @@ namespace kagami {
         castAttachment = instance_i->getObjTemplate();
         deleter = instance_i->getDeleter();
         //delete entries
-        map = instance_i->GetMap();
-        for (auto unit : map) {
-          Delete(unit.first);
+        act_temp = instance_i->GetMap();
+        for (auto unit : act_temp) {
+          Delete(unit.id);
         }
         //delete object templates
         if (castAttachment != nullptr) {
-          temp_map = castAttachment();
-          for (auto &unit : *temp_map) {
+          obj_temp = castAttachment();
+          for (auto &unit : *obj_temp) {
             type::DisposeTemplate(unit.first);
           }
         }
         //delete memory
-        deleter(temp_map);
+        deleter(obj_temp);
       }
       FreeLibrary(*hinstance);
       InstanceList.erase(instance_i);
@@ -240,270 +240,179 @@ namespace kagami {
     }
   }
 
-  Message WriteLog(PathMap &p) {
+  Message WriteLog(ObjectMap &p) {
+    Kit kit;
     Message result;
-    string r = CastToString(p.at("data"));
+    Object data = p.at("data");
     ofstream ofs("script.log", std::ios::out | std::ios::app);
 
-    if (r.at(0) == '"' && r.back() == '"') {
-      ofs << r.substr(1, r.size() - 2) << "\n";
+    if (data.GetTypeId() == kTypeIdRawString) {
+      auto ptr = static_pointer_cast<string>(data.get());
+      if (kit.GetDataType(*ptr) == kTypeString) {
+        ofs << ptr->substr(1, ptr->size() - 2) << "\n";
+      }
+      else {
+        ofs << *ptr << "\n";
+      }
     }
     else {
-      ofs << r << "\n";
+      //TODO:query
     }
-      
     ofs.close();
     return result;
   }
 
-  Message BinaryOperands(PathMap &p) {
-    using namespace entry;
+  Message BinaryOperands(ObjectMap &p) {
     Kit kit;
-    Object object;
-    string *opercode = nullptr;
-    enum { EnumDouble, EnumInt, EnumStr, EnumNull }type = EnumNull;
-    Message result(kStrRedirect,kCodeSuccess,"0");
-    array<string, 3> buf = { CastToString(p["first"]),
-      CastToString(p["second"]),
-      CastToString(p["operator"])
-    };
-    string temp = kStrEmpty;
-    bool tempresult = false;
-    size_t i = 0;
-    
-    auto CheckingOr = [&](regex pat) -> bool {
-      return (regex_match(buf.at(0), pat) || regex_match(buf.at(1), pat));
-    };
-    auto CheckingAnd = [&](regex pat) -> bool {
-      return (regex_match(buf.at(0), pat) && regex_match(buf.at(1), pat));
-    };
-    auto CheckString = [&](string str) -> bool {
-      return (str.front() == '"' && str.back() == '"');
-    };
+    Message result(kStrRedirect, kCodeSuccess, "0");
+    Object first = p.at("first"), second = p.at("second"), op = p.at("operator");
+    string temp = kStrEmpty, dataOP = kStrEmpty, dataA = kStrEmpty, dataB = kStrEmpty;
+    bool tempresult = false, health = true;
+    size_t count = 0;
+    enum { EnumInt, EnumDouble, EnumStr, EnumNull } enumtype = EnumNull;
+    int datatypeA = kTypeNull, datatypeB = kTypeNull;
 
-    //array data format rule:number number operator
-    opercode = &(buf.at(2));
+    if (op.get() != nullptr) dataOP = *static_pointer_cast<string>(op.get());
 
-    if (CheckingOr(kPatternDouble)) type = EnumDouble;
-    else if (CheckingAnd(kPatternInteger)) type = EnumInt;
-    else if (CheckString(buf.at(0)) || CheckString(buf.at(1))) type = EnumStr;
+    if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
+      dataA = *static_pointer_cast<string>(first.get()),
+      dataB = *static_pointer_cast<string>(second.get());
+      datatypeA = kit.GetDataType(dataA);
+      datatypeB = kit.GetDataType(dataB);
+      if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = EnumDouble;
+      if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = EnumInt;
+      if (datatypeA == kTypeString || datatypeB == kTypeString) enumtype = EnumStr;
 
-    if (type == EnumInt || type == EnumDouble) {
-      if (*opercode == "+" || *opercode == "-" || *opercode == "*" || *opercode == "/") {
-        switch (type) {
-        case EnumInt:
-          temp = to_string(kit.Calc(stoi(buf.at(0)), stoi(buf.at(1)), *opercode));
-          break;
-        case EnumDouble:
-          temp = to_string(kit.Calc(stod(buf.at(0)), stod(buf.at(1)), *opercode));
-          break;
+      if (enumtype == kTypeInteger || enumtype == kTypeDouble) {
+        if (dataOP == "+" || dataOP == "-" || dataOP == "*" || dataOP == "/") {
+          switch (enumtype) {
+          case EnumInt:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
+          case EnumDouble:temp = to_string(kit.Calc(stod(dataA), stod(dataB), dataOP)); break;
+          }
         }
-      }
-      else if (*opercode == "==" || *opercode == ">=" || *opercode == "<=" || *opercode == "!=") {
-        switch (type) {
-        case EnumInt:
-          tempresult = kit.Logic(stoi(buf.at(1)), stoi(buf.at(0)), *opercode);
-          break;
-        case EnumDouble:
-          tempresult = kit.Logic(stod(buf.at(1)), stod(buf.at(0)), *opercode);
-          break;
+        else if (dataOP == "==" || dataOP == ">=" || dataOP == "<=" || dataOP == "!=") {
+          switch (enumtype) {
+          case EnumInt:tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
+          case EnumDouble:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
+          }
+          switch (tempresult) {
+          case true:temp = kStrTrue; break;
+          case false:temp = kStrFalse; break;
+          }
         }
-        switch (tempresult) {
-        case true:
-          temp = kStrTrue;
-          break;
-        case false:
-          temp = kStrFalse;
-          break;
-        }
-      }
-    }
-    else if (type == EnumStr) {
-      if (*opercode == "+") {
-        if (buf.at(1).back() == '"') {
-          temp = buf.at(1).substr(0, buf.at(1).size() - 1);
-          buf.at(1) = temp;
-          temp = kStrEmpty;
-        }
-        if (buf.at(0).front() == '"') {
-          temp = buf.at(0).substr(1, buf.at(0).size() - 1);
-          buf.at(0) = temp;
-          temp = kStrEmpty;
-        }
-        if (buf.at(1).front() != '"') {
-          buf.at(1) = "\"" + buf.at(1);
-        }
-        if (buf.at(0).back() != '"') {
-          buf.at(0) = buf.at(0) + "\"";
-        }
-        temp = buf.at(1) + buf.at(0);
-      }
-      else if (*opercode == "==" || *opercode == "!=") {
-        tempresult = kit.Logic(buf.at(1), buf.at(0), *opercode);
-        switch (tempresult) {
-        case true:
-          temp = kStrTrue;
-          break;
-        case false:
-          temp = kStrFalse;
-          break;
+        else if (enumtype == EnumStr) {
+          if (dataOP == "+") {
+            if (dataB.back() == '"') {
+              temp = dataB.substr(0, dataB.size() - 1);
+              dataB = temp;
+              temp = kStrEmpty;
+            }
+            if (dataA.front() == '"') {
+              temp = dataA.substr(1, dataA.size() - 1);
+              dataA = temp;
+              temp = kStrEmpty;
+            }
+          }
+          else if (dataOP == "!=" || dataOP == "==") {
+            tempresult = kit.Logic(dataB, dataA, dataOP);
+            switch (tempresult) {
+            case true:temp = kStrTrue; break;
+            case false:temp = kStrFalse; break;
+            }
+          }
+          else if (dataOP == ">=" || dataOP == "<=") {
+            //TODO:add in Kit::Logic()
+          }
         }
       }
       else {
-        temp = "Illegal operation symbol.";
-        result.SetCode(kCodeIllegalArgs).SetDetail(kStrFatalError);
+        //TODO:other type
       }
     }
-    else {
-      temp = "Illegal data type.";
-      result.SetCode(kCodeIllegalArgs).SetDetail(kStrFatalError);
+    if (health) {
+      result.SetDetail(temp);
     }
-    result.SetDetail(temp);
     return result;
   }
 
-  Message ConditionRoot(PathMap &p) {
-    Message result(CastToString(p.at("state")), kCodeConditionRoot, kStrEmpty);
+  Message ConditionRoot(ObjectMap &p) {
+    auto object = p.at("state");
+    Message result(CastToString(object.get()), kCodeConditionRoot, kStrEmpty);
     return result;
   }
 
-  Message ConditionBranch(PathMap &p) {
-    Message result(CastToString(p.at("state")), kCodeConditionBranch, kStrEmpty);
+  Message ConditionBranch(ObjectMap &p) {
+    auto object = p.at("state");
+    Message result(CastToString(object.get()), kCodeConditionBranch, kStrEmpty);
     return result;
   }
 
-  Message ConditionLeaf(PathMap &p) {
+  Message ConditionLeaf(ObjectMap &p) {
     Message result(kStrTrue, kCodeConditionLeaf, kStrEmpty);
     return result;
   }
 
-  Message WhileCycle(PathMap &p) {
-    Message result(CastToString(p.at("state")), kCodeHeadSign, kStrEmpty);
+  Message WhileCycle(ObjectMap &p) {
+    auto object = p.at("state");
+    Message result(CastToString(object.get()), kCodeHeadSign, kStrEmpty);
     return result;
   }
 
-  Message TailSign(PathMap &p) {
+  Message TailSign(ObjectMap &p) {
     Message result(kStrEmpty, kCodeTailSign, kStrEmpty);
     return result;
   }
 
-  Message ReturnSign(PathMap &p) {
+  Message ReturnSign(ObjectMap &p) {
     Message result;
     //TODO:return specific value
     return result;
   }
 
-  Message SetOperand(PathMap &p) {
-    using entry::FindObject;
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    bool source_is_object = false;
-    shared_ptr<void> target = nullptr, source = nullptr;
-    PathMap::iterator it;
-
-    //check left parameter
-    it = p.find("target");
-    if (it != p.end()) {
-      target = it->second;
-    }
-    else {
-      it = p.find("&target");
-      if (it != p.end()) target = it->second;
-    }
-
-    //check right parameter
-    it = p.find("source");
-    if (it != p.end()) {
-      source = it->second;
-    }
-    else {
-      it = p.find("&source");
-      if (it != p.end()) {
-        source_is_object = true;
-        source = it->second;
-      }
-    }
-
-    //set operations
-    if (target != nullptr) {
-      auto left = static_pointer_cast<Object>(target);
-      if (left->getTag().ro) {
-        result.combo(kStrFatalError, kCodeIllegalCall, "Try to operate with a constant.");
-      }
-      else {
-        if (source_is_object && source != nullptr) {
-          auto source_ptr = static_pointer_cast<Object>(source);
-          auto right = type::GetObjectCopy(*source_ptr);
-          AttrTag tag = source_ptr->getTag();
-          tag.ro = false;
-          if (right != nullptr) {
-            left->set(right, source_ptr->GetTypeId(), Kit().MakeAttrTagStr(tag));
-          }
-        }
-        else if (!source_is_object && source != nullptr) {
-          string temp = CastToString(source);
-          AttrTag tag(type::GetTemplate(kTypeIdRawString)->GetMethods(), false);
-          left->manage(temp, kTypeIdRawString,Kit().MakeAttrTagStr(tag));
-        }
-      }
-    }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Left parameter is illegal.");
-    }
-    return result;
-  }
-
-  Message CreateOperand(PathMap &p) {
-    using namespace entry;
+  Message SetOperand(ObjectMap &p) {
+    AttrTag attrTag;
     Message result;
-    bool useobject = false;
-    const string name = CastToString(p.at("name"));
-    shared_ptr<void> source;
-    Object *object = FindObject(name);
-    PathMap::iterator it = p.find("source");
+    Object source = p.at("source"), target = p.at("target");
+    auto ptr = type::GetObjectCopy(target);
 
-    if (it == p.end()) {
-      it = p.find("&source");
-      if (it != p.end()) {
-        source = it->second;
-        useobject = true;
-      }
-    }
-    else {
-      source = it->second;
-    }
+    attrTag.methods = type::GetTemplate(target.GetTypeId())->GetMethods();
+    attrTag.ro = false;
+    source.set(ptr, target.GetTypeId(), Kit().MakeAttrTagStr(attrTag));
 
-    if (object == nullptr) {
-      if (useobject) {
-        shared_ptr<void> ptr = type::GetObjectCopy(*static_pointer_cast<Object>(source));
-        if (ptr != nullptr) {
-          object = CreateObject(name, ptr, static_pointer_cast<Object>(source)->GetTypeId());
-          if (object == nullptr) {
-            result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail.");
-          }
-        }
-      }
-      else {
-        string temp = CastToString(source);
-        object = CreateObject(name, temp);
-        if (object == nullptr) {
-          result.combo(kStrFatalError, kCodeIllegalCall, "Variable creation fail.");
-        }
-      }
-    }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, name + "is already existed.");
-    }
     return result;
+
   }
 
+  Message CreateOperand(ObjectMap &p) {
+    Message result;
+    Object name = p.at("name"), source = p.at("source");
+    string name_value = CastToString(name.get());
+    Object *ptr = entry::FindObject(name_value);
+    shared_ptr<void> target_ptr = nullptr;
+
+    if (ptr == nullptr) {
+      target_ptr = type::GetObjectCopy(source);
+      auto object = entry::CreateObject(CastToString(name.get()), target_ptr, source.GetTypeId(), false);
+      if (object == nullptr) {
+        result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
+      }
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Object is already existed.");
+    }
+
+    return result;
+  }
 
 //plugin init code for Windows/Linux
 #if defined(_WIN32)
   //Windows Version
-  Message LoadPlugin(PathMap &p) {
+  Message LoadPlugin(ObjectMap &p) {
     using namespace entry;
-    const string name = CastToString(p.at("name"));
-    const string path = CastToString(p.at("path"));
+    //TODO:type checking
+    //temp fix
+    const string name = CastToString(p.at("name").get());
+    const string path = CastToString(p.at("path").get());
     Message result;
     Attachment attachment = nullptr;
     Activity activity = nullptr;
@@ -518,134 +427,55 @@ namespace kagami {
     }
     return result;
   }
-
-  Message UnloadPlugin(PathMap &p) {
-    using namespace entry;
-    Message result;
-    UnloadInstance(Kit().GetRawString(CastToString(p.at("name"))));
-    return result;
-  }
 #else
   //Linux Version
 #endif
 
-  Message ArrayConstructor(PathMap &p) {
+  Message ArrayConstructor(ObjectMap &p) {
     Message result;
-    int size = stoi(CastToString(p.at("size")));
+    AttrTag attrTag("", false);
+    Object size = p.at("size"), init_value = p.at("init_value");
+    int size_value = stoi(*static_pointer_cast<string>(size.get()));
     int count = 0;
-    AttrTag tag("", false);
-    shared_ptr<void> init_value = nullptr;
-    shared_ptr<void> &cast_path = result.GetCastPath();
-    shared_ptr<void> temp_ptr = nullptr;
-    shared_ptr<Object> object_ptr = nullptr;
-    auto it = p.find("init_value");
-    Object init_object;
-    string object_option = kTypeIdNull;
-    bool use_object = false;
-    deque<Object> temp_base;
+    shared_ptr<void> init_ptr = nullptr;
+    deque<Object> base;
 
-    if (size == 0) {
+    //error:wrong size
+    if (size_value <= 0) {
       result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
       return result;
     }
 
-    if (it == p.end()) {
-      it = p.find("&init_value");
-      if (it != p.end()) {
-        init_value = it->second;
-        use_object = true;
-      }
-    }
-    else {
-      init_value = it->second;
+    attrTag = init_value.getTag();
+    attrTag.ro = false;
+
+    for (count = 0; count < size_value; count++) {
+      init_ptr = type::GetObjectCopy(init_value);
+      base.push_back(Object().set(init_ptr, init_value.GetTypeId(), Kit().MakeAttrTagStr(attrTag)));
     }
 
-    switch (use_object) {
-    case true:
-      object_ptr = static_pointer_cast<Object>(init_value);
-      object_option = object_ptr->GetTypeId();
-      tag.methods = object_ptr->getTag().methods;
-      for (count = 0; count < size; count++) {
-        temp_ptr = type::GetObjectCopy(*static_pointer_cast<Object>(init_value));
-        temp_base.push_back(Object().set(temp_ptr, object_option, Kit().MakeAttrTagStr(tag)));
-      }
-      break;
-    case false:
-      tag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-      for (count = 0; count < size; count++) {
-        init_object.manage(*static_pointer_cast<string>(init_value), kTypeIdRawString, Kit().MakeAttrTagStr(tag));
-        temp_base.push_back(init_object);
-      }
-      break;
-    }
-    
-    result.combo(kTypeIdArrayBase, kCodePoint, "__result");
-    cast_path = make_shared<deque<Object>>(temp_base);
+    result.combo(kTypeIdArrayBase, kCodeObject, "__result");
+    result.GetPtr() = make_shared<deque<Object>>(base);
 
     return result;
   }
 
-#if defined(_ENABLE_FASTRING_)
-
-
-  Message CharConstructor(PathMap &p) {
+  Message GetElement(ObjectMap &p) {
     Message result;
 
     return result;
   }
 
-  Message FileStreamConstructor(PathMap &p) {
-    Message result;
-
+  Message VersionInfo(ObjectMap &p) {
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    std::cout << kEngineVersion << std::endl;
     return result;
   }
-#endif
-  
 
-  Message GetElement(PathMap &p) {
-    using entry::FindObject;
-    Message result;
-    string name = CastToString(p.at("name"));
-    Object *target = FindObject(name), *item = nullptr;
-    string option = kTypeIdNull;
-    size_t subscript_1 = 0, subscript_2 = 0;
-    shared_ptr<void> &cast_path = result.GetCastPath();
-    PathMap::iterator it;
-
-    if (target != nullptr) {
-      option = target->GetTypeId();
-      it = p.find("subscript_1");
-      if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
-      it = p.find("subscript_2");
-      if (it->second != nullptr) subscript_2 = stoi(CastToString(it->second));
-
-      if (option == kTypeIdArrayBase) {
-        shared_ptr<deque<Object>> ptr = static_pointer_cast<deque<Object>>(target->get());
-        if (ptr != nullptr && subscript_1 < ptr->size()) {
-          item = &(ptr->at(subscript_1));
-          result.combo(item->GetTypeId(), kCodePoint, "__result");
-          cast_path = item->get();
-        }
-        else {
-          result.combo(kStrFatalError, kCodeOverflow, "Illegal subscript.");
-        }
-      }
-      else if (option == kTypeIdRawString) {
-        shared_ptr<string> ptr = static_pointer_cast<string>(target->get());
-        string data = kStrEmpty;
-        switch (Kit().GetDataType(*ptr)) {
-        case kTypeString:
-          data = ptr->substr(1, ptr->size() - 2);
-          result.combo(kStrRedirect, kCodeSuccess, string().append(1, data.at(subscript_1)));
-          break;
-        default:break;
-        }
-      }
-    }
-    else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Couldn't find item.");
-    }
-
+  Message PrintOnScreen(ObjectMap &p) {
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    string msg = CastToString(p.at("msg").get());
+    std::cout << msg << std::endl;
     return result;
   }
 
@@ -658,19 +488,31 @@ namespace kagami {
     Kit kit;
     auto Build = [&](string target) { return kit.BuildStringVector(target); };
 
-    Inject("end", EntryProvider("end", TailSign, 0));
-    Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateOperand, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
-    Inject("while", EntryProvider("while", WhileCycle, 1, kFlagNormalEntry, Build("state")));
-    Inject("binexp", EntryProvider("binexp", BinaryOperands, 3, kFlagBinEntry, Build("first|second|operator")));
-    Inject("log", EntryProvider("log", WriteLog, 1, kFlagNormalEntry, Build("data")));
-    Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
-    Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
-    Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("target|source")));
-    Inject("if", EntryProvider("if", ConditionRoot, 1, kFlagNormalEntry, Build("state")));
-    Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
-    Inject("else", EntryProvider("else", ConditionLeaf, 0));
-    Inject("array", EntryProvider("array", ArrayConstructor, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
-    Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
+    Inject("end", EntryProvider(ActivityTemplate()
+      .set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject("while", EntryProvider(ActivityTemplate()
+      .set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject("binexp", EntryProvider(ActivityTemplate()
+      .set("binexp", BinaryOperands, kFlagBinEntry, kCodeNormalArgs, "first|second|operator")));
+    Inject("log", EntryProvider(ActivityTemplate()
+      .set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
+    Inject("import", EntryProvider(ActivityTemplate()
+      .set("import", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "name|path")));
+    Inject(kStrDefineCmd, EntryProvider(ActivityTemplate()
+      .set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "name|source")));
+    Inject(kStrSetCmd, EntryProvider(ActivityTemplate()
+      .set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeNormalArgs, "target|source")));
+    Inject("if", EntryProvider(ActivityTemplate()
+      .set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject("elif", EntryProvider(ActivityTemplate()
+      .set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject("else", EntryProvider(ActivityTemplate()
+      .set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject("array", EntryProvider(ActivityTemplate()
+      .set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "name|init_value")));
+    Inject("print", EntryProvider(ActivityTemplate()
+      .set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
+    //Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
   }
 
   void InitObjectTemplates() {

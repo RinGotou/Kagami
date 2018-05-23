@@ -25,7 +25,7 @@
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #define _ENABLE_FASTRING_
-#define _DEBUG_FLAG_
+//#define _DEBUG_FLAG_
 #include <stack>
 #include <fstream>
 #include <regex>

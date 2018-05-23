@@ -2,7 +2,7 @@
 
 ## What's this?
 It's a simple and tiny script language.Kagami is originally designed for compiling principle studying, but I'm
-rebuilding and revising it, in order to make it can be used for writing visual novel.The script processor is implemented with shunting yard algorithm.The name of this project is from japanese kanji "鏡（かがみ）".
+rebuilding and revising it, in order to make it can be used for writing visual novel.The script processor is implemented with shunting yard algorithm.The name of this project is from Japanese kanji "鏡（かがみ）".
 
 ## How to use these codes?
 Strongly recommend to compile them in Visual Studio 2010 or later version.It can run on Windows only, becuase I write
