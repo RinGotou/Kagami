@@ -237,7 +237,7 @@ namespace kagami {
         }
         InstanceList.pop_back();
       }
-      if (!OnExit) ResetPluginEntry();
+      //TODO:clear
     }
   }
 
@@ -381,7 +381,6 @@ namespace kagami {
     source.set(ptr, target.GetTypeId(), Kit().MakeAttrTagStr(attrTag));
 
     return result;
-
   }
 
   Message CreateOperand(ObjectMap &p) {
@@ -536,12 +535,14 @@ namespace kagami {
     Inject("else", EntryProvider(ActivityTemplate()
       .set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject("array", EntryProvider(ActivityTemplate()
-      .set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "name|init_value")));
+      .set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
     Inject("print", EntryProvider(ActivityTemplate()
       .set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
     Inject("version", EntryProvider(ActivityTemplate()
       .set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject("__" + kTypeIdRawString + "_size", EntryProvider(ActivityTemplate()
+      .set("getsize", GetSize, kFlagNormalEntry, kCodeNormalArgs, "object")));
+    Inject("__" + kTypeIdArrayBase + "_size", EntryProvider(ActivityTemplate()
       .set("getsize", GetSize, kFlagNormalEntry, kCodeNormalArgs, "object")));
     //Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
   }

@@ -100,7 +100,6 @@ namespace kagami {
   const int kFlagCoreEntry = 0;
   const int kFlagNormalEntry = 1;
   const int kFlagBinEntry = 2;
-  const int kFlagPluginEntry = 3;
 
   const size_t kTypeFunction = 0;
   const size_t kTypeString = 1;

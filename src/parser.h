@@ -114,6 +114,9 @@ namespace kagami {
       if (opercode == "-") result = A - B;
       if (opercode == "*") result = A * B;
       if (opercode == "/") result = A / B;
+      //if (opercode == "%") result = A % B;
+      //if (opercode == "&") result = A & B;
+      //if (opercode == "|") result = A | B;
       return result;
     }
 
@@ -140,8 +143,6 @@ namespace kagami {
     bool FindInStringVector(string target, string source);
     vector<string> BuildStringVector(string source);
   };
-
-
 
   /*Object Class
    A shared void pointer is packaged in this.Almost all varibales and
@@ -407,7 +408,6 @@ namespace kagami {
     std::wstring s2ws(const std::string& s);
     void Inject(string name, EntryProvider provider);
     void Delete(string name);
-    void ResetPluginEntry();
     void ResetPlugin(bool OnExit = false);
     Object *FindObject(string name);
     ObjectManager &CreateManager();
