@@ -700,7 +700,7 @@ namespace kagami {
       }
       temp.append(1, unit);
     }
-    if (!temp.empty()) result.push_back(temp);
+    if (temp != kStrEmpty) result.push_back(temp);
     return result;
   }
 
