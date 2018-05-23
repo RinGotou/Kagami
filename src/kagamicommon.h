@@ -46,8 +46,8 @@ namespace kagami {
   class Object;
 
   using ObjectMap = map<string, Object>;
-  using CastTo = shared_ptr<void>(*)(shared_ptr<void>);
-  using CastFunc = pair<string, CastTo>;
+  using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
+  using CastFunc = pair<string, CopyCreator>;
   using Activity = Message(*)(ObjectMap &);
   using CastAttachment = map<string, ObjTemplate> *(*)();
   using MemoryDeleter = void(*)(void *);
@@ -55,9 +55,9 @@ namespace kagami {
 
 
 #if defined(_WIN32)
-  const string kEngineVersion = "version 0.3 (Windows Platform)";
+  const string kEngineVersion = "version 0.5 (Windows Platform)";
 #else
-  const string kEngineVersion = "version 0.3 (Linux Platform)";
+  const string kEngineVersion = "version 0.5 (Linux Platform)";
 #endif
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
@@ -139,21 +139,21 @@ namespace kagami {
   */
   class ObjTemplate {
   private:
-    CastTo castTo;
+    CopyCreator copyCreator;
     string methods;
   public:
     ObjTemplate() : methods(kStrEmpty) {
-      castTo = nullptr;
+      copyCreator = nullptr;
     }
-    ObjTemplate(CastTo castTo, string methods) {
-      this->castTo = castTo;
+    ObjTemplate(CopyCreator copyCreator, string methods) {
+      this->copyCreator = copyCreator;
       this->methods = methods;
     }
 
     shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) {
       shared_ptr<void> result = nullptr;
       if (target != nullptr) {
-        result = castTo(target);
+        result = copyCreator(target);
       }
       return result;
     }
