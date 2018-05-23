@@ -327,12 +327,11 @@ namespace kagami {
       else {
         //TODO:other type
       }
-
-      if (health) {
-        result.SetDetail(temp);
-      }
-      return result;
     }
+    if (health) {
+      result.SetDetail(temp);
+    }
+    return result;
   }
 
   Message ConditionRoot(ObjectMap &p) {
@@ -426,13 +425,6 @@ namespace kagami {
     }
     return result;
   }
-
-  Message UnloadPlugin(ObjectMap &p) {
-    using namespace entry;
-    Message result;
-    UnloadInstance(Kit().GetRawString(CastToString(p.at("name").get())));
-    return result;
-  }
 #else
   //Linux Version
 #endif
@@ -466,52 +458,11 @@ namespace kagami {
     return result;
   }
 
-//  Message GetElement(ObjectMap &p) {
-//    using entry::FindObject;
-//    Message result;
-//    string name = CastToString(p.at("name"));
-//    Object *target = FindObject(name), *item = nullptr;
-//    string option = kTypeIdNull;
-//    size_t subscript_1 = 0, subscript_2 = 0;
-//    shared_ptr<void> &cast_path = result.GetPtr();
-//    ObjectMap::iterator it;
-//
-//    if (target != nullptr) {
-//      option = target->GetTypeId();
-//      it = p.find("subscript_1");
-//      if (it->second != nullptr) subscript_1 = stoi(CastToString(it->second));
-//      it = p.find("subscript_2");
-//      if (it->second != nullptr) subscript_2 = stoi(CastToString(it->second));
-//
-//      if (option == kTypeIdArrayBase) {
-//        shared_ptr<deque<Object>> ptr = static_pointer_cast<deque<Object>>(target->get());
-//        if (ptr != nullptr && subscript_1 < ptr->size()) {
-//          item = &(ptr->at(subscript_1));
-//          result.combo(item->GetTypeId(), kCodeObject, "__result");
-//          cast_path = item->get();
-//        }
-//        else {
-//          result.combo(kStrFatalError, kCodeOverflow, "Illegal subscript.");
-//        }
-//      }
-//      else if (option == kTypeIdRawString) {
-//        shared_ptr<string> ptr = static_pointer_cast<string>(target->get());
-//        string data = kStrEmpty;
-//        switch (Kit().GetDataType(*ptr)) {
-//        case kTypeString:
-//          data = ptr->substr(1, ptr->size() - 2);
-//          result.combo(kStrRedirect, kCodeSuccess, string().append(1, data.at(subscript_1)));
-//          break;
-//        default:break;
-//        }
-//      }
-//    }
-//    else {
-//      result.combo(kStrFatalError, kCodeIllegalCall, "Couldn't find item.");
-//    }
-//
-//    return result;
-//  }
+  Message GetElement(ObjectMap &p) {
+    Message result;
+
+    return result;
+  }
 
   Message VersionInfo(ObjectMap &p) {
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
@@ -535,18 +486,30 @@ namespace kagami {
     Kit kit;
     auto Build = [&](string target) { return kit.BuildStringVector(target); };
 
-    //Inject("end", EntryProvider("end", TailSign, 0));
-    //Inject(kStrDefineCmd, EntryProvider(kStrDefineCmd, CreateOperand, kFlagAutoFill, kFlagNormalEntry, Build("name|source")));
-    //Inject("while", EntryProvider("while", WhileCycle, 1, kFlagNormalEntry, Build("state")));
-    //Inject("binexp", EntryProvider("binexp", BinaryOperands, 3, kFlagBinEntry, Build("first|second|operator")));
-    //Inject("log", EntryProvider("log", WriteLog, 1, kFlagNormalEntry, Build("data")));
-    //Inject("import", EntryProvider("import", LoadPlugin, 2, kFlagNormalEntry, Build("name|path")));
-    //Inject("release", EntryProvider("release", UnloadPlugin, 1, kFlagNormalEntry, Build("name")));
-    //Inject(kStrSetCmd, EntryProvider(kStrSetCmd, SetOperand, 2, kFlagNormalEntry, Build("target|source")));
-    //Inject("if", EntryProvider("if", ConditionRoot, 1, kFlagNormalEntry, Build("state")));
-    //Inject("elif", EntryProvider("elif", ConditionBranch, 1, kFlagNormalEntry, Build("state")));
-    //Inject("else", EntryProvider("else", ConditionLeaf, 0));
-    //Inject("array", EntryProvider("array", ArrayConstructor, kFlagAutoFill, kFlagNormalEntry, Build("size|init_value")));
+    Inject("end", EntryProvider(ActivityTemplate()
+      .set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject("while", EntryProvider(ActivityTemplate()
+      .set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject("binexp", EntryProvider(ActivityTemplate()
+      .set("binexp", BinaryOperands, kFlagBinEntry, kCodeNormalArgs, "first|second|operator")));
+    Inject("log", EntryProvider(ActivityTemplate()
+      .set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
+    Inject("import", EntryProvider(ActivityTemplate()
+      .set("import", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "name|path")));
+    Inject(kStrDefineCmd, EntryProvider(ActivityTemplate()
+      .set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "name|source")));
+    Inject(kStrSetCmd, EntryProvider(ActivityTemplate()
+      .set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeNormalArgs, "target|source")));
+    Inject("if", EntryProvider(ActivityTemplate()
+      .set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject("elif", EntryProvider(ActivityTemplate()
+      .set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject("else", EntryProvider(ActivityTemplate()
+      .set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject("array", EntryProvider(ActivityTemplate()
+      .set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "name|init_value")));
+    Inject("print", EntryProvider(ActivityTemplate()
+      .set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
     //Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
   }
 
