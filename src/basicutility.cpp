@@ -106,6 +106,7 @@ namespace kagami {
         if (object != nullptr) {
           result = object->GetTypeId();
         }
+        count--;
       }
 
       return result;
@@ -460,21 +461,49 @@ namespace kagami {
     return result;
   }
 
+  Message GetSize(ObjectMap &p) {
+    Message result;
+    Object object = p.at("object");
+    string type_id = object.GetTypeId();
+
+    if (type_id == kTypeIdArrayBase) {
+      result.SetDetail(to_string(static_pointer_cast<deque<Object>>(object.get())->size()));
+    }
+    else if (type_id == kTypeIdRawString) {
+      auto str = *static_pointer_cast<string>(object.get());
+      result.SetDetail(to_string(str.size()));
+    }
+
+    result.SetValue(kStrRedirect);
+    return result;
+  }
+
   Message GetElement(ObjectMap &p) {
     Message result;
+    Object target = p.at("target"), subscript_1 = p.at("subscript_1"), subscript_2 = p.at("subscript_2");
+    string type_id = target.GetTypeId();
+
+    if (type_id == kTypeIdRawString) {
+
+    }
+    else if (type_id == kTypeIdArrayBase) {
+
+    }
 
     return result;
   }
 
   Message VersionInfo(ObjectMap &p) {
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    std::cout << kEngineVersion << std::endl;
+    Message result(kStrRedirect, kCodeSuccess, "\"" + kEngineVersion + "\"");
     return result;
   }
 
   Message PrintOnScreen(ObjectMap &p) {
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     string msg = CastToString(p.at("msg").get());
+    if (Kit().GetDataType(msg) == kTypeString) {
+      msg = msg.substr(1, msg.size() - 2);
+    }
     std::cout << msg << std::endl;
     return result;
   }
@@ -485,8 +514,6 @@ namespace kagami {
   */
   void Activiate() {
     using namespace entry;
-    Kit kit;
-    auto Build = [&](string target) { return kit.BuildStringVector(target); };
 
     Inject("end", EntryProvider(ActivityTemplate()
       .set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
@@ -512,10 +539,10 @@ namespace kagami {
       .set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "name|init_value")));
     Inject("print", EntryProvider(ActivityTemplate()
       .set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
+    Inject("version", EntryProvider(ActivityTemplate()
+      .set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject("__" + kTypeIdRawString + "_size", EntryProvider(ActivityTemplate()
+      .set("getsize", GetSize, kFlagNormalEntry, kCodeNormalArgs, "object")));
     //Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
-  }
-
-  void InitObjectTemplates() {
-
   }
 }
