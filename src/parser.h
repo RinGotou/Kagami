@@ -137,6 +137,7 @@ namespace kagami {
     Message ExecScriptFile(string target);
     void PrintEvents();
     void Terminal();
+    bool FindInStringVector(string target, string source);
     vector<string> BuildStringVector(string source);
   };
 

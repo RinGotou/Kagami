@@ -605,16 +605,14 @@ namespace kagami {
         //new
         if (dot_operator) {
           temp_str = entry::GetTypeId(item.back());
-          if (temp_str != kTypeIdNull) {
-            temp_sign = "__" + temp_str + "_" + raw.at(i);
-            switch (entry::Find(temp_sign).Good()) {
-            case true:symbol.push_back(temp_sign);break;
-            case false:
-              result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".");
-              fatal = true;
-              continue;
-              break;
-            }
+          if (kit.FindInStringVector(raw.at(i), type::GetTemplate(temp_str)->GetMethods())) {
+            symbol.push_back("__" + temp_str + "_" + raw.at(i));
+            continue;
+          }
+          else {
+            result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".");
+            fatal = true;
+            continue;
           }
         }
         else {
@@ -694,6 +692,18 @@ namespace kagami {
       result = activity(map);
     }
 
+    return result;
+  }
+
+  bool Kit::FindInStringVector(string target, string source) {
+    bool result = false;
+    auto methods = this->BuildStringVector(source);
+    for (auto &unit : methods) {
+      if (unit == target) {
+        result = true;
+        break;
+      }
+    }
     return result;
   }
 
