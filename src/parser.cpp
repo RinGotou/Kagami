@@ -55,15 +55,6 @@ namespace kagami {
       EntryMapBase.insert(EntryMapUnit(name, provider));
     }
 
-    Message FindAndExec(string name, deque<string> res) {
-      Message result(kStrFatalError, kCodeIllegalCall, "entry is not found.");
-      EntryMap::iterator it = EntryMapBase.find(name);
-      if (it != EntryMapBase.end()) {
-        result = it->second.StartActivity(res, nullptr);
-      }
-      return result;
-    }
-
     EntryProvider Order(string name) {
       EntryProvider result;
       EntryMap::iterator it = EntryMapBase.find(name);
@@ -94,13 +85,13 @@ namespace kagami {
     int GetRequiredCount(string target) {
       if (target == "+" || target == "-" || target == "*" || target == "/"
         || target == "==" || target == "<=" || target == ">=" || target == "!=") {
-        return Order("binexp").GetRequiredCount() - 1;
+        return Order("binexp").GetArgumentSize();
       }
       EntryMap::iterator it = EntryMapBase.find(target);
       if (it != EntryMapBase.end()) {
-        return it->second.GetRequiredCount();
+        return it->second.GetArgumentSize();
       }
-      return kFlagNotDefined;
+      return kCodeIllegalArgs;
     }
 
     void Delete(string name) {
@@ -130,10 +121,10 @@ namespace kagami {
 
     if (target == kStrNull) result = kTypeNull;
     else if (target.front() == '"' && target.back() == '"') result = kTypeString;
-    else if (match(kPatternFunction)) result = kTypeFunction;
     else if (match(kPatternBoolean)) result = kTypeBoolean;
+    else if (match(kPatternFunction)) result = kTypeFunction;
     else if (match(kPatternInteger)) result = kTypeInteger;
-    else if (match(kPatternDouble)) result = KTypeDouble;
+    else if (match(kPatternDouble)) result = kTypeDouble;
     else if (match(kPatternSymbol)) result = kTypeSymbol;
     else if (match(kPatternBlank)) result = kTypeBlank;
     else result = kTypeNull;
@@ -207,28 +198,6 @@ namespace kagami {
       }
     }
     return result;
-  }
-
-  bool Chainloader::StartActivity(EntryProvider &provider, deque<string> container, deque<string> &item,
-    size_t top, Message &msg, Chainloader *loader) {
-    bool return_state = true;
-    int code = kCodeSuccess;
-    string value = kStrEmpty;
-    Message temp;
-
-    if (provider.Good()) {
-      temp = provider.StartActivity(container, loader);
-      code = temp.GetCode();
-      value = temp.GetValue();
-      if (code < kCodeSuccess) trace::log(temp);
-      msg = temp;
-    }
-    else {
-      trace::log(msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found."));
-      return_state = false;
-    }
-
-    return return_state;
   }
 
   Chainloader &Chainloader::Build(string target) {
@@ -381,76 +350,141 @@ namespace kagami {
     return priority;
   }
 
-  bool Chainloader::ShuntingYardProcessing(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
-    Message &msg, size_t mode) {
-    using namespace entry;
-    EntryProvider provider = Find(symbol.back());
-    bool result = false, reversed = true;
-    int count = provider.GetRequiredCount();
-    deque<string> container;
-    string name = provider.GetName();
+  Object Chainloader::GetObj(string name) {
+    Object result;
+    if (name.substr(0, 2) == "__") {
+      map<string, Object>::iterator it = lambdamap.find(name);
+      if (it != lambdamap.end()) result = it->second;
+    }
+    else {
+      auto ptr = entry::FindObject(name);
+      if (ptr != nullptr) result = *ptr;
+    }
+    return result;
+  }
 
-    if (provider.GetPriority() == kFlagBinEntry) {
-      if (count != kFlagAutoSize) count -= 1;
+  bool Chainloader::Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
+    Message &msg, size_t mode) {
+    Kit kit;
+    AttrTag attrTag;
+    EntryProvider provider = entry::Find(symbol.back());
+    bool reversed = true, disable_query = false;
+    size_t size = provider.GetArgumentSize();
+    int arg_mode = provider.GetArgumentMode(), priority = provider.GetPriority();
+    string id = provider.GetId();
+    Object temp;
+    deque<Object> objects;
+      
+    if (!provider.Good()) {
+      msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found.");
+      return false;
+    }
+
+    if (provider.GetId() == kStrDefineCmd) {
+      disable_query = true;
+    }
+
+    if (priority == kFlagBinEntry) {
+      size--;
       reversed = false;
     }
-    if (disable_set_entry == true) {
-      while (item.back() != "," && item.empty() == false) {
-        container.push_back(item.back());
-        item.pop_back();
-      }
-      if (!item.empty()) item.pop_back(); //pop ","
-    }
-    else {
-      while (count != 0 && item.empty() != true) {
-        switch (reversed) {
-        case true:container.push_front(item.back()); break;
-        case false:container.push_back(item.back()); break;
-        }
-        item.pop_back();
-        count--;
-      }
-    }
-
-    if (provider.GetPriority() == kFlagBinEntry) container.push_back(symbol.back());
-
-    if (mode != kModeNextCondition && mode != kModeCycleJump) {
-      result = StartActivity(provider, container, item, item.size(), msg, this);
-    }
-    else {
-      switch (mode) {
-      case kModeCycleJump:
-        if (name == "end") {
-          result = StartActivity(provider, container, item, item.size(), msg, this);
-        }
-        else if (name == "if") {
-          msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
-        }
-        break;
-      case kModeNextCondition:
-        if (name == "if" || name == "elif" || name == "else" || name == "end") {
-          result = StartActivity(provider, container, item, item.size(), msg, this);
+    if (disable_set_entry) {
+      while (item.back() != "," && !item.empty()) {
+        if (kit.GetDataType(item.back()) == kTypeFunction) {
+          //query is completed in GetObj().
+          if (disable_query) {
+            attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+            attrTag.ro = true;
+            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+            disable_query = false;
+          }
+          else {
+            temp = GetObj(item.back());
+            if (temp.GetTypeId() != kTypeIdNull) {
+              objects.push_back(temp);
+            }
+            else {
+              //TODO:error
+              break;
+            }
+          }
         }
         else {
-          result = true;
-          msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
+          attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+          attrTag.ro = true;
+          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
         }
-        break;
-      default:break;
+        item.pop_back();
+      }
+      if (!item.empty()) item.pop_back();
+    }
+    else {
+      while (size > 0 && !item.empty()) {
+        if (kit.GetDataType(item.back()) == kTypeFunction) {
+          if (disable_query) {
+            attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+            attrTag.ro = true;
+            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+            disable_query = false;
+          }
+          else {
+            temp = GetObj(item.back());
+          }
+        }
+        else {
+          attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+          attrTag.ro = true;
+          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+        }
+        if (temp.GetTypeId() != kTypeIdNull) {
+          switch (reversed) {
+          case true:objects.push_front(temp); break;
+          case false:objects.push_back(temp); break;
+          }
+        }
+        item.pop_back();
+        size--;
       }
     }
+    
+    if (priority == kFlagBinEntry) {
+      attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+      objects.push_back(Object().manage(symbol.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag)));
+    }
 
-    if (msg.GetCode() == kCodePoint) {
-      AttrTag tag(type::GetTemplate(msg.GetValue())->GetMethods(), false);
-      item.push_back(msg.GetDetail());
-      lambdamap.insert(pair<string, Object>(msg.GetDetail(), Object().set(msg.GetCastPath(), msg.GetValue(), 
-        Kit().MakeAttrTagStr(tag))));
+    switch (mode) {
+    case kModeCycleJump:
+      if (id == "end") {
+        msg = provider.StartActivity(objects, this);
+      }
+      else if (id == "if") {
+        msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
+      }
+      break;
+    case kModeNextCondition:
+      if (id == "if" || id == "elif" || id == "else" || id == "end") {
+        msg = provider.StartActivity(objects, this);
+      }
+      else {
+        msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
+      }
+      break;
+    case kModeNormal:
+    default:
+      msg = provider.StartActivity(objects, this);
+    }
+
+    if (msg.GetCode() == kCodeObject) {
+      attrTag.methods = type::GetTemplate(msg.GetValue())->GetMethods();
+      item.push_back(msg.GetDetail()); //detail start with "__"
+      lambdamap.insert(pair<string, Object>(msg.GetDetail(),
+        Object().set(msg.GetPtr(), msg.GetValue(), kit.MakeAttrTagStr(attrTag))));
     }
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
     }
 
-    return result;
+    return (msg.GetValue() != kStrFatalError && msg.GetValue() != kStrWarning);
   }
 
   Message Chainloader::Start(size_t mode = kModeNormal) {
@@ -518,7 +552,7 @@ namespace kagami {
               symbol.pop_back();
             }
             //Start point 1
-            if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, mode)) break;
+            if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
             symbol.pop_back();
           }
 
@@ -528,7 +562,7 @@ namespace kagami {
             container.pop_back();
           }
           //Start point 2
-          if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, mode)) break;
+          if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
           symbol.pop_back();
         }
         else if (raw[i] == ".") {
@@ -606,7 +640,7 @@ namespace kagami {
           break;
         }
         //Start point 3
-        if (!ShuntingYardProcessing(disable_set_entry, item, symbol, result, mode)) break;
+        if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
         symbol.pop_back();
       }
     }
@@ -616,92 +650,40 @@ namespace kagami {
     return result;
   }
 
-  Message EntryProvider::StartActivity(deque<string> p, Chainloader *parent) {
+  Message EntryProvider::StartActivity(deque<Object> p, Chainloader *parent) {
     using namespace entry;
-    const string entry_name = this->GetName();
-    Kit kit;
+    ObjectMap map;
     Message result;
-    size_t size = p.size(), i = 0;
-    PathMap map;
-    shared_ptr<void> ptr;
-    bool ignore_first_arg = true;
-
-    auto Filling = [&](bool number = false) {
-      string name = kStrEmpty;
-      
-      if (kit.GetDataType(p.at(i)) == kTypeFunction) {
-        if (name == kStrDefineCmd || name == kStrSetCmd) {
-          if (ignore_first_arg) {
-            if (name == kStrSetCmd && p.at(i).substr(0, 2) == "__") {
-              ptr == make_shared<Object>(parent->GetVariable(p.at(i)));
-            }
-            else {
-              ptr = make_shared<string>(string(p.at(i)));
-            }
-            ignore_first_arg = false;
-          }
-          else {
-            name.append("&");
-            if (p.at(i).substr(0, 2) == "__") {
-              ptr = make_shared<Object>(parent->GetVariable(p.at(i)));
-            }
-            else {
-              ptr = make_shared<Object>(*FindObject(p.at(i)));
-            }
-          }
-        }
-        else {
-          if (p.at(i) == kStrTrue || p.at(i) == kStrFalse) {
-            ptr = make_shared<string>(string(p.at(i)));
-          }
-          else {
-            ptr = FindObject(p.at(i))->get();
-          }
-        }
+    AttrTag attrTag;
+    bool ignore_first_arg = true, health = true;
+    size_t size = p.size(), expected = this->args.size(), i = 0;
+    
+    if (arg_mode == kCodeAutoFill) {
+      if (size > expected) {
+        health = false;
+        result.combo(kStrFatalError, kCodeIllegalArgs, "Parameter doesn't match expected count.(01)");
       }
       else {
-        ptr = make_shared<string>(string(p.at(i)));
+        for (i = 0; i < expected; i++) {
+          if (i > size - 1) map.insert(pair<string, Object>(args.at(i), Object()));
+          else map.insert(pair<string, Object>(args.at(i), p.at(i)));
+        }
       }
-
-      switch (number) {
-      case true:name.append(to_string(i)); break;
-      case false:name.append(parameters.at(i)); break;
-      }
-      map.insert(PathMap::value_type(name, ptr));
-    };
-
-
-    if (priority == kFlagPluginEntry) {
-      for (i = 0; i < parameters.size(); i++) {
-        if (i >= size) map.insert(PathMap::value_type(parameters[i], nullptr));
-        else Filling();
-      }
-      Message *msgptr = activity2(map);
-      result = *msgptr;
-      deleter(msgptr);
     }
-    else {
-      if (size == parameters.size() ) {
-        for (i = 0; i < size; i++) { Filling(); }
-        result = activity(map);
-      }
-      else if (size == kFlagAutoFill) {
-        for (i = 0; i < parameters.size(); i++) {
-          if (i >= size) map.insert(PathMap::value_type(parameters[i], nullptr));
-          else Filling();
-          result = activity(map);
-        }
-      }
-      else if (parameters.empty() && requiredcount == kFlagAutoSize) {
-        for (i = 0; i < size; i++) { Filling(true); }
-        result = activity(map);
+    else if (arg_mode == kCodeNormalArgs) {
+      if (size != expected) {
+        health = false;
+        result.combo(kStrFatalError, kCodeIllegalArgs, "Parameter count doesn't match expected count.(02)");
       }
       else {
-        switch (requiredcount) {
-        case kFlagNotDefined:result.combo(kStrFatalError, kCodeBrokenEntry, string("Illegal entry - ").append(this->name)); break;
-        default:result.combo(kStrFatalError, kCodeIllegalArgs, string("Parameter count doesn't match - ").append(this->name)); break;
+        for (i = 0; i < size; i++) {
+          map.insert(pair<string, Object>(args.at(i), p.at(i)));
         }
       }
+    }
+
+    if (health) {
+      result = activity(map);
     }
 
     return result;
@@ -718,7 +700,7 @@ namespace kagami {
       }
       temp.append(1, unit);
     }
-    if (!temp.empty()) result.push_back(temp);
+    if (temp != kStrEmpty) result.push_back(temp);
     return result;
   }
 
@@ -767,6 +749,7 @@ namespace kagami {
     return result;
   }
 
+  //TODO:upgrade to new object system
   Message ChainStorage::Run(deque<string> res = deque<string>()) {
     using namespace entry;
     Message result;
@@ -786,7 +769,7 @@ namespace kagami {
         return result;
       }
       for (i = 0; i < parameter.size(); i++) {
-        CreateObject(parameter.at(i), res.at(i), false);
+        //CreateObject(parameter.at(i), res.at(i), false);
       }
     }
 
@@ -903,27 +886,15 @@ namespace kagami {
       return result;
     }
     Activiate();
+    InitTemplates();
     cs.Run();
     entry::ResetPlugin();
     //entry::CleanupObject();
     return result;
   }
 
-  Message VersionInfo(PathMap &p) {
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    std::cout << kEngineVersion << std::endl;
-    return result;
-  }
-
-  Message Quit(PathMap &p) {
+  Message Quit(ObjectMap &p) {
     Message result(kStrEmpty, kCodeQuit, kStrEmpty);
-    return result;
-  }
-
-  Message PrintOnScreen(PathMap &p) {
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    string msg = CastToString(p.at("msg"));
-    std::cout << msg << std::endl;
     return result;
   }
 
@@ -938,9 +909,8 @@ namespace kagami {
 
     CreateManager();
     Activiate();
-    Inject("version", EntryProvider("version", VersionInfo, 0));
-    Inject("quit", EntryProvider("quit", Quit, 0));
-    Inject("print", EntryProvider("print", PrintOnScreen, 1, kFlagNormalEntry, Build("msg")));
+    InitTemplates();
+    Inject("quit", EntryProvider(ActivityTemplate().set("quit",Quit,kFlagNormalEntry,kCodeNormalArgs,"")));
 
     while (result.GetCode() != kCodeQuit) {
       std::cout << ">>>";

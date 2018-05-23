@@ -40,25 +40,24 @@ namespace kagami {
   using std::static_pointer_cast;
   using std::map;
 
+  struct ActivityTemplate;
   class Message;
   class ObjTemplate;
+  class Object;
 
-  using PathMap = map<string, shared_ptr<void>>;
-  using StrMap = map<string, string>;
-  using CastTo = shared_ptr<void>(*)(shared_ptr<void>);
-  using CastFunc = pair<string, CastTo>;
-  //using CastToExt = void * (*)(shared_ptr<void> &);
-  using Activity = Message(*)(PathMap &);
-  using PluginActivity = Message * (*)(PathMap &);
+  using ObjectMap = map<string, Object>;
+  using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
+  using CastFunc = pair<string, CopyCreator>;
+  using Activity = Message(*)(ObjectMap &);
   using CastAttachment = map<string, ObjTemplate> *(*)();
   using MemoryDeleter = void(*)(void *);
-  using Attachment = StrMap * (*)(void);
+  using Attachment = vector<ActivityTemplate> * (*)(void);
 
 
 #if defined(_WIN32)
-  const string kEngineVersion = "version 0.3 (Windows Platform)";
+  const string kEngineVersion = "version 0.5 (Windows Platform)";
 #else
-  const string kEngineVersion = "version 0.3 (Linux Platform)";
+  const string kEngineVersion = "version 0.5 (Linux Platform)";
 #endif
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
@@ -77,12 +76,14 @@ namespace kagami {
   const string kStrTrue = "true";
   const string kStrFalse = "false";
 
+  const int kCodeAutoFill = 14;
+  const int kCodeNormalArgs = 13;
   const int kCodeFillingSign = 12;
   const int kCodeReturn = 11;
   const int kCodeConditionLeaf = 10;
   const int kCodeConditionBranch = 9;
   const int kCodeConditionRoot = 8;
-  const int kCodePoint = 7;
+  const int kCodeObject = 7;
   const int kCodeTailSign = 5;
   const int kCodeHeadSign = 4;
   const int kCodeQuit = 3;
@@ -95,18 +96,16 @@ namespace kagami {
   const int kCodeIllegalCall = -4;
   const int kCodeIllegalSymbol = -5;
   const int kCodeBadStream = -6;
+
   const int kFlagCoreEntry = 0;
   const int kFlagNormalEntry = 1;
   const int kFlagBinEntry = 2;
   const int kFlagPluginEntry = 3;
-  const int kFlagAutoSize = -1;
-  const int kFlagAutoFill = -2;
-  const int kFlagNotDefined = -3;
 
   const size_t kTypeFunction = 0;
   const size_t kTypeString = 1;
   const size_t kTypeInteger = 2;
-  const size_t KTypeDouble = 3;
+  const size_t kTypeDouble = 3;
   const size_t kTypeBoolean = 4;
   const size_t kTypeSymbol = 5;
   const size_t kTypeBlank = 6;
@@ -118,26 +117,43 @@ namespace kagami {
   const size_t kModeCycle = 2;
   const size_t kModeCycleJump = 3;
 
+  struct ActivityTemplate {
+    string id;
+    Activity activity;
+    int priority;
+    int arg_mode;
+    string args;
+
+    ActivityTemplate &set(string id, Activity activity, int priority, int arg_mode, string args) {
+      this->id = id;
+      this->activity = activity;
+      this->priority = priority;
+      this->arg_mode = arg_mode;
+      this->args = args;
+      return *this;
+    }
+  };
+
   /* Object Template Class
   this class contains custom class info for script language.
   */
   class ObjTemplate {
   private:
-    CastTo castTo;
+    CopyCreator copyCreator;
     string methods;
   public:
     ObjTemplate() : methods(kStrEmpty) {
-      castTo = nullptr;
+      copyCreator = nullptr;
     }
-    ObjTemplate(CastTo castTo, string methods) {
-      this->castTo = castTo;
+    ObjTemplate(CopyCreator copyCreator, string methods) {
+      this->copyCreator = copyCreator;
       this->methods = methods;
     }
 
     shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) {
       shared_ptr<void> result = nullptr;
       if (target != nullptr) {
-        result = castTo(target);
+        result = copyCreator(target);
       }
       return result;
     }
@@ -157,7 +173,7 @@ namespace kagami {
     string value;
     string detail;
     int code;
-    shared_ptr<void> castpath;
+    shared_ptr<void> ptr;
   public:
     Message() {
       value = kStrEmpty;
@@ -196,7 +212,7 @@ namespace kagami {
     string GetValue() const { return this->value; }
     int GetCode() const { return this->code; }
     string GetDetail() const { return this->detail; }
-    shared_ptr<void> &GetCastPath() { return castpath; }
+    shared_ptr<void> &GetPtr() { return ptr; }
   };
 
 
