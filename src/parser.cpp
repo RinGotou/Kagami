@@ -209,7 +209,7 @@ namespace kagami {
     size_t i;
     string current = kStrEmpty;
     bool exempt_blank_char = false, string_processing = false;
-    vector<string> list = { kStrVar, "def", "return" };
+    vector<string> list = { "var", "def", "return" };
     auto ToString = [](char c) -> string {
       return string().append(1, c);
     };
@@ -342,7 +342,7 @@ namespace kagami {
 
   int Chainloader::GetPriority(string target) const {
     int priority;
-    if (target == "=" || target == kStrVar) priority = 0;
+    if (target == "=" || target == "var") priority = 0;
     else if (target == "==" || target == ">=" || target == "<=") priority = 1;
     else if (target == "+" || target == "-") priority = 2;
     else if (target == "*" || target == "/" || target == "\\") priority = 3;
@@ -518,14 +518,14 @@ namespace kagami {
         else if (raw[i] == "=") {
           switch (symbol.empty()) {
           case true:symbol.push_back(raw[i]); break;
-          case false:if (symbol.back() != kStrVar) symbol.push_back(raw[i]); break;
+          case false:if (symbol.back() != "var") symbol.push_back(raw[i]); break;
           }
         }
         else if (raw[i] == ",") {
-          if (symbol.back() == kStrVar) disable_set_entry = true;
+          if (symbol.back() == "var") disable_set_entry = true;
           switch (disable_set_entry) {
           case true:
-            symbol.push_back(kStrVar);
+            symbol.push_back("var");
             item.push_back(raw[i]);
             break;
           case false:
