@@ -26,7 +26,7 @@ namespace kagami {
 
   void InitTemplates() {
     using type::AddTemplate;
-    AddTemplate(kTypeIdRawString, ObjTemplate(StringCopy, "size|substr"));
+    AddTemplate(kTypeIdRawString, ObjTemplate(StringCopy, "size|substr|at"));
     AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at"));
     AddTemplate(kTypeIdNull, ObjTemplate(NullCopy, ""));
   }

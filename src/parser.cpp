@@ -380,9 +380,9 @@ namespace kagami {
       disable_query = true;
     }
 
-    if (id.substr(0, 2) == "__") {
-      method = true;
-    }
+    //if (symbol.back().substr(0, 2) == "__") {
+    //  method = true;
+    //}
 
     if (priority == kFlagBinEntry) {
       size--;

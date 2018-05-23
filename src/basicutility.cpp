@@ -477,16 +477,29 @@ namespace kagami {
     return result;
   }
 
-  Message GetElement(ObjectMap &p) {
+  Message GetElementAt(ObjectMap &p) {
     Message result;
     Object target = p.at("target"), subscript_1 = p.at("subscript_1"), subscript_2 = p.at("subscript_2");
     string type_id = target.GetTypeId();
+    int size = 0;
+    int count0 = 0, count1 = 0;
 
     if (type_id == kTypeIdRawString) {
-
+      count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
+      size = static_pointer_cast<string>(target.get())->size();
+      if (count0 <= size - 1) {
+        result.combo(kStrRedirect,kCodeSuccess,string().append(1,
+          static_pointer_cast<string>(target.get())->at(count0)));
+      }
     }
     else if (type_id == kTypeIdArrayBase) {
-
+      count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
+      size = static_pointer_cast<deque<Object>>(target.get())->size();
+      if (count0 <= size - 1) {
+        auto &object = static_pointer_cast<deque<Object>>(target.get())->at(count0);
+        result.combo(object.GetTypeId(), kCodeObject, "__element");
+        result.GetPtr() = object.get();
+      }
     }
 
     return result;
@@ -544,6 +557,9 @@ namespace kagami {
       .set("getsize", GetSize, kFlagNormalEntry, kCodeNormalArgs, "object")));
     Inject("__" + kTypeIdArrayBase + "_size", EntryProvider(ActivityTemplate()
       .set("getsize", GetSize, kFlagNormalEntry, kCodeNormalArgs, "object")));
-    //Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
+    Inject("__" + kTypeIdRawString + "_at", EntryProvider(ActivityTemplate()
+      .set("at", GetElementAt, kFlagNormalEntry, kCodeAutoFill, "subscript_1|subscript_2|target")));
+    Inject("__" + kTypeIdArrayBase + "_at", EntryProvider(ActivityTemplate()
+      .set("at", GetElementAt, kFlagNormalEntry, kCodeAutoFill, "subscript_1|subscript_2|target")));
   }
 }
