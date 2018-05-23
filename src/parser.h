@@ -45,10 +45,6 @@ namespace kagami {
   using std::static_pointer_cast;
   using std::make_shared;
 
-  const string kStrVar = "var";
-  const string kStrFor = "for";
-  const string kStrWhile = "while";
-  const string kStrEnd = "end";
   const string kTypeIdNull = "null";
   const string kTypeIdInt = "int";
   const string kTypeIdRawString = "string";

@@ -283,7 +283,7 @@ namespace kagami {
       if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = EnumInt;
       if (datatypeA == kTypeString || datatypeB == kTypeString) enumtype = EnumStr;
 
-      if (enumtype == kTypeInteger || enumtype == kTypeDouble) {
+      if (enumtype == EnumInt || enumtype == EnumDouble) {
         if (dataOP == "+" || dataOP == "-" || dataOP == "*" || dataOP == "/") {
           switch (enumtype) {
           case EnumInt:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
