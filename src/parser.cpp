@@ -886,6 +886,7 @@ namespace kagami {
       return result;
     }
     Activiate();
+    InitTemplates();
     cs.Run();
     entry::ResetPlugin();
     //entry::CleanupObject();
@@ -908,6 +909,7 @@ namespace kagami {
 
     CreateManager();
     Activiate();
+    InitTemplates();
     Inject("quit", EntryProvider(ActivityTemplate().set("quit",Quit,kFlagNormalEntry,kCodeNormalArgs,"")));
 
     while (result.GetCode() != kCodeQuit) {

@@ -35,7 +35,7 @@ namespace kagami {
     shared_ptr<void> GetObjectCopy(Object &object) {
       shared_ptr<void> result = nullptr;
       string option = object.GetTypeId();
-      CastTo castTo = nullptr;
+      CopyCreator copyCreator = nullptr;
       map<string, ObjTemplate>::iterator it = TemplateMap.find(option);
       if (it != TemplateMap.end()) {
         result = it->second.CreateObjectCopy(object.get());
@@ -75,6 +75,7 @@ namespace kagami {
         if (object != nullptr) {
           break;
         }
+        count--;
       }
       return object;
     }
@@ -385,7 +386,8 @@ namespace kagami {
   Message CreateOperand(ObjectMap &p) {
     Message result;
     Object name = p.at("name"), source = p.at("source");
-    Object *ptr = entry::FindObject(CastToString(name.get()));
+    string name_value = CastToString(name.get());
+    Object *ptr = entry::FindObject(name_value);
     shared_ptr<void> target_ptr = nullptr;
 
     if (ptr == nullptr) {

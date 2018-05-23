@@ -47,7 +47,6 @@ namespace kagami {
 
   const string kStrVar = "var";
   const string kStrFor = "for";
-  const string kStrForeach = "foreach";
   const string kStrWhile = "while";
   const string kStrEnd = "end";
   const string kTypeIdNull = "null";
@@ -371,9 +370,11 @@ namespace kagami {
   }
 
   void Activiate();
+  void InitTemplates();
 
   namespace type {
     ObjTemplate *GetTemplate(string name);
+    void AddTemplate(string name, ObjTemplate temp);
   }
 
   namespace trace {
