@@ -83,15 +83,21 @@ namespace kagami {
     }
 
     int GetRequiredCount(string target) {
+      int result;
       if (target == "+" || target == "-" || target == "*" || target == "/"
         || target == "==" || target == "<=" || target == ">=" || target == "!=") {
-        return Order("binexp").GetArgumentSize();
+        result = Order("binexp").GetArgumentSize();
       }
-      EntryMap::iterator it = EntryMapBase.find(target);
-      if (it != EntryMapBase.end()) {
-        return it->second.GetArgumentSize();
+      else {
+        EntryMap::iterator it = EntryMapBase.find(target);
+        if (it != EntryMapBase.end()) {
+          result = it->second.GetArgumentSize();
+        }
+        else {
+          result = kCodeIllegalArgs;
+        }
       }
-      return kCodeIllegalArgs;
+      return result;
     }
 
     void Delete(string name) {
@@ -99,16 +105,6 @@ namespace kagami {
       if (it != EntryMapBase.end()) {
         EntryMapBase.erase(it);
       }
-    }
-
-    void ResetPluginEntry() {
-      EntryMap tempbase;
-      for (auto unit : EntryMapBase) {
-        if (unit.second.GetPriority() != kFlagPluginEntry) tempbase.insert(unit);
-      }
-      EntryMapBase.swap(tempbase);
-      tempbase.clear();
-      EntryMap().swap(tempbase);
     }
   }
 
@@ -425,7 +421,7 @@ namespace kagami {
     else {
       while (size > 0 && !item.empty()) {
         if (kit.GetDataType(item.back()) == kTypeFunction) {
-          if (disable_query) {
+          if (disable_query && size == 1) {
             attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
             attrTag.ro = true;
             temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
@@ -724,29 +720,43 @@ namespace kagami {
 
   AttrTag Kit::GetAttrTag(string target) {
     AttrTag result;
-    char current = ' ', symbol = ' ';
-    size_t size = target.size(), count = 0;
+    vector<string> base;
     string temp = kStrEmpty;
 
-    for (count = 0; count < size; count++) {
-      current = target.at(count);
-      if (current == '+' || current == '%') {
-        if (symbol != current) {
-          switch (symbol) {
-          case '+':
-            result.methods.append(temp + "|");
-            break;
-          case '%':
-            result.ro = (temp == kStrTrue);
-            break;
-          default:break;
-          }
+    for (auto &unit : target) {
+      if (unit == '+' || unit == '%') {
+        if (temp == kStrEmpty) {
+          temp.append(1, unit);
+        }
+        else {
+          base.push_back(temp);
           temp = kStrEmpty;
+          temp.append(1, unit);
         }
       }
       else {
-        temp.append(1, current);
+        temp.append(1, unit);
       }
+    }
+    if (temp != kStrEmpty) base.push_back(temp);
+    temp = kStrEmpty;
+
+    for (auto &unit : base) {
+      if (unit.front() == '%') {
+        temp = unit.substr(1, unit.size() - 1);
+        if (temp == kStrTrue) {
+          result.ro = true;
+        }
+        else if (temp == kStrFalse) {
+          result.ro = false;
+        }
+      }
+      else if (unit.front() == '+') {
+        temp = unit.substr(1, unit.size() - 1) + "|";
+        result.methods.append(temp);
+      }
+
+      temp = kStrEmpty;
     }
 
     if (result.methods.back() == '|') result.methods.pop_back();
