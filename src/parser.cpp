@@ -29,36 +29,43 @@
 
 namespace kagami {
   namespace trace {
-    vector<log_t> logger;
+    vector<log_t> &GetLogger() {
+      static vector<log_t> base;
+      return base;
+    }
 
     void log(Message msg) { 
       time_t now = time(0);
 #if defined(_WIN32)
       char nowtime[30] = { ' ' };
       ctime_s(nowtime, sizeof(nowtime), &now);
-      logger.push_back(log_t(string(nowtime), msg));
+      GetLogger().push_back(log_t(string(nowtime), msg));
 #else
       string nowtime(ctime(&now));
-      logger.push_back(log_t(nowtime, msg));
+      GetLogger().push_back(log_t(nowtime, msg));
 #endif
     }
 
     bool IsEmpty() {
-      return logger.empty();
+      return GetLogger().empty();
     }
   }
 
   namespace entry {
-    EntryMap EntryMapBase;
+    EntryMap &GetEntryMap() {
+      static EntryMap base;
+      return base;
+    }
+    //EntryMap GetEntryMap();
 
     void Inject(string name, EntryProvider provider) {
-      EntryMapBase.insert(EntryMapUnit(name, provider));
+      GetEntryMap().insert(EntryMapUnit(name, provider));
     }
 
     EntryProvider Order(string name) {
       EntryProvider result;
-      EntryMap::iterator it = EntryMapBase.find(name);
-      if (it != EntryMapBase.end()) {
+      EntryMap::iterator it = GetEntryMap().find(name);
+      if (it != GetEntryMap().end()) {
         result = it->second;
       }
       return result;
@@ -74,8 +81,8 @@ namespace kagami {
         result = Order(kStrSetCmd);
       }
       else {
-        EntryMap::iterator it = EntryMapBase.find(target);
-        if (it != EntryMapBase.end()) {
+        EntryMap::iterator it = GetEntryMap().find(target);
+        if (it != GetEntryMap().end()) {
           result = it->second;
         }
       }
@@ -89,8 +96,8 @@ namespace kagami {
         result = Order("binexp").GetArgumentSize();
       }
       else {
-        EntryMap::iterator it = EntryMapBase.find(target);
-        if (it != EntryMapBase.end()) {
+        EntryMap::iterator it = GetEntryMap().find(target);
+        if (it != GetEntryMap().end()) {
           result = it->second.GetArgumentSize();
         }
         else {
@@ -101,9 +108,9 @@ namespace kagami {
     }
 
     void Delete(string name) {
-      EntryMap::iterator it = EntryMapBase.find(name);
-      if (it != EntryMapBase.end()) {
-        EntryMapBase.erase(it);
+      EntryMap::iterator it = GetEntryMap().find(name);
+      if (it != GetEntryMap().end()) {
+        GetEntryMap().erase(it);
       }
     }
   }
@@ -133,11 +140,11 @@ namespace kagami {
     ofstream ofs("event.log", std::ios::trunc);
     string prioritystr;
     if (ofs.good()) {
-      if (logger.empty()) {
+      if (GetLogger().empty()) {
         ofs << "No Events.\n";
       }
       else {
-        for (log_t unit : logger) {
+        for (log_t unit : GetLogger()) {
           ofs << "[" << unit.first << "]";
           if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
           else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
@@ -370,24 +377,21 @@ namespace kagami {
     string id = provider.GetId();
     Object temp;
     deque<Object> objects;
-      
+
     if (!provider.Good()) {
       msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found.");
       return false;
     }
 
-    if (id == kStrDefineCmd) {
+    if (id == kStrDefineCmd) { 
       disable_query = true;
     }
 
-    //if (symbol.back().substr(0, 2) == "__") {
-    //  method = true;
-    //}
-
-    if (priority == kFlagBinEntry) {
+    if (priority == kFlagBinEntry || priority == kFlagMethod) {
       size--;
       reversed = false;
     }
+
     if (disable_set_entry) {
       while (item.back() != "," && !item.empty()) {
         if (kit.GetDataType(item.back()) == kTypeFunction) {
@@ -451,9 +455,9 @@ namespace kagami {
       attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
       objects.push_back(Object().manage(symbol.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag)));
     }
-
-    if (method) {
-      objects.push_back(GetObj(item.back()));
+    else if (priority == kFlagMethod) {
+      objects.push_front(GetObj(item.back()));
+      item.pop_back();
     }
 
     switch (mode) {
@@ -541,6 +545,7 @@ namespace kagami {
           symbol.push_back(raw[i]);
         }
         else if (raw[i] == "[") {
+          //TODO:
           if (kit.GetDataType(raw.at(i - 1)) == kTypeFunction) {
             symbol.push_back("__get_element");
           }

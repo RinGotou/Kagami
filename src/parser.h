@@ -49,6 +49,7 @@ namespace kagami {
   const string kTypeIdInt = "int";
   const string kTypeIdRawString = "string";
   const string kTypeIdArrayBase = "deque";
+  const string kTypeIdCubeBase = "cube";
   const string kTypeIdRef = "__ref";
 
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
@@ -333,6 +334,7 @@ namespace kagami {
     string id;
     int arg_mode;
     int priority;
+    size_t minsize;
     vector<string> args;
     Activity activity;
   public:
@@ -381,8 +383,6 @@ namespace kagami {
   }
 
   namespace entry {
-    extern vector<ObjectManager> ObjectStack;
-
 #if defined(_WIN32)
     //Windows Verison
     class Instance : public pair<string, HINSTANCE> {
