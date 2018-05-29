@@ -359,7 +359,7 @@ namespace kagami {
   bool Chainloader::Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
     Message &msg, size_t mode) {
     Kit kit;
-    AttrTag attrTag;
+    Attribute attribute;
     EntryProvider provider;
     Object temp;
     size_t size = 0;
@@ -404,9 +404,9 @@ namespace kagami {
         if (kit.GetDataType(item.back()) == kTypeFunction) {
           //query is completed in GetObj().
           if (disable_query) {
-            attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-            attrTag.ro = true;
-            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+            attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+            attribute.ro = true;
+            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute));
             disable_query = false;
           }
           else {
@@ -421,9 +421,9 @@ namespace kagami {
           }
         }
         else {
-          attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-          attrTag.ro = true;
-          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+          attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+          attribute.ro = true;
+          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute));
         }
         item.pop_back();
       }
@@ -433,9 +433,9 @@ namespace kagami {
       while (size > 0 && !item.empty()) {
         if (kit.GetDataType(item.back()) == kTypeFunction) {
           if (disable_query && size == 1) {
-            attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-            attrTag.ro = true;
-            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+            attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+            attribute.ro = true;
+            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute));
             disable_query = false;
           }
           else {
@@ -443,9 +443,9 @@ namespace kagami {
           }
         }
         else {
-          attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-          attrTag.ro = true;
-          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+          attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+          attribute.ro = true;
+          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute));
         }
         if (temp.GetTypeId() != kTypeIdNull) {
           switch (reversed) {
@@ -459,8 +459,8 @@ namespace kagami {
     }
     
     if (priority == kFlagBinEntry) {
-      attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-      objects.push_back(Object().manage(symbol.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag)));
+      attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
+      objects.push_back(Object().manage(symbol.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute)));
     }
     else if (priority == kFlagMethod) {
       objects.push_front(GetObj(item.back()));
@@ -490,10 +490,10 @@ namespace kagami {
     }
 
     if (msg.GetCode() == kCodeObject) {
-      attrTag.methods = type::GetTemplate(msg.GetValue())->GetMethods();
+      attribute.methods = type::GetTemplate(msg.GetValue())->GetMethods();
       item.push_back(msg.GetDetail()); //detail start with "__"
       lambdamap.insert(pair<string, Object>(msg.GetDetail(),
-        Object().set(msg.GetPtr(), msg.GetValue(), kit.MakeAttrTagStr(attrTag))));
+        Object().set(msg.GetPtr(), msg.GetValue(), kit.MakeAttrTagStr(attribute))));
     }
     else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
       item.push_back(msg.GetDetail());
@@ -502,7 +502,7 @@ namespace kagami {
     return (msg.GetValue() != kStrFatalError && msg.GetValue() != kStrWarning);
   }
 
-  Message Chainloader::Start(size_t mode = kModeNormal) {
+  Message Chainloader::Start(size_t mode) {
     using namespace entry;
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
@@ -640,7 +640,6 @@ namespace kagami {
         }
       }
       else if (unit_type == kTypeFunction && !string_token_proc) {
-        //todo:override
         if (dot_operator) {
           temp_str = entry::GetTypeId(item.back());
           if (kit.FindInStringVector(raw.at(i), type::GetTemplate(temp_str)->GetMethods())) {
@@ -710,7 +709,7 @@ namespace kagami {
     using namespace entry;
     ObjectMap map;
     Message result;
-    AttrTag attrTag;
+    Attribute attribute;
     bool ignore_first_arg = true, health = true;
     size_t size = p.size(), expected = this->args.size(), i = 0;
     
@@ -746,7 +745,7 @@ namespace kagami {
     return result;
   }
 
-  Message ChainStorage::Run(deque<string> res = deque<string>()) {
+  Message ChainStorage::Run(deque<string> res) {
     using namespace entry;
     Message result;
     size_t i = 0;
@@ -873,74 +872,6 @@ namespace kagami {
     return result;
   }
 
-  void Core::PrintEvents() {
-    using namespace trace;
-    ofstream ofs("event.log", std::ios::trunc);
-    string prioritystr;
-    if (ofs.good()) {
-      if (GetLogger().empty()) {
-        ofs << "No Events.\n";
-      }
-      else {
-        for (log_t unit : GetLogger()) {
-          ofs << "[" << unit.first << "]";
-          if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
-          else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
-          if (unit.second.GetDetail() != kStrEmpty) {
-            ofs << prioritystr << unit.second.GetDetail() << "\n";
-          }
-        }
-      }
-    }
-    ofs.close();
-  }
 
-  Message Core::ExecScriptFile(string target) {
-    Message result;
-    ScriptProvider sp(target.c_str());
-    ChainStorage cs(sp);
-
-    if (target == kStrEmpty) {
-      trace::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
-      return result;
-    }
-    Activiate();
-    InitTemplates();
-    cs.Run();
-    entry::ResetPlugin();
-    return result;
-  }
-
-  Message Quit(ObjectMap &p) {
-    Message result(kStrEmpty, kCodeQuit, kStrEmpty);
-    return result;
-  }
-
-  void Core::Terminal() {
-    using namespace entry;
-    string buf = kStrEmpty;
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    Chainloader loader;
-    //auto Build = [&](string target) {return BuildStringVector(target); };
-    std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
-    std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
-
-    CreateManager();
-    Activiate();
-    InitTemplates();
-    Inject(EntryProvider(ActivityTemplate().set("quit",Quit,kFlagNormalEntry,kCodeNormalArgs,"")));
-
-    while (result.GetCode() != kCodeQuit) {
-      std::cout << ">>>";
-      std::getline(std::cin, buf);
-      if (buf != kStrEmpty) {
-        result = loader.Reset().Build(buf).Start();
-        if (result.GetCode() < kCodeSuccess) {
-          std::cout << result.GetDetail() << std::endl;
-        }
-      }
-    }
-    ResetPlugin();
-  }
 }
 

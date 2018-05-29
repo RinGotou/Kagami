@@ -24,14 +24,19 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
-#define _ENABLE_FASTRING_
-#include <stack>
-#include <fstream>
-#include <array>
-#include "kagamicommon.h"
-#if defined(_WIN32)
-#include "windows.h"
-#define WIN32_LEAN_AND_MEAN
-#else
-#endif
+#include "parser.h"
 
+namespace kagami {
+  /*Core Class
+  this class contains all main functions of script processor.
+  */
+  class ScriptCore {
+  private:
+    bool ignore_fatal_error;
+  public:
+    //TODO:startup arugment
+    void Terminal();
+    void PrintEvents();
+    Message ExecScriptFile(string target);
+  };
+}
