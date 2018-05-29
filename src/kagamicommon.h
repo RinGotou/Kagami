@@ -38,9 +38,14 @@ namespace kagami {
   using std::vector;
   using std::map;
   using std::deque;
+
   using std::shared_ptr;
   using std::static_pointer_cast;
   using std::regex;
+  using std::regex_match;
+  using std::shared_ptr;
+  using std::static_pointer_cast;
+  using std::make_shared;
 
   struct ActivityTemplate;
   class Message;
@@ -55,11 +60,10 @@ namespace kagami {
   using MemoryDeleter = int(*)(void *);
   using Attachment = vector<ActivityTemplate> * (*)(void);
 
-
 #if defined(_WIN32)
-  const string kEngineVersion = "version 0.5 (Windows Platform)";
+  const string kEngineVersion = "version 0.51 (Windows Platform)";
 #else
-  const string kEngineVersion = "version 0.5 (Linux Platform)";
+  const string kEngineVersion = "version 0.51 (Linux Platform)";
 #endif
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
@@ -137,14 +141,14 @@ namespace kagami {
   /*Object Tag Struct
     no description yet.
   */
-  struct AttrTag {
+  struct Attribute {
     string methods;
     bool ro;
-    AttrTag(string methods, bool ro) {
+    Attribute(string methods, bool ro) {
       this->methods = methods;
       this->ro = ro;
     }
-    AttrTag(){}
+    Attribute(){}
   };
 
   /*Activity Template class
@@ -306,11 +310,45 @@ namespace kagami {
     }
 
     int GetDataType(string target);
-    AttrTag GetAttrTag(string target);
-    string MakeAttrTagStr(AttrTag target);
+    Attribute GetAttrTag(string target);
+    string MakeAttrTagStr(Attribute target);
     bool FindInStringVector(string target, string source);
     vector<string> BuildStringVector(string source);
   };
 
+  /*Object Class
+  A shared void pointer is packaged in this.Almost all varibales and
+  constants are managed by shared pointers.This class will be packaged
+  in ObjectManager class.
+  */
+  class Object {
+  private:
+    std::shared_ptr<void> ptr;
+    string option;
+    string tag;
+  public:
+    Object() {
+      ptr = nullptr;
+      option = kTypeIdNull;
+      tag = kStrEmpty;
+    }
+    template <class T> 
+    Object &manage(T &t, string option, string tag) {
+      ptr = std::make_shared<T>(t);
+      this->option = option;
+      this->tag = tag;
+      return *this;
+    }
+    Object &set(shared_ptr<void> ptr, string option, string tag) {
+      this->ptr = ptr;
+      this->option = option;
+      return *this;
+    }
+    shared_ptr<void> get() { return ptr; }
+    string GetTypeId() const { return option; }
+    Attribute getTag() const { return Kit().GetAttrTag(tag); }
+    Object &setTag(string tag) { this->tag = tag; return *this; }
+    Attribute addTag(string target) { tag.append(target); return Kit().GetAttrTag(tag); }
+  };
 }
 

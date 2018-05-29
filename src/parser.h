@@ -24,75 +24,29 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
-#include "includes.h"
+#define _ENABLE_FASTRING_
+#include <stack>
+#include <fstream>
+#include <array>
+#include "kagamicommon.h"
+#if defined(_WIN32)
+#include "windows.h"
+#define WIN32_LEAN_AND_MEAN
+#else
+#endif
 
 namespace kagami {
   using std::ifstream;
   using std::ofstream;
-  using std::vector;
   using std::stack;
   using std::array;
-  using std::deque;
-  using std::pair;
-  using std::map;
   using std::to_string;
   using std::stoi;
   using std::stof;
   using std::stod;
-  using std::regex_match;
-  using std::shared_ptr;
-  using std::static_pointer_cast;
-  using std::make_shared;
 
   class EntryProvider;
   class Chainloader;
-
-  /*Core Class
-  this class contains all main functions of script processor.
-  */
-  class Core {
-  private:
-    bool ignore_fatal_error;
-  public:
-    //TODO:startup arugment
-    void Terminal();
-    void PrintEvents();
-    Message ExecScriptFile(string target);
-  };
-
-  /*Object Class
-   A shared void pointer is packaged in this.Almost all varibales and
-   constants are managed by shared pointers.This class will be packaged
-   in ObjectManager class.
-  */
-  class Object {
-  private:
-    std::shared_ptr<void> ptr;
-    string option;
-    string tag;
-  public:
-    Object() { 
-      ptr = nullptr; 
-      option = kTypeIdNull;
-      tag = kStrEmpty;
-    }
-    template <class T> Object &manage(T &t, string option, string tag) {
-      ptr = std::make_shared<T>(t);
-      this->option = option;
-      this->tag = tag;
-      return *this;
-    }
-    Object &set(shared_ptr<void> ptr, string option,string tag) {
-      this->ptr = ptr;
-      this->option = option;
-      return *this;
-    }
-    shared_ptr<void> get() { return ptr; }
-    string GetTypeId() const { return option; }
-    AttrTag getTag() const { return Kit().GetAttrTag(tag); }
-    Object &setTag(string tag) { this->tag = tag; return *this; }
-    AttrTag addTag(string target) { tag.append(target); return Kit().GetAttrTag(tag); }
-  };
 
   /*ObjectManager Class
   MemoryManger will be filled with Object and manage life cycle of variables
@@ -112,17 +66,17 @@ namespace kagami {
     template <class Type> bool Create(string sign, Type &t, string TypeId, ObjTemplate temp, bool constant) {
       bool result = true;
       string tag = kStrEmpty;
-      AttrTag attrTag;
+      Attribute attribute;
 
       if (CheckObject(sign) == true) {
         result = false;
       }
       else {
-        if (constant) attrTag.ro = true;
-        else attrTag.ro = false;
-        attrTag.methods = temp.GetMethods();
+        if (constant) attribute.ro = true;
+        else attribute.ro = false;
+        attribute.methods = temp.GetMethods();
 
-        tag = Kit().MakeAttrTagStr(attrTag);
+        tag = Kit().MakeAttrTagStr(attribute);
 
         base.insert(pair<string, Object>(sign, Object().manage(t, TypeId, tag)));
       }
@@ -210,7 +164,7 @@ namespace kagami {
       return *this;
     }
 
-    Message Start(size_t mode); 
+    Message Start(size_t mode = kModeNormal);
     Chainloader &Build(string target);
   };
 
@@ -237,7 +191,7 @@ namespace kagami {
       this->parameter = names;
     }
 
-    Message Run(deque<string> res);
+    Message Run(deque<string> res = deque<string>());
   };
   
   /*EntryProvider Class
@@ -307,15 +261,18 @@ namespace kagami {
 
   void Activiate();
   void InitTemplates();
+  void InitMethods();
 
   namespace type {
     ObjTemplate *GetTemplate(string name);
     void AddTemplate(string name, ObjTemplate temp);
+    shared_ptr<void> GetObjectCopy(Object &object);
   }
 
   namespace trace {
     using log_t = pair<string, Message>;
     void log(kagami::Message msg);
+    vector<log_t> &GetLogger();
   }
 
   namespace entry {

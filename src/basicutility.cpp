@@ -99,8 +99,8 @@ namespace kagami {
 
     Object *CreateObject(string sign, shared_ptr<void> ptr, string option, bool constant = false) {
       Object *object = nullptr;
-      AttrTag attrTag(type::GetTemplate(option)->GetMethods(), constant);
-      GetObjectStack().back().add(sign, Object().set(ptr, option, Kit().MakeAttrTagStr(attrTag)));
+      Attribute attribute(type::GetTemplate(option)->GetMethods(), constant);
+      GetObjectStack().back().add(sign, Object().set(ptr, option, Kit().MakeAttrTagStr(attribute)));
       object = GetObjectStack().back().Find(sign);
       return object;
     }
@@ -380,14 +380,14 @@ namespace kagami {
   }
 
   Message SetOperand(ObjectMap &p) {
-    AttrTag attrTag;
+    Attribute attribute;
     Message result;
     Object source = p.at("source"), target = p.at("target");
     auto ptr = type::GetObjectCopy(target);
 
-    attrTag.methods = type::GetTemplate(target.GetTypeId())->GetMethods();
-    attrTag.ro = false;
-    source.set(ptr, target.GetTypeId(), Kit().MakeAttrTagStr(attrTag));
+    attribute.methods = type::GetTemplate(target.GetTypeId())->GetMethods();
+    attribute.ro = false;
+    source.set(ptr, target.GetTypeId(), Kit().MakeAttrTagStr(attribute));
 
     return result;
   }
@@ -436,93 +436,6 @@ namespace kagami {
 #else
   //Linux Version
 #endif
-
-  Message ArrayConstructor(ObjectMap &p) {
-    Message result;
-    AttrTag attrTag("", false);
-    Object size = p.at("size"), init_value = p.at("init_value");
-    int size_value = stoi(*static_pointer_cast<string>(size.get()));
-    int count = 0;
-    shared_ptr<void> init_ptr = nullptr;
-    deque<Object> base;
-
-    //error:wrong size
-    if (size_value <= 0) {
-      result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
-      return result;
-    }
-
-    attrTag = init_value.getTag();
-    attrTag.ro = false;
-
-    for (count = 0; count < size_value; count++) {
-      init_ptr = type::GetObjectCopy(init_value);
-      base.push_back(Object().set(init_ptr, init_value.GetTypeId(), Kit().MakeAttrTagStr(attrTag)));
-    }
-
-    result.combo(kTypeIdArrayBase, kCodeObject, "__result");
-    result.GetPtr() = make_shared<deque<Object>>(base);
-
-    return result;
-  }
-
-  Message GetSize(ObjectMap &p) {
-    Message result;
-    Object object = p.at("object");
-    string type_id = object.GetTypeId();
-
-    if (type_id == kTypeIdArrayBase) {
-      result.SetDetail(to_string(static_pointer_cast<deque<Object>>(object.get())->size()));
-    }
-    else if (type_id == kTypeIdRawString) {
-      auto str = *static_pointer_cast<string>(object.get());
-      result.SetDetail(to_string(str.size()));
-    }
-
-    result.SetValue(kStrRedirect);
-    return result;
-  }
-
-  Message GetElement(ObjectMap &p) {
-    Message result;
-    Object object = p.at("object"), subscript_1 = p.at("subscript_1");
-    string type_id = object.GetTypeId();
-    int size = 0;
-    int count0 = 0;
-
-    if (type_id == kTypeIdRawString) {
-      count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
-      size = static_pointer_cast<string>(object.get())->size();
-      if (count0 <= size - 1) {
-        result.combo(kStrRedirect,kCodeSuccess,string().append(1,
-          static_pointer_cast<string>(object.get())->at(count0)));
-      }
-    }
-    else if (type_id == kTypeIdArrayBase) {
-      count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
-      size = static_pointer_cast<deque<Object>>(object.get())->size();
-      if (count0 <= size - 1) {
-        auto &target = static_pointer_cast<deque<Object>>(object.get())->at(count0);
-        result.combo(target.GetTypeId(), kCodeObject, "__element");
-        result.GetPtr() = target.get();
-      }
-    }
-
-    return result;
-  }
-
-  Message GetElement_2Dimension(ObjectMap &p) {
-    Message result;
-    Object object = p.at("object"), subscript_1 = p.at("subscript_1"), subscript_2 = p.at("subscript_2");
-    string type_id = object.GetTypeId();
-    int size = 0;
-    int count0 = 0, count1 = 0;
-
-    //TODO:
-
-    return result;
-  }
-
   Message VersionInfo(ObjectMap &p) {
     Message result(kStrRedirect, kCodeSuccess, "\"" + kEngineVersion + "\"");
     return result;
@@ -545,11 +458,9 @@ namespace kagami {
   */
   void Activiate() {
     using namespace entry;
+    InitTemplates();
+    InitMethods();
     ActivityTemplate temp;
-    Inject(EntryProvider(temp.set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
-    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1", kTypeIdRawString)));
-    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1", kTypeIdArrayBase)));
-    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1|subscript_2", kTypeIdCubeBase)));
     Inject(EntryProvider(temp.set("binexp", BinaryOperands, kFlagBinEntry, kCodeNormalArgs, "first|second|operator")));
     Inject(EntryProvider(temp.set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
     Inject(EntryProvider(temp.set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
@@ -560,8 +471,6 @@ namespace kagami {
     Inject(EntryProvider(temp.set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeNormalArgs, "target|source")));
     Inject(EntryProvider(temp.set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
     Inject(EntryProvider(temp.set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
-    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "object", kTypeIdRawString)));
-    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "object", kTypeIdArrayBase)));
     Inject(EntryProvider(temp.set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
   }
