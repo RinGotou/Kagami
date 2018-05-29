@@ -184,7 +184,7 @@ namespace kagami {
         deleter = GetInstanceList().back().getDeleter();
 
         for (auto &unit : temp) {
-          Inject(unit.id, EntryProvider(unit));
+          Inject(EntryProvider(unit));
         }
         if (castAttachment != nullptr) {
           objtemps = castAttachment();
@@ -221,7 +221,7 @@ namespace kagami {
         //delete entries
         act_temp = instance_i->GetMap();
         for (auto unit : act_temp) {
-          Delete(unit.id);
+          Delete(unit.id,unit.specifictype,Kit().BuildStringVector(unit.args).size());
         }
         //delete object templates
         if (castAttachment != nullptr) {
@@ -237,7 +237,7 @@ namespace kagami {
       GetInstanceList().erase(instance_i);
     }
 
-    void ResetPlugin(bool OnExit) {
+    void ResetPlugin() {
       HINSTANCE *hinstance = nullptr;
       while (GetInstanceList().empty() != true) {
         if (GetInstanceList().back().GetHealth()) {
@@ -491,7 +491,7 @@ namespace kagami {
     Object object = p.at("object"), subscript_1 = p.at("subscript_1");
     string type_id = object.GetTypeId();
     int size = 0;
-    int count0 = 0, count1 = 0;
+    int count0 = 0;
 
     if (type_id == kTypeIdRawString) {
       count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
@@ -514,11 +514,24 @@ namespace kagami {
     return result;
   }
 
+  Message GetElement_2Dimension(ObjectMap &p) {
+    Message result;
+    Object object = p.at("object"), subscript_1 = p.at("subscript_1"), subscript_2 = p.at("subscript_2");
+    string type_id = object.GetTypeId();
+    int size = 0;
+    int count0 = 0, count1 = 0;
+
+    //TODO:
+
+    return result;
+  }
+
   Message VersionInfo(ObjectMap &p) {
     Message result(kStrRedirect, kCodeSuccess, "\"" + kEngineVersion + "\"");
     return result;
   }
 
+  //TODO:rewrite this!
   Message PrintOnScreen(ObjectMap &p) {
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     string msg = CastToString(p.at("msg").get());
@@ -535,40 +548,24 @@ namespace kagami {
   */
   void Activiate() {
     using namespace entry;
-
-    Inject("end", EntryProvider(ActivityTemplate()
-      .set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject("while", EntryProvider(ActivityTemplate()
-      .set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject("binexp", EntryProvider(ActivityTemplate()
-      .set("binexp", BinaryOperands, kFlagBinEntry, kCodeNormalArgs, "first|second|operator")));
-    Inject("log", EntryProvider(ActivityTemplate()
-      .set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
-    Inject("import", EntryProvider(ActivityTemplate()
-      .set("import", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "name|path")));
-    Inject(kStrDefineCmd, EntryProvider(ActivityTemplate()
-      .set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "name|source")));
-    Inject(kStrSetCmd, EntryProvider(ActivityTemplate()
-      .set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeNormalArgs, "target|source")));
-    Inject("if", EntryProvider(ActivityTemplate()
-      .set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject("elif", EntryProvider(ActivityTemplate()
-      .set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject("else", EntryProvider(ActivityTemplate()
-      .set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject("array", EntryProvider(ActivityTemplate()
-      .set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
-    Inject("print", EntryProvider(ActivityTemplate()
-      .set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
-    Inject("version", EntryProvider(ActivityTemplate()
-      .set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject("__" + kTypeIdRawString + "_size", EntryProvider(ActivityTemplate()
-      .set("getsize", GetSize, kFlagMethod, kCodeNormalArgs, "object")));
-    Inject("__" + kTypeIdArrayBase + "_size", EntryProvider(ActivityTemplate()
-      .set("getsize", GetSize, kFlagMethod, kCodeNormalArgs, "object")));
-    Inject("__" + kTypeIdRawString + "_at", EntryProvider(ActivityTemplate()
-      .set("at", GetElement, kFlagMethod, kCodeAutoFill, "object|subscript_1")));
-    Inject("__" + kTypeIdArrayBase + "_at", EntryProvider(ActivityTemplate()
-      .set("at", GetElement, kFlagMethod, kCodeAutoFill, "object|subscript_1")));
+    ActivityTemplate temp;
+    Inject(EntryProvider(temp.set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
+    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1", kTypeIdRawString)));
+    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1", kTypeIdArrayBase)));
+    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1|subscript_2", kTypeIdCubeBase)));
+    Inject(EntryProvider(temp.set("binexp", BinaryOperands, kFlagBinEntry, kCodeNormalArgs, "first|second|operator")));
+    Inject(EntryProvider(temp.set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject(EntryProvider(temp.set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject(EntryProvider(temp.set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "name|path")));
+    Inject(EntryProvider(temp.set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "name|source")));
+    Inject(EntryProvider(temp.set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeNormalArgs, "target|source")));
+    Inject(EntryProvider(temp.set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
+    Inject(EntryProvider(temp.set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
+    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "object", kTypeIdRawString)));
+    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "object", kTypeIdArrayBase)));
+    Inject(EntryProvider(temp.set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
   }
 }
