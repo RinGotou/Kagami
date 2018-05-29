@@ -45,16 +45,6 @@ namespace kagami {
   using std::static_pointer_cast;
   using std::make_shared;
 
-  const string kStrVar = "var";
-  const string kStrFor = "for";
-  const string kStrWhile = "while";
-  const string kStrEnd = "end";
-  const string kTypeIdNull = "null";
-  const string kTypeIdInt = "int";
-  const string kTypeIdRawString = "string";
-  const string kTypeIdArrayBase = "deque";
-  const string kTypeIdRef = "__ref";
-
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternNumber(R"(\d+\.?\d*)");
   const regex kPatternInteger(R"([-]?\d+)");
@@ -118,6 +108,9 @@ namespace kagami {
       if (opercode == "-") result = A - B;
       if (opercode == "*") result = A * B;
       if (opercode == "/") result = A / B;
+      //if (opercode == "%") result = A % B;
+      //if (opercode == "&") result = A & B;
+      //if (opercode == "|") result = A | B;
       return result;
     }
 
@@ -141,10 +134,9 @@ namespace kagami {
     Message ExecScriptFile(string target);
     void PrintEvents();
     void Terminal();
+    bool FindInStringVector(string target, string source);
     vector<string> BuildStringVector(string source);
   };
-
-
 
   /*Object Class
    A shared void pointer is packaged in this.Almost all varibales and
@@ -279,7 +271,8 @@ namespace kagami {
     map<string, Object> lambdamap;
 
     Object GetObj(string name);
-
+    vector<string> spilt(string target);
+    string GetHead(string target);
     int GetPriority(string target) const;
     bool Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
       Message &msg, size_t mode);
@@ -337,9 +330,11 @@ namespace kagami {
     int priority;
     vector<string> args;
     Activity activity;
+    string specifictype;
   public:
     EntryProvider() : id(kStrNull), activity(nullptr) {
       arg_mode = kCodeIllegalArgs;
+      specifictype = kTypeIdNull;
     }
 
     EntryProvider(ActivityTemplate temp) :
@@ -347,6 +342,7 @@ namespace kagami {
       activity(temp.activity) {
       arg_mode = temp.arg_mode;
       priority = temp.priority;
+      specifictype = temp.specifictype;
     }
 
     bool operator==(EntryProvider &target) {
@@ -357,6 +353,12 @@ namespace kagami {
         target.args == this->args);
     }
 
+    EntryProvider &SetSpecificType(string type) {
+      this->specifictype = type;
+      return *this;
+    }
+
+    string GetSpecificType() const { return specifictype; }
     string GetId() const { return this->id; }
     int GetArgumentMode() const { return this->arg_mode; }
     size_t GetArgumentSize() const { return this->args.size(); }
@@ -383,8 +385,6 @@ namespace kagami {
   }
 
   namespace entry {
-    extern vector<ObjectManager> ObjectStack;
-
 #if defined(_WIN32)
     //Windows Verison
     class Instance : public pair<string, HINSTANCE> {
@@ -402,16 +402,13 @@ namespace kagami {
 #else
     //Linux Version
 #endif
-
-    using EntryMap = map<string, EntryProvider>;
     using EntryMapUnit = map<string, EntryProvider>::value_type;
     
     string GetTypeId(string sign);
     std::wstring s2ws(const std::string& s);
-    void Inject(string name, EntryProvider provider);
-    void Delete(string name);
-    void ResetPluginEntry();
-    void ResetPlugin(bool OnExit = false);
+    void Inject(EntryProvider provider);
+    void Delete(string id, string type, int size);
+    void ResetPlugin();
     Object *FindObject(string name);
     ObjectManager &CreateManager();
     bool DisposeManager();

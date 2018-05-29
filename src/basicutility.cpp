@@ -26,18 +26,20 @@
 #include "parser.h"
 #include "windows.h"
 #include <iostream>
-//#define _DISABLE_TYPE_SYSTEM_
 
 namespace kagami {
   namespace type {
-    map<string, ObjTemplate> TemplateMap;
+    map <string, ObjTemplate> &GetTemplateMap() {
+      static map<string, ObjTemplate> base;
+      return base;
+    }
 
     shared_ptr<void> GetObjectCopy(Object &object) {
       shared_ptr<void> result = nullptr;
       string option = object.GetTypeId();
       CopyCreator copyCreator = nullptr;
-      map<string, ObjTemplate>::iterator it = TemplateMap.find(option);
-      if (it != TemplateMap.end()) {
+      map<string, ObjTemplate>::iterator it = GetTemplateMap().find(option);
+      if (it != GetTemplateMap().end()) {
         result = it->second.CreateObjectCopy(object.get());
       }
       return result;
@@ -45,33 +47,40 @@ namespace kagami {
 
     ObjTemplate *GetTemplate(string name) {
       ObjTemplate *result = nullptr;
-      map<string, ObjTemplate>::iterator it = TemplateMap.find(name);
-      if (it != TemplateMap.end()) {
+      map<string, ObjTemplate>::iterator it = GetTemplateMap().find(name);
+      if (it != GetTemplateMap().end()) {
         result = &(it->second);
       }
       return result;
     }
 
     void AddTemplate(string name, ObjTemplate temp) {
-      TemplateMap.insert(pair<string, ObjTemplate>(name, temp));
+      GetTemplateMap().insert(pair<string, ObjTemplate>(name, temp));
     }
 
     void DisposeTemplate(string name) {
-      map<string, ObjTemplate>::iterator it = TemplateMap.find(name);
-      if (it != TemplateMap.end()) TemplateMap.erase(it);
+      map<string, ObjTemplate>::iterator it = GetTemplateMap().find(name);
+      if (it != GetTemplateMap().end()) GetTemplateMap().erase(it);
     }
   }
 
   namespace entry {
-    vector<Instance> InstanceList;
-    vector<ObjectManager> ObjectStack;
+    vector<Instance> &GetInstanceList() {
+      static vector<Instance> base;
+      return base;
+    }
+
+    vector<ObjectManager> &GetObjectStack() {
+      static vector<ObjectManager> base;
+      return base;
+    }
 
     Object *FindObject(string sign) {
       Object *object = nullptr;
-      size_t count = ObjectStack.size();
+      size_t count = GetObjectStack().size();
 
-      while (!ObjectStack.empty() && count > 0) {
-        object = ObjectStack.at(count - 1).Find(sign);
+      while (!GetObjectStack().empty() && count > 0) {
+        object = GetObjectStack().at(count - 1).Find(sign);
         if (object != nullptr) {
           break;
         }
@@ -83,46 +92,47 @@ namespace kagami {
     Object *CreateObject(string sign, string dat, bool constant = false) {
       Object *object = nullptr;
       ObjTemplate *objtemp = type::GetTemplate(kTypeIdRawString);
-      ObjectStack.back().Create(sign, dat, kTypeIdRawString, *objtemp, constant);
-      object = ObjectStack.back().Find(sign);
+      GetObjectStack().back().Create(sign, dat, kTypeIdRawString, *objtemp, constant);
+      object = GetObjectStack().back().Find(sign);
       return object;
     }
 
     Object *CreateObject(string sign, shared_ptr<void> ptr, string option, bool constant = false) {
       Object *object = nullptr;
       AttrTag attrTag(type::GetTemplate(option)->GetMethods(), constant);
-      ObjectStack.back().add(sign, Object().set(ptr, option, Kit().MakeAttrTagStr(attrTag)));
-      object = ObjectStack.back().Find(sign);
+      GetObjectStack().back().add(sign, Object().set(ptr, option, Kit().MakeAttrTagStr(attrTag)));
+      object = GetObjectStack().back().Find(sign);
       return object;
     }
 
     string GetTypeId(string sign) {
       string result = kTypeIdNull;
       Object *object = nullptr;
-      size_t count = ObjectStack.size();
+      size_t count = GetObjectStack().size();
 
       while (count > 0) {
-        object = ObjectStack.at(count - 1).Find(sign);
+        object = GetObjectStack().at(count - 1).Find(sign);
         if (object != nullptr) {
           result = object->GetTypeId();
         }
+        count--;
       }
 
       return result;
     }
 
     void ResetObject() {
-      while (!ObjectStack.empty()) ObjectStack.pop_back();
+      while (!GetObjectStack().empty()) GetObjectStack().pop_back();
     }
 
     ObjectManager &CreateManager() {
-      ObjectStack.push_back(ObjectManager());
-      return ObjectStack.back();
+      GetObjectStack().push_back(ObjectManager());
+      return GetObjectStack().back();
     }
 
     bool DisposeManager() {
-      if (!ObjectStack.empty()) { ObjectStack.pop_back(); }
-      return ObjectStack.empty();
+      if (!GetObjectStack().empty()) { GetObjectStack().pop_back(); }
+      return GetObjectStack().empty();
     }
 
     bool Instance::Load(string name, HINSTANCE h) {
@@ -164,17 +174,17 @@ namespace kagami {
       vector<ActivityTemplate> *activities = nullptr;
       MemoryDeleter deleter = nullptr;
 
-      InstanceList.push_back(Instance());
-      InstanceList.back().Load(name, h);
+      GetInstanceList().push_back(Instance());
+      GetInstanceList().back().Load(name, h);
 
-      if (InstanceList.back().GetHealth()) {
-        HINSTANCE &ins = InstanceList.back().second;
-        vector<ActivityTemplate> temp = InstanceList.back().GetMap();
+      if (GetInstanceList().back().GetHealth()) {
+        HINSTANCE &ins = GetInstanceList().back().second;
+        vector<ActivityTemplate> temp = GetInstanceList().back().GetMap();
         castAttachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
-        deleter = InstanceList.back().getDeleter();
+        deleter = GetInstanceList().back().getDeleter();
 
         for (auto &unit : temp) {
-          Inject(unit.id, EntryProvider(unit));
+          Inject(EntryProvider(unit));
         }
         if (castAttachment != nullptr) {
           objtemps = castAttachment();
@@ -194,12 +204,12 @@ namespace kagami {
       vector<ActivityTemplate> act_temp;
       //StrMap map;
 
-      vector<Instance>::iterator instance_i = InstanceList.begin();
-      while (instance_i != InstanceList.end()) {
+      vector<Instance>::iterator instance_i = GetInstanceList().begin();
+      while (instance_i != GetInstanceList().end()) {
         if (instance_i->first == name) break;
         instance_i++;
       }
-      if (instance_i == InstanceList.end() && instance_i->first != name) {
+      if (instance_i == GetInstanceList().end() && instance_i->first != name) {
         trace::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
         return;
       }
@@ -211,7 +221,7 @@ namespace kagami {
         //delete entries
         act_temp = instance_i->GetMap();
         for (auto unit : act_temp) {
-          Delete(unit.id);
+          Delete(unit.id,unit.specifictype,Kit().BuildStringVector(unit.args).size());
         }
         //delete object templates
         if (castAttachment != nullptr) {
@@ -224,19 +234,19 @@ namespace kagami {
         deleter(obj_temp);
       }
       FreeLibrary(*hinstance);
-      InstanceList.erase(instance_i);
+      GetInstanceList().erase(instance_i);
     }
 
-    void ResetPlugin(bool OnExit) {
+    void ResetPlugin() {
       HINSTANCE *hinstance = nullptr;
-      while (InstanceList.empty() != true) {
-        if (InstanceList.back().GetHealth()) {
-          hinstance = &(InstanceList.back().second);
+      while (GetInstanceList().empty() != true) {
+        if (GetInstanceList().back().GetHealth()) {
+          hinstance = &(GetInstanceList().back().second);
           FreeLibrary(*hinstance);
         }
-        InstanceList.pop_back();
+        GetInstanceList().pop_back();
       }
-      if (!OnExit) ResetPluginEntry();
+      //TODO:clear
     }
   }
 
@@ -283,7 +293,7 @@ namespace kagami {
       if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = EnumInt;
       if (datatypeA == kTypeString || datatypeB == kTypeString) enumtype = EnumStr;
 
-      if (enumtype == kTypeInteger || enumtype == kTypeDouble) {
+      if (enumtype == EnumInt || enumtype == EnumDouble) {
         if (dataOP == "+" || dataOP == "-" || dataOP == "*" || dataOP == "/") {
           switch (enumtype) {
           case EnumInt:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
@@ -380,7 +390,6 @@ namespace kagami {
     source.set(ptr, target.GetTypeId(), Kit().MakeAttrTagStr(attrTag));
 
     return result;
-
   }
 
   Message CreateOperand(ObjectMap &p) {
@@ -460,21 +469,75 @@ namespace kagami {
     return result;
   }
 
+  Message GetSize(ObjectMap &p) {
+    Message result;
+    Object object = p.at("object");
+    string type_id = object.GetTypeId();
+
+    if (type_id == kTypeIdArrayBase) {
+      result.SetDetail(to_string(static_pointer_cast<deque<Object>>(object.get())->size()));
+    }
+    else if (type_id == kTypeIdRawString) {
+      auto str = *static_pointer_cast<string>(object.get());
+      result.SetDetail(to_string(str.size()));
+    }
+
+    result.SetValue(kStrRedirect);
+    return result;
+  }
+
   Message GetElement(ObjectMap &p) {
     Message result;
+    Object object = p.at("object"), subscript_1 = p.at("subscript_1");
+    string type_id = object.GetTypeId();
+    int size = 0;
+    int count0 = 0;
+
+    if (type_id == kTypeIdRawString) {
+      count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
+      size = static_pointer_cast<string>(object.get())->size();
+      if (count0 <= size - 1) {
+        result.combo(kStrRedirect,kCodeSuccess,string().append(1,
+          static_pointer_cast<string>(object.get())->at(count0)));
+      }
+    }
+    else if (type_id == kTypeIdArrayBase) {
+      count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
+      size = static_pointer_cast<deque<Object>>(object.get())->size();
+      if (count0 <= size - 1) {
+        auto &target = static_pointer_cast<deque<Object>>(object.get())->at(count0);
+        result.combo(target.GetTypeId(), kCodeObject, "__element");
+        result.GetPtr() = target.get();
+      }
+    }
+
+    return result;
+  }
+
+  Message GetElement_2Dimension(ObjectMap &p) {
+    Message result;
+    Object object = p.at("object"), subscript_1 = p.at("subscript_1"), subscript_2 = p.at("subscript_2");
+    string type_id = object.GetTypeId();
+    int size = 0;
+    int count0 = 0, count1 = 0;
+
+    //TODO:
 
     return result;
   }
 
   Message VersionInfo(ObjectMap &p) {
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    std::cout << kEngineVersion << std::endl;
+    Message result(kStrRedirect, kCodeSuccess, "\"" + kEngineVersion + "\"");
     return result;
   }
 
+  //TODO:rewrite this!
   Message PrintOnScreen(ObjectMap &p) {
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     string msg = CastToString(p.at("msg").get());
+    if (Kit().GetDataType(msg) == kTypeString) {
+      msg = msg.substr(1, msg.size() - 2);
+    }
     std::cout << msg << std::endl;
     return result;
   }
@@ -485,37 +548,24 @@ namespace kagami {
   */
   void Activiate() {
     using namespace entry;
-    Kit kit;
-    auto Build = [&](string target) { return kit.BuildStringVector(target); };
-
-    Inject("end", EntryProvider(ActivityTemplate()
-      .set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject("while", EntryProvider(ActivityTemplate()
-      .set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject("binexp", EntryProvider(ActivityTemplate()
-      .set("binexp", BinaryOperands, kFlagBinEntry, kCodeNormalArgs, "first|second|operator")));
-    Inject("log", EntryProvider(ActivityTemplate()
-      .set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
-    Inject("import", EntryProvider(ActivityTemplate()
-      .set("import", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "name|path")));
-    Inject(kStrDefineCmd, EntryProvider(ActivityTemplate()
-      .set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "name|source")));
-    Inject(kStrSetCmd, EntryProvider(ActivityTemplate()
-      .set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeNormalArgs, "target|source")));
-    Inject("if", EntryProvider(ActivityTemplate()
-      .set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject("elif", EntryProvider(ActivityTemplate()
-      .set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject("else", EntryProvider(ActivityTemplate()
-      .set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject("array", EntryProvider(ActivityTemplate()
-      .set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "name|init_value")));
-    Inject("print", EntryProvider(ActivityTemplate()
-      .set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
-    //Inject("__get_element", EntryProvider("__get_element", GetElement, kFlagAutoFill, kFlagNormalEntry, Build("name|subscript_1|subscript_2")));
-  }
-
-  void InitObjectTemplates() {
-
+    ActivityTemplate temp;
+    Inject(EntryProvider(temp.set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
+    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1", kTypeIdRawString)));
+    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1", kTypeIdArrayBase)));
+    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1|subscript_2", kTypeIdCubeBase)));
+    Inject(EntryProvider(temp.set("binexp", BinaryOperands, kFlagBinEntry, kCodeNormalArgs, "first|second|operator")));
+    Inject(EntryProvider(temp.set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject(EntryProvider(temp.set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject(EntryProvider(temp.set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "name|path")));
+    Inject(EntryProvider(temp.set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "name|source")));
+    Inject(EntryProvider(temp.set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeNormalArgs, "target|source")));
+    Inject(EntryProvider(temp.set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
+    Inject(EntryProvider(temp.set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
+    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "object", kTypeIdRawString)));
+    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "object", kTypeIdArrayBase)));
+    Inject(EntryProvider(temp.set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
   }
 }

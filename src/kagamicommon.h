@@ -100,7 +100,7 @@ namespace kagami {
   const int kFlagCoreEntry = 0;
   const int kFlagNormalEntry = 1;
   const int kFlagBinEntry = 2;
-  const int kFlagPluginEntry = 3;
+  const int kFlagMethod = 3;
 
   const size_t kTypeFunction = 0;
   const size_t kTypeString = 1;
@@ -111,6 +111,13 @@ namespace kagami {
   const size_t kTypeBlank = 6;
   const size_t kTypeChar = 7;
   const size_t kTypeNull = 100;
+
+  const string kTypeIdNull = "null";
+  const string kTypeIdInt = "int";
+  const string kTypeIdRawString = "string";
+  const string kTypeIdArrayBase = "deque";
+  const string kTypeIdCubeBase = "cube";
+  const string kTypeIdRef = "__ref";
 
   const size_t kModeNormal = 0;
   const size_t kModeNextCondition = 1;
@@ -123,13 +130,15 @@ namespace kagami {
     int priority;
     int arg_mode;
     string args;
+    string specifictype;
 
-    ActivityTemplate &set(string id, Activity activity, int priority, int arg_mode, string args) {
+    ActivityTemplate &set(string id, Activity activity, int priority, int arg_mode, string args,string type = kTypeIdNull) {
       this->id = id;
       this->activity = activity;
       this->priority = priority;
       this->arg_mode = arg_mode;
       this->args = args;
+      this->specifictype = type;
       return *this;
     }
   };
