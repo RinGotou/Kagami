@@ -29,86 +29,102 @@
 
 namespace kagami {
   namespace trace {
-    vector<log_t> logger;
+    vector<log_t> &GetLogger() {
+      static vector<log_t> base;
+      return base;
+    }
 
     void log(Message msg) { 
       time_t now = time(0);
 #if defined(_WIN32)
       char nowtime[30] = { ' ' };
       ctime_s(nowtime, sizeof(nowtime), &now);
-      logger.push_back(log_t(string(nowtime), msg));
+      GetLogger().push_back(log_t(string(nowtime), msg));
 #else
       string nowtime(ctime(&now));
-      logger.push_back(log_t(nowtime, msg));
+      GetLogger().push_back(log_t(nowtime, msg));
 #endif
     }
 
     bool IsEmpty() {
-      return logger.empty();
+      return GetLogger().empty();
     }
   }
 
   namespace entry {
-    EntryMap EntryMapBase;
-
-    void Inject(string name, EntryProvider provider) {
-      EntryMapBase.insert(EntryMapUnit(name, provider));
+    vector<EntryProvider> &GetEntryBase() {
+      static vector<EntryProvider> base;
+      return base;
     }
 
-    EntryProvider Order(string name) {
-      EntryProvider result;
-      EntryMap::iterator it = EntryMapBase.find(name);
-      if (it != EntryMapBase.end()) {
-        result = it->second;
-      }
-      return result;
+    void Inject(EntryProvider provider) {
+      GetEntryBase().emplace_back(provider);
     }
 
-    EntryProvider Find(string target) {
+    EntryProvider Order(string id,string type = kTypeIdNull,int size = -1) {
       EntryProvider result;
-      if (target == "+" || target == "-" || target == "*" || target == "/"
-        || target == "==" || target == "<=" || target == ">=" || target == "!=") {
+      vector<EntryProvider> &base = GetEntryBase();
+      string spectype = kTypeIdNull;
+      size_t argsize = 0;
+
+      if (id == "+" || id == "-" || id == "*" || id == "/"
+        || id == "==" || id == "<=" || id == ">=" || id == "!=") {
         result = Order("binexp");
       }
-      else if (target == "=") {
+      else if (id == "=") {
         result = Order(kStrSetCmd);
       }
       else {
-        EntryMap::iterator it = EntryMapBase.find(target);
-        if (it != EntryMapBase.end()) {
-          result = it->second;
+        for (auto &unit : base) {
+          if (unit.GetId() == id) {
+            if (type == unit.GetSpecificType() && (size == -1 || size == unit.GetArgumentSize())) {
+              result = unit;
+              break;
+            }
+          }
         }
       }
       return result;
     }
 
     int GetRequiredCount(string target) {
+      EntryProvider provider;
+      int result;
       if (target == "+" || target == "-" || target == "*" || target == "/"
         || target == "==" || target == "<=" || target == ">=" || target == "!=") {
-        return Order("binexp").GetArgumentSize();
+        result = Order("binexp").GetArgumentSize();
       }
-      EntryMap::iterator it = EntryMapBase.find(target);
-      if (it != EntryMapBase.end()) {
-        return it->second.GetArgumentSize();
+      else {
+        provider = Order(target);
+        switch (provider.Good()) {
+        case true:result = provider.GetArgumentSize(); break;
+        case false:result = kCodeIllegalArgs; break;
+        }
       }
-      return kCodeIllegalArgs;
+      return result;
     }
 
-    void Delete(string name) {
-      EntryMap::iterator it = EntryMapBase.find(name);
-      if (it != EntryMapBase.end()) {
-        EntryMapBase.erase(it);
-      }
-    }
+    void Delete(string id, string type, int size) {
+      vector<EntryProvider> &base = GetEntryBase();
+      vector<EntryProvider>::iterator it;
 
-    void ResetPluginEntry() {
-      EntryMap tempbase;
-      for (auto unit : EntryMapBase) {
-        if (unit.second.GetPriority() != kFlagPluginEntry) tempbase.insert(unit);
+      for (it = base.begin(); it != base.end(); it++) {
+        if (it->GetId() == id) {
+          if (type == kTypeIdNull && size == -1) {
+            break;
+          }
+          else if (type != kTypeIdNull && it->GetSpecificType() == type) {
+            if (size == -1) break;
+            else if (size != -1 && size == it->GetArgumentSize()) break;
+          }
+          else if (type == kTypeIdNull) {
+            if (size == -1) break;
+            else if (size != -1 && size == it->GetArgumentSize()) break;
+          }
+        }
       }
-      EntryMapBase.swap(tempbase);
-      tempbase.clear();
-      EntryMap().swap(tempbase);
+
+      if (it != base.end()) base.erase(it);
     }
   }
 
@@ -137,11 +153,11 @@ namespace kagami {
     ofstream ofs("event.log", std::ios::trunc);
     string prioritystr;
     if (ofs.good()) {
-      if (logger.empty()) {
+      if (GetLogger().empty()) {
         ofs << "No Events.\n";
       }
       else {
-        for (log_t unit : logger) {
+        for (log_t unit : GetLogger()) {
           ofs << "[" << unit.first << "]";
           if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
           else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
@@ -209,7 +225,7 @@ namespace kagami {
     size_t i;
     string current = kStrEmpty;
     bool exempt_blank_char = false, string_processing = false;
-    vector<string> list = { kStrVar, "def", "return" };
+    vector<string> list = { "var", "ref", "return" };
     auto ToString = [](char c) -> string {
       return string().append(1, c);
     };
@@ -342,7 +358,7 @@ namespace kagami {
 
   int Chainloader::GetPriority(string target) const {
     int priority;
-    if (target == "=" || target == kStrVar) priority = 0;
+    if (target == "=" || target == "var") priority = 0;
     else if (target == "==" || target == ">=" || target == "<=") priority = 1;
     else if (target == "+" || target == "-") priority = 2;
     else if (target == "*" || target == "/" || target == "\\") priority = 3;
@@ -363,31 +379,75 @@ namespace kagami {
     return result;
   }
 
+  vector<string> Chainloader::spilt(string target) {
+    vector<string> result;
+    string temp = kStrEmpty;
+    bool start = false;
+    for (auto &unit : target) {
+      if (unit == ':') {
+        start = true;
+        continue;
+      }
+      if (start) {
+        temp.append(1, unit);
+      }
+    }
+    result = Kit().BuildStringVector(temp);
+    return result;
+  }
+
+  string Chainloader::GetHead(string target) {
+    string result = kStrEmpty;
+    for (auto &unit : target) {
+      if (unit == ':') break;
+      else result.append(1, unit);
+    }
+    return result;
+  }
+
   bool Chainloader::Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
     Message &msg, size_t mode) {
     Kit kit;
     AttrTag attrTag;
-    EntryProvider provider = entry::Find(symbol.back());
-    bool reversed = true, disable_query = false;
-    size_t size = provider.GetArgumentSize();
-    int arg_mode = provider.GetArgumentMode(), priority = provider.GetPriority();
-    string id = provider.GetId();
+    EntryProvider provider;
     Object temp;
+    size_t size = 0;
+    int provider_size = -1, arg_mode = 0, priority = 0;
+    bool reversed = true, disable_query = false, method = false;
+    string id = GetHead(symbol.back()), provider_type = kTypeIdNull;
+    vector<string> tags = spilt(symbol.back());
     deque<Object> objects;
-      
+
+    if (!tags.empty()) {
+      provider_type = tags.front();
+      if (tags.size() > 1) {
+        provider_size = stoi(tags.at(1));
+      }
+      else {
+        provider_size = -1;
+      }
+    }
+
+    provider = entry::Order(id, provider_type, provider_size);
     if (!provider.Good()) {
       msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found.");
       return false;
     }
+    else {
+      size = provider.GetArgumentSize();
+      arg_mode = provider.GetArgumentMode();
+      priority = provider.GetPriority();
+    }
 
-    if (provider.GetId() == kStrDefineCmd) {
+    if (id == kStrDefineCmd) { 
       disable_query = true;
     }
 
-    if (priority == kFlagBinEntry) {
+    if (priority == kFlagBinEntry || priority == kFlagMethod) {
       size--;
       reversed = false;
     }
+
     if (disable_set_entry) {
       while (item.back() != "," && !item.empty()) {
         if (kit.GetDataType(item.back()) == kTypeFunction) {
@@ -421,7 +481,7 @@ namespace kagami {
     else {
       while (size > 0 && !item.empty()) {
         if (kit.GetDataType(item.back()) == kTypeFunction) {
-          if (disable_query) {
+          if (disable_query && size == 1) {
             attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
             attrTag.ro = true;
             temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
@@ -450,6 +510,10 @@ namespace kagami {
     if (priority == kFlagBinEntry) {
       attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
       objects.push_back(Object().manage(symbol.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag)));
+    }
+    else if (priority == kFlagMethod) {
+      objects.push_front(GetObj(item.back()));
+      item.pop_back();
     }
 
     switch (mode) {
@@ -492,10 +556,12 @@ namespace kagami {
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
     string temp_str = kStrEmpty, temp_symbol = kStrEmpty, temp_sign = kStrEmpty;
+    string operator_target_type = kTypeIdNull;
     int unit_type = kTypeNull;
     bool comma_exp_func = false,
       string_token_proc = false, insert_btn_symbols = false,
-      disable_set_entry = false, dot_operator = false;
+      disable_set_entry = false, dot_operator = false,
+      subscript_processing = false;
     bool fatal = false;
     Kit kit;
     Message result;
@@ -518,33 +584,63 @@ namespace kagami {
         else if (raw[i] == "=") {
           switch (symbol.empty()) {
           case true:symbol.push_back(raw[i]); break;
-          case false:if (symbol.back() != kStrVar) symbol.push_back(raw[i]); break;
+          case false:if (symbol.back() != "var") symbol.push_back(raw[i]); break;
           }
         }
         else if (raw[i] == ",") {
-          if (symbol.back() == kStrVar) disable_set_entry = true;
+          if (symbol.back() == "var") disable_set_entry = true;
           switch (disable_set_entry) {
           case true:
-            symbol.push_back(kStrVar);
+            symbol.push_back("var");
             item.push_back(raw[i]);
             break;
           case false:
-            symbol.push_back(raw[i]);
             break;
           }
         }
         else if (raw[i] == "(") {
-          symbol.push_back(raw[i]);
-        }
-        else if (raw[i] == "[") {
-          if (kit.GetDataType(raw.at(i - 1)) == kTypeFunction) {
-            symbol.push_back("__get_element");
+          if (symbol.back() == kStrDefineCmd) {
+            result.combo(kStrFatalError, kCodeIllegalCall, "Illegal pattern of definition.");
+            fatal = true;
+            continue;
+          }
+          else {
+            symbol.push_back(raw[i]);
           }
         }
-        else if (raw[i] == ")" || raw[i] == "]") {
+        else if (raw[i] == "[") {
+          operator_target_type = entry::FindObject(item.back())->GetTypeId();
+          item.push_back(raw.at(i));
+          subscript_processing = true;
+        }
+        else if (raw[i] == "]") {
+          container.clear();
+          if (subscript_processing) {
+            subscript_processing = false;
+            while (item.back() != "[" && !item.empty()) {
+              container.push_back(item.back());
+              item.pop_back();
+            }
+            item.pop_back();
+            if (!container.empty()) {
+              switch (container.size()) {
+              case 1:symbol.push_back("at:" + operator_target_type + "|2"); break;
+              case 2:symbol.push_back("at:" + operator_target_type + "|3"); break;
+              }
+              while (!container.empty()) {
+                item.push_back(container.back());
+                container.pop_back();
+              }
+            }
+          }
+          else {
+            fatal = true;
+            continue;
+          }
+        }
+        else if (raw[i] == ")") {
           if (raw[i] == ")") temp_symbol = "(";
-          else if (raw[i] == "]") temp_symbol = "[";
-
+          container.clear();
           while (symbol.back() != temp_symbol && symbol.empty() != true) {
             if (symbol.back() == ",") {
               container.push_back(item.back());
@@ -593,29 +689,38 @@ namespace kagami {
         }
       }
       else if (unit_type == kTypeFunction && !string_token_proc) {
-        //TODO:dot operator processing
-        //new
+        //todo:override
         if (dot_operator) {
           temp_str = entry::GetTypeId(item.back());
-          if (temp_str != kTypeIdNull) {
-            temp_sign = "__" + temp_str + "_" + raw.at(i);
-            switch (entry::Find(temp_sign).Good()) {
-            case true:symbol.push_back(temp_sign);break;
+          if (kit.FindInStringVector(raw.at(i), type::GetTemplate(temp_str)->GetMethods())) {
+            auto provider = entry::Order(raw.at(i), temp_str);
+            switch (provider.Good()) {
+            case true:
+              symbol.push_back(raw.at(i) + ':' + temp_str);
+              break;
             case false:
-              result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".");
+              result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".(01)");
               fatal = true;
-              continue;
               break;
             }
+            continue;
+          }
+          else {
+            result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".(02)");
+            fatal = true;
+            continue;
           }
         }
         else {
-          switch (entry::Find(raw.at(i)).Good()) {
+          switch (entry::Order(raw.at(i)).Good()) {
           case true:symbol.push_back(raw.at(i)); break;
           case false:item.push_back(raw.at(i)); break;
           }
         }
         dot_operator = false;
+      }
+      else if (unit_type == kTypeNull) {
+        fatal = true;
       }
       else {
         switch (insert_btn_symbols) {
@@ -689,6 +794,18 @@ namespace kagami {
     return result;
   }
 
+  bool Kit::FindInStringVector(string target, string source) {
+    bool result = false;
+    auto methods = this->BuildStringVector(source);
+    for (auto &unit : methods) {
+      if (unit == target) {
+        result = true;
+        break;
+      }
+    }
+    return result;
+  }
+
   vector<string> Kit::BuildStringVector(string source) {
     vector<string> result;
     string temp = kStrEmpty;
@@ -706,29 +823,43 @@ namespace kagami {
 
   AttrTag Kit::GetAttrTag(string target) {
     AttrTag result;
-    char current = ' ', symbol = ' ';
-    size_t size = target.size(), count = 0;
+    vector<string> base;
     string temp = kStrEmpty;
 
-    for (count = 0; count < size; count++) {
-      current = target.at(count);
-      if (current == '+' || current == '%') {
-        if (symbol != current) {
-          switch (symbol) {
-          case '+':
-            result.methods.append(temp + "|");
-            break;
-          case '%':
-            result.ro = (temp == kStrTrue);
-            break;
-          default:break;
-          }
+    for (auto &unit : target) {
+      if (unit == '+' || unit == '%') {
+        if (temp == kStrEmpty) {
+          temp.append(1, unit);
+        }
+        else {
+          base.push_back(temp);
           temp = kStrEmpty;
+          temp.append(1, unit);
         }
       }
       else {
-        temp.append(1, current);
+        temp.append(1, unit);
       }
+    }
+    if (temp != kStrEmpty) base.push_back(temp);
+    temp = kStrEmpty;
+
+    for (auto &unit : base) {
+      if (unit.front() == '%') {
+        temp = unit.substr(1, unit.size() - 1);
+        if (temp == kStrTrue) {
+          result.ro = true;
+        }
+        else if (temp == kStrFalse) {
+          result.ro = false;
+        }
+      }
+      else if (unit.front() == '+') {
+        temp = unit.substr(1, unit.size() - 1) + "|";
+        result.methods.append(temp);
+      }
+
+      temp = kStrEmpty;
     }
 
     if (result.methods.back() == '|') result.methods.pop_back();
@@ -749,7 +880,6 @@ namespace kagami {
     return result;
   }
 
-  //TODO:upgrade to new object system
   Message ChainStorage::Run(deque<string> res = deque<string>()) {
     using namespace entry;
     Message result;
@@ -763,6 +893,7 @@ namespace kagami {
     size_t current_mode = kModeNormal;
 
     CreateManager();
+    //TODO:add custom function support
     if (!res.empty()) {
       if (res.size() != parameter.size()) {
         result.combo(kStrFatalError, kCodeIllegalCall, "wrong parameter count.");
@@ -910,7 +1041,7 @@ namespace kagami {
     CreateManager();
     Activiate();
     InitTemplates();
-    Inject("quit", EntryProvider(ActivityTemplate().set("quit",Quit,kFlagNormalEntry,kCodeNormalArgs,"")));
+    Inject(EntryProvider(ActivityTemplate().set("quit",Quit,kFlagNormalEntry,kCodeNormalArgs,"")));
 
     while (result.GetCode() != kCodeQuit) {
       std::cout << ">>>";
@@ -923,7 +1054,6 @@ namespace kagami {
       }
     }
     ResetPlugin();
-    //CleanupObject();
   }
 }
 

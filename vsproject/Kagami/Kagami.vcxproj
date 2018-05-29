@@ -148,6 +148,7 @@
     <ClCompile Include="..\..\src\kagami.cpp" />
     <ClCompile Include="..\..\src\kagamicommon.cpp" />
     <ClCompile Include="..\..\src\parser.cpp" />
+    <ClCompile Include="..\..\src\template.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
