@@ -77,15 +77,9 @@ namespace kagami {
       else {
         for (auto &unit : base) {
           if (unit.GetId() == id) {
-            spectype = unit.GetSpecificType();
-            argsize = unit.GetArgumentSize();
-            if (type != kTypeIdNull && spectype == type) {
-              if (size == -1) result = unit;
-              else if (size != -1 && argsize == size) result = unit;
-            }
-            else if (type == kTypeIdNull) {
-              if (size == -1) result = unit;
-              else if (size != -1 && argsize == size) result = unit;
+            if (type == unit.GetSpecificType() && (size == -1 || size == unit.GetArgumentSize())) {
+              result = unit;
+              break;
             }
           }
         }
@@ -418,16 +412,16 @@ namespace kagami {
     EntryProvider provider;
     Object temp;
     size_t size = 0;
-    int provider_size = 0, arg_mode = 0, priority = 0;
+    int provider_size = -1, arg_mode = 0, priority = 0;
     bool reversed = true, disable_query = false, method = false;
-    string id = GetHead(symbol.back()), provider_type = kStrEmpty;
+    string id = GetHead(symbol.back()), provider_type = kTypeIdNull;
     vector<string> tags = spilt(symbol.back());
     deque<Object> objects;
 
     if (!tags.empty()) {
-      provider.GetSpecificType = tags.front();
+      provider_type = tags.front();
       if (tags.size() > 1) {
-        provider_size = stoi(tags.at(2));
+        provider_size = stoi(tags.at(1));
       }
       else {
         provider_size = -1;
@@ -615,8 +609,8 @@ namespace kagami {
           }
         }
         else if (raw[i] == "[") {
-          item.push_back(raw.at(i));
           operator_target_type = entry::FindObject(item.back())->GetTypeId();
+          item.push_back(raw.at(i));
           subscript_processing = true;
         }
         else if (raw[i] == "]") {
@@ -630,8 +624,8 @@ namespace kagami {
             item.pop_back();
             if (!container.empty()) {
               switch (container.size()) {
-              case 1:symbol.push_back("at:" + entry::FindObject(item.back())->GetTypeId() + "|2"); break;
-              case 2:symbol.push_back("at:" + entry::FindObject(item.back())->GetTypeId() + "|3"); break;
+              case 1:symbol.push_back("at:" + operator_target_type + "|2"); break;
+              case 2:symbol.push_back("at:" + operator_target_type + "|3"); break;
               }
               while (!container.empty()) {
                 item.push_back(container.back());
@@ -705,7 +699,7 @@ namespace kagami {
               symbol.push_back(raw.at(i) + ':' + temp_str);
               break;
             case false:
-              result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".(02)");
+              result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".(01)");
               fatal = true;
               break;
             }
@@ -1060,7 +1054,6 @@ namespace kagami {
       }
     }
     ResetPlugin();
-    //CleanupObject();
   }
 }
 

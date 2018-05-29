@@ -138,6 +138,7 @@ namespace kagami {
       this->priority = priority;
       this->arg_mode = arg_mode;
       this->args = args;
+      this->specifictype = type;
       return *this;
     }
   };

@@ -328,13 +328,13 @@ namespace kagami {
     string id;
     int arg_mode;
     int priority;
-    size_t minsize;
     vector<string> args;
     Activity activity;
     string specifictype;
   public:
     EntryProvider() : id(kStrNull), activity(nullptr) {
       arg_mode = kCodeIllegalArgs;
+      specifictype = kTypeIdNull;
     }
 
     EntryProvider(ActivityTemplate temp) :
@@ -342,7 +342,7 @@ namespace kagami {
       activity(temp.activity) {
       arg_mode = temp.arg_mode;
       priority = temp.priority;
-      specifictype = kTypeIdNull;
+      specifictype = temp.specifictype;
     }
 
     bool operator==(EntryProvider &target) {
