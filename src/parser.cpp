@@ -104,71 +104,22 @@ namespace kagami {
       return result;
     }
 
-    void Delete(string id, string type, int size) {
+    void RemoveByTemplate(ActivityTemplate temp) {
       vector<EntryProvider> &base = GetEntryBase();
       vector<EntryProvider>::iterator it;
 
       for (it = base.begin(); it != base.end(); it++) {
-        if (it->GetId() == id) {
-          if (type == kTypeIdNull && size == -1) {
-            break;
-          }
-          else if (type != kTypeIdNull && it->GetSpecificType() == type) {
-            if (size == -1) break;
-            else if (size != -1 && size == it->GetArgumentSize()) break;
-          }
-          else if (type == kTypeIdNull) {
-            if (size == -1) break;
-            else if (size != -1 && size == it->GetArgumentSize()) break;
-          }
+        if (*it == temp) {
+          break;
         }
       }
-
-      if (it != base.end()) base.erase(it);
+      if (it != base.end()) {
+        base.erase(it);
+      }
     }
   }
 
-  int Kit::GetDataType(string target) {
-    using std::regex_match;
-    int result = kTypeNull;
-    auto match = [&](const regex &pat) -> bool {
-      return regex_match(target, pat);
-    };
 
-    if (target == kStrNull) result = kTypeNull;
-    else if (target.front() == '"' && target.back() == '"') result = kTypeString;
-    else if (match(kPatternBoolean)) result = kTypeBoolean;
-    else if (match(kPatternFunction)) result = kTypeFunction;
-    else if (match(kPatternInteger)) result = kTypeInteger;
-    else if (match(kPatternDouble)) result = kTypeDouble;
-    else if (match(kPatternSymbol)) result = kTypeSymbol;
-    else if (match(kPatternBlank)) result = kTypeBlank;
-    else result = kTypeNull;
-
-    return result;
-  }
-
-  void Kit::PrintEvents() {
-    using namespace trace;
-    ofstream ofs("event.log", std::ios::trunc);
-    string prioritystr;
-    if (ofs.good()) {
-      if (GetLogger().empty()) {
-        ofs << "No Events.\n";
-      }
-      else {
-        for (log_t unit : GetLogger()) {
-          ofs << "[" << unit.first << "]";
-          if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
-          else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
-          if (unit.second.GetDetail() != kStrEmpty) {
-            ofs << prioritystr << unit.second.GetDetail() << "\n";
-          }
-        }
-      }
-    }
-    ofs.close();
-  }
 
   ScriptProvider::ScriptProvider(const char *target) {
     using trace::log;
@@ -776,6 +727,7 @@ namespace kagami {
       }
     }
     else if (arg_mode == kCodeNormalArgs) {
+
       if (size != expected) {
         health = false;
         result.combo(kStrFatalError, kCodeIllegalArgs, "Parameter count doesn't match expected count.(02)");
@@ -791,92 +743,6 @@ namespace kagami {
       result = activity(map);
     }
 
-    return result;
-  }
-
-  bool Kit::FindInStringVector(string target, string source) {
-    bool result = false;
-    auto methods = this->BuildStringVector(source);
-    for (auto &unit : methods) {
-      if (unit == target) {
-        result = true;
-        break;
-      }
-    }
-    return result;
-  }
-
-  vector<string> Kit::BuildStringVector(string source) {
-    vector<string> result;
-    string temp = kStrEmpty;
-    for (auto unit : source) {
-      if (unit == '|') {
-        result.push_back(temp);
-        temp.clear();
-        continue;
-      }
-      temp.append(1, unit);
-    }
-    if (temp != kStrEmpty) result.push_back(temp);
-    return result;
-  }
-
-  AttrTag Kit::GetAttrTag(string target) {
-    AttrTag result;
-    vector<string> base;
-    string temp = kStrEmpty;
-
-    for (auto &unit : target) {
-      if (unit == '+' || unit == '%') {
-        if (temp == kStrEmpty) {
-          temp.append(1, unit);
-        }
-        else {
-          base.push_back(temp);
-          temp = kStrEmpty;
-          temp.append(1, unit);
-        }
-      }
-      else {
-        temp.append(1, unit);
-      }
-    }
-    if (temp != kStrEmpty) base.push_back(temp);
-    temp = kStrEmpty;
-
-    for (auto &unit : base) {
-      if (unit.front() == '%') {
-        temp = unit.substr(1, unit.size() - 1);
-        if (temp == kStrTrue) {
-          result.ro = true;
-        }
-        else if (temp == kStrFalse) {
-          result.ro = false;
-        }
-      }
-      else if (unit.front() == '+') {
-        temp = unit.substr(1, unit.size() - 1) + "|";
-        result.methods.append(temp);
-      }
-
-      temp = kStrEmpty;
-    }
-
-    if (result.methods.back() == '|') result.methods.pop_back();
-
-    return result;
-  }
-
-  string Kit::MakeAttrTagStr(AttrTag target) {
-    string result = kStrEmpty;
-    vector<string> methods = this->BuildStringVector(target.methods);
-    if (target.ro)result.append("%true");
-    else result.append("%false");
-    if (!methods.empty()) {
-      for (auto &unit : methods) {
-        result.append("+" + unit);
-      }
-    }
     return result;
   }
 
@@ -1007,7 +873,29 @@ namespace kagami {
     return result;
   }
 
-  Message Kit::ExecScriptFile(string target) {
+  void Core::PrintEvents() {
+    using namespace trace;
+    ofstream ofs("event.log", std::ios::trunc);
+    string prioritystr;
+    if (ofs.good()) {
+      if (GetLogger().empty()) {
+        ofs << "No Events.\n";
+      }
+      else {
+        for (log_t unit : GetLogger()) {
+          ofs << "[" << unit.first << "]";
+          if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
+          else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
+          if (unit.second.GetDetail() != kStrEmpty) {
+            ofs << prioritystr << unit.second.GetDetail() << "\n";
+          }
+        }
+      }
+    }
+    ofs.close();
+  }
+
+  Message Core::ExecScriptFile(string target) {
     Message result;
     ScriptProvider sp(target.c_str());
     ChainStorage cs(sp);
@@ -1020,7 +908,6 @@ namespace kagami {
     InitTemplates();
     cs.Run();
     entry::ResetPlugin();
-    //entry::CleanupObject();
     return result;
   }
 
@@ -1029,12 +916,12 @@ namespace kagami {
     return result;
   }
 
-  void Kit::Terminal() {
+  void Core::Terminal() {
     using namespace entry;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Chainloader loader;
-    auto Build = [&](string target) {return BuildStringVector(target); };
+    //auto Build = [&](string target) {return BuildStringVector(target); };
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
