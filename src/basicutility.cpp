@@ -137,15 +137,17 @@ namespace kagami {
 
     bool Instance::Load(string name, HINSTANCE h) {
       Attachment attachment = nullptr;
+      MemoryDeleter deleter = nullptr;
       //StrMap *targetmap = nullptr;
       this->first = name;
       this->second = h;
 
       attachment = (Attachment)GetProcAddress(this->second, "Attachment");
+      deleter = this->getDeleter();
       if (attachment != nullptr) {
         auto ptr = attachment();
         act_temp = *ptr;
-        delete(ptr);
+        deleter(ptr);
         health = true;
       }
       else {
@@ -221,7 +223,7 @@ namespace kagami {
         //delete entries
         act_temp = instance_i->GetMap();
         for (auto unit : act_temp) {
-          Delete(unit.id,unit.specifictype,Kit().BuildStringVector(unit.args).size());
+          RemoveByTemplate(unit);
         }
         //delete object templates
         if (castAttachment != nullptr) {
@@ -237,16 +239,14 @@ namespace kagami {
       GetInstanceList().erase(instance_i);
     }
 
-    void ResetPlugin() {
-      HINSTANCE *hinstance = nullptr;
-      while (GetInstanceList().empty() != true) {
-        if (GetInstanceList().back().GetHealth()) {
-          hinstance = &(GetInstanceList().back().second);
-          FreeLibrary(*hinstance);
-        }
-        GetInstanceList().pop_back();
+    size_t ResetPlugin() {
+      vector<Instance> &base = GetInstanceList();
+      size_t count = 0;
+      while (!base.empty()) {
+        UnloadInstance(base.back().first);
+        count++;
       }
-      //TODO:clear
+      return count;
     }
   }
 
@@ -418,9 +418,6 @@ namespace kagami {
   //Windows Version
   Message LoadPlugin(ObjectMap &p) {
     using namespace entry;
-    //TODO:type checking
-    //temp fix
-    const string name = CastToString(p.at("name").get());
     const string path = CastToString(p.at("path").get());
     Message result;
     Attachment attachment = nullptr;
@@ -429,7 +426,7 @@ namespace kagami {
     
     HINSTANCE hinstance = LoadLibrary(wpath.c_str());
     if (hinstance != nullptr) {
-      AddInstance(name, hinstance);
+      AddInstance(path, hinstance);
     }
     else {
       result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found.");
@@ -558,7 +555,7 @@ namespace kagami {
     Inject(EntryProvider(temp.set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject(EntryProvider(temp.set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "name|path")));
+    Inject(EntryProvider(temp.set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
     Inject(EntryProvider(temp.set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "name|source")));
     Inject(EntryProvider(temp.set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeNormalArgs, "target|source")));
     Inject(EntryProvider(temp.set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
