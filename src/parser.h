@@ -33,7 +33,6 @@ namespace kagami {
   using std::stack;
   using std::array;
   using std::deque;
-  using std::regex;
   using std::pair;
   using std::map;
   using std::to_string;
@@ -45,97 +44,20 @@ namespace kagami {
   using std::static_pointer_cast;
   using std::make_shared;
 
-  const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
-  const regex kPatternNumber(R"(\d+\.?\d*)");
-  const regex kPatternInteger(R"([-]?\d+)");
-  const regex kPatternDouble(R"([-]?\d+\.\d+)");
-  const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
-  const regex kPatternSymbol(R"(==|<=|>=|!=|&&|\|\||[[:Punct:]])");
-  const regex kPatternBlank(R"([[:blank:]])");
-
   class EntryProvider;
   class Chainloader;
 
-  /*Object Tag Struct
-    no description yet.
+  /*Core Class
+  this class contains all main functions of script processor.
   */
-  struct AttrTag {
-    string methods;
-    bool ro;
-    AttrTag(string methods, bool ro) {
-      this->methods = methods;
-      this->ro = ro;
-    }
-    AttrTag(){}
-  };
-
-  /*Kit Class
-   this class contains many useful template or tiny function, and
-   create script processing workspace.
-  */
-  class Kit {
+  class Core {
+  private:
+    bool ignore_fatal_error;
   public:
-    template <class Type>
-    Kit CleanupVector(vector<Type> &target) {
-      target.clear();
-      vector<Type>(target).swap(target);
-      return *this;
-    }
-
-    template <class Type>
-    Kit CleanupDeque(deque<Type> &target) {
-      target.clear();
-      deque<Type>(target).swap(target);
-      return *this;
-    }
-
-    template <class Type>
-    bool Compare(Type source, vector<Type> list) {
-      bool result = false;
-      for (auto unit : list) {
-        if (unit == source) {
-          result = true;
-          break;
-        }
-      }
-      return result;
-    }
-
-    template <class Type>
-    Type Calc(Type A, Type B, string opercode) {
-      Type result = 0;
-      if (opercode == "+") result = A + B;
-      if (opercode == "-") result = A - B;
-      if (opercode == "*") result = A * B;
-      if (opercode == "/") result = A / B;
-      //if (opercode == "%") result = A % B;
-      //if (opercode == "&") result = A & B;
-      //if (opercode == "|") result = A | B;
-      return result;
-    }
-
-    template <class Type>
-    bool Logic(Type A, Type B, string opercode) {
-      bool result = false;
-      if (opercode == "==") result = (A == B);
-      if (opercode == "<=") result = (A <= B);
-      if (opercode == ">=") result = (A >= B);
-      if (opercode == "!=") result = (A != B);
-      return result;
-    }
-
-    string GetRawString(string target) {
-      return target.substr(1, target.size() - 2);
-    }
-
-    int GetDataType(string target);
-    AttrTag GetAttrTag(string target);
-    string MakeAttrTagStr(AttrTag target);
-    Message ExecScriptFile(string target);
-    void PrintEvents();
+    //TODO:startup arugment
     void Terminal();
-    bool FindInStringVector(string target, string source);
-    vector<string> BuildStringVector(string source);
+    void PrintEvents();
+    Message ExecScriptFile(string target);
   };
 
   /*Object Class
@@ -350,7 +272,19 @@ namespace kagami {
         target.activity == this->activity &&
         target.arg_mode == this->arg_mode &&
         target.priority == this->priority &&
+        this->specifictype == target.specifictype &&
         target.args == this->args);
+    }
+
+    bool operator==(ActivityTemplate &target) {
+      return(
+        this->id == target.id &&
+        this->arg_mode == target.arg_mode &&
+        this->priority==target.priority &&
+        this->args == Kit().BuildStringVector(target.args) &&
+        this->activity == target.activity &&
+        this->specifictype == target.specifictype
+        );
     }
 
     EntryProvider &SetSpecificType(string type) {
@@ -407,11 +341,11 @@ namespace kagami {
     string GetTypeId(string sign);
     std::wstring s2ws(const std::string& s);
     void Inject(EntryProvider provider);
-    void Delete(string id, string type, int size);
-    void ResetPlugin();
+    void RemoveByTemplate(ActivityTemplate temp);
     Object *FindObject(string name);
     ObjectManager &CreateManager();
     bool DisposeManager();
+    size_t ResetPlugin();
   }
 }
 

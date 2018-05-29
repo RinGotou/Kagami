@@ -26,5 +26,110 @@
 #include "kagamicommon.h"
 
 namespace kagami {
+  int Kit::GetDataType(string target) {
+    using std::regex_match;
+    int result = kTypeNull;
+    auto match = [&](const regex &pat) -> bool {
+      return regex_match(target, pat);
+    };
 
+    if (target == kStrNull) result = kTypeNull;
+    else if (target.front() == '"' && target.back() == '"') result = kTypeString;
+    else if (match(kPatternBoolean)) result = kTypeBoolean;
+    else if (match(kPatternFunction)) result = kTypeFunction;
+    else if (match(kPatternInteger)) result = kTypeInteger;
+    else if (match(kPatternDouble)) result = kTypeDouble;
+    else if (match(kPatternSymbol)) result = kTypeSymbol;
+    else if (match(kPatternBlank)) result = kTypeBlank;
+    else result = kTypeNull;
+
+    return result;
+  }
+
+  bool Kit::FindInStringVector(string target, string source) {
+    bool result = false;
+    auto methods = this->BuildStringVector(source);
+    for (auto &unit : methods) {
+      if (unit == target) {
+        result = true;
+        break;
+      }
+    }
+    return result;
+  }
+
+  vector<string> Kit::BuildStringVector(string source) {
+    vector<string> result;
+    string temp = kStrEmpty;
+    for (auto unit : source) {
+      if (unit == '|') {
+        result.push_back(temp);
+        temp.clear();
+        continue;
+      }
+      temp.append(1, unit);
+    }
+    if (temp != kStrEmpty) result.push_back(temp);
+    return result;
+  }
+
+
+  AttrTag Kit::GetAttrTag(string target) {
+    AttrTag result;
+    vector<string> base;
+    string temp = kStrEmpty;
+
+    for (auto &unit : target) {
+      if (unit == '+' || unit == '%') {
+        if (temp == kStrEmpty) {
+          temp.append(1, unit);
+        }
+        else {
+          base.push_back(temp);
+          temp = kStrEmpty;
+          temp.append(1, unit);
+        }
+      }
+      else {
+        temp.append(1, unit);
+      }
+    }
+    if (temp != kStrEmpty) base.push_back(temp);
+    temp = kStrEmpty;
+
+    for (auto &unit : base) {
+      if (unit.front() == '%') {
+        temp = unit.substr(1, unit.size() - 1);
+        if (temp == kStrTrue) {
+          result.ro = true;
+        }
+        else if (temp == kStrFalse) {
+          result.ro = false;
+        }
+      }
+      else if (unit.front() == '+') {
+        temp = unit.substr(1, unit.size() - 1) + "|";
+        result.methods.append(temp);
+      }
+
+      temp = kStrEmpty;
+    }
+
+    if (result.methods.back() == '|') result.methods.pop_back();
+
+    return result;
+  }
+
+  string Kit::MakeAttrTagStr(AttrTag target) {
+    string result = kStrEmpty;
+    vector<string> methods = this->BuildStringVector(target.methods);
+    if (target.ro)result.append("%true");
+    else result.append("%false");
+    if (!methods.empty()) {
+      for (auto &unit : methods) {
+        result.append("+" + unit);
+      }
+    }
+    return result;
+  }
 }
