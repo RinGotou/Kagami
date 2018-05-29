@@ -27,18 +27,20 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <cstring>
 #include <memory>
 #include <map>
 #include <deque>
+#include <regex>
 
 namespace kagami {
   using std::string;
   using std::pair;
   using std::vector;
+  using std::map;
+  using std::deque;
   using std::shared_ptr;
   using std::static_pointer_cast;
-  using std::map;
+  using std::regex;
 
   struct ActivityTemplate;
   class Message;
@@ -50,7 +52,7 @@ namespace kagami {
   using CastFunc = pair<string, CopyCreator>;
   using Activity = Message(*)(ObjectMap &);
   using CastAttachment = map<string, ObjTemplate> *(*)();
-  using MemoryDeleter = void(*)(void *);
+  using MemoryDeleter = int(*)(void *);
   using Attachment = vector<ActivityTemplate> * (*)(void);
 
 
@@ -124,6 +126,30 @@ namespace kagami {
   const size_t kModeCycle = 2;
   const size_t kModeCycleJump = 3;
 
+  const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
+  const regex kPatternNumber(R"(\d+\.?\d*)");
+  const regex kPatternInteger(R"([-]?\d+)");
+  const regex kPatternDouble(R"([-]?\d+\.\d+)");
+  const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
+  const regex kPatternSymbol(R"(==|<=|>=|!=|&&|\|\||[[:Punct:]])");
+  const regex kPatternBlank(R"([[:blank:]])");
+
+  /*Object Tag Struct
+    no description yet.
+  */
+  struct AttrTag {
+    string methods;
+    bool ro;
+    AttrTag(string methods, bool ro) {
+      this->methods = methods;
+      this->ro = ro;
+    }
+    AttrTag(){}
+  };
+
+  /*Activity Template class
+    no description yet.
+  */
   struct ActivityTemplate {
     string id;
     Activity activity;
@@ -217,14 +243,74 @@ namespace kagami {
       this->detail = detail;
       return *this;
     }
-
     string GetValue() const { return this->value; }
     int GetCode() const { return this->code; }
     string GetDetail() const { return this->detail; }
     shared_ptr<void> &GetPtr() { return ptr; }
   };
 
+  /*Kit Class
+  this class contains many useful template or tiny function, and
+  create script processing workspace.
+  */
+  class Kit {
+  public:
+    template <class Type>
+    Kit CleanupVector(vector<Type> &target) {
+      target.clear();
+      vector<Type>(target).swap(target);
+      return *this;
+    }
 
+    template <class Type>
+    Kit CleanupDeque(deque<Type> &target) {
+      target.clear();
+      deque<Type>(target).swap(target);
+      return *this;
+    }
+
+    template <class Type>
+    bool Compare(Type source, vector<Type> list) {
+      bool result = false;
+      for (auto unit : list) {
+        if (unit == source) {
+          result = true;
+          break;
+        }
+      }
+      return result;
+    }
+
+    template <class Type>
+    Type Calc(Type A, Type B, string opercode) {
+      Type result = 0;
+      if (opercode == "+") result = A + B;
+      if (opercode == "-") result = A - B;
+      if (opercode == "*") result = A * B;
+      if (opercode == "/") result = A / B;
+      return result;
+    }
+
+    template <class Type>
+    bool Logic(Type A, Type B, string opercode) {
+      bool result = false;
+      if (opercode == "==") result = (A == B);
+      if (opercode == "<=") result = (A <= B);
+      if (opercode == ">=") result = (A >= B);
+      if (opercode == "!=") result = (A != B);
+      return result;
+    }
+
+    string GetRawString(string target) {
+      return target.substr(1, target.size() - 2);
+    }
+
+    int GetDataType(string target);
+    AttrTag GetAttrTag(string target);
+    string MakeAttrTagStr(AttrTag target);
+    bool FindInStringVector(string target, string source);
+    vector<string> BuildStringVector(string source);
+  };
 
 }
 

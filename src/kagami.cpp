@@ -24,29 +24,30 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "parser.h"
+//#define _DEBUG_FLAG_
 //#define _NO_CUI_
 
 int main(int argc, char **argv) {
 
-  kagami::Kit kit;
+  kagami::Core scriptcore;
 #ifdef _DEBUG_FLAG_
   //direct load a external script
-  kit.ExecScriptFile("test.kagami");
+  scriptcore.ExecScriptFile("C:\\workspace\\test.kagami");
 #else
 #ifndef _NO_CUI_
   if (argc > 1) {
     //load external script from command arguments
-    kit.ExecScriptFile(argv[1]);
+    scriptcore.ExecScriptFile(argv[1]);
   }
   else {
     //open terminal mode
-    kit.Terminal();
+    scriptcore.Terminal();
   }
 #else
-  Kit.ExecScriptFile(argv[1]);
+  scriptcore.ExecScriptFile(argv[1]);
 #endif
 #endif
-  kit.PrintEvents();
+  scriptcore.PrintEvents();
 
   return 0;
 }

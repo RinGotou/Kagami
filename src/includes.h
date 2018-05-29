@@ -25,15 +25,13 @@
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #define _ENABLE_FASTRING_
-//#define _DEBUG_FLAG_
 #include <stack>
 #include <fstream>
-#include <regex>
 #include <array>
-#include <set>
 #include "kagamicommon.h"
 #if defined(_WIN32)
 #include "windows.h"
+#define WIN32_LEAN_AND_MEAN
 #else
 #endif
 
