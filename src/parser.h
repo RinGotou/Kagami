@@ -45,13 +45,6 @@ namespace kagami {
   using std::static_pointer_cast;
   using std::make_shared;
 
-  const string kTypeIdNull = "null";
-  const string kTypeIdInt = "int";
-  const string kTypeIdRawString = "string";
-  const string kTypeIdArrayBase = "deque";
-  const string kTypeIdCubeBase = "cube";
-  const string kTypeIdRef = "__ref";
-
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternNumber(R"(\d+\.?\d*)");
   const regex kPatternInteger(R"([-]?\d+)");
@@ -278,7 +271,8 @@ namespace kagami {
     map<string, Object> lambdamap;
 
     Object GetObj(string name);
-
+    vector<string> spilt(string target);
+    string GetHead(string target);
     int GetPriority(string target) const;
     bool Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
       Message &msg, size_t mode);
@@ -337,6 +331,7 @@ namespace kagami {
     size_t minsize;
     vector<string> args;
     Activity activity;
+    string specifictype;
   public:
     EntryProvider() : id(kStrNull), activity(nullptr) {
       arg_mode = kCodeIllegalArgs;
@@ -347,6 +342,7 @@ namespace kagami {
       activity(temp.activity) {
       arg_mode = temp.arg_mode;
       priority = temp.priority;
+      specifictype = kTypeIdNull;
     }
 
     bool operator==(EntryProvider &target) {
@@ -357,6 +353,12 @@ namespace kagami {
         target.args == this->args);
     }
 
+    EntryProvider &SetSpecificType(string type) {
+      this->specifictype = type;
+      return *this;
+    }
+
+    string GetSpecificType() const { return specifictype; }
     string GetId() const { return this->id; }
     int GetArgumentMode() const { return this->arg_mode; }
     size_t GetArgumentSize() const { return this->args.size(); }
@@ -400,15 +402,13 @@ namespace kagami {
 #else
     //Linux Version
 #endif
-
-    using EntryMap = map<string, EntryProvider>;
     using EntryMapUnit = map<string, EntryProvider>::value_type;
     
     string GetTypeId(string sign);
     std::wstring s2ws(const std::string& s);
-    void Inject(string name, EntryProvider provider);
-    void Delete(string name);
-    void ResetPlugin(bool OnExit = false);
+    void Inject(EntryProvider provider);
+    void Delete(string id, string type, int size);
+    void ResetPlugin();
     Object *FindObject(string name);
     ObjectManager &CreateManager();
     bool DisposeManager();

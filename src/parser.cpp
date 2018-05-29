@@ -52,66 +52,85 @@ namespace kagami {
   }
 
   namespace entry {
-    EntryMap &GetEntryMap() {
-      static EntryMap base;
+    vector<EntryProvider> &GetEntryBase() {
+      static vector<EntryProvider> base;
       return base;
     }
-    //EntryMap GetEntryMap();
 
-    void Inject(string name, EntryProvider provider) {
-      GetEntryMap().insert(EntryMapUnit(name, provider));
+    void Inject(EntryProvider provider) {
+      GetEntryBase().emplace_back(provider);
     }
 
-    EntryProvider Order(string name) {
+    EntryProvider Order(string id,string type = kTypeIdNull,int size = -1) {
       EntryProvider result;
-      EntryMap::iterator it = GetEntryMap().find(name);
-      if (it != GetEntryMap().end()) {
-        result = it->second;
-      }
-      return result;
-    }
+      vector<EntryProvider> &base = GetEntryBase();
+      string spectype = kTypeIdNull;
+      size_t argsize = 0;
 
-    EntryProvider Find(string target) {
-      EntryProvider result;
-      if (target == "+" || target == "-" || target == "*" || target == "/"
-        || target == "==" || target == "<=" || target == ">=" || target == "!=") {
+      if (id == "+" || id == "-" || id == "*" || id == "/"
+        || id == "==" || id == "<=" || id == ">=" || id == "!=") {
         result = Order("binexp");
       }
-      else if (target == "=") {
+      else if (id == "=") {
         result = Order(kStrSetCmd);
       }
       else {
-        EntryMap::iterator it = GetEntryMap().find(target);
-        if (it != GetEntryMap().end()) {
-          result = it->second;
+        for (auto &unit : base) {
+          if (unit.GetId() == id) {
+            spectype = unit.GetSpecificType();
+            argsize = unit.GetArgumentSize();
+            if (type != kTypeIdNull && spectype == type) {
+              if (size == -1) result = unit;
+              else if (size != -1 && argsize == size) result = unit;
+            }
+            else if (type == kTypeIdNull) {
+              if (size == -1) result = unit;
+              else if (size != -1 && argsize == size) result = unit;
+            }
+          }
         }
       }
       return result;
     }
 
     int GetRequiredCount(string target) {
+      EntryProvider provider;
       int result;
       if (target == "+" || target == "-" || target == "*" || target == "/"
         || target == "==" || target == "<=" || target == ">=" || target == "!=") {
         result = Order("binexp").GetArgumentSize();
       }
       else {
-        EntryMap::iterator it = GetEntryMap().find(target);
-        if (it != GetEntryMap().end()) {
-          result = it->second.GetArgumentSize();
-        }
-        else {
-          result = kCodeIllegalArgs;
+        provider = Order(target);
+        switch (provider.Good()) {
+        case true:result = provider.GetArgumentSize(); break;
+        case false:result = kCodeIllegalArgs; break;
         }
       }
       return result;
     }
 
-    void Delete(string name) {
-      EntryMap::iterator it = GetEntryMap().find(name);
-      if (it != GetEntryMap().end()) {
-        GetEntryMap().erase(it);
+    void Delete(string id, string type, int size) {
+      vector<EntryProvider> &base = GetEntryBase();
+      vector<EntryProvider>::iterator it;
+
+      for (it = base.begin(); it != base.end(); it++) {
+        if (it->GetId() == id) {
+          if (type == kTypeIdNull && size == -1) {
+            break;
+          }
+          else if (type != kTypeIdNull && it->GetSpecificType() == type) {
+            if (size == -1) break;
+            else if (size != -1 && size == it->GetArgumentSize()) break;
+          }
+          else if (type == kTypeIdNull) {
+            if (size == -1) break;
+            else if (size != -1 && size == it->GetArgumentSize()) break;
+          }
+        }
       }
+
+      if (it != base.end()) base.erase(it);
     }
   }
 
@@ -212,7 +231,7 @@ namespace kagami {
     size_t i;
     string current = kStrEmpty;
     bool exempt_blank_char = false, string_processing = false;
-    vector<string> list = { "var", "def", "return" };
+    vector<string> list = { "var", "ref", "return" };
     auto ToString = [](char c) -> string {
       return string().append(1, c);
     };
@@ -366,21 +385,64 @@ namespace kagami {
     return result;
   }
 
+  vector<string> Chainloader::spilt(string target) {
+    vector<string> result;
+    string temp = kStrEmpty;
+    bool start = false;
+    for (auto &unit : target) {
+      if (unit == ':') {
+        start = true;
+        continue;
+      }
+      if (start) {
+        temp.append(1, unit);
+      }
+    }
+    result = Kit().BuildStringVector(temp);
+    return result;
+  }
+
+  string Chainloader::GetHead(string target) {
+    string result = kStrEmpty;
+    for (auto &unit : target) {
+      if (unit == ':') break;
+      else result.append(1, unit);
+    }
+    return result;
+  }
+
   bool Chainloader::Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
     Message &msg, size_t mode) {
     Kit kit;
     AttrTag attrTag;
-    EntryProvider provider = entry::Find(symbol.back());
-    bool reversed = true, disable_query = false, method = false;
-    size_t size = provider.GetArgumentSize();
-    int arg_mode = provider.GetArgumentMode(), priority = provider.GetPriority();
-    string id = provider.GetId();
+    EntryProvider provider;
     Object temp;
+    size_t size = 0;
+    int provider_size = 0, arg_mode = 0, priority = 0;
+    bool reversed = true, disable_query = false, method = false;
+    string id = GetHead(symbol.back()), provider_type = kStrEmpty;
+    vector<string> tags = spilt(symbol.back());
     deque<Object> objects;
 
+    if (!tags.empty()) {
+      provider.GetSpecificType = tags.front();
+      if (tags.size() > 1) {
+        provider_size = stoi(tags.at(2));
+      }
+      else {
+        provider_size = -1;
+      }
+    }
+
+    provider = entry::Order(id, provider_type, provider_size);
     if (!provider.Good()) {
       msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found.");
       return false;
+    }
+    else {
+      size = provider.GetArgumentSize();
+      arg_mode = provider.GetArgumentMode();
+      priority = provider.GetPriority();
     }
 
     if (id == kStrDefineCmd) { 
@@ -500,10 +562,12 @@ namespace kagami {
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
     string temp_str = kStrEmpty, temp_symbol = kStrEmpty, temp_sign = kStrEmpty;
+    string operator_target_type = kTypeIdNull;
     int unit_type = kTypeNull;
     bool comma_exp_func = false,
       string_token_proc = false, insert_btn_symbols = false,
-      disable_set_entry = false, dot_operator = false;
+      disable_set_entry = false, dot_operator = false,
+      subscript_processing = false;
     bool fatal = false;
     Kit kit;
     Message result;
@@ -537,23 +601,52 @@ namespace kagami {
             item.push_back(raw[i]);
             break;
           case false:
-            symbol.push_back(raw[i]);
             break;
           }
         }
         else if (raw[i] == "(") {
-          symbol.push_back(raw[i]);
-        }
-        else if (raw[i] == "[") {
-          //TODO:
-          if (kit.GetDataType(raw.at(i - 1)) == kTypeFunction) {
-            symbol.push_back("__get_element");
+          if (symbol.back() == kStrDefineCmd) {
+            result.combo(kStrFatalError, kCodeIllegalCall, "Illegal pattern of definition.");
+            fatal = true;
+            continue;
+          }
+          else {
+            symbol.push_back(raw[i]);
           }
         }
-        else if (raw[i] == ")" || raw[i] == "]") {
+        else if (raw[i] == "[") {
+          item.push_back(raw.at(i));
+          operator_target_type = entry::FindObject(item.back())->GetTypeId();
+          subscript_processing = true;
+        }
+        else if (raw[i] == "]") {
+          container.clear();
+          if (subscript_processing) {
+            subscript_processing = false;
+            while (item.back() != "[" && !item.empty()) {
+              container.push_back(item.back());
+              item.pop_back();
+            }
+            item.pop_back();
+            if (!container.empty()) {
+              switch (container.size()) {
+              case 1:symbol.push_back("at:" + entry::FindObject(item.back())->GetTypeId() + "|2"); break;
+              case 2:symbol.push_back("at:" + entry::FindObject(item.back())->GetTypeId() + "|3"); break;
+              }
+              while (!container.empty()) {
+                item.push_back(container.back());
+                container.pop_back();
+              }
+            }
+          }
+          else {
+            fatal = true;
+            continue;
+          }
+        }
+        else if (raw[i] == ")") {
           if (raw[i] == ")") temp_symbol = "(";
-          else if (raw[i] == "]") temp_symbol = "[";
-
+          container.clear();
           while (symbol.back() != temp_symbol && symbol.empty() != true) {
             if (symbol.back() == ",") {
               container.push_back(item.back());
@@ -602,27 +695,38 @@ namespace kagami {
         }
       }
       else if (unit_type == kTypeFunction && !string_token_proc) {
-        //TODO:dot operator processing
-        //new
+        //todo:override
         if (dot_operator) {
           temp_str = entry::GetTypeId(item.back());
           if (kit.FindInStringVector(raw.at(i), type::GetTemplate(temp_str)->GetMethods())) {
-            symbol.push_back("__" + temp_str + "_" + raw.at(i));
+            auto provider = entry::Order(raw.at(i), temp_str);
+            switch (provider.Good()) {
+            case true:
+              symbol.push_back(raw.at(i) + ':' + temp_str);
+              break;
+            case false:
+              result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".(02)");
+              fatal = true;
+              break;
+            }
             continue;
           }
           else {
-            result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".");
+            result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".(02)");
             fatal = true;
             continue;
           }
         }
         else {
-          switch (entry::Find(raw.at(i)).Good()) {
+          switch (entry::Order(raw.at(i)).Good()) {
           case true:symbol.push_back(raw.at(i)); break;
           case false:item.push_back(raw.at(i)); break;
           }
         }
         dot_operator = false;
+      }
+      else if (unit_type == kTypeNull) {
+        fatal = true;
       }
       else {
         switch (insert_btn_symbols) {
@@ -782,7 +886,6 @@ namespace kagami {
     return result;
   }
 
-  //TODO:upgrade to new object system
   Message ChainStorage::Run(deque<string> res = deque<string>()) {
     using namespace entry;
     Message result;
@@ -796,6 +899,7 @@ namespace kagami {
     size_t current_mode = kModeNormal;
 
     CreateManager();
+    //TODO:add custom function support
     if (!res.empty()) {
       if (res.size() != parameter.size()) {
         result.combo(kStrFatalError, kCodeIllegalCall, "wrong parameter count.");
@@ -943,7 +1047,7 @@ namespace kagami {
     CreateManager();
     Activiate();
     InitTemplates();
-    Inject("quit", EntryProvider(ActivityTemplate().set("quit",Quit,kFlagNormalEntry,kCodeNormalArgs,"")));
+    Inject(EntryProvider(ActivityTemplate().set("quit",Quit,kFlagNormalEntry,kCodeNormalArgs,"")));
 
     while (result.GetCode() != kCodeQuit) {
       std::cout << ">>>";
