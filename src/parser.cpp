@@ -119,8 +119,6 @@ namespace kagami {
     }
   }
 
-
-
   ScriptProvider::ScriptProvider(const char *target) {
     using trace::log;
     string temp;
@@ -317,15 +315,15 @@ namespace kagami {
     return priority;
   }
 
-  Object Chainloader::GetObj(string name) {
-    Object result;
+  Object *Chainloader::GetObj(string name) {
+    Object *result = new Object();
     if (name.substr(0, 2) == "__") {
       map<string, Object>::iterator it = lambdamap.find(name);
-      if (it != lambdamap.end()) result = it->second;
+      if (it != lambdamap.end()) result = &(it->second);
     }
     else {
       auto ptr = entry::FindObject(name);
-      if (ptr != nullptr) result = *ptr;
+      if (ptr != nullptr) result = ptr;
     }
     return result;
   }
@@ -359,15 +357,24 @@ namespace kagami {
   bool Chainloader::Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
     Message &msg, size_t mode) {
     Kit kit;
-    AttrTag attrTag;
+    Attribute strAttr(type::GetTemplate(kTypeIdRawString)->GetMethods(), false);
+    Attribute attribute;
     EntryProvider provider;
-    Object temp;
-    size_t size = 0;
-    int provider_size = -1, arg_mode = 0, priority = 0;
-    bool reversed = true, disable_query = false, method = false;
+    Object temp, *origin;
+    size_t size = 0, count = 0;
+    int provider_size = -1, arg_mode = 0, priority = 0, token_type = kTypeNull;
+    bool reversed = true, disable_query = false, method = false, health = true;
     string id = GetHead(symbol.back()), provider_type = kTypeIdNull;
     vector<string> tags = spilt(symbol.back());
-    deque<Object> objects;
+    vector<string> args;
+    deque<string> tokens;
+    ObjectMap map;
+
+    auto GetName = [](string target) ->string {
+      if (target.front() == '&' || target.front() == '%')
+        return target.substr(1, target.size() - 1);
+      else return target;
+    };
 
     if (!tags.empty()) {
       provider_type = tags.front();
@@ -380,6 +387,7 @@ namespace kagami {
     }
 
     provider = entry::Order(id, provider_type, provider_size);
+
     if (!provider.Good()) {
       msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found.");
       return false;
@@ -388,121 +396,117 @@ namespace kagami {
       size = provider.GetArgumentSize();
       arg_mode = provider.GetArgumentMode();
       priority = provider.GetPriority();
+      args = provider.GetArguments();
     }
 
-    if (id == kStrDefineCmd) { 
-      disable_query = true;
+    if (priority == kFlagOperatorEntry) { 
+      reversed = false; 
     }
-
-    if (priority == kFlagBinEntry || priority == kFlagMethod) {
-      size--;
-      reversed = false;
-    }
-
-    if (disable_set_entry) {
-      while (item.back() != "," && !item.empty()) {
-        if (kit.GetDataType(item.back()) == kTypeFunction) {
-          //query is completed in GetObj().
-          if (disable_query) {
-            attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-            attrTag.ro = true;
-            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
-            disable_query = false;
-          }
-          else {
-            temp = GetObj(item.back());
-            if (temp.GetTypeId() != kTypeIdNull) {
-              objects.push_back(temp);
-            }
-            else {
-              //TODO:error
-              break;
-            }
-          }
-        }
-        else {
-          attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-          attrTag.ro = true;
-          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
+    if (!disable_set_entry) {
+      count = size;
+      while (count > 0 && !item.empty()) {
+        switch (reversed) {
+        case true:tokens.push_front(item.back()); break;
+        case false:tokens.push_back(item.back()); break;
         }
         item.pop_back();
+        count--;
       }
-      if (!item.empty()) item.pop_back();
     }
     else {
-      while (size > 0 && !item.empty()) {
-        if (kit.GetDataType(item.back()) == kTypeFunction) {
-          if (disable_query && size == 1) {
-            attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-            attrTag.ro = true;
-            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
-            disable_query = false;
-          }
-          else {
-            temp = GetObj(item.back());
-          }
+      while (item.back() != "," && !item.empty()) {
+        tokens.push_front(item.back());
+        item.pop_back();
+      }
+    }
+
+    if (arg_mode == kCodeNormalArgs && (tokens.size() < size || tokens.size() > size)) {
+      msg.combo(kStrFatalError, kCodeIllegalArgs, "Parameter doesn't match expected count.(01)");
+      health = false;
+    }
+    else if (arg_mode == kCodeAutoFill && tokens.size() < 1) {
+      msg.combo(kStrFatalError, kCodeIllegalArgs, "You should provide at least one parameter.(02)");
+      health = false;
+    }
+    else {
+      for (count = 0; count < size; count++) {
+        if (tokens.size() - 1 < count) {
+          map.insert(pair<string, Object>(GetName(args.at(count)), Object()));
         }
         else {
-          attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-          attrTag.ro = true;
-          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag));
-        }
-        if (temp.GetTypeId() != kTypeIdNull) {
-          switch (reversed) {
-          case true:objects.push_front(temp); break;
-          case false:objects.push_back(temp); break;
+          token_type = kit.GetDataType(tokens.at(count));
+          switch (token_type) {
+          case kTypeFunction:
+            if (args.at(count).front() == '&') {
+              origin = GetObj(tokens.at(count));
+              temp.ref(*origin);
+              //temp.set(make_shared<Ref>(origin), kTypeIdRef, "%false");
+            }
+            else if (args.at(count).front() == '%') {
+              temp.manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
+            }
+            else {
+              temp = *GetObj(tokens.at(count));
+            }
+            break;
+          default:
+            temp.manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
+            break;
           }
+          map.insert(pair<string,Object>(GetName(args.at(count)), temp));
+          temp.clear();
         }
+      }
+
+      switch (priority) {
+      case kFlagOperatorEntry:
+        map.insert(pair<string, Object>(kStrOperator, Object()
+          .manage(symbol.back(), kTypeIdRawString, kit.BuildAttrStr(strAttr))));
+        break;
+      case kFlagMethod:
+        origin = GetObj(item.back());
+        map.insert(pair<string, Object>(kStrObject, Object()
+          .ref(*origin)));
         item.pop_back();
-        size--;
+        break;
+      default:
+        break;
       }
     }
     
-    if (priority == kFlagBinEntry) {
-      attrTag.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-      objects.push_back(Object().manage(symbol.back(), kTypeIdRawString, kit.MakeAttrTagStr(attrTag)));
-    }
-    else if (priority == kFlagMethod) {
-      objects.push_front(GetObj(item.back()));
-      item.pop_back();
-    }
+    if (health) {
+      switch (mode) {
+      case kModeCycleJump:
+        if (id == "end") msg = provider.Start(map);
+        else if (id == "if") msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
+        break;
+      case kModeNextCondition:
+        if (id == "if" || id == "elif" || id == "else" || id == "end") msg = provider.Start(map);
+        else msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
+        break;
+      case kModeNormal:
+      default:
+        msg = provider.Start(map);
+        break;
+      }
 
-    switch (mode) {
-    case kModeCycleJump:
-      if (id == "end") {
-        msg = provider.StartActivity(objects, this);
+      if (msg.GetCode() == kCodeObject) {
+        attribute.methods = type::GetTemplate(msg.GetValue())->GetMethods();
+        item.push_back(msg.GetDetail()); //detail start with "__"
+        lambdamap.insert(pair<string, Object>(msg.GetDetail(),
+          Object().set(msg.GetPtr(), msg.GetValue(), kit.BuildAttrStr(attribute))));
       }
-      else if (id == "if") {
-        msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
+      else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
+        item.push_back(msg.GetDetail());
       }
-      break;
-    case kModeNextCondition:
-      if (id == "if" || id == "elif" || id == "else" || id == "end") {
-        msg = provider.StartActivity(objects, this);
-      }
-      else {
-        msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
-      }
-      break;
-    case kModeNormal:
-    default:
-      msg = provider.StartActivity(objects, this);
-    }
 
-    if (msg.GetCode() == kCodeObject) {
-      attrTag.methods = type::GetTemplate(msg.GetValue())->GetMethods();
-      item.push_back(msg.GetDetail()); //detail start with "__"
-      lambdamap.insert(pair<string, Object>(msg.GetDetail(),
-        Object().set(msg.GetPtr(), msg.GetValue(), kit.MakeAttrTagStr(attrTag))));
+      health = (msg.GetValue() != kStrFatalError && msg.GetValue() != kStrWarning);
+      symbol.pop_back();
     }
-    else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
-      item.push_back(msg.GetDetail());
-    }
-
-    return (msg.GetValue() != kStrFatalError && msg.GetValue() != kStrWarning);
+    return health;
   }
 
-  Message Chainloader::Start(size_t mode = kModeNormal) {
+  Message Chainloader::Start(size_t mode) {
     using namespace entry;
     const size_t size = raw.size();
     size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
@@ -575,16 +579,24 @@ namespace kagami {
             item.pop_back();
             if (!container.empty()) {
               switch (container.size()) {
-              case 1:symbol.push_back("at:" + operator_target_type + "|2"); break;
-              case 2:symbol.push_back("at:" + operator_target_type + "|3"); break;
+              case 1:symbol.push_back("at:" + operator_target_type + "|1"); break;
+              case 2:symbol.push_back("at:" + operator_target_type + "|2"); break;
               }
               while (!container.empty()) {
                 item.push_back(container.back());
                 container.pop_back();
               }
             }
+            else {
+              //msg.combo
+              fatal = true;
+              continue;
+            }
+            //Start point 0
+            if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
           }
           else {
+            //msg.combo
             fatal = true;
             continue;
           }
@@ -600,7 +612,6 @@ namespace kagami {
             }
             //Start point 1
             if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-            symbol.pop_back();
           }
 
           if (symbol.back() == temp_symbol) symbol.pop_back();
@@ -610,7 +621,6 @@ namespace kagami {
           }
           //Start point 2
           if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-          symbol.pop_back();
         }
         else if (raw[i] == ".") {
           dot_operator = true;
@@ -640,7 +650,6 @@ namespace kagami {
         }
       }
       else if (unit_type == kTypeFunction && !string_token_proc) {
-        //todo:override
         if (dot_operator) {
           temp_str = entry::GetTypeId(item.back());
           if (kit.FindInStringVector(raw.at(i), type::GetTemplate(temp_str)->GetMethods())) {
@@ -654,6 +663,7 @@ namespace kagami {
               fatal = true;
               break;
             }
+            dot_operator = false;
             continue;
           }
           else {
@@ -668,7 +678,7 @@ namespace kagami {
           case false:item.push_back(raw.at(i)); break;
           }
         }
-        dot_operator = false;
+        
       }
       else if (unit_type == kTypeNull) {
         fatal = true;
@@ -697,7 +707,6 @@ namespace kagami {
         }
         //Start point 3
         if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-        symbol.pop_back();
       }
     }
 
@@ -706,47 +715,16 @@ namespace kagami {
     return result;
   }
 
-  Message EntryProvider::StartActivity(deque<Object> p, Chainloader *parent) {
-    using namespace entry;
-    ObjectMap map;
+  Message EntryProvider::Start(ObjectMap &map) {
     Message result;
-    AttrTag attrTag;
-    bool ignore_first_arg = true, health = true;
-    size_t size = p.size(), expected = this->args.size(), i = 0;
-    
-    if (arg_mode == kCodeAutoFill) {
-      if (size > expected) {
-        health = false;
-        result.combo(kStrFatalError, kCodeIllegalArgs, "Parameter doesn't match expected count.(01)");
-      }
-      else {
-        for (i = 0; i < expected; i++) {
-          if (i > size - 1) map.insert(pair<string, Object>(args.at(i), Object()));
-          else map.insert(pair<string, Object>(args.at(i), p.at(i)));
-        }
-      }
+    switch (this->Good()) {
+    case true:result = activity(map); break;
+    case false:result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry.");; break;
     }
-    else if (arg_mode == kCodeNormalArgs) {
-
-      if (size != expected) {
-        health = false;
-        result.combo(kStrFatalError, kCodeIllegalArgs, "Parameter count doesn't match expected count.(02)");
-      }
-      else {
-        for (i = 0; i < size; i++) {
-          map.insert(pair<string, Object>(args.at(i), p.at(i)));
-        }
-      }
-    }
-
-    if (health) {
-      result = activity(map);
-    }
-
     return result;
   }
 
-  Message ChainStorage::Run(deque<string> res = deque<string>()) {
+  Message ChainStorage::Run(deque<string> res) {
     using namespace entry;
     Message result;
     size_t i = 0;
@@ -873,74 +851,6 @@ namespace kagami {
     return result;
   }
 
-  void Core::PrintEvents() {
-    using namespace trace;
-    ofstream ofs("event.log", std::ios::trunc);
-    string prioritystr;
-    if (ofs.good()) {
-      if (GetLogger().empty()) {
-        ofs << "No Events.\n";
-      }
-      else {
-        for (log_t unit : GetLogger()) {
-          ofs << "[" << unit.first << "]";
-          if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
-          else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
-          if (unit.second.GetDetail() != kStrEmpty) {
-            ofs << prioritystr << unit.second.GetDetail() << "\n";
-          }
-        }
-      }
-    }
-    ofs.close();
-  }
 
-  Message Core::ExecScriptFile(string target) {
-    Message result;
-    ScriptProvider sp(target.c_str());
-    ChainStorage cs(sp);
-
-    if (target == kStrEmpty) {
-      trace::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
-      return result;
-    }
-    Activiate();
-    InitTemplates();
-    cs.Run();
-    entry::ResetPlugin();
-    return result;
-  }
-
-  Message Quit(ObjectMap &p) {
-    Message result(kStrEmpty, kCodeQuit, kStrEmpty);
-    return result;
-  }
-
-  void Core::Terminal() {
-    using namespace entry;
-    string buf = kStrEmpty;
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    Chainloader loader;
-    //auto Build = [&](string target) {return BuildStringVector(target); };
-    std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
-    std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
-
-    CreateManager();
-    Activiate();
-    InitTemplates();
-    Inject(EntryProvider(ActivityTemplate().set("quit",Quit,kFlagNormalEntry,kCodeNormalArgs,"")));
-
-    while (result.GetCode() != kCodeQuit) {
-      std::cout << ">>>";
-      std::getline(std::cin, buf);
-      if (buf != kStrEmpty) {
-        result = loader.Reset().Build(buf).Start();
-        if (result.GetCode() < kCodeSuccess) {
-          std::cout << result.GetDetail() << std::endl;
-        }
-      }
-    }
-    ResetPlugin();
-  }
 }
 

@@ -23,31 +23,103 @@
 //  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "parser.h"
-//#define _DEBUG_FLAG_
+#include "kagami.h"
+//#define _ENABLE_DEBUGGING_
 //#define _NO_CUI_
+#ifndef _NO_CUI_
+#include <iostream>
+#endif
+
+namespace kagami {
+  Message Quit(ObjectMap &p) {
+    Message result(kStrEmpty, kCodeQuit, kStrEmpty);
+    return result;
+  }
+
+  void ScriptCore::PrintEvents() {
+    using namespace trace;
+    ofstream ofs("event.log", std::ios::trunc);
+    string prioritystr;
+    if (ofs.good()) {
+      if (GetLogger().empty()) {
+        ofs << "No Events.\n";
+      }
+      else {
+        for (log_t unit : GetLogger()) {
+          ofs << "[" << unit.first << "]";
+          if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
+          else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
+          if (unit.second.GetDetail() != kStrEmpty) {
+            ofs << prioritystr << unit.second.GetDetail() << "\n";
+          }
+        }
+      }
+    }
+    ofs.close();
+  }
+
+  Message ScriptCore::ExecScriptFile(string target) {
+    Message result;
+    ScriptProvider sp(target.c_str());
+    ChainStorage cs(sp);
+
+    if (target == kStrEmpty) {
+      trace::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
+      return result;
+    }
+    Activiate();
+    cs.Run();
+    entry::ResetPlugin();
+    return result;
+  }
+
+#ifndef _NO_CUI_
+  void ScriptCore::Terminal() {
+    using namespace entry;
+    string buf = kStrEmpty;
+    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
+    Chainloader loader;
+    //auto Build = [&](string target) {return BuildStringVector(target); };
+    std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
+    std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
+
+    CreateManager();
+    Activiate();
+    Inject(EntryProvider(ActivityTemplate().set("quit", Quit, kFlagNormalEntry, kCodeNormalArgs, "")));
+
+    while (result.GetCode() != kCodeQuit) {
+      std::cout << ">>>";
+      std::getline(std::cin, buf);
+      if (buf != kStrEmpty) {
+        result = loader.Reset().Build(buf).Start();
+        if (result.GetCode() < kCodeSuccess) {
+          std::cout << result.GetDetail() << std::endl;
+        }
+      }
+    }
+    ResetPlugin();
+  }
+#endif
+}
 
 int main(int argc, char **argv) {
 
-  kagami::Core scriptcore;
-#ifdef _DEBUG_FLAG_
-  //direct load a external script
-  scriptcore.ExecScriptFile("C:\\workspace\\test.kagami");
+  kagami::ScriptCore scriptCore;
+#ifdef _ENABLE_DEBUGGING_
+  scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
 #else
 #ifndef _NO_CUI_
   if (argc > 1) {
-    //load external script from command arguments
-    scriptcore.ExecScriptFile(argv[1]);
+    scriptCore.ExecScriptFile(argv[1]);
   }
   else {
-    //open terminal mode
-    scriptcore.Terminal();
+    scriptCore.Terminal();
   }
 #else
   scriptcore.ExecScriptFile(argv[1]);
 #endif
 #endif
-  scriptcore.PrintEvents();
+  scriptCore.PrintEvents();
 
   return 0;
 }
