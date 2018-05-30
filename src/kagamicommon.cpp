@@ -119,7 +119,7 @@ namespace kagami {
     return result;
   }
 
-  string Kit::MakeAttrTagStr(Attribute target) {
+  string Kit::BuildAttrStr(Attribute target) {
     string result = kStrEmpty;
     vector<string> methods = this->BuildStringVector(target.methods);
     if (target.ro)result.append("%true");

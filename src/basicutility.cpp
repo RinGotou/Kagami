@@ -78,9 +78,10 @@ namespace kagami {
     Object *FindObject(string sign) {
       Object *object = nullptr;
       size_t count = GetObjectStack().size();
+      vector<ObjectManager> &base = GetObjectStack();
 
-      while (!GetObjectStack().empty() && count > 0) {
-        object = GetObjectStack().at(count - 1).Find(sign);
+      while (!base.empty() && count > 0) {
+        object = base.at(count - 1).Find(sign);
         if (object != nullptr) {
           break;
         }
@@ -100,7 +101,7 @@ namespace kagami {
     Object *CreateObject(string sign, shared_ptr<void> ptr, string option, bool constant = false) {
       Object *object = nullptr;
       Attribute attribute(type::GetTemplate(option)->GetMethods(), constant);
-      GetObjectStack().back().add(sign, Object().set(ptr, option, Kit().MakeAttrTagStr(attribute)));
+      GetObjectStack().back().add(sign, Object().set(ptr, option, Kit().BuildAttrStr(attribute)));
       object = GetObjectStack().back().Find(sign);
       return object;
     }
@@ -384,10 +385,12 @@ namespace kagami {
     Message result;
     Object source = p.at("source"), target = p.at("target");
     auto ptr = type::GetObjectCopy(target);
+    string attrstr = kStrEmpty;
 
     attribute.methods = type::GetTemplate(target.GetTypeId())->GetMethods();
     attribute.ro = false;
-    source.set(ptr, target.GetTypeId(), Kit().MakeAttrTagStr(attribute));
+    attrstr = Kit().BuildAttrStr(attribute);
+    source.set(ptr, target.GetTypeId(), attrstr);
 
     return result;
   }
@@ -461,14 +464,14 @@ namespace kagami {
     InitTemplates();
     InitMethods();
     ActivityTemplate temp;
-    Inject(EntryProvider(temp.set("binexp", BinaryOperands, kFlagBinEntry, kCodeNormalArgs, "first|second|operator")));
+    Inject(EntryProvider(temp.set("binexp", BinaryOperands, kFlagOperatorEntry, kCodeNormalArgs, "first|second")));
     Inject(EntryProvider(temp.set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
     Inject(EntryProvider(temp.set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
     Inject(EntryProvider(temp.set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
-    Inject(EntryProvider(temp.set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "name|source")));
-    Inject(EntryProvider(temp.set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeNormalArgs, "target|source")));
+    Inject(EntryProvider(temp.set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
+    Inject(EntryProvider(temp.set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
     Inject(EntryProvider(temp.set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
     Inject(EntryProvider(temp.set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
     Inject(EntryProvider(temp.set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));

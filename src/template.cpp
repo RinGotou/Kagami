@@ -53,7 +53,7 @@ namespace kagami {
 
   //Null
   shared_ptr<void> NullCopy(shared_ptr<void> target) {
-    return nullptr;
+    return make_shared<int>(0);
   }
 
   Message ArrayConstructor(ObjectMap &p) {
@@ -76,7 +76,7 @@ namespace kagami {
 
     for (count = 0; count < size_value; count++) {
       init_ptr = type::GetObjectCopy(init_value);
-      base.push_back(Object().set(init_ptr, init_value.GetTypeId(), Kit().MakeAttrTagStr(attribute)));
+      base.push_back(Object().set(init_ptr, init_value.GetTypeId(), Kit().BuildAttrStr(attribute)));
     }
 
     result.combo(kTypeIdArrayBase, kCodeObject, "__result");
@@ -157,10 +157,10 @@ namespace kagami {
     //types
     Inject(EntryProvider(temp.set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
     //methods
-    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1", kTypeIdRawString)));
-    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "object|subscript_1", kTypeIdArrayBase)));
-    Inject(EntryProvider(temp.set("at", GetElement_2Dimension, kFlagMethod, kCodeNormalArgs, "object|subscript_1|subscript_2", kTypeIdCubeBase)));
-    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "object", kTypeIdRawString)));
-    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "object", kTypeIdArrayBase)));
+    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdRawString)));
+    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdArrayBase)));
+    Inject(EntryProvider(temp.set("at", GetElement_2Dimension, kFlagMethod, kCodeNormalArgs, "subscript_1|subscript_2", kTypeIdCubeBase)));
+    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
+    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
   }
 }

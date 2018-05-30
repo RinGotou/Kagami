@@ -51,6 +51,7 @@ namespace kagami {
   class Message;
   class ObjTemplate;
   class Object;
+  class Ref;
 
   using ObjectMap = map<string, Object>;
   using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
@@ -81,6 +82,8 @@ namespace kagami {
   const string kStrRedirect = "__*__";
   const string kStrTrue = "true";
   const string kStrFalse = "false";
+  const string kStrOperator = "__operator";
+  const string kStrObject = "__object";
 
   const int kCodeAutoFill = 14;
   const int kCodeNormalArgs = 13;
@@ -105,7 +108,7 @@ namespace kagami {
 
   const int kFlagCoreEntry = 0;
   const int kFlagNormalEntry = 1;
-  const int kFlagBinEntry = 2;
+  const int kFlagOperatorEntry = 2;
   const int kFlagMethod = 3;
 
   const size_t kTypeFunction = 0;
@@ -123,7 +126,7 @@ namespace kagami {
   const string kTypeIdRawString = "string";
   const string kTypeIdArrayBase = "deque";
   const string kTypeIdCubeBase = "cube";
-  const string kTypeIdRef = "__ref";
+  const string kTypeIdRef = "ref";
 
   const size_t kModeNormal = 0;
   const size_t kModeNextCondition = 1;
@@ -148,7 +151,7 @@ namespace kagami {
       this->methods = methods;
       this->ro = ro;
     }
-    Attribute(){}
+    Attribute() {}
   };
 
   /*Activity Template class
@@ -162,7 +165,7 @@ namespace kagami {
     string args;
     string specifictype;
 
-    ActivityTemplate &set(string id, Activity activity, int priority, int arg_mode, string args,string type = kTypeIdNull) {
+    ActivityTemplate &set(string id, Activity activity, int priority, int arg_mode, string args, string type = kTypeIdNull) {
       this->id = id;
       this->activity = activity;
       this->priority = priority;
@@ -204,7 +207,7 @@ namespace kagami {
   /*Message Class
     It's the basic message tunnel of this script processor.
     According to my design,processor will check value or detail or
-    both of them to find out warnings or errors.Some functions use 
+    both of them to find out warnings or errors.Some functions use
     value,detail and castpath to deliver Object class.
   */
   class Message {
@@ -311,7 +314,7 @@ namespace kagami {
 
     int GetDataType(string target);
     Attribute GetAttrTag(string target);
-    string MakeAttrTagStr(Attribute target);
+    string BuildAttrStr(Attribute target);
     bool FindInStringVector(string target, string source);
     vector<string> BuildStringVector(string source);
   };
@@ -323,32 +326,88 @@ namespace kagami {
   */
   class Object {
   private:
+    typedef struct { Object *ptr; } TargetObject;
     std::shared_ptr<void> ptr;
     string option;
     string tag;
   public:
     Object() {
-      ptr = nullptr;
+      //hold a null pointer will cause some mysterious ploblems,
+      //so this will hold a specific value intead of nullptr
+      ptr = make_shared<int>(0);
       option = kTypeIdNull;
       tag = kStrEmpty;
     }
-    template <class T> 
+    template <class T>
     Object &manage(T &t, string option, string tag) {
-      ptr = std::make_shared<T>(t);
-      this->option = option;
-      this->tag = tag;
-      return *this;
+      Object *result = nullptr;
+      if (option == kTypeIdRef) {
+        result = &(static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->manage(t, option, tag));
+      }
+      else {
+        ptr = std::make_shared<T>(t);
+        this->option = option;
+        this->tag = tag;
+        result = this;
+      }
+      return *result;
     }
     Object &set(shared_ptr<void> ptr, string option, string tag) {
-      this->ptr = ptr;
-      this->option = option;
+      Object *result = nullptr;
+      if (option == kTypeIdRef) {
+        result = &(static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->set(ptr, option, tag));
+      }
+      else {
+        this->ptr = ptr;
+        this->option = option;
+        this->tag = tag;
+        result = this;
+      }
+      return *result;
+    }
+    Object &ref(Object &object) {
+      this->option = kTypeIdRef;
+      TargetObject target;
+      target.ptr = &object;
+      ptr = make_shared<TargetObject>(target);
       return *this;
     }
-    shared_ptr<void> get() { return ptr; }
-    string GetTypeId() const { return option; }
-    Attribute getTag() const { return Kit().GetAttrTag(tag); }
-    Object &setTag(string tag) { this->tag = tag; return *this; }
-    Attribute addTag(string target) { tag.append(target); return Kit().GetAttrTag(tag); }
+    shared_ptr<void> get() { 
+      shared_ptr<void> result = ptr;
+      if (option == kTypeIdRef) {
+        result = static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->get();
+      }
+      return result;
+    }
+    string GetTypeId() const { 
+      string result = option;
+      if (option == kTypeIdRef) {
+        result = static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->GetTypeId();
+      }
+      return option; 
+    }
+    Attribute getTag() const { 
+      Attribute result;
+      if (option == kTypeIdRef) {
+        result = static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->getTag();
+      }
+      else {
+        result = Kit().GetAttrTag(tag);
+      }
+      return result;
+    }
   };
+
+
 }
 

@@ -119,8 +119,6 @@ namespace kagami {
     }
   }
 
-
-
   ScriptProvider::ScriptProvider(const char *target) {
     using trace::log;
     string temp;
@@ -317,15 +315,15 @@ namespace kagami {
     return priority;
   }
 
-  Object Chainloader::GetObj(string name) {
-    Object result;
+  Object *Chainloader::GetObj(string name) {
+    Object *result = new Object();
     if (name.substr(0, 2) == "__") {
       map<string, Object>::iterator it = lambdamap.find(name);
-      if (it != lambdamap.end()) result = it->second;
+      if (it != lambdamap.end()) result = &(it->second);
     }
     else {
       auto ptr = entry::FindObject(name);
-      if (ptr != nullptr) result = *ptr;
+      if (ptr != nullptr) result = ptr;
     }
     return result;
   }
@@ -359,15 +357,24 @@ namespace kagami {
   bool Chainloader::Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
     Message &msg, size_t mode) {
     Kit kit;
+    Attribute strAttr(type::GetTemplate(kTypeIdRawString)->GetMethods(), false);
     Attribute attribute;
     EntryProvider provider;
-    Object temp;
-    size_t size = 0;
-    int provider_size = -1, arg_mode = 0, priority = 0;
-    bool reversed = true, disable_query = false, method = false;
+    Object temp, *origin;
+    size_t size = 0, count = 0;
+    int provider_size = -1, arg_mode = 0, priority = 0, token_type = kTypeNull;
+    bool reversed = true, disable_query = false, method = false, health = true;
     string id = GetHead(symbol.back()), provider_type = kTypeIdNull;
     vector<string> tags = spilt(symbol.back());
-    deque<Object> objects;
+    vector<string> args;
+    deque<string> tokens;
+    ObjectMap map;
+
+    auto GetName = [](string target) ->string {
+      if (target.front() == '&' || target.front() == '%')
+        return target.substr(1, target.size() - 1);
+      else return target;
+    };
 
     if (!tags.empty()) {
       provider_type = tags.front();
@@ -380,6 +387,7 @@ namespace kagami {
     }
 
     provider = entry::Order(id, provider_type, provider_size);
+
     if (!provider.Good()) {
       msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found.");
       return false;
@@ -388,118 +396,110 @@ namespace kagami {
       size = provider.GetArgumentSize();
       arg_mode = provider.GetArgumentMode();
       priority = provider.GetPriority();
+      args = provider.GetArguments();
     }
 
     if (id == kStrDefineCmd) { 
-      disable_query = true;
+      if (item.size() == 1) {
+        size = 1; //force reset to 1
+      }
     }
 
-    if (priority == kFlagBinEntry || priority == kFlagMethod) {
-      size--;
-      reversed = false;
-    }
-
-    if (disable_set_entry) {
-      while (item.back() != "," && !item.empty()) {
-        if (kit.GetDataType(item.back()) == kTypeFunction) {
-          //query is completed in GetObj().
-          if (disable_query) {
-            attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-            attribute.ro = true;
-            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute));
-            disable_query = false;
-          }
-          else {
-            temp = GetObj(item.back());
-            if (temp.GetTypeId() != kTypeIdNull) {
-              objects.push_back(temp);
-            }
-            else {
-              //TODO:error
-              break;
-            }
-          }
-        }
-        else {
-          attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-          attribute.ro = true;
-          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute));
+    if (priority == kFlagOperatorEntry) { reversed = false; }
+    if (!disable_set_entry) {
+      while (size > 0 && !item.empty()) {
+        switch (reversed) {
+        case true:tokens.push_front(item.back()); break;
+        case false:tokens.push_back(item.back()); break;
         }
         item.pop_back();
       }
-      if (!item.empty()) item.pop_back();
     }
     else {
-      while (size > 0 && !item.empty()) {
-        if (kit.GetDataType(item.back()) == kTypeFunction) {
-          if (disable_query && size == 1) {
-            attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-            attribute.ro = true;
-            temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute));
-            disable_query = false;
-          }
-          else {
-            temp = GetObj(item.back());
-          }
+      while (item.back() != "," && !item.empty()) {
+        tokens.push_front(item.back());
+        item.pop_back();
+      }
+    }
+
+    if (arg_mode == kCodeNormalArgs && (tokens.size() < size || tokens.size() > size)) {
+      msg.combo(kStrFatalError, kCodeIllegalArgs, "Parameter doesn't match expected count.(01)");
+      health = false;
+    }
+    else {
+      for (count = 0; count < size; count++) {
+        if (tokens.size() - 1 < count) {
+          map.insert(pair<string, Object>(GetName(args.at(count)), Object()));
         }
         else {
-          attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-          attribute.ro = true;
-          temp.manage(item.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute));
-        }
-        if (temp.GetTypeId() != kTypeIdNull) {
-          switch (reversed) {
-          case true:objects.push_front(temp); break;
-          case false:objects.push_back(temp); break;
+          token_type = kit.GetDataType(tokens.at(count));
+          switch (token_type) {
+          case kTypeFunction:
+            if (args.at(count).front() == '&') {
+              origin = GetObj(tokens.at(count));
+              temp.ref(*origin);
+              //temp.set(make_shared<Ref>(origin), kTypeIdRef, "%false");
+            }
+            else if (args.at(count).front() == '%') {
+              temp.manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
+            }
+            else {
+              temp = *GetObj(tokens.at(count));
+            }
+            break;
+          default:
+            temp.manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
+            break;
           }
+          map.insert(pair<string,Object>(GetName(args.at(count)), temp));
         }
-        item.pop_back();
-        size--;
+      }
+
+      switch (priority) {
+      case kFlagOperatorEntry:
+        map.insert(pair<string, Object>(kStrOperator, Object()
+          .manage(symbol.back(), kTypeIdRawString, kit.BuildAttrStr(strAttr))));
+        break;
+      case kFlagMethod:
+        origin = GetObj(item.back());
+        //map.insert(pair<string, Object>(kStrObject, Object()
+        //  .set(make_shared<Ref>(origin), kTypeIdRef, "")));
+        map.insert(pair<string, Object>(kStrObject, Object()
+          .ref(*origin)));
+      default:
+        break;
       }
     }
     
-    if (priority == kFlagBinEntry) {
-      attribute.methods = type::GetTemplate(kTypeIdRawString)->GetMethods();
-      objects.push_back(Object().manage(symbol.back(), kTypeIdRawString, kit.MakeAttrTagStr(attribute)));
-    }
-    else if (priority == kFlagMethod) {
-      objects.push_front(GetObj(item.back()));
-      item.pop_back();
-    }
+    if (health) {
+      switch (mode) {
+      case kModeCycleJump:
+        if (id == "end") msg = provider.Start(map);
+        else if (id == "if") msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
+        break;
+      case kModeNextCondition:
+        if (id == "if" || id == "elif" || id == "else" || id == "end") msg = provider.Start(map);
+        else msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
+        break;
+      case kModeNormal:
+      default:
+        msg = provider.Start(map);
+        break;
+      }
 
-    switch (mode) {
-    case kModeCycleJump:
-      if (id == "end") {
-        msg = provider.StartActivity(objects, this);
+      if (msg.GetCode() == kCodeObject) {
+        attribute.methods = type::GetTemplate(msg.GetValue())->GetMethods();
+        item.push_back(msg.GetDetail()); //detail start with "__"
+        lambdamap.insert(pair<string, Object>(msg.GetDetail(),
+          Object().set(msg.GetPtr(), msg.GetValue(), kit.BuildAttrStr(attribute))));
       }
-      else if (id == "if") {
-        msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
+      else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
+        item.push_back(msg.GetDetail());
       }
-      break;
-    case kModeNextCondition:
-      if (id == "if" || id == "elif" || id == "else" || id == "end") {
-        msg = provider.StartActivity(objects, this);
-      }
-      else {
-        msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
-      }
-      break;
-    case kModeNormal:
-    default:
-      msg = provider.StartActivity(objects, this);
-    }
 
-    if (msg.GetCode() == kCodeObject) {
-      attribute.methods = type::GetTemplate(msg.GetValue())->GetMethods();
-      item.push_back(msg.GetDetail()); //detail start with "__"
-      lambdamap.insert(pair<string, Object>(msg.GetDetail(),
-        Object().set(msg.GetPtr(), msg.GetValue(), kit.MakeAttrTagStr(attribute))));
+      health = (msg.GetValue() != kStrFatalError && msg.GetValue() != kStrWarning);
     }
-    else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
-      item.push_back(msg.GetDetail());
-    }
-
-    return (msg.GetValue() != kStrFatalError && msg.GetValue() != kStrWarning);
+    return health;
   }
 
   Message Chainloader::Start(size_t mode) {
@@ -705,6 +705,15 @@ namespace kagami {
     return result;
   }
 
+  Message EntryProvider::Start(ObjectMap &map) {
+    Message result;
+    switch (this->Good()) {
+    case true:result = activity(map); break;
+    case false:result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry.");; break;
+    }
+    return result;
+  }
+
   Message EntryProvider::StartActivity(deque<Object> p, Chainloader *parent) {
     using namespace entry;
     ObjectMap map;
@@ -726,7 +735,6 @@ namespace kagami {
       }
     }
     else if (arg_mode == kCodeNormalArgs) {
-
       if (size != expected) {
         health = false;
         result.combo(kStrFatalError, kCodeIllegalArgs, "Parameter count doesn't match expected count.(02)");
