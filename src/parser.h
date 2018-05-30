@@ -208,6 +208,7 @@ namespace kagami {
     vector<string> args;
     Activity activity;
     string specifictype;
+    size_t minsize;
   public:
     EntryProvider() : id(kStrNull), activity(nullptr) {
       arg_mode = kCodeIllegalArgs;
@@ -254,7 +255,6 @@ namespace kagami {
     size_t GetArgumentSize() const { return this->args.size(); }
     int GetPriority() const { return this->priority; }
     bool Good() const { return ((activity != nullptr) && arg_mode != kCodeIllegalArgs); }
-    Message StartActivity(deque<Object> p, Chainloader *parent);
     Message Start(ObjectMap &map);
   };
 

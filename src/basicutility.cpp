@@ -384,13 +384,13 @@ namespace kagami {
     Attribute attribute;
     Message result;
     Object source = p.at("source"), target = p.at("target");
-    auto ptr = type::GetObjectCopy(target);
+    auto ptr = type::GetObjectCopy(source);
     string attrstr = kStrEmpty;
 
-    attribute.methods = type::GetTemplate(target.GetTypeId())->GetMethods();
+    attribute.methods = type::GetTemplate(source.GetTypeId())->GetMethods();
     attribute.ro = false;
     attrstr = Kit().BuildAttrStr(attribute);
-    source.set(ptr, target.GetTypeId(), attrstr);
+    target.set(ptr, source.GetTypeId(), attrstr);
 
     return result;
   }

@@ -154,7 +154,7 @@ namespace kagami {
   void InitMethods() {
     using namespace entry;
     ActivityTemplate temp;
-    //types
+    //constructpr
     Inject(EntryProvider(temp.set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
     //methods
     Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdRawString)));
