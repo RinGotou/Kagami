@@ -78,7 +78,7 @@ namespace kagami {
     using namespace entry;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    Chainloader loader;
+    Processor loader;
     //auto Build = [&](string target) {return BuildStringVector(target); };
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
