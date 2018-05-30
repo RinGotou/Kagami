@@ -73,9 +73,8 @@ namespace kagami {
     return result;
   }
 
-
-  AttrTag Kit::GetAttrTag(string target) {
-    AttrTag result;
+  Attribute Kit::GetAttrTag(string target) {
+    Attribute result;
     vector<string> base;
     string temp = kStrEmpty;
 
@@ -120,7 +119,7 @@ namespace kagami {
     return result;
   }
 
-  string Kit::MakeAttrTagStr(AttrTag target) {
+  string Kit::BuildAttrStr(Attribute target) {
     string result = kStrEmpty;
     vector<string> methods = this->BuildStringVector(target.methods);
     if (target.ro)result.append("%true");
