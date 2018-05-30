@@ -110,9 +110,10 @@ namespace kagami {
       string result = kTypeIdNull;
       Object *object = nullptr;
       size_t count = GetObjectStack().size();
+      vector<ObjectManager> &base = GetObjectStack();
 
       while (count > 0) {
-        object = GetObjectStack().at(count - 1).Find(sign);
+        object = base.at(count - 1).Find(sign);
         if (object != nullptr) {
           result = object->GetTypeId();
         }
@@ -276,7 +277,7 @@ namespace kagami {
   Message BinaryOperands(ObjectMap &p) {
     Kit kit;
     Message result(kStrRedirect, kCodeSuccess, "0");
-    Object first = p.at("first"), second = p.at("second"), op = p.at("operator");
+    Object first = p.at("first"), second = p.at("second"), op = p.at(kStrOperator);
     string temp = kStrEmpty, dataOP = kStrEmpty, dataA = kStrEmpty, dataB = kStrEmpty;
     bool tempresult = false, health = true;
     size_t count = 0;

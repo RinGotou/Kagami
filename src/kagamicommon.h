@@ -320,7 +320,7 @@ namespace kagami {
   };
 
   /*Object Class
-  A shared void pointer is packaged in this.Almost all varibales and
+  A shared void pointer is packaged in this.Almost all variables and
   constants are managed by shared pointers.This class will be packaged
   in ObjectManager class.
   */

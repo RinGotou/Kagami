@@ -399,14 +399,18 @@ namespace kagami {
       args = provider.GetArguments();
     }
 
-    if (priority == kFlagOperatorEntry) { reversed = false; }
+    if (priority == kFlagOperatorEntry) { 
+      reversed = false; 
+    }
     if (!disable_set_entry) {
-      while (size > 0 && !item.empty()) {
+      count = size;
+      while (count > 0 && !item.empty()) {
         switch (reversed) {
         case true:tokens.push_front(item.back()); break;
         case false:tokens.push_back(item.back()); break;
         }
         item.pop_back();
+        count--;
       }
     }
     else {
@@ -461,10 +465,10 @@ namespace kagami {
         break;
       case kFlagMethod:
         origin = GetObj(item.back());
-        //map.insert(pair<string, Object>(kStrObject, Object()
-        //  .set(make_shared<Ref>(origin), kTypeIdRef, "")));
         map.insert(pair<string, Object>(kStrObject, Object()
           .ref(*origin)));
+        item.pop_back();
+        break;
       default:
         break;
       }
@@ -497,6 +501,7 @@ namespace kagami {
       }
 
       health = (msg.GetValue() != kStrFatalError && msg.GetValue() != kStrWarning);
+      symbol.pop_back();
     }
     return health;
   }
@@ -574,16 +579,24 @@ namespace kagami {
             item.pop_back();
             if (!container.empty()) {
               switch (container.size()) {
-              case 1:symbol.push_back("at:" + operator_target_type + "|2"); break;
-              case 2:symbol.push_back("at:" + operator_target_type + "|3"); break;
+              case 1:symbol.push_back("at:" + operator_target_type + "|1"); break;
+              case 2:symbol.push_back("at:" + operator_target_type + "|2"); break;
               }
               while (!container.empty()) {
                 item.push_back(container.back());
                 container.pop_back();
               }
             }
+            else {
+              //msg.combo
+              fatal = true;
+              continue;
+            }
+            //Start point 0
+            if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
           }
           else {
+            //msg.combo
             fatal = true;
             continue;
           }
@@ -599,7 +612,6 @@ namespace kagami {
             }
             //Start point 1
             if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-            symbol.pop_back();
           }
 
           if (symbol.back() == temp_symbol) symbol.pop_back();
@@ -609,7 +621,6 @@ namespace kagami {
           }
           //Start point 2
           if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-          symbol.pop_back();
         }
         else if (raw[i] == ".") {
           dot_operator = true;
@@ -652,6 +663,7 @@ namespace kagami {
               fatal = true;
               break;
             }
+            dot_operator = false;
             continue;
           }
           else {
@@ -666,7 +678,7 @@ namespace kagami {
           case false:item.push_back(raw.at(i)); break;
           }
         }
-        dot_operator = false;
+        
       }
       else if (unit_type == kTypeNull) {
         fatal = true;
@@ -695,7 +707,6 @@ namespace kagami {
         }
         //Start point 3
         if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-        symbol.pop_back();
       }
     }
 

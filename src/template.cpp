@@ -87,7 +87,7 @@ namespace kagami {
   
   Message GetElement(ObjectMap &p) {
     Message result;
-    Object object = p.at("object"), subscript_1 = p.at("subscript_1");
+    Object object = p.at(kStrObject), subscript_1 = p.at("subscript_1");
     string type_id = object.GetTypeId();
     int size = 0;
     int count0 = 0;
@@ -115,7 +115,7 @@ namespace kagami {
 
   Message GetSize(ObjectMap &p) {
     Message result;
-    Object object = p.at("object");
+    Object object = p.at(kStrObject);
     string type_id = object.GetTypeId();
 
     if (type_id == kTypeIdArrayBase) {
@@ -134,7 +134,7 @@ namespace kagami {
 
   Message GetElement_2Dimension(ObjectMap &p) {
     Message result;
-    Object object = p.at("object"), subscript_1 = p.at("subscript_1"), subscript_2 = p.at("subscript_2");
+    Object object = p.at(kStrObject), subscript_1 = p.at("subscript_1"), subscript_2 = p.at("subscript_2");
     string type_id = object.GetTypeId();
     int size = 0;
     int count0 = 0, count1 = 0;
