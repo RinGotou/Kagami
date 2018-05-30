@@ -63,7 +63,8 @@ namespace kagami {
       else return true;
     }
   public:
-    template <class Type> bool Create(string sign, Type &t, string TypeId, ObjTemplate temp, bool constant) {
+    template <class Type> 
+    bool Create(string sign, Type &t, string TypeId, ObjTemplate temp, bool constant) {
       bool result = true;
       string tag = kStrEmpty;
       Attribute attribute;
@@ -76,7 +77,7 @@ namespace kagami {
         else attribute.ro = false;
         attribute.methods = temp.GetMethods();
 
-        tag = Kit().MakeAttrTagStr(attribute);
+        tag = Kit().BuildAttrStr(attribute);
 
         base.insert(pair<string, Object>(sign, Object().manage(t, TypeId, tag)));
       }
@@ -146,7 +147,7 @@ namespace kagami {
     vector<string> raw;
     map<string, Object> lambdamap;
 
-    Object GetObj(string name);
+    Object *GetObj(string name);
     vector<string> spilt(string target);
     string GetHead(string target);
     int GetPriority(string target) const;
@@ -249,10 +250,12 @@ namespace kagami {
     string GetSpecificType() const { return specifictype; }
     string GetId() const { return this->id; }
     int GetArgumentMode() const { return this->arg_mode; }
+    vector<string> GetArguments() const { return args; }
     size_t GetArgumentSize() const { return this->args.size(); }
     int GetPriority() const { return this->priority; }
     bool Good() const { return ((activity != nullptr) && arg_mode != kCodeIllegalArgs); }
     Message StartActivity(deque<Object> p, Chainloader *parent);
+    Message Start(ObjectMap &map);
   };
 
   inline string CastToString(shared_ptr<void> ptr) {
