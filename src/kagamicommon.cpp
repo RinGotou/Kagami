@@ -36,7 +36,7 @@ namespace kagami {
     if (target == kStrNull) result = kTypeNull;
     else if (target.front() == '"' && target.back() == '"') result = kTypeString;
     else if (match(kPatternBoolean)) result = kTypeBoolean;
-    else if (match(kPatternFunction)) result = kTypeFunction;
+    else if (match(kPatternFunction)) result = kGenericToken;
     else if (match(kPatternInteger)) result = kTypeInteger;
     else if (match(kPatternDouble)) result = kTypeDouble;
     else if (match(kPatternSymbol)) result = kTypeSymbol;

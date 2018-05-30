@@ -471,8 +471,8 @@ namespace kagami {
     Inject(EntryProvider(temp.set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
     Inject(EntryProvider(temp.set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
-    Inject(EntryProvider(temp.set(kStrDefineCmd, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
-    Inject(EntryProvider(temp.set(kStrSetCmd, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
+    Inject(EntryProvider(temp.set(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
+    Inject(EntryProvider(temp.set(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
     Inject(EntryProvider(temp.set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
     Inject(EntryProvider(temp.set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
     Inject(EntryProvider(temp.set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));

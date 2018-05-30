@@ -46,7 +46,7 @@ namespace kagami {
   using std::stod;
 
   class EntryProvider;
-  class Chainloader;
+  class Processor;
 
   /*ObjectManager Class
   MemoryManger will be filled with Object and manage life cycle of variables
@@ -138,35 +138,57 @@ namespace kagami {
     Message Get();
   };
 
-  /*Chainloader Class
+  /*Processor Class
   The most important part of script processor.Original string will be tokenized and
   parsed here.Processed data will be delivered to entry provider.
   */
-  class Chainloader {
+  class Processor {
   private:
     vector<string> raw;
     map<string, Object> lambdamap;
+    deque<string> item, symbol;
+    bool comma_exp_func,
+      string_token_proc, 
+      insert_btn_symbols,
+      disable_set_entry, 
+      dot_operator,
+      subscript_processing;
+    string currentToken;
+    string operatorTargetType;
+    size_t mode,
+      nextInsertSubscript;
 
+    void DoubleQuotationMark();
+    void EqualMark();
+    void Comma();
+    bool LeftBracket(Message &msg);
+    bool RightBracket(Message &msg);
+    void LeftSquareBracket();
+    bool RightSquareBracket(Message &msg);
+    void Dot();
+    void OtherSymbols();
+    bool FunctionAndObject(Message &msg);
+    void OtherTokens();
+    void FinalProcessing(Message &msg);
     Object *GetObj(string name);
     vector<string> spilt(string target);
     string GetHead(string target);
     int GetPriority(string target) const;
-    bool Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
-      Message &msg, size_t mode);
+    bool Assemble(Message &msg);
   public:
-    Chainloader() {}
-    Chainloader &Build(vector<string> raw) {
+    Processor() {}
+    Processor &Build(vector<string> raw) {
       this->raw = raw;
       return *this;
     }
 
-    Chainloader &Reset() {
+    Processor &Reset() {
       Kit().CleanupVector(raw);
       return *this;
     }
 
     Message Start(size_t mode = kModeNormal);
-    Chainloader &Build(string target);
+    Processor &Build(string target);
   };
 
   /*ChainStorage Class
@@ -174,10 +196,10 @@ namespace kagami {
   */
   class ChainStorage {
   private:
-    vector<Chainloader> storage;
+    vector<Processor> storage;
     vector<string> parameter;
     void AddLoader(string raw) {
-      storage.push_back(Chainloader().Reset().Build(raw));
+      storage.push_back(Processor().Reset().Build(raw));
     }
   public:
     ChainStorage(ScriptProvider &provider) {
