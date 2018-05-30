@@ -399,12 +399,6 @@ namespace kagami {
       args = provider.GetArguments();
     }
 
-    if (id == kStrDefineCmd) { 
-      if (item.size() == 1) {
-        size = 1; //force reset to 1
-      }
-    }
-
     if (priority == kFlagOperatorEntry) { reversed = false; }
     if (!disable_set_entry) {
       while (size > 0 && !item.empty()) {
@@ -424,6 +418,10 @@ namespace kagami {
 
     if (arg_mode == kCodeNormalArgs && (tokens.size() < size || tokens.size() > size)) {
       msg.combo(kStrFatalError, kCodeIllegalArgs, "Parameter doesn't match expected count.(01)");
+      health = false;
+    }
+    else if (arg_mode == kCodeAutoFill && tokens.size() < 1) {
+      msg.combo(kStrFatalError, kCodeIllegalArgs, "You should provide at least one parameter.(02)");
       health = false;
     }
     else {
@@ -452,6 +450,7 @@ namespace kagami {
             break;
           }
           map.insert(pair<string,Object>(GetName(args.at(count)), temp));
+          temp.clear();
         }
       }
 
@@ -711,45 +710,6 @@ namespace kagami {
     case true:result = activity(map); break;
     case false:result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry.");; break;
     }
-    return result;
-  }
-
-  Message EntryProvider::StartActivity(deque<Object> p, Chainloader *parent) {
-    using namespace entry;
-    ObjectMap map;
-    Message result;
-    Attribute attribute;
-    bool ignore_first_arg = true, health = true;
-    size_t size = p.size(), expected = this->args.size(), i = 0;
-    
-    if (arg_mode == kCodeAutoFill) {
-      if (size > expected) {
-        health = false;
-        result.combo(kStrFatalError, kCodeIllegalArgs, "Parameter doesn't match expected count.(01)");
-      }
-      else {
-        for (i = 0; i < expected; i++) {
-          if (i > size - 1) map.insert(pair<string, Object>(args.at(i), Object()));
-          else map.insert(pair<string, Object>(args.at(i), p.at(i)));
-        }
-      }
-    }
-    else if (arg_mode == kCodeNormalArgs) {
-      if (size != expected) {
-        health = false;
-        result.combo(kStrFatalError, kCodeIllegalArgs, "Parameter count doesn't match expected count.(02)");
-      }
-      else {
-        for (i = 0; i < size; i++) {
-          map.insert(pair<string, Object>(args.at(i), p.at(i)));
-        }
-      }
-    }
-
-    if (health) {
-      result = activity(map);
-    }
-
     return result;
   }
 

@@ -341,13 +341,13 @@ namespace kagami {
     template <class T>
     Object &manage(T &t, string option, string tag) {
       Object *result = nullptr;
-      if (option == kTypeIdRef) {
-        result = &(static_pointer_cast<TargetObject>(ptr)
+      if (this->option == kTypeIdRef) {
+        result = &(static_pointer_cast<TargetObject>(this->ptr)
           ->ptr
           ->manage(t, option, tag));
       }
       else {
-        ptr = std::make_shared<T>(t);
+        this->ptr = std::make_shared<T>(t);
         this->option = option;
         this->tag = tag;
         result = this;
@@ -356,8 +356,8 @@ namespace kagami {
     }
     Object &set(shared_ptr<void> ptr, string option, string tag) {
       Object *result = nullptr;
-      if (option == kTypeIdRef) {
-        result = &(static_pointer_cast<TargetObject>(ptr)
+      if (this->option == kTypeIdRef) {
+        result = &(static_pointer_cast<TargetObject>(this->ptr)
           ->ptr
           ->set(ptr, option, tag));
       }
@@ -370,10 +370,12 @@ namespace kagami {
       return *result;
     }
     Object &ref(Object &object) {
-      this->option = kTypeIdRef;
-      TargetObject target;
-      target.ptr = &object;
-      ptr = make_shared<TargetObject>(target);
+      if (!object.isRef()) {
+        this->option = kTypeIdRef;
+        TargetObject target;
+        target.ptr = &object;
+        ptr = make_shared<TargetObject>(target);
+      }
       return *this;
     }
     shared_ptr<void> get() { 
@@ -392,7 +394,7 @@ namespace kagami {
           ->ptr
           ->GetTypeId();
       }
-      return option; 
+      return result; 
     }
     Attribute getTag() const { 
       Attribute result;
@@ -406,6 +408,12 @@ namespace kagami {
       }
       return result;
     }
+    void clear() {
+      ptr = make_shared<int>(0);
+      option = kTypeIdNull;
+      tag = kStrEmpty;
+    }
+    bool isRef() const { return option == kTypeIdRef; }
   };
 
 
