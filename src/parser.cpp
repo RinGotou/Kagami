@@ -72,7 +72,7 @@ namespace kagami {
         result = Order("binexp");
       }
       else if (id == "=") {
-        result = Order(kStrSetCmd);
+        result = Order(kStrSet);
       }
       else {
         for (auto &unit : base) {
@@ -165,7 +165,7 @@ namespace kagami {
     return result;
   }
 
-  Chainloader &Chainloader::Build(string target) {
+  Processor &Processor::Build(string target) {
     using trace::log;
     Kit kit;
     vector<string> output;
@@ -305,7 +305,7 @@ namespace kagami {
     return *this;
   }
 
-  int Chainloader::GetPriority(string target) const {
+  int Processor::GetPriority(string target) const {
     int priority;
     if (target == "=" || target == "var") priority = 0;
     else if (target == "==" || target == ">=" || target == "<=") priority = 1;
@@ -315,7 +315,7 @@ namespace kagami {
     return priority;
   }
 
-  Object *Chainloader::GetObj(string name) {
+  Object *Processor::GetObj(string name) {
     Object *result = new Object();
     if (name.substr(0, 2) == "__") {
       map<string, Object>::iterator it = lambdamap.find(name);
@@ -328,7 +328,7 @@ namespace kagami {
     return result;
   }
 
-  vector<string> Chainloader::spilt(string target) {
+  vector<string> Processor::spilt(string target) {
     vector<string> result;
     string temp = kStrEmpty;
     bool start = false;
@@ -345,7 +345,7 @@ namespace kagami {
     return result;
   }
 
-  string Chainloader::GetHead(string target) {
+  string Processor::GetHead(string target) {
     string result = kStrEmpty;
     for (auto &unit : target) {
       if (unit == ':') break;
@@ -354,8 +354,7 @@ namespace kagami {
     return result;
   }
 
-  bool Chainloader::Assemble(bool disable_set_entry, deque<string> &item, deque<string> &symbol,
-    Message &msg, size_t mode) {
+  bool Processor::Assemble(Message &msg) {
     Kit kit;
     Attribute strAttr(type::GetTemplate(kTypeIdRawString)->GetMethods(), false);
     Attribute attribute;
@@ -436,7 +435,7 @@ namespace kagami {
         else {
           token_type = kit.GetDataType(tokens.at(count));
           switch (token_type) {
-          case kTypeFunction:
+          case kGenericToken:
             if (args.at(count).front() == '&') {
               origin = GetObj(tokens.at(count));
               temp.ref(*origin);
@@ -506,211 +505,225 @@ namespace kagami {
     return health;
   }
 
-  Message Chainloader::Start(size_t mode) {
+  void Processor::DoubleQuotationMark() {
+    switch (string_token_proc) {
+    case true:item.back().append(currentToken); break;
+    case false:item.push_back(currentToken); break;
+    }
+    string_token_proc = !string_token_proc;
+  }
+
+  void Processor::EqualMark() {
+    switch (symbol.empty()) {
+    case true:
+      symbol.push_back(currentToken); 
+      break;
+    case false:
+      if (symbol.back() != kStrVar)symbol.push_back(currentToken);
+      break;
+    }
+  }
+
+  void Processor::Comma() {
+    if (symbol.back() == kStrVar) {
+      disable_set_entry = true;
+    }
+    if (disable_set_entry) {
+      symbol.push_back(kStrVar);
+      item.push_back(currentToken);
+    }
+  }
+
+  bool Processor::LeftBracket(Message &msg) {
+    bool result = true;
+    if (symbol.back() == kStrVar) {
+      msg.combo(kStrFatalError, kCodeIllegalCall, "Illegal pattern of definition.");
+      result = false;
+    }
+    else {
+      symbol.push_back(currentToken);
+    }
+    return result;
+  }
+
+  bool Processor::RightBracket(Message &msg) {
+    bool result = true;
+    while (symbol.back() != "(" && !symbol.empty()) {
+      result = Assemble(msg);
+      if (!result) break;
+    }
+
+    if (result) {
+      if (symbol.back() == "(") symbol.pop_back();
+      result = Assemble(msg);
+    }
+
+    return result;
+  }
+
+  void Processor::LeftSquareBracket() {
+    operatorTargetType = entry::FindObject(item.back())->GetTypeId();
+    item.push_back(currentToken);
+    subscript_processing = true;
+  }
+
+  bool Processor::RightSquareBracket(Message &msg) {
+    bool result = true;
+    deque<string> container;
+    if (!subscript_processing) {
+      //msg.combo
+      result = false;
+    }
+    else {
+      subscript_processing = false;
+      while (item.back() != "[" && !item.empty()) {
+        container.push_back(item.back());
+        item.pop_back();
+      }
+      if (item.back() == "[") item.pop_back();
+      if (!container.empty()) {
+        switch (container.size()) {
+        case 1:symbol.push_back("at:" + operatorTargetType + "|1"); break;
+        case 2:symbol.push_back("at:" + operatorTargetType + "|2"); break;
+        }
+
+        result = Assemble(msg);
+      }
+      else {
+        //msg.combo
+        result = false;
+      }
+    }
+
+    Kit().CleanupDeque(container);
+    return result;
+  }
+
+  void Processor::Dot() {
+    dot_operator = true;
+  }
+
+  void Processor::OtherSymbols() {
+    size_t j, k;
+    if (symbol.empty()) {
+      symbol.push_back(currentToken);
+    }
+    else if (GetPriority(currentToken) < GetPriority(symbol.back()) && symbol.back() != "(") {
+      j = symbol.size() - 1;
+      k = item.size();
+      while (symbol.at(j) != "(" && GetPriority(currentToken) < GetPriority(symbol.at(j))) {
+        if (k = item.size()) { k -= entry::GetRequiredCount(symbol.at(j)); }
+        else { k -= entry::GetRequiredCount(symbol.at(j)) - 1; }
+        --j;
+      }
+      symbol.insert(symbol.begin() + j + 1, currentToken);
+      nextInsertSubscript = k;
+      insert_btn_symbols = true;
+
+      j = 0;
+      k = 0;
+    }
+    else {
+      symbol.push_back(currentToken);
+    }
+  }
+
+  bool Processor::FunctionAndObject(Message &msg) {
+    Kit kit;
+    string id = kStrEmpty;
+    bool result = true;
+
+    if (dot_operator) {
+      id = entry::GetTypeId(item.back());
+      if (kit.FindInStringVector(currentToken, type::GetTemplate(id)->GetMethods())) {
+        symbol.push_back(currentToken + ':' + id);
+        dot_operator = false;
+      }
+      else {
+        msg.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + id + ".(02)");
+        result = false;
+      }
+    }
+    else {
+      switch (entry::Order(currentToken).Good()) {
+      case true:symbol.push_back(currentToken); break;
+      case false:item.push_back(currentToken); break;
+      }
+    }
+    return result;
+  }
+
+  void Processor::OtherTokens() {
+    switch (insert_btn_symbols) {
+    case true:
+      item.insert(item.begin() + nextInsertSubscript, currentToken);
+      insert_btn_symbols = false;
+      break;
+    case false:
+      switch (string_token_proc) {
+      case true:item.back().append(currentToken); break;
+      case false:item.push_back(currentToken); break;
+      }
+      break;
+    }
+  }
+
+  void Processor::FinalProcessing(Message &msg) {
+    while (symbol.empty() != true) {
+      if (symbol.back() == "(" || symbol.back() == ")") {
+        msg.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
+        break;
+      }
+      Assemble(msg);
+    }
+  }
+
+  Message Processor::Start(size_t mode) {
     using namespace entry;
     const size_t size = raw.size();
-    size_t i = 0, j = 0, k = 0, next_ins_point = 0, forward_token_type = kTypeNull;
-    string temp_str = kStrEmpty, temp_symbol = kStrEmpty, temp_sign = kStrEmpty;
-    string operator_target_type = kTypeIdNull;
+    size_t i = 0;
     int unit_type = kTypeNull;
-    bool comma_exp_func = false,
-      string_token_proc = false, insert_btn_symbols = false,
-      disable_set_entry = false, dot_operator = false,
-      subscript_processing = false;
-    bool fatal = false;
     Kit kit;
     Message result;
+    bool health = true;
 
-    deque<string> item, symbol;
-    deque<string> container;
+    nextInsertSubscript = 0;
+    this->mode = mode;
+    operatorTargetType = kTypeIdNull;
+    comma_exp_func = false,
+    string_token_proc = false,
+    insert_btn_symbols = false,
+    disable_set_entry = false,
+    dot_operator = false,
+    subscript_processing = false;
 
     for (i = 0; i < size; ++i) {
-      if(fatal == true) break;
+      if(!health) break;
+      currentToken = raw.at(i);
       unit_type = kit.GetDataType(raw.at(i));
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
       if (unit_type == kTypeSymbol) {
-        if (raw[i] == "\"") {
-          switch (string_token_proc) {
-          case true:item.back().append(raw[i]); break;
-          case false:item.push_back(raw[i]); break;
-          }
-          string_token_proc = !string_token_proc;
-        }
-        else if (raw[i] == "=") {
-          switch (symbol.empty()) {
-          case true:symbol.push_back(raw[i]); break;
-          case false:if (symbol.back() != "var") symbol.push_back(raw[i]); break;
-          }
-        }
-        else if (raw[i] == ",") {
-          if (symbol.back() == "var") disable_set_entry = true;
-          switch (disable_set_entry) {
-          case true:
-            symbol.push_back("var");
-            item.push_back(raw[i]);
-            break;
-          case false:
-            break;
-          }
-        }
-        else if (raw[i] == "(") {
-          if (symbol.back() == kStrDefineCmd) {
-            result.combo(kStrFatalError, kCodeIllegalCall, "Illegal pattern of definition.");
-            fatal = true;
-            continue;
-          }
-          else {
-            symbol.push_back(raw[i]);
-          }
-        }
-        else if (raw[i] == "[") {
-          operator_target_type = entry::FindObject(item.back())->GetTypeId();
-          item.push_back(raw.at(i));
-          subscript_processing = true;
-        }
-        else if (raw[i] == "]") {
-          container.clear();
-          if (subscript_processing) {
-            subscript_processing = false;
-            while (item.back() != "[" && !item.empty()) {
-              container.push_back(item.back());
-              item.pop_back();
-            }
-            item.pop_back();
-            if (!container.empty()) {
-              switch (container.size()) {
-              case 1:symbol.push_back("at:" + operator_target_type + "|1"); break;
-              case 2:symbol.push_back("at:" + operator_target_type + "|2"); break;
-              }
-              while (!container.empty()) {
-                item.push_back(container.back());
-                container.pop_back();
-              }
-            }
-            else {
-              //msg.combo
-              fatal = true;
-              continue;
-            }
-            //Start point 0
-            if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-          }
-          else {
-            //msg.combo
-            fatal = true;
-            continue;
-          }
-        }
-        else if (raw[i] == ")") {
-          if (raw[i] == ")") temp_symbol = "(";
-          container.clear();
-          while (symbol.back() != temp_symbol && symbol.empty() != true) {
-            if (symbol.back() == ",") {
-              container.push_back(item.back());
-              item.pop_back();
-              symbol.pop_back();
-            }
-            //Start point 1
-            if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-          }
-
-          if (symbol.back() == temp_symbol) symbol.pop_back();
-          while (!container.empty()) {
-            item.push_back(container.back());
-            container.pop_back();
-          }
-          //Start point 2
-          if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-        }
-        else if (raw[i] == ".") {
-          dot_operator = true;
-        }
-        else {
-          if (symbol.empty()) {
-            symbol.push_back(raw[i]);
-          }
-          else if (GetPriority(raw[i]) < GetPriority(symbol.back()) && symbol.back() != "(") {
-            j = symbol.size() - 1;
-            k = item.size();
-            while (symbol.at(j) != "(" && GetPriority(raw[i]) < GetPriority(symbol.at(j))) {
-              if (k = item.size()) { k -= entry::GetRequiredCount(symbol.at(j)); }
-              else { k -= entry::GetRequiredCount(symbol.at(j)) - 1; }
-              --j;
-            }
-            symbol.insert(symbol.begin() + j + 1, raw[i]);
-            next_ins_point = k;
-            insert_btn_symbols = true;
-
-            j = 0;
-            k = 0;
-          }
-          else {
-            symbol.push_back(raw[i]);
-          }
-        }
+        if (raw[i] == "\"") DoubleQuotationMark();
+        else if (raw[i] == "=") EqualMark();
+        else if (raw[i] == ",") Comma();
+        else if (raw[i] == "[") LeftSquareBracket();
+        else if (raw[i] == ".") Dot();
+        else if (raw[i] == "(") health = LeftBracket(result);
+        else if (raw[i] == "]") health = RightSquareBracket(result);
+        else if (raw[i] == ")") health = RightBracket(result);
+        else OtherSymbols();
       }
-      else if (unit_type == kTypeFunction && !string_token_proc) {
-        if (dot_operator) {
-          temp_str = entry::GetTypeId(item.back());
-          if (kit.FindInStringVector(raw.at(i), type::GetTemplate(temp_str)->GetMethods())) {
-            auto provider = entry::Order(raw.at(i), temp_str);
-            switch (provider.Good()) {
-            case true:
-              symbol.push_back(raw.at(i) + ':' + temp_str);
-              break;
-            case false:
-              result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".(01)");
-              fatal = true;
-              break;
-            }
-            dot_operator = false;
-            continue;
-          }
-          else {
-            result.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + temp_str + ".(02)");
-            fatal = true;
-            continue;
-          }
-        }
-        else {
-          switch (entry::Order(raw.at(i)).Good()) {
-          case true:symbol.push_back(raw.at(i)); break;
-          case false:item.push_back(raw.at(i)); break;
-          }
-        }
-        
-      }
+      else if (unit_type == kGenericToken && !string_token_proc) health = FunctionAndObject(result);
       else if (unit_type == kTypeNull) {
-        fatal = true;
+        result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal token.");
+        health = false;
       }
-      else {
-        switch (insert_btn_symbols) {
-        case true:
-          item.insert(item.begin() + next_ins_point, raw[i]);
-          insert_btn_symbols = false;
-          break;
-        case false:
-          switch (string_token_proc) {
-          case true:item.back().append(raw[i]); break;
-          case false:item.push_back(raw[i]); break;
-          }
-          break;
-        }
-      }
+      else OtherTokens();
     }
 
-    if (!fatal) {
-      while (symbol.empty() != true) {
-        if (symbol.back() == "(" || symbol.back() == ")") {
-          result.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
-          break;
-        }
-        //Start point 3
-        if (!Assemble(disable_set_entry, item, symbol, result, mode)) break;
-      }
-    }
+    if (health) FinalProcessing(result);
 
-    kit.CleanupDeque(container).CleanupDeque(item).CleanupDeque(symbol);
+    kit.CleanupDeque(item).CleanupDeque(symbol);
 
     return result;
   }
@@ -735,6 +748,8 @@ namespace kagami {
     stack<size_t> mode_stack;
     bool already_executed = false;
     size_t current_mode = kModeNormal;
+    int code = kCodeSuccess;
+    string value = kStrEmpty;
 
     CreateManager();
     //TODO:add custom function support
@@ -753,22 +768,23 @@ namespace kagami {
       i = 0;
       while (i < size) {
         result = storage.at(i).Start(current_mode);
-
+        value = result.GetValue();
+        code = result.GetCode();
         //error
-        if (result.GetValue() == kStrFatalError) break;
+        if (value == kStrFatalError) break;
 
         //return
-        if (result.GetCode() == kCodeReturn) {
+        if (code == kCodeReturn) {
           result.SetCode(kCodeSuccess);
           break;
         }
 
         //condition
-        if (result.GetCode() == kCodeConditionRoot) {
+        if (code == kCodeConditionRoot) {
           state_stack.push(already_executed);
           mode_stack.push(current_mode);
 
-          if (result.GetValue() == kStrFalse) {
+          if (value == kStrFalse) {
             current_mode = kModeNextCondition;
             already_executed = false;
           }
@@ -776,8 +792,8 @@ namespace kagami {
             already_executed = true;
           }
         }
-        if (result.GetCode() == kCodeConditionBranch) {
-          if (!already_executed && current_mode == kModeNextCondition && result.GetValue() == kStrTrue) {
+        if (code == kCodeConditionBranch) {
+          if (!already_executed && current_mode == kModeNextCondition && value == kStrTrue) {
             current_mode = kModeNormal;
             already_executed = true;
           }
@@ -785,7 +801,7 @@ namespace kagami {
             current_mode = kModeNextCondition;
           }
         }
-        if (result.GetCode() == kCodeConditionLeaf) {
+        if (code == kCodeConditionLeaf) {
           if (!already_executed && current_mode == kModeNextCondition) {
             current_mode = kModeNormal;
           }
@@ -793,17 +809,17 @@ namespace kagami {
             current_mode = kModeNextCondition;
           }
         }
-        if (result.GetCode() == kCodeFillingSign) {
+        if (code == kCodeFillingSign) {
           mode_stack.push(kModeCycleJump);
         }
 
         //loop
-        if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrTrue) {
+        if (code == kCodeHeadSign && value == kStrTrue) {
           current_mode = kModeCycle;
           if (nest.empty()) nest.push(i);
           else if (nest.top() != i) nest.push(i);
         }
-        if (result.GetCode() == kCodeHeadSign && result.GetValue() == kStrFalse) {
+        if (code == kCodeHeadSign && value == kStrFalse) {
           if (nest.empty()) {
             current_mode = kModeCycleJump;
           }
@@ -816,7 +832,7 @@ namespace kagami {
         }
 
         //tail
-        if (result.GetCode() == kCodeTailSign) {
+        if (code == kCodeTailSign) {
           if (current_mode == kModeCycle) {
             if (!nest.empty()) {
               tail = i;

@@ -69,8 +69,8 @@ namespace kagami {
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
   const string kCopyright = "Copyright(c) 2017-2018";
-  const string kStrDefineCmd = "var";
-  const string kStrSetCmd = "__set";
+  const string kStrVar = "var";
+  const string kStrSet = "__set";
   const string kStrNull = "null";
 
   const string kStrEmpty = "";
@@ -111,7 +111,7 @@ namespace kagami {
   const int kFlagOperatorEntry = 2;
   const int kFlagMethod = 3;
 
-  const size_t kTypeFunction = 0;
+  const size_t kGenericToken = 0;
   const size_t kTypeString = 1;
   const size_t kTypeInteger = 2;
   const size_t kTypeDouble = 3;
