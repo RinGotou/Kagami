@@ -288,7 +288,7 @@ namespace kagami {
 
     if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
       dataA = *static_pointer_cast<string>(first.get()),
-      dataB = *static_pointer_cast<string>(second.get());
+        dataB = *static_pointer_cast<string>(second.get());
       datatypeA = kit.GetDataType(dataA);
       datatypeB = kit.GetDataType(dataB);
       if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = EnumDouble;
@@ -313,30 +313,31 @@ namespace kagami {
           case false:temp = kStrFalse; break;
           }
         }
-        else if (enumtype == EnumStr) {
-          if (dataOP == "+") {
-            if (dataB.back() == '"') {
-              temp = dataB.substr(0, dataB.size() - 1);
-              dataB = temp;
-              temp = kStrEmpty;
-            }
-            if (dataA.front() == '"') {
-              temp = dataA.substr(1, dataA.size() - 1);
-              dataA = temp;
-              temp = kStrEmpty;
-            }
+      }
+      else if (enumtype == EnumStr) {
+        if (dataOP == "+") {
+          if (dataB.back() == '"') {
+            temp = dataB.substr(0, dataB.size() - 1);
+            dataB = temp;
+            temp = kStrEmpty;
           }
-          else if (dataOP == "!=" || dataOP == "==") {
-            tempresult = kit.Logic(dataB, dataA, dataOP);
-            switch (tempresult) {
-            case true:temp = kStrTrue; break;
-            case false:temp = kStrFalse; break;
-            }
+          if (dataA.front() == '"') {
+            temp = dataA.substr(1, dataA.size() - 1);
+            dataA = temp;
+            temp = kStrEmpty;
           }
-          else if (dataOP == ">=" || dataOP == "<=") {
-            //TODO:add in Kit::Logic()
+          temp = dataB + dataA;
+        }
+        else if (dataOP == "!=" || dataOP == "==") {
+          tempresult = kit.Logic(dataB, dataA, dataOP);
+          switch (tempresult) {
+          case true:temp = kStrTrue; break;
+          case false:temp = kStrFalse; break;
+          }
+        }
+        else if (dataOP == ">=" || dataOP == "<=") {
+          //TODO:add in Kit::Logic()
 
-          }
         }
       }
       else {
@@ -450,11 +451,18 @@ namespace kagami {
   //TODO:rewrite this!
   Message PrintOnScreen(ObjectMap &p) {
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    string msg = CastToString(p.at("msg").get());
-    if (Kit().GetDataType(msg) == kTypeString) {
-      msg = msg.substr(1, msg.size() - 2);
+    Object source = p.at("msg");
+    if (source.GetTypeId() == kTypeIdRawString) {
+      string msg = CastToString(p.at("msg").get());
+      if (Kit().GetDataType(msg) == kTypeString) {
+        msg = msg.substr(1, msg.size() - 2);
+      }
+      std::cout << msg << std::endl;
     }
-    std::cout << msg << std::endl;
+    else {
+      std::cout << "You can't print this object." << std::endl;
+    }
+
     return result;
   }
 

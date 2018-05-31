@@ -131,7 +131,8 @@ namespace kagami {
     string currentToken;
     string operatorTargetType;
     size_t mode,
-      nextInsertSubscript;
+      nextInsertSubscript,
+      lambdaObjectCount;
 
     void DoubleQuotationMark();
     void EqualMark();
