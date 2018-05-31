@@ -216,7 +216,7 @@ namespace kagami {
     string value;
     string detail;
     int code;
-    shared_ptr<void> ptr;
+    shared_ptr<void> object;
   public:
     Message() {
       value = kStrEmpty;
@@ -254,7 +254,9 @@ namespace kagami {
     string GetValue() const { return this->value; }
     int GetCode() const { return this->code; }
     string GetDetail() const { return this->detail; }
-    shared_ptr<void> &GetPtr() { return ptr; }
+    //shared_ptr<void> &GetPtr() { return ptr; }
+    Object GetObj();
+    void SetObject(Object &object, string id);
   };
 
   /*Kit Class
@@ -373,11 +375,14 @@ namespace kagami {
       return *result;
     }
     Object &ref(Object &object) {
+      this->option = kTypeIdRef;
       if (!object.isRef()) {
-        this->option = kTypeIdRef;
         TargetObject target;
         target.ptr = &object;
         ptr = make_shared<TargetObject>(target);
+      }
+      else {
+        this->ptr = object.ptr;
       }
       return *this;
     }

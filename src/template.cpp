@@ -78,15 +78,16 @@ namespace kagami {
       base.push_back(Object().set(init_ptr, init_value.GetTypeId(), Kit().BuildAttrStr(attribute)));
     }
 
-    result.combo(kTypeIdArrayBase, kCodeObject, "__result");
-    result.GetPtr() = make_shared<deque<Object>>(base);
-
+    attribute.methods = type::GetTemplate(kTypeIdArrayBase)->GetMethods();
+    result.SetObject(Object().set(make_shared<deque<Object>>(base), kTypeIdArrayBase,
+      Kit().BuildAttrStr(attribute)), "__result");
     return result;
   }
   
   Message GetElement(ObjectMap &p) {
     Message result;
     Object object = p.at(kStrObject), subscript_1 = p.at("subscript_1");
+    Object temp;
     string type_id = object.GetTypeId();
     int size = 0;
     int count0 = 0;
@@ -104,8 +105,8 @@ namespace kagami {
       size = static_pointer_cast<deque<Object>>(object.get())->size();
       if (count0 <= size - 1) {
         auto &target = static_pointer_cast<deque<Object>>(object.get())->at(count0);
-        result.combo(target.GetTypeId(), kCodeObject, "__element");
-        result.GetPtr() = target.get();
+        temp.ref(target);
+        result.SetObject(temp, "__element");
       }
     }
 
