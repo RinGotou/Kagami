@@ -26,6 +26,17 @@
 #include "kagamicommon.h"
 
 namespace kagami {
+  void Message::SetObject(Object &object, string id) {
+    Attribute attribute;
+    this->object = make_shared<Object>(object);
+    this->code = kCodeObject;
+    this->detail = id;
+  }
+
+  Object Message::GetObj() {
+    return *static_pointer_cast<Object>(this->object);
+  }
+
   size_t Kit::GetDataType(string target) {
     using std::regex_match;
     size_t result = kTypeNull;
@@ -114,7 +125,9 @@ namespace kagami {
       temp = kStrEmpty;
     }
 
-    if (result.methods.back() == '|') result.methods.pop_back();
+    if (!result.methods.empty()) {
+      if (result.methods.back() == '|') result.methods.pop_back();
+    }
 
     return result;
   }
