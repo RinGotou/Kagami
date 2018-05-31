@@ -135,7 +135,7 @@ namespace kagami {
     bool DisposeManager() {
       if (!GetObjectStack().empty()) { GetObjectStack().pop_back(); }
       return GetObjectStack().empty();
-    }
+    } 
 
     bool Instance::Load(string name, HINSTANCE h) {
       Attachment attachment = nullptr;

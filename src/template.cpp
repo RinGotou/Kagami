@@ -49,7 +49,6 @@ namespace kagami {
   //Cube
 
   //Regex
-  
 
   //Null
   shared_ptr<void> NullCopy(shared_ptr<void> target) {
@@ -129,8 +128,6 @@ namespace kagami {
     result.SetValue(kStrRedirect);
     return result;
   }
-
-
 
   Message GetElement_2Dimension(ObjectMap &p) {
     Message result;
