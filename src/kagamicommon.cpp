@@ -26,9 +26,9 @@
 #include "kagamicommon.h"
 
 namespace kagami {
-  int Kit::GetDataType(string target) {
+  size_t Kit::GetDataType(string target) {
     using std::regex_match;
-    int result = kTypeNull;
+    size_t result = kTypeNull;
     auto match = [&](const regex &pat) -> bool {
       return regex_match(target, pat);
     };

@@ -68,7 +68,8 @@ namespace kagami {
       size_t argsize = 0;
 
       if (id == "+" || id == "-" || id == "*" || id == "/"
-        || id == "==" || id == "<=" || id == ">=" || id == "!=") {
+        || id == "==" || id == "<=" || id == ">=" || id == "!="
+        || id == ">" || id == "<") {
         result = Order("binexp");
       }
       else if (id == "=") {
