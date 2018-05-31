@@ -1,2 +1,0 @@
-ImportPlugin("sample","C:\workspace\PluginSample.dll")
-log(FunctionInPlugin())

@@ -121,48 +121,164 @@ namespace kagami {
   }
 
   ScriptProvider::ScriptProvider(const char *target) {
-    using trace::log;
     string temp;
-    current = 0;
     end = false;
-    auto IsBlankStr = [](string target) -> bool {
-      if (target == kStrEmpty || target.size() == 0) return true;
-      for (const auto unit : target) {
-        if (unit != ' ' || unit != '\n' || unit != '\t' || unit != '\r') {
-          return false;
-        }
-      }
-      return true;
-    };
+    health = false;
+    current = 0;
 
     stream.open(target, std::ios::in);
     if (stream.good()) {
       while (!stream.eof()) {
         std::getline(stream, temp);
         if (!IsBlankStr(temp)) {
-          base.push_back(temp);
+          storage.push_back(Processor().Reset().Build(temp));
         }
       }
-      if (!base.empty()) health = true;
-      else health = false;
-    }
-    else {
-      health = false;
+      if (!storage.empty()) health = true;
     }
     stream.close();
   }
 
-  Message ScriptProvider::Get() {
-    Message result(kStrEmpty, kCodeSuccess, "");
-    size_t size = base.size();
+  Message ScriptProvider::Run(deque<string> res) {
+    //using namespace entry;
+    Message result;
+    size_t count;
+    stack<size_t> cycleNestStack;
+    stack<size_t> cycleTailStack;
+    stack<bool> conditionStack;
+    stack<size_t> modeStack;
+    size_t currentMode = kModeNormal;
+    int code = kCodeSuccess;
+    string value = kStrEmpty;
+    bool health = true;
+    bool modeStackLock = false;
 
-    if (current < size) {
-      result.SetDetail(base.at(current));
-      current++;
-      if (current == size) {
-        end = true;
+    if (storage.empty()) {
+      return result;
+    }
+
+    entry::CreateManager();
+
+    //TODO:add custom function support
+    if (!res.empty()) {
+      if (res.size() != parameters.size()) {
+        result.combo(kStrFatalError, kCodeIllegalCall, "wrong parameter count.");
+        return result;
+      }
+      for (count = 0; count < parameters.size(); count++) {
+        //CreateObject(parameter.at(i), res.at(i), false);
       }
     }
+
+    //Main state machine
+    while (current < storage.size()) {
+      if (!health) break;
+      result = storage.at(current).Start(currentMode);
+      value = result.GetValue();
+      code = result.GetCode();
+
+      if (value == kStrFatalError) break;
+      //TODO:return
+
+      switch (code) {
+      case kCodeConditionRoot:
+        modeStack.push(currentMode);
+        if (value == kStrTrue) {
+          currentMode = kModeCondition;
+          conditionStack.push(true);
+        }
+        else if (value == kStrFalse) {
+          currentMode = kModeNextCondition;
+          conditionStack.push(false);
+        }
+        else {
+          health = false;
+        }
+        break;
+      case kCodeConditionBranch:
+        if (!conditionStack.empty()) {
+          if (conditionStack.top() == false && currentMode == kModeNextCondition
+            && value == kStrTrue) {
+            currentMode = kModeCondition;
+            conditionStack.top() = true;
+          }
+        }
+        else {
+          //msg.combo
+          health = false;
+        }
+        break;
+      case kCodeConditionLeaf:
+        if (!conditionStack.empty()) {
+          switch (conditionStack.top()) {
+          case true:
+            currentMode = kModeNextCondition;
+            break;
+          case false:
+            conditionStack.top() = true;
+            currentMode = kModeCondition;
+            break;
+          }
+        }
+        else {
+          //msg.combo
+          health = false;
+        }
+        break;
+      case kCodeHeadSign:
+        if (cycleNestStack.empty()) {
+          modeStack.push(currentMode);
+        }
+        else {
+          if (cycleNestStack.top() != current - 1) {
+            modeStack.push(currentMode);
+          }
+        }
+        if (value == kStrTrue) {
+          currentMode = kModeCycle;
+          if (cycleNestStack.empty()) {
+            cycleNestStack.push(current - 1);
+          }
+          else if (cycleNestStack.top() != current - 1) {
+            cycleNestStack.push(current - 1);
+          }
+        }
+        else if (value == kStrFalse) {
+          currentMode = kModeCycleJump;
+          if (!cycleTailStack.empty()) {
+            current = cycleTailStack.top();
+          }
+        }
+        else {
+          health = false;
+        }
+        break;
+      case kCodeTailSign:
+        if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
+          conditionStack.pop();
+          currentMode = modeStack.top();
+          modeStack.pop();
+        }
+        if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
+          switch (currentMode) {
+          case kModeCycle:
+            if (cycleTailStack.empty()) cycleTailStack.push(current - 1);
+            current = cycleNestStack.top();
+            break;
+          case kModeCycleJump:
+            currentMode = modeStack.top();
+            modeStack.pop();
+            cycleNestStack.pop();
+            cycleTailStack.pop();
+            break;
+          }
+        }
+      }
+      ++current;
+    }
+
+    entry::DisposeManager();
+
     return result;
   }
 
@@ -175,7 +291,7 @@ namespace kagami {
     size_t i;
     string current = kStrEmpty;
     bool exempt_blank_char = false, string_processing = false;
-    vector<string> list = { "var", "ref", "return" };
+    vector<string> list = { "var", "def", "return" };
     auto ToString = [](char c) -> string {
       return string().append(1, c);
     };
@@ -293,6 +409,8 @@ namespace kagami {
           }
         }
         break;
+      case '#':
+        if (!string_processing) break;
       default:
         current.append(1, target[i]);
         break;
@@ -440,7 +558,6 @@ namespace kagami {
             if (args.at(count).front() == '&') {
               origin = GetObj(tokens.at(count));
               temp.ref(*origin);
-              //temp.set(make_shared<Ref>(origin), kTypeIdRef, "%false");
             }
             else if (args.at(count).front() == '%') {
               temp.manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
@@ -481,10 +598,12 @@ namespace kagami {
         else if (id == "if") msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
         break;
       case kModeNextCondition:
-        if (id == "if" || id == "elif" || id == "else" || id == "end") msg = provider.Start(map);
+        if (id == "if" || id == "else" || id == "end") msg = provider.Start(map);
+        else if (symbol.front() == "elif") msg = provider.Start(map);
         else msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
         break;
       case kModeNormal:
+      case kModeCondition:
       default:
         msg = provider.Start(map);
         break;
@@ -737,137 +856,5 @@ namespace kagami {
     }
     return result;
   }
-
-  Message ChainStorage::Run(deque<string> res) {
-    using namespace entry;
-    Message result;
-    size_t i = 0;
-    size_t size = 0;
-    size_t tail = 0;
-    stack<size_t> nest;
-    stack<bool> state_stack;
-    stack<size_t> mode_stack;
-    bool already_executed = false;
-    size_t current_mode = kModeNormal;
-    int code = kCodeSuccess;
-    string value = kStrEmpty;
-
-    CreateManager();
-    //TODO:add custom function support
-    if (!res.empty()) {
-      if (res.size() != parameter.size()) {
-        result.combo(kStrFatalError, kCodeIllegalCall, "wrong parameter count.");
-        return result;
-      }
-      for (i = 0; i < parameter.size(); i++) {
-        //CreateObject(parameter.at(i), res.at(i), false);
-      }
-    }
-
-    if (!storage.empty()) {
-      size = storage.size();
-      i = 0;
-      while (i < size) {
-        result = storage.at(i).Start(current_mode);
-        value = result.GetValue();
-        code = result.GetCode();
-        //error
-        if (value == kStrFatalError) break;
-
-        //return
-        if (code == kCodeReturn) {
-          result.SetCode(kCodeSuccess);
-          break;
-        }
-
-        //condition
-        if (code == kCodeConditionRoot) {
-          state_stack.push(already_executed);
-          mode_stack.push(current_mode);
-
-          if (value == kStrFalse) {
-            current_mode = kModeNextCondition;
-            already_executed = false;
-          }
-          else {
-            already_executed = true;
-          }
-        }
-        if (code == kCodeConditionBranch) {
-          if (!already_executed && current_mode == kModeNextCondition && value == kStrTrue) {
-            current_mode = kModeNormal;
-            already_executed = true;
-          }
-          else if (already_executed && current_mode == kModeNormal) {
-            current_mode = kModeNextCondition;
-          }
-        }
-        if (code == kCodeConditionLeaf) {
-          if (!already_executed && current_mode == kModeNextCondition) {
-            current_mode = kModeNormal;
-          }
-          else if (already_executed && current_mode == kModeNormal) {
-            current_mode = kModeNextCondition;
-          }
-        }
-        if (code == kCodeFillingSign) {
-          mode_stack.push(kModeCycleJump);
-        }
-
-        //loop
-        if (code == kCodeHeadSign && value == kStrTrue) {
-          current_mode = kModeCycle;
-          if (nest.empty()) nest.push(i);
-          else if (nest.top() != i) nest.push(i);
-        }
-        if (code == kCodeHeadSign && value == kStrFalse) {
-          if (nest.empty()) {
-            current_mode = kModeCycleJump;
-          }
-          else {
-            current_mode = kModeCycle;
-            nest.pop();
-            i = tail;
-          }
-
-        }
-
-        //tail
-        if (code == kCodeTailSign) {
-          if (current_mode == kModeCycle) {
-            if (!nest.empty()) {
-              tail = i;
-              i = nest.top();
-              continue;
-            }
-          }
-          else if (current_mode = kModeNextCondition) {
-            if (!state_stack.empty()) {
-              already_executed = state_stack.top();
-              state_stack.pop();
-            }
-          }
-          else if (current_mode == kModeCycleJump) {
-            if (mode_stack.empty()) {
-              current_mode = kModeNormal;
-            }
-            else if (mode_stack.top() == kModeCycleJump) {
-              mode_stack.pop();
-            }
-            else {
-              current_mode = kModeNormal;
-            }
-          }
-        }
-
-        i++;
-      }
-    }
-
-    DisposeManager();
-    return result;
-  }
-
-
 }
 
