@@ -46,7 +46,7 @@ namespace kagami {
       }
       else {
         for (log_t unit : GetLogger()) {
-          ofs << "[" << unit.first << "]";
+          ofs << unit.first;
           if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
           else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
           if (unit.second.GetDetail() != kStrEmpty) {
@@ -78,7 +78,7 @@ namespace kagami {
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Processor loader;
-    //auto Build = [&](string target) {return BuildStringVector(target); };
+
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
@@ -102,7 +102,6 @@ namespace kagami {
 }
 
 int main(int argc, char **argv) {
-
   kagami::ScriptCore scriptCore;
 #ifdef _ENABLE_DEBUGGING_
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");

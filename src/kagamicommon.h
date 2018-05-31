@@ -62,9 +62,9 @@ namespace kagami {
   using Attachment = vector<ActivityTemplate> * (*)(void);
 
 #if defined(_WIN32)
-  const string kEngineVersion = "version 0.51 (Windows Platform)";
+  const string kEngineVersion = "version 0.52 (Windows Platform)";
 #else
-  const string kEngineVersion = "version 0.51 (Linux Platform)";
+  const string kEngineVersion = "version 0.52 (Linux Platform)";
 #endif
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
@@ -132,6 +132,7 @@ namespace kagami {
   const size_t kModeNextCondition = 1;
   const size_t kModeCycle = 2;
   const size_t kModeCycleJump = 3;
+  const size_t kModeCondition = 4;
 
   const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternNumber(R"(\d+\.?\d*)");
