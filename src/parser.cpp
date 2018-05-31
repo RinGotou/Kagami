@@ -522,7 +522,7 @@ namespace kagami {
     }
     if (!disable_set_entry) {
       count = size;
-      while (count > 0 && !item.empty()) {
+      while (count > 0 && !item.empty() && item.back() != "(") {
         switch (reversed) {
         case true:tokens.push_front(item.back()); break;
         case false:tokens.push_back(item.back()); break;
@@ -530,6 +530,7 @@ namespace kagami {
         item.pop_back();
         count--;
       }
+      if (!item.empty() && item.back() == "(") item.pop_back();
     }
     else {
       while (item.back() != "," && !item.empty()) {
@@ -610,10 +611,11 @@ namespace kagami {
       }
 
       if (msg.GetCode() == kCodeObject) {
-        attribute.methods = type::GetTemplate(msg.GetValue())->GetMethods();
-        item.push_back(msg.GetDetail()); //detail start with "__"
-        lambdamap.insert(pair<string, Object>(msg.GetDetail(),
-          Object().set(msg.GetPtr(), msg.GetValue(), kit.BuildAttrStr(attribute))));
+        temp = msg.GetObj();
+        auto tempId = msg.GetDetail() + to_string(lambdaObjectCount); //detail start with "__"
+        item.push_back(tempId); 
+        lambdamap.insert(pair<string, Object>(tempId, temp));
+        ++lambdaObjectCount;
       }
       else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
         item.push_back(msg.GetDetail());
@@ -639,7 +641,8 @@ namespace kagami {
       symbol.push_back(currentToken); 
       break;
     case false:
-      if (symbol.back() != kStrVar)symbol.push_back(currentToken);
+      if (symbol.back() != kStrVar) symbol.push_back(currentToken);
+      //else item.push_back(currentToken);
       break;
     }
   }
@@ -662,6 +665,7 @@ namespace kagami {
     }
     else {
       symbol.push_back(currentToken);
+      item.push_back(currentToken);
     }
     return result;
   }
@@ -705,6 +709,11 @@ namespace kagami {
         switch (container.size()) {
         case 1:symbol.push_back("at:" + operatorTargetType + "|1"); break;
         case 2:symbol.push_back("at:" + operatorTargetType + "|2"); break;
+        }
+
+        while (!container.empty()) {
+          item.push_back(container.back());
+          container.pop_back();
         }
 
         result = Assemble(msg);
@@ -807,6 +816,7 @@ namespace kagami {
     Message result;
     bool health = true;
 
+    lambdaObjectCount = 0;
     nextInsertSubscript = 0;
     this->mode = mode;
     operatorTargetType = kTypeIdNull;
@@ -844,6 +854,8 @@ namespace kagami {
     if (health) FinalProcessing(result);
 
     kit.CleanupDeque(item).CleanupDeque(symbol);
+    lambdamap.clear();
+
 
     return result;
   }
