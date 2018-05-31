@@ -24,7 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kagami.h"
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 //#define _NO_CUI_
 #ifndef _NO_CUI_
 #include <iostream>
@@ -46,7 +46,7 @@ namespace kagami {
       }
       else {
         for (log_t unit : GetLogger()) {
-          ofs << "[" << unit.first << "]";
+          ofs << unit.first;
           if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
           else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
           if (unit.second.GetDetail() != kStrEmpty) {
@@ -60,15 +60,14 @@ namespace kagami {
 
   Message ScriptCore::ExecScriptFile(string target) {
     Message result;
-    ScriptProvider sp(target.c_str());
-    ChainStorage cs(sp);
+    ScriptProvider provider(target.c_str());
 
     if (target == kStrEmpty) {
       trace::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
       return result;
     }
     Activiate();
-    cs.Run();
+    provider.Run();
     entry::ResetPlugin();
     return result;
   }
@@ -79,7 +78,7 @@ namespace kagami {
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Processor loader;
-    //auto Build = [&](string target) {return BuildStringVector(target); };
+
     std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
@@ -103,7 +102,6 @@ namespace kagami {
 }
 
 int main(int argc, char **argv) {
-
   kagami::ScriptCore scriptCore;
 #ifdef _ENABLE_DEBUGGING_
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");

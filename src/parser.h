@@ -46,7 +46,6 @@ namespace kagami {
   using std::stod;
 
   class EntryProvider;
-  class Processor;
 
   /*ObjectManager Class
   MemoryManger will be filled with Object and manage life cycle of variables
@@ -114,30 +113,6 @@ namespace kagami {
     }
   };
 
-  /*ScriptProvider class
-  Script provider caches original string data from script file.
-  */
-  class ScriptProvider {
-  private:
-    std::ifstream stream;
-    size_t current;
-    vector<string> base;
-    bool health;
-    bool end;
-    ScriptProvider() {}
-  public:
-    ~ScriptProvider() {
-      stream.close();
-      Kit().CleanupVector(base);
-    }
-
-    bool GetHealth() const { return health; }
-    bool eof() const { return end; }
-    void ResetCounter() { current = 0; }
-    ScriptProvider(const char *target);
-    Message Get();
-  };
-
   /*Processor Class
   The most important part of script processor.Original string will be tokenized and
   parsed here.Processed data will be delivered to entry provider.
@@ -148,9 +123,9 @@ namespace kagami {
     map<string, Object> lambdamap;
     deque<string> item, symbol;
     bool comma_exp_func,
-      string_token_proc, 
+      string_token_proc,
       insert_btn_symbols,
-      disable_set_entry, 
+      disable_set_entry,
       dot_operator,
       subscript_processing;
     string currentToken;
@@ -191,32 +166,44 @@ namespace kagami {
     Processor &Build(string target);
   };
 
-  /*ChainStorage Class
-  A set of packaged chainloader.Loop and condition judging is processed here.
+  /*ScriptProvider class
+  Script provider caches original string data from script file.
   */
-  class ChainStorage {
+  class ScriptProvider {
   private:
+    std::ifstream stream;
+    size_t current;
+    //vector<string> base;
     vector<Processor> storage;
-    vector<string> parameter;
-    void AddLoader(string raw) {
-      storage.push_back(Processor().Reset().Build(raw));
+    vector<string> parameters;
+    bool health;
+    bool end;
+    ScriptProvider() {}
+    void AddLoader(string raw) { 
+      storage.push_back(Processor().Reset().Build(raw)); 
+    }
+    bool IsBlankStr(string target) {
+      if (target == kStrEmpty || target.size() == 0) return true;
+      for (const auto unit : target) {
+        if (unit != ' ' || unit != '\n' || unit != '\t' || unit != '\r') {
+          return false;
+        }
+      }
+      return true;
     }
   public:
-    ChainStorage(ScriptProvider &provider) {
-      Message temp;
-      while (provider.eof() != true) {
-        temp = provider.Get();
-        if (temp.GetCode() == kCodeSuccess) AddLoader(temp.GetDetail());
-      }
+    ~ScriptProvider() {
+      stream.close();
+      Kit().CleanupVector(storage).CleanupVector(parameters);
     }
 
-    void AddParameterName(vector<string> names) {
-      this->parameter = names;
-    }
-
+    bool GetHealth() const { return health; }
+    bool eof() const { return end; }
+    void ResetCounter() { current = 0; }
+    ScriptProvider(const char *target);
     Message Run(deque<string> res = deque<string>());
   };
-  
+
   /*EntryProvider Class
   contains function pointer.Processed argument tokens are used for building
   new argument map.entry provider have two mode:internal function and plugin
