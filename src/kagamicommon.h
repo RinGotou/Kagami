@@ -305,6 +305,8 @@ namespace kagami {
       if (opercode == "<=") result = (A <= B);
       if (opercode == ">=") result = (A >= B);
       if (opercode == "!=") result = (A != B);
+      if (opercode == ">") result = (A > B);
+      if (opercode == "<")result = (A < B);
       return result;
     }
 
@@ -312,7 +314,7 @@ namespace kagami {
       return target.substr(1, target.size() - 2);
     }
 
-    int GetDataType(string target);
+    size_t GetDataType(string target);
     Attribute GetAttrTag(string target);
     string BuildAttrStr(Attribute target);
     bool FindInStringVector(string target, string source);

@@ -302,10 +302,11 @@ namespace kagami {
           case EnumDouble:temp = to_string(kit.Calc(stod(dataA), stod(dataB), dataOP)); break;
           }
         }
-        else if (dataOP == "==" || dataOP == ">=" || dataOP == "<=" || dataOP == "!=") {
+        else if (dataOP == "==" || dataOP == ">=" || dataOP == "<=" || dataOP == "!="
+          || dataOP == "<" || dataOP == ">") {
           switch (enumtype) {
-          case EnumInt:tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
-          case EnumDouble:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
+          case EnumInt:tempresult = kit.Logic(stoi(dataB), stoi(dataA), dataOP); break;
+          case EnumDouble:tempresult = kit.Logic(stod(dataB), stod(dataA), dataOP); break;
           }
           switch (tempresult) {
           case true:temp = kStrTrue; break;
@@ -334,6 +335,7 @@ namespace kagami {
           }
           else if (dataOP == ">=" || dataOP == "<=") {
             //TODO:add in Kit::Logic()
+
           }
         }
       }
