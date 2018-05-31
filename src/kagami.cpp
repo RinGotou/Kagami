@@ -24,7 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kagami.h"
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 //#define _NO_CUI_
 #ifndef _NO_CUI_
 #include <iostream>
@@ -60,15 +60,14 @@ namespace kagami {
 
   Message ScriptCore::ExecScriptFile(string target) {
     Message result;
-    ScriptProvider sp(target.c_str());
-    ChainStorage cs(sp);
+    ScriptProvider provider(target.c_str());
 
     if (target == kStrEmpty) {
       trace::log(result.combo(kStrFatalError, kCodeIllegalArgs, "Empty path string."));
       return result;
     }
     Activiate();
-    cs.Run();
+    provider.Run();
     entry::ResetPlugin();
     return result;
   }
