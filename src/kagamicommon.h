@@ -69,8 +69,15 @@ namespace kagami {
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
   const string kCopyright = "Copyright(c) 2017-2018";
+
   const string kStrVar = "var";
   const string kStrSet = "__set";
+  const string kStrWhile = "while";
+  const string kStrEnd = "end";
+  const string kStrIf = "if";
+  const string kStrElse = "else";
+  const string kStrElif = "elif";
+  const string kStrFor = "for";
   const string kStrNull = "null";
 
   const string kStrEmpty = "";
