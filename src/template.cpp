@@ -24,6 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "template.h"
+#include <iostream>
 
 namespace kagami {
   //FileStream
@@ -85,19 +86,27 @@ namespace kagami {
   }
   
   Message GetElement(ObjectMap &p) {
+    Kit kit;
     Message result;
     Object object = p.at(kStrObject), subscript_1 = p.at("subscript_1");
     Object temp;
-    string type_id = object.GetTypeId();
+    string type_id = object.GetTypeId(), data = kStrEmpty;
     int size = 0;
     int count0 = 0;
 
+    auto MakeStrToken = [](char target)->string {
+      return string().append("\"").append(1, target).append("\"");
+    };
+
     if (type_id == kTypeIdRawString) {
+      data = *static_pointer_cast<string>(object.get());
+      if (kit.GetDataType(data) == kTypeString) {
+        data = kit.GetRawString(data);
+      }
       count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
-      size = static_pointer_cast<string>(object.get())->size();
+      size = data.size();
       if (count0 <= size - 1) {
-        result.combo(kStrRedirect, kCodeSuccess, string().append(1,
-          static_pointer_cast<string>(object.get())->at(count0)));
+        result.combo(kStrRedirect, kCodeSuccess, MakeStrToken(data.at(count0)));
       }
     }
     else if (type_id == kTypeIdArrayBase) {
@@ -123,6 +132,7 @@ namespace kagami {
     }
     else if (type_id == kTypeIdRawString) {
       auto str = *static_pointer_cast<string>(object.get());
+      if (Kit().GetDataType(str) == kTypeString) str = Kit().GetRawString(str);
       result.SetDetail(to_string(str.size()));
     }
 
@@ -142,10 +152,38 @@ namespace kagami {
     return result;
   }
 
+  Message Print_RawString(ObjectMap &p) {
+    Message result;
+    Object object = p.at("object");
+    string data = kStrEmpty;
+    if (object.GetTypeId() == kTypeIdRawString) {
+      data = *static_pointer_cast<string>(object.get());
+      if (Kit().GetDataType(data) == kTypeString) data = Kit().GetRawString(data);
+      std::cout << data << std::endl;
+    }
+    return result;
+  }
+
+  Message Print_Array(ObjectMap &p) {
+    Message result;
+    Object object = p.at("object");
+    ObjectMap map;
+    if (object.GetTypeId() == kTypeIdArrayBase) {
+      auto &base = *static_pointer_cast<deque<Object>>(object.get());
+      auto provider = entry::Order("print", kTypeIdNull, -1);
+      for (auto &unit : base) {
+        map.insert(pair<string, Object>("object", unit));
+        result = provider.Start(map);
+        map.clear();
+      }
+    }
+    return result;
+  }
+
   void InitTemplates() {
     using type::AddTemplate;
-    AddTemplate(kTypeIdRawString, ObjTemplate(SimpleSharedPtrCopy<string>, "size|substr|at"));
-    AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at"));
+    AddTemplate(kTypeIdRawString, ObjTemplate(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
+    AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at|__print"));
     AddTemplate(kTypeIdNull, ObjTemplate(NullCopy, ""));
   }
 
@@ -158,6 +196,8 @@ namespace kagami {
     Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdRawString)));
     Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdArrayBase)));
     Inject(EntryProvider(temp.set("at", GetElement_2Dimension, kFlagMethod, kCodeNormalArgs, "subscript_1|subscript_2", kTypeIdCubeBase)));
+    Inject(EntryProvider(temp.set("__print", Print_RawString, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
+    Inject(EntryProvider(temp.set("__print", Print_Array, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
     Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
     Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
   }
