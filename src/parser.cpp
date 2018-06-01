@@ -707,7 +707,12 @@ namespace kagami {
   }
 
   void Processor::LeftSquareBracket() {
-    operatorTargetType = entry::FindObject(item.back())->GetTypeId();
+    if (item.back().substr(0, 2) == "__") {
+      operatorTargetType = lambdamap.find(item.back())->second.GetTypeId();
+    }
+    else {
+      operatorTargetType = entry::FindObject(item.back())->GetTypeId();
+    }
     item.push_back(currentToken);
     symbol.push_back(currentToken);
     subscript_processing = true;

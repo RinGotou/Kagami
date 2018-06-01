@@ -164,10 +164,26 @@ namespace kagami {
     return result;
   }
 
+  Message Print_Array(ObjectMap &p) {
+    Message result;
+    Object object = p.at("object");
+    ObjectMap map;
+    if (object.GetTypeId() == kTypeIdArrayBase) {
+      auto &base = *static_pointer_cast<deque<Object>>(object.get());
+      auto provider = entry::Order("print", kTypeIdNull, -1);
+      for (auto &unit : base) {
+        map.insert(pair<string, Object>("object", unit));
+        result = provider.Start(map);
+        map.clear();
+      }
+    }
+    return result;
+  }
+
   void InitTemplates() {
     using type::AddTemplate;
     AddTemplate(kTypeIdRawString, ObjTemplate(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
-    AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at"));
+    AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at|__print"));
     AddTemplate(kTypeIdNull, ObjTemplate(NullCopy, ""));
   }
 
@@ -181,6 +197,7 @@ namespace kagami {
     Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdArrayBase)));
     Inject(EntryProvider(temp.set("at", GetElement_2Dimension, kFlagMethod, kCodeNormalArgs, "subscript_1|subscript_2", kTypeIdCubeBase)));
     Inject(EntryProvider(temp.set("__print", Print_RawString, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
+    Inject(EntryProvider(temp.set("__print", Print_Array, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
     Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
     Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
   }

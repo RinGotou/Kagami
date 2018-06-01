@@ -451,7 +451,6 @@ namespace kagami {
     return result;
   }
 
-  //TODO:rewrite this!
   Message Print(ObjectMap &p) {
     Kit kit;
     Message result;
