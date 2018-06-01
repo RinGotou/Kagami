@@ -148,6 +148,7 @@ namespace kagami {
     stack<bool> conditionStack;
     stack<size_t> modeStack;
     size_t currentMode = kModeNormal;
+    size_t nestHeadCount = 0;
     int code = kCodeSuccess;
     string value = kStrEmpty;
     bool health = true;
@@ -196,6 +197,7 @@ namespace kagami {
         }
         break;
       case kCodeConditionBranch:
+        if (nestHeadCount > 0) break;
         if (!conditionStack.empty()) {
           if (conditionStack.top() == false && currentMode == kModeNextCondition
             && value == kStrTrue) {
@@ -209,6 +211,7 @@ namespace kagami {
         }
         break;
       case kCodeConditionLeaf:
+        if (nestHeadCount > 0) break;
         if (!conditionStack.empty()) {
           switch (conditionStack.top()) {
           case true:
@@ -253,7 +256,14 @@ namespace kagami {
           health = false;
         }
         break;
+      case kCodeFillingSign:
+        nestHeadCount++;
+        break;
       case kCodeTailSign:
+        if (nestHeadCount > 0) {
+          nestHeadCount--;
+          break;
+        }
         if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
           conditionStack.pop();
           currentMode = modeStack.top();
@@ -426,11 +436,22 @@ namespace kagami {
 
   int Processor::GetPriority(string target) const {
     int priority;
-    if (target == "=" || target == "var") priority = 0;
-    else if (target == "==" || target == ">=" || target == "<=") priority = 1;
-    else if (target == "+" || target == "-") priority = 2;
-    else if (target == "*" || target == "/" || target == "\\") priority = 3;
-    else priority = 4;
+    if (target == "=" || target == "var") {
+      priority = 0;
+    }
+    else if (target == "==" || target == ">=" || target == "<="
+      || target == "!=" || target == "<" || target == ">") {
+      priority = 1;
+    }
+    else if (target == "+" || target == "-") {
+      priority = 2;
+    }
+    else if (target == "*" || target == "/" || target == "\\") {
+      priority = 3;
+    }
+    else {
+      priority = 4;
+    }
     return priority;
   }
 
@@ -481,7 +502,7 @@ namespace kagami {
     Object temp, *origin;
     size_t size = 0, count = 0;
     int provider_size = -1, arg_mode = 0, priority = 0, token_type = kTypeNull;
-    bool reversed = true, disable_query = false, method = false, health = true;
+    bool disable_query = false, method = false, health = true;
     string id = GetHead(symbol.back()), provider_type = kTypeIdNull;
     vector<string> tags = spilt(symbol.back());
     vector<string> args;
@@ -517,16 +538,11 @@ namespace kagami {
       args = provider.GetArguments();
     }
 
-    if (priority == kFlagOperatorEntry) { 
-      reversed = false; 
-    }
+
     if (!disable_set_entry) {
       count = size;
       while (count > 0 && !item.empty() && item.back() != "(") {
-        switch (reversed) {
-        case true:tokens.push_front(item.back()); break;
-        case false:tokens.push_back(item.back()); break;
-        }
+        tokens.push_front(item.back());
         item.pop_back();
         count--;
       }
@@ -595,12 +611,17 @@ namespace kagami {
     if (health) {
       switch (mode) {
       case kModeCycleJump:
-        if (id == "end") msg = provider.Start(map);
-        else if (id == "if") msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
+        if (id == kStrEnd) msg = provider.Start(map);
+        else if (symbol.front() == kStrIf || symbol.front() == kStrWhile) {
+          msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+        }
         break;
       case kModeNextCondition:
-        if (id == "if" || id == "else" || id == "end") msg = provider.Start(map);
-        else if (symbol.front() == "elif") msg = provider.Start(map);
+        if (symbol.front() == kStrIf || symbol.front() == kStrWhile) {
+          msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+        }
+        else if (id == kStrElse || id == kStrEnd) msg = provider.Start(map);
+        else if (symbol.front() == kStrElif) msg = provider.Start(map);
         else msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
         break;
       case kModeNormal:
@@ -617,7 +638,7 @@ namespace kagami {
         lambdamap.insert(pair<string, Object>(tempId, temp));
         ++lambdaObjectCount;
       }
-      else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
+      else if (msg.GetValue() == kStrRedirect && (msg.GetCode() == kCodeSuccess || msg.GetCode() == kCodeFillingSign)) {
         item.push_back(msg.GetDetail());
       }
 
@@ -686,8 +707,14 @@ namespace kagami {
   }
 
   void Processor::LeftSquareBracket() {
-    operatorTargetType = entry::FindObject(item.back())->GetTypeId();
+    if (item.back().substr(0, 2) == "__") {
+      operatorTargetType = lambdamap.find(item.back())->second.GetTypeId();
+    }
+    else {
+      operatorTargetType = entry::FindObject(item.back())->GetTypeId();
+    }
     item.push_back(currentToken);
+    symbol.push_back(currentToken);
     subscript_processing = true;
   }
 
@@ -700,6 +727,11 @@ namespace kagami {
     }
     else {
       subscript_processing = false;
+      while (symbol.back() != "[" && !symbol.empty()) {
+        result = Assemble(msg);
+        if (!result) break;
+      }
+      if (symbol.back() == "[") symbol.pop_back();
       while (item.back() != "[" && !item.empty()) {
         container.push_back(item.back());
         item.pop_back();
@@ -737,10 +769,10 @@ namespace kagami {
     if (symbol.empty()) {
       symbol.push_back(currentToken);
     }
-    else if (GetPriority(currentToken) < GetPriority(symbol.back()) && symbol.back() != "(") {
+    else if (GetPriority(currentToken) < GetPriority(symbol.back()) && symbol.back() != "(" && symbol.back() != "[") {
       j = symbol.size() - 1;
       k = item.size();
-      while (symbol.at(j) != "(" && GetPriority(currentToken) < GetPriority(symbol.at(j))) {
+      while (symbol.at(j) != "(" && symbol.back() != "[" && GetPriority(currentToken) < GetPriority(symbol.at(j))) {
         if (k = item.size()) { k -= entry::GetRequiredCount(symbol.at(j)); }
         else { k -= entry::GetRequiredCount(symbol.at(j)) - 1; }
         --j;
