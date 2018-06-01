@@ -287,8 +287,8 @@ namespace kagami {
     if (op.get() != nullptr) dataOP = *static_pointer_cast<string>(op.get());
 
     if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
-      dataA = *static_pointer_cast<string>(first.get()),
-        dataB = *static_pointer_cast<string>(second.get());
+      dataA = *static_pointer_cast<string>(first.get());
+      dataB = *static_pointer_cast<string>(second.get());
       datatypeA = kit.GetDataType(dataA);
       datatypeB = kit.GetDataType(dataB);
       if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = EnumDouble;
@@ -305,8 +305,8 @@ namespace kagami {
         else if (dataOP == "==" || dataOP == ">=" || dataOP == "<=" || dataOP == "!="
           || dataOP == "<" || dataOP == ">") {
           switch (enumtype) {
-          case EnumInt:tempresult = kit.Logic(stoi(dataB), stoi(dataA), dataOP); break;
-          case EnumDouble:tempresult = kit.Logic(stod(dataB), stod(dataA), dataOP); break;
+          case EnumInt:tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
+          case EnumDouble:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
           }
           switch (tempresult) {
           case true:temp = kStrTrue; break;
@@ -316,20 +316,23 @@ namespace kagami {
       }
       else if (enumtype == EnumStr) {
         if (dataOP == "+") {
-          if (dataB.back() == '"') {
-            temp = dataB.substr(0, dataB.size() - 1);
-            dataB = temp;
-            temp = kStrEmpty;
-          }
-          if (dataA.front() == '"') {
-            temp = dataA.substr(1, dataA.size() - 1);
+          if (dataA.back() == '"') {
+            temp = dataA.substr(0, dataA.size() - 1);
             dataA = temp;
             temp = kStrEmpty;
           }
-          temp = dataB + dataA;
+          if (dataB.front() == '"') {
+            temp = dataB.substr(1, dataB.size() - 1);
+            dataB = temp;
+            temp = kStrEmpty;
+          }
+          if (dataB.back() != '"') {
+            dataB.append(1, '"');
+          }
+          temp = dataA + dataB;
         }
         else if (dataOP == "!=" || dataOP == "==") {
-          tempresult = kit.Logic(dataB, dataA, dataOP);
+          tempresult = kit.Logic(dataA, dataB, dataOP);
           switch (tempresult) {
           case true:temp = kStrTrue; break;
           case false:temp = kStrFalse; break;
@@ -449,15 +452,20 @@ namespace kagami {
   }
 
   //TODO:rewrite this!
-  Message PrintOnScreen(ObjectMap &p) {
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    Object source = p.at("msg");
-    if (source.GetTypeId() == kTypeIdRawString) {
-      string msg = CastToString(p.at("msg").get());
-      if (Kit().GetDataType(msg) == kTypeString) {
-        msg = msg.substr(1, msg.size() - 2);
+  Message Print(ObjectMap &p) {
+    Kit kit;
+    Message result;
+    Object object = p.at("object");
+    Attribute attribute = object.getTag();
+
+    if (kit.FindInStringVector("__print", attribute.methods)) {
+      auto provider = entry::Order("__print", object.GetTypeId(), -1);
+      if (provider.Good()) {
+        result = provider.Start(p);
       }
-      std::cout << msg << std::endl;
+      else {
+        std::cout << "You can't print this object." << std::endl;
+      }
     }
     else {
       std::cout << "You can't print this object." << std::endl;
@@ -484,7 +492,7 @@ namespace kagami {
     Inject(EntryProvider(temp.set(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
     Inject(EntryProvider(temp.set(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
     Inject(EntryProvider(temp.set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
-    Inject(EntryProvider(temp.set("print", PrintOnScreen, kFlagNormalEntry, kCodeNormalArgs, "msg")));
+    Inject(EntryProvider(temp.set("print", Print, kFlagNormalEntry, kCodeNormalArgs, "object")));
     Inject(EntryProvider(temp.set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
   }
