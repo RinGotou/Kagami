@@ -91,6 +91,7 @@ namespace kagami {
   const string kStrFalse = "false";
   const string kStrOperator = "__operator";
   const string kStrObject = "__object";
+  const string kMethodPrint = "__print";
 
   const int kCodeAutoFill = 14;
   const int kCodeNormalArgs = 13;

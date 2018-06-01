@@ -316,6 +316,7 @@ namespace kagami {
     ObjectManager &CreateManager();
     bool DisposeManager();
     size_t ResetPlugin();
+    EntryProvider Order(string id, string type, int size);
   }
 }
 
