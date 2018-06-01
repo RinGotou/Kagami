@@ -148,6 +148,7 @@ namespace kagami {
     stack<bool> conditionStack;
     stack<size_t> modeStack;
     size_t currentMode = kModeNormal;
+    size_t nestHeadCount = 0;
     int code = kCodeSuccess;
     string value = kStrEmpty;
     bool health = true;
@@ -196,6 +197,7 @@ namespace kagami {
         }
         break;
       case kCodeConditionBranch:
+        if (nestHeadCount > 0) break;
         if (!conditionStack.empty()) {
           if (conditionStack.top() == false && currentMode == kModeNextCondition
             && value == kStrTrue) {
@@ -209,6 +211,7 @@ namespace kagami {
         }
         break;
       case kCodeConditionLeaf:
+        if (nestHeadCount > 0) break;
         if (!conditionStack.empty()) {
           switch (conditionStack.top()) {
           case true:
@@ -253,7 +256,14 @@ namespace kagami {
           health = false;
         }
         break;
+      case kCodeFillingSign:
+        nestHeadCount++;
+        break;
       case kCodeTailSign:
+        if (nestHeadCount > 0) {
+          nestHeadCount--;
+          break;
+        }
         if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
           conditionStack.pop();
           currentMode = modeStack.top();
@@ -595,12 +605,17 @@ namespace kagami {
     if (health) {
       switch (mode) {
       case kModeCycleJump:
-        if (id == "end") msg = provider.Start(map);
-        else if (id == "if") msg.combo(kStrEmpty, kCodeFillingSign, kStrEmpty);
+        if (id == kStrEnd) msg = provider.Start(map);
+        else if (symbol.front() == kStrIf || symbol.front() == kStrWhile) {
+          msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+        }
         break;
       case kModeNextCondition:
-        if (id == "if" || id == "else" || id == "end") msg = provider.Start(map);
-        else if (symbol.front() == "elif") msg = provider.Start(map);
+        if (symbol.front() == kStrIf || symbol.front() == kStrWhile) {
+          msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+        }
+        else if (id == kStrElse || id == kStrEnd) msg = provider.Start(map);
+        else if (symbol.front() == kStrElif) msg = provider.Start(map);
         else msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
         break;
       case kModeNormal:
@@ -617,7 +632,7 @@ namespace kagami {
         lambdamap.insert(pair<string, Object>(tempId, temp));
         ++lambdaObjectCount;
       }
-      else if (msg.GetValue() == kStrRedirect && msg.GetCode() == kCodeSuccess) {
+      else if (msg.GetValue() == kStrRedirect && (msg.GetCode() == kCodeSuccess || msg.GetCode() == kCodeFillingSign)) {
         item.push_back(msg.GetDetail());
       }
 
