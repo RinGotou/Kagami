@@ -155,4 +155,26 @@ namespace kagami {
     }
     return result;
   }
+
+  wchar_t Kit::convertWideChar(wchar_t target) {
+    wchar_t result;
+    switch (target) {
+    case L't':result = L'\t'; break;
+    case L'n':result = L'\n'; break;
+    case L'r':result = L'\r'; break;
+    default:result = target; break;
+    }
+    return result;
+  }
+
+  bool Kit::isWideString(string target) {
+    bool result = false;
+    for (auto &unit : target) {
+      if (unit < 0 || unit>127) {
+        result = true;
+        break;
+      }
+    }
+    return result;
+  }
 }

@@ -23,7 +23,7 @@
 //  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+//#include <iostream>
 #include <ctime>
 #include "parser.h"
 
@@ -132,6 +132,9 @@ namespace kagami {
         std::getline(stream, temp);
         if (!IsBlankStr(temp) && temp.front() != '#') {
           storage.push_back(Processor().Reset().Build(temp));
+          if (!storage.back().isHealth()) {
+            //this->errorString = storage.back().getErrorString();
+          }
         }
       }
       if (!storage.empty()) health = true;
@@ -178,7 +181,13 @@ namespace kagami {
       value = result.GetValue();
       code = result.GetCode();
 
-      if (value == kStrFatalError) break;
+      if (value == kStrFatalError) {
+        trace::log(result);
+        break;
+      }
+      if (value == kStrWarning) {
+        trace::log(result);
+      }
       //TODO:return
 
       switch (code) {
@@ -293,22 +302,22 @@ namespace kagami {
   }
 
   Processor &Processor::Build(string target) {
-    //using trace::log;
     Kit kit;
     string current, data, forward;
     bool exemptBlankChar = true;
     bool stringProcessing = false;
     bool convertSymbol = false;
-    bool health = true;
     char currentChar = ' ', forwardChar = ' ';
     vector<string> origin, output;
-    size_t count = 0, head = 0, tail = 0, type = 0;
+    size_t count = 0, head = 0, tail = 0, type = 0, nest = 0;
 
     auto ToString = [](char t) ->string {return string().append(1, t); };
 
+    health = true;
+
     if (target.front() == '#') return *this;
 
-    //first cycle
+    //PreProcessing
     for (count = 0; count < target.size(); ++count) {
       currentChar = target[count];
       if (kit.GetDataType(ToString(currentChar)) != kTypeBlank
@@ -326,8 +335,10 @@ namespace kagami {
 
     if (tail > head) data = target.substr(head, tail - head);
     else data = target.substr(head, target.size() - head);
+
+    while (kit.GetDataType(ToString(data.back())) == kTypeBlank) data.pop_back();
     
-    //second cycle
+    //Spilt
     forwardChar = 0;
     for (count = 0; count < data.size(); ++count) {
       currentChar = data[count];
@@ -357,7 +368,6 @@ namespace kagami {
       }
       forwardChar = data[count];
     }
-    //if (!current.empty()) origin.push_back(current);
 
     type = kit.GetDataType(current);
     if (type != kTypeNull && type != kTypeBlank) origin.push_back(current);
@@ -365,8 +375,32 @@ namespace kagami {
 
     //third cycle
     stringProcessing = false;
+    type = kTypeNull;
     for (count = 0; count < origin.size(); ++count) {
       current = origin.at(count);
+      if (!stringProcessing) {
+        //Analyzing
+        if (current == "(" || current == "[") nest++;
+        if (current == ")" || current == "]") nest--;
+        if (current == "[") {
+          if (kit.GetDataType(forward) != kGenericToken && forward != "]" && forward != ")") {
+            errorString = "Illegal subscript operation.";
+            nest = 0;
+            health = false;
+            break;
+          }
+        }
+        if (current == ",") {
+          if (kit.GetDataType(forward) == kTypeSymbol &&
+            forward != "]" && forward != ")" &&
+            forward != "++" && forward != "--" &&
+            forward != "'") {
+            errorString = "Illegal comma location.";
+            health = false;
+            break;
+          }
+        }
+      }
       if (current == "'" && forward != "\\") {
         if (stringProcessing) {
           output.back().append(current);
@@ -382,8 +416,21 @@ namespace kagami {
           output.back().append(current);
         }
         else {
-          if ((current == "+" || current == "-") && output.back() == current) {
-            output.back().append(current);
+          if ((current == "+" || current == "-") && !output.empty()) {
+            if (output.back() == current) {
+              output.back().append(current);
+            }
+            else {
+              output.push_back(current);
+            }
+          }
+          else if (current == "=") {
+            if (output.back() == "<" || output.back() == ">" || output.back() == "=" || output.back() == "!") {
+              output.back().append(current);
+            }
+            else {
+              output.push_back(current);
+            }
           }
           else {
             output.push_back(current);
@@ -392,6 +439,14 @@ namespace kagami {
       }
 
       forward = origin.at(count);
+    }
+
+    if (stringProcessing == true) {
+      errorString = "Quotation mark is missing.";
+      health = false;
+    }
+    if (nest > 0) {
+      errorString = "Bracket/Square Bracket is missing";
     }
 
     raw = output;
@@ -479,6 +534,8 @@ namespace kagami {
         return target.substr(1, target.size() - 1);
       else return target;
     };
+
+    if (id == kStrNop) return true;
 
     if (!tags.empty()) {
       provider_type = tags.front();
@@ -613,22 +670,16 @@ namespace kagami {
     return health;
   }
 
-  void Processor::DoubleQuotationMark() {
-    switch (string_token_proc) {
-    case true:item.back().append(currentToken); break;
-    case false:item.push_back(currentToken); break;
-    }
-    string_token_proc = !string_token_proc;
-  }
-
   void Processor::EqualMark() {
     switch (symbol.empty()) {
     case true:
       symbol.push_back(currentToken); 
       break;
     case false:
-      if (symbol.back() != kStrVar) symbol.push_back(currentToken);
-      //else item.push_back(currentToken);
+      switch (define_line) {
+      case true:define_line = false; break;
+      case false:symbol.push_back(currentToken); break;
+      }
       break;
     }
   }
@@ -758,24 +809,55 @@ namespace kagami {
     Kit kit;
     string id = kStrEmpty;
     bool result = true;
+    bool function = false;
+
+    if (currentToken == kStrVar) define_line = true;
+    if (currentToken == kStrDef) function_line = true;
 
     if (dot_operator) {
       id = entry::GetTypeId(item.back());
       if (kit.FindInStringVector(currentToken, type::GetTemplate(id)->GetMethods())) {
-        symbol.push_back(currentToken + ':' + id);
+        auto provider = entry::Order(currentToken, id);
+        if (provider.Good()) {
+          symbol.push_back(currentToken + ':' + id);
+          function = true;
+        }
+        else {
+          //TODO:???
+        }
+        
         dot_operator = false;
       }
       else {
-        msg.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + id + ".(02)");
+        msg.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + id + ".");
         result = false;
       }
     }
     else {
-      switch (entry::Order(currentToken).Good()) {
-      case true:symbol.push_back(currentToken); break;
-      case false:item.push_back(currentToken); break;
+      switch (function_line) {
+      case true:
+        item.push_back(currentToken);
+        break;
+      case false:
+        switch (entry::Order(currentToken).Good()) {
+        case true:symbol.push_back(currentToken); function = true; break;
+        case false:item.push_back(currentToken); break;
+        }
+        break;
       }
     }
+
+    if (!define_line && function && nextToken != "(") {
+      errorString = "Bracket after function is missing";
+      this->health = false;
+      result = false;
+    }
+    if (function_line && forwardToken == kStrDef && nextToken != "(") {
+      errorString = "Illegal declare of function.";
+      this->health = false;
+      result = false;
+    }
+
     return result;
   }
 
@@ -786,10 +868,7 @@ namespace kagami {
       insert_btn_symbols = false;
       break;
     case false:
-      switch (string_token_proc) {
-      case true:item.back().append(currentToken); break;
-      case false:item.push_back(currentToken); break;
-      }
+      item.push_back(currentToken);
       break;
     }
   }
@@ -811,44 +890,58 @@ namespace kagami {
     int unit_type = kTypeNull;
     Kit kit;
     Message result;
-    bool health = true;
+    bool state = true;
+
+    if (this->health == false) {
+      result.combo(kStrFatalError, kCodeBadExpression, errorString);
+      return result;
+    }
 
     lambdaObjectCount = 0;
     nextInsertSubscript = 0;
     this->mode = mode;
     operatorTargetType = kTypeIdNull;
     comma_exp_func = false,
-    string_token_proc = false,
     insert_btn_symbols = false,
     disable_set_entry = false,
     dot_operator = false,
     subscript_processing = false;
+    function_line = false;
+    define_line = false;
 
     for (i = 0; i < size; ++i) {
-      if(!health) break;
+      if (!this->health) {
+        result.combo(kStrFatalError, kCodeBadExpression, errorString);
+        break;
+      }
+      if(!state) break;
       currentToken = raw.at(i);
+      if (i < size - 1) nextToken = raw.at(i + 1);
+      else nextToken = kStrNull;
       unit_type = kit.GetDataType(raw.at(i));
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
       if (unit_type == kTypeSymbol) {
-        if (raw[i] == "\"") DoubleQuotationMark();
-        else if (raw[i] == "=") EqualMark();
+        if (raw[i] == "=") EqualMark();
         else if (raw[i] == ",") Comma();
         else if (raw[i] == "[") LeftSquareBracket();
         else if (raw[i] == ".") Dot();
-        else if (raw[i] == "(") health = LeftBracket(result);
-        else if (raw[i] == "]") health = RightSquareBracket(result);
-        else if (raw[i] == ")") health = RightBracket(result);
+        else if (raw[i] == "(") state = LeftBracket(result);
+        else if (raw[i] == "]") state = RightSquareBracket(result);
+        else if (raw[i] == ")") state = RightBracket(result);
+        else if (raw[i] == "++"); //
+        else if (raw[i] == "--"); //
         else OtherSymbols();
       }
-      else if (unit_type == kGenericToken && !string_token_proc) health = FunctionAndObject(result);
+      else if (unit_type == kGenericToken) state = FunctionAndObject(result);
       else if (unit_type == kTypeNull) {
         result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal token.");
-        health = false;
+        state = false;
       }
       else OtherTokens();
+      forwardToken = currentToken;
     }
 
-    if (health) FinalProcessing(result);
+    if (state == true) FinalProcessing(result);
 
     kit.CleanupDeque(item).CleanupDeque(symbol);
     lambdamap.clear();
