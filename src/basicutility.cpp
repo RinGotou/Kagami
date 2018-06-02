@@ -260,7 +260,7 @@ namespace kagami {
 
     if (data.GetTypeId() == kTypeIdRawString) {
       auto ptr = static_pointer_cast<string>(data.get());
-      if (kit.GetDataType(*ptr) == kTypeString) {
+      if (kit.isString(*ptr)) {
         ofs << ptr->substr(1, ptr->size() - 2) << "\n";
       }
       else {
@@ -293,7 +293,7 @@ namespace kagami {
       datatypeB = kit.GetDataType(dataB);
       if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = EnumDouble;
       if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = EnumInt;
-      if (datatypeA == kTypeString || datatypeB == kTypeString) enumtype = EnumStr;
+      if (kit.isString(dataA) || kit.isString(dataB)) enumtype = EnumStr;
 
       if (enumtype == EnumInt || enumtype == EnumDouble) {
         if (dataOP == "+" || dataOP == "-" || dataOP == "*" || dataOP == "/") {
@@ -316,18 +316,18 @@ namespace kagami {
       }
       else if (enumtype == EnumStr) {
         if (dataOP == "+") {
-          if (dataA.back() == '"') {
+          if (dataA.back() == '\'') {
             temp = dataA.substr(0, dataA.size() - 1);
             dataA = temp;
             temp = kStrEmpty;
           }
-          if (dataB.front() == '"') {
+          if (dataB.front() == '\'') {
             temp = dataB.substr(1, dataB.size() - 1);
             dataB = temp;
             temp = kStrEmpty;
           }
-          if (dataB.back() != '"') {
-            dataB.append(1, '"');
+          if (dataB.back() != '\'') {
+            dataB.append(1, '\'');
           }
           temp = dataA + dataB;
         }

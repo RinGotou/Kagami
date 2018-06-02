@@ -130,7 +130,7 @@ namespace kagami {
     if (stream.good()) {
       while (!stream.eof()) {
         std::getline(stream, temp);
-        if (!IsBlankStr(temp)) {
+        if (!IsBlankStr(temp) && temp.front() != '#') {
           storage.push_back(Processor().Reset().Build(temp));
         }
       }
@@ -293,143 +293,108 @@ namespace kagami {
   }
 
   Processor &Processor::Build(string target) {
-    using trace::log;
+    //using trace::log;
     Kit kit;
-    vector<string> output;
-    char bin_oper = NULL;
-    size_t size = target.size();
-    size_t i;
-    string current = kStrEmpty;
-    bool exempt_blank_char = false, string_processing = false;
-    vector<string> list = { "var", "def", "return" };
-    auto ToString = [](char c) -> string {
-      return string().append(1, c);
-    };
+    string current, data, forward;
+    bool exemptBlankChar = true;
+    bool stringProcessing = false;
+    bool convertSymbol = false;
+    bool health = true;
+    char currentChar = ' ', forwardChar = ' ';
+    vector<string> origin, output;
+    size_t count = 0, head = 0, tail = 0, type = 0;
 
-    for (i = 0; i < size; i++) {
-      if (!exempt_blank_char) {
-        if (kit.GetDataType(ToString(target[i])) == kTypeBlank) {
-          continue;
-        }
-        else if (kit.GetDataType(ToString(target[i])) != kTypeBlank) {
-          exempt_blank_char = true;
-        }
+    auto ToString = [](char t) ->string {return string().append(1, t); };
+
+    if (target.front() == '#') return *this;
+
+    //first cycle
+    for (count = 0; count < target.size(); ++count) {
+      currentChar = target[count];
+      if (kit.GetDataType(ToString(currentChar)) != kTypeBlank
+        && exemptBlankChar) {
+        head = count;
+        exemptBlankChar = false;
       }
-
-      if (target[i] == '"') {
-        if (string_processing && target[i - 1] != '\\' && i - 1 >= 0) {
-          string_processing = !string_processing;
-          current.append(1, target.at(i));
-          output.push_back(current);
-          current = kStrEmpty;
-          continue;
-        }
-        else if (!string_processing) {
-          string_processing = !string_processing;
-        }
-      }
-
-      switch (target[i]) {
-      case '(':
-      case ',':
-      case ')':
-      case '[':
-      case ']':
-      case '{':
-      case '}':
-      case ':':
-      case '+':
-      case '-':
-      case '*':
-      case '/':
-      case '.':
-        if (string_processing) {
-          current.append(1, target[i]);
-        }
-        else {
-          if (current != kStrEmpty) output.push_back(current);
-          output.push_back(ToString(target[i]));
-          current = kStrEmpty;
-        }
-        break;
-      case '"':
-        if (string_processing) {
-          current.append(1, target.at(i));
-        }
-        else if (i > 0) {
-          if (target.at(i - 1) == '\\') {
-            current.append(1, target.at(i));
-          }
-        }
-        else {
-          if (current != kStrEmpty) output.push_back(current);
-          output.push_back(ToString(target[i]));
-          current = kStrEmpty;
-        }
-        break;
-      case '=':
-      case '>':
-      case '<':
-      case '!':
-        if (string_processing) {
-          current.append(1, target[i]);
-        }
-        else {
-          if (i + 1 < size && target[i + 1] == '=') {
-            bin_oper = target[i];
-            if (current != kStrEmpty) output.push_back(current);
-            current = kStrEmpty;
-            continue;
-          }
-          else if (bin_oper != NULL) {
-            string binaryopt = { bin_oper, target[i] };
-            if (kit.GetDataType(binaryopt) == kTypeSymbol) {
-              output.push_back(binaryopt);
-              bin_oper = NULL;
-            }
-          }
-          else {
-            if (current != kStrEmpty) output.push_back(current);
-            output.push_back(ToString(target[i]));
-            current = kStrEmpty;
-          }
-        }
-        break;
-      case ' ':
-      case '\t':
-        if (string_processing) {
-          current.append(1, target[i]);
-        }
-        else if (kit.Compare(current, list) && output.empty()) {
-          if (i + 1 < size && target[i + 1] != ' ' && target[i + 1] != '\t') {
-            output.push_back(current);
-            current = kStrEmpty;
-          }
-          continue;
-        }
-        else {
-          if ((std::regex_match(ToString(target[i + 1]), kPatternSymbol)
-            || std::regex_match(ToString(target[i - 1]), kPatternSymbol)
-            || target[i - 1] == ' ' || target[i - 1] == '\t')
-            && i + 1 < size) {
-            continue;
-          }
-          else {
-            continue;
-          }
-        }
-        break;
-      case '#':
-        if (!string_processing) break;
-      default:
-        current.append(1, target[i]);
+      if (currentChar == '\'' && forwardChar != '\\') stringProcessing = !stringProcessing;
+      if (!stringProcessing && currentChar == '#') {
+        tail = count;
         break;
       }
+      forwardChar = target.at(count);
     }
 
-    if (current != kStrEmpty) output.push_back(current);
+    if (tail > head) data = target.substr(head, tail - head);
+    else data = target.substr(head, target.size() - head);
+    
+    //second cycle
+    forwardChar = 0;
+    for (count = 0; count < data.size(); ++count) {
+      currentChar = data[count];
+      if (currentChar == '\'' && forwardChar != '\\') {
+        if (kit.GetDataType(current) == kTypeBlank) {
+          current.clear();
+        }
+        stringProcessing = !stringProcessing;
+      }
+      current.append(1, currentChar);
+      if (kit.GetDataType(current) != kTypeNull) {
+        forwardChar = data[count];
+        continue;
+      }
+      else {
+        current = current.substr(0, current.size() - 1);
+        if (kit.GetDataType(current) == kTypeBlank) {
+          if (stringProcessing) origin.push_back(current);
+          current.clear();
+          current.append(1, currentChar);
+        }
+        else {
+          origin.push_back(current);
+          current.clear();
+          current.append(1, currentChar);
+        }
+      }
+      forwardChar = data[count];
+    }
+    //if (!current.empty()) origin.push_back(current);
+
+    type = kit.GetDataType(current);
+    if (type != kTypeNull && type != kTypeBlank) origin.push_back(current);
+    current.clear();
+
+    //third cycle
+    stringProcessing = false;
+    for (count = 0; count < origin.size(); ++count) {
+      current = origin.at(count);
+      if (current == "'" && forward != "\\") {
+        if (stringProcessing) {
+          output.back().append(current);
+        }
+        else {
+          output.push_back(kStrEmpty);
+          output.back().append(current);
+        }
+        stringProcessing = !stringProcessing;
+      }
+      else {
+        if (stringProcessing) {
+          output.back().append(current);
+        }
+        else {
+          if ((current == "+" || current == "-") && output.back() == current) {
+            output.back().append(current);
+          }
+          else {
+            output.push_back(current);
+          }
+        }
+      }
+
+      forward = origin.at(count);
+    }
+
     raw = output;
-    kit.CleanupVector(output);
 
     return *this;
   }
