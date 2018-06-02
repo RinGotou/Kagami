@@ -44,14 +44,14 @@ namespace kagami {
       return regex_match(target, pat);
     };
 
-    if (target == kStrNull) result = kTypeNull;
-    else if (target.front() == '"' && target.back() == '"') result = kTypeString;
+    if (target == kStrNull || target == kStrEmpty) result = kTypeNull;
     else if (match(kPatternBoolean)) result = kTypeBoolean;
-    else if (match(kPatternFunction)) result = kGenericToken;
+    else if (match(kPatternGenericToken)) result = kGenericToken;
     else if (match(kPatternInteger)) result = kTypeInteger;
     else if (match(kPatternDouble)) result = kTypeDouble;
     else if (match(kPatternSymbol)) result = kTypeSymbol;
     else if (match(kPatternBlank)) result = kTypeBlank;
+    else if (isString(target)) result = kTypeString;
     else result = kTypeNull;
 
     return result;
@@ -141,6 +141,17 @@ namespace kagami {
       for (auto &unit : methods) {
         result.append("+" + unit);
       }
+    }
+    return result;
+  }
+
+  char Kit::convertChar(char target) {
+    char result;
+    switch (target) {
+    case 't':result = '\t'; break;
+    case 'n':result = '\n'; break;
+    case 'r':result = '\r'; break;
+    default:result = target; break;
     }
     return result;
   }
