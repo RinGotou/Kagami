@@ -181,6 +181,7 @@ namespace kagami {
     return result;
   }
 
+
   Message Print_Array(ObjectMap &p) {
     Message result;
     Object object = p.at("object");

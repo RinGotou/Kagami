@@ -24,6 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
+#pragma execution_character_set("utf-8")
 #define _ENABLE_FASTRING_
 #include <stack>
 #include <fstream>
@@ -45,7 +46,22 @@ namespace kagami {
   using std::stof;
   using std::stod;
 
-  class EntryProvider;
+  const string kStrNop = "nop";
+  const string kStrDef = "def";
+
+  //using TokenEnum = enum {
+  //  EnumGeneric,
+  //  EnumLeftBracket,
+  //  EnumRightBracket,
+  //  EnumLeftSquareBracket,
+  //  EnumRightSquareBracket,
+  //  EnumComma,
+  //  EnumMonoOperand,
+  //  EnumBinaryOperand,
+  //  EnumDot,
+  //  EnumDef,
+  //  EnumNull
+  //};
 
   /*ObjectManager Class
   MemoryManger will be filled with Object and manage life cycle of variables
@@ -119,22 +135,29 @@ namespace kagami {
   */
   class Processor {
   private:
+    bool health;
+    //bool legal;
     vector<string> raw;
     map<string, Object> lambdamap;
     deque<string> item, symbol;
     bool comma_exp_func,
-      string_token_proc,
+      //string_token_proc,
       insert_btn_symbols,
       disable_set_entry,
       dot_operator,
+      define_line,
+      function_line,
       subscript_processing;
     string currentToken;
+    string nextToken;
+    string forwardToken;
     string operatorTargetType;
+    string errorString;
     size_t mode,
       nextInsertSubscript,
       lambdaObjectCount;
 
-    void DoubleQuotationMark();
+    //void DoubleQuotationMark();
     void EqualMark();
     void Comma();
     bool LeftBracket(Message &msg);
@@ -165,6 +188,8 @@ namespace kagami {
 
     Message Start(size_t mode = kModeNormal);
     Processor &Build(string target);
+    bool isHealth() const { return health; }
+    string getErrorString() const { return errorString; }
   };
 
   /*ScriptProvider class
@@ -177,8 +202,11 @@ namespace kagami {
     //vector<string> base;
     vector<Processor> storage;
     vector<string> parameters;
+    //string errorString;
     bool health;
     bool end;
+
+
     ScriptProvider() {}
     void AddLoader(string raw) { 
       storage.push_back(Processor().Reset().Build(raw)); 
@@ -199,6 +227,7 @@ namespace kagami {
     }
 
     bool GetHealth() const { return health; }
+    //string getErrorString() const { return errorString; }
     bool eof() const { return end; }
     void ResetCounter() { current = 0; }
     ScriptProvider(const char *target);
@@ -317,6 +346,7 @@ namespace kagami {
     bool DisposeManager();
     size_t ResetPlugin();
     EntryProvider Order(string id, string type, int size);
+    std::wstring s2ws(const std::string& s);
   }
 }
 
