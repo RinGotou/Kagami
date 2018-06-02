@@ -31,6 +31,7 @@
 #include <map>
 #include <deque>
 #include <regex>
+#include <locale>
 
 namespace kagami {
   using std::string;
@@ -113,6 +114,7 @@ namespace kagami {
   const int kCodeIllegalCall = -4;
   const int kCodeIllegalSymbol = -5;
   const int kCodeBadStream = -6;
+  const int kCodeBadExpression = -7;
 
   const int kFlagCoreEntry = 0;
   const int kFlagNormalEntry = 1;
@@ -147,7 +149,7 @@ namespace kagami {
   const regex kPatternInteger(R"([-]?\d+)");
   const regex kPatternDouble(R"([-]?\d+\.\d+)");
   const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
-  const regex kPatternSymbol(R"(==|<=|>=|!=|&&|\|\||[[:Punct:]])");
+  const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
   const regex kPatternBlank(R"([[:blank:]])");
 
   /*Object Tag Struct
@@ -325,13 +327,18 @@ namespace kagami {
       return target.substr(1, target.size() - 2);
     }
 
-    bool isString(string target) { return(target.front() == '\'' && target.back() == '\''); }
+    bool isString(string target) { 
+      if (target.empty()) return false;
+      return(target.front() == '\'' && target.back() == '\''); 
+    }
     size_t GetDataType(string target);
     Attribute GetAttrTag(string target);
     string BuildAttrStr(Attribute target);
     bool FindInStringVector(string target, string source);
     vector<string> BuildStringVector(string source);
     char convertChar(char target);
+    wchar_t convertWideChar(wchar_t target);
+    bool isWideString(string target);
   };
 
   /*Object Class
