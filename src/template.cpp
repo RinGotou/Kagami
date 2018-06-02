@@ -95,12 +95,12 @@ namespace kagami {
     int count0 = 0;
 
     auto MakeStrToken = [](char target)->string {
-      return string().append("\"").append(1, target).append("\"");
+      return string().append("'").append(1, target).append("'");
     };
 
     if (type_id == kTypeIdRawString) {
       data = *static_pointer_cast<string>(object.get());
-      if (kit.GetDataType(data) == kTypeString) {
+      if (kit.isString(data)) {
         data = kit.GetRawString(data);
       }
       count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
@@ -132,7 +132,7 @@ namespace kagami {
     }
     else if (type_id == kTypeIdRawString) {
       auto str = *static_pointer_cast<string>(object.get());
-      if (Kit().GetDataType(str) == kTypeString) str = Kit().GetRawString(str);
+      if (Kit().isString(str)) str = Kit().GetRawString(str);
       result.SetDetail(to_string(str.size()));
     }
 
@@ -156,10 +156,27 @@ namespace kagami {
     Message result;
     Object object = p.at("object");
     string data = kStrEmpty;
+    string msg = kStrEmpty;
+    size_t count = 0;
+    bool needConvert = false;
+
     if (object.GetTypeId() == kTypeIdRawString) {
       data = *static_pointer_cast<string>(object.get());
-      if (Kit().GetDataType(data) == kTypeString) data = Kit().GetRawString(data);
-      std::cout << data << std::endl;
+      if (Kit().isString(data)) data = Kit().GetRawString(data);
+      for (count = 0; count < data.size(); ++count) {
+        if (data.at(count) == '\\') {
+          needConvert = true;
+          continue;
+        }
+        if (needConvert) {
+          msg.append(1, Kit().convertChar(data.at(count)));
+          needConvert = false;
+        }
+        else {
+          msg.append(1, data.at(count));
+        }
+      }
+      std::cout << msg << std::endl;
     }
     return result;
   }
