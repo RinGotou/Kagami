@@ -142,7 +142,7 @@ namespace kagami {
   const size_t kModeCycleJump = 3;
   const size_t kModeCondition = 4;
 
-  const regex kPatternFunction(R"([a-zA-Z_][a-zA-Z_0-9]*)");
+  const regex kPatternGenericToken(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternNumber(R"(\d+\.?\d*)");
   const regex kPatternInteger(R"([-]?\d+)");
   const regex kPatternDouble(R"([-]?\d+\.\d+)");
@@ -325,11 +325,13 @@ namespace kagami {
       return target.substr(1, target.size() - 2);
     }
 
+    bool isString(string target) { return(target.front() == '\'' && target.back() == '\''); }
     size_t GetDataType(string target);
     Attribute GetAttrTag(string target);
     string BuildAttrStr(Attribute target);
     bool FindInStringVector(string target, string source);
     vector<string> BuildStringVector(string source);
+    char convertChar(char target);
   };
 
   /*Object Class
@@ -404,7 +406,7 @@ namespace kagami {
       return result;
     }
     string GetTypeId() const { 
-      string result = option;
+       string result = option;
       if (option == kTypeIdRef) {
         result = static_pointer_cast<TargetObject>(ptr)
           ->ptr
