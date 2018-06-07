@@ -33,14 +33,14 @@ namespace kagami {
     this->detail = id;
   }
 
-  Object Message::GetObj() {
+  Object Message::GetObj() const {
     return *static_pointer_cast<Object>(this->object);
   }
 
   size_t Kit::GetDataType(string target) {
     using std::regex_match;
-    size_t result = kTypeNull;
-    auto match = [&](const regex &pat) -> bool {
+    size_t result;
+    const auto match = [&](const regex &pat) -> bool {
       return regex_match(target, pat);
     };
 
@@ -51,7 +51,7 @@ namespace kagami {
     else if (match(kPatternDouble)) result = kTypeDouble;
     else if (match(kPatternSymbol)) result = kTypeSymbol;
     else if (match(kPatternBlank)) result = kTypeBlank;
-    else if (isString(target)) result = kTypeString;
+    else if (IsString(target)) result = kTypeString;
     else result = kTypeNull;
 
     return result;
@@ -111,22 +111,22 @@ namespace kagami {
       if (unit.front() == '%') {
         temp = unit.substr(1, unit.size() - 1);
         if (temp == kStrTrue) {
-          result.ro = true;
+          result.Ro = true;
         }
         else if (temp == kStrFalse) {
-          result.ro = false;
+          result.Ro = false;
         }
       }
       else if (unit.front() == '+') {
         temp = unit.substr(1, unit.size() - 1) + "|";
-        result.methods.append(temp);
+        result.Methods.append(temp);
       }
 
       temp = kStrEmpty;
     }
 
-    if (!result.methods.empty()) {
-      if (result.methods.back() == '|') result.methods.pop_back();
+    if (!result.Methods.empty()) {
+      if (result.Methods.back() == '|') result.Methods.pop_back();
     }
 
     return result;
@@ -134,8 +134,8 @@ namespace kagami {
 
   string Kit::BuildAttrStr(Attribute target) {
     string result = kStrEmpty;
-    vector<string> methods = this->BuildStringVector(target.methods);
-    if (target.ro)result.append("%true");
+    vector<string> methods = this->BuildStringVector(target.Methods);
+    if (target.Ro)result.append("%true");
     else result.append("%false");
     if (!methods.empty()) {
       for (auto &unit : methods) {
