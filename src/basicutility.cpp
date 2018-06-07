@@ -36,18 +36,17 @@ namespace kagami {
 
     shared_ptr<void> GetObjectCopy(Object &object) {
       shared_ptr<void> result = nullptr;
-      string option = object.GetTypeId();
-      CopyCreator copyCreator = nullptr;
-      map<string, ObjTemplate>::iterator it = GetTemplateMap().find(option);
+      const auto option = object.GetTypeId();
+      auto it = GetTemplateMap().find(option);
       if (it != GetTemplateMap().end()) {
-        result = it->second.CreateObjectCopy(object.get());
+        result = it->second.CreateObjectCopy(object.Get());
       }
       return result;
     }
 
-    ObjTemplate *GetTemplate(string name) {
+    ObjTemplate *GetTemplate(const string name) {
       ObjTemplate *result = nullptr;
-      map<string, ObjTemplate>::iterator it = GetTemplateMap().find(name);
+      const auto it = GetTemplateMap().find(name);
       if (it != GetTemplateMap().end()) {
         result = &(it->second);
       }
@@ -58,8 +57,8 @@ namespace kagami {
       GetTemplateMap().insert(pair<string, ObjTemplate>(name, temp));
     }
 
-    void DisposeTemplate(string name) {
-      map<string, ObjTemplate>::iterator it = GetTemplateMap().find(name);
+    void DisposeTemplate(const string name) {
+      const auto it = GetTemplateMap().find(name);
       if (it != GetTemplateMap().end()) GetTemplateMap().erase(it);
     }
   }
@@ -91,29 +90,26 @@ namespace kagami {
     }
 
     Object *CreateObject(string sign, string dat, bool constant = false) {
-      Object *object = nullptr;
-      ObjTemplate *objtemp = type::GetTemplate(kTypeIdRawString);
+      const auto objtemp = type::GetTemplate(kTypeIdRawString);
       GetObjectStack().back().Create(sign, dat, kTypeIdRawString, *objtemp, constant);
-      object = GetObjectStack().back().Find(sign);
+      const auto object = GetObjectStack().back().Find(sign);
       return object;
     }
 
-    Object *CreateObject(string sign, shared_ptr<void> ptr, string option, bool constant = false) {
-      Object *object = nullptr;
-      Attribute attribute(type::GetTemplate(option)->GetMethods(), constant);
-      GetObjectStack().back().add(sign, Object().set(ptr, option, Kit().BuildAttrStr(attribute)));
-      object = GetObjectStack().back().Find(sign);
+    Object *CreateObject(const string sign, const shared_ptr<void> ptr, const string option, const bool constant = false) {
+      const Attribute attribute(type::GetTemplate(option)->GetMethods(), constant);
+      GetObjectStack().back().add(sign, Object().Set(ptr, option, Kit().BuildAttrStr(attribute)));
+      const auto object = GetObjectStack().back().Find(sign);
       return object;
     }
 
-    string GetTypeId(string sign) {
-      string result = kTypeIdNull;
-      Object *object = nullptr;
-      size_t count = GetObjectStack().size();
-      vector<ObjectManager> &base = GetObjectStack();
+    string GetTypeId(const string sign) {
+      auto result = kTypeIdNull;
+      auto count = GetObjectStack().size();
+      auto& base = GetObjectStack(); 
 
       while (count > 0) {
-        object = base.at(count - 1).Find(sign);
+        const auto object = base.at(count - 1).Find(sign);
         if (object != nullptr) {
           result = object->GetTypeId();
         }
@@ -138,16 +134,13 @@ namespace kagami {
     } 
 
     bool Instance::Load(string name, HINSTANCE h) {
-      Attachment attachment = nullptr;
-      MemoryDeleter deleter = nullptr;
-      //StrMap *targetmap = nullptr;
       this->first = name;
       this->second = h;
 
-      attachment = (Attachment)GetProcAddress(this->second, "Attachment");
-      deleter = this->getDeleter();
+      const auto attachment = Attachment(GetProcAddress(this->second, "Attachment"));
+      const auto deleter = this->getDeleter();
       if (attachment != nullptr) {
-        auto ptr = attachment();
+        const auto ptr = attachment();
         act_temp = *ptr;
         deleter(ptr);
         health = true;
@@ -160,38 +153,36 @@ namespace kagami {
     }
 
     //from MSDN
+    // ReSharper disable CppInconsistentNaming
     std::wstring s2ws(const std::string& s) {
-      int len;
-      int slength = (int)s.length() + 1;
-      len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-      wchar_t *buf = new wchar_t[len];
+      // ReSharper restore CppInconsistentNaming
+      //int len;
+      // ReSharper disable once CppLocalVariableMayBeConst
+      auto slength = static_cast<int>(s.length()) + 1;
+      // ReSharper disable once CppLocalVariableMayBeConst
+      auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+      auto *buf = new wchar_t[len];
       MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
       std::wstring r(buf);
       delete[] buf;
       return r;
     }
 
-    void AddInstance(string name, HINSTANCE h) {
-      //PluginActivity activity = nullptr;
-      CastAttachment castAttachment = nullptr;
-      map<string, ObjTemplate> *objtemps = nullptr;
-      vector<ActivityTemplate> *activities = nullptr;
-      MemoryDeleter deleter = nullptr;
+    void AddInstance(const string name, const HINSTANCE h) {
+      auto &base = GetInstanceList();
+      base.push_back(Instance());
+      base.back().Load(name, h);
 
-      GetInstanceList().push_back(Instance());
-      GetInstanceList().back().Load(name, h);
-
-      if (GetInstanceList().back().GetHealth()) {
-        HINSTANCE &ins = GetInstanceList().back().second;
-        vector<ActivityTemplate> temp = GetInstanceList().back().GetMap();
-        castAttachment = (CastAttachment)GetProcAddress(ins, "CastAttachment");
-        deleter = GetInstanceList().back().getDeleter();
+      if (base.back().GetHealth()) {
+        auto &ins = base.back().second;
+        auto temp = base.back().GetMap();
+        const auto castAttachment = CastAttachment(GetProcAddress(ins, "CastAttachment"));
 
         for (auto &unit : temp) {
           Inject(EntryProvider(unit));
         }
         if (castAttachment != nullptr) {
-          objtemps = castAttachment();
+          const auto objtemps = castAttachment();
           for (auto &unit : *objtemps) {
             type::AddTemplate(unit.first, unit.second);
           }
@@ -199,50 +190,45 @@ namespace kagami {
       }
     }
 
-    void UnloadInstance(string name) {
-      Attachment attachment = nullptr;
-      CastAttachment castAttachment = nullptr;
-      MemoryDeleter deleter = nullptr;
+    void UnloadInstance(const string name) {
       HINSTANCE *hinstance = nullptr;
-      map<string, ObjTemplate> *obj_temp = nullptr;
-      vector<ActivityTemplate> act_temp;
-      //StrMap map;
+      map<string, ObjTemplate> *objTemp = nullptr;
 
-      vector<Instance>::iterator instance_i = GetInstanceList().begin();
-      while (instance_i != GetInstanceList().end()) {
-        if (instance_i->first == name) break;
-        instance_i++;
+      auto instanceI = GetInstanceList().begin();
+      while (instanceI != GetInstanceList().end()) {
+        if (instanceI->first == name) break;
+        ++instanceI;
       }
-      if (instance_i == GetInstanceList().end() && instance_i->first != name) {
-        trace::log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
+      if (instanceI == GetInstanceList().end() && instanceI->first != name) {
+        trace::Log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
         return;
       }
 
-      if (instance_i->GetHealth() == true) {
-        hinstance = &(instance_i->second);
-        castAttachment = instance_i->getObjTemplate();
-        deleter = instance_i->getDeleter();
+      if (instanceI->GetHealth() == true) {
+        hinstance = &(instanceI->second);
+        const auto castAttachment = instanceI->getObjTemplate();
+        const auto deleter = instanceI->getDeleter();
         //delete entries
-        act_temp = instance_i->GetMap();
-        for (auto unit : act_temp) {
+        auto actTemp = instanceI->GetMap();
+        for (auto unit : actTemp) {
           RemoveByTemplate(unit);
         }
         //delete object templates
         if (castAttachment != nullptr) {
-          obj_temp = castAttachment();
-          for (auto &unit : *obj_temp) {
+          objTemp = castAttachment();
+          for (auto &unit : *objTemp) {
             type::DisposeTemplate(unit.first);
           }
         }
         //delete memory
-        deleter(obj_temp);
+        deleter(objTemp);
       }
       FreeLibrary(*hinstance);
-      GetInstanceList().erase(instance_i);
+      GetInstanceList().erase(instanceI);
     }
 
     size_t ResetPlugin() {
-      vector<Instance> &base = GetInstanceList();
+      auto &base = GetInstanceList();
       size_t count = 0;
       while (!base.empty()) {
         UnloadInstance(base.back().first);
@@ -259,8 +245,8 @@ namespace kagami {
     ofstream ofs("script.log", std::ios::out | std::ios::app);
 
     if (data.GetTypeId() == kTypeIdRawString) {
-      auto ptr = static_pointer_cast<string>(data.get());
-      if (kit.isString(*ptr)) {
+      const auto ptr = static_pointer_cast<string>(data.Get());
+      if (kit.IsString(*ptr)) {
         ofs << ptr->substr(1, ptr->size() - 2) << "\n";
       }
       else {
@@ -277,36 +263,36 @@ namespace kagami {
   Message BinaryOperands(ObjectMap &p) {
     Kit kit;
     Message result(kStrRedirect, kCodeSuccess, "0");
-    Object first = p.at("first"), second = p.at("second"), op = p.at(kStrOperator);
-    string temp = kStrEmpty, dataOP = kStrEmpty, dataA = kStrEmpty, dataB = kStrEmpty;
-    bool tempresult = false, health = true;
-    size_t count = 0;
-    enum { EnumInt, EnumDouble, EnumStr, EnumNull } enumtype = EnumNull;
-    int datatypeA = kTypeNull, datatypeB = kTypeNull;
+    auto first = p.at("first"), second = p.at("second"), op = p.at(kStrOperator);
+    auto temp = kStrEmpty, dataOP = kStrEmpty;
+    auto tempresult = false;
+    enum { enum_int, enum_double, enum_str, enum_null } enumtype = enum_null;
 
-    if (op.get() != nullptr) dataOP = *static_pointer_cast<string>(op.get());
+    if (op.Get() != nullptr) dataOP = *static_pointer_cast<string>(op.Get());
 
     if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
-      dataA = *static_pointer_cast<string>(first.get());
-      dataB = *static_pointer_cast<string>(second.get());
-      datatypeA = kit.GetDataType(dataA);
-      datatypeB = kit.GetDataType(dataB);
-      if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = EnumDouble;
-      if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = EnumInt;
-      if (kit.isString(dataA) || kit.isString(dataB)) enumtype = EnumStr;
+      auto dataA = *static_pointer_cast<string>(first.Get());
+      auto dataB = *static_pointer_cast<string>(second.Get());
+      const auto datatypeA = kit.GetDataType(dataA);
+      const auto datatypeB = kit.GetDataType(dataB);
+      if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = enum_double;
+      if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = enum_int;
+      if (kit.IsString(dataA) || kit.IsString(dataB)) enumtype = enum_str;
 
-      if (enumtype == EnumInt || enumtype == EnumDouble) {
+      if (enumtype == enum_int || enumtype == enum_double) {
         if (dataOP == "+" || dataOP == "-" || dataOP == "*" || dataOP == "/") {
           switch (enumtype) {
-          case EnumInt:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
-          case EnumDouble:temp = to_string(kit.Calc(stod(dataA), stod(dataB), dataOP)); break;
+          case enum_int:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
+          case enum_double:temp = to_string(kit.Calc(stod(dataA), stod(dataB), dataOP)); break;
+          default: ;
           }
         }
         else if (dataOP == "==" || dataOP == ">=" || dataOP == "<=" || dataOP == "!="
           || dataOP == "<" || dataOP == ">") {
           switch (enumtype) {
-          case EnumInt:tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
-          case EnumDouble:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
+          case enum_int:tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
+          case enum_double:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
+          default: ;
           }
           switch (tempresult) {
           case true:temp = kStrTrue; break;
@@ -314,17 +300,15 @@ namespace kagami {
           }
         }
       }
-      else if (enumtype == EnumStr) {
+      else if (enumtype == enum_str) {
         if (dataOP == "+") {
           if (dataA.back() == '\'') {
             temp = dataA.substr(0, dataA.size() - 1);
             dataA = temp;
-            temp = kStrEmpty;
           }
           if (dataB.front() == '\'') {
             temp = dataB.substr(1, dataB.size() - 1);
             dataB = temp;
-            temp = kStrEmpty;
           }
           if (dataB.back() != '\'') {
             dataB.append(1, '\'');
@@ -347,21 +331,20 @@ namespace kagami {
         //TODO:other type
       }
     }
-    if (health) {
-      result.SetDetail(temp);
-    }
+    result.SetDetail(temp);
+
     return result;
   }
 
   Message ConditionRoot(ObjectMap &p) {
     auto object = p.at("state");
-    Message result(CastToString(object.get()), kCodeConditionRoot, kStrEmpty);
+    Message result(CastToString(object.Get()), kCodeConditionRoot, kStrEmpty);
     return result;
   }
 
   Message ConditionBranch(ObjectMap &p) {
     auto object = p.at("state");
-    Message result(CastToString(object.get()), kCodeConditionBranch, kStrEmpty);
+    Message result(CastToString(object.Get()), kCodeConditionBranch, kStrEmpty);
     return result;
   }
 
@@ -372,7 +355,7 @@ namespace kagami {
 
   Message WhileCycle(ObjectMap &p) {
     auto object = p.at("state");
-    Message result(CastToString(object.get()), kCodeHeadSign, kStrEmpty);
+    Message result(CastToString(object.Get()), kCodeHeadSign, kStrEmpty);
     return result;
   }
 
@@ -391,27 +374,25 @@ namespace kagami {
     Attribute attribute;
     Message result;
     Object source = p.at("source"), target = p.at("target");
-    auto ptr = type::GetObjectCopy(source);
-    string attrstr = kStrEmpty;
+    const auto ptr = type::GetObjectCopy(source);
 
-    attribute.methods = type::GetTemplate(source.GetTypeId())->GetMethods();
-    attribute.ro = false;
-    attrstr = Kit().BuildAttrStr(attribute);
-    target.set(ptr, source.GetTypeId(), attrstr);
+    attribute.Methods = type::GetTemplate(source.GetTypeId())->GetMethods();
+    attribute.Ro = false;
+    const auto attrStr = Kit().BuildAttrStr(attribute);
+    target.Set(ptr, source.GetTypeId(), attrStr);
 
     return result;
   }
 
   Message CreateOperand(ObjectMap &p) {
     Message result;
-    Object name = p.at("name"), source = p.at("source");
-    string name_value = CastToString(name.get());
-    Object *ptr = entry::FindObject(name_value);
-    shared_ptr<void> target_ptr = nullptr;
+    auto name = p.at("name"), source = p.at("source");
+    const auto nameValue = CastToString(name.Get());
+    const auto ptr = entry::FindObject(nameValue);
 
     if (ptr == nullptr) {
-      target_ptr = type::GetObjectCopy(source);
-      auto object = entry::CreateObject(CastToString(name.get()), target_ptr, source.GetTypeId(), false);
+      const auto targetPtr = type::GetObjectCopy(source);
+      const auto object = entry::CreateObject(CastToString(name.Get()), targetPtr, source.GetTypeId(), false);
       if (object == nullptr) {
         result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
       }
@@ -428,13 +409,11 @@ namespace kagami {
   //Windows Version
   Message LoadPlugin(ObjectMap &p) {
     using namespace entry;
-    const string path = CastToString(p.at("path").get());
+    const auto path = CastToString(p.at("path").Get());
     Message result;
-    Attachment attachment = nullptr;
-    Activity activity = nullptr;
-    std::wstring wpath = s2ws(Kit().GetRawString(path));
-    
-    HINSTANCE hinstance = LoadLibrary(wpath.c_str());
+    auto wpath = s2ws(Kit().GetRawString(path));
+
+    const auto hinstance = LoadLibrary(wpath.c_str());
     if (hinstance != nullptr) {
       AddInstance(path, hinstance);
     }
@@ -454,10 +433,10 @@ namespace kagami {
   Message Print(ObjectMap &p) {
     Kit kit;
     Message result;
-    Object object = p.at("object");
-    Attribute attribute = object.getTag();
+    auto object = p.at("object");
+    const auto attribute = object.GetTag();
 
-    if (kit.FindInStringVector("__print", attribute.methods)) {
+    if (kit.FindInStringVector("__print", attribute.Methods)) {
       auto provider = entry::Order("__print", object.GetTypeId(), -1);
       if (provider.Good()) {
         result = provider.Start(p);

@@ -34,8 +34,8 @@ namespace kagami {
       return base;
     }
 
-    void Log(Message msg) {
-      auto now = time(nullptr);
+    void log(Message msg) { 
+      time_t now = time(nullptr);
 #if defined(_WIN32)
       char nowtime[30] = { ' ' };
       ctime_s(nowtime, sizeof(nowtime), &now);
@@ -144,13 +144,14 @@ namespace kagami {
   Message ScriptProvider::Run(deque<string> res) {
     //using namespace entry;
     Message result;
-    int code;
+    //size_t count;
     stack<size_t> cycleNestStack;
     stack<size_t> cycleTailStack;
     stack<bool> conditionStack;
     stack<size_t> modeStack;
     size_t currentMode = kModeNormal;
     size_t nestHeadCount = 0;
+    //int code;
     auto value = kStrEmpty;
     auto health = true;
     //auto modeStackLock = false;
@@ -177,14 +178,14 @@ namespace kagami {
       if (!health) break;
       result = storage.at(current).Start(currentMode);
       value = result.GetValue();
-      code = result.GetCode();
+      const auto code = result.GetCode();
 
       if (value == kStrFatalError) {
-        trace::Log(result);
+        trace::log(result);
         break;
       }
       if (value == kStrWarning) {
-        trace::Log(result);
+        trace::log(result);
       }
       //TODO:return
 
@@ -304,11 +305,12 @@ namespace kagami {
   Processor &Processor::Build(string target) {
     Kit kit;
     string current, data, forward;
-    auto exemptBlankChar = true;
-    auto stringProcessing = false;
+    bool exemptBlankChar = true;
+    bool stringProcessing = false;
     char currentChar;
-    auto forwardChar = ' ';
+    char forwardChar = ' ';
     vector<string> origin, output;
+    size_t type;
     size_t count, head = 0, tail = 0, nest = 0;
 
     const auto toString = [](char t) ->string {return string().append(1, t); };
@@ -369,7 +371,7 @@ namespace kagami {
       forwardChar = data[count];
     }
 
-    auto type = kit.GetDataType(current);
+    type = kit.GetDataType(current);
     if (type != kTypeNull && type != kTypeBlank) origin.push_back(current);
     current.clear();
 
@@ -599,33 +601,33 @@ namespace kagami {
           case kGenericToken:
             if (args.at(count).front() == '&') {
               origin = GetObj(tokens.at(count));
-              temp.Ref(*origin);
+              temp.ref(*origin);
             }
             else if (args.at(count).front() == '%') {
-              temp.Manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
+              temp.manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
             }
             else {
               temp = *GetObj(tokens.at(count));
             }
             break;
           default:
-            temp.Manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
+            temp.manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
             break;
           }
           map.insert(pair<string,Object>(getName(args.at(count)), temp));
-          temp.Clear();
+          temp.clear();
         }
       }
 
       switch (priority) {
       case kFlagOperatorEntry:
         map.insert(pair<string, Object>(kStrOperator, Object()
-          .Manage(symbol.back(), kTypeIdRawString, kit.BuildAttrStr(strAttr))));
+          .manage(symbol.back(), kTypeIdRawString, kit.BuildAttrStr(strAttr))));
         break;
       case kFlagMethod:
         origin = GetObj(item.back());
         map.insert(pair<string, Object>(kStrObject, Object()
-          .Ref(*origin)));
+          .ref(*origin)));
         item.pop_back();
         break;
       default:
@@ -800,9 +802,7 @@ namespace kagami {
       nextInsertSubscript = k;
       insert_btn_symbols = true;
 
-      // ReSharper disable once CppAssignedValueIsNeverUsed
       j = 0;
-      // ReSharper disable once CppAssignedValueIsNeverUsed
       k = 0;
     }
     else {
@@ -851,12 +851,12 @@ namespace kagami {
       }
     }
 
-    if (!define_line && function && nextToken != "(" && currentToken != kStrEnd) {
+    if (!define_line && function && nextToken != "(") {
       errorString = "Bracket after function is missing";
       this->health = false;
       result = false;
     }
-    if (function_line && forwardToken == kStrDef && nextToken != "(" && currentToken != kStrEnd) {
+    if (function_line && forwardToken == kStrDef && nextToken != "(") {
       errorString = "Illegal declare of function.";
       this->health = false;
       result = false;
@@ -890,10 +890,10 @@ namespace kagami {
   Message Processor::Start(size_t mode) {
     using namespace entry;
     const auto size = raw.size();
-    int unitType;
+    int unitType = kTypeNull;
     Kit kit;
     Message result;
-    auto state = true;
+    bool state = true;
 
     if (this->health == false) {
       result.combo(kStrFatalError, kCodeBadExpression, errorString);
