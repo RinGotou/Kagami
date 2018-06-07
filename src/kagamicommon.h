@@ -31,7 +31,6 @@
 #include <map>
 #include <deque>
 #include <regex>
-#include <locale>
 
 namespace kagami {
   using std::string;
@@ -60,7 +59,7 @@ namespace kagami {
   using Activity = Message(*)(ObjectMap &);
   using CastAttachment = map<string, ObjTemplate> *(*)();
   using MemoryDeleter = int(*)(void *);
-  using Attachment = vector<ActivityTemplate> * (*)(void);
+  using Attachment = vector<ActivityTemplate> * (*)();
 
 #if defined(_WIN32)
   const string kEngineVersion = "version 0.52 (Windows Platform)";
@@ -156,13 +155,10 @@ namespace kagami {
     no description yet.
   */
   struct Attribute {
-    string methods;
-    bool ro;
-    Attribute(string methods, bool ro) {
-      this->methods = methods;
-      this->ro = ro;
-    }
-    Attribute() {}
+    string Methods;
+    bool Ro;
+    Attribute(string methods, const bool ro): Methods(std::move(methods)), Ro(ro) {}
+    Attribute() { Ro = false; }
   };
 
   /*Activity Template class
@@ -265,7 +261,7 @@ namespace kagami {
     int GetCode() const { return this->code; }
     string GetDetail() const { return this->detail; }
     //shared_ptr<void> &GetPtr() { return ptr; }
-    Object GetObj();
+    Object GetObj() const;
     void SetObject(Object &object, string id);
   };
 
@@ -312,8 +308,8 @@ namespace kagami {
     }
 
     template <class Type>
-    bool Logic(Type A, Type B, string opercode) {
-      bool result = false;
+    static bool Logic(Type A, Type B, string opercode) {
+      auto result = false;
       if (opercode == "==") result = (A == B);
       if (opercode == "<=") result = (A <= B);
       if (opercode == ">=") result = (A >= B);
@@ -323,11 +319,11 @@ namespace kagami {
       return result;
     }
 
-    string GetRawString(string target) {
+    static string GetRawString(string target) {
       return target.substr(1, target.size() - 2);
     }
 
-    bool isString(string target) { 
+    static bool IsString(string target) { 
       if (target.empty()) return false;
       return(target.front() == '\'' && target.back() == '\''); 
     }
@@ -361,12 +357,12 @@ namespace kagami {
       tag = kStrEmpty;
     }
     template <class T>
-    Object &manage(T &t, string option, string tag) {
-      Object *result = nullptr;
+    Object &Manage(T &t, string option, string tag) {
+      Object *result;
       if (this->option == kTypeIdRef) {
         result = &(static_pointer_cast<TargetObject>(this->ptr)
           ->ptr
-          ->manage(t, option, tag));
+          ->Manage(t, option, tag));
       }
       else {
         this->ptr = std::make_shared<T>(t);
@@ -376,12 +372,12 @@ namespace kagami {
       }
       return *result;
     }
-    Object &set(shared_ptr<void> ptr, string option, string tag) {
-      Object *result = nullptr;
+    Object &Set(shared_ptr<void> ptr, string option, string tag) {
+      Object *result;
       if (this->option == kTypeIdRef) {
         result = &(static_pointer_cast<TargetObject>(this->ptr)
           ->ptr
-          ->set(ptr, option, tag));
+          ->Set(ptr, option, tag));
       }
       else {
         this->ptr = ptr;
@@ -391,9 +387,9 @@ namespace kagami {
       }
       return *result;
     }
-    Object &ref(Object &object) {
+    Object &Ref(Object &object) {
       this->option = kTypeIdRef;
-      if (!object.isRef()) {
+      if (!object.IsRef()) {
         TargetObject target;
         target.ptr = &object;
         ptr = make_shared<TargetObject>(target);
@@ -403,12 +399,12 @@ namespace kagami {
       }
       return *this;
     }
-    shared_ptr<void> get() { 
+    shared_ptr<void> Get() const { 
       shared_ptr<void> result = ptr;
       if (option == kTypeIdRef) {
         result = static_pointer_cast<TargetObject>(ptr)
           ->ptr
-          ->get();
+          ->Get();
       }
       return result;
     }
@@ -421,24 +417,24 @@ namespace kagami {
       }
       return result; 
     }
-    Attribute getTag() const { 
+    Attribute GetTag() const { 
       Attribute result;
       if (option == kTypeIdRef) {
         result = static_pointer_cast<TargetObject>(ptr)
           ->ptr
-          ->getTag();
+          ->GetTag();
       }
       else {
         result = Kit().GetAttrTag(tag);
       }
       return result;
     }
-    void clear() {
+    void Clear() {
       ptr = make_shared<int>(0);
       option = kTypeIdNull;
       tag = kStrEmpty;
     }
-    bool isRef() const { return option == kTypeIdRef; }
+    bool IsRef() const { return option == kTypeIdRef; }
   };
 
 

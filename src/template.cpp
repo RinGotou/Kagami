@@ -29,16 +29,19 @@
 namespace kagami {
   //FileStream
 
+  //WideString
+
+
   //RawString
-  shared_ptr<void> StringCopy(shared_ptr<void> target) {
-    string temp(*static_pointer_cast<string>(target));
+  shared_ptr<void> StringCopy(const shared_ptr<void> target) {
+    auto temp(*static_pointer_cast<string>(target));
     return make_shared<string>(temp);
   }
 
   //Array
-  shared_ptr<void> ArrayCopy(shared_ptr<void> target) {
-    auto ptr = static_pointer_cast<deque<Object>>(target);
-    size_t size = ptr->size(), count = 0;
+  shared_ptr<void> ArrayCopy(const shared_ptr<void> target) {
+    const auto ptr = static_pointer_cast<deque<Object>>(target);
+    //size_t size = ptr->size(), count = 0;
     deque<Object> base;
 
     for (auto &unit : *ptr) {
@@ -58,29 +61,26 @@ namespace kagami {
 
   Message ArrayConstructor(ObjectMap &p) {
     Message result;
-    Attribute attribute("", false);
-    Object size = p.at("size"), init_value = p.at("init_value");
-    int size_value = stoi(*static_pointer_cast<string>(size.get()));
-    int count = 0;
-    shared_ptr<void> init_ptr = nullptr;
+    auto size = p.at("size"), initValue = p.at("init_value");
+    const auto sizeValue = stoi(*static_pointer_cast<string>(size.Get()));
     deque<Object> base;
 
     //error:wrong size
-    if (size_value <= 0) {
+    if (sizeValue <= 0) {
       result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal array size.");
       return result;
     }
 
-    attribute = init_value.getTag();
-    attribute.ro = false;
+    auto attribute = initValue.GetTag();
+    attribute.Ro = false;
 
-    for (count = 0; count < size_value; count++) {
-      init_ptr = type::GetObjectCopy(init_value);
-      base.push_back(Object().set(init_ptr, init_value.GetTypeId(), Kit().BuildAttrStr(attribute)));
+    for (auto count = 0; count < sizeValue; count++) {
+      const auto initPtr = type::GetObjectCopy(initValue);
+      base.push_back(Object().Set(initPtr, initValue.GetTypeId(), Kit().BuildAttrStr(attribute)));
     }
 
-    attribute.methods = type::GetTemplate(kTypeIdArrayBase)->GetMethods();
-    result.SetObject(Object().set(make_shared<deque<Object>>(base), kTypeIdArrayBase,
+    attribute.Methods = type::GetTemplate(kTypeIdArrayBase)->GetMethods();
+    result.SetObject(Object().Set(make_shared<deque<Object>>(base), kTypeIdArrayBase,
       Kit().BuildAttrStr(attribute)), "__result");
     return result;
   }
@@ -88,33 +88,33 @@ namespace kagami {
   Message GetElement(ObjectMap &p) {
     Kit kit;
     Message result;
-    Object object = p.at(kStrObject), subscript_1 = p.at("subscript_1");
     Object temp;
-    string type_id = object.GetTypeId(), data = kStrEmpty;
-    int size = 0;
-    int count0 = 0;
+    size_t size;
+    int count0;
+    auto object = p.at(kStrObject), subscript1 = p.at("subscript_1");
+    const auto typeId = object.GetTypeId();
 
-    auto MakeStrToken = [](char target)->string {
+    const auto makeStrToken = [](char target)->string {
       return string().append("'").append(1, target).append("'");
     };
 
-    if (type_id == kTypeIdRawString) {
-      data = *static_pointer_cast<string>(object.get());
-      if (kit.isString(data)) {
+    if (typeId == kTypeIdRawString) {
+      auto data = *static_pointer_cast<string>(object.Get());
+      if (kit.IsString(data)) {
         data = kit.GetRawString(data);
       }
-      count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
+      count0 = stoi(*static_pointer_cast<string>(subscript1.Get()));
       size = data.size();
-      if (count0 <= size - 1) {
-        result.combo(kStrRedirect, kCodeSuccess, MakeStrToken(data.at(count0)));
+      if (count0 <= int(size - 1)) {
+        result.combo(kStrRedirect, kCodeSuccess, makeStrToken(data.at(count0)));
       }
     }
-    else if (type_id == kTypeIdArrayBase) {
-      count0 = stoi(*static_pointer_cast<string>(subscript_1.get()));
-      size = static_pointer_cast<deque<Object>>(object.get())->size();
-      if (count0 <= size - 1) {
-        auto &target = static_pointer_cast<deque<Object>>(object.get())->at(count0);
-        temp.ref(target);
+    else if (typeId == kTypeIdArrayBase) {
+      count0 = stoi(*static_pointer_cast<string>(subscript1.Get()));
+      size = static_pointer_cast<deque<Object>>(object.Get())->size();
+      if (count0 <= int(size - 1)) {
+        auto &target = static_pointer_cast<deque<Object>>(object.Get())->at(count0);
+        temp.Ref(target);
         result.SetObject(temp, "__element");
       }
     }
@@ -128,11 +128,11 @@ namespace kagami {
     string type_id = object.GetTypeId();
 
     if (type_id == kTypeIdArrayBase) {
-      result.SetDetail(to_string(static_pointer_cast<deque<Object>>(object.get())->size()));
+      result.SetDetail(to_string(static_pointer_cast<deque<Object>>(object.Get())->size()));
     }
     else if (type_id == kTypeIdRawString) {
-      auto str = *static_pointer_cast<string>(object.get());
-      if (Kit().isString(str)) str = Kit().GetRawString(str);
+      auto str = *static_pointer_cast<string>(object.Get());
+      if (Kit().IsString(str)) str = Kit().GetRawString(str);
       result.SetDetail(to_string(str.size()));
     }
 
@@ -154,16 +154,14 @@ namespace kagami {
 
   Message Print_RawString(ObjectMap &p) {
     Message result;
-    Object object = p.at("object");
-    string data = kStrEmpty;
-    string msg = kStrEmpty;
-    size_t count = 0;
-    bool needConvert = false;
+    auto object = p.at("object");
+    string msg;
+    auto needConvert = false;
 
     if (object.GetTypeId() == kTypeIdRawString) {
-      data = *static_pointer_cast<string>(object.get());
-      if (Kit().isString(data)) data = Kit().GetRawString(data);
-      for (count = 0; count < data.size(); ++count) {
+      auto data = *static_pointer_cast<string>(object.Get());
+      if (Kit().IsString(data)) data = Kit().GetRawString(data);
+      for (size_t count = 0; count < data.size(); ++count) {
         if (data.at(count) == '\\') {
           needConvert = true;
           continue;
@@ -187,7 +185,7 @@ namespace kagami {
     Object object = p.at("object");
     ObjectMap map;
     if (object.GetTypeId() == kTypeIdArrayBase) {
-      auto &base = *static_pointer_cast<deque<Object>>(object.get());
+      auto &base = *static_pointer_cast<deque<Object>>(object.Get());
       auto provider = entry::Order("print", kTypeIdNull, -1);
       for (auto &unit : base) {
         map.insert(pair<string, Object>("object", unit));
@@ -208,7 +206,7 @@ namespace kagami {
   void InitMethods() {
     using namespace entry;
     ActivityTemplate temp;
-    //constructpr
+    //constructor
     Inject(EntryProvider(temp.set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
     //methods
     Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdRawString)));
