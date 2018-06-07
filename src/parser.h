@@ -49,20 +49,6 @@ namespace kagami {
   const string kStrNop = "nop";
   const string kStrDef = "def";
 
-  //using TokenEnum = enum {
-  //  EnumGeneric,
-  //  EnumLeftBracket,
-  //  EnumRightBracket,
-  //  EnumLeftSquareBracket,
-  //  EnumRightSquareBracket,
-  //  EnumComma,
-  //  EnumMonoOperand,
-  //  EnumBinaryOperand,
-  //  EnumDot,
-  //  EnumDef,
-  //  EnumNull
-  //};
-
   /*ObjectManager Class
   MemoryManger will be filled with Object and manage life cycle of variables
   and constants.
@@ -81,20 +67,20 @@ namespace kagami {
     template <class Type> 
     bool Create(string sign, Type &t, string TypeId, ObjTemplate temp, bool constant) {
       bool result = true;
-      string tag = kStrEmpty;
+      //string tag;
       Attribute attribute;
 
       if (CheckObject(sign) == true) {
         result = false;
       }
       else {
-        if (constant) attribute.ro = true;
-        else attribute.ro = false;
-        attribute.methods = temp.GetMethods();
+        if (constant) attribute.Ro = true;
+        else attribute.Ro = false;
+        attribute.Methods = temp.GetMethods();
 
-        tag = Kit().BuildAttrStr(attribute);
+        auto tag = Kit().BuildAttrStr(attribute);
 
-        base.insert(pair<string, Object>(sign, Object().manage(t, TypeId, tag)));
+        base.insert(pair<string, Object>(sign, Object().Manage(t, TypeId, tag)));
       }
       
       return result;
@@ -170,13 +156,16 @@ namespace kagami {
     void OtherTokens();
     void FinalProcessing(Message &msg);
     Object *GetObj(string name);
-    vector<string> spilt(string target);
-    string GetHead(string target);
+    static vector<string> Spilt(string target);
+    static string GetHead(string target);
     int GetPriority(string target) const;
     bool Assemble(Message &msg);
   public:
-    Processor() {}
-    Processor &Build(vector<string> raw) {
+    Processor(): health(false), comma_exp_func(false), insert_btn_symbols(false), disable_set_entry(false),
+                 dot_operator(false), define_line(false), function_line(false), subscript_processing(false), mode(0),
+                 nextInsertSubscript(0), lambdaObjectCount(0) {}
+
+    Processor &Build(const vector<string> raw) {
       this->raw = raw;
       return *this;
     }
@@ -188,8 +177,8 @@ namespace kagami {
 
     Message Start(size_t mode = kModeNormal);
     Processor &Build(string target);
-    bool isHealth() const { return health; }
-    string getErrorString() const { return errorString; }
+    bool IsHealth() const { return health; }
+    string GetErrorString() const { return errorString; }
   };
 
   /*ScriptProvider class
@@ -207,11 +196,14 @@ namespace kagami {
     bool end;
 
 
+    // ReSharper disable CppPossiblyUninitializedMember
     ScriptProvider() {}
+    // ReSharper restore CppPossiblyUninitializedMember
     void AddLoader(string raw) { 
       storage.push_back(Processor().Reset().Build(raw)); 
     }
-    bool IsBlankStr(string target) {
+
+    static bool IsBlankStr(string target) {
       if (target == kStrEmpty || target.size() == 0) return true;
       for (const auto unit : target) {
         if (unit != ' ' || unit != '\n' || unit != '\t' || unit != '\r') {
@@ -228,9 +220,9 @@ namespace kagami {
 
     bool GetHealth() const { return health; }
     //string getErrorString() const { return errorString; }
-    bool eof() const { return end; }
+    bool Eof() const { return end; }
     void ResetCounter() { current = 0; }
-    ScriptProvider(const char *target);
+    explicit ScriptProvider(const char *target);
     Message Run(deque<string> res = deque<string>());
   };
 
@@ -249,20 +241,20 @@ namespace kagami {
     string specifictype;
     size_t minsize;
   public:
-    EntryProvider() : id(kStrNull), activity(nullptr) {
+    EntryProvider() : id(kStrNull), priority(0), activity(nullptr), minsize(0) {
       arg_mode = kCodeIllegalArgs;
       specifictype = kTypeIdNull;
     }
 
-    EntryProvider(ActivityTemplate temp) :
-    id(temp.id), args(Kit().BuildStringVector(temp.args)), 
-      activity(temp.activity) {
+    explicit EntryProvider(const ActivityTemplate temp) :
+      id(temp.id), args(Kit().BuildStringVector(temp.args)),
+      activity(temp.activity), minsize(0) {
       arg_mode = temp.arg_mode;
       priority = temp.priority;
       specifictype = temp.specifictype;
     }
 
-    bool operator==(EntryProvider &target) {
+    bool operator==(EntryProvider &target) const {
       return (target.id == this->id &&
         target.activity == this->activity &&
         target.arg_mode == this->arg_mode &&
@@ -271,7 +263,7 @@ namespace kagami {
         target.args == this->args);
     }
 
-    bool operator==(ActivityTemplate &target) {
+    bool operator==(ActivityTemplate &target) const {
       return(
         this->id == target.id &&
         this->arg_mode == target.arg_mode &&
@@ -294,7 +286,7 @@ namespace kagami {
     size_t GetArgumentSize() const { return this->args.size(); }
     int GetPriority() const { return this->priority; }
     bool Good() const { return ((activity != nullptr) && arg_mode != kCodeIllegalArgs); }
-    Message Start(ObjectMap &map);
+    Message Start(ObjectMap &map) const;
   };
 
   inline string CastToString(shared_ptr<void> ptr) {
@@ -313,7 +305,7 @@ namespace kagami {
 
   namespace trace {
     using log_t = pair<string, Message>;
-    void log(kagami::Message msg);
+    void Log(kagami::Message msg);
     vector<log_t> &GetLogger();
   }
 
