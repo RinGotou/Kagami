@@ -155,10 +155,10 @@ namespace kagami {
     no description yet.
   */
   struct Attribute {
-    string Methods;
-    bool Ro;
-    Attribute(string methods, const bool ro): Methods(std::move(methods)), Ro(ro) {}
-    Attribute() { Ro = false; }
+    string methods;
+    bool ro;
+    Attribute(string methods, bool ro): methods(std::move(methods)), ro(ro) {}
+    Attribute() { ro = false; }
   };
 
   /*Activity Template class
@@ -168,15 +168,15 @@ namespace kagami {
     string id;
     Activity activity;
     int priority;
-    int arg_mode;
+    int argMode;
     string args;
     string specifictype;
 
-    ActivityTemplate &set(string id, Activity activity, int priority, int arg_mode, string args, string type = kTypeIdNull) {
+    ActivityTemplate &Set(string id, Activity activity, int priority, int arg_mode, string args, string type = kTypeIdNull) {
       this->id = id;
       this->activity = activity;
       this->priority = priority;
-      this->arg_mode = arg_mode;
+      this->argMode = arg_mode;
       this->args = args;
       this->specifictype = type;
       return *this;
@@ -199,7 +199,7 @@ namespace kagami {
       this->methods = methods;
     }
 
-    shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) {
+    shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
       shared_ptr<void> result = nullptr;
       if (target != nullptr) {
         result = copyCreator(target);
@@ -327,14 +327,14 @@ namespace kagami {
       if (target.empty()) return false;
       return(target.front() == '\'' && target.back() == '\''); 
     }
-    size_t GetDataType(string target);
-    Attribute GetAttrTag(string target);
+    static size_t GetDataType(string target);
+    static Attribute GetAttrTag(string target);
     string BuildAttrStr(Attribute target);
     bool FindInStringVector(string target, string source);
-    vector<string> BuildStringVector(string source);
-    char convertChar(char target);
-    wchar_t convertWideChar(wchar_t target);
-    bool isWideString(string target);
+    static vector<string> BuildStringVector(string source);
+    static char ConvertChar(char target);
+    static wchar_t ConvertWideChar(wchar_t target);
+    static bool IsWideString(string target);
   };
 
   /*Object Class

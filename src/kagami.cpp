@@ -24,8 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kagami.h"
-#define _ENABLE_DEBUGGING_
-//#define _NO_CUI_
+//#define _ENABLE_DEBUGGING_
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
@@ -73,7 +72,7 @@ namespace kagami {
   }
 
 #ifndef _NO_CUI_
-  void ScriptCore::Terminal() {
+  void ScriptCore::Terminal() const {
     using namespace entry;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
@@ -84,7 +83,7 @@ namespace kagami {
 
     CreateManager();
     Activiate();
-    Inject(EntryProvider(ActivityTemplate().set("quit", Quit, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(ActivityTemplate().Set("quit", Quit, kFlagNormalEntry, kCodeNormalArgs, "")));
 
     while (result.GetCode() != kCodeQuit) {
       std::cout << ">>>";
