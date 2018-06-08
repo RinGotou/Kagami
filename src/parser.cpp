@@ -88,17 +88,16 @@ namespace kagami {
       return result;
     }
 
-    int GetRequiredCount(string target) {
-      auto result = -1;
+    size_t GetRequiredCount(string target) {
+      size_t result = 0;
       if (target == "+" || target == "-" || target == "*" || target == "/"
         || target == "==" || target == "<=" || target == ">=" || target == "!=") {
         result = Order("binexp").GetArgumentSize();
       }
       else {
         auto provider = Order(target);
-        switch (provider.Good()) {
-        case true:result = provider.GetArgumentSize(); break;
-        case false:result = kCodeIllegalArgs; break;
+        if(provider.Good()) {
+          result = provider.GetArgumentSize();
         }
       }
       return result;
@@ -171,7 +170,7 @@ namespace kagami {
     //Main state machine
     while (current < storage.size()) {
       if (!health) break;
-      result = storage.at(current).Start(currentMode);
+      result = storage[current].Start(currentMode);
       const auto value = result.GetValue();
       const auto code = result.GetCode();
 
@@ -326,7 +325,7 @@ namespace kagami {
         tail = count;
         break;
       }
-      forwardChar = target.at(count);
+      forwardChar = target[count];
     }
 
     if (tail > head) data = target.substr(head, tail - head);
@@ -372,7 +371,7 @@ namespace kagami {
     //third cycle
     stringProcessing = false;
     for (size_t count = 0; count < origin.size(); ++count) {
-      current = origin.at(count);
+      current = origin[count];
       if (!stringProcessing) {
         if (current == "(" || current == "[") nest++;
         if (current == ")" || current == "]") nest--;
@@ -432,7 +431,13 @@ namespace kagami {
         }
       }
 
-      forward = origin.at(count);
+      forward = origin[count];
+    }
+
+    if(health) {
+      for(auto &unit : output) {
+        types.emplace_back(kit.GetDataType(unit));
+      }
     }
 
     if (stringProcessing == true) {
@@ -514,6 +519,7 @@ namespace kagami {
     Object temp, *origin;
     size_t count;
     deque<string> tokens;
+    vector<size_t> tokenTypes;
     ObjectMap map;
     auto providerSize = -1;
     auto health = true;
@@ -534,7 +540,7 @@ namespace kagami {
     if (!tags.empty()) {
       providerType = tags.front();
       if (tags.size() > 1) {
-        providerSize = stoi(tags.at(1));
+        providerSize = stoi(tags[1]);
       }
       else {
         providerSize = -1;
@@ -569,6 +575,10 @@ namespace kagami {
       }
     }
 
+    for (auto &unit : tokens) {
+      tokenTypes.emplace_back(kit.GetDataType(unit));
+    }
+
     if (argMode == kCodeNormalArgs && (tokens.size() < size || tokens.size() > size)) {
       msg.combo(kStrFatalError, kCodeIllegalArgs, "Parameter doesn't match expected count.(01)");
       health = false;
@@ -580,28 +590,28 @@ namespace kagami {
     else {
       for (count = 0; count < size; count++) {
         if (tokens.size() - 1 < count) {
-          map.insert(pair<string, Object>(getName(args.at(count)), Object()));
+          map.insert(pair<string, Object>(getName(args[count]), Object()));
         }
         else {
-          const auto tokenType = kit.GetDataType(tokens.at(count));
+          const auto tokenType = tokenTypes[count];
           switch (tokenType) {
           case kGenericToken:
-            if (args.at(count).front() == '&') {
-              origin = GetObj(tokens.at(count));
+            if (args[count].front() == '&') {
+              origin = GetObj(tokens[count]);
               temp.Ref(*origin);
             }
-            else if (args.at(count).front() == '%') {
-              temp.Manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
+            else if (args[count].front() == '%') {
+              temp.Manage(tokens[count], kTypeIdRawString, kit.BuildAttrStr(strAttr));
             }
             else {
-              temp = *GetObj(tokens.at(count));
+              temp = *GetObj(tokens[count]);
             }
             break;
           default:
-            temp.Manage(tokens.at(count), kTypeIdRawString, kit.BuildAttrStr(strAttr));
+            temp.Manage(tokens[count], kTypeIdRawString, kit.BuildAttrStr(strAttr));
             break;
           }
-          map.insert(pair<string,Object>(getName(args.at(count)), temp));
+          map.insert(pair<string,Object>(getName(args[count]), temp));
           temp.Clear();
         }
       }
@@ -645,18 +655,22 @@ namespace kagami {
         break;
       }
 
-      if (msg.GetCode() == kCodeObject) {
+      const auto code = msg.GetCode();
+      const auto value = msg.GetValue();
+      const auto detail = msg.GetDetail();
+
+      if (code == kCodeObject) {
         temp = msg.GetObj();
-        auto tempId = msg.GetDetail() + to_string(lambdaObjectCount); //detail start with "__"
+        auto tempId = detail + to_string(lambdaObjectCount); //detail start with "__"
         item.push_back(tempId); 
         lambdamap.insert(pair<string, Object>(tempId, temp));
         ++lambdaObjectCount;
       }
-      else if (msg.GetValue() == kStrRedirect && (msg.GetCode() == kCodeSuccess || msg.GetCode() == kCodeFillingSign)) {
+      else if (value == kStrRedirect && (code == kCodeSuccess || code == kCodeFillingSign)) {
         item.push_back(msg.GetDetail());
       }
 
-      health = (msg.GetValue() != kStrFatalError && msg.GetValue() != kStrWarning);
+      health = (value != kStrFatalError && value != kStrWarning);
       symbol.pop_back();
     }
     return health;
@@ -780,9 +794,9 @@ namespace kagami {
     else if (GetPriority(currentToken) < GetPriority(symbol.back()) && symbol.back() != "(" && symbol.back() != "[") {
       auto j = symbol.size() - 1;
       auto k = item.size();
-      while (symbol.at(j) != "(" && symbol.back() != "[" && GetPriority(currentToken) < GetPriority(symbol.at(j))) {
-        if (k == item.size()) { k -= entry::GetRequiredCount(symbol.at(j)); }
-        else { k -= entry::GetRequiredCount(symbol.at(j)) - 1; }
+      while (symbol[j] != "(" && symbol.back() != "[" && GetPriority(currentToken) < GetPriority(symbol[j])) {
+        if (k == item.size()) { k -= entry::GetRequiredCount(symbol[j]); }
+        else { k -= entry::GetRequiredCount(symbol[j]) - 1; }
         --j;
       }
       symbol.insert(symbol.begin() + j + 1, currentToken);
@@ -897,9 +911,9 @@ namespace kagami {
     for (size_t i = 0; i < size; ++i) {
       if (!health) break;
       if(!state) break;
-      const auto unitType = kit.GetDataType(raw.at(i));
-      currentToken = raw.at(i);
-      if (i < size - 1) nextToken = raw.at(i + 1);
+      const auto unitType = types[i];
+      currentToken = raw[i];
+      if (i < size - 1) nextToken = raw[i + 1];
       else nextToken = kStrNull;
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
       if (unitType == kTypeSymbol) {

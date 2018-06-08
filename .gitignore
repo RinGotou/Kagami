@@ -1,5 +1,7 @@
 # Prerequisites
 *.d
+# Template files
+*.TMP
 
 # Compiled Object files
 *.slo

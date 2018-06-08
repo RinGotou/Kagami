@@ -33,20 +33,20 @@ namespace kagami {
 
 
   //RawString
-  shared_ptr<void> StringCopy(shared_ptr<void> target) {
-    auto temp(*static_pointer_cast<string>(target));
-    return make_shared<string>(temp);
-  }
+  //shared_ptr<void> StringCopy(shared_ptr<void> target) {
+  //  auto temp(*static_pointer_cast<string>(target));
+  //  return make_shared<string>(temp);
+  //}
 
   //Array
   shared_ptr<void> ArrayCopy(shared_ptr<void> target) {
-    const auto ptr = static_pointer_cast<deque<Object>>(target);
-    deque<Object> base;
+    const auto ptr = static_pointer_cast<vector<Object>>(target);
+    vector<Object> base;
 
     for (auto &unit : *ptr) {
       base.push_back(unit);
     }
-    return make_shared<deque<Object>>(base);
+    return make_shared<vector<Object>>(std::move(base));
   }
 
   //Cube
@@ -60,9 +60,10 @@ namespace kagami {
 
   Message ArrayConstructor(ObjectMap &p) {
     Message result;
+    Kit kit;
     auto size = p.at("size"), initValue = p.at("init_value");
     const auto sizeValue = stoi(*static_pointer_cast<string>(size.Get()));
-    deque<Object> base;
+    vector<Object> base;
 
     //error:wrong size
     if (sizeValue <= 0) {
@@ -72,14 +73,17 @@ namespace kagami {
 
     auto attribute = initValue.GetTag();
     attribute.ro = false;
+    const auto attrStr = kit.BuildAttrStr(attribute);
+    const auto typeId = initValue.GetTypeId();
+    base.reserve(sizeValue);
 
     for (auto count = 0; count < sizeValue; count++) {
-      const auto initPtr = type::GetObjectCopy(initValue);
-      base.push_back(Object().Set(initPtr, initValue.GetTypeId(), Kit().BuildAttrStr(attribute)));
+      auto initPtr = type::GetObjectCopy(initValue);
+      base.emplace_back(Object().Set(initPtr, typeId, attrStr));
     }
 
     attribute.methods = type::GetTemplate(kTypeIdArrayBase)->GetMethods();
-    result.SetObject(Object().Set(make_shared<deque<Object>>(base), kTypeIdArrayBase,
+    result.SetObject(Object().Set(make_shared<vector<Object>>(base), kTypeIdArrayBase,
       Kit().BuildAttrStr(attribute)), "__result");
     return result;
   }
@@ -110,9 +114,9 @@ namespace kagami {
     }
     else if (typeId == kTypeIdArrayBase) {
       count0 = stoi(*static_pointer_cast<string>(subscript1.Get()));
-      size = static_pointer_cast<deque<Object>>(object.Get())->size();
+      size = static_pointer_cast<vector<Object>>(object.Get())->size();
       if (count0 <= int(size - 1)) {
-        auto &target = static_pointer_cast<deque<Object>>(object.Get())->at(count0);
+        auto &target = static_pointer_cast<vector<Object>>(object.Get())->at(count0);
         temp.Ref(target);
         result.SetObject(temp, "__element");
       }
@@ -127,7 +131,7 @@ namespace kagami {
     const auto typeId = object.GetTypeId();
 
     if (typeId == kTypeIdArrayBase) {
-      result.SetDetail(to_string(static_pointer_cast<deque<Object>>(object.Get())->size()));
+      result.SetDetail(to_string(static_pointer_cast<vector<Object>>(object.Get())->size()));
     }
     else if (typeId == kTypeIdRawString) {
       auto str = *static_pointer_cast<string>(object.Get());
@@ -184,7 +188,7 @@ namespace kagami {
     Object object = p.at("object");
     ObjectMap map;
     if (object.GetTypeId() == kTypeIdArrayBase) {
-      auto &base = *static_pointer_cast<deque<Object>>(object.Get());
+      auto &base = *static_pointer_cast<vector<Object>>(object.Get());
       auto provider = entry::Order("print", kTypeIdNull, -1);
       for (auto &unit : base) {
         map.insert(pair<string, Object>("object", unit));
