@@ -24,7 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kagami.h"
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
@@ -38,7 +38,7 @@ namespace kagami {
   void ScriptCore::PrintEvents() {
     using namespace trace;
     ofstream ofs("event.log", std::ios::trunc);
-    string prioritystr;
+    string priorityStr;
     if (ofs.good()) {
       if (GetLogger().empty()) {
         ofs << "No Events.\n";
@@ -46,10 +46,11 @@ namespace kagami {
       else {
         for (log_t unit : GetLogger()) {
           ofs << unit.first;
-          if (unit.second.GetValue() == kStrFatalError) prioritystr = "Fatal:";
-          else if (unit.second.GetValue() == kStrWarning) prioritystr = "Warning:";
+          const auto value = unit.second.GetValue();
+          if (value == kStrFatalError) priorityStr = "Fatal:";
+          else if (value == kStrWarning) priorityStr = "Warning:";
           if (unit.second.GetDetail() != kStrEmpty) {
-            ofs << prioritystr << unit.second.GetDetail() << "\n";
+            ofs << priorityStr << unit.second.GetDetail() << "\n";
           }
         }
       }
@@ -72,6 +73,7 @@ namespace kagami {
   }
 
 #ifndef _NO_CUI_
+  //TODO:remove old terminal code and add terminal mode to script provider
   void ScriptCore::Terminal() const {
     using namespace entry;
     string buf = kStrEmpty;

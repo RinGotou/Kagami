@@ -156,7 +156,7 @@ namespace kagami {
     Object *GetObj(string name);
     static vector<string> Spilt(string target);
     static string GetHead(string target);
-    int GetPriority(string target) const;
+    static int GetPriority(string target);
     bool Assemble(Message &msg);
   public:
     Processor(): health(false), commaExpFunc(false), insertBtnSymbols(false), disableSetEntry(false),

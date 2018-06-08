@@ -275,7 +275,9 @@ namespace kagami {
         if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
           switch (currentMode) {
           case kModeCycle:
-            if (cycleTailStack.empty()) cycleTailStack.push(current - 1);
+            if (cycleTailStack.empty() || cycleTailStack.top() != current - 1) {
+              cycleTailStack.push(current - 1);
+            }
             current = cycleNestStack.top();
             break;
           case kModeCycleJump:
@@ -469,7 +471,7 @@ namespace kagami {
   }
 
   Object *Processor::GetObj(string name) {
-    auto result = new Object();
+    Object *result = nullptr;
     if (name.substr(0, 2) == "__") {
       const auto it = lambdamap.find(name);
       if (it != lambdamap.end()) result = &(it->second);
@@ -833,12 +835,12 @@ namespace kagami {
     }
 
     if (!defineLine && function && nextToken != "(" && currentToken != kStrEnd) {
-      errorString = "Bracket after function is missing";
+      errorString = "Bracket after function is missing.";
       this->health = false;
       result = false;
     }
     if (functionLine && forwardToken == kStrDef && nextToken != "(" && currentToken != kStrEnd) {
-      errorString = "Illegal declare of function.";
+      errorString = "Illegal declaration of function.";
       this->health = false;
       result = false;
     }
@@ -861,7 +863,7 @@ namespace kagami {
   void Processor::FinalProcessing(Message &msg) {
     while (symbol.empty() != true) {
       if (symbol.back() == "(" || symbol.back() == ")") {
-        msg.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket expected.");
+        msg.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket is expected.");
         break;
       }
       Assemble(msg);
@@ -875,7 +877,7 @@ namespace kagami {
     auto state = true;
     const auto size = raw.size();
 
-    if (this->health == false) {
+    if (health == false) {
       result.combo(kStrFatalError, kCodeBadExpression, errorString);
       return result;
     }
@@ -893,10 +895,7 @@ namespace kagami {
     defineLine = false;
 
     for (size_t i = 0; i < size; ++i) {
-      if (!this->health) {
-        result.combo(kStrFatalError, kCodeBadExpression, errorString);
-        break;
-      }
+      if (!health) break;
       if(!state) break;
       const auto unitType = kit.GetDataType(raw.at(i));
       currentToken = raw.at(i);
@@ -929,6 +928,7 @@ namespace kagami {
     kit.CleanupDeque(item).CleanupDeque(symbol);
     lambdamap.clear();
 
+    if(!health) result.combo(kStrFatalError, kCodeBadExpression, errorString);
 
     return result;
   }
