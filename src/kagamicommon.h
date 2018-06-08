@@ -157,6 +157,7 @@ namespace kagami {
   struct Attribute {
     string methods;
     bool ro;
+    Attribute &Set(string methods, bool ro) { this->methods = methods; this->ro = ro; return *this; }
     Attribute(string methods, bool ro): methods(std::move(methods)), ro(ro) {}
     Attribute() { ro = false; }
   };

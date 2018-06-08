@@ -373,11 +373,13 @@ namespace kagami {
     return result;
   }
 
+
+  //TODO:UNDER CONSTRUCTION
   Message ForEachCycle(ObjectMap &p) {
     Kit kit;
     Object *subscript = nullptr, *unit = nullptr;
     auto object = p["source"], id = p["id"];
-    Message result;
+    Message result, temp;
 
     if(!entry::FindObjectInCurrentManager("__subscript")) {
       entry::CreateManager();
@@ -390,10 +392,20 @@ namespace kagami {
     }
     
     const auto subValue = stoi(*static_pointer_cast<string>(subscript->Get()));
-    if (kit.FindInStringVector("at", object.GetTag().methods)) {
+    auto provider = entry::Order("at", object.GetTypeId(), -1);
+    if (provider.Good()) {
+      ObjectMap map;
+      map.insert(pair<string, Object>("subscript_1", *subscript));
+      map.insert(pair<string, Object>("object", object));
+    }
+    else {
+
+    }
+    //if (kit.FindInStringVector("at", object.GetTag().methods)) {
+      //entry::Order()
       //auto &target = static_pointer_cast<vector<Object>>(object.Get())->at(subValue);
       //unit->Ref(target);
-    }
+    //}
     
     return result;
   }
@@ -454,7 +466,7 @@ namespace kagami {
   //Linux Version
 #endif
   Message VersionInfo(ObjectMap &p) {
-    Message result(kStrRedirect, kCodeSuccess, "\"" + kEngineVersion + "\"");
+    Message result(kStrRedirect, kCodeSuccess, "'" + kEngineVersion + "'");
     return result;
   }
 
@@ -484,7 +496,7 @@ namespace kagami {
     auto now = time(nullptr);
     char nowTime[30] = { ' ' };
     ctime_s(nowTime, sizeof(nowTime), &now);
-    return Message(kStrRedirect, kCodeSuccess, string(nowTime));
+    return Message(kStrRedirect, kCodeSuccess, "'" + string(nowTime) + "'");
   }
 
   /*

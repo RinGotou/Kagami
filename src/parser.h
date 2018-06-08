@@ -125,12 +125,12 @@ namespace kagami {
   */
   class Processor {
   private:
+    using Token = pair<string, size_t>;
     bool health;
-    //bool legal;
-    vector<string> raw;
+    vector<Token> origin;
     vector<size_t> types;
     map<string, Object> lambdamap;
-    deque<string> item, symbol;
+    deque<Token> item, symbol;
     bool commaExpFunc,
       insertBtnSymbols,
       disableSetEntry,
@@ -138,9 +138,9 @@ namespace kagami {
       defineLine,
       functionLine,
       subscriptProcessing;
-    string currentToken;
-    string nextToken;
-    string forwardToken;
+    Token currentToken;
+    Token nextToken;
+    Token forwardToken;
     string operatorTargetType;
     string errorString;
     size_t mode,
@@ -168,13 +168,8 @@ namespace kagami {
                  dotOperator(false), defineLine(false), functionLine(false), subscriptProcessing(false), mode(0),
                  nextInsertSubscript(0), lambdaObjectCount(0) {}
 
-    Processor &Build(vector<string> &raw) {
-      this->raw = raw;
-      return *this;
-    }
-
     Processor &Reset() {
-      Kit().CleanupVector(raw);
+      Kit().CleanupVector(origin);
       return *this;
     }
 
@@ -303,6 +298,7 @@ namespace kagami {
     ObjTemplate *GetTemplate(string name);
     void AddTemplate(string name, ObjTemplate temp);
     shared_ptr<void> GetObjectCopy(Object &object);
+    string FindGoods(string name);
   }
 
   namespace trace {
