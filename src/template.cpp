@@ -27,6 +27,20 @@
 #include <iostream>
 
 namespace kagami {
+  namespace type {
+    using TagStore = pair<string, string>;
+    map<string,string>& GetTagMap() {
+      static map<string, string> base;
+      return base;
+    }
+
+    string FindGoods(string name) {
+      auto &base = GetTagMap();
+      auto it = base.find(name);
+      if (it != base.end()) return it->second;
+      else return kStrEmpty;
+    }
+  }
   //FileStream
 
   //WideString
@@ -79,12 +93,13 @@ namespace kagami {
 
     for (auto count = 0; count < sizeValue; count++) {
       auto initPtr = type::GetObjectCopy(initValue);
-      base.emplace_back(Object().Set(initPtr, typeId, attrStr));
+      base.emplace_back(std::move(Object().Set(initPtr, typeId, attrStr)));
     }
 
     attribute.methods = type::GetTemplate(kTypeIdArrayBase)->GetMethods();
-    result.SetObject(Object().Set(make_shared<vector<Object>>(base), kTypeIdArrayBase,
-      Kit().BuildAttrStr(attribute)), "__result");
+    attribute.ro = false;
+    const auto arrayTag = kit.BuildAttrStr(attribute);
+    result.SetObject(Object().Set(make_shared<vector<Object>>(base), kTypeIdArrayBase, arrayTag), "__result");
     return result;
   }
   
@@ -143,18 +158,6 @@ namespace kagami {
     return result;
   }
 
-  Message GetElement2Dimension(ObjectMap &p) {
-    Message result;
-    Object object = p.at(kStrObject), subscript_1 = p.at("subscript_1"), subscript_2 = p.at("subscript_2");
-    string type_id = object.GetTypeId();
-    int size = 0;
-    int count0 = 0, count1 = 0;
-
-    //TODO:
-
-    return result;
-  }
-
   Message PrintRawString(ObjectMap &p) {
     Message result;
     auto object = p.at("object");
@@ -201,9 +204,14 @@ namespace kagami {
 
   void InitTemplates() {
     using type::AddTemplate;
+    auto &base = type::GetTagMap();
+    Attribute attr;
+    Kit kit;
+    auto Build = [&kit](Attribute target) {return kit.BuildAttrStr(target); };
     AddTemplate(kTypeIdRawString, ObjTemplate(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
     AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at|__print"));
     AddTemplate(kTypeIdNull, ObjTemplate(NullCopy, ""));
+    base.insert(type::TagStore(kTypeIdRawString, Build(attr.Set("size|substr|at|__print",false))));
   }
 
   void InitMethods() {
@@ -214,10 +222,12 @@ namespace kagami {
     //methods
     Inject(EntryProvider(temp.Set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdRawString)));
     Inject(EntryProvider(temp.Set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdArrayBase)));
-    Inject(EntryProvider(temp.Set("at", GetElement2Dimension, kFlagMethod, kCodeNormalArgs, "subscript_1|subscript_2", kTypeIdCubeBase)));
+    //Inject(EntryProvider(temp.Set("at", GetElement2Dimension, kFlagMethod, kCodeNormalArgs, "subscript_1|subscript_2", kTypeIdCubeBase)));
     Inject(EntryProvider(temp.Set("__print", PrintRawString, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
     Inject(EntryProvider(temp.Set("__print", PrintArray, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
     Inject(EntryProvider(temp.Set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
     Inject(EntryProvider(temp.Set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
   }
+
+
 }
