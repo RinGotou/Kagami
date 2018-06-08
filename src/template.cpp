@@ -33,15 +33,14 @@ namespace kagami {
 
 
   //RawString
-  shared_ptr<void> StringCopy(const shared_ptr<void> target) {
+  shared_ptr<void> StringCopy(shared_ptr<void> target) {
     auto temp(*static_pointer_cast<string>(target));
     return make_shared<string>(temp);
   }
 
   //Array
-  shared_ptr<void> ArrayCopy(const shared_ptr<void> target) {
+  shared_ptr<void> ArrayCopy(shared_ptr<void> target) {
     const auto ptr = static_pointer_cast<deque<Object>>(target);
-    //size_t size = ptr->size(), count = 0;
     deque<Object> base;
 
     for (auto &unit : *ptr) {
@@ -72,14 +71,14 @@ namespace kagami {
     }
 
     auto attribute = initValue.GetTag();
-    attribute.Ro = false;
+    attribute.ro = false;
 
     for (auto count = 0; count < sizeValue; count++) {
       const auto initPtr = type::GetObjectCopy(initValue);
       base.push_back(Object().Set(initPtr, initValue.GetTypeId(), Kit().BuildAttrStr(attribute)));
     }
 
-    attribute.Methods = type::GetTemplate(kTypeIdArrayBase)->GetMethods();
+    attribute.methods = type::GetTemplate(kTypeIdArrayBase)->GetMethods();
     result.SetObject(Object().Set(make_shared<deque<Object>>(base), kTypeIdArrayBase,
       Kit().BuildAttrStr(attribute)), "__result");
     return result;
@@ -124,13 +123,13 @@ namespace kagami {
 
   Message GetSize(ObjectMap &p) {
     Message result;
-    Object object = p.at(kStrObject);
-    string type_id = object.GetTypeId();
+    auto object = p.at(kStrObject);
+    const auto typeId = object.GetTypeId();
 
-    if (type_id == kTypeIdArrayBase) {
+    if (typeId == kTypeIdArrayBase) {
       result.SetDetail(to_string(static_pointer_cast<deque<Object>>(object.Get())->size()));
     }
-    else if (type_id == kTypeIdRawString) {
+    else if (typeId == kTypeIdRawString) {
       auto str = *static_pointer_cast<string>(object.Get());
       if (Kit().IsString(str)) str = Kit().GetRawString(str);
       result.SetDetail(to_string(str.size()));
@@ -140,7 +139,7 @@ namespace kagami {
     return result;
   }
 
-  Message GetElement_2Dimension(ObjectMap &p) {
+  Message GetElement2Dimension(ObjectMap &p) {
     Message result;
     Object object = p.at(kStrObject), subscript_1 = p.at("subscript_1"), subscript_2 = p.at("subscript_2");
     string type_id = object.GetTypeId();
@@ -152,7 +151,7 @@ namespace kagami {
     return result;
   }
 
-  Message Print_RawString(ObjectMap &p) {
+  Message PrintRawString(ObjectMap &p) {
     Message result;
     auto object = p.at("object");
     string msg;
@@ -167,7 +166,7 @@ namespace kagami {
           continue;
         }
         if (needConvert) {
-          msg.append(1, Kit().convertChar(data.at(count)));
+          msg.append(1, Kit().ConvertChar(data.at(count)));
           needConvert = false;
         }
         else {
@@ -180,7 +179,7 @@ namespace kagami {
   }
 
 
-  Message Print_Array(ObjectMap &p) {
+  Message PrintArray(ObjectMap &p) {
     Message result;
     Object object = p.at("object");
     ObjectMap map;
@@ -207,14 +206,14 @@ namespace kagami {
     using namespace entry;
     ActivityTemplate temp;
     //constructor
-    Inject(EntryProvider(temp.set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
+    Inject(EntryProvider(temp.Set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
     //methods
-    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdRawString)));
-    Inject(EntryProvider(temp.set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdArrayBase)));
-    Inject(EntryProvider(temp.set("at", GetElement_2Dimension, kFlagMethod, kCodeNormalArgs, "subscript_1|subscript_2", kTypeIdCubeBase)));
-    Inject(EntryProvider(temp.set("__print", Print_RawString, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
-    Inject(EntryProvider(temp.set("__print", Print_Array, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
-    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
-    Inject(EntryProvider(temp.set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
+    Inject(EntryProvider(temp.Set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdRawString)));
+    Inject(EntryProvider(temp.Set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdArrayBase)));
+    Inject(EntryProvider(temp.Set("at", GetElement2Dimension, kFlagMethod, kCodeNormalArgs, "subscript_1|subscript_2", kTypeIdCubeBase)));
+    Inject(EntryProvider(temp.Set("__print", PrintRawString, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
+    Inject(EntryProvider(temp.Set("__print", PrintArray, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
+    Inject(EntryProvider(temp.Set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
+    Inject(EntryProvider(temp.Set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
   }
 }

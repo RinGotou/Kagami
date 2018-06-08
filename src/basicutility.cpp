@@ -37,7 +37,7 @@ namespace kagami {
     shared_ptr<void> GetObjectCopy(Object &object) {
       shared_ptr<void> result = nullptr;
       const auto option = object.GetTypeId();
-      auto it = GetTemplateMap().find(option);
+      const auto it = GetTemplateMap().find(option);
       if (it != GetTemplateMap().end()) {
         result = it->second.CreateObjectCopy(object.Get());
       }
@@ -98,7 +98,7 @@ namespace kagami {
 
     Object *CreateObject(const string sign, const shared_ptr<void> ptr, const string option, const bool constant = false) {
       const Attribute attribute(type::GetTemplate(option)->GetMethods(), constant);
-      GetObjectStack().back().add(sign, Object().Set(ptr, option, Kit().BuildAttrStr(attribute)));
+      GetObjectStack().back().Add(sign, Object().Set(ptr, option, Kit().BuildAttrStr(attribute)));
       const auto object = GetObjectStack().back().Find(sign);
       return object;
     }
@@ -138,10 +138,10 @@ namespace kagami {
       this->second = h;
 
       const auto attachment = Attachment(GetProcAddress(this->second, "Attachment"));
-      const auto deleter = this->getDeleter();
+      const auto deleter = this->GetDeleter();
       if (attachment != nullptr) {
         const auto ptr = attachment();
-        act_temp = *ptr;
+        actTemp = *ptr;
         deleter(ptr);
         health = true;
       }
@@ -155,12 +155,8 @@ namespace kagami {
     //from MSDN
     // ReSharper disable CppInconsistentNaming
     std::wstring s2ws(const std::string& s) {
-      // ReSharper restore CppInconsistentNaming
-      //int len;
-      // ReSharper disable once CppLocalVariableMayBeConst
-      auto slength = static_cast<int>(s.length()) + 1;
-      // ReSharper disable once CppLocalVariableMayBeConst
-      auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+      const auto slength = static_cast<int>(s.length()) + 1;
+      const auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
       auto *buf = new wchar_t[len];
       MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
       std::wstring r(buf);
@@ -193,21 +189,22 @@ namespace kagami {
     void UnloadInstance(const string name) {
       HINSTANCE *hinstance = nullptr;
       map<string, ObjTemplate> *objTemp = nullptr;
+      auto &instanceList = GetInstanceList();
 
-      auto instanceI = GetInstanceList().begin();
-      while (instanceI != GetInstanceList().end()) {
+      auto instanceI = instanceList.begin();
+      while (instanceI != instanceList.end()) {
         if (instanceI->first == name) break;
         ++instanceI;
       }
-      if (instanceI == GetInstanceList().end() && instanceI->first != name) {
+      if (instanceI == instanceList.end() && instanceI->first != name) {
         trace::Log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
         return;
       }
 
       if (instanceI->GetHealth() == true) {
         hinstance = &(instanceI->second);
-        const auto castAttachment = instanceI->getObjTemplate();
-        const auto deleter = instanceI->getDeleter();
+        const auto castAttachment = instanceI->GetObjTemplate();
+        const auto deleter = instanceI->GetDeleter();
         //delete entries
         auto actTemp = instanceI->GetMap();
         for (auto unit : actTemp) {
@@ -224,7 +221,7 @@ namespace kagami {
         deleter(objTemp);
       }
       FreeLibrary(*hinstance);
-      GetInstanceList().erase(instanceI);
+      instanceList.erase(instanceI);
     }
 
     size_t ResetPlugin() {
@@ -263,8 +260,8 @@ namespace kagami {
   Message BinaryOperands(ObjectMap &p) {
     Kit kit;
     Message result(kStrRedirect, kCodeSuccess, "0");
+    string temp, dataOP;
     auto first = p.at("first"), second = p.at("second"), op = p.at(kStrOperator);
-    auto temp = kStrEmpty, dataOP = kStrEmpty;
     auto tempresult = false;
     enum { enum_int, enum_double, enum_str, enum_null } enumtype = enum_null;
 
@@ -376,8 +373,8 @@ namespace kagami {
     Object source = p.at("source"), target = p.at("target");
     const auto ptr = type::GetObjectCopy(source);
 
-    attribute.Methods = type::GetTemplate(source.GetTypeId())->GetMethods();
-    attribute.Ro = false;
+    attribute.methods = type::GetTemplate(source.GetTypeId())->GetMethods();
+    attribute.ro = false;
     const auto attrStr = Kit().BuildAttrStr(attribute);
     target.Set(ptr, source.GetTypeId(), attrStr);
 
@@ -436,7 +433,7 @@ namespace kagami {
     auto object = p.at("object");
     const auto attribute = object.GetTag();
 
-    if (kit.FindInStringVector("__print", attribute.Methods)) {
+    if (kit.FindInStringVector("__print", attribute.methods)) {
       auto provider = entry::Order("__print", object.GetTypeId(), -1);
       if (provider.Good()) {
         result = provider.Start(p);
@@ -461,17 +458,17 @@ namespace kagami {
     InitTemplates();
     InitMethods();
     ActivityTemplate temp;
-    Inject(EntryProvider(temp.set("binexp", BinaryOperands, kFlagOperatorEntry, kCodeNormalArgs, "first|second")));
-    Inject(EntryProvider(temp.set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject(EntryProvider(temp.set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject(EntryProvider(temp.set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject(EntryProvider(temp.set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject(EntryProvider(temp.set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
-    Inject(EntryProvider(temp.set(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
-    Inject(EntryProvider(temp.set(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
-    Inject(EntryProvider(temp.set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
-    Inject(EntryProvider(temp.set("print", Print, kFlagNormalEntry, kCodeNormalArgs, "object")));
-    Inject(EntryProvider(temp.set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject(EntryProvider(temp.set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject(EntryProvider(temp.Set("binexp", BinaryOperands, kFlagOperatorEntry, kCodeNormalArgs, "first|second")));
+    Inject(EntryProvider(temp.Set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject(EntryProvider(temp.Set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.Set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.Set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject(EntryProvider(temp.Set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
+    Inject(EntryProvider(temp.Set(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
+    Inject(EntryProvider(temp.Set(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
+    Inject(EntryProvider(temp.Set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
+    Inject(EntryProvider(temp.Set("print", Print, kFlagNormalEntry, kCodeNormalArgs, "object")));
+    Inject(EntryProvider(temp.Set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.Set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
   }
 }
