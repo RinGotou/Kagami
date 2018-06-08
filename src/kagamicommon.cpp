@@ -71,7 +71,7 @@ namespace kagami {
 
   vector<string> Kit::BuildStringVector(string source) {
     vector<string> result;
-    string temp = kStrEmpty;
+    string temp;
     for (auto unit : source) {
       if (unit == '|') {
         result.push_back(temp);
@@ -87,7 +87,7 @@ namespace kagami {
   Attribute Kit::GetAttrTag(string target) {
     Attribute result;
     vector<string> base;
-    string temp = kStrEmpty;
+    string temp;
 
     for (auto &unit : target) {
       if (unit == '+' || unit == '%') {
@@ -111,31 +111,31 @@ namespace kagami {
       if (unit.front() == '%') {
         temp = unit.substr(1, unit.size() - 1);
         if (temp == kStrTrue) {
-          result.Ro = true;
+          result.ro = true;
         }
         else if (temp == kStrFalse) {
-          result.Ro = false;
+          result.ro = false;
         }
       }
       else if (unit.front() == '+') {
         temp = unit.substr(1, unit.size() - 1) + "|";
-        result.Methods.append(temp);
+        result.methods.append(temp);
       }
 
       temp = kStrEmpty;
     }
 
-    if (!result.Methods.empty()) {
-      if (result.Methods.back() == '|') result.Methods.pop_back();
+    if (!result.methods.empty()) {
+      if (result.methods.back() == '|') result.methods.pop_back();
     }
 
     return result;
   }
 
   string Kit::BuildAttrStr(Attribute target) {
-    string result = kStrEmpty;
-    vector<string> methods = this->BuildStringVector(target.Methods);
-    if (target.Ro)result.append("%true");
+    string result;
+    auto methods = this->BuildStringVector(target.methods);
+    if (target.ro)result.append("%true");
     else result.append("%false");
     if (!methods.empty()) {
       for (auto &unit : methods) {
@@ -145,7 +145,7 @@ namespace kagami {
     return result;
   }
 
-  char Kit::convertChar(char target) {
+  char Kit::ConvertChar(char target) {
     char result;
     switch (target) {
     case 't':result = '\t'; break;
@@ -156,7 +156,7 @@ namespace kagami {
     return result;
   }
 
-  wchar_t Kit::convertWideChar(wchar_t target) {
+  wchar_t Kit::ConvertWideChar(wchar_t target) {
     wchar_t result;
     switch (target) {
     case L't':result = L'\t'; break;
@@ -167,8 +167,8 @@ namespace kagami {
     return result;
   }
 
-  bool Kit::isWideString(string target) {
-    bool result = false;
+  bool Kit::IsWideString(string target) {
+    auto result = false;
     for (auto &unit : target) {
       if (unit < 0 || unit>127) {
         result = true;

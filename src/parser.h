@@ -59,14 +59,14 @@ namespace kagami {
     ObjectBase base;
 
     bool CheckObject(string sign) {
-      ObjectBase::iterator it = base.find(sign);
+      const auto it = base.find(sign);
       if (it == base.end()) return false;
       else return true;
     }
   public:
     template <class Type> 
     bool Create(string sign, Type &t, string TypeId, ObjTemplate temp, bool constant) {
-      bool result = true;
+      auto result = true;
       //string tag;
       Attribute attribute;
 
@@ -74,9 +74,9 @@ namespace kagami {
         result = false;
       }
       else {
-        if (constant) attribute.Ro = true;
-        else attribute.Ro = false;
-        attribute.Methods = temp.GetMethods();
+        if (constant) attribute.ro = true;
+        else attribute.ro = false;
+        attribute.methods = temp.GetMethods();
 
         auto tag = Kit().BuildAttrStr(attribute);
 
@@ -85,7 +85,7 @@ namespace kagami {
       
       return result;
     }
-    bool add(string sign, Object &source) {
+    bool Add(string sign, Object &source) {
       bool result = true;
       Object object = source;
 
@@ -109,8 +109,8 @@ namespace kagami {
       return wrapper;
     }
 
-    void dispose(string name) {
-      ObjectBase::iterator it = base.find(name);
+    void Dispose(string name) {
+      const auto it = base.find(name);
       if (it != base.end()) base.erase(it);
     }
   };
@@ -126,14 +126,13 @@ namespace kagami {
     vector<string> raw;
     map<string, Object> lambdamap;
     deque<string> item, symbol;
-    bool comma_exp_func,
-      //string_token_proc,
-      insert_btn_symbols,
-      disable_set_entry,
-      dot_operator,
-      define_line,
-      function_line,
-      subscript_processing;
+    bool commaExpFunc,
+      insertBtnSymbols,
+      disableSetEntry,
+      dotOperator,
+      defineLine,
+      functionLine,
+      subscriptProcessing;
     string currentToken;
     string nextToken;
     string forwardToken;
@@ -143,7 +142,6 @@ namespace kagami {
       nextInsertSubscript,
       lambdaObjectCount;
 
-    //void DoubleQuotationMark();
     void EqualMark();
     void Comma();
     bool LeftBracket(Message &msg);
@@ -158,14 +156,14 @@ namespace kagami {
     Object *GetObj(string name);
     static vector<string> Spilt(string target);
     static string GetHead(string target);
-    int GetPriority(string target) const;
+    static int GetPriority(string target);
     bool Assemble(Message &msg);
   public:
-    Processor(): health(false), comma_exp_func(false), insert_btn_symbols(false), disable_set_entry(false),
-                 dot_operator(false), define_line(false), function_line(false), subscript_processing(false), mode(0),
+    Processor(): health(false), commaExpFunc(false), insertBtnSymbols(false), disableSetEntry(false),
+                 dotOperator(false), defineLine(false), functionLine(false), subscriptProcessing(false), mode(0),
                  nextInsertSubscript(0), lambdaObjectCount(0) {}
 
-    Processor &Build(const vector<string> raw) {
+    Processor &Build(vector<string> &raw) {
       this->raw = raw;
       return *this;
     }
@@ -219,7 +217,6 @@ namespace kagami {
     }
 
     bool GetHealth() const { return health; }
-    //string getErrorString() const { return errorString; }
     bool Eof() const { return end; }
     void ResetCounter() { current = 0; }
     explicit ScriptProvider(const char *target);
@@ -234,7 +231,7 @@ namespace kagami {
   class EntryProvider {
   private:
     string id;
-    int arg_mode;
+    int argMode;
     int priority;
     vector<string> args;
     Activity activity;
@@ -242,14 +239,14 @@ namespace kagami {
     size_t minsize;
   public:
     EntryProvider() : id(kStrNull), priority(0), activity(nullptr), minsize(0) {
-      arg_mode = kCodeIllegalArgs;
+      argMode = kCodeIllegalArgs;
       specifictype = kTypeIdNull;
     }
 
-    explicit EntryProvider(const ActivityTemplate temp) :
+    explicit EntryProvider(ActivityTemplate temp) :
       id(temp.id), args(Kit().BuildStringVector(temp.args)),
       activity(temp.activity), minsize(0) {
-      arg_mode = temp.arg_mode;
+      argMode = temp.argMode;
       priority = temp.priority;
       specifictype = temp.specifictype;
     }
@@ -257,7 +254,7 @@ namespace kagami {
     bool operator==(EntryProvider &target) const {
       return (target.id == this->id &&
         target.activity == this->activity &&
-        target.arg_mode == this->arg_mode &&
+        target.argMode == this->argMode &&
         target.priority == this->priority &&
         this->specifictype == target.specifictype &&
         target.args == this->args);
@@ -266,7 +263,7 @@ namespace kagami {
     bool operator==(ActivityTemplate &target) const {
       return(
         this->id == target.id &&
-        this->arg_mode == target.arg_mode &&
+        this->argMode == target.argMode &&
         this->priority==target.priority &&
         this->args == Kit().BuildStringVector(target.args) &&
         this->activity == target.activity &&
@@ -281,11 +278,11 @@ namespace kagami {
 
     string GetSpecificType() const { return specifictype; }
     string GetId() const { return this->id; }
-    int GetArgumentMode() const { return this->arg_mode; }
+    int GetArgumentMode() const { return this->argMode; }
     vector<string> GetArguments() const { return args; }
     size_t GetArgumentSize() const { return this->args.size(); }
     int GetPriority() const { return this->priority; }
-    bool Good() const { return ((activity != nullptr) && arg_mode != kCodeIllegalArgs); }
+    bool Good() const { return ((activity != nullptr) && argMode != kCodeIllegalArgs); }
     Message Start(ObjectMap &map) const;
   };
 
@@ -315,14 +312,14 @@ namespace kagami {
     class Instance : public pair<string, HINSTANCE> {
     private:
       bool health;
-      vector<ActivityTemplate> act_temp;
+      vector<ActivityTemplate> actTemp;
     public:
       Instance() { health = false; }
       bool Load(string name, HINSTANCE h);
       bool GetHealth() const { return health; }
-      vector<ActivityTemplate> GetMap() const { return act_temp; }
-      CastAttachment getObjTemplate() { return (CastAttachment)GetProcAddress(this->second, "CastAttachment"); }
-      MemoryDeleter getDeleter() { return (MemoryDeleter)GetProcAddress(this->second, "FreeMemory"); }
+      vector<ActivityTemplate> GetMap() const { return actTemp; }
+      CastAttachment GetObjTemplate() const { return CastAttachment(GetProcAddress(this->second, "CastAttachment")); }
+      MemoryDeleter GetDeleter() const { return MemoryDeleter(GetProcAddress(this->second, "FreeMemory")); }
     };
 #else
     //Linux Version
@@ -330,7 +327,6 @@ namespace kagami {
     using EntryMapUnit = map<string, EntryProvider>::value_type;
     
     string GetTypeId(string sign);
-    std::wstring s2ws(const std::string& s);
     void Inject(EntryProvider provider);
     void RemoveByTemplate(ActivityTemplate temp);
     Object *FindObject(string name);
