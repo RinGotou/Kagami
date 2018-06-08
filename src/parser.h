@@ -113,6 +113,10 @@ namespace kagami {
       const auto it = base.find(name);
       if (it != base.end()) base.erase(it);
     }
+
+    bool Empty() const {
+      return base.empty();
+    }
   };
 
   /*Processor Class
@@ -124,6 +128,7 @@ namespace kagami {
     bool health;
     //bool legal;
     vector<string> raw;
+    vector<size_t> types;
     map<string, Object> lambdamap;
     deque<string> item, symbol;
     bool commaExpFunc,
