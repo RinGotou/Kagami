@@ -64,6 +64,13 @@ namespace kagami {
     return true;
   }
 
+  bool Kit::IsBlank(string target) {
+    for (auto &unit : target) {
+      if (unit != ' ' && unit != '\t' && unit != '\r' && unit != '\n') return false;
+    }
+    return true;
+  }
+
   size_t Kit::GetDataType(string target) {
     using std::regex_match;
     size_t result;
@@ -75,9 +82,9 @@ namespace kagami {
     else if (target == kStrTrue || target == kStrFalse) result = kTypeBoolean;
     else if (IsGenericToken(target)) result = kGenericToken;
     else if (IsInteger(target)) result = kTypeInteger;
-    else if (match(kPatternDouble)) result = kTypeDouble;
+    else if (IsDouble(target)) result = kTypeDouble;
     else if (match(kPatternSymbol)) result = kTypeSymbol;
-    else if (match(kPatternBlank)) result = kTypeBlank;
+    else if (IsBlank(target)) result = kTypeBlank;
     else if (IsString(target)) result = kTypeString;
     else result = kTypeNull;
 

@@ -322,6 +322,7 @@ namespace kagami {
     static bool IsGenericToken(string target);
     static bool IsInteger(string target);
     static bool IsDouble(string target);
+    static bool IsBlank(string target);
     static size_t GetDataType(string target);
     bool FindInStringVector(string target, string source);
     static vector<string> BuildStringVector(string source);
@@ -412,20 +413,56 @@ namespace kagami {
       return result; 
     }
     Object &SetMethods(string methods) {
+      if(option == kTypeIdRef) {
+        return static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->SetMethods(methods);
+      }
       this->methods = methods;
       return *this;
     }
     Object &SetTokenType(size_t tokenType) {
+      if (option == kTypeIdRef) {
+        return static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->SetTokenType(tokenType);
+      }
       this->tokenType = tokenType;
       return *this;
     }
     Object &SetRo(bool ro) {
+      if (option == kTypeIdRef) {
+        return static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->SetRo(ro);
+      }
       this->ro = ro;
       return *this;
     }
-    string GetMethods() const { return methods; }
-    size_t GetTokenType() const { return tokenType; }
-    bool IsRo() const { return ro; }
+    string GetMethods() const {
+      if (option == kTypeIdRef) {
+        return static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->GetMethods();
+      }
+      return methods;
+    }
+    size_t GetTokenType() const {
+      if (option == kTypeIdRef) {
+        return static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->GetTokenType();
+      }
+      return tokenType;
+    }
+    bool IsRo() const {
+      if (option == kTypeIdRef) {
+        return static_pointer_cast<TargetObject>(ptr)
+          ->ptr
+          ->IsRo();
+      }
+      return ro;
+    }
     void Clear() {
       ptr = make_shared<int>(0);
       option = kTypeIdNull;
