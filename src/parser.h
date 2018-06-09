@@ -64,27 +64,6 @@ namespace kagami {
       else return true;
     }
   public:
-    template <class Type> 
-    bool Create(string sign, Type &t, string TypeId, ObjTemplate temp, bool constant) {
-      auto result = true;
-      //string tag;
-      Attribute attribute;
-
-      if (CheckObject(sign) == true) {
-        result = false;
-      }
-      else {
-        if (constant) attribute.ro = true;
-        else attribute.ro = false;
-        attribute.methods = temp.GetMethods();
-
-        auto tag = Kit().BuildAttrStr(attribute);
-
-        base.insert(pair<string, Object>(sign, Object().Manage(t, TypeId, tag)));
-      }
-      
-      return result;
-    }
     bool Add(string sign, Object &source) {
       bool result = true;
       Object object = source;
@@ -298,7 +277,6 @@ namespace kagami {
     ObjTemplate *GetTemplate(string name);
     void AddTemplate(string name, ObjTemplate temp);
     shared_ptr<void> GetObjectCopy(Object &object);
-    string FindGoods(string name);
   }
 
   namespace trace {

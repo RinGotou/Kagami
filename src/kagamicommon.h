@@ -151,17 +151,6 @@ namespace kagami {
   const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
   const regex kPatternBlank(R"([[:blank:]])");
 
-  /*Object Tag Struct
-    no description yet.
-  */
-  struct Attribute {
-    string methods;
-    bool ro;
-    Attribute &Set(string methods, bool ro) { this->methods = methods; this->ro = ro; return *this; }
-    Attribute(string methods, bool ro): methods(std::move(methods)), ro(ro) {}
-    Attribute() { ro = false; }
-  };
-
   /*Activity Template class
     no description yet.
   */
@@ -324,13 +313,16 @@ namespace kagami {
       return target.substr(1, target.size() - 2);
     }
 
+    static bool IsDigit(char c) { return (c >= '0' && c <= '9'); }
+    static bool IsAlpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
     static bool IsString(string target) { 
       if (target.empty()) return false;
       return(target.front() == '\'' && target.back() == '\''); 
     }
+    static bool IsGenericToken(string target);
+    static bool IsInteger(string target);
+    static bool IsDouble(string target);
     static size_t GetDataType(string target);
-    static Attribute GetAttrTag(string target);
-    string BuildAttrStr(Attribute target);
     bool FindInStringVector(string target, string source);
     static vector<string> BuildStringVector(string source);
     static char ConvertChar(char target);
@@ -348,42 +340,43 @@ namespace kagami {
     typedef struct { Object *ptr; } TargetObject;
     std::shared_ptr<void> ptr;
     string option;
-    string tag;
+    string methods;
+    size_t tokenType;
+    bool ro;
   public:
     Object() {
       //hold a null pointer will cause some mysterious ploblems,
       //so this will hold a specific value intead of nullptr
       ptr = make_shared<int>(0);
       option = kTypeIdNull;
-      tag = kStrEmpty;
+      tokenType = kTypeNull;
+      ro = false;
     }
     template <class T>
-    Object &Manage(T &t, string option, string tag) {
+    Object &Manage(T &t, string option) {
       Object *result;
       if (this->option == kTypeIdRef) {
         result = &(static_pointer_cast<TargetObject>(this->ptr)
           ->ptr
-          ->Manage(t, option, tag));
+          ->Manage(t, option));
       }
       else {
         this->ptr = std::make_shared<T>(t);
         this->option = option;
-        this->tag = tag;
         result = this;
       }
       return *result;
     }
-    Object &Set(shared_ptr<void> ptr, string option, string tag) {
+    Object &Set(shared_ptr<void> ptr, string option) {
       Object *result;
       if (this->option == kTypeIdRef) {
         result = &(static_pointer_cast<TargetObject>(this->ptr)
           ->ptr
-          ->Set(ptr, option, tag));
+          ->Set(ptr, option));
       }
       else {
         this->ptr = ptr;
         this->option = option;
-        this->tag = tag;
         result = this;
       }
       return *result;
@@ -418,22 +411,24 @@ namespace kagami {
       }
       return result; 
     }
-    Attribute GetTag() const { 
-      Attribute result;
-      if (option == kTypeIdRef) {
-        result = static_pointer_cast<TargetObject>(ptr)
-          ->ptr
-          ->GetTag();
-      }
-      else {
-        result = Kit().GetAttrTag(tag);
-      }
-      return result;
+    Object &SetMethods(string methods) {
+      this->methods = methods;
+      return *this;
     }
+    Object &SetTokenType(size_t tokenType) {
+      this->tokenType = tokenType;
+      return *this;
+    }
+    Object &SetRo(bool ro) {
+      this->ro = ro;
+      return *this;
+    }
+    string GetMethods() const { return methods; }
+    size_t GetTokenType() const { return tokenType; }
+    bool IsRo() const { return ro; }
     void Clear() {
       ptr = make_shared<int>(0);
       option = kTypeIdNull;
-      tag = kStrEmpty;
     }
     bool IsRef() const { return option == kTypeIdRef; }
   };

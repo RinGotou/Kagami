@@ -519,7 +519,6 @@ namespace kagami {
 
   bool Processor::Assemble(Message &msg) {
     Kit kit;
-    Attribute attribute;
     Object temp, *origin;
     size_t count;
     deque<Token> tokens;
@@ -598,14 +597,18 @@ namespace kagami {
               temp.Ref(*origin);
             }
             else if (args[count].front() == '%') {
-              temp.Manage(tokens[count], kTypeIdRawString, type::FindGoods(kTypeIdRawString));
+              temp.Manage(tokens[count], kTypeIdRawString)
+                  .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+                  .SetTokenType(kGenericToken);
             }
             else {
               temp = *GetObj(tokens[count].first);
             }
             break;
           default:
-            temp.Manage(tokens[count], kTypeIdRawString, type::FindGoods(kTypeIdRawString));
+            temp.Manage(tokens[count], kTypeIdRawString)
+              .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+              .SetTokenType(tokens[count].second);
             break;
           }
           map.insert(pair<string,Object>(getName(args[count]), temp));
@@ -616,7 +619,9 @@ namespace kagami {
       switch (priority) {
       case kFlagOperatorEntry:
         map.insert(pair<string, Object>(kStrOperator, Object()
-          .Manage(symbol.back(), kTypeIdRawString, type::FindGoods(kTypeIdRawString))));
+          .Manage(symbol.back(), kTypeIdRawString)
+          .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+          .SetTokenType(kTypeSymbol)));
         break;
       case kFlagMethod:
         origin = GetObj(item.back().first);
@@ -664,7 +669,7 @@ namespace kagami {
         ++lambdaObjectCount;
       }
       else if (value == kStrRedirect && (code == kCodeSuccess || code == kCodeFillingSign)) {
-        item.emplace_back(Token(msg.GetDetail(), kit.GetDataType(msg.GetDetail())));
+        item.emplace_back(Token(detail, kit.GetDataType(detail)));
       }
 
       health = (value != kStrFatalError && value != kStrWarning);

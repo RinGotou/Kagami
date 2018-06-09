@@ -27,20 +27,6 @@
 #include <iostream>
 
 namespace kagami {
-  namespace type {
-    using TagStore = pair<string, string>;
-    map<string,string>& GetTagMap() {
-      static map<string, string> base;
-      return base;
-    }
-
-    string FindGoods(string name) {
-      auto &base = GetTagMap();
-      auto it = base.find(name);
-      if (it != base.end()) return it->second;
-      else return kStrEmpty;
-    }
-  }
   //FileStream
 
   //WideString
@@ -85,21 +71,24 @@ namespace kagami {
       return result;
     }
 
-    auto attribute = initValue.GetTag();
-    attribute.ro = false;
-    const auto attrStr = kit.BuildAttrStr(attribute);
     const auto typeId = initValue.GetTypeId();
+    const auto methods = initValue.GetMethods();
+    const auto tokenType = initValue.GetTokenType();
     base.reserve(sizeValue);
 
     for (auto count = 0; count < sizeValue; count++) {
       auto initPtr = type::GetObjectCopy(initValue);
-      base.emplace_back(std::move(Object().Set(initPtr, typeId, attrStr)));
+      base.emplace_back(std::move(Object()
+        .Set(initPtr, typeId)
+        .SetMethods(methods)
+        .SetTokenType(tokenType).SetRo(false)));
     }
 
-    attribute.methods = type::GetTemplate(kTypeIdArrayBase)->GetMethods();
-    attribute.ro = false;
-    const auto arrayTag = kit.BuildAttrStr(attribute);
-    result.SetObject(Object().Set(make_shared<vector<Object>>(base), kTypeIdArrayBase, arrayTag), "__result");
+    result.SetObject(Object()
+      .Set(make_shared<vector<Object>>(base), kTypeIdArrayBase)
+      .SetMethods(type::GetTemplate(kTypeIdArrayBase)->GetMethods())
+      .SetRo(false)
+      , "__result");
     return result;
   }
   
@@ -204,14 +193,9 @@ namespace kagami {
 
   void InitTemplates() {
     using type::AddTemplate;
-    auto &base = type::GetTagMap();
-    Attribute attr;
-    Kit kit;
-    auto Build = [&kit](Attribute target) {return kit.BuildAttrStr(target); };
     AddTemplate(kTypeIdRawString, ObjTemplate(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
     AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at|__print"));
     AddTemplate(kTypeIdNull, ObjTemplate(NullCopy, ""));
-    base.insert(type::TagStore(kTypeIdRawString, Build(attr.Set("size|substr|at|__print",false))));
   }
 
   void InitMethods() {
