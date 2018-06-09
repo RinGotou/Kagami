@@ -104,6 +104,7 @@ namespace kagami {
 
 int main(int argc, char **argv) {
   kagami::ScriptCore scriptCore;
+
 #ifdef _ENABLE_DEBUGGING_
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
 #else

@@ -64,27 +64,6 @@ namespace kagami {
       else return true;
     }
   public:
-    template <class Type> 
-    bool Create(string sign, Type &t, string TypeId, ObjTemplate temp, bool constant) {
-      auto result = true;
-      //string tag;
-      Attribute attribute;
-
-      if (CheckObject(sign) == true) {
-        result = false;
-      }
-      else {
-        if (constant) attribute.ro = true;
-        else attribute.ro = false;
-        attribute.methods = temp.GetMethods();
-
-        auto tag = Kit().BuildAttrStr(attribute);
-
-        base.insert(pair<string, Object>(sign, Object().Manage(t, TypeId, tag)));
-      }
-      
-      return result;
-    }
     bool Add(string sign, Object &source) {
       bool result = true;
       Object object = source;
@@ -113,6 +92,10 @@ namespace kagami {
       const auto it = base.find(name);
       if (it != base.end()) base.erase(it);
     }
+
+    bool Empty() const {
+      return base.empty();
+    }
   };
 
   /*Processor Class
@@ -121,11 +104,12 @@ namespace kagami {
   */
   class Processor {
   private:
+    using Token = pair<string, size_t>;
     bool health;
-    //bool legal;
-    vector<string> raw;
+    vector<Token> origin;
+    vector<size_t> types;
     map<string, Object> lambdamap;
-    deque<string> item, symbol;
+    deque<Token> item, symbol;
     bool commaExpFunc,
       insertBtnSymbols,
       disableSetEntry,
@@ -133,9 +117,9 @@ namespace kagami {
       defineLine,
       functionLine,
       subscriptProcessing;
-    string currentToken;
-    string nextToken;
-    string forwardToken;
+    Token currentToken;
+    Token nextToken;
+    Token forwardToken;
     string operatorTargetType;
     string errorString;
     size_t mode,
@@ -163,13 +147,8 @@ namespace kagami {
                  dotOperator(false), defineLine(false), functionLine(false), subscriptProcessing(false), mode(0),
                  nextInsertSubscript(0), lambdaObjectCount(0) {}
 
-    Processor &Build(vector<string> &raw) {
-      this->raw = raw;
-      return *this;
-    }
-
     Processor &Reset() {
-      Kit().CleanupVector(raw);
+      Kit().CleanupVector(origin);
       return *this;
     }
 
