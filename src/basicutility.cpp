@@ -80,7 +80,7 @@ namespace kagami {
       vector<ObjectManager> &base = GetObjectStack();
 
       while (!base.empty() && count > 0) {
-        object = base.at(count - 1).Find(sign);
+        object = base[count - 1].Find(sign);
         if (object != nullptr) {
           break;
         }
@@ -89,18 +89,25 @@ namespace kagami {
       return object;
     }
 
-    Object *CreateObject(string sign, string dat, bool constant = false) {
-      const auto objtemp = type::GetTemplate(kTypeIdRawString);
-      GetObjectStack().back().Create(sign, dat, kTypeIdRawString, *objtemp, constant);
-      const auto object = GetObjectStack().back().Find(sign);
+    Object *FindObjectInCurrentManager(string sign) {
+      Object *object = nullptr;
+      auto &base = GetObjectStack().back();
+
+      while(!base.Empty()) {
+        object = base.Find(sign);
+        if(object != nullptr) {
+          break;
+        }
+      }
+
       return object;
     }
 
-    Object *CreateObject(const string sign, const shared_ptr<void> ptr, const string option, const bool constant = false) {
-      const Attribute attribute(type::GetTemplate(option)->GetMethods(), constant);
-      GetObjectStack().back().Add(sign, Object().Set(ptr, option, Kit().BuildAttrStr(attribute)));
-      const auto object = GetObjectStack().back().Find(sign);
-      return object;
+    Object *CreateObject(string sign, Object &object) {
+      auto &base = GetObjectStack();
+      base.back().Add(sign, object);
+      const auto result = base.back().Find(sign);
+      return result;
     }
 
     string GetTypeId(const string sign) {
@@ -109,7 +116,7 @@ namespace kagami {
       auto& base = GetObjectStack(); 
 
       while (count > 0) {
-        const auto object = base.at(count - 1).Find(sign);
+        const auto object = base[count - 1].Find(sign);
         if (object != nullptr) {
           result = object->GetTypeId();
         }
@@ -238,7 +245,7 @@ namespace kagami {
   Message WriteLog(ObjectMap &p) {
     Kit kit;
     Message result;
-    Object data = p.at("data");
+    auto data = p["data"];
     ofstream ofs("script.log", std::ios::out | std::ios::app);
 
     if (data.GetTypeId() == kTypeIdRawString) {
@@ -261,7 +268,7 @@ namespace kagami {
     Kit kit;
     Message result(kStrRedirect, kCodeSuccess, "0");
     string temp, dataOP;
-    auto first = p.at("first"), second = p.at("second"), op = p.at(kStrOperator);
+    auto first = p["first"], second = p["second"], op = p[kStrOperator];
     auto tempresult = false;
     enum { enum_int, enum_double, enum_str, enum_null } enumtype = enum_null;
 
@@ -270,8 +277,8 @@ namespace kagami {
     if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
       auto dataA = *static_pointer_cast<string>(first.Get());
       auto dataB = *static_pointer_cast<string>(second.Get());
-      const auto datatypeA = kit.GetDataType(dataA);
-      const auto datatypeB = kit.GetDataType(dataB);
+      const auto datatypeA = first.GetTokenType();
+      const auto datatypeB = second.GetTokenType();
       if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = enum_double;
       if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = enum_int;
       if (kit.IsString(dataA) || kit.IsString(dataB)) enumtype = enum_str;
@@ -334,31 +341,23 @@ namespace kagami {
   }
 
   Message ConditionRoot(ObjectMap &p) {
-    auto object = p.at("state");
-    Message result(CastToString(object.Get()), kCodeConditionRoot, kStrEmpty);
-    return result;
+    return Message(CastToString(p["state"].Get()), kCodeConditionRoot, kStrEmpty);
   }
 
   Message ConditionBranch(ObjectMap &p) {
-    auto object = p.at("state");
-    Message result(CastToString(object.Get()), kCodeConditionBranch, kStrEmpty);
-    return result;
+    return Message(CastToString(p["state"].Get()), kCodeConditionBranch, kStrEmpty);
   }
 
   Message ConditionLeaf(ObjectMap &p) {
-    Message result(kStrTrue, kCodeConditionLeaf, kStrEmpty);
-    return result;
+    return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty);
   }
 
   Message WhileCycle(ObjectMap &p) {
-    auto object = p.at("state");
-    Message result(CastToString(object.Get()), kCodeHeadSign, kStrEmpty);
-    return result;
+    return Message(CastToString(p["state"].Get()), kCodeHeadSign, kStrEmpty);
   }
 
   Message TailSign(ObjectMap &p) {
-    Message result(kStrEmpty, kCodeTailSign, kStrEmpty);
-    return result;
+    return Message(kStrEmpty, kCodeTailSign, kStrEmpty);
   }
 
   Message ReturnSign(ObjectMap &p) {
@@ -368,29 +367,39 @@ namespace kagami {
   }
 
   Message SetOperand(ObjectMap &p) {
-    Attribute attribute;
     Message result;
-    Object source = p.at("source"), target = p.at("target");
+    Object source = p["source"], target = p["target"];
     const auto ptr = type::GetObjectCopy(source);
 
-    attribute.methods = type::GetTemplate(source.GetTypeId())->GetMethods();
-    attribute.ro = false;
-    const auto attrStr = Kit().BuildAttrStr(attribute);
-    target.Set(ptr, source.GetTypeId(), attrStr);
+    if (!target.IsRo()) {
+      auto typeId = source.GetTypeId();
+      auto tokenType = source.GetTokenType();
+      auto methods = source.GetMethods();
+
+      target.Set(ptr, source.GetTypeId())
+            .SetMethods(methods)
+            .SetTokenType(tokenType);
+    }
+    
 
     return result;
   }
 
   Message CreateOperand(ObjectMap &p) {
     Message result;
-    auto name = p.at("name"), source = p.at("source");
+    auto name = p["name"], source = p["source"];
     const auto nameValue = CastToString(name.Get());
     const auto ptr = entry::FindObject(nameValue);
 
     if (ptr == nullptr) {
       const auto targetPtr = type::GetObjectCopy(source);
-      const auto object = entry::CreateObject(CastToString(name.Get()), targetPtr, source.GetTypeId(), false);
-      if (object == nullptr) {
+      Object object;
+      object.Set(targetPtr, source.GetTypeId())
+            .SetMethods(source.GetMethods())
+            .SetTokenType(source.GetTokenType())
+            .SetRo(false);
+      auto re = entry::CreateObject(CastToString(name.Get()), object);
+      if (re == nullptr) {
         result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
       }
     }
@@ -406,7 +415,7 @@ namespace kagami {
   //Windows Version
   Message LoadPlugin(ObjectMap &p) {
     using namespace entry;
-    const auto path = CastToString(p.at("path").Get());
+    const auto path = CastToString(p["path"].Get());
     Message result;
     auto wpath = s2ws(Kit().GetRawString(path));
 
@@ -423,17 +432,16 @@ namespace kagami {
   //Linux Version
 #endif
   Message VersionInfo(ObjectMap &p) {
-    Message result(kStrRedirect, kCodeSuccess, "\"" + kEngineVersion + "\"");
+    Message result(kStrRedirect, kCodeSuccess, "'" + kEngineVersion + "'");
     return result;
   }
 
   Message Print(ObjectMap &p) {
     Kit kit;
     Message result;
-    auto object = p.at("object");
-    const auto attribute = object.GetTag();
+    auto object = p["object"];
 
-    if (kit.FindInStringVector("__print", attribute.methods)) {
+    if (kit.FindInStringVector("__print", object.GetMethods())) {
       auto provider = entry::Order("__print", object.GetTypeId(), -1);
       if (provider.Good()) {
         result = provider.Start(p);
@@ -447,6 +455,13 @@ namespace kagami {
     }
 
     return result;
+  }
+
+  Message TimeReport(ObjectMap &p) {
+    auto now = time(nullptr);
+    char nowTime[30] = { ' ' };
+    ctime_s(nowTime, sizeof(nowTime), &now);
+    return Message(kStrRedirect, kCodeSuccess, "'" + string(nowTime) + "'");
   }
 
   /*
@@ -468,6 +483,7 @@ namespace kagami {
     Inject(EntryProvider(temp.Set(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
     Inject(EntryProvider(temp.Set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
     Inject(EntryProvider(temp.Set("print", Print, kFlagNormalEntry, kCodeNormalArgs, "object")));
+    Inject(EntryProvider(temp.Set("time", TimeReport, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
   }

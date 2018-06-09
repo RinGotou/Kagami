@@ -27,7 +27,6 @@
 
 namespace kagami {
   void Message::SetObject(Object &object, string id) {
-    Attribute attribute;
     this->object = make_shared<Object>(object);
     this->code = kCodeObject;
     this->detail = id;
@@ -35,6 +34,34 @@ namespace kagami {
 
   Object Message::GetObj() const {
     return *static_pointer_cast<Object>(this->object);
+  }
+
+  bool Kit::IsGenericToken(string target) {
+    const auto head = target.front();
+    if (!IsAlpha(head) && head != '_') return false;
+    for (auto &unit : target) {
+      if (!IsDigit(unit) && !IsAlpha(unit) && unit != '_') return false;
+    }
+    return true;
+  }
+
+  bool Kit::IsInteger(string target) {
+    const auto head = target.front();
+    if (!IsDigit(head) && head != '-') return false;
+    for (size_t i = 1;i < target.size();++i) {
+      if (!IsDigit(target[i])) return false;
+    }
+    return true;
+  }
+
+  bool Kit::IsDouble(string target) {
+    const auto head = target.front();
+    if (!IsDigit(head) && head != '-') return false;
+    for(size_t i = 1;i < target.size();++i) {
+      if (!IsDigit(target[i]) && target[i] != '.') return false;
+      if (i == target.size() - 1 && !IsDigit(target[i])) return false;
+    }
+    return true;
   }
 
   size_t Kit::GetDataType(string target) {
@@ -45,9 +72,9 @@ namespace kagami {
     };
 
     if (target == kStrNull || target == kStrEmpty) result = kTypeNull;
-    else if (match(kPatternBoolean)) result = kTypeBoolean;
-    else if (match(kPatternGenericToken)) result = kGenericToken;
-    else if (match(kPatternInteger)) result = kTypeInteger;
+    else if (target == kStrTrue || target == kStrFalse) result = kTypeBoolean;
+    else if (IsGenericToken(target)) result = kGenericToken;
+    else if (IsInteger(target)) result = kTypeInteger;
     else if (match(kPatternDouble)) result = kTypeDouble;
     else if (match(kPatternSymbol)) result = kTypeSymbol;
     else if (match(kPatternBlank)) result = kTypeBlank;
@@ -81,67 +108,6 @@ namespace kagami {
       temp.append(1, unit);
     }
     if (temp != kStrEmpty) result.push_back(temp);
-    return result;
-  }
-
-  Attribute Kit::GetAttrTag(string target) {
-    Attribute result;
-    vector<string> base;
-    string temp;
-
-    for (auto &unit : target) {
-      if (unit == '+' || unit == '%') {
-        if (temp == kStrEmpty) {
-          temp.append(1, unit);
-        }
-        else {
-          base.push_back(temp);
-          temp = kStrEmpty;
-          temp.append(1, unit);
-        }
-      }
-      else {
-        temp.append(1, unit);
-      }
-    }
-    if (temp != kStrEmpty) base.push_back(temp);
-    temp = kStrEmpty;
-
-    for (auto &unit : base) {
-      if (unit.front() == '%') {
-        temp = unit.substr(1, unit.size() - 1);
-        if (temp == kStrTrue) {
-          result.ro = true;
-        }
-        else if (temp == kStrFalse) {
-          result.ro = false;
-        }
-      }
-      else if (unit.front() == '+') {
-        temp = unit.substr(1, unit.size() - 1) + "|";
-        result.methods.append(temp);
-      }
-
-      temp = kStrEmpty;
-    }
-
-    if (!result.methods.empty()) {
-      if (result.methods.back() == '|') result.methods.pop_back();
-    }
-
-    return result;
-  }
-
-  string Kit::BuildAttrStr(Attribute target) {
-    string result;
-    auto methods = this->BuildStringVector(target.methods);
-    if (target.ro)result.append("%true");
-    else result.append("%false");
-    if (!methods.empty()) {
-      for (auto &unit : methods) {
-        result.append("+" + unit);
-      }
-    }
     return result;
   }
 
