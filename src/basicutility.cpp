@@ -103,18 +103,11 @@ namespace kagami {
       return object;
     }
 
-    Object *CreateObject(string sign, string dat, bool constant = false) {
-      const auto objtemp = type::GetTemplate(kTypeIdRawString);
-      GetObjectStack().back().Create(sign, dat, kTypeIdRawString, *objtemp, constant);
-      const auto object = GetObjectStack().back().Find(sign);
-      return object;
-    }
-
-    Object *CreateObject(const string sign, const shared_ptr<void> ptr, const string option, const bool constant = false) {
-      const Attribute attribute(type::GetTemplate(option)->GetMethods(), constant);
-      GetObjectStack().back().Add(sign, Object().Set(ptr, option, Kit().BuildAttrStr(attribute)));
-      const auto object = GetObjectStack().back().Find(sign);
-      return object;
+    Object *CreateObject(string sign, Object &object) {
+      auto &base = GetObjectStack();
+      base.back().Add(sign, object);
+      const auto result = base.back().Find(sign);
+      return result;
     }
 
     string GetTypeId(const string sign) {
@@ -284,8 +277,8 @@ namespace kagami {
     if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
       auto dataA = *static_pointer_cast<string>(first.Get());
       auto dataB = *static_pointer_cast<string>(second.Get());
-      const auto datatypeA = kit.GetDataType(dataA);
-      const auto datatypeB = kit.GetDataType(dataB);
+      const auto datatypeA = first.GetTokenType();
+      const auto datatypeB = second.GetTokenType();
       if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = enum_double;
       if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = enum_int;
       if (kit.IsString(dataA) || kit.IsString(dataB)) enumtype = enum_str;
@@ -373,53 +366,21 @@ namespace kagami {
     return result;
   }
 
-
-  //TODO:UNDER CONSTRUCTION
-  Message ForEachCycle(ObjectMap &p) {
-    Kit kit;
-    Object *subscript = nullptr, *unit = nullptr;
-    auto object = p["source"], id = p["id"];
-    Message result, temp;
-
-    if(!entry::FindObjectInCurrentManager("__subscript")) {
-      entry::CreateManager();
-      subscript = entry::CreateObject("__subscript", to_string(0), false);
-      unit = entry::CreateObject(*static_pointer_cast<string>(id.Get()), nullptr, kTypeIdNull, false);
-    }
-    else {
-      subscript = entry::FindObjectInCurrentManager("__subscript");
-      unit = entry::FindObjectInCurrentManager(*static_pointer_cast<string>(id.Get()));
-    }
-    
-    const auto subValue = stoi(*static_pointer_cast<string>(subscript->Get()));
-    auto provider = entry::Order("at", object.GetTypeId(), -1);
-    if (provider.Good()) {
-      ObjectMap map;
-      map.insert(pair<string, Object>("subscript_1", *subscript));
-      map.insert(pair<string, Object>("object", object));
-    }
-    else {
-
-    }
-    //if (kit.FindInStringVector("at", object.GetTag().methods)) {
-      //entry::Order()
-      //auto &target = static_pointer_cast<vector<Object>>(object.Get())->at(subValue);
-      //unit->Ref(target);
-    //}
-    
-    return result;
-  }
-
   Message SetOperand(ObjectMap &p) {
-    Attribute attribute;
     Message result;
     Object source = p["source"], target = p["target"];
     const auto ptr = type::GetObjectCopy(source);
 
-    attribute.methods = type::GetTemplate(source.GetTypeId())->GetMethods();
-    attribute.ro = false;
-    const auto attrStr = Kit().BuildAttrStr(attribute);
-    target.Set(ptr, source.GetTypeId(), attrStr);
+    if (!target.IsRo()) {
+      auto typeId = source.GetTypeId();
+      auto tokenType = source.GetTokenType();
+      auto methods = source.GetMethods();
+
+      target.Set(ptr, source.GetTypeId())
+            .SetMethods(methods)
+            .SetTokenType(tokenType);
+    }
+    
 
     return result;
   }
@@ -432,8 +393,13 @@ namespace kagami {
 
     if (ptr == nullptr) {
       const auto targetPtr = type::GetObjectCopy(source);
-      const auto object = entry::CreateObject(CastToString(name.Get()), targetPtr, source.GetTypeId(), false);
-      if (object == nullptr) {
+      Object object;
+      object.Set(targetPtr, source.GetTypeId())
+            .SetMethods(source.GetMethods())
+            .SetTokenType(source.GetTokenType())
+            .SetRo(false);
+      auto re = entry::CreateObject(CastToString(name.Get()), object);
+      if (re == nullptr) {
         result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
       }
     }
@@ -474,9 +440,8 @@ namespace kagami {
     Kit kit;
     Message result;
     auto object = p["object"];
-    const auto attribute = object.GetTag();
 
-    if (kit.FindInStringVector("__print", attribute.methods)) {
+    if (kit.FindInStringVector("__print", object.GetMethods())) {
       auto provider = entry::Order("__print", object.GetTypeId(), -1);
       if (provider.Good()) {
         result = provider.Start(p);
