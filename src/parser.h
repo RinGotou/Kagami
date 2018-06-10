@@ -137,6 +137,8 @@ namespace kagami {
     bool FunctionAndObject(Message &msg);
     void OtherTokens();
     void FinalProcessing(Message &msg);
+    bool SelfIncrease(Message &msg);
+    bool SelfDecrease(Message &msg);
     Object *GetObj(string name);
     static vector<string> Spilt(string target);
     static string GetHead(string target);
@@ -300,6 +302,7 @@ namespace kagami {
       CastAttachment GetObjTemplate() const { return CastAttachment(GetProcAddress(this->second, "CastAttachment")); }
       MemoryDeleter GetDeleter() const { return MemoryDeleter(GetProcAddress(this->second, "FreeMemory")); }
     };
+    size_t ResetPlugin();
 #else
     //Linux Version
 #endif
@@ -311,7 +314,6 @@ namespace kagami {
     Object *FindObject(string name);
     ObjectManager &CreateManager();
     bool DisposeManager();
-    size_t ResetPlugin();
     EntryProvider Order(string id, string type, int size);
     std::wstring s2ws(const std::string& s);
   }
