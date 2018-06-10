@@ -528,15 +528,13 @@ namespace kagami {
     auto providerType = kTypeIdNull;
     auto tags = Spilt(symbol.back().first);
     const auto id = GetHead(symbol.back().first);
-
+    EntryProvider provider;
 
     auto getName = [](string target) ->string {
       if (target.front() == '&' || target.front() == '%')
         return target.substr(1, target.size() - 1);
       else return target;
     };
-
-    if (id == kStrNop) return true;
 
     if (!tags.empty()) {
       providerType = tags.front();
@@ -548,20 +546,29 @@ namespace kagami {
       }
     }
 
-    auto provider = entry::Order(id, providerType, providerSize);
-
-    if (!provider.Good()) {
-      msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found.");
-      symbol.pop_back();
-      return false;
+    if (id != kStrNop) {
+      provider = entry::Order(id, providerType, providerSize);
+      if (!provider.Good()) {
+        msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found.");
+        symbol.pop_back();
+        return false;
+      }
     }
+
 
     const auto size = provider.GetArgumentSize();
     const auto argMode = provider.GetArgumentMode();
     const auto priority = provider.GetPriority();
     auto args = provider.GetArguments();
 
-    if (!disableSetEntry) {
+    if (id == kStrNop) {
+      while (!item.empty() && item.back().first != "(") {
+        tokens.push_front(item.back());
+        item.pop_back();
+      }
+      if (!item.empty() && item.back().first == "(") item.pop_back();
+    }
+    else if (!disableSetEntry) {
       count = size;
       while (count > 0 && !item.empty() && item.back().first != "(") {
         tokens.push_front(item.back());
@@ -575,6 +582,13 @@ namespace kagami {
         tokens.push_front(item.back());
         item.pop_back();
       }
+    }
+
+    if (id == kStrNop) {
+      item.push_back(tokens.back());
+      symbol.pop_back();
+      kit.CleanupDeque(tokens);
+      return true;
     }
 
     if (argMode == kCodeNormalArgs && (tokens.size() < size || tokens.size() > size)) {
