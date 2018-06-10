@@ -137,8 +137,7 @@ namespace kagami {
     bool FunctionAndObject(Message &msg);
     void OtherTokens();
     void FinalProcessing(Message &msg);
-    bool SelfIncrease(Message &msg);
-    bool SelfDecrease(Message &msg);
+    bool SelfOperator(Message &msg);
     Object *GetObj(string name);
     static vector<string> Spilt(string target);
     static string GetHead(string target);

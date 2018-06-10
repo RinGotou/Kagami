@@ -552,6 +552,7 @@ namespace kagami {
 
     if (!provider.Good()) {
       msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found.");
+      symbol.pop_back();
       return false;
     }
 
@@ -892,26 +893,24 @@ namespace kagami {
     }
   }
 
-  bool Processor::SelfIncrease(Message &msg) {
-    bool result = true;
+  bool Processor::SelfOperator(Message &msg) {
     if (forwardToken.second != kGenericToken) {
-      symbol.emplace_back(Token("lSelfInc", kGenericToken));
+      if (currentToken.first == "++") {
+        symbol.emplace_back("lSelfInc", kGenericToken);
+      }
+      else if (currentToken.first == "--") {
+        symbol.emplace_back("lSelfDec", kGenericToken);
+      }
     }
     else {
-      symbol.emplace_back(Token("rSelfInc", kGenericToken));
+      if (currentToken.first == "++") {
+        symbol.emplace_back("rSelfInc", kGenericToken);
+      }
+      else if (currentToken.first == "--") {
+        symbol.emplace_back("rSelfDec", kGenericToken);
+      }
     }
-    return result;
-  }
-
-  bool Processor::SelfDecrease(Message &msg) {
-    bool result = true;
-    if (forwardToken.second != kGenericToken) {
-      symbol.emplace_back(Token("lSelfDec", kGenericToken));
-    }
-    else {
-      symbol.emplace_back(Token("rSelfDec", kGenericToken));
-    }
-    return result;
+    return true;
   }
 
   Message Processor::Start(size_t mode) {
@@ -957,8 +956,7 @@ namespace kagami {
         else if (tokenValue == "(") state = LeftBracket(result);
         else if (tokenValue == "]") state = RightSquareBracket(result);
         else if (tokenValue == ")") state = RightBracket(result);
-        else if (tokenValue == "++") state = SelfIncrease(result);
-        else if (tokenValue == "--") state = SelfDecrease(result);
+        else if (tokenValue == "++" || tokenValue == "--") state = SelfOperator(result);
         else OtherSymbols();
       }
       else if (tokenType == kGenericToken) state = FunctionAndObject(result);
