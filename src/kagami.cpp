@@ -68,7 +68,9 @@ namespace kagami {
     }
     Activiate();
     provider.Run();
+#if defined(_WIN32)
     entry::ResetPlugin();
+#endif
     return result;
   }
 
@@ -97,7 +99,9 @@ namespace kagami {
         }
       }
     }
+#if defined(WIN32)
     ResetPlugin();
+#endif
   }
 #endif
 }

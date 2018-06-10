@@ -66,10 +66,12 @@ namespace kagami {
   }
 
   namespace entry {
+#if defined(_WIN32)
     vector<Instance> &GetInstanceList() {
       static vector<Instance> base;
       return base;
     }
+#endif
 
     vector<ObjectManager> &GetObjectStack() {
       static vector<ObjectManager> base;
@@ -231,9 +233,6 @@ namespace kagami {
       }
       return count;
     }
-#else
-    //Linux Version
-#endif
 
     //from MSDN
     // ReSharper disable CppInconsistentNaming
@@ -246,6 +245,9 @@ namespace kagami {
       delete[] buf;
       return r;
     }
+#else
+    //Linux Version
+#endif
   }
 
   Message WriteLog(ObjectMap &p) {
@@ -493,8 +495,13 @@ namespace kagami {
   Message TimeReport(ObjectMap &p) {
     auto now = time(nullptr);
     char nowTime[30] = { ' ' };
+#if defined(_WIN32)
     ctime_s(nowTime, sizeof(nowTime), &now);
     return Message(kStrRedirect, kCodeSuccess, "'" + string(nowTime) + "'");
+#else
+    string TimeData(ctime(&now));
+    return Message(kStrRedirect, kCodeSuccess, "'" + TimeData + "'");
+#endif
   }
 
   /*
