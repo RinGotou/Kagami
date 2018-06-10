@@ -47,6 +47,7 @@ namespace kagami {
 
   bool Kit::IsInteger(string target) {
     const auto head = target.front();
+    if (head == '-' && target.size() == 1) return false;
     if (!IsDigit(head) && head != '-') return false;
     for (size_t i = 1;i < target.size();++i) {
       if (!IsDigit(target[i])) return false;
@@ -56,6 +57,7 @@ namespace kagami {
 
   bool Kit::IsDouble(string target) {
     const auto head = target.front();
+    if (head == '-' && target.size() == 1) return false;
     if (!IsDigit(head) && head != '-') return false;
     for(size_t i = 1;i < target.size();++i) {
       if (!IsDigit(target[i]) && target[i] != '.') return false;
