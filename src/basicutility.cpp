@@ -24,7 +24,9 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "parser.h"
+#if defined(_WIN32)
 #include "windows.h"
+#endif
 #include <iostream>
 
 namespace kagami {
