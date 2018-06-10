@@ -368,37 +368,94 @@ namespace kagami {
     return Message(kStrEmpty, kCodeTailSign, kStrEmpty);
   }
 
-  Message ReturnSign(ObjectMap &p) {
-    //TODO:return specific value
-    return Message();
+  Message LeftSelfIncreament(ObjectMap &p) {
+    auto object = p["object"];
+    string result;
+
+    if(object.GetTypeId() == kTypeIdRawString) {
+      const auto origin = *static_pointer_cast<string>(object.Get());
+      if (object.GetTokenType() == kTypeInteger) {
+        auto data = stoi(origin);
+        ++data;
+        result = to_string(data);
+        object.Set(make_shared<string>(result), kTypeIdRawString);
+      }
+      else if (object.GetTokenType() == kTypeDouble) {
+        auto data = stod(origin);
+        data += 1.0f;
+        result = to_string(data);
+        object.Set(make_shared<string>(result), kTypeIdRawString);
+      }
+    }
+
+    return Message(kStrRedirect, kCodeSuccess, result);
   }
 
-  Message LeftSelfIncrease(ObjectMap &p) {
+  Message LeftSelfDecreament(ObjectMap &p) {
     auto object = p["object"];
-    
+    string result;
 
-    return Message();
+    if (object.GetTypeId() == kTypeIdRawString) {
+      const auto origin = *static_pointer_cast<string>(object.Get());
+      if (object.GetTokenType() == kTypeInteger) {
+        auto data = stoi(origin);
+        --data;
+        result = to_string(data);
+        object.Set(make_shared<string>(result), kTypeIdRawString);
+      }
+      else if (object.GetTokenType() == kTypeDouble) {
+        auto data = stod(origin);
+        data -= 1.0f;
+        result = to_string(data);
+        object.Set(make_shared<string>(result), kTypeIdRawString);
+      }
+    }
+
+    return Message(kStrRedirect, kCodeSuccess, result);
   }
 
-  Message RightSelfIncrease(ObjectMap &p) {
+  Message RightSelfIncreament(ObjectMap &p) {
     auto object = p["object"];
-    
+    string result;
 
-    return Message();
+    if (object.GetTypeId() == kTypeIdRawString) {
+      auto origin = *static_pointer_cast<string>(object.Get());
+      result = origin;
+      if (object.GetTokenType() == kTypeInteger) {
+        auto data = stoi(origin);
+        ++data;
+        object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
+      }
+      else if (object.GetTokenType() == kTypeDouble) {
+        auto data = stod(origin);
+        data += 1.0f;
+        object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
+      }
+    }
+
+    return Message(kStrRedirect, kCodeSuccess, result);
   }
 
-  Message LeftSelfDecrease(ObjectMap &p) {
+  Message RightSelfDecreament(ObjectMap &p) {
     auto object = p["object"];
+    string result;
 
+    if (object.GetTypeId() == kTypeIdRawString) {
+      auto origin = *static_pointer_cast<string>(object.Get());
+      result = origin;
+      if (object.GetTokenType() == kTypeInteger) {
+        auto data = stoi(origin);
+        --data;
+        object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
+      }
+      else if (object.GetTokenType() == kTypeDouble) {
+        auto data = stod(origin);
+        data -= 1.0f;
+        object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
+      }
+    }
 
-    return Message();
-  }
-
-  Message RightSelfDecrease(ObjectMap &p) {
-    auto object = p["object"];
-
-
-    return Message();
+    return Message(kStrRedirect, kCodeSuccess, result);
   }
 
   Message SetOperand(ObjectMap &p) {
@@ -526,7 +583,11 @@ namespace kagami {
     Inject(EntryProvider(temp.Set(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
     Inject(EntryProvider(temp.Set(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
     Inject(EntryProvider(temp.Set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
+    Inject(EntryProvider(temp.Set("lSelfInc", LeftSelfIncreament, kFlagNormalEntry,kCodeNormalArgs,"&object")));
+    Inject(EntryProvider(temp.Set("lSelfDec", LeftSelfDecreament, kFlagNormalEntry, kCodeNormalArgs, "&object")));
     Inject(EntryProvider(temp.Set("print", Print, kFlagNormalEntry, kCodeNormalArgs, "object")));
+    Inject(EntryProvider(temp.Set("rSelfDec", RightSelfDecreament, kFlagNormalEntry,kCodeNormalArgs,"&object")));
+    Inject(EntryProvider(temp.Set("rSelfInc", RightSelfIncreament, kFlagNormalEntry, kCodeNormalArgs, "&object")));
     Inject(EntryProvider(temp.Set("time", TimeReport, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
