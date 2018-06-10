@@ -140,6 +140,7 @@ namespace kagami {
       return GetObjectStack().empty();
     } 
 
+#if defined(_WIN32)
     bool Instance::Load(string name, HINSTANCE h) {
       this->first = name;
       this->second = h;
@@ -157,18 +158,6 @@ namespace kagami {
       }
 
       return health;
-    }
-
-    //from MSDN
-    // ReSharper disable CppInconsistentNaming
-    std::wstring s2ws(const std::string& s) {
-      const auto slength = static_cast<int>(s.length()) + 1;
-      const auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
-      auto *buf = new wchar_t[len];
-      MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-      std::wstring r(buf);
-      delete[] buf;
-      return r;
     }
 
     void AddInstance(const string name, const HINSTANCE h) {
@@ -239,6 +228,21 @@ namespace kagami {
         count++;
       }
       return count;
+    }
+#else
+    //Linux Version
+#endif
+
+    //from MSDN
+    // ReSharper disable CppInconsistentNaming
+    std::wstring s2ws(const std::string& s) {
+      const auto slength = static_cast<int>(s.length()) + 1;
+      const auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
+      auto *buf = new wchar_t[len];
+      MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+      std::wstring r(buf);
+      delete[] buf;
+      return r;
     }
   }
 
@@ -361,9 +365,36 @@ namespace kagami {
   }
 
   Message ReturnSign(ObjectMap &p) {
-    Message result;
     //TODO:return specific value
-    return result;
+    return Message();
+  }
+
+  Message LeftSelfIncrease(ObjectMap &p) {
+    auto object = p["object"];
+    
+
+    return Message();
+  }
+
+  Message RightSelfIncrease(ObjectMap &p) {
+    auto object = p["object"];
+    
+
+    return Message();
+  }
+
+  Message LeftSelfDecrease(ObjectMap &p) {
+    auto object = p["object"];
+
+
+    return Message();
+  }
+
+  Message RightSelfDecrease(ObjectMap &p) {
+    auto object = p["object"];
+
+
+    return Message();
   }
 
   Message SetOperand(ObjectMap &p) {
@@ -376,7 +407,7 @@ namespace kagami {
       auto tokenType = source.GetTokenType();
       auto methods = source.GetMethods();
 
-      target.Set(ptr, source.GetTypeId())
+      target.Set(ptr, typeId)
             .SetMethods(methods)
             .SetTokenType(tokenType);
     }
@@ -478,7 +509,11 @@ namespace kagami {
     Inject(EntryProvider(temp.Set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
+#if defined(_WIN32)
     Inject(EntryProvider(temp.Set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
+#else
+    //Linux Version
+#endif
     Inject(EntryProvider(temp.Set(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
     Inject(EntryProvider(temp.Set(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
     Inject(EntryProvider(temp.Set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
