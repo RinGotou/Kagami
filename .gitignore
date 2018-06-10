@@ -32,6 +32,10 @@
 *.exe
 *.out
 *.app
-.vscode/c_cpp_properties.json
-/vsproject/Kagami/.vs/Kagami/v15
-/vsproject/Kagami/Debug
+script.log
+event.log
+.vscode
+vsproject/Kagami/.vs/Kagami/v15
+vsproject/Kagami/Debug
+vsproject/Kagami/Release
+vsproject/Kagami/x64

@@ -434,6 +434,15 @@ namespace kagami {
       forward = origin[count];
     }
 
+    if (stringProcessing == true) {
+      errorString = "Quotation mark is missing.";
+      health = false;
+    }
+    if (nest > 0) {
+      errorString = "Bracket/Square Bracket is missing";
+      health = false;
+    }
+
     if (health) {
       origin.reserve(output.size());
       for (auto &unit : output) {
@@ -444,16 +453,7 @@ namespace kagami {
       }
     }
 
-    if (stringProcessing == true) {
-      errorString = "Quotation mark is missing.";
-      health = false;
-    }
-    if (nest > 0) {
-      errorString = "Bracket/Square Bracket is missing";
-      health = false;
-    }
-
-    //raw = output;
+    kit.CleanupVector(origin).CleanupVector(output);
 
     return *this;
   }
@@ -892,6 +892,28 @@ namespace kagami {
     }
   }
 
+  bool Processor::SelfIncrease(Message &msg) {
+    bool result = true;
+    if (forwardToken.second != kGenericToken) {
+      symbol.emplace_back(Token("lSelfInc", kGenericToken));
+    }
+    else {
+      symbol.emplace_back(Token("rSelfInc", kGenericToken));
+    }
+    return result;
+  }
+
+  bool Processor::SelfDecrease(Message &msg) {
+    bool result = true;
+    if (forwardToken.second != kGenericToken) {
+      symbol.emplace_back(Token("lSelfDec", kGenericToken));
+    }
+    else {
+      symbol.emplace_back(Token("rSelfDec", kGenericToken));
+    }
+    return result;
+  }
+
   Message Processor::Start(size_t mode) {
     using namespace entry;
     Kit kit;
@@ -935,8 +957,8 @@ namespace kagami {
         else if (tokenValue == "(") state = LeftBracket(result);
         else if (tokenValue == "]") state = RightSquareBracket(result);
         else if (tokenValue == ")") state = RightBracket(result);
-        else if (tokenValue == "++"); //
-        else if (tokenValue == "--"); //
+        else if (tokenValue == "++") state = SelfIncrease(result);
+        else if (tokenValue == "--") state = SelfDecrease(result);
         else OtherSymbols();
       }
       else if (tokenType == kGenericToken) state = FunctionAndObject(result);
