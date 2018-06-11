@@ -115,6 +115,9 @@ namespace kagami {
       if (count0 <= int(size - 1)) {
         result.combo(kStrRedirect, kCodeSuccess, makeStrToken(data.at(count0)));
       }
+      else {
+        result.combo(kStrFatalError, kCodeOverflow, "Subscript is out of range");
+      }
     }
     else if (typeId == kTypeIdArrayBase) {
       count0 = stoi(*static_pointer_cast<string>(subscript1.Get()));
@@ -123,6 +126,9 @@ namespace kagami {
         auto &target = static_pointer_cast<vector<Object>>(object.Get())->at(count0);
         temp.Ref(target);
         result.SetObject(temp, "__element");
+      }
+      else {
+        result.combo(kStrFatalError, kCodeOverflow, "Subscript is out of range");
       }
     }
 
@@ -206,7 +212,6 @@ namespace kagami {
     //methods
     Inject(EntryProvider(temp.Set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdRawString)));
     Inject(EntryProvider(temp.Set("at", GetElement, kFlagMethod, kCodeNormalArgs, "subscript_1", kTypeIdArrayBase)));
-    //Inject(EntryProvider(temp.Set("at", GetElement2Dimension, kFlagMethod, kCodeNormalArgs, "subscript_1|subscript_2", kTypeIdCubeBase)));
     Inject(EntryProvider(temp.Set("__print", PrintRawString, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));
     Inject(EntryProvider(temp.Set("__print", PrintArray, kFlagMethod, kCodeNormalArgs, "", kTypeIdArrayBase)));
     Inject(EntryProvider(temp.Set("size", GetSize, kFlagMethod, kCodeNormalArgs, "", kTypeIdRawString)));

@@ -25,6 +25,9 @@
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include <iostream>
 #include <ctime>
+#ifndef _NO_CUI_
+#include <iostream>
+#endif
 #include "parser.h"
 
 namespace kagami {
@@ -123,17 +126,20 @@ namespace kagami {
     end = false;
     health = false;
     current = 0;
+    size_t subscript = 0;
 
     stream.open(target, std::ios::in);
     if (stream.good()) {
       while (!stream.eof()) {
         std::getline(stream, temp);
         if (!IsBlankStr(temp) && temp.front() != '#') {
-          storage.emplace_back(Processor().Reset().Build(temp));
+          storage.push_back(Processor().Reset().Build(temp).SetSubscript(subscript));
           if (!storage.back().IsHealth()) {
             //this->errorString = storage.back().getErrorString();
+            break;
           }
         }
+        subscript++;
       }
       if (!storage.empty()) health = true;
     }
@@ -555,7 +561,6 @@ namespace kagami {
       }
     }
 
-
     const auto size = provider.GetArgumentSize();
     const auto argMode = provider.GetArgumentMode();
     const auto priority = provider.GetPriority();
@@ -602,7 +607,7 @@ namespace kagami {
     else {
       for (count = 0; count < size; count++) {
         if (tokens.size() - 1 < count) {
-          map.insert(pair<string, Object>(getName(args[count]), Object()));
+          map.insert(Parameter(getName(args[count]), Object()));
         }
         else {
           switch (tokens[count].second) {
@@ -612,7 +617,7 @@ namespace kagami {
               temp.Ref(*origin);
             }
             else if (args[count].front() == '%') {
-              temp.Manage(tokens[count], kTypeIdRawString)
+              temp.Manage(tokens[count].first)
                   .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
                   .SetTokenType(kGenericToken);
             }
@@ -621,7 +626,7 @@ namespace kagami {
             }
             break;
           default:
-            temp.Manage(tokens[count], kTypeIdRawString)
+            temp.Manage(tokens[count].first)
               .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
               .SetTokenType(tokens[count].second);
             break;
@@ -631,16 +636,24 @@ namespace kagami {
         }
       }
 
+      if (id == kStrFor) {
+        const auto sub = to_string(this->subscript);
+        map.insert(Parameter(kStrCodeSub,Object()
+          .Manage(sub)
+          .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+          .SetTokenType(kTypeInteger)));
+      }
+
       switch (priority) {
       case kFlagOperatorEntry:
-        map.insert(pair<string, Object>(kStrOperator, Object()
-          .Manage(symbol.back(), kTypeIdRawString)
+        map.insert(Parameter(kStrOperator, Object()
+          .Manage(symbol.back().first)
           .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
           .SetTokenType(kTypeSymbol)));
         break;
       case kFlagMethod:
         origin = GetObj(item.back().first);
-        map.insert(pair<string, Object>(kStrObject, Object()
+        map.insert(Parameter(kStrObject, Object()
           .Ref(*origin)));
         item.pop_back();
         break;
@@ -680,7 +693,7 @@ namespace kagami {
         temp = msg.GetObj();
         auto tempId = detail + to_string(lambdaObjectCount); //detail start with "__"
         item.emplace_back(Token(tempId, kGenericToken));
-        lambdamap.insert(pair<string, Object>(tempId, temp));
+        lambdamap.insert(Parameter(tempId, temp));
         ++lambdaObjectCount;
       }
       else if (value == kStrRedirect && (code == kCodeSuccess || code == kCodeFillingSign)) {
@@ -839,7 +852,7 @@ namespace kagami {
 
     if (dotOperator) {
       const auto id = entry::GetTypeId(item.back().first);
-      if (kit.FindInStringVector(currentToken.first, type::GetTemplate(id)->GetMethods())) {
+      if (kit.FindInStringGroup(currentToken.first, type::GetTemplate(id)->GetMethods())) {
         auto provider = entry::Order(currentToken.first, id);
         if (provider.Good()) {
           symbol.emplace_back(Token(currentToken.first + ':' + id, kGenericToken));
@@ -927,6 +940,14 @@ namespace kagami {
     return true;
   }
 
+  bool Processor::Colon() {
+    if (symbol.front().first != kStrFor) {
+      errorString = "Illegal colon location.";
+      return false;
+    }
+    return true;
+  }
+
   Message Processor::Start(size_t mode) {
     using namespace entry;
     Kit kit;
@@ -967,6 +988,7 @@ namespace kagami {
         else if (tokenValue == ",") Comma();
         else if (tokenValue == "[") LeftSquareBracket();
         else if (tokenValue == ".") Dot();
+        else if (tokenValue == ":") state = Colon();
         else if (tokenValue == "(") state = LeftBracket(result);
         else if (tokenValue == "]") state = RightSquareBracket(result);
         else if (tokenValue == ")") state = RightBracket(result);
@@ -983,12 +1005,34 @@ namespace kagami {
     }
 
     if (state == true) FinalProcessing(result);
-
+    if (!health) result.combo(kStrFatalError, kCodeBadExpression, errorString);
+    
+#ifndef _NO_CUI_
+    if (!item.empty()) {
+      if (item.back().second == kTypeNull) {
+        std::cout << "What's this? - " + item.back().first << std::endl;
+      }
+      else if (item.back().second != kGenericToken) {
+        std::cout << item.back().first << std::endl;
+      }
+      else {
+        auto object = GetObj(item.back().first);
+        const auto provider = entry::Order("print");
+        if (object != nullptr) {
+          if (kit.FindInStringGroup("__print", object->GetMethods())) {
+            ObjectMap map;
+            map.insert(Parameter("object", *object));
+            result = provider.Start(map);
+          }
+        }
+        else {
+          std::cout << "What's this? - " + item.back().first << std::endl;
+        }
+      }
+    }
+#endif
     kit.CleanupDeque(item).CleanupDeque(symbol);
     lambdamap.clear();
-
-    if(!health) result.combo(kStrFatalError, kCodeBadExpression, errorString);
-
     return result;
   }
 

@@ -51,9 +51,9 @@ namespace kagami {
   class Message;
   class ObjTemplate;
   class Object;
-  class Ref;
 
   using ObjectMap = map<string, Object>;
+  using Parameter = pair<string, Object>;
   using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
   using CastFunc = pair<string, CopyCreator>;
   using Activity = Message(*)(ObjectMap &);
@@ -62,9 +62,9 @@ namespace kagami {
   using Attachment = vector<ActivityTemplate> * (*)();
 
 #if defined(_WIN32)
-  const string kEngineVersion = "version 0.52 (Windows Platform)";
+  const string kEngineVersion = "version 0.6 (Windows Platform)";
 #else
-  const string kEngineVersion = "version 0.52 (Linux Platform)";
+  const string kEngineVersion = "version 0.6 (Linux Platform)";
 #endif
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
@@ -261,6 +261,14 @@ namespace kagami {
   */
   class Kit {
   public:
+    template <class TypeA, class TypeB>
+    Kit CleanupMap(map<TypeA, TypeB> &target) {
+      using map_t = map<TypeA, TypeB>;
+      target.clear();
+      map_t(target).swap(target);
+      return *this;
+    }
+
     template <class Type>
     Kit CleanupVector(vector<Type> &target) {
       target.clear();
@@ -324,7 +332,7 @@ namespace kagami {
     static bool IsDouble(string target);
     static bool IsBlank(string target);
     static size_t GetDataType(string target);
-    bool FindInStringVector(string target, string source);
+    bool FindInStringGroup(string target, string source);
     static vector<string> BuildStringVector(string source);
     static char ConvertChar(char target);
     static wchar_t ConvertWideChar(wchar_t target);
@@ -353,8 +361,7 @@ namespace kagami {
       tokenType = kTypeNull;
       ro = false;
     }
-    template <class T>
-    Object &Manage(T &t, string option) {
+    Object &Manage(string t, string option = kTypeIdRawString) {
       Object *result;
       if (this->option == kTypeIdRef) {
         result = &(static_pointer_cast<TargetObject>(this->ptr)
@@ -362,7 +369,7 @@ namespace kagami {
           ->Manage(t, option));
       }
       else {
-        this->ptr = std::make_shared<T>(t);
+        this->ptr = std::make_shared<string>(t);
         this->option = option;
         result = this;
       }
@@ -466,8 +473,43 @@ namespace kagami {
     void Clear() {
       ptr = make_shared<int>(0);
       option = kTypeIdNull;
+      methods.clear();
+      tokenType = kTypeNull;
+      ro = false;
     }
-    bool IsRef() const { return option == kTypeIdRef; }
+    bool IsRef() const {
+      return option == kTypeIdRef;
+    }
+    bool operator==(Object &object) const {
+      return (ptr == object.ptr &&
+        option == object.option &&
+        methods == object.methods &&
+        tokenType == object.tokenType &&
+        ro == object.ro);
+    }
+    bool operator!=(Object &object) const {
+      return (ptr != object.ptr &&
+        option != object.option &&
+        methods != object.methods &&
+        tokenType != object.tokenType &&
+        ro != object.ro);
+    }
+    Object &Copy(Object &object) {
+      ptr = object.ptr;
+      option = object.option;
+      methods = object.methods;
+      tokenType = object.tokenType;
+      ro = object.ro;
+      return *this;
+    }
+    Object &Copy(Object &&object) {
+      ptr = object.ptr;
+      option = object.option;
+      methods = object.methods;
+      tokenType = object.tokenType;
+      ro = object.ro;
+      return *this;
+    }
   };
 
 

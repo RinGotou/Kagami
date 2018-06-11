@@ -73,18 +73,18 @@ namespace kagami {
     }
 #endif
 
-    vector<ObjectManager> &GetObjectStack() {
-      static vector<ObjectManager> base;
+    list<ObjectManager> &GetObjectStack() {
+      static list<ObjectManager> base;
       return base;
     }
 
     Object *FindObject(string sign) {
       Object *object = nullptr;
       size_t count = GetObjectStack().size();
-      vector<ObjectManager> &base = GetObjectStack();
+      list<ObjectManager> &base = GetObjectStack();
 
       while (!base.empty() && count > 0) {
-        object = base[count - 1].Find(sign);
+        object = base[count - 1]->Find(sign);
         if (object != nullptr) {
           break;
         }
@@ -95,10 +95,10 @@ namespace kagami {
 
     Object *FindObjectInCurrentManager(string sign) {
       Object *object = nullptr;
-      auto &base = GetObjectStack().back();
+      ObjectManager *base = GetObjectStack().back();
 
-      while(!base.Empty()) {
-        object = base.Find(sign);
+      while(!base->Empty()) {
+        object = base->Find(sign);
         if(object != nullptr) {
           break;
         }
@@ -108,9 +108,10 @@ namespace kagami {
     }
 
     Object *CreateObject(string sign, Object &object) {
-      auto &base = GetObjectStack();
-      base.back().Add(sign, object);
-      const auto result = base.back().Find(sign);
+      ObjectManager *base = GetObjectStack().back();
+
+      base->Add(sign, object);
+      const auto result = base->Find(sign);
       return result;
     }
 
@@ -120,7 +121,7 @@ namespace kagami {
       auto& base = GetObjectStack(); 
 
       while (count > 0) {
-        const auto object = base[count - 1].Find(sign);
+        const auto object = base[count - 1]->Find(sign);
         if (object != nullptr) {
           result = object->GetTypeId();
         }
@@ -135,8 +136,9 @@ namespace kagami {
     }
 
     ObjectManager &CreateManager() {
-      GetObjectStack().push_back(ObjectManager());
-      return GetObjectStack().back();
+      auto &base = GetObjectStack();
+      base.push_back(ObjectManager());
+      return *GetObjectStack().back();
     }
 
     bool DisposeManager() {
@@ -458,6 +460,76 @@ namespace kagami {
     return Message(kStrRedirect, kCodeSuccess, result);
   }
 
+  Message ForEachHead(ObjectMap &p) {
+    static stack<string> subscriptStack;
+    Kit kit;
+    string unitName = *static_pointer_cast<string>(p["unit"].Get());
+    string codeSubscript = *static_pointer_cast<string>(p[kStrCodeSub].Get());
+    string objectName = *static_pointer_cast<string>(p["object"].Get());
+    Object *object = entry::FindObject(objectName);
+    bool result;
+    size_t currentSub = 0;
+    const auto methods = object->GetMethods();
+    const auto typeId = object->GetTypeId();
+    Object *objUnit = nullptr;
+
+    if (!kit.FindInStringGroup("at",methods) && !kit.FindInStringGroup("size",methods)) {
+      return Message(kStrFatalError, kCodeIllegalCall, 
+        "This object isn't compatible with For-Each method.");
+    }
+
+    if (subscriptStack.empty() || subscriptStack.top() != codeSubscript) {
+      subscriptStack.push(codeSubscript);
+      auto &manager = entry::CreateManager();
+      manager.Add(kStrSub, Object().Manage("0", kTypeIdNull));
+      manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull));
+    }
+    else if (subscriptStack.top() == codeSubscript) {
+      const auto objSub = entry::FindObjectInCurrentManager(kStrSub);
+      currentSub = stoi(*static_pointer_cast<string>(objSub->Get()));
+    }
+    objUnit = entry::FindObjectInCurrentManager(unitName);
+
+    auto providerAt = entry::Order("at", typeId, 1);
+    auto providerGetSize = entry::Order("size", typeId, -1);
+    if (providerAt.Good() && providerGetSize.Good()) {
+      ObjectMap map;
+      Message msg;
+      auto subStr = to_string(currentSub);
+      map.insert(Parameter(kStrObject, Object().Ref(*object)));
+      msg = providerGetSize.Start(map);
+      size_t size = stoi(msg.GetDetail());
+      if (size>currentSub) {
+        map.insert(Parameter("subscript_1", Object().Manage(subStr)));
+        msg = providerAt.Start(map);
+        if (msg.GetCode() == kCodeObject) {
+          objUnit->Copy(msg.GetObj());
+          result = true;
+        }
+        else if (msg.GetValue() == kStrRedirect) {
+          objUnit->Manage(msg.GetDetail());
+          result = true;
+        }
+        else {
+          result = false;
+        }
+      }
+      else {
+        result = false;
+      }
+
+      kit.CleanupMap(map);
+    }
+    else {
+      return Message(kStrFatalError, kCodeIllegalCall,
+        "This object isn't compatible with For-Each method.");
+    }
+
+    string value;
+    result ? value = kStrTrue : value = kStrFalse;
+    return Message(value, kCodeHeadSign, kStrEmpty);
+  }
+
   Message SetOperand(ObjectMap &p) {
     Message result;
     Object source = p["source"], target = p["target"];
@@ -467,13 +539,10 @@ namespace kagami {
       auto typeId = source.GetTypeId();
       auto tokenType = source.GetTokenType();
       auto methods = source.GetMethods();
-
       target.Set(ptr, typeId)
             .SetMethods(methods)
             .SetTokenType(tokenType);
     }
-    
-
     return result;
   }
 
@@ -533,7 +602,7 @@ namespace kagami {
     Message result;
     auto object = p["object"];
 
-    if (kit.FindInStringVector("__print", object.GetMethods())) {
+    if (kit.FindInStringGroup("__print", object.GetMethods())) {
       auto provider = entry::Order("__print", object.GetTypeId(), -1);
       if (provider.Good()) {
         result = provider.Start(p);
@@ -574,22 +643,23 @@ namespace kagami {
     Inject(EntryProvider(temp.Set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
     Inject(EntryProvider(temp.Set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.Set(kStrFor, ForEachHead, kFlagNormalEntry, kCodeNormalArgs, "%unit|%object")));
     Inject(EntryProvider(temp.Set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
-#if defined(_WIN32)
-    Inject(EntryProvider(temp.Set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
-#else
-    //Linux Version
-#endif
     Inject(EntryProvider(temp.Set(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
     Inject(EntryProvider(temp.Set(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
     Inject(EntryProvider(temp.Set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
-    Inject(EntryProvider(temp.Set("lSelfInc", LeftSelfIncreament, kFlagNormalEntry,kCodeNormalArgs,"&object")));
     Inject(EntryProvider(temp.Set("lSelfDec", LeftSelfDecreament, kFlagNormalEntry, kCodeNormalArgs, "&object")));
+    Inject(EntryProvider(temp.Set("lSelfInc", LeftSelfIncreament, kFlagNormalEntry,kCodeNormalArgs,"&object")));
     Inject(EntryProvider(temp.Set("print", Print, kFlagNormalEntry, kCodeNormalArgs, "object")));
     Inject(EntryProvider(temp.Set("rSelfDec", RightSelfDecreament, kFlagNormalEntry,kCodeNormalArgs,"&object")));
     Inject(EntryProvider(temp.Set("rSelfInc", RightSelfIncreament, kFlagNormalEntry, kCodeNormalArgs, "&object")));
     Inject(EntryProvider(temp.Set("time", TimeReport, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
+#if defined(_WIN32)
+    Inject(EntryProvider(temp.Set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
+#else
+    //Linux Version
+#endif
   }
 }

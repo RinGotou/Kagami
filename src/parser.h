@@ -26,73 +26,77 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #define _ENABLE_FASTRING_
+#include "akane.h"
 #include <stack>
 #include <fstream>
-#include <array>
 #include "kagamicommon.h"
 #if defined(_WIN32)
 #include "windows.h"
 #define WIN32_LEAN_AND_MEAN
 #else
 #endif
+//#define _NO_CUI_
 
 namespace kagami {
   using std::ifstream;
   using std::ofstream;
   using std::stack;
-  using std::array;
   using std::to_string;
   using std::stoi;
   using std::stof;
   using std::stod;
+  using akane::list;
 
   const string kStrNop = "nop";
   const string kStrDef = "def";
+  const string kStrRef = "__ref";
+  const string kStrCodeSub = "__code_sub";
+  const string kStrSub = "__sub";
 
   /*ObjectManager Class
   MemoryManger will be filled with Object and manage life cycle of variables
   and constants.
   */
   class ObjectManager {
-  private:
-    using ObjectBase = map<string, Object>;
-    ObjectBase base;
+    using NamedObject = pair<string,Object>;
+    list<NamedObject> base;
 
     bool CheckObject(string sign) {
-      const auto it = base.find(sign);
-      if (it == base.end()) return false;
-      else return true;
+      NamedObject *object = nullptr;
+      for (size_t i = 0;i < base.size();++i) {
+        object = base.at(i);
+        if (object->first == sign) return false;
+      }
+      return true;
     }
   public:
-    bool Add(string sign, Object &source) {
-      bool result = true;
-      Object object = source;
-
-      if (CheckObject(sign) == true) {
-        result = false;
-      }
-      else {
-        base.insert(pair<string, Object>(sign, object));
-      }
-      return result;
+    bool Add(string sign, Object source) {
+      if(!CheckObject(sign)) return false;
+      base.push_back(NamedObject(sign,source));
+      return true;
     }
-
-    Object *Find(string name) {
-      Object *wrapper = nullptr;
-      for (auto &unit : base) {
-        if (unit.first == name) {
-          wrapper = &(unit.second);
+    Object *Find(string sign) {
+      Object *object = nullptr;
+      for (size_t i = 0;i < base.size();++i) {
+        if (base[i]->first == sign) {
+          object = &base[i]->second;
           break;
         }
       }
-      return wrapper;
+      return object;
     }
-
-    void Dispose(string name) {
-      const auto it = base.find(name);
-      if (it != base.end()) base.erase(it);
+    void Dispose(string sign) {
+      size_t pos = 0;
+      bool found = false;
+      for (size_t i = 0;i < base.size();++i) {
+        if (base[i]->first == sign) {
+          found = true;
+          pos = i;
+          break;
+        }
+      }
+      if (found) base.erase(pos);
     }
-
     bool Empty() const {
       return base.empty();
     }
@@ -103,7 +107,6 @@ namespace kagami {
   parsed here.Processed data will be delivered to entry provider.
   */
   class Processor {
-  private:
     using Token = pair<string, size_t>;
     bool health;
     vector<Token> origin;
@@ -125,6 +128,8 @@ namespace kagami {
     size_t mode,
       nextInsertSubscript,
       lambdaObjectCount;
+    size_t subscript;
+    bool marked;
 
     void EqualMark();
     void Comma();
@@ -138,6 +143,7 @@ namespace kagami {
     void OtherTokens();
     void FinalProcessing(Message &msg);
     bool SelfOperator(Message &msg);
+    bool Colon();
     Object *GetObj(string name);
     static vector<string> Spilt(string target);
     static string GetHead(string target);
@@ -157,6 +163,7 @@ namespace kagami {
     Processor &Build(string target);
     bool IsHealth() const { return health; }
     string GetErrorString() const { return errorString; }
+    Processor &SetSubscript(size_t sub) { this->subscript = sub; marked = true; return *this; }
   };
 
   /*ScriptProvider class
