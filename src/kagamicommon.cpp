@@ -93,7 +93,7 @@ namespace kagami {
     return result;
   }
 
-  bool Kit::FindInStringVector(string target, string source) {
+  bool Kit::FindInStringGroup(string target, string source) {
     bool result = false;
     auto methods = this->BuildStringVector(source);
     for (auto &unit : methods) {
