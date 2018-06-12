@@ -598,8 +598,15 @@ namespace kagami {
   //Linux Version
 #endif
   Message VersionInfo(ObjectMap &p) {
-    Message result(kStrRedirect, kCodeSuccess, "'" + kEngineVersion + "'");
-    return result;
+    return Message(kStrRedirect, kCodeSuccess, "'" + kEngineVersion + "'");
+  }
+
+  Message PlatformInfo(ObjectMap &p) {
+    return Message(kStrRedirect, kCodeSuccess, "'" + kPlatformType + "'");
+  }
+
+  Message InsideNameInfo(ObjectMap &p) {
+    return Message(kStrRedirect, kCodeSuccess, "'" + kInsideName + "'");
   }
 
   Message Print(ObjectMap &p) {
@@ -661,6 +668,8 @@ namespace kagami {
     Inject(EntryProvider(temp.Set("time", TimeReport, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
     Inject(EntryProvider(temp.Set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
+    Inject(EntryProvider(temp.Set("platform", PlatformInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(EntryProvider(temp.Set("insidename", InsideNameInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
 #if defined(_WIN32)
     Inject(EntryProvider(temp.Set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
 #else
