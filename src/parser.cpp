@@ -1007,30 +1007,6 @@ namespace kagami {
     if (state == true) FinalProcessing(result);
     if (!health) result.combo(kStrFatalError, kCodeBadExpression, errorString);
     
-#ifndef _NO_CUI_
-    if (!item.empty()) {
-      if (item.back().second == kTypeNull) {
-        std::cout << "What's this? - " + item.back().first << std::endl;
-      }
-      else if (item.back().second != kGenericToken) {
-        std::cout << item.back().first << std::endl;
-      }
-      else {
-        auto object = GetObj(item.back().first);
-        const auto provider = entry::Order("print");
-        if (object != nullptr) {
-          if (kit.FindInStringGroup("__print", object->GetMethods())) {
-            ObjectMap map;
-            map.insert(Parameter("object", *object));
-            result = provider.Start(map);
-          }
-        }
-        else {
-          std::cout << "What's this? - " + item.back().first << std::endl;
-        }
-      }
-    }
-#endif
     kit.CleanupDeque(item).CleanupDeque(symbol);
     lambdamap.clear();
     return result;

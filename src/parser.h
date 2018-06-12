@@ -70,6 +70,13 @@ namespace kagami {
       return true;
     }
   public:
+    ObjectManager() {}
+    ObjectManager(ObjectManager &mgr) { base = mgr.base; }
+    ObjectManager(ObjectManager &&mgr) {}
+    ObjectManager &operator=(ObjectManager &mgr) {
+      base = mgr.base;
+      return *this;
+    } 
     bool Add(string sign, Object source) {
       if(!CheckObject(sign)) return false;
       base.push_back(NamedObject(sign,source));
