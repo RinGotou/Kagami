@@ -62,9 +62,11 @@ namespace kagami {
   using Attachment = vector<ActivityTemplate> * (*)();
 
 #if defined(_WIN32)
-  const string kEngineVersion = "version 0.6 (Windows Platform)";
+  const string kEngineVersion = "0.6";
+  const string kInsideName = "Dawn";
+  const string kPlatformType = "Windows";
 #else
-  const string kEngineVersion = "version 0.6 (Linux Platform)";
+  const string kPlatformType = "Linux";
 #endif
   const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura";
