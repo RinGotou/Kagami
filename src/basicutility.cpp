@@ -507,7 +507,9 @@ namespace kagami {
           result = true;
         }
         else if (msg.GetValue() == kStrRedirect) {
-          objUnit->Manage(msg.GetDetail());
+          objUnit->Manage(msg.GetDetail())
+                  .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+                  .SetTokenType(kit.GetDataType(msg.GetDetail()));
           result = true;
         }
         else {
@@ -519,6 +521,9 @@ namespace kagami {
       }
 
       kit.CleanupMap(map);
+      currentSub++;
+      Object *objSub = entry::FindObjectInCurrentManager(kStrSub);
+      objSub->Manage(to_string(currentSub));
     }
     else {
       return Message(kStrFatalError, kCodeIllegalCall,
