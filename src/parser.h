@@ -26,7 +26,7 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #define _ENABLE_FASTRING_
-#include "akane.h"
+#include "akane/akane.h"
 #include <stack>
 #include <fstream>
 #include "kagamicommon.h"
