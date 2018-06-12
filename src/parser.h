@@ -104,6 +104,16 @@ namespace kagami {
       }
       if (found) base.erase(pos);
     }
+    void clear() {
+      list<NamedObject> temp;
+      for(size_t i = 0;i < base.size();++i) {
+        if(base[i]->second.IsPermanent()) {
+          temp.push_back(*base[i]);
+        }
+      }
+      base.clear();
+      base = temp;
+    }
     bool Empty() const {
       return base.empty();
     }
@@ -169,8 +179,18 @@ namespace kagami {
     Message Start(size_t mode = kModeNormal);
     Processor &Build(string target);
     bool IsHealth() const { return health; }
+    bool IsMarked() const { return marked; }
     string GetErrorString() const { return errorString; }
-    Processor &SetSubscript(size_t sub) { this->subscript = sub; marked = true; return *this; }
+    bool IsSelfObjectManagement() const {
+      string front = origin.front().first;
+      return (front == kStrFor || front == kStrDef);
+    }
+    Processor &SetSubscript(size_t sub) {
+      this->subscript = sub;
+      marked = true; 
+      return *this;
+    }
+    
   };
 
   /*ScriptProvider class
@@ -320,7 +340,9 @@ namespace kagami {
     //Linux Version
 #endif
     using EntryMapUnit = map<string, EntryProvider>::value_type;
-    
+
+    list<ObjectManager> &GetObjectStack();
+    ObjectManager &GetCurrentManager();
     string GetTypeId(string sign);
     void Inject(EntryProvider provider);
     void RemoveByTemplate(ActivityTemplate temp);

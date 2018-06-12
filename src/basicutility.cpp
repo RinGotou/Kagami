@@ -93,6 +93,10 @@ namespace kagami {
       return object;
     }
 
+    ObjectManager &GetCurrentManager() {
+      return *GetObjectStack().back();
+    }
+
     Object *FindObjectInCurrentManager(string sign) {
       Object *object = nullptr;
       ObjectManager *base = GetObjectStack().back();
@@ -481,8 +485,8 @@ namespace kagami {
     if (subscriptStack.empty() || subscriptStack.top() != codeSubscript) {
       subscriptStack.push(codeSubscript);
       auto &manager = entry::CreateManager();
-      manager.Add(kStrSub, Object().Manage("0", kTypeIdNull));
-      manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull));
+      manager.Add(kStrSub, Object().Manage("0", kTypeIdNull).SetPermanent(true));
+      manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull).SetPermanent(true));
     }
     else if (subscriptStack.top() == codeSubscript) {
       const auto objSub = entry::FindObjectInCurrentManager(kStrSub);
@@ -513,12 +517,10 @@ namespace kagami {
           result = true;
         }
         else {
-          entry::DisposeManager();
           result = false;
         }
       }
       else {
-        entry::DisposeManager();
         result = false;
       }
 

@@ -179,6 +179,7 @@ namespace kagami {
       result = storage[current].Start(currentMode);
       const auto value = result.GetValue();
       const auto code = result.GetCode();
+      const auto selfObjectManagement = storage[current].IsSelfObjectManagement();
 
       if (value == kStrFatalError) {
         trace::Log(result);
@@ -193,6 +194,7 @@ namespace kagami {
       case kCodeConditionRoot:
         modeStack.push(currentMode);
         if (value == kStrTrue) {
+          entry::CreateManager();
           currentMode = kModeCondition;
           conditionStack.push(true);
         }
@@ -209,6 +211,7 @@ namespace kagami {
         if (!conditionStack.empty()) {
           if (conditionStack.top() == false && currentMode == kModeNextCondition
             && value == kStrTrue) {
+            entry::CreateManager();
             currentMode = kModeCondition;
             conditionStack.top() = true;
           }
@@ -226,6 +229,7 @@ namespace kagami {
             currentMode = kModeNextCondition;
             break;
           case false:
+            entry::CreateManager();
             conditionStack.top() = true;
             currentMode = kModeCondition;
             break;
@@ -239,10 +243,12 @@ namespace kagami {
       case kCodeHeadSign:
         if (cycleNestStack.empty()) {
           modeStack.push(currentMode);
+          if (!selfObjectManagement) entry::CreateManager();
         }
         else {
           if (cycleNestStack.top() != current - 1) {
             modeStack.push(currentMode);
+            if (!selfObjectManagement) entry::CreateManager();
           }
         }
         if (value == kStrTrue) {
@@ -276,6 +282,7 @@ namespace kagami {
           conditionStack.pop();
           currentMode = modeStack.top();
           modeStack.pop();
+          entry::DisposeManager();
         }
         if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
           switch (currentMode) {
@@ -284,12 +291,14 @@ namespace kagami {
               cycleTailStack.push(current - 1);
             }
             current = cycleNestStack.top();
+            entry::GetCurrentManager().clear();
             break;
           case kModeCycleJump:
             currentMode = modeStack.top();
             modeStack.pop();
             cycleNestStack.pop();
             cycleTailStack.pop();
+            entry::DisposeManager();
             break;
           default:break;
           }
