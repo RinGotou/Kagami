@@ -499,7 +499,7 @@ namespace kagami {
       map.insert(Parameter(kStrObject, Object().Ref(*object)));
       msg = providerGetSize.Start(map);
       size_t size = stoi(msg.GetDetail());
-      if (size>currentSub) {
+      if (size > currentSub) {
         map.insert(Parameter("subscript_1", Object().Manage(subStr)));
         msg = providerAt.Start(map);
         if (msg.GetCode() == kCodeObject) {
@@ -513,10 +513,12 @@ namespace kagami {
           result = true;
         }
         else {
+          entry::DisposeManager();
           result = false;
         }
       }
       else {
+        entry::DisposeManager();
         result = false;
       }
 
