@@ -24,7 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kagami.h"
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
@@ -82,7 +82,9 @@ namespace kagami {
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Processor loader;
 
-    std::cout << kEngineName << ' ' << kEngineVersion << std::endl;
+    std::cout << kEngineName 
+    << ' ' << "verison:" << kEngineVersion 
+    << '(' << kInsideName << ')' << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
     CreateManager();
