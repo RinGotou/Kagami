@@ -1,7 +1,11 @@
 /*
  * Akane - simple template kit 
  */
+
 #pragma once
+
+#include <cstring>
+
 namespace akane {
   //Node class for linked list
   template <class T>
