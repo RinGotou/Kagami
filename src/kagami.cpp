@@ -110,7 +110,7 @@ namespace kagami {
 
 void atexit_handler()
 {
-    printf("Press any key to continue...\n");
+    printf("Press Enter to close the app...\n");
     std::cin.get();
 }
 
