@@ -108,7 +108,15 @@ namespace kagami {
 #endif
 }
 
+void atexit_handler()
+{
+    printf("Press any key to continue...\n");
+    std::cin.get();
+}
+
 int main(int argc, char **argv) {
+  atexit(atexit_handler);
+  
   kagami::ScriptCore scriptCore;
 
 #ifdef _ENABLE_DEBUGGING_
