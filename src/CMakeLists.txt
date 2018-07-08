@@ -10,6 +10,14 @@ elseif(MINGW)
 	add_definitions(-municode)
 endif()
 
+if(NOCUI)
+	add_definitions(-D_NO_CUI_)
+endif()
+
+if(ENABLE_DEBUGGING)
+	add_definitions(-D_ENABLE_DEBUGGING_)
+endif()
+
 file(GLOB PROJECT_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
 )
