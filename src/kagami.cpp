@@ -108,15 +108,19 @@ namespace kagami {
 #endif
 }
 
+#ifndef _NO_CUI_
 void atexit_handler()
 {
     printf("Press Enter to close the app...\n");
     std::cin.get();
 }
+#endif
 
 int main(int argc, char **argv) {
+#ifndef _NO_CUI_
   atexit(atexit_handler);
-  
+#endif
+
   kagami::ScriptCore scriptCore;
 
 #ifdef _ENABLE_DEBUGGING_
