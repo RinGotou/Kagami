@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\akane.h" />
     <ClInclude Include="..\..\src\includes.h" />
     <ClInclude Include="..\..\src\kagamicommon.h" />
     <ClInclude Include="..\..\src\parser.h" />
