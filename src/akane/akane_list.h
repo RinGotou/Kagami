@@ -1,13 +1,6 @@
-/*
- * Akane - simple template kit 
- */
-
 #pragma once
-
-#include <cstring>
-
 namespace akane {
-  //Node class for linked list
+    //Node class for linked list
   template <class T>
   class sl_node {
   public:
@@ -17,18 +10,6 @@ namespace akane {
     sl_node(T &t) { data = t; next = nullptr; }
     sl_node(T &&t) { data = t; next = nullptr; }
     sl_node(sl_node &sln) { this->data = sln.data; this->next = sln.next; }
-  };
-
-  //Node class for double linked list
-  template <class T>
-  class node {
-  public:
-    T data;
-    node *next, *forward;
-    node() { next = nullptr; forward = nullptr; }
-    node(T &t) { data = t; next = nullptr; forward = nullptr; }
-    node(T &&t) { data = t; next = nullptr; forward = nullptr; }
-    node(node &n) { data = n.data; next = nullptr; forward = nullptr; }
   };
 
   class ref_blk {
@@ -53,6 +34,7 @@ namespace akane {
     health(true) {
       blk = new ref_blk();
     }
+
     list(list &lst) : blk(lst.blk), 
     count(lst.count), 
     root(lst.root), 
@@ -60,6 +42,7 @@ namespace akane {
     health(lst.health) {
       blk->count++;
     }
+
     ~list() {
       blk->count--;
       if (blk->count == 0) {
@@ -78,9 +61,10 @@ namespace akane {
         }
       }
     }
+
     list &operator=(list &lst) {
-      lst.blk->count++;
-      this->blk->count--;
+      ++lst.blk->count;
+      --this->blk->count;
       if (this->blk->count == 0) {
         clear();
       }
@@ -91,9 +75,7 @@ namespace akane {
       health = lst.health;
       return *this;
     }
-    bool empty() const { return (root == nullptr && count == 0); }
-    bool good() const { return health; }
-    size_t size() const { return count; }
+
     void push_back(T t) {
       if (root == nullptr) {
         root = new _DataNode(t);
@@ -111,7 +93,9 @@ namespace akane {
       }
       ++count;
     }
+
     void pop_back() {
+      if (tail == nullptr) return;
       if (root != tail) {
         _DataNode *ptr = root;
         while (ptr->next != tail) ptr = ptr->next;
@@ -127,33 +111,68 @@ namespace akane {
         count = 0;
       }
     }
+
+    void push_front(T t) {
+      if (root == nullptr) {
+        root = new _DataNode(t);
+        if (root == nullptr) health = false;
+        tail = root;
+      }
+      else {
+        _DataNode *ptr = new _DataNode(t);
+        if (ptr == nullptr) return;
+        ptr->next = root;
+        root = ptr;
+      }
+      ++count;
+    }
+
+    void pop_front() {
+      if (root == nullptr) return;
+      if (root == tail) {
+        delete root;
+        root = nullptr;
+        tail = nullptr;
+      }
+      else {
+        _DataNode *ptr = root;
+        root = root->next;
+        delete ptr;
+      }
+      --count;
+    }
+
     T *at(size_t pos) {
       if (pos > count - 1) return nullptr;
       if (empty()) return nullptr;
       size_t sub = 0;
-      _DataNode *walker = root;
+      _DataNode *ptr = root;
       while (sub < pos) {
         ++sub;
-        walker = walker->next;
-        if (walker == nullptr) break;
+        ptr = ptr->next;
+        if (ptr == nullptr) break;
       }
-      return &walker->data;
+      return &ptr->data;
     }
+
     T *operator[](size_t pos) {
       return at(pos);
     }
+
     T *back() {
       if (tail != nullptr) {
         return &tail->data;
       }
       return nullptr;
     }
+
     T *front() {
       if (root != nullptr) {
         return &root->data;
       }
       return nullptr;
     }
+
     void clear() {
       if (root == nullptr && tail == nullptr) return;
       if (root != tail) {
@@ -173,6 +192,7 @@ namespace akane {
       }
       count = 0;
     }
+
     void replace(size_t pos, T t) {
       if (pos > count - 1) return;
       if (empty()) return;
@@ -184,6 +204,7 @@ namespace akane {
       }
       if (ptr != nullptr) ptr->data = t;
     }
+
     size_t find(T t) {
       size_t sub = 0;
       _DataNode *ptr = root;
@@ -194,6 +215,7 @@ namespace akane {
       }
       return sub;
     }
+
     void erase(size_t pos) {
       if (pos > count - 1) return;
       if (empty()) return;
@@ -208,6 +230,7 @@ namespace akane {
       delete ptr;
       --count;
     }
+
     void insert(size_t pos, T t) {
       if (pos > count - 1) {
         tail->next = new _DataNode(t);
@@ -229,43 +252,10 @@ namespace akane {
         ++count;
       }
     }
+
     size_t ref_count() const { return blk->count; }
-  };
-
-
-  //A simple string container.
-  //thanks to https://github.com/adolli/FruitString !
-  template <class T>
-  class basic_string_container {
-  protected:
-    T *data;
-    size_t size_;
-  public:
-    basic_string_container(const T *data, size_t size) : size_(size){
-      this->data = new T[size + 1];
-      memcpy(this->data, data, sizeof(T)*size);
-    }
-    basic_string_container(const T unit) : size_(1) {
-      this->data = new T[2];
-      data[0] = unit;
-    }
-    basic_string_container(basic_string_container &bsc) : size_(bsc.size_) {
-      data = new T[bsc.size + 1];
-      memcpy(data, bsc.data, bsc.size_);
-    }
-    basic_string_container &operator=(basic_string_container &bsc) {
-      if (&bsc == this) return this;
-      this->size_ = bsc.size_;
-      //TODO:???
-    }
-    
-    T &get(size_t pos) { return data[pos]; } 
-    ~basic_string_container() { delete[] data; }
-    void clear() { delete[] data; }
-    size_t size() const { return size_; }
-  };
-
-  class string : public basic_string_container<char> {
-    
+    bool empty() const { return (root == nullptr && count == 0); }
+    bool good() const { return health; }
+    size_t size() const { return count; }
   };
 }
