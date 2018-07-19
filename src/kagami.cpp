@@ -24,7 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kagami.h"
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
@@ -108,6 +108,13 @@ namespace kagami {
 #endif
 }
 
+#ifndef _NO_CUI_
+void AtExitHandler() {
+  std::cout << "Press enter to close..." << std::endl;
+  std::cin.get();
+}
+#endif
+
 int main(int argc, char **argv) {
   kagami::ScriptCore scriptCore;
   
@@ -116,6 +123,8 @@ int main(int argc, char **argv) {
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
 #else
 #ifndef _NO_CUI_
+  atexit(AtExitHandler);
+
   if (argc > 1) {
     scriptCore.ExecScriptFile(argv[1]);
   }

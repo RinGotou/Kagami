@@ -312,10 +312,7 @@ namespace kagami {
           case enum_double:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
           default: ;
           }
-          switch (tempresult) {
-          case true:temp = kStrTrue; break;
-          case false:temp = kStrFalse; break;
-          }
+          tempresult?temp = kStrTrue:temp = kStrFalse;
         }
       }
       else if (enumtype == enum_str) {
@@ -335,10 +332,7 @@ namespace kagami {
         }
         else if (dataOP == "!=" || dataOP == "==") {
           tempresult = kit.Logic(dataA, dataB, dataOP);
-          switch (tempresult) {
-          case true:temp = kStrTrue; break;
-          case false:temp = kStrFalse; break;
-          }
+          tempresult?temp = kStrTrue:temp = kStrFalse;
         }
         else if (dataOP == ">=" || dataOP == "<=") {
           //TODO:add in Kit::Logic()
@@ -589,7 +583,11 @@ namespace kagami {
     Message result;
     auto wpath = s2ws(Kit().GetRawString(path));
 
-    const auto hinstance = LoadLibrary(wpath.c_str());
+#if defined(__clang__)
+    auto hinstance = LoadLibrary(path.c_str());
+#else
+    auto hinstance = LoadLibrary(wpath.c_str());
+#endif
     if (hinstance != nullptr) {
       AddInstance(path, hinstance);
     }
