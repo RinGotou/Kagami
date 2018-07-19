@@ -109,24 +109,22 @@ namespace kagami {
 }
 
 #ifndef _NO_CUI_
-void atexit_handler()
-{
-    printf("Press Enter to close the app...\n");
-    std::cin.get();
+void AtExitHandler() {
+  std::cout << "Press enter to close..." << std::endl;
+  std::cin.get();
 }
 #endif
 
 int main(int argc, char **argv) {
-#ifndef _NO_CUI_
-  atexit(atexit_handler);
-#endif
-
   kagami::ScriptCore scriptCore;
-
+  
 #ifdef _ENABLE_DEBUGGING_
+  auto &base = kagami::entry::GetObjectStack();
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
 #else
 #ifndef _NO_CUI_
+  atexit(AtExitHandler);
+
   if (argc > 1) {
     scriptCore.ExecScriptFile(argv[1]);
   }
@@ -138,6 +136,7 @@ int main(int argc, char **argv) {
 #endif
 #endif
   scriptCore.PrintEvents();
+  kagami::entry::DisposeManager();
 
   return 0;
 }

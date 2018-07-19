@@ -93,6 +93,10 @@ namespace kagami {
       return object;
     }
 
+    ObjectManager &GetCurrentManager() {
+      return *GetObjectStack().back();
+    }
+
     Object *FindObjectInCurrentManager(string sign) {
       Object *object = nullptr;
       ObjectManager *base = GetObjectStack().back();
@@ -308,10 +312,7 @@ namespace kagami {
           case enum_double:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
           default: ;
           }
-          switch (tempresult) {
-          case true:temp = kStrTrue; break;
-          case false:temp = kStrFalse; break;
-          }
+          tempresult?temp = kStrTrue:temp = kStrFalse;
         }
       }
       else if (enumtype == enum_str) {
@@ -331,10 +332,7 @@ namespace kagami {
         }
         else if (dataOP == "!=" || dataOP == "==") {
           tempresult = kit.Logic(dataA, dataB, dataOP);
-          switch (tempresult) {
-          case true:temp = kStrTrue; break;
-          case false:temp = kStrFalse; break;
-          }
+          tempresult?temp = kStrTrue:temp = kStrFalse;
         }
         else if (dataOP == ">=" || dataOP == "<=") {
           //TODO:add in Kit::Logic()
@@ -481,8 +479,8 @@ namespace kagami {
     if (subscriptStack.empty() || subscriptStack.top() != codeSubscript) {
       subscriptStack.push(codeSubscript);
       auto &manager = entry::CreateManager();
-      manager.Add(kStrSub, Object().Manage("0", kTypeIdNull));
-      manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull));
+      manager.Add(kStrSub, Object().Manage("0", kTypeIdNull).SetPermanent(true));
+      manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull).SetPermanent(true));
     }
     else if (subscriptStack.top() == codeSubscript) {
       const auto objSub = entry::FindObjectInCurrentManager(kStrSub);
@@ -499,7 +497,7 @@ namespace kagami {
       map.insert(Parameter(kStrObject, Object().Ref(*object)));
       msg = providerGetSize.Start(map);
       size_t size = stoi(msg.GetDetail());
-      if (size>currentSub) {
+      if (size > currentSub) {
         map.insert(Parameter("subscript_1", Object().Manage(subStr)));
         msg = providerAt.Start(map);
         if (msg.GetCode() == kCodeObject) {
@@ -585,7 +583,11 @@ namespace kagami {
     Message result;
     auto wpath = s2ws(Kit().GetRawString(path));
 
-    const auto hinstance = LoadLibrary(wpath.c_str());
+#if defined(__clang__)
+    auto hinstance = LoadLibrary(path.c_str());
+#else
+    auto hinstance = LoadLibrary(wpath.c_str());
+#endif
     if (hinstance != nullptr) {
       AddInstance(path, hinstance);
     }

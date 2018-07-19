@@ -354,6 +354,7 @@ namespace kagami {
     string methods;
     size_t tokenType;
     bool ro;
+    bool permanent;
   public:
     Object() {
       //hold a null pointer will cause some mysterious ploblems,
@@ -362,6 +363,7 @@ namespace kagami {
       option = kTypeIdNull;
       tokenType = kTypeNull;
       ro = false;
+      permanent = false;
     }
     Object &Manage(string t, string option = kTypeIdRawString) {
       Object *result;
@@ -448,6 +450,10 @@ namespace kagami {
       this->ro = ro;
       return *this;
     }
+    Object &SetPermanent(bool permanent) {
+      this->permanent = permanent;
+      return *this;
+    }
     string GetMethods() const {
       if (option == kTypeIdRef) {
         return static_pointer_cast<TargetObject>(ptr)
@@ -472,12 +478,16 @@ namespace kagami {
       }
       return ro;
     }
+    bool IsPermanent() const {
+      return permanent;
+    }
     void Clear() {
       ptr = make_shared<int>(0);
       option = kTypeIdNull;
       methods.clear();
       tokenType = kTypeNull;
       ro = false;
+      permanent = false;
     }
     bool IsRef() const {
       return option == kTypeIdRef;
