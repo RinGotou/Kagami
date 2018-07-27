@@ -142,35 +142,14 @@ namespace akane {
       --count;
     }
 
-    T *at(size_t pos) {
-      if (pos > count - 1) return nullptr;
-      if (empty()) return nullptr;
+    T &at(size_t pos) {
       size_t sub = 0;
       _DataNode *ptr = root;
       while (sub < pos) {
         ++sub;
         ptr = ptr->next;
-        if (ptr == nullptr) break;
       }
-      return &ptr->data;
-    }
-
-    T *operator[](size_t pos) {
-      return at(pos);
-    }
-
-    T *back() {
-      if (tail != nullptr) {
-        return &tail->data;
-      }
-      return nullptr;
-    }
-
-    T *front() {
-      if (root != nullptr) {
-        return &root->data;
-      }
-      return nullptr;
+      return ptr->data;
     }
 
     void clear() {
@@ -253,8 +232,11 @@ namespace akane {
       }
     }
 
+    T &operator[](size_t pos) { return at(pos); }
+    T &back() { return tail->data; }
+    T &front() { return root->data; }
     size_t ref_count() const { return blk->count; }
-    bool empty() const { return (root == nullptr && count == 0); }
+    bool empty() const { return (root == nullptr && tail == nullptr && count == 0); }
     bool good() const { return health; }
     size_t size() const { return count; }
   };

@@ -6,6 +6,11 @@ namespace akane {
   class stack {
   protected:
     list<T> base;
-    //TODO:?
+  public:
+    void push(T t) { base.push_back(t); }
+    void pop(T t) { base.pop_back(); }
+    T &top() { return base.back(); }
+    void clear() { base.clear(); }
+    size_t size() { return base.size(); }
   };
 }

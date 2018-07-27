@@ -62,10 +62,10 @@ namespace kagami {
     list<NamedObject> base;
 
     bool CheckObject(string sign) {
-      NamedObject *object = nullptr;
+      //NamedObject *object = nullptr;
       for (size_t i = 0;i < base.size();++i) {
-        object = base.at(i);
-        if (object->first == sign) return false;
+        NamedObject &object = base.at(i);
+        if (object.first == sign) return false;
       }
       return true;
     }
@@ -85,8 +85,8 @@ namespace kagami {
     Object *Find(string sign) {
       Object *object = nullptr;
       for (size_t i = 0;i < base.size();++i) {
-        if (base[i]->first == sign) {
-          object = &base[i]->second;
+        if (base[i].first == sign) {
+          object = &(base[i].second);
           break;
         }
       }
@@ -96,7 +96,7 @@ namespace kagami {
       size_t pos = 0;
       bool found = false;
       for (size_t i = 0;i < base.size();++i) {
-        if (base[i]->first == sign) {
+        if (base[i].first == sign) {
           found = true;
           pos = i;
           break;
@@ -107,8 +107,8 @@ namespace kagami {
     void clear() {
       list<NamedObject> temp;
       for(size_t i = 0;i < base.size();++i) {
-        if(base[i]->second.IsPermanent()) {
-          temp.push_back(*base[i]);
+        if(base[i].second.IsPermanent()) {
+          temp.push_back(base[i]);
         }
       }
       base.clear();

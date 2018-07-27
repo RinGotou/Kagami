@@ -84,7 +84,7 @@ namespace kagami {
       list<ObjectManager> &base = GetObjectStack();
 
       while (!base.empty() && count > 0) {
-        object = base[count - 1]->Find(sign);
+        object = base[count - 1].Find(sign);
         if (object != nullptr) {
           break;
         }
@@ -94,15 +94,15 @@ namespace kagami {
     }
 
     ObjectManager &GetCurrentManager() {
-      return *GetObjectStack().back();
+      return GetObjectStack().back();
     }
 
     Object *FindObjectInCurrentManager(string sign) {
       Object *object = nullptr;
-      ObjectManager *base = GetObjectStack().back();
+      ObjectManager &base = GetObjectStack().back();
 
-      while(!base->Empty()) {
-        object = base->Find(sign);
+      while(!base.Empty()) {
+        object = base.Find(sign);
         if(object != nullptr) {
           break;
         }
@@ -112,20 +112,20 @@ namespace kagami {
     }
 
     Object *CreateObject(string sign, Object &object) {
-      ObjectManager *base = GetObjectStack().back();
+      ObjectManager &base = GetObjectStack().back();
 
-      base->Add(sign, object);
-      const auto result = base->Find(sign);
+      base.Add(sign, object);
+      const auto result = base.Find(sign);
       return result;
     }
 
     string GetTypeId(const string sign) {
       auto result = kTypeIdNull;
       auto count = GetObjectStack().size();
-      auto& base = GetObjectStack(); 
+      auto &base = GetObjectStack(); 
 
       while (count > 0) {
-        const auto object = base[count - 1]->Find(sign);
+        const auto object = base[count - 1].Find(sign);
         if (object != nullptr) {
           result = object->GetTypeId();
         }
@@ -142,11 +142,11 @@ namespace kagami {
     ObjectManager &CreateManager() {
       auto &base = GetObjectStack();
       base.push_back(ObjectManager());
-      return *GetObjectStack().back();
+      return GetObjectStack().back();
     }
 
     bool DisposeManager() {
-      if (!GetObjectStack().empty()) { GetObjectStack().pop_back(); }
+        if (!GetObjectStack().empty()) { GetObjectStack().pop_back(); }
       return GetObjectStack().empty();
     } 
 
@@ -492,10 +492,9 @@ namespace kagami {
     auto providerGetSize = entry::Order("size", typeId, -1);
     if (providerAt.Good() && providerGetSize.Good()) {
       ObjectMap map;
-      Message msg;
       auto subStr = to_string(currentSub);
       map.insert(Parameter(kStrObject, Object().Ref(*object)));
-      msg = providerGetSize.Start(map);
+      Message msg = providerGetSize.Start(map);
       size_t size = stoi(msg.GetDetail());
       if (size > currentSub) {
         map.insert(Parameter("subscript_1", Object().Manage(subStr)));
@@ -624,7 +623,7 @@ namespace kagami {
       else {
         std::cout << "You can't print this object." << std::endl;
       }
-    }
+    } 
     else {
       std::cout << "You can't print this object." << std::endl;
     }

@@ -1,5 +1,7 @@
 #pragma once
 #include "akane_util.h"
+#include <iostream>
+#include <cstdlib>
 
 namespace akane {
   //A simple string container.
@@ -11,7 +13,7 @@ namespace akane {
     size_t size_;
   public:
     basic_string_container() : data(nullptr), size_(0) {}
-    basic_string_container(const T *data, size_t size) : size_(size){
+    basic_string_container(const T *data, size_t size) : size_(size) {
       this->data = new T[size + 1];
       memcpy(this->data, data, sizeof(T)*size);
     }
@@ -19,11 +21,11 @@ namespace akane {
       this->data = new T[2];
       data[0] = unit;
     }
-    basic_string_container(basic_string_container &bsc) : size_(bsc.size_) {
+    basic_string_container(const basic_string_container &bsc) : size_(bsc.size_) {
       data = new T[bsc.size_ + 1];
       memcpy(data, bsc.data, sizeof(T)*bsc.size_);
     }
-    basic_string_container &operator=(basic_string_container &bsc) {
+    basic_string_container &operator=(const basic_string_container &bsc) {
       if (&bsc == this) return *this;
       delete[] data;
       this->size_ = bsc.size_;
@@ -31,7 +33,7 @@ namespace akane {
       memcpy(data, bsc.data, sizeof(T)*bsc.size_);
       return *this;
     }
-    basic_string_container &operator=(basic_string_container &&bsc) {
+    basic_string_container &operator=(const basic_string_container &&bsc) {
       if (&bsc == this) return *this;
       delete[] data;
       this->size_ = bsc.size_;
@@ -40,7 +42,8 @@ namespace akane {
       return *this;
     }
     
-    T &get(size_t pos) { return data[pos]; } 
+    T &get(size_t pos) const { return data[pos]; } 
+    T &_get_unsafe(size_t pos) { return data[pos]; }
     ~basic_string_container() { delete[] data; }
     void clear() { delete[] data; size_ = 0; }
     size_t size() const { return size_; }
@@ -54,23 +57,25 @@ namespace akane {
   public:
     basic_string() {}
     basic_string(const T *t, size_t size) : container(t, size) {}
-    basic_string(basic_string &str) : container(str.container) {}
-    basic_string(basic_string &&str) : container(str.container) {}
-    T &at(size_t pos) { return container.get(pos); }
+    basic_string(const basic_string &str) : container(str.container) {}
+    basic_string(const basic_string &&str) : container(str.container) {}
+    T &at(size_t pos) const { return container.get(pos); }
     T &operator[](size_t pos) { return container.get(pos); }
     size_t size() const { return container.size(); }
     void clear() { container.clear(); }
   };
 
-
+  //Light string class.
+  //For building work,please use stringbuilder class.
   class string : public basic_string<char> {
     const char kEndingSymbol = '\0';
   public:
-    string() : basic_string<char>() { container.get(0) = kEndingSymbol; }
-    string(const char *str) : basic_string<char>(str, strlen(str)) { container.get(strlen(str)) = kEndingSymbol; }
-    string(string &str) : basic_string<char>(str) { container.get(container.size()) = kEndingSymbol; }
-    string(string &&str) : basic_string<char>(str) { container.get(container.size()) = kEndingSymbol; }
-    bool compare(const char *str) {
+    string() : basic_string<char>() { container._get_unsafe(0) = kEndingSymbol; }
+    string(const char *str) : basic_string<char>(str, strlen(str)) { container._get_unsafe(strlen(str)) = kEndingSymbol; }
+    string(const string &str) : basic_string<char>(str) { container._get_unsafe(container.size()) = kEndingSymbol; }
+    string(const string &&str) : basic_string<char>(str) { container._get_unsafe(container.size()) = kEndingSymbol; }
+    string(const std::string &str) : basic_string<char>(str.c_str(), str.size()) {}
+    bool compare(const char *str) const {
       size_t str_size = strlen(str);
       if (container.size() != str_size) return false;
       size_t pos = 0;
@@ -80,7 +85,7 @@ namespace akane {
       }
       return true;
     }
-    bool compare(string &str) {
+    bool compare(const string &str) const {
       if (str.container.size() != container.size()) return false;
       size_t pos = 0;
       while(pos < container.size()) {
@@ -89,74 +94,47 @@ namespace akane {
       }
       return true;
     }
-    bool operator==(string &str) {
-      return compare(str);
-    }
-    bool operator==(const char *str) {
-      return compare(str);
-    }
-    string &operator=(string &str) {
+    string &operator=(const string &str) {
       container = str.container;
-      container.get(container.size()) = kEndingSymbol;
+      container._get_unsafe(container.size()) = kEndingSymbol;
       return *this;
     }
     string &operator=(const char *str) {
       size_t len = strlen(str);
       container = _ContainerType(str, len);
-      container.get(len) = kEndingSymbol;
+      container._get_unsafe(len) = kEndingSymbol;
       return *this;
     }
-    const char *c_str() {
+    char *c_str() const {
       return &container.get(0);
     }
-  };
-
-  class wstring : public basic_string<wchar_t> {
-    const wchar_t kEndingSymbol = L'\0';
-  public:
-    wstring() : basic_string<wchar_t>() { container.get(0) = kEndingSymbol; }
-    wstring(const wchar_t *str) : basic_string<wchar_t>(str, wstrlen(str)) { container.get(wstrlen(str)) = kEndingSymbol; }
-    wstring(wstring &str) : basic_string<wchar_t>(str) { container.get(container.size()) = kEndingSymbol; }
-    wstring(wstring &&str) : basic_string<wchar_t>(str) { container.get(container.size()) = kEndingSymbol; }
-    bool compare(const wchar_t *str) {
-      size_t str_size = wstrlen(str);
-      if (container.size() != str_size) return false;
-      size_t pos = 0;
-      while (pos < container.size()) {
-        if (str[pos] != container.get(pos)) return false;
-        ++pos;
+    string substr(size_t pos, size_t len) {
+      char *res = new char[len + 1];
+      for(size_t i = 0;i < len;++i) {
+        res[i] = container.get(i + pos);
+      }
+      res[len] = kEndingSymbol;
+      return string(res);
+    }
+    bool is_blank() const {
+      for(size_t i = 0;i < container.size();++i) {
+        char c = container.get(i);
+        if(c != ' ' && c !=  '\t' && c != '\r' && c != '\n') {
+          return false;
+        }
       }
       return true;
     }
-    bool compare(wstring &str) {
-      if (str.container.size() != container.size()) return false;
-      size_t pos = 0;
-      while(pos < container.size()) {
-        if (str.container.get(pos) != container.get(pos)) return false;
-        ++pos;
-      }
-      return true;
-    }
-    bool operator==(wstring &str) {
-      return compare(str);
-    }
-    bool operator==(const wchar_t *str) {
-      return compare(str);
-    }
-    wstring &operator=(wstring &str) {
-      container = str.container;
-      container.get(container.size()) = kEndingSymbol;
-      return *this;
-    }
-    wstring &operator=(const wchar_t *str) {
-      size_t len = wstrlen(str);
-      container = _ContainerType(str, len);
-      container.get(len) = kEndingSymbol;
-      return *this;
-    }
-    const wchar_t *c_str() {
-      return &container.get(0);
-    }
+    int to_int() const { return atoi(&container.get(0)); }
+    float to_float() const { return float(atof(&container.get(0))); }
+    double to_double() const { return atof(&container.get(0)); }
+    std::string to_std_string() const { return std::string(&container.get(0)); }
+    char front() const { return container.get(0); }
+    char back() const { return container.get(container.size() - 1); }
+    bool empty() const { return (container.size() == 0); }
+    friend bool operator==(const akane::string& lhs, const akane::string& rhs);
+    friend bool operator!=(const akane::string& lhs, const akane::string& rhs);
+    friend std::ostream &operator<<(std::ostream &os, const akane::string &str);
   };
 }
 

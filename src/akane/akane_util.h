@@ -1,4 +1,3 @@
-#include <cstring>
 #pragma once
 namespace akane {
   extern size_t strlen(const char *str);
