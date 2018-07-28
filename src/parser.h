@@ -53,6 +53,12 @@ namespace kagami {
   const string kStrCodeSub = "__code_sub";
   const string kStrSub = "__sub";
 
+  enum BasicTokenValue {
+    TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT, 
+    TOKEN_COLON, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_SQRBRACKET, TOKEN_RIGHT_BRACKET, 
+    TOKEN_SELFOP, TOKEN_OTHERS
+  };
+
   /*ObjectManager Class
   MemoryManger will be filled with Object and manage life cycle of variables
   and constants.

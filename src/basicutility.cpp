@@ -241,7 +241,6 @@ namespace kagami {
     }
 
     //from MSDN
-    // ReSharper disable CppInconsistentNaming
     std::wstring s2ws(const std::string& s) {
       const auto slength = static_cast<int>(s.length()) + 1;
       const auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
@@ -279,6 +278,8 @@ namespace kagami {
   }
 
   Message BinaryOperands(ObjectMap &p) {
+    using entry::OperatorCode;
+
     Kit kit;
     Message result(kStrRedirect, kCodeSuccess, "0");
     string temp, dataOP;
@@ -287,6 +288,7 @@ namespace kagami {
     enum { enum_int, enum_double, enum_str, enum_null } enumtype = enum_null;
 
     if (op.Get() != nullptr) dataOP = *static_pointer_cast<string>(op.Get());
+    auto opCode = entry::GetOperatorCode(dataOP);
 
     if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
       auto dataA = *static_pointer_cast<string>(first.Get());
@@ -298,25 +300,35 @@ namespace kagami {
       if (kit.IsString(dataA) || kit.IsString(dataB)) enumtype = enum_str;
 
       if (enumtype == enum_int || enumtype == enum_double) {
-        if (dataOP == "+" || dataOP == "-" || dataOP == "*" || dataOP == "/") {
+        switch (opCode) {
+        case OperatorCode::ADD:
+        case OperatorCode::SUB:
+        case OperatorCode::MUL:
+        case OperatorCode::DIV:
           switch (enumtype) {
           case enum_int:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
           case enum_double:temp = to_string(kit.Calc(stod(dataA), stod(dataB), dataOP)); break;
-          default: ;
+          default:;
           }
-        }
-        else if (dataOP == "==" || dataOP == ">=" || dataOP == "<=" || dataOP == "!="
-          || dataOP == "<" || dataOP == ">") {
+          break;
+        case OperatorCode::IS:
+        case OperatorCode::MORE_OR_EQUAL:
+        case OperatorCode::LESS_OR_EQUAL:
+        case OperatorCode::NOT_EQUAL:
+        case OperatorCode::MORE:
+        case OperatorCode::LESS:
           switch (enumtype) {
           case enum_int:tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
           case enum_double:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
-          default: ;
+          default:;
           }
-          tempresult?temp = kStrTrue:temp = kStrFalse;
+          tempresult ? temp = kStrTrue : temp = kStrFalse;
+          break;
         }
       }
       else if (enumtype == enum_str) {
-        if (dataOP == "+") {
+        switch (opCode) {
+        case OperatorCode::ADD:
           if (dataA.back() == '\'') {
             temp = dataA.substr(0, dataA.size() - 1);
             dataA = temp;
@@ -329,14 +341,17 @@ namespace kagami {
             dataB.append(1, '\'');
           }
           temp = dataA + dataB;
-        }
-        else if (dataOP == "!=" || dataOP == "==") {
+          break;
+        case OperatorCode::NOT_EQUAL:
+        case OperatorCode::EQUAL:
           tempresult = kit.Logic(dataA, dataB, dataOP);
-          tempresult?temp = kStrTrue:temp = kStrFalse;
-        }
-        else if (dataOP == ">=" || dataOP == "<=") {
+          tempresult ? temp = kStrTrue : temp = kStrFalse;
+          break;
+        case OperatorCode::MORE_OR_EQUAL:
+        case OperatorCode::LESS_OR_EQUAL:
           //TODO:add in Kit::Logic()
-
+          break;
+        default:break;
         }
       }
       else {

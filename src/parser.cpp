@@ -93,10 +93,8 @@ namespace kagami {
 
     size_t GetRequiredCount(string id) {
       OperatorCode opCode = GetOperatorCode(id);
-      
       if (opCode == EQUAL) return Order(kStrSet).GetParameterSIze();
       if (opCode != NUL) return Order("binexp").GetParameterSIze();
-  
       auto provider = Order(id);
       if (provider.Good()) return provider.GetParameterSIze();
       
@@ -106,16 +104,22 @@ namespace kagami {
     void RemoveByTemplate(ActivityTemplate temp) {
       auto &base = GetEntryBase();
       vector<EntryProvider>::iterator it;
-
-      for (it = base.begin(); it != base.end(); ++it) {
-        if (*it == temp) {
-          break;
-        }
-      }
-      if (it != base.end()) {
-        base.erase(it);
-      }
+      for (it = base.begin(); it != base.end(); ++it) if (*it == temp) break;
+      if (it != base.end()) base.erase(it);
     }
+  }
+
+  BasicTokenValue GetBasicToken(string src) {
+    if (src == "=") return TOKEN_EQUAL;
+    if (src == ",") return TOKEN_COMMA;
+    if (src == "[") return TOKEN_LEFT_SQRBRACKET;
+    if (src == ".") return TOKEN_DOT;
+    if (src == ":") return TOKEN_COLON;
+    if (src == "(") return TOKEN_LEFT_BRACKET;
+    if (src == "]") return TOKEN_RIGHT_SQRBRACKET;
+    if (src == ")") return TOKEN_RIGHT_BRACKET;
+    if (src == "++" || src == "--") return TOKEN_SELFOP;
+    return TOKEN_OTHERS;
   }
 
   ScriptProvider::ScriptProvider(const char *target) {
@@ -317,8 +321,6 @@ namespace kagami {
     size_t head = 0, tail = 0, nest = 0;
     auto toString = [](char t) ->string {return string().append(1, t); };
     health = true;
-
-    if (target.front() == '#') return *this;
 
     //PreProcessing
     for (size_t count = 0; count < target.size(); ++count) {
@@ -986,16 +988,20 @@ namespace kagami {
       const auto tokenType = currentToken.second;
       const auto tokenValue = currentToken.first;
       if (tokenType == kTypeSymbol) {
-        if (tokenValue == "=") EqualMark();
-        else if (tokenValue == ",") Comma();
-        else if (tokenValue == "[") LeftSquareBracket();
-        else if (tokenValue == ".") Dot();
-        else if (tokenValue == ":") state = Colon();
-        else if (tokenValue == "(") state = LeftBracket(result);
-        else if (tokenValue == "]") state = RightSquareBracket(result);
-        else if (tokenValue == ")") state = RightBracket(result);
-        else if (tokenValue == "++" || tokenValue == "--") state = SelfOperator(result);
-        else OtherSymbols();
+        BasicTokenValue value = GetBasicToken(tokenValue);
+        switch (value) {
+        case TOKEN_EQUAL:EqualMark(); break;
+        case TOKEN_COMMA:Comma(); break;
+        case TOKEN_LEFT_SQRBRACKET:LeftSquareBracket(); break;
+        case TOKEN_DOT:Dot(); break;
+        case TOKEN_COLON:state = Colon(); break;
+        case TOKEN_LEFT_BRACKET:state = LeftBracket(result); break;
+        case TOKEN_RIGHT_SQRBRACKET:state = RightSquareBracket; break;
+        case TOKEN_RIGHT_BRACKET:state = RightBracket(result); break;
+        case TOKEN_SELFOP:state = SelfOperator(result); break;
+        case TOKEN_OTHERS:OtherSymbols(); break;
+        default:break;
+        }
       }
       else if (tokenType == kGenericToken) state = FunctionAndObject(result);
       else if (tokenType == kTypeNull) {
