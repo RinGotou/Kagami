@@ -48,62 +48,59 @@ namespace kagami {
       GetLogger().emplace_back(log_t(nowtime, msg));
 #endif
     }
-
-    bool IsEmpty() {
-      return GetLogger().empty();
-    }
   }
 
   namespace entry {
+    OperatorCode GetOperatorCode(string src) {
+      if (src == "+") return ADD;
+      if (src == "-") return SUB;
+      if (src == "*") return NUL;
+      if (src == "/") return DIV;
+      if (src == "=") return EQUAL;
+      if (src == "==") return IS;
+      if (src == "<=") return LESS_OR_EQUAL;
+      if (src == ">=") return MORE_OR_EQUAL;
+      if (src == "!=") return NOT_EQUAL;
+      if (src == ">") return MORE;
+      if (src == "<") return LESS;
+      return NUL;
+    }
+
     vector<EntryProvider> &GetEntryBase() {
       static vector<EntryProvider> base;
       return base;
     }
 
-    void Inject(EntryProvider provider) {
-      GetEntryBase().emplace_back(provider);
-    }
+    void Inject(EntryProvider provider) { GetEntryBase().emplace_back(provider); }
 
     EntryProvider Order(string id,string type = kTypeIdNull,int size = -1) {
-      EntryProvider result;
       vector<EntryProvider> &base = GetEntryBase();
-      string spectype = kTypeIdNull;
-      //size_t argsize = 0;
+      OperatorCode opCode = GetOperatorCode(id);
 
-      if (id == "+" || id == "-" || id == "*" || id == "/"
-        || id == "==" || id == "<=" || id == ">=" || id == "!="
-        || id == ">" || id == "<") {
-        result = Order("binexp");
-      }
-      else if (id == "=") {
-        result = Order(kStrSet);
-      }
-      else {
-        for (auto &unit : base) {
-          if (unit.GetId() == id) {
-            if (type == unit.GetSpecificType() && (size == -1 || size == unit.GetArgumentSize())) {
-              result = unit;
-              break;
-            }
-          }
+      if (opCode == EQUAL) return Order(kStrSet); 
+      else if (opCode != NUL) return Order("binexp"); 
+
+      EntryProvider result;
+      for (auto &unit : base) {
+        if (id == unit.GetId() && type == unit.GetSpecificType()
+          && (size == -1 || size == unit.GetParameterSIze())) {
+          result = unit;
+          break;
         }
       }
       return result;
     }
 
-    size_t GetRequiredCount(string target) {
-      size_t result = 0;
-      if (target == "+" || target == "-" || target == "*" || target == "/"
-        || target == "==" || target == "<=" || target == ">=" || target == "!=") {
-        result = Order("binexp").GetArgumentSize();
-      }
-      else {
-        auto provider = Order(target);
-        if(provider.Good()) {
-          result = provider.GetArgumentSize();
-        }
-      }
-      return result;
+    size_t GetRequiredCount(string id) {
+      OperatorCode opCode = GetOperatorCode(id);
+      
+      if (opCode == EQUAL) return Order(kStrSet).GetParameterSIze();
+      if (opCode != NUL) return Order("binexp").GetParameterSIze();
+  
+      auto provider = Order(id);
+      if (provider.Good()) return provider.GetParameterSIze();
+      
+      return 0;
     }
 
     void RemoveByTemplate(ActivityTemplate temp) {
@@ -133,11 +130,7 @@ namespace kagami {
       while (!stream.eof()) {
         std::getline(stream, temp);
         if (!IsBlankStr(temp) && temp.front() != '#') {
-          storage.push_back(Processor().Reset().Build(temp).SetSubscript(subscript));
-          if (!storage.back().IsHealth()) {
-            //this->errorString = storage.back().getErrorString();
-            break;
-          }
+          storage.push_back(Processor().Build(temp).SetIndex(subscript));
         }
         subscript++;
       }
@@ -570,7 +563,7 @@ namespace kagami {
       }
     }
 
-    const auto size = provider.GetArgumentSize();
+    const auto size = provider.GetParameterSIze();
     const auto argMode = provider.GetArgumentMode();
     const auto priority = provider.GetPriority();
     auto args = provider.GetArguments();
@@ -646,7 +639,7 @@ namespace kagami {
       }
 
       if (id == kStrFor) {
-        const auto sub = to_string(this->subscript);
+        const auto sub = to_string(this->index);
         map.insert(Parameter(kStrCodeSub,Object()
           .Manage(sub)
           .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())

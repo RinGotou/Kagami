@@ -62,7 +62,6 @@ namespace kagami {
     list<NamedObject> base;
 
     bool CheckObject(string sign) {
-      //NamedObject *object = nullptr;
       for (size_t i = 0;i < base.size();++i) {
         NamedObject &object = base.at(i);
         if (object.first == sign) return false;
@@ -71,12 +70,10 @@ namespace kagami {
     }
   public:
     ObjectManager() {}
-    ObjectManager(ObjectManager &mgr) { base = mgr.base; }
     ObjectManager(ObjectManager &&mgr) {}
-    ObjectManager &operator=(ObjectManager &mgr) {
-      base = mgr.base;
-      return *this;
-    } 
+    ObjectManager(ObjectManager &mgr) { base = mgr.base; }
+    ObjectManager &operator=(ObjectManager &mgr) { base = mgr.base; return *this; } 
+
     bool Add(string sign, Object source) {
       if(!CheckObject(sign)) return false;
       base.push_back(NamedObject(sign,source));
@@ -145,8 +142,7 @@ namespace kagami {
     size_t mode,
       nextInsertSubscript,
       lambdaObjectCount;
-    size_t subscript;
-    bool marked;
+    size_t index;
 
     void EqualMark();
     void Comma();
@@ -167,52 +163,39 @@ namespace kagami {
     static int GetPriority(string target);
     bool Assemble(Message &msg);
   public:
-    Processor(): health(false), commaExpFunc(false), insertBtnSymbols(false), disableSetEntry(false),
-                 dotOperator(false), defineLine(false), functionLine(false), subscriptProcessing(false), mode(0),
-                 nextInsertSubscript(0), lambdaObjectCount(0) {}
+    Processor() : health(false), commaExpFunc(false), insertBtnSymbols(false), dotOperator(false),
+      disableSetEntry(false),  defineLine(false), functionLine(false), subscriptProcessing(false),
+       mode(0), nextInsertSubscript(0), lambdaObjectCount(0) {}
 
-    Processor &Reset() {
-      Kit().CleanupVector(origin);
-      return *this;
-    }
-
-    Message Start(size_t mode = kModeNormal);
-    Processor &Build(string target);
     bool IsHealth() const { return health; }
-    bool IsMarked() const { return marked; }
     string GetErrorString() const { return errorString; }
     bool IsSelfObjectManagement() const {
       string front = origin.front().first;
       return (front == kStrFor || front == kStrDef);
     }
-    Processor &SetSubscript(size_t sub) {
-      this->subscript = sub;
-      marked = true; 
+    Processor &SetIndex(size_t idx) {
+      this->index = idx;
       return *this;
     }
-    
+
+    Message Start(size_t mode = kModeNormal);
+    Processor &Build(string target);
   };
 
   /*ScriptProvider class
   Script provider caches original string data from script file.
   */
   class ScriptProvider {
-  private:
     std::ifstream stream;
     size_t current;
-    //vector<string> base;
     vector<Processor> storage;
     vector<string> parameters;
-    //string errorString;
     bool health;
     bool end;
 
-
-    // ReSharper disable CppPossiblyUninitializedMember
     ScriptProvider() {}
-    // ReSharper restore CppPossiblyUninitializedMember
     void AddLoader(string raw) { 
-      storage.push_back(Processor().Reset().Build(raw)); 
+      storage.push_back(Processor().Build(raw)); 
     }
 
     static bool IsBlankStr(string target) {
@@ -243,7 +226,6 @@ namespace kagami {
   function.
   */
   class EntryProvider {
-  private:
     string id;
     int argMode;
     int priority;
@@ -294,7 +276,7 @@ namespace kagami {
     string GetId() const { return this->id; }
     int GetArgumentMode() const { return this->argMode; }
     vector<string> GetArguments() const { return args; }
-    size_t GetArgumentSize() const { return this->args.size(); }
+    size_t GetParameterSIze() const { return this->args.size(); }
     int GetPriority() const { return this->priority; }
     bool Good() const { return ((activity != nullptr) && argMode != kCodeIllegalArgs); }
     Message Start(ObjectMap &map) const;
@@ -321,10 +303,17 @@ namespace kagami {
   }
 
   namespace entry {
+    enum OperatorCode {
+      ADD, SUB, MUL, DIV, EQUAL, IS, NOT,
+      MORE, LESS, NOT_EQUAL, MORE_OR_EQUAL, LESS_OR_EQUAL,
+      NUL
+    };
+
+    OperatorCode GetOperatorCode(string src);
+
 #if defined(_WIN32)
     //Windows Verison
     class Instance : public pair<string, HINSTANCE> {
-    private:
       bool health;
       vector<ActivityTemplate> actTemp;
     public:
