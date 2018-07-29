@@ -54,7 +54,7 @@ namespace kagami {
     OperatorCode GetOperatorCode(string src) {
       if (src == "+") return ADD;
       if (src == "-") return SUB;
-      if (src == "*") return NUL;
+      if (src == "*") return MUL;
       if (src == "/") return DIV;
       if (src == "=") return EQUAL;
       if (src == "==") return IS;
@@ -323,6 +323,9 @@ namespace kagami {
     health = true;
 
     //PreProcessing
+    origin.clear();
+    item.clear();
+    symbol.clear();
     for (size_t count = 0; count < target.size(); ++count) {
       currentChar = target[count];
       if (kit.GetDataType(toString(currentChar)) != kTypeBlank
@@ -887,13 +890,18 @@ namespace kagami {
       }
     }
 
-    if (!defineLine && function && nextToken.first != "(" && currentToken.first != kStrEnd) {
+    if (!defineLine && function 
+      && nextToken.first != "(" 
+      && currentToken.first != kStrElse
+      && currentToken.first != kStrEnd) {
       errorString = "Bracket after function is missing.";
       this->health = false;
       result = false;
     }
-    if (functionLine && forwardToken.first == kStrDef && 
-      nextToken.first != "(" && currentToken.first != kStrEnd) {
+    if (functionLine 
+      && forwardToken.first == kStrDef 
+      && nextToken.first != "(" 
+      && currentToken.first != kStrEnd) {
       errorString = "Illegal declaration of function.";
       this->health = false;
       result = false;
@@ -996,7 +1004,7 @@ namespace kagami {
         case TOKEN_DOT:Dot(); break;
         case TOKEN_COLON:state = Colon(); break;
         case TOKEN_LEFT_BRACKET:state = LeftBracket(result); break;
-        case TOKEN_RIGHT_SQRBRACKET:state = RightSquareBracket; break;
+        case TOKEN_RIGHT_SQRBRACKET:state = RightSquareBracket(result); break;
         case TOKEN_RIGHT_BRACKET:state = RightBracket(result); break;
         case TOKEN_SELFOP:state = SelfOperator(result); break;
         case TOKEN_OTHERS:OtherSymbols(); break;

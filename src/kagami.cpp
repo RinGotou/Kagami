@@ -24,7 +24,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kagami.h"
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
@@ -95,7 +95,7 @@ namespace kagami {
       std::cout << ">>>";
       std::getline(std::cin, buf);
       if (buf != kStrEmpty) {
-        result = loader.Reset().Build(buf).Start();
+        result = loader.Build(buf).Start();
         if (result.GetCode() < kCodeSuccess) {
           std::cout << result.GetDetail() << std::endl;
         }
@@ -121,6 +121,7 @@ int main(int argc, char **argv) {
 #ifdef _ENABLE_DEBUGGING_
   auto &base = kagami::entry::GetObjectStack();
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
+  atexit(AtExitHandler);
 #else
 #ifndef _NO_CUI_
   atexit(AtExitHandler);

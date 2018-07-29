@@ -130,7 +130,7 @@ namespace kagami {
     using Token = pair<string, size_t>;
     bool health;
     vector<Token> origin;
-    vector<size_t> types;
+    //vector<size_t> types;
     map<string, Object> lambdamap;
     deque<Token> item, symbol;
     bool commaExpFunc,
