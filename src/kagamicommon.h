@@ -62,8 +62,8 @@ namespace kagami {
   using Attachment = vector<ActivityTemplate> * (*)();
 
 #if defined(_WIN32)
-  const string kEngineVersion = "0.6";
-  const string kInsideName = "Dawn";
+  const string kEngineVersion = "0.7";
+  const string kInsideName = "August";
   const string kPlatformType = "Windows";
 #else
   const string kPlatformType = "Linux";
