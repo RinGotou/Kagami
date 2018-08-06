@@ -64,7 +64,7 @@ namespace kagami {
 
     CreateManager();
     Activiate();
-    Inject(EntryProvider(ActivityTemplate().Set("quit", Quit, kFlagNormalEntry, kCodeNormalParm, "")));
+    Inject(ActivityTemplate("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
 
     while (result.GetCode() != kCodeQuit) {
       std::cout << ">>>";

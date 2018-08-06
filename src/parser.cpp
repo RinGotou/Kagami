@@ -47,7 +47,7 @@ namespace kagami {
     }
 
     //void Inject(EntryProvider provider) { GetEntryBase().emplace_back(provider); }
-    void Inject(ActivityTemplate temp) { GetEntryBase().emplace_back(EntryProvider(temp); }
+    void Inject(ActivityTemplate temp) { GetEntryBase().emplace_back(EntryProvider(temp)); }
 
     EntryProvider Order(string id,string type = kTypeIdNull,int size = -1) {
       vector<EntryProvider> &base = GetEntryBase();
