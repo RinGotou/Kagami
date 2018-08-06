@@ -1,28 +1,3 @@
-//BSD 2 - Clause License
-//
-//Copyright(c) 2017 - 2018, Suzu Nakamura
-//All rights reserved.
-//
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions are met :
-//
-//*Redistributions of source code must retain the above copyright notice, this
-//list of conditions and the following disclaimer.
-//
-//* Redistributions in binary form must reproduce the above copyright notice,
-//this list of conditions and the following disclaimer in the documentation
-//and/or other materials provided with the distribution.
-//
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-//AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-//IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-//FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-//DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-//  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-//  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-//  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include <iostream>
 #include <ctime>
 #ifndef _NO_CUI_
@@ -52,17 +27,17 @@ namespace kagami {
 
   namespace entry {
     OperatorCode GetOperatorCode(string src) {
-      if (src == "+") return ADD;
-      if (src == "-") return SUB;
-      if (src == "*") return MUL;
-      if (src == "/") return DIV;
-      if (src == "=") return EQUAL;
+      if (src == "+")  return ADD;
+      if (src == "-")  return SUB;
+      if (src == "*")  return MUL;
+      if (src == "/")  return DIV;
+      if (src == "=")  return EQUAL;
       if (src == "==") return IS;
       if (src == "<=") return LESS_OR_EQUAL;
       if (src == ">=") return MORE_OR_EQUAL;
       if (src == "!=") return NOT_EQUAL;
-      if (src == ">") return MORE;
-      if (src == "<") return LESS;
+      if (src == ">")  return MORE;
+      if (src == "<")  return LESS;
       return NUL;
     }
 
@@ -71,7 +46,8 @@ namespace kagami {
       return base;
     }
 
-    void Inject(EntryProvider provider) { GetEntryBase().emplace_back(provider); }
+    //void Inject(EntryProvider provider) { GetEntryBase().emplace_back(provider); }
+    void Inject(ActivityTemplate temp) { GetEntryBase().emplace_back(EntryProvider(temp); }
 
     EntryProvider Order(string id,string type = kTypeIdNull,int size = -1) {
       vector<EntryProvider> &base = GetEntryBase();
@@ -110,16 +86,24 @@ namespace kagami {
   }
 
   BasicTokenValue GetBasicToken(string src) {
-    if (src == "=") return TOKEN_EQUAL;
-    if (src == ",") return TOKEN_COMMA;
-    if (src == "[") return TOKEN_LEFT_SQRBRACKET;
-    if (src == ".") return TOKEN_DOT;
-    if (src == ":") return TOKEN_COLON;
-    if (src == "(") return TOKEN_LEFT_BRACKET;
-    if (src == "]") return TOKEN_RIGHT_SQRBRACKET;
-    if (src == ")") return TOKEN_RIGHT_BRACKET;
-    if (src == "++" || src == "--") return TOKEN_SELFOP;
+    if (src == "=")   return TOKEN_EQUAL;
+    if (src == ",")   return TOKEN_COMMA;
+    if (src == "[")   return TOKEN_LEFT_SQRBRACKET;
+    if (src == ".")   return TOKEN_DOT;
+    if (src == ":")   return TOKEN_COLON;
+    if (src == "(")   return TOKEN_LEFT_BRACKET;
+    if (src == "]")   return TOKEN_RIGHT_SQRBRACKET;
+    if (src == ")")   return TOKEN_RIGHT_BRACKET;
+    if (src == "++")  return TOKEN_SELFOP;
+    if (src == "--")  return TOKEN_SELFOP;
     return TOKEN_OTHERS;
+  }
+
+  //TODO:processing for integer
+  bool GetBooleanValue(string src) {
+    if (src == kStrTrue) return true;
+    if (src == kStrFalse)return false;
+    return false;
   }
 
   ScriptProvider::ScriptProvider(const char *target) {
@@ -144,14 +128,14 @@ namespace kagami {
   }
 
   Message ScriptProvider::Run(deque<string> res) {
-    Message result;
+    Message       result;
     stack<size_t> cycleNestStack;
     stack<size_t> cycleTailStack;
-    stack<bool> conditionStack;
+    stack<bool>   conditionStack;
     stack<size_t> modeStack;
-    size_t currentMode = kModeNormal;
-    size_t nestHeadCount = 0;
-    auto health = true;
+    size_t        currentMode = kModeNormal;
+    size_t        nestHeadCount = 0;
+    auto          health = true;
 
     if (storage.empty()) {
       return result;
@@ -173,9 +157,9 @@ namespace kagami {
     //Main state machine
     while (current < storage.size()) {
       if (!health) break;
-      result = storage[current].Start(currentMode);
-      const auto value = result.GetValue();
-      const auto code = result.GetCode();
+      result                          = storage[current].Start(currentMode);
+      const auto value                = result.GetValue();
+      const auto code                 = result.GetCode();
       const auto selfObjectManagement = storage[current].IsSelfObjectManagement();
 
       if (value == kStrFatalError) {
@@ -531,32 +515,27 @@ namespace kagami {
   }
 
   bool Processor::Assemble(Message &msg) {
-    Kit kit;
-    Object temp, *origin;
-    size_t count;
-    deque<Token> tokens;
-    ObjectMap map;
-    auto providerSize = -1;
-    auto health = true;
-    auto providerType = kTypeIdNull;
-    auto tags = Spilt(symbol.back().first);
-    const auto id = GetHead(symbol.back().first);
+    Kit           kit;
+    Object        temp, *origin;
+    size_t        count;
+    deque<Token>  tokens;
+    ObjectMap     map;
+    auto          providerSize = -1;
+    auto          health       = true;
+    auto          providerType = kTypeIdNull;
+    auto          tags         = Spilt(symbol.back().first);
+    const auto id              = GetHead(symbol.back().first);
     EntryProvider provider;
 
     auto getName = [](string target) ->string {
-      if (target.front() == '&' || target.front() == '%')
-        return target.substr(1, target.size() - 1);
+      if (target.front()  == '&' 
+        || target.front() == '%') return target.substr(1, target.size() - 1);
       else return target;
     };
 
     if (!tags.empty()) {
       providerType = tags.front();
-      if (tags.size() > 1) {
-        providerSize = stoi(tags[1]);
-      }
-      else {
-        providerSize = -1;
-      }
+      tags.size() > 1 ? providerSize = stoi(tags[1]) : providerSize = -1;
     }
 
     if (id != kStrNop) {
@@ -568,10 +547,10 @@ namespace kagami {
       }
     }
 
-    const auto size = provider.GetParameterSIze();
-    const auto argMode = provider.GetArgumentMode();
+    const auto size     = provider.GetParameterSIze();
+    const auto parmMode = provider.GetArgumentMode();
     const auto priority = provider.GetPriority();
-    auto args = provider.GetArguments();
+    auto args           = provider.GetArguments();
 
     if (id == kStrNop) {
       while (!item.empty() && item.back().first != "(") {
@@ -603,12 +582,12 @@ namespace kagami {
       return true;
     }
 
-    if (argMode == kCodeNormalArgs && (tokens.size() < size || tokens.size() > size)) {
-      msg.combo(kStrFatalError, kCodeIllegalArgs, "Parameter doesn't match expected count.(01)");
+    if (parmMode == kCodeNormalParm && (tokens.size() < size || tokens.size() > size)) {
+      msg.combo(kStrFatalError, kCodeIllegalParm, "Parameter doesn't match expected count.(01)");
       health = false;
     }
-    else if (argMode == kCodeAutoFill && tokens.size() < 1) {
-      msg.combo(kStrFatalError, kCodeIllegalArgs, "You should provide at least one parameter.(02)");
+    else if (parmMode == kCodeAutoFill && tokens.size() < 1) {
+      msg.combo(kStrFatalError, kCodeIllegalParm, "You should provide at least one parameter.(02)");
       health = false;
     }
     else {
@@ -692,8 +671,8 @@ namespace kagami {
         break;
       }
 
-      const auto code = msg.GetCode();
-      const auto value = msg.GetValue();
+      const auto code   = msg.GetCode();
+      const auto value  = msg.GetValue();
       const auto detail = msg.GetDetail();
 
       if (code == kCodeObject) {
@@ -720,7 +699,7 @@ namespace kagami {
       break;
     case false:
       switch (defineLine) {
-      case true:defineLine = false; break;
+      case true: defineLine = false; break;
       case false:symbol.emplace_back(currentToken); break;
       }
       break;
@@ -823,22 +802,17 @@ namespace kagami {
     return result;
   }
 
-  void Processor::Dot() {
-    dotOperator = true;
-  }
-
   void Processor::OtherSymbols() {
-    if (symbol.empty()) {
-      symbol.emplace_back(currentToken);
-    }
+    if (symbol.empty()) symbol.emplace_back(currentToken);
     else if (GetPriority(currentToken.first) < GetPriority(symbol.back().first) && 
       symbol.back().first != "(" && symbol.back().first != "[") {
       auto j = symbol.size() - 1;
       auto k = item.size();
       while (symbol[j].first != "(" && symbol.back().first != "[" && 
         GetPriority(currentToken.first) < GetPriority(symbol[j].first)) {
-        if (k == item.size()) { k -= entry::GetRequiredCount(symbol[j].first); }
-        else { k -= entry::GetRequiredCount(symbol[j].first) - 1; }
+        k == item.size()?
+          k -= entry::GetRequiredCount(symbol[j].first):
+          k -= entry::GetRequiredCount(symbol[j].first) - 1;
         --j;
       }
       symbol.insert(symbol.begin() + j + 1, currentToken);
@@ -883,7 +857,7 @@ namespace kagami {
         break;
       case false:
         switch (entry::Order(currentToken.first).Good()) {
-        case true:symbol.emplace_back(currentToken); function = true; break;
+        case true: symbol.emplace_back(currentToken); function = true; break;
         case false:item.emplace_back(currentToken); break;
         }
         break;
@@ -891,7 +865,7 @@ namespace kagami {
     }
 
     if (!defineLine && function 
-      && nextToken.first != "(" 
+      && nextToken.first    != "(" 
       && currentToken.first != kStrElse
       && currentToken.first != kStrEnd) {
       errorString = "Bracket after function is missing.";
@@ -972,48 +946,47 @@ namespace kagami {
       return result;
     }
 
-    this->mode = mode;
-    lambdaObjectCount = 0;
+    this->mode          = mode;
+    lambdaObjectCount   = 0;
     nextInsertSubscript = 0;
-    operatorTargetType = kTypeIdNull;
-    commaExpFunc = false,
-    insertBtnSymbols = false,
-    disableSetEntry = false,
-    dotOperator = false,
+    operatorTargetType  = kTypeIdNull;
+    commaExpFunc        = false,
+    insertBtnSymbols    = false,
+    disableSetEntry     = false,
+    dotOperator         = false,
     subscriptProcessing = false;
-    functionLine = false;
-    defineLine = false;
+    functionLine        = false;
+    defineLine          = false;
 
     for (size_t i = 0; i < size; ++i) {
       if (!health) break;
-      if(!state) break;
+      if (!state)  break;
 
       currentToken = origin[i];
-      if (i < size - 1) nextToken = origin[i + 1];
-      else nextToken = Token(kStrNull, kTypeNull);
+      i < size - 1 ? nextToken = origin[i + 1] : nextToken = Token(kStrNull, kTypeNull);
 
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
-      const auto tokenType = currentToken.second;
+      const auto tokenType  = currentToken.second;
       const auto tokenValue = currentToken.first;
       if (tokenType == kTypeSymbol) {
         BasicTokenValue value = GetBasicToken(tokenValue);
         switch (value) {
-        case TOKEN_EQUAL:EqualMark(); break;
-        case TOKEN_COMMA:Comma(); break;
-        case TOKEN_LEFT_SQRBRACKET:LeftSquareBracket(); break;
-        case TOKEN_DOT:Dot(); break;
-        case TOKEN_COLON:state = Colon(); break;
-        case TOKEN_LEFT_BRACKET:state = LeftBracket(result); break;
+        case TOKEN_EQUAL:           EqualMark(); break;
+        case TOKEN_COMMA:           Comma(); break;
+        case TOKEN_LEFT_SQRBRACKET: LeftSquareBracket(); break;
+        case TOKEN_DOT:             dotOperator = true; break;
+        case TOKEN_COLON:           state = Colon(); break;
+        case TOKEN_LEFT_BRACKET:    state = LeftBracket(result); break;
         case TOKEN_RIGHT_SQRBRACKET:state = RightSquareBracket(result); break;
-        case TOKEN_RIGHT_BRACKET:state = RightBracket(result); break;
-        case TOKEN_SELFOP:state = SelfOperator(result); break;
-        case TOKEN_OTHERS:OtherSymbols(); break;
+        case TOKEN_RIGHT_BRACKET:   state = RightBracket(result); break;
+        case TOKEN_SELFOP:          state = SelfOperator(result); break;
+        case TOKEN_OTHERS:          OtherSymbols(); break;
         default:break;
         }
       }
       else if (tokenType == kGenericToken) state = FunctionAndObject(result);
       else if (tokenType == kTypeNull) {
-        result.combo(kStrFatalError, kCodeIllegalArgs, "Illegal token.");
+        result.combo(kStrFatalError, kCodeIllegalParm, "Illegal token.");
         state = false;
       }
       else OtherTokens();
@@ -1031,8 +1004,8 @@ namespace kagami {
   Message EntryProvider::Start(ObjectMap &map) const {
     Message result;
     switch (this->Good()) {
-    case true:result = activity(map); break;
-    case false:result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry.");; break;
+    case true: result = activity(map); break;
+    case false:result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry."); break;
     }
     return result;
   }

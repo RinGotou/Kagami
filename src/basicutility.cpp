@@ -1,28 +1,3 @@
-//BSD 2 - Clause License
-//
-//Copyright(c) 2017 - 2018, Suzu Nakamura
-//All rights reserved.
-//
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions are met :
-//
-//*Redistributions of source code must retain the above copyright notice, this
-//list of conditions and the following disclaimer.
-//
-//* Redistributions in binary form must reproduce the above copyright notice,
-//this list of conditions and the following disclaimer in the documentation
-//and/or other materials provided with the distribution.
-//
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-//AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-//IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-//FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-//DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-//  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-//  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-//  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "parser.h"
 #if defined(_WIN32)
 #include "windows.h"
@@ -38,8 +13,9 @@ namespace kagami {
 
     shared_ptr<void> GetObjectCopy(Object &object) {
       shared_ptr<void> result = nullptr;
-      const auto option = object.GetTypeId();
-      const auto it = GetTemplateMap().find(option);
+      const auto option       = object.GetTypeId();
+      const auto it           = GetTemplateMap().find(option);
+
       if (it != GetTemplateMap().end()) {
         result = it->second.CreateObjectCopy(object.Get());
       }
@@ -48,7 +24,8 @@ namespace kagami {
 
     ObjTemplate *GetTemplate(const string name) {
       ObjTemplate *result = nullptr;
-      const auto it = GetTemplateMap().find(name);
+      const auto it       = GetTemplateMap().find(name);
+
       if (it != GetTemplateMap().end()) {
         result = &(it->second);
       }
@@ -79,8 +56,8 @@ namespace kagami {
     }
 
     Object *FindObject(string sign) {
-      Object *object = nullptr;
-      size_t count = GetObjectStack().size();
+      Object *object            = nullptr;
+      size_t count              = GetObjectStack().size();
       list<ObjectManager> &base = GetObjectStack();
 
       while (!base.empty() && count > 0) {
@@ -98,7 +75,7 @@ namespace kagami {
     }
 
     Object *FindObjectInCurrentManager(string sign) {
-      Object *object = nullptr;
+      Object *object      = nullptr;
       ObjectManager &base = GetObjectStack().back();
 
       while(!base.Empty()) {
@@ -121,8 +98,8 @@ namespace kagami {
 
     string GetTypeId(const string sign) {
       auto result = kTypeIdNull;
-      auto count = GetObjectStack().size();
-      auto &base = GetObjectStack(); 
+      auto count  = GetObjectStack().size();
+      auto &base  = GetObjectStack(); 
 
       while (count > 0) {
         const auto object = base[count - 1].Find(sign);
@@ -146,7 +123,7 @@ namespace kagami {
     }
 
     bool DisposeManager() {
-        if (!GetObjectStack().empty()) { GetObjectStack().pop_back(); }
+      if (!GetObjectStack().empty()) { GetObjectStack().pop_back(); }
       return GetObjectStack().empty();
     } 
 
@@ -156,7 +133,7 @@ namespace kagami {
       this->second = h;
 
       const auto attachment = Attachment(GetProcAddress(this->second, "Attachment"));
-      const auto deleter = this->GetDeleter();
+      const auto deleter    = this->GetDeleter();
       if (attachment != nullptr) {
         const auto ptr = attachment();
         actTemp = *ptr;
@@ -193,9 +170,9 @@ namespace kagami {
     }
 
     void UnloadInstance(const string name) {
-      HINSTANCE *hinstance = nullptr;
+      HINSTANCE *hinstance              = nullptr;
       map<string, ObjTemplate> *objTemp = nullptr;
-      auto &instanceList = GetInstanceList();
+      auto &instanceList                = GetInstanceList();
 
       auto instanceI = instanceList.begin();
       while (instanceI != instanceList.end()) {
@@ -208,11 +185,11 @@ namespace kagami {
       }
 
       if (instanceI->GetHealth() == true) {
-        hinstance = &(instanceI->second);
+        hinstance                 = &(instanceI->second);
         const auto castAttachment = instanceI->GetObjTemplate();
-        const auto deleter = instanceI->GetDeleter();
+        const auto deleter        = instanceI->GetDeleter();
         //delete entries
-        auto actTemp = instanceI->GetMap();
+        auto actTemp              = instanceI->GetMap();
         for (auto unit : actTemp) {
           RemoveByTemplate(unit);
         }
@@ -231,7 +208,7 @@ namespace kagami {
     }
 
     size_t ResetPlugin() {
-      auto &base = GetInstanceList();
+      auto &base  = GetInstanceList();
       size_t count = 0;
       while (!base.empty()) {
         UnloadInstance(base.back().first);
@@ -243,8 +220,8 @@ namespace kagami {
     //from MSDN
     std::wstring s2ws(const std::string& s) {
       const auto slength = static_cast<int>(s.length()) + 1;
-      const auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
-      auto *buf = new wchar_t[len];
+      const auto len     = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
+      auto *buf          = new wchar_t[len];
       MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
       std::wstring r(buf);
       delete[] buf;
@@ -306,7 +283,7 @@ namespace kagami {
         case OperatorCode::MUL:
         case OperatorCode::DIV:
           switch (enumtype) {
-          case enum_int:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
+          case enum_int:   temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
           case enum_double:temp = to_string(kit.Calc(stod(dataA), stod(dataB), dataOP)); break;
           default:;
           }
@@ -318,7 +295,7 @@ namespace kagami {
         case OperatorCode::MORE:
         case OperatorCode::LESS:
           switch (enumtype) {
-          case enum_int:tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
+          case enum_int:   tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
           case enum_double:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
           default:;
           }
@@ -330,11 +307,11 @@ namespace kagami {
         switch (opCode) {
         case OperatorCode::ADD:
           if (dataA.back() == '\'') {
-            temp = dataA.substr(0, dataA.size() - 1);
+            temp  = dataA.substr(0, dataA.size() - 1);
             dataA = temp;
           }
           if (dataB.front() == '\'') {
-            temp = dataB.substr(1, dataB.size() - 1);
+            temp  = dataB.substr(1, dataB.size() - 1);
             dataB = temp;
           }
           if (dataB.back() != '\'') {
@@ -476,15 +453,15 @@ namespace kagami {
   Message ForEachHead(ObjectMap &p) {
     static stack<string> subscriptStack;
     Kit kit;
-    string unitName = *static_pointer_cast<string>(p["unit"].Get());
+    string unitName      = *static_pointer_cast<string>(p["unit"].Get());
     string codeSubscript = *static_pointer_cast<string>(p[kStrCodeSub].Get());
-    string objectName = *static_pointer_cast<string>(p["object"].Get());
-    Object *object = entry::FindObject(objectName);
+    string objectName    = *static_pointer_cast<string>(p["object"].Get());
+    Object *object       = entry::FindObject(objectName);
     bool result;
-    size_t currentSub = 0;
+    size_t currentSub  = 0;
     const auto methods = object->GetMethods();
-    const auto typeId = object->GetTypeId();
-    Object *objUnit = nullptr;
+    const auto typeId  = object->GetTypeId();
+    Object *objUnit    = nullptr;
 
     if (!kit.FindInStringGroup("at",methods) && !kit.FindInStringGroup("size",methods)) {
       return Message(kStrFatalError, kCodeIllegalCall, 
@@ -494,16 +471,16 @@ namespace kagami {
     if (subscriptStack.empty() || subscriptStack.top() != codeSubscript) {
       subscriptStack.push(codeSubscript);
       auto &manager = entry::CreateManager();
-      manager.Add(kStrSub, Object().Manage("0", kTypeIdNull).SetPermanent(true));
+      manager.Add(kStrSub,  Object().Manage("0", kTypeIdNull).SetPermanent(true));
       manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull).SetPermanent(true));
     }
     else if (subscriptStack.top() == codeSubscript) {
       const auto objSub = entry::FindObjectInCurrentManager(kStrSub);
-      currentSub = stoi(*static_pointer_cast<string>(objSub->Get()));
+      currentSub        = stoi(*static_pointer_cast<string>(objSub->Get()));
     }
     objUnit = entry::FindObjectInCurrentManager(unitName);
 
-    auto providerAt = entry::Order("at", typeId, 1);
+    auto providerAt      = entry::Order("at", typeId, 1);
     auto providerGetSize = entry::Order("size", typeId, -1);
     if (providerAt.Good() && providerGetSize.Good()) {
       ObjectMap map;
@@ -553,9 +530,9 @@ namespace kagami {
     const auto ptr = type::GetObjectCopy(source);
 
     if (!target.IsRo()) {
-      auto typeId = source.GetTypeId();
+      auto typeId    = source.GetTypeId();
       auto tokenType = source.GetTokenType();
-      auto methods = source.GetMethods();
+      auto methods   = source.GetMethods();
       target.Set(ptr, typeId)
             .SetMethods(methods)
             .SetTokenType(tokenType);
@@ -663,31 +640,32 @@ namespace kagami {
   Just do not edit unless you want to change processor's basic behaviors.
   */
   void Activiate() {
+    using T = ActivityTemplate;
     using namespace entry;
     InitTemplates();
     InitMethods();
     ActivityTemplate temp;
-    Inject(EntryProvider(temp.Set("binexp", BinaryOperands, kFlagOperatorEntry, kCodeNormalArgs, "first|second")));
-    Inject(EntryProvider(temp.Set("elif", ConditionBranch, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject(EntryProvider(temp.Set("else", ConditionLeaf, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject(EntryProvider(temp.Set("end", TailSign, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject(EntryProvider(temp.Set(kStrFor, ForEachHead, kFlagNormalEntry, kCodeNormalArgs, "%unit|%object")));
-    Inject(EntryProvider(temp.Set("if", ConditionRoot, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject(EntryProvider(temp.Set(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source")));
-    Inject(EntryProvider(temp.Set(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source")));
-    Inject(EntryProvider(temp.Set("log", WriteLog, kFlagNormalEntry, kCodeNormalArgs, "data")));
-    Inject(EntryProvider(temp.Set("lSelfDec", LeftSelfDecreament, kFlagNormalEntry, kCodeNormalArgs, "&object")));
-    Inject(EntryProvider(temp.Set("lSelfInc", LeftSelfIncreament, kFlagNormalEntry,kCodeNormalArgs,"&object")));
-    Inject(EntryProvider(temp.Set("print", Print, kFlagNormalEntry, kCodeNormalArgs, "object")));
-    Inject(EntryProvider(temp.Set("rSelfDec", RightSelfDecreament, kFlagNormalEntry,kCodeNormalArgs,"&object")));
-    Inject(EntryProvider(temp.Set("rSelfInc", RightSelfIncreament, kFlagNormalEntry, kCodeNormalArgs, "&object")));
-    Inject(EntryProvider(temp.Set("time", TimeReport, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject(EntryProvider(temp.Set("version", VersionInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject(EntryProvider(temp.Set("while", WhileCycle, kFlagNormalEntry, kCodeNormalArgs, "state")));
-    Inject(EntryProvider(temp.Set("platform", PlatformInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
-    Inject(EntryProvider(temp.Set("insidename", InsideNameInfo, kFlagNormalEntry, kCodeNormalArgs, "")));
+    Inject(T("binexp"      , BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
+    Inject(T("elif"        , ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
+    Inject(T("else"        , ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T("end"         , TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T(kStrFor       , ForEachHead, kFlagNormalEntry, kCodeNormalParm, "%unit|%object"));
+    Inject(T("if"          , ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
+    Inject(T(kStrVar       , CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
+    Inject(T(kStrSet       , SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
+    Inject(T("log"         , WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
+    Inject(T("lSelfDec"    , LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    Inject(T("lSelfInc"    , LeftSelfIncreament, kFlagNormalEntry,kCodeNormalParm,"&object"));
+    Inject(T("print"       , Print, kFlagNormalEntry, kCodeNormalParm, "object"));
+    Inject(T("rSelfDec"    , RightSelfDecreament, kFlagNormalEntry,kCodeNormalParm,"&object"));
+    Inject(T("rSelfInc"    , RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    Inject(T("time"        , TimeReport, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T("version"     , VersionInfo, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T("while"       , WhileCycle, kFlagNormalEntry, kCodeNormalParm, "state"));
+    Inject(T("platform"    , PlatformInfo, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T("codename"    , InsideNameInfo, kFlagNormalEntry, kCodeNormalParm, ""));
 #if defined(_WIN32)
-    Inject(EntryProvider(temp.Set("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalArgs, "path")));
+    Inject(T("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalParm, "path"));
 #else
     //Linux Version
 #endif

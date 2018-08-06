@@ -1,28 +1,3 @@
-//BSD 2 - Clause License
-//
-//Copyright(c) 2017 - 2018, Suzu Nakamura
-//All rights reserved.
-//
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions are met :
-//
-//*Redistributions of source code must retain the above copyright notice, this
-//list of conditions and the following disclaimer.
-//
-//* Redistributions in binary form must reproduce the above copyright notice,
-//this list of conditions and the following disclaimer in the documentation
-//and/or other materials provided with the distribution.
-//
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-//AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-//IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-//FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-//DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-//  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-//  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-//  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #include <string>
 #include <utility>
@@ -72,78 +47,78 @@ namespace kagami {
   const string kEngineAuthor = "Suzu Nakamura";
   const string kCopyright = "Copyright(c) 2017-2018";
 
-  const string kStrVar = "var";
-  const string kStrSet = "__set";
-  const string kStrWhile = "while";
-  const string kStrEnd = "end";
-  const string kStrIf = "if";
-  const string kStrElse = "else";
-  const string kStrElif = "elif";
-  const string kStrFor = "for";
-  const string kStrNull = "null";
+  const string kStrVar        = "var";
+  const string kStrSet        = "__set";
+  const string kStrWhile      = "while";
+  const string kStrEnd        = "end";
+  const string kStrIf         = "if";
+  const string kStrElse       = "else";
+  const string kStrElif       = "elif";
+  const string kStrFor        = "for";
+  const string kStrNull       = "null";
 
-  const string kStrEmpty = "";
+  const string kStrEmpty      = "";
   const string kStrFatalError = "__FATAL__";
-  const string kStrWarning = "__WARNING__";
-  const string kStrSuccess = "__SUCCESS__";
-  const string kStrEOF = "__EOF__";
-  const string kStrPass = "__PASS__";
-  const string kStrRedirect = "__*__";
-  const string kStrTrue = "true";
-  const string kStrFalse = "false";
-  const string kStrOperator = "__operator";
-  const string kStrObject = "__object";
-  const string kMethodPrint = "__print";
+  const string kStrWarning    = "__WARNING__";
+  const string kStrSuccess    = "__SUCCESS__";
+  const string kStrEOF        = "__EOF__";
+  const string kStrPass       = "__PASS__";
+  const string kStrRedirect   = "__*__";
+  const string kStrTrue       = "true";
+  const string kStrFalse      = "false";
+  const string kStrOperator   = "__operator";
+  const string kStrObject     = "__object";
+  const string kMethodPrint   = "__print";
 
-  const int kCodeAutoFill = 14;
-  const int kCodeNormalArgs = 13;
-  const int kCodeFillingSign = 12;
-  const int kCodeReturn = 11;
-  const int kCodeConditionLeaf = 10;
+  const int kCodeAutoFill        = 14;
+  const int kCodeNormalParm      = 13;
+  const int kCodeFillingSign     = 12;
+  const int kCodeReturn          = 11;
+  const int kCodeConditionLeaf   = 10;
   const int kCodeConditionBranch = 9;
-  const int kCodeConditionRoot = 8;
-  const int kCodeObject = 7;
-  const int kCodeTailSign = 5;
-  const int kCodeHeadSign = 4;
-  const int kCodeQuit = 3;
-  const int kCodeRedirect = 2;
-  const int kCodeNothing = 1;
-  const int kCodeSuccess = 0;
-  const int kCodeBrokenEntry = -1;
-  const int kCodeOverflow = -2;
-  const int kCodeIllegalArgs = -3;
-  const int kCodeIllegalCall = -4;
-  const int kCodeIllegalSymbol = -5;
-  const int kCodeBadStream = -6;
-  const int kCodeBadExpression = -7;
+  const int kCodeConditionRoot   = 8;
+  const int kCodeObject          = 7;
+  const int kCodeTailSign        = 5;
+  const int kCodeHeadSign        = 4;
+  const int kCodeQuit            = 3;
+  const int kCodeRedirect        = 2;
+  const int kCodeNothing         = 1;
+  const int kCodeSuccess         = 0;
+  const int kCodeBrokenEntry     = -1;
+  const int kCodeOverflow        = -2;
+  const int kCodeIllegalParm     = -3;
+  const int kCodeIllegalCall     = -4;
+  const int kCodeIllegalSymbol   = -5;
+  const int kCodeBadStream       = -6;
+  const int kCodeBadExpression   = -7;
 
-  const int kFlagCoreEntry = 0;
-  const int kFlagNormalEntry = 1;
-  const int kFlagOperatorEntry = 2;
-  const int kFlagMethod = 3;
+  const int kFlagCoreEntry      = 0;
+  const int kFlagNormalEntry    = 1;
+  const int kFlagOperatorEntry  = 2;
+  const int kFlagMethod         = 3;
 
-  const size_t kGenericToken = 0;
-  const size_t kTypeString = 1;
-  const size_t kTypeInteger = 2;
-  const size_t kTypeDouble = 3;
-  const size_t kTypeBoolean = 4;
-  const size_t kTypeSymbol = 5;
-  const size_t kTypeBlank = 6;
-  const size_t kTypeChar = 7;
-  const size_t kTypeNull = 100;
+  const size_t kGenericToken    = 0;
+  const size_t kTypeString      = 1;
+  const size_t kTypeInteger     = 2;
+  const size_t kTypeDouble      = 3;
+  const size_t kTypeBoolean     = 4;
+  const size_t kTypeSymbol      = 5;
+  const size_t kTypeBlank       = 6;
+  const size_t kTypeChar        = 7;
+  const size_t kTypeNull        = 100;
 
-  const string kTypeIdNull = "null";
-  const string kTypeIdInt = "int";
+  const string kTypeIdNull      = "null";
+  const string kTypeIdInt       = "int";
   const string kTypeIdRawString = "string";
   const string kTypeIdArrayBase = "deque";
-  const string kTypeIdCubeBase = "cube";
-  const string kTypeIdRef = "ref";
+  const string kTypeIdCubeBase  = "cube";
+  const string kTypeIdRef       = "ref";
 
-  const size_t kModeNormal = 0;
+  const size_t kModeNormal        = 0;
   const size_t kModeNextCondition = 1;
-  const size_t kModeCycle = 2;
-  const size_t kModeCycleJump = 3;
-  const size_t kModeCondition = 4;
+  const size_t kModeCycle         = 2;
+  const size_t kModeCycleJump     = 3;
+  const size_t kModeCondition     = 4;
 
   const regex kPatternGenericToken(R"([a-zA-Z_][a-zA-Z_0-9]*)");
   const regex kPatternNumber(R"(\d+\.?\d*)");
@@ -160,19 +135,19 @@ namespace kagami {
     string id;
     Activity activity;
     int priority;
-    int argMode;
+    int parmMode;
     string args;
     string specifictype;
 
-    ActivityTemplate &Set(string id, Activity activity, int priority, int arg_mode, string args, string type = kTypeIdNull) {
+    ActivityTemplate(string id, Activity activity, int priority, int arg_mode, string args, string type = kTypeIdNull) {
       this->id = id;
       this->activity = activity;
       this->priority = priority;
-      this->argMode = arg_mode;
+      this->parmMode = arg_mode;
       this->args = args;
       this->specifictype = type;
-      return *this;
     }
+    ActivityTemplate(){}
   };
 
   /* Object Template Class
@@ -188,7 +163,7 @@ namespace kagami {
     }
     ObjTemplate(CopyCreator copyCreator, string methods) {
       this->copyCreator = copyCreator;
-      this->methods = methods;
+      this->methods     = methods;
     }
 
     shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
@@ -223,20 +198,20 @@ namespace kagami {
     }
 
     Message(string value, int code, string detail) {
-      this->value = value;
-      this->code = code;
+      this->value  = value;
+      this->code   = code;
       this->detail = detail;
     }
 
     Message combo(string value, int code, string detail) {
-      this->value = value;
-      this->code = code;
+      this->value  = value;
+      this->code   = code;
       this->detail = detail;
       return *this;
     }
 
     Message SetValue(const string &value) {
-      this->value = value;
+      this->value  = value;
       return *this;
     }
 
@@ -249,10 +224,9 @@ namespace kagami {
       this->detail = detail;
       return *this;
     }
-    string GetValue() const { return this->value; }
-    int GetCode() const { return this->code; }
-    string GetDetail() const { return this->detail; }
-    //shared_ptr<void> &GetPtr() { return ptr; }
+    string GetValue()  const  { return this->value; }
+    int GetCode()      const  { return this->code; }
+    string GetDetail() const  { return this->detail; }
     Object GetObj() const;
     void SetObject(Object &object, string id);
   };
@@ -314,8 +288,8 @@ namespace kagami {
       if (opercode == "<=") result = (A <= B);
       if (opercode == ">=") result = (A >= B);
       if (opercode == "!=") result = (A != B);
-      if (opercode == ">") result = (A > B);
-      if (opercode == "<")result = (A < B);
+      if (opercode == ">")  result = (A > B);
+      if (opercode == "<")  result = (A < B);
       return result;
     }
 
@@ -494,32 +468,32 @@ namespace kagami {
     }
     bool operator==(Object &object) const {
       return (ptr == object.ptr &&
-        option == object.option &&
-        methods == object.methods &&
+        option    == object.option &&
+        methods   == object.methods &&
         tokenType == object.tokenType &&
-        ro == object.ro);
+        ro        == object.ro);
     }
     bool operator!=(Object &object) const {
       return (ptr != object.ptr &&
-        option != object.option &&
-        methods != object.methods &&
+        option    != object.option &&
+        methods   != object.methods &&
         tokenType != object.tokenType &&
-        ro != object.ro);
+        ro        != object.ro);
     }
     Object &Copy(Object &object) {
-      ptr = object.ptr;
-      option = object.option;
-      methods = object.methods;
+      ptr       = object.ptr;
+      option    = object.option;
+      methods   = object.methods;
       tokenType = object.tokenType;
-      ro = object.ro;
+      ro        = object.ro;
       return *this;
     }
     Object &Copy(Object &&object) {
-      ptr = object.ptr;
-      option = object.option;
-      methods = object.methods;
+      ptr       = object.ptr;
+      option    = object.option;
+      methods   = object.methods;
       tokenType = object.tokenType;
-      ro = object.ro;
+      ro        = object.ro;
       return *this;
     }
   };
