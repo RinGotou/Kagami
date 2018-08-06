@@ -176,21 +176,21 @@ namespace kagami {
     using type::AddTemplate;
     AddTemplate(kTypeIdRawString, ObjTemplate(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
     AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at|__print"));
-    AddTemplate(kTypeIdNull, ObjTemplate(NullCopy, ""));
+    AddTemplate(kTypeIdNull     , ObjTemplate(NullCopy, ""));
   }
 
   void InitMethods() {
     using namespace entry;
-    ActivityTemplate temp;
+    using T = ActivityTemplate;
     //constructor
-    Inject(EntryProvider(temp.Set("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value")));
+    Inject(T("array"  , ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
     //methods
-    Inject(EntryProvider(temp.Set("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdRawString)));
-    Inject(EntryProvider(temp.Set("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdArrayBase)));
-    Inject(EntryProvider(temp.Set("__print", PrintRawString, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString)));
-    Inject(EntryProvider(temp.Set("__print", PrintArray, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase)));
-    Inject(EntryProvider(temp.Set("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString)));
-    Inject(EntryProvider(temp.Set("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase)));
+    Inject(T("at"     , GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdRawString));
+    Inject(T("at"     , GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdArrayBase));
+    Inject(T("__print", PrintRawString, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
+    Inject(T("__print", PrintArray, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
+    Inject(T("size"   , GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
+    Inject(T("size"   , GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
   }
 
 

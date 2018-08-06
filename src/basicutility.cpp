@@ -158,7 +158,7 @@ namespace kagami {
         const auto castAttachment = CastAttachment(GetProcAddress(ins, "CastAttachment"));
 
         for (auto &unit : temp) {
-          Inject(EntryProvider(unit));
+          Inject(unit);
         }
         if (castAttachment != nullptr) {
           const auto objtemps = castAttachment();
