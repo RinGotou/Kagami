@@ -1,28 +1,3 @@
-//BSD 2 - Clause License
-//
-//Copyright(c) 2017 - 2018, Suzu Nakamura
-//All rights reserved.
-//
-//Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions are met :
-//
-//*Redistributions of source code must retain the above copyright notice, this
-//list of conditions and the following disclaimer.
-//
-//* Redistributions in binary form must reproduce the above copyright notice,
-//this list of conditions and the following disclaimer in the documentation
-//and/or other materials provided with the distribution.
-//
-//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-//AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-//IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//DISCLAIMED.IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-//FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-//DAMAGES(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-//  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-//  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-//  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-//  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #pragma execution_character_set("utf-8")
 #define _ENABLE_FASTRING_
@@ -47,11 +22,11 @@ namespace kagami {
   using std::stod;
   using akane::list;
 
-  const string kStrNop = "nop";
-  const string kStrDef = "def";
-  const string kStrRef = "__ref";
+  const string kStrNop     = "nop";
+  const string kStrDef     = "def";
+  const string kStrRef     = "__ref";
   const string kStrCodeSub = "__code_sub";
-  const string kStrSub = "__sub";
+  const string kStrSub     = "__sub";
 
   enum BasicTokenValue {
     TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT, 
@@ -128,46 +103,36 @@ namespace kagami {
   */
   class Processor {
     using Token = pair<string, size_t>;
-    bool health;
-    vector<Token> origin;
-    //vector<size_t> types;
+    bool                health;
+    vector<Token>       origin;
     map<string, Object> lambdamap;
-    deque<Token> item, symbol;
-    bool commaExpFunc,
-      insertBtnSymbols,
-      disableSetEntry,
-      dotOperator,
-      defineLine,
-      functionLine,
-      subscriptProcessing;
-    Token currentToken;
-    Token nextToken;
-    Token forwardToken;
-    string operatorTargetType;
-    string errorString;
-    size_t mode,
-      nextInsertSubscript,
-      lambdaObjectCount;
-    size_t index;
+    deque<Token>  item, symbol;
+    bool          commaExpFunc, insertBtnSymbols, disableSetEntry, dotOperator,
+                       defineLine, functionLine, subscriptProcessing;
+    Token         currentToken;
+    Token         nextToken;
+    Token         forwardToken;
+    string        operatorTargetType;
+    string        errorString;
+    size_t        mode, nextInsertSubscript, lambdaObjectCount, index;
 
-    void EqualMark();
-    void Comma();
-    bool LeftBracket(Message &msg);
-    bool RightBracket(Message &msg);
-    void LeftSquareBracket();
-    bool RightSquareBracket(Message &msg);
-    void Dot();
-    void OtherSymbols();
-    bool FunctionAndObject(Message &msg);
-    void OtherTokens();
-    void FinalProcessing(Message &msg);
-    bool SelfOperator(Message &msg);
-    bool Colon();
+    void   EqualMark();
+    void   Comma();
+    bool   LeftBracket(Message &msg);
+    bool   RightBracket(Message &msg);
+    void   LeftSquareBracket();
+    bool   RightSquareBracket(Message &msg);
+    void   OtherSymbols();
+    bool   FunctionAndObject(Message &msg);
+    void   OtherTokens();
+    void   FinalProcessing(Message &msg);
+    bool   SelfOperator(Message &msg);
+    bool   Colon();
     Object *GetObj(string name);
     static vector<string> Spilt(string target);
     static string GetHead(string target);
     static int GetPriority(string target);
-    bool Assemble(Message &msg);
+    bool   Assemble(Message &msg);
   public:
     Processor() : health(false), commaExpFunc(false), insertBtnSymbols(false), dotOperator(false),
       disableSetEntry(false),  defineLine(false), functionLine(false), subscriptProcessing(false),
@@ -233,7 +198,7 @@ namespace kagami {
   */
   class EntryProvider {
     string id;
-    int argMode;
+    int parmMode;
     int priority;
     vector<string> args;
     Activity activity;
@@ -241,34 +206,34 @@ namespace kagami {
     size_t minsize;
   public:
     EntryProvider() : id(kStrNull), priority(0), activity(nullptr), minsize(0) {
-      argMode = kCodeIllegalArgs;
+      parmMode = kCodeIllegalParm;
       specifictype = kTypeIdNull;
     }
 
     explicit EntryProvider(ActivityTemplate temp) :
       id(temp.id), args(Kit().BuildStringVector(temp.args)),
       activity(temp.activity), minsize(0) {
-      argMode = temp.argMode;
+      parmMode = temp.parmMode;
       priority = temp.priority;
       specifictype = temp.specifictype;
     }
 
     bool operator==(EntryProvider &target) const {
-      return (target.id == this->id &&
-        target.activity == this->activity &&
-        target.argMode == this->argMode &&
-        target.priority == this->priority &&
+      return (target.id    == this->id &&
+        target.activity    == this->activity &&
+        target.parmMode    == this->parmMode &&
+        target.priority    == this->priority &&
         this->specifictype == target.specifictype &&
-        target.args == this->args);
+        target.args        == this->args);
     }
 
     bool operator==(ActivityTemplate &target) const {
       return(
-        this->id == target.id &&
-        this->argMode == target.argMode &&
-        this->priority==target.priority &&
-        this->args == Kit().BuildStringVector(target.args) &&
-        this->activity == target.activity &&
+        this->id           == target.id &&
+        this->parmMode     == target.parmMode &&
+        this->priority     ==target.priority &&
+        this->args         == Kit().BuildStringVector(target.args) &&
+        this->activity     == target.activity &&
         this->specifictype == target.specifictype
         );
     }
@@ -278,13 +243,13 @@ namespace kagami {
       return *this;
     }
 
-    string GetSpecificType() const { return specifictype; }
-    string GetId() const { return this->id; }
-    int GetArgumentMode() const { return this->argMode; }
+    string GetSpecificType()      const { return specifictype; }
+    string GetId()                const { return this->id; }
+    int GetArgumentMode()         const { return this->parmMode; }
     vector<string> GetArguments() const { return args; }
-    size_t GetParameterSIze() const { return this->args.size(); }
-    int GetPriority() const { return this->priority; }
-    bool Good() const { return ((activity != nullptr) && argMode != kCodeIllegalArgs); }
+    size_t GetParameterSIze()     const { return this->args.size(); }
+    int GetPriority()             const { return this->priority; }
+    bool Good()                   const { return ((activity != nullptr) && parmMode != kCodeIllegalParm); }
     Message Start(ObjectMap &map) const;
   };
 
@@ -325,10 +290,10 @@ namespace kagami {
     public:
       Instance() { health = false; }
       bool Load(string name, HINSTANCE h);
-      bool GetHealth() const { return health; }
+      bool GetHealth()                  const { return health; }
       vector<ActivityTemplate> GetMap() const { return actTemp; }
-      CastAttachment GetObjTemplate() const { return CastAttachment(GetProcAddress(this->second, "CastAttachment")); }
-      MemoryDeleter GetDeleter() const { return MemoryDeleter(GetProcAddress(this->second, "FreeMemory")); }
+      CastAttachment GetObjTemplate()   const { return CastAttachment(GetProcAddress(this->second, "CastAttachment")); }
+      MemoryDeleter GetDeleter()        const { return MemoryDeleter(GetProcAddress(this->second, "FreeMemory")); }
     };
     size_t ResetPlugin();
 #else
@@ -337,15 +302,15 @@ namespace kagami {
     using EntryMapUnit = map<string, EntryProvider>::value_type;
 
     list<ObjectManager> &GetObjectStack();
-    ObjectManager &GetCurrentManager();
-    string GetTypeId(string sign);
-    void Inject(EntryProvider provider);
-    void RemoveByTemplate(ActivityTemplate temp);
-    Object *FindObject(string name);
-    ObjectManager &CreateManager();
-    bool DisposeManager();
-    EntryProvider Order(string id, string type, int size);
-    std::wstring s2ws(const std::string& s);
+    ObjectManager       &GetCurrentManager();
+    string              GetTypeId(string sign);
+    void                Inject(ActivityTemplate temp);
+    void                RemoveByTemplate(ActivityTemplate temp);
+    Object              *FindObject(string name);
+    ObjectManager       &CreateManager();
+    bool                DisposeManager();
+    EntryProvider       Order(string id, string type, int size);
+    std::wstring        s2ws(const std::string& s);
   }
 }
 

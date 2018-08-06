@@ -15,16 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\includes.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\kagamicommon.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\parser.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\akane.h">
+    <ClInclude Include="..\..\src\kagami.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\template.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
