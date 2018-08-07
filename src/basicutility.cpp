@@ -137,7 +137,7 @@ namespace kagami {
       if (attachment != nullptr) {
         const auto ptr = attachment();
         actTemp = *ptr;
-        deleter(ptr);
+        deleter(ptr, 1);
         health = true;
       }
       else {
@@ -201,7 +201,7 @@ namespace kagami {
           }
         }
         //delete memory
-        deleter(objTemp);
+        deleter(objTemp, 2);
       }
       FreeLibrary(*hinstance);
       instanceList.erase(instanceI);
@@ -676,7 +676,7 @@ namespace kagami {
     Inject(T("codename", InsideNameInfo, kFlagNormalEntry, kCodeNormalParm, ""));
     Inject(T("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
 #if defined(_WIN32)
-    Inject(T("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalParm, "path"));
+    Inject(T("plugin", LoadPlugin, kFlagNormalEntry, kCodeNormalParm, "path"));
 #else
     //Linux Version
 #endif
