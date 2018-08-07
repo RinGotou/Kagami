@@ -43,7 +43,7 @@ namespace kagami {
   const string kPlatformType = "Linux";
 #endif
   const string kEngineName = "Kagami";
-  const string kEngineAuthor = "Suzu Nakamura";
+  const string kEngineAuthor = "Suzu Nakamura and Contributor(s)";
   const string kCopyright = "Copyright(c) 2017-2018";
 
   const string kStrNull       = "null";

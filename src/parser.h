@@ -22,20 +22,23 @@ namespace kagami {
   using std::stod;
   using akane::list;
 
-  const string kStrNop     = "nop";
-  const string kStrDef     = "def";
-  const string kStrRef     = "__ref";
-  const string kStrCodeSub = "__code_sub";
-  const string kStrSub     = "__sub";
-  const string kStrBinOp   = "BinOp";
-  const string kStrIf      = "if";
-  const string kStrElif    = "elif";
-  const string kStrEnd     = "end";
-  const string kStrElse    = "else";
-  const string kStrVar     = "var";
-  const string kStrSet     = "__set";
-  const string kStrWhile   = "while";
-  const string kStrFor     = "for";
+  const string kStrNormalArrow = ">>>";
+  const string kStrDotGroup    = "...";
+  const string kStrHostArgHead = "arg";
+  const string kStrNop         = "nop";
+  const string kStrDef         = "def";
+  const string kStrRef         = "__ref";
+  const string kStrCodeSub     = "__code_sub";
+  const string kStrSub         = "__sub";
+  const string kStrBinOp       = "BinOp";
+  const string kStrIf          = "if";
+  const string kStrElif        = "elif";
+  const string kStrEnd         = "end";
+  const string kStrElse        = "else";
+  const string kStrVar         = "var";
+  const string kStrSet         = "__set";
+  const string kStrWhile       = "while";
+  const string kStrFor         = "for";
   const string kStrLeftSelfInc  = "lSelfInc";
   const string kStrLeftSelfDec  = "lSelfDec";
   const string kStrRightSelfInc = "rSelfInc";
@@ -174,6 +177,10 @@ namespace kagami {
       return index;
     }
 
+    Token GetFirstToken() const {
+      return origin.front();
+    }
+
     Message Start(size_t mode = kModeNormal);
     Processor &Build(string target);
   };
@@ -192,6 +199,7 @@ namespace kagami {
     size_t currentMode;
     int nestHeadCount;
     bool health;
+    bool isTerminal;
 
     void ConditionRoot(bool value);
     void ConditionBranch(bool value);
@@ -221,9 +229,10 @@ namespace kagami {
     bool GetHealth() const { return health; }
     bool Eof() const { return end; }
     void ResetCounter() { current = 0; }
-    ScriptMachine() {}
+    ScriptMachine() { isTerminal = true; }
     explicit ScriptMachine(const char *target);
     Message Run();
+    void Terminal();
   };
 
   /*EntryProvider Class

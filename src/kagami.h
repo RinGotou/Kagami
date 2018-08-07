@@ -10,9 +10,10 @@ namespace kagami {
     bool ignoreFatalError;
     bool isTerminal;
   public:
-    //TODO:startup arugment
-    void Terminal();
     void PrintEvents();
     Message ExecScriptFile(string target);
+#ifndef _NO_CUI_
+    void Terminal2();
+#endif
   };
 }

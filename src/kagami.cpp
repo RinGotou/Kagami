@@ -1,15 +1,11 @@
 #include "kagami.h"
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
 
 namespace kagami {
-  Message Quit(ObjectMap &p) {
-    Message result(kStrEmpty, kCodeQuit, kStrEmpty);
-    return result;
-  }
-
+  
   void ScriptCore::PrintEvents() {
     using namespace trace;
     ofstream ofs("event.log", std::ios::trunc);
@@ -36,7 +32,7 @@ namespace kagami {
 
   Message ScriptCore::ExecScriptFile(string target) {
     Message result;
-    ScriptMachine provider(target.c_str());
+    ScriptMachine machine(target.c_str());
 
     isTerminal = false;
 
@@ -45,7 +41,7 @@ namespace kagami {
       return result;
     }
     Activiate();
-    provider.Run();
+    machine.Run();
 #if defined(_WIN32)
     entry::ResetPlugin();
 #endif
@@ -53,38 +49,17 @@ namespace kagami {
   }
 
 #ifndef _NO_CUI_
-  //TODO:remove old terminal code and add terminal mode to script provider
-  void ScriptCore::Terminal() {
-    using namespace entry;
-    string buf = kStrEmpty;
-    Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
-    Processor loader;
+  void ScriptCore::Terminal2() {
+    ScriptMachine machine;
+    isTerminal = true;
 
-    isTerminal = false;
-
-    std::cout << kEngineName 
-    << ' ' << "verison:" << kEngineVersion 
-    << '(' << kInsideName << ')' << std::endl;
+    std::cout << kEngineName
+      << ' ' << "verison:" << kEngineVersion
+      << '(' << kInsideName << ')' << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
-    CreateManager();
     Activiate();
-    Inject(ActivityTemplate("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
-
-    while (result.GetCode() != kCodeQuit) {
-      std::cout << ">>>";
-      std::getline(std::cin, buf);
-      if (buf != kStrEmpty) {
-        result = loader.Build(buf).Start();
-        if (result.GetCode() < kCodeSuccess) {
-          std::cout << result.GetDetail() << std::endl;
-          trace::Log(result);
-        }
-      }
-    }
-#if defined(WIN32)
-    ResetPlugin();
-#endif
+    machine.Terminal();
   }
 #endif
 }
@@ -105,13 +80,13 @@ int main(int argc, char **argv) {
   atexit(AtExitHandler);
 #else
 #ifndef _NO_CUI_
-  atexit(AtExitHandler);
+  //atexit(AtExitHandler);
 
   if (argc > 1) {
     scriptCore.ExecScriptFile(argv[1]);
   }
   else {
-    scriptCore.Terminal();
+    scriptCore.Terminal2();
   }
 #else
   scriptcore.ExecScriptFile(argv[1]);
