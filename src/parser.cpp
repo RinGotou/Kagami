@@ -46,15 +46,14 @@ namespace kagami {
       return base;
     }
 
-    //void Inject(EntryProvider provider) { GetEntryBase().emplace_back(provider); }
     void Inject(ActivityTemplate temp) { GetEntryBase().emplace_back(EntryProvider(temp)); }
 
     EntryProvider Order(string id,string type = kTypeIdNull,int size = -1) {
       vector<EntryProvider> &base = GetEntryBase();
       OperatorCode opCode = GetOperatorCode(id);
 
-      if (opCode == EQUAL) return Order(kStrSet); 
-      else if (opCode != NUL) return Order("binexp"); 
+      if (opCode == EQUAL)    return Order(kStrSet); 
+      else if (opCode != NUL) return Order(kStrBinOp); 
 
       EntryProvider result;
       for (auto &unit : base) {
@@ -70,7 +69,7 @@ namespace kagami {
     size_t GetRequiredCount(string id) {
       OperatorCode opCode = GetOperatorCode(id);
       if (opCode == EQUAL) return Order(kStrSet).GetParameterSIze();
-      if (opCode != NUL) return Order("binexp").GetParameterSIze();
+      if (opCode != NUL)   return Order(kStrBinOp).GetParameterSIze();
       auto provider = Order(id);
       if (provider.Good()) return provider.GetParameterSIze();
       
@@ -133,8 +132,8 @@ namespace kagami {
     stack<size_t> cycleTailStack;
     stack<bool>   conditionStack;
     stack<size_t> modeStack;
-    size_t        currentMode = kModeNormal;
-    size_t        nestHeadCount = 0;
+    auto          currentMode = kModeNormal;
+    auto          nestHeadCount = 0;
     auto          health = true;
 
     if (storage.empty()) {
@@ -524,12 +523,13 @@ namespace kagami {
     auto          health       = true;
     auto          providerType = kTypeIdNull;
     auto          tags         = Spilt(symbol.back().first);
-    const auto id              = GetHead(symbol.back().first);
+    const auto    id           = GetHead(symbol.back().first);
     EntryProvider provider;
 
     auto getName = [](string target) ->string {
-      if (target.front()  == '&' 
-        || target.front() == '%') return target.substr(1, target.size() - 1);
+      if (target.front() == '&' || target.front() == '%') {
+        return target.substr(1, target.size() - 1);
+      }
       else return target;
     };
 
@@ -546,6 +546,9 @@ namespace kagami {
         return false;
       }
     }
+    else {
+
+    }
 
     const auto size     = provider.GetParameterSIze();
     const auto parmMode = provider.GetArgumentMode();
@@ -553,13 +556,18 @@ namespace kagami {
     auto args           = provider.GetArguments();
 
     if (id == kStrNop) {
+      auto res = item.back();
       while (!item.empty() && item.back().first != "(") {
-        tokens.push_front(item.back());
         item.pop_back();
       }
       if (!item.empty() && item.back().first == "(") item.pop_back();
+      item.push_back(tokens.back());
+      symbol.pop_back();
+      kit.CleanupDeque(tokens);
+      return true;
     }
-    else if (!disableSetEntry) {
+
+    if (!disableSetEntry) {
       count = size;
       while (count > 0 && !item.empty() && item.back().first != "(") {
         tokens.push_front(item.back());
@@ -573,13 +581,6 @@ namespace kagami {
         tokens.push_front(item.back());
         item.pop_back();
       }
-    }
-
-    if (id == kStrNop) {
-      item.push_back(tokens.back());
-      symbol.pop_back();
-      kit.CleanupDeque(tokens);
-      return true;
     }
 
     if (parmMode == kCodeNormalParm && (tokens.size() < size || tokens.size() > size)) {
@@ -613,8 +614,8 @@ namespace kagami {
             break;
           default:
             temp.Manage(tokens[count].first)
-              .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
-              .SetTokenType(tokens[count].second);
+                .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+                .SetTokenType(tokens[count].second);
             break;
           }
           map.insert(pair<string,Object>(getName(args[count]), temp));
@@ -625,22 +626,22 @@ namespace kagami {
       if (id == kStrFor) {
         const auto sub = to_string(this->index);
         map.insert(Parameter(kStrCodeSub,Object()
-          .Manage(sub)
-          .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
-          .SetTokenType(kTypeInteger)));
+           .Manage(sub)
+           .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+           .SetTokenType(kTypeInteger)));
       }
 
       switch (priority) {
       case kFlagOperatorEntry:
         map.insert(Parameter(kStrOperator, Object()
-          .Manage(symbol.back().first)
-          .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
-          .SetTokenType(kTypeSymbol)));
+           .Manage(symbol.back().first)
+           .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+           .SetTokenType(kTypeSymbol)));
         break;
       case kFlagMethod:
         origin = GetObj(item.back().first);
         map.insert(Parameter(kStrObject, Object()
-          .Ref(*origin)));
+           .Ref(*origin)));
         item.pop_back();
         break;
       default:
@@ -942,8 +943,11 @@ namespace kagami {
     const auto size = origin.size();
 
     if (health == false) {
-      result.combo(kStrFatalError, kCodeBadExpression, errorString);
-      return result;
+      return Message(kStrFatalError, kCodeBadExpression, errorString);
+    }
+
+    if (origin.front().first == "else") {
+      return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty);
     }
 
     this->mode          = mode;

@@ -23,7 +23,7 @@ namespace kagami {
   bool Kit::IsInteger(string target) {
     const auto head = target.front();
     if (head == '-' && target.size() == 1) return false;
-    if (!IsDigit(head) && head != '-') return false;
+    if (!IsDigit(head) && head != '-')     return false;
     for (size_t i = 1;i < target.size();++i) {
       if (!IsDigit(target[i])) return false;
     }
@@ -33,9 +33,9 @@ namespace kagami {
   bool Kit::IsDouble(string target) {
     const auto head = target.front();
     if (head == '-' && target.size() == 1) return false;
-    if (!IsDigit(head) && head != '-') return false;
+    if (!IsDigit(head) && head != '-')     return false;
     for(size_t i = 1;i < target.size();++i) {
-      if (!IsDigit(target[i]) && target[i] != '.') return false;
+      if (!IsDigit(target[i]) && target[i] != '.')       return false;
       if (i == target.size() - 1 && !IsDigit(target[i])) return false;
     }
     return true;
@@ -55,14 +55,14 @@ namespace kagami {
       return regex_match(target, pat);
     };
 
-    if (target == kStrNull || target == kStrEmpty) result = kTypeNull;
+    if (target == kStrNull || target == kStrEmpty)      result = kTypeNull;
     else if (target == kStrTrue || target == kStrFalse) result = kTypeBoolean;
     else if (IsGenericToken(target)) result = kGenericToken;
-    else if (IsInteger(target)) result = kTypeInteger;
-    else if (IsDouble(target)) result = kTypeDouble;
-    else if (match(kPatternSymbol)) result = kTypeSymbol;
-    else if (IsBlank(target)) result = kTypeBlank;
-    else if (IsString(target)) result = kTypeString;
+    else if (IsInteger(target))      result = kTypeInteger;
+    else if (IsDouble(target))       result = kTypeDouble;
+    else if (match(kPatternSymbol))  result = kTypeSymbol;
+    else if (IsBlank(target))        result = kTypeBlank;
+    else if (IsString(target))       result = kTypeString;
     else result = kTypeNull;
 
     return result;

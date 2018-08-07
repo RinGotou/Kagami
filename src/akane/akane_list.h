@@ -35,12 +35,10 @@ namespace akane {
       blk = new ref_blk();
     }
 
-    list(list &lst) : blk(lst.blk), 
-    count(lst.count), 
-    root(lst.root), 
-    tail(lst.tail), 
-    health(lst.health) {
+    list(list &lst) : blk(lst.blk), count(lst.count), root(lst.root), 
+    tail(lst.tail) {
       blk->count++;
+      this->health = lst.health;
     }
 
     ~list() {
@@ -229,6 +227,14 @@ namespace akane {
         forward->next = newNode;
         newNode->next = ptr;
         ++count;
+      }
+    }
+
+    void copy(list &lst) {
+      _DataNode *ptr = lst.root;
+      while (ptr != nullptr) {
+        this->push_back(ptr->data);
+        ptr = ptr->next;
       }
     }
 

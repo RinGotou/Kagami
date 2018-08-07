@@ -118,7 +118,7 @@ namespace kagami {
 
     ObjectManager &CreateManager() {
       auto &base = GetObjectStack();
-      base.push_back(ObjectManager());
+      base.push_back(std::move(ObjectManager()));
       return GetObjectStack().back();
     }
 
@@ -129,7 +129,7 @@ namespace kagami {
 
 #if defined(_WIN32)
     bool Instance::Load(string name, HINSTANCE h) {
-      this->first = name;
+      this->first  = name;
       this->second = h;
 
       const auto attachment = Attachment(GetProcAddress(this->second, "Attachment"));
@@ -645,27 +645,27 @@ namespace kagami {
     InitTemplates();
     InitMethods();
     ActivityTemplate temp;
-    Inject(T("binexp"      , BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
-    Inject(T("elif"        , ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
-    Inject(T("else"        , ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T("end"         , TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T(kStrFor       , ForEachHead, kFlagNormalEntry, kCodeNormalParm, "%unit|%object"));
-    Inject(T("if"          , ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
-    Inject(T(kStrVar       , CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
-    Inject(T(kStrSet       , SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
-    Inject(T("log"         , WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
-    Inject(T("lSelfDec"    , LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    Inject(T("lSelfInc"    , LeftSelfIncreament, kFlagNormalEntry,kCodeNormalParm,"&object"));
-    Inject(T("print"       , Print, kFlagNormalEntry, kCodeNormalParm, "object"));
-    Inject(T("rSelfDec"    , RightSelfDecreament, kFlagNormalEntry,kCodeNormalParm,"&object"));
-    Inject(T("rSelfInc"    , RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    Inject(T("time"        , TimeReport, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T("version"     , VersionInfo, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T("while"       , WhileCycle, kFlagNormalEntry, kCodeNormalParm, "state"));
-    Inject(T("platform"    , PlatformInfo, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T("codename"    , InsideNameInfo, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T(kStrBinOp       , BinaryOperands    , kFlagOperatorEntry, kCodeNormalParm, "first|second"));
+    Inject(T(kStrElif        , ConditionBranch   , kFlagNormalEntry, kCodeNormalParm, "state"));
+    Inject(T(kStrElse        , ConditionLeaf     , kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T(kStrEnd         , TailSign          , kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T(kStrFor         , ForEachHead       , kFlagNormalEntry, kCodeNormalParm, "%unit|%object"));
+    Inject(T(kStrIf          , ConditionRoot     , kFlagNormalEntry, kCodeNormalParm, "state"));
+    Inject(T(kStrVar         , CreateOperand     , kFlagNormalEntry, kCodeAutoFill, "%name|source"));
+    Inject(T(kStrSet         , SetOperand        , kFlagNormalEntry, kCodeAutoFill, "&target|source"));
+    Inject(T(kStrWhile       , WhileCycle        , kFlagNormalEntry, kCodeNormalParm, "state"));
+    Inject(T(kStrRightSelfDec, RightSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    Inject(T(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    Inject(T(kStrLeftSelfDec , LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    Inject(T(kStrLeftSelfInc , LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    Inject(T("log"           , WriteLog          , kFlagNormalEntry, kCodeNormalParm, "data"));
+    Inject(T("print"         , Print             , kFlagNormalEntry, kCodeNormalParm, "object"));
+    Inject(T("time"          , TimeReport         , kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T("version"       , VersionInfo        , kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T("platform"      , PlatformInfo       , kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T("codename"      , InsideNameInfo     , kFlagNormalEntry, kCodeNormalParm, ""));
 #if defined(_WIN32)
-    Inject(T("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalParm, "path"));
+    Inject(T("ImportPlugin", LoadPlugin         , kFlagNormalEntry, kCodeNormalParm, "path"));
 #else
     //Linux Version
 #endif

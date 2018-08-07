@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
   
 #ifdef _ENABLE_DEBUGGING_
   auto &base = kagami::entry::GetObjectStack();
-  scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
+  scriptCore.ExecScriptFile("C:\\workspace\\benmark_1.kagami");
   atexit(AtExitHandler);
 #else
 #ifndef _NO_CUI_
