@@ -56,8 +56,8 @@ namespace kagami {
     }
 
     Object *FindObject(string sign) {
-      Object *object            = nullptr;
-      size_t count              = GetObjectStack().size();
+      Object *object = nullptr;
+      size_t count   = GetObjectStack().size();
       list<ObjectManager> &base = GetObjectStack();
 
       while (!base.empty() && count > 0) {
@@ -635,6 +635,11 @@ namespace kagami {
 #endif
   }
 
+  Message Quit(ObjectMap &p) {
+    Message result(kStrEmpty, kCodeQuit, kStrEmpty);
+    return result;
+  }
+
   /*
   Init all basic objects and entries
   Just do not edit unless you want to change processor's basic behaviors.
@@ -669,6 +674,7 @@ namespace kagami {
     Inject(T("version", VersionInfo, kFlagNormalEntry, kCodeNormalParm, ""));
     Inject(T("platform", PlatformInfo, kFlagNormalEntry, kCodeNormalParm, ""));
     Inject(T("codename", InsideNameInfo, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(T("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
 #if defined(_WIN32)
     Inject(T("ImportPlugin", LoadPlugin, kFlagNormalEntry, kCodeNormalParm, "path"));
 #else

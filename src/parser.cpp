@@ -182,6 +182,7 @@ namespace kagami {
   ScriptMachine::ScriptMachine(const char *target) {
     string temp;
     end = false;
+    isTerminal = false;
     current = 0;
     size_t subscript = 0;
 
@@ -309,9 +310,10 @@ namespace kagami {
   Message ScriptMachine::Run() {
     Message result;
 
-    currentMode   = kModeNormal;
+    currentMode = kModeNormal;
     nestHeadCount = 0;
-    health        = true;
+    current = 0;
+    health = true;
 
     if (storage.empty()) return result;
 
@@ -371,11 +373,64 @@ namespace kagami {
     return result;
   }
 
+  void ScriptMachine::Terminal() {
+    Message msg;
+    string buf;
+    string head = kStrNormalArrow;
+    Processor processor;
+    bool subProcess = false;
+
+    entry::CreateManager();
+
+    while (msg.GetCode() != kCodeQuit) {
+      std::cout << head;
+      std::getline(std::cin, buf);
+      processor.Build(buf);
+      auto tokenValue = entry::GetGenericToken(processor.GetFirstToken().first);
+      switch (tokenValue) {
+      case BasicGenToken::IF:
+      case BasicGenToken::WHILE:
+      case BasicGenToken::FOR:
+        subProcess = true;
+        head = kStrDotGroup;
+        break;
+      case BasicGenToken::END:
+        subProcess = false;
+        storage.emplace_back(processor);
+        head = kStrNormalArrow;
+        msg = this->Run();
+        storage.clear();
+        current = 0;
+        break;
+      case BasicGenToken::DEF:
+        //
+        break;
+      default:
+        break;
+      }
+      if (subProcess) {
+        storage.emplace_back(processor);
+      }
+      else {
+        msg = processor.Start();
+      }
+
+      if (msg.GetCode() < kCodeSuccess) {
+        std::cout << msg.GetDetail() << std::endl;
+        trace::Log(msg);
+      }
+    }
+
+    entry::DisposeManager();
+    entry::ResetPlugin();
+  }
+
   Processor &Processor::Build(string target) {
     Kit kit;
-    string current, data, forward;
+    string current, data, forward, next;
     auto exemptBlankChar = true;
     auto stringProcessing = false;
+    auto appendingOnce = false;
     char currentChar;
     auto forwardChar = ' ';
     vector<string> origin, output;
@@ -445,8 +500,17 @@ namespace kagami {
     //third cycle
     stringProcessing = false;
     for (size_t count = 0; count < origin.size(); ++count) {
+      if (count + 1 < origin.size()) next = origin[count + 1];
+
       current = origin[count];
       if (!stringProcessing) {
+        if (current == ".") {
+          if (kit.IsInteger(forward) && kit.IsInteger(next)) {
+            output.back().append(current);
+            appendingOnce = true;
+            continue;
+          }
+        }
         if (current == "(" || current == "[") nest++;
         if (current == ")" || current == "]") nest--;
         if (current == "[") {
@@ -481,6 +545,10 @@ namespace kagami {
       else {
         if (stringProcessing) {
           output.back().append(current);
+        }
+        else if (appendingOnce) {
+          output.back().append(current);
+          appendingOnce = false;
         }
         else {
           if ((current == "+" || current == "-") && !output.empty()) {
