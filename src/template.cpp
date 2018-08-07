@@ -35,8 +35,7 @@ namespace kagami {
 
   Message ArrayConstructor(ObjectMap &p) {
     Message result;
-    Kit kit;
-    auto size = p.at("size"), initValue = p.at("init_value");
+    auto size = p["size"], initValue = p["init_value"];
     const auto sizeValue = stoi(*static_pointer_cast<string>(size.Get()));
     vector<Object> base;
 
@@ -74,7 +73,7 @@ namespace kagami {
     Object temp;
     size_t size;
     int count0;
-    auto object = p.at(kStrObject), subscript1 = p.at("subscript_1");
+    auto object = p.at(kStrObject), subscript1 = p["subscript_1"];
     const auto typeId = object.GetTypeId();
 
     const auto makeStrToken = [](char target)->string {
@@ -177,21 +176,21 @@ namespace kagami {
     using type::AddTemplate;
     AddTemplate(kTypeIdRawString, ObjTemplate(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
     AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at|__print"));
-    AddTemplate(kTypeIdNull     , ObjTemplate(NullCopy, ""));
+    AddTemplate(kTypeIdNull, ObjTemplate(NullCopy, ""));
   }
 
   void InitMethods() {
     using namespace entry;
     using T = ActivityTemplate;
     //constructor
-    Inject(T("array"  , ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
+    Inject(T("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
     //methods
-    Inject(T("at"     , GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdRawString));
-    Inject(T("at"     , GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdArrayBase));
+    Inject(T("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdRawString));
+    Inject(T("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdArrayBase));
     Inject(T("__print", PrintRawString, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
     Inject(T("__print", PrintArray, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
-    Inject(T("size"   , GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
-    Inject(T("size"   , GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
+    Inject(T("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
+    Inject(T("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
   }
 
 

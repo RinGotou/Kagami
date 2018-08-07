@@ -41,7 +41,11 @@ namespace kagami {
   const string kStrRightSelfInc = "rSelfInc";
   const string kStrRightSelfDec = "rSelfDec";
 
-
+  enum BasicGenToken {
+    NOP, DEF, REF, CODE_SUB, SUB, BINOP, IF, ELIF, END, ELSE, VAR,
+    SET, WHILE, FOR, LSELF_INC, LSELF_DEC, RSELF_INC, RSELF_DEC,
+    NUL
+  };
 
   enum BasicTokenValue {
     TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT, 
@@ -168,18 +172,19 @@ namespace kagami {
     Processor &Build(string target);
   };
 
-  /*ScriptProvider class
+  /*ScriptMachine class
   Script provider caches original string data from script file.
   */
-  class ScriptProvider {
+  class ScriptMachine {
     std::ifstream stream;
     size_t current;
     vector<Processor> storage;
     vector<string> parameters;
     bool health;
     bool end;
+    stack<size_t> cycleNestStack, cycleTailStack, modeStack;
+    stack<bool> conditionStack;
 
-    ScriptProvider() {}
     void AddLoader(string raw) { 
       storage.push_back(Processor().Build(raw)); 
     }
@@ -194,7 +199,8 @@ namespace kagami {
       return true;
     }
   public:
-    ~ScriptProvider() {
+    ScriptMachine() {}
+    ~ScriptMachine() {
       stream.close();
       Kit().CleanupVector(storage).CleanupVector(parameters);
     }
@@ -202,7 +208,7 @@ namespace kagami {
     bool GetHealth() const { return health; }
     bool Eof() const { return end; }
     void ResetCounter() { current = 0; }
-    explicit ScriptProvider(const char *target);
+    explicit ScriptMachine(const char *target);
     Message Run(deque<string> res = deque<string>());
   };
 
@@ -292,6 +298,7 @@ namespace kagami {
     enum OperatorCode {
       ADD, SUB, MUL, DIV, EQUAL, IS, NOT,
       MORE, LESS, NOT_EQUAL, MORE_OR_EQUAL, LESS_OR_EQUAL,
+      SELFINC, SELFDEC,
       NUL
     };
 
@@ -320,6 +327,7 @@ namespace kagami {
     ObjectManager       &GetCurrentManager();
     string              GetTypeId(string sign);
     void                Inject(ActivityTemplate temp);
+    void                LoadGenProvider(BasicGenToken token, ActivityTemplate temp);
     void                RemoveByTemplate(ActivityTemplate temp);
     Object              *FindObject(string name);
     ObjectManager       &CreateManager();
