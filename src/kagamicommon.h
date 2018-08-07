@@ -180,11 +180,13 @@ namespace kagami {
     string detail;
     int code;
     shared_ptr<void> object;
+    size_t idx;
   public:
     Message() {
       value = kStrEmpty;
       code = kCodeSuccess;
       detail = kStrEmpty;
+      idx = 0;
     }
 
     Message(string value, int code, string detail) {
@@ -193,30 +195,37 @@ namespace kagami {
       this->detail = detail;
     }
 
-    Message combo(string value, int code, string detail) {
+    Message &combo(string value, int code, string detail) {
       this->value  = value;
       this->code   = code;
       this->detail = detail;
       return *this;
     }
 
-    Message SetValue(const string &value) {
+    Message &SetValue(const string &value) {
       this->value  = value;
       return *this;
     }
 
-    Message SetCode(const int &code) {
+    Message &SetCode(const int &code) {
       this->code = code;
       return *this;
     }
 
-    Message SetDetail(const string &detail) {
+    Message &SetDetail(const string &detail) {
       this->detail = detail;
       return *this;
     }
+
+    Message &SetIndex(const size_t index) {
+      idx = index;
+      return *this;
+    }
+
     string GetValue()  const  { return this->value; }
     int GetCode()      const  { return this->code; }
     string GetDetail() const  { return this->detail; }
+    size_t GetIndex()  const  { return idx; }
     Object GetObj() const;
     void SetObject(Object &object, string id);
   };

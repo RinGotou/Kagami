@@ -8,10 +8,11 @@ namespace kagami {
   class ScriptCore {
   private:
     bool ignoreFatalError;
+    bool isTerminal;
   public:
     //TODO:startup arugment
-    void Terminal() const;
-    static void PrintEvents();
-    static Message ExecScriptFile(string target);
+    void Terminal();
+    void PrintEvents();
+    Message ExecScriptFile(string target);
   };
 }

@@ -327,12 +327,12 @@ namespace kagami {
       const auto selfObjectManagement = storage[current].IsSelfObjectManagement();
 
       if (value == kStrFatalError) {
-        trace::Log(result);
+        trace::Log(result.SetIndex(storage[current].GetIndex()));
         break;
       }
 
       if (value == kStrWarning) {
-        trace::Log(result);
+        trace::Log(result.SetIndex(storage[current].GetIndex()));
       }
       //TODO:return
 
@@ -619,7 +619,7 @@ namespace kagami {
     if (id != kStrNop) {
       provider = entry::Order(id, providerType, providerSize);
       if (!provider.Good()) {
-        msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found. - " + id);
+        msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found - " + id);
         symbol.pop_back();
         return false;
       }
@@ -685,7 +685,14 @@ namespace kagami {
                 .SetTokenType(kGenericToken);
           }
           else {
-            temp = *GetObj(tokens[count].first);
+            auto ptr = GetObj(tokens[count].first);
+            if (ptr == nullptr) {
+              msg.combo(kStrFatalError, kCodeIllegalCall, "Object not found - " + tokens[count].first);
+              health = false;
+            }
+            else {
+              temp = *GetObj(tokens[count].first);
+            }
           }
           break;
         default:

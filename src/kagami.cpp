@@ -21,6 +21,7 @@ namespace kagami {
       else {
         for (log_t unit : GetLogger()) {
           ofs << unit.first;
+          ofs << "At:" << to_string(unit.second.GetIndex()) << "\n";
           const auto value = unit.second.GetValue();
           if (value == kStrFatalError) priorityStr = "Fatal:";
           else if (value == kStrWarning) priorityStr = "Warning:";
@@ -37,6 +38,8 @@ namespace kagami {
     Message result;
     ScriptMachine provider(target.c_str());
 
+    isTerminal = false;
+
     if (target == kStrEmpty) {
       trace::Log(result.combo(kStrFatalError, kCodeIllegalParm, "Empty path string."));
       return result;
@@ -51,11 +54,13 @@ namespace kagami {
 
 #ifndef _NO_CUI_
   //TODO:remove old terminal code and add terminal mode to script provider
-  void ScriptCore::Terminal() const {
+  void ScriptCore::Terminal() {
     using namespace entry;
     string buf = kStrEmpty;
     Message result(kStrEmpty, kCodeSuccess, kStrEmpty);
     Processor loader;
+
+    isTerminal = false;
 
     std::cout << kEngineName 
     << ' ' << "verison:" << kEngineVersion 
@@ -96,7 +101,7 @@ int main(int argc, char **argv) {
   
 #ifdef _ENABLE_DEBUGGING_
   auto &base = kagami::entry::GetObjectStack();
-  scriptCore.ExecScriptFile("C:\\workspace\\InternalTypeTest.kagami");
+  scriptCore.ExecScriptFile("C:\\workspace\\ErrorTest.kagami");
   atexit(AtExitHandler);
 #else
 #ifndef _NO_CUI_

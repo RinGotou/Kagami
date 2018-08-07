@@ -155,17 +155,23 @@ namespace kagami {
   public:
     Processor() : health(false), commaExpFunc(false), insertBtnSymbols(false), dotOperator(false),
       disableSetEntry(false),  defineLine(false), functionLine(false), subscriptProcessing(false),
-       mode(0), nextInsertSubscript(0), lambdaObjectCount(0) {}
+       mode(0), nextInsertSubscript(0), lambdaObjectCount(0), index(0) {}
 
     bool IsHealth() const { return health; }
     string GetErrorString() const { return errorString; }
+
     bool IsSelfObjectManagement() const {
       string front = origin.front().first;
       return (front == kStrFor || front == kStrDef);
     }
+
     Processor &SetIndex(size_t idx) {
       this->index = idx;
       return *this;
+    }
+
+    size_t GetIndex() const {
+      return index;
     }
 
     Message Start(size_t mode = kModeNormal);
