@@ -180,10 +180,18 @@ namespace kagami {
     size_t current;
     vector<Processor> storage;
     vector<string> parameters;
-    bool health;
     bool end;
     stack<size_t> cycleNestStack, cycleTailStack, modeStack;
     stack<bool> conditionStack;
+    size_t currentMode;
+    int nestHeadCount;
+    bool health;
+
+    void ConditionRoot(bool value);
+    void ConditionBranch(bool value);
+    void ConditionLeaf();
+    void HeadSign(bool value, bool selfObjectManagement);
+    void TailSign();
 
     void AddLoader(string raw) { 
       storage.push_back(Processor().Build(raw)); 
@@ -199,7 +207,6 @@ namespace kagami {
       return true;
     }
   public:
-    ScriptMachine() {}
     ~ScriptMachine() {
       stream.close();
       Kit().CleanupVector(storage).CleanupVector(parameters);
@@ -208,8 +215,9 @@ namespace kagami {
     bool GetHealth() const { return health; }
     bool Eof() const { return end; }
     void ResetCounter() { current = 0; }
+    ScriptMachine() {}
     explicit ScriptMachine(const char *target);
-    Message Run(deque<string> res = deque<string>());
+    Message Run();
   };
 
   /*EntryProvider Class
