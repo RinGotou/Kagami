@@ -72,6 +72,7 @@ namespace kagami {
       }
       return result;
     }
+
     OperatorCode GetOperatorCode(string src) {
       if (src == "+")  return ADD;
       if (src == "-")  return SUB;
@@ -102,6 +103,7 @@ namespace kagami {
     void Inject(ActivityTemplate temp) { 
       GetEntryBase().emplace_back(EntryProvider(temp));
     }
+
     void LoadGenProvider(BasicGenToken token, ActivityTemplate temp) {
       GetGenProviderBase().insert(pair<BasicGenToken, EntryProvider>(
         token, EntryProvider(temp)));
@@ -169,19 +171,17 @@ namespace kagami {
     return TOKEN_OTHERS;
   }
 
-
-
   //TODO:processing for integer
   bool GetBooleanValue(string src) {
     if (src == kStrTrue) return true;
-    if (src == kStrFalse)return false;
-    return false;
+    if (src == kStrFalse) return false;
+    if (src == "0" || src.empty()) return false;
+    return true;
   }
 
   ScriptMachine::ScriptMachine(const char *target) {
     string temp;
     end = false;
-    health = false;
     current = 0;
     size_t subscript = 0;
 
@@ -194,33 +194,128 @@ namespace kagami {
         }
         subscript++;
       }
-      if (!storage.empty()) health = true;
     }
     stream.close();
   }
 
-  Message ScriptMachine::Run(deque<string> res) {
-    Message result;
-    auto currentMode = kModeNormal;
-    auto nestHeadCount = 0;
-    auto health = true;
-
-    if (storage.empty()) {
-      return result;
+  void ScriptMachine::ConditionRoot(bool value) {
+    modeStack.push(currentMode);
+    switch (value) {
+    case true:
+      entry::CreateManager();
+      currentMode = kModeCondition;
+      conditionStack.push(true);
+      break;
+    case false:
+      currentMode = kModeNextCondition;
+      conditionStack.push(false);
+      break;
     }
+  }
+
+  void ScriptMachine::ConditionBranch(bool value) {
+    if (!conditionStack.empty()) {
+      if (conditionStack.top() == false && currentMode == kModeNextCondition
+        && value == true) {
+        entry::CreateManager();
+        currentMode = kModeCondition;
+        conditionStack.top() = true;
+      }
+    }
+    else {
+      //msg.combo
+      health = false;
+    }
+  }
+
+  void ScriptMachine::ConditionLeaf() {
+    if (!conditionStack.empty()) {
+      switch (conditionStack.top()) {
+      case true:
+        currentMode = kModeNextCondition;
+        break;
+      case false:
+        entry::CreateManager();
+        conditionStack.top() = true;
+        currentMode = kModeCondition;
+        break;
+      }
+    }
+    else {
+      //msg.combo
+      health = false;
+    }
+  }
+
+  void ScriptMachine::HeadSign(bool value, bool selfObjectManagement) {
+    if (cycleNestStack.empty()) {
+      modeStack.push(currentMode);
+      if (!selfObjectManagement) entry::CreateManager();
+    }
+    else {
+      if (cycleNestStack.top() != current - 1) {
+        modeStack.push(currentMode);
+        if (!selfObjectManagement) entry::CreateManager();
+      }
+    }
+    if (value == true) {
+      currentMode = kModeCycle;
+      if (cycleNestStack.empty()) {
+        cycleNestStack.push(current - 1);
+      }
+      else if (cycleNestStack.top() != current - 1) {
+        cycleNestStack.push(current - 1);
+      }
+    }
+    else if (value == false) {
+      currentMode = kModeCycleJump;
+      if (!cycleTailStack.empty()) {
+        current = cycleTailStack.top();
+      }
+    }
+    else {
+      health = false;
+    }
+  }
+
+  void ScriptMachine::TailSign() {
+    if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
+      conditionStack.pop();
+      currentMode = modeStack.top();
+      modeStack.pop();
+      entry::DisposeManager();
+    }
+    if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
+      switch (currentMode) {
+      case kModeCycle:
+        if (cycleTailStack.empty() || cycleTailStack.top() != current - 1) {
+          cycleTailStack.push(current - 1);
+        }
+        current = cycleNestStack.top();
+        entry::GetCurrentManager().clear();
+        break;
+      case kModeCycleJump:
+        currentMode = modeStack.top();
+        modeStack.pop();
+        cycleNestStack.pop();
+        cycleTailStack.pop();
+        entry::DisposeManager();
+        break;
+      default:break;
+      }
+    }
+  }
+
+  Message ScriptMachine::Run() {
+    Message result;
+
+    currentMode   = kModeNormal;
+    nestHeadCount = 0;
+    health        = true;
+
+    if (storage.empty()) return result;
 
     entry::CreateManager();
-
-    //TODO:add custom function support
-    if (!res.empty()) {
-      if (res.size() != parameters.size()) {
-        result.combo(kStrFatalError, kCodeIllegalCall, "wrong parameter count.");
-        return result;
-      }
-      for (size_t count = 0; count < parameters.size(); count++) {
-        //CreateObject(parameter.at(i), res.at(i), false);
-      }
-    }
 
     //Main state machine
     while (current < storage.size()) {
@@ -235,6 +330,7 @@ namespace kagami {
         trace::Log(result);
         break;
       }
+
       if (value == kStrWarning) {
         trace::Log(result);
       }
@@ -242,83 +338,18 @@ namespace kagami {
 
       switch (code) {
       case kCodeConditionRoot:
-        modeStack.push(currentMode);
-        if (value == kStrTrue) {
-          entry::CreateManager();
-          currentMode = kModeCondition;
-          conditionStack.push(true);
-        }
-        else if (value == kStrFalse) {
-          currentMode = kModeNextCondition;
-          conditionStack.push(false);
-        }
-        else {
-          health = false;
-        }
+        ConditionRoot(GetBooleanValue(value)); 
         break;
       case kCodeConditionBranch:
         if (nestHeadCount > 0) break;
-        if (!conditionStack.empty()) {
-          if (conditionStack.top() == false && currentMode == kModeNextCondition
-            && value == kStrTrue) {
-            entry::CreateManager();
-            currentMode = kModeCondition;
-            conditionStack.top() = true;
-          }
-        }
-        else {
-          //msg.combo
-          health = false;
-        }
+        ConditionBranch(GetBooleanValue(value));
         break;
       case kCodeConditionLeaf:
         if (nestHeadCount > 0) break;
-        if (!conditionStack.empty()) {
-          switch (conditionStack.top()) {
-          case true:
-            currentMode = kModeNextCondition;
-            break;
-          case false:
-            entry::CreateManager();
-            conditionStack.top() = true;
-            currentMode = kModeCondition;
-            break;
-          }
-        }
-        else {
-          //msg.combo
-          health = false;
-        }
+        ConditionLeaf();
         break;
       case kCodeHeadSign:
-        if (cycleNestStack.empty()) {
-          modeStack.push(currentMode);
-          if (!selfObjectManagement) entry::CreateManager();
-        }
-        else {
-          if (cycleNestStack.top() != current - 1) {
-            modeStack.push(currentMode);
-            if (!selfObjectManagement) entry::CreateManager();
-          }
-        }
-        if (value == kStrTrue) {
-          currentMode = kModeCycle;
-          if (cycleNestStack.empty()) {
-            cycleNestStack.push(current - 1);
-          }
-          else if (cycleNestStack.top() != current - 1) {
-            cycleNestStack.push(current - 1);
-          }
-        }
-        else if (value == kStrFalse) {
-          currentMode = kModeCycleJump;
-          if (!cycleTailStack.empty()) {
-            current = cycleTailStack.top();
-          }
-        }
-        else {
-          health = false;
-        }
+        HeadSign(GetBooleanValue(value), selfObjectManagement);
         break;
       case kCodeFillingSign:
         nestHeadCount++;
@@ -328,31 +359,8 @@ namespace kagami {
           nestHeadCount--;
           break;
         }
-        if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
-          conditionStack.pop();
-          currentMode = modeStack.top();
-          modeStack.pop();
-          entry::DisposeManager();
-        }
-        if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
-          switch (currentMode) {
-          case kModeCycle:
-            if (cycleTailStack.empty() || cycleTailStack.top() != current - 1) {
-              cycleTailStack.push(current - 1);
-            }
-            current = cycleNestStack.top();
-            entry::GetCurrentManager().clear();
-            break;
-          case kModeCycleJump:
-            currentMode = modeStack.top();
-            modeStack.pop();
-            cycleNestStack.pop();
-            cycleTailStack.pop();
-            entry::DisposeManager();
-            break;
-          default:break;
-          }
-        }
+        TailSign();
+        break;
       default:break;
       }
       ++current;
