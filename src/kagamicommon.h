@@ -37,7 +37,7 @@ namespace kagami {
 
 #if defined(_WIN32)
   const string kEngineVersion = "0.7";
-  const string kInsideName = "August";
+  const string kInsideName = "Clover";
   const string kPlatformType = "Windows";
 #else
   const string kPlatformType = "Linux";
@@ -115,8 +115,8 @@ namespace kagami {
   //const regex kPatternInteger(R"([-]?\d+)");
   //const regex kPatternDouble(R"([-]?\d+\.\d+)");
   //const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
-  const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
   //const regex kPatternBlank(R"([[:blank:]])");
+  const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
 
   /*Activity Template class
     no description yet.
@@ -369,7 +369,7 @@ namespace kagami {
       }
       return *this;
     }
-    shared_ptr<void> Get() const { 
+    shared_ptr<void> Get() const {
       shared_ptr<void> result = ptr;
       if (option == kTypeIdRef) {
         result = static_pointer_cast<TargetObject>(ptr)
@@ -378,17 +378,17 @@ namespace kagami {
       }
       return result;
     }
-    string GetTypeId() const { 
-       string result = option;
+    string GetTypeId() const {
+      string result = option;
       if (option == kTypeIdRef) {
         result = static_pointer_cast<TargetObject>(ptr)
           ->ptr
           ->GetTypeId();
       }
-      return result; 
+      return result;
     }
     Object &SetMethods(string methods) {
-      if(option == kTypeIdRef) {
+      if (option == kTypeIdRef) {
         return static_pointer_cast<TargetObject>(ptr)
           ->ptr
           ->SetMethods(methods);
@@ -458,32 +458,32 @@ namespace kagami {
     }
     bool operator==(Object &object) const {
       return (ptr == object.ptr &&
-        option    == object.option &&
-        methods   == object.methods &&
+        option == object.option &&
+        methods == object.methods &&
         tokenType == object.tokenType &&
-        ro        == object.ro);
+        ro == object.ro);
     }
     bool operator!=(Object &object) const {
       return (ptr != object.ptr &&
-        option    != object.option &&
-        methods   != object.methods &&
+        option != object.option &&
+        methods != object.methods &&
         tokenType != object.tokenType &&
-        ro        != object.ro);
+        ro != object.ro);
     }
     Object &Copy(Object &object) {
-      ptr       = object.ptr;
-      option    = object.option;
-      methods   = object.methods;
+      ptr = object.ptr;
+      option = object.option;
+      methods = object.methods;
       tokenType = object.tokenType;
-      ro        = object.ro;
+      ro = object.ro;
       return *this;
     }
     Object &Copy(Object &&object) {
-      ptr       = object.ptr;
-      option    = object.option;
-      methods   = object.methods;
+      ptr = object.ptr;
+      option = object.option;
+      methods = object.methods;
       tokenType = object.tokenType;
-      ro        = object.ro;
+      ro = object.ro;
       return *this;
     }
   };

@@ -35,7 +35,7 @@ namespace kagami {
 
   Message ScriptCore::ExecScriptFile(string target) {
     Message result;
-    ScriptProvider provider(target.c_str());
+    ScriptMachine provider(target.c_str());
 
     if (target == kStrEmpty) {
       trace::Log(result.combo(kStrFatalError, kCodeIllegalParm, "Empty path string."));
@@ -73,6 +73,7 @@ namespace kagami {
         result = loader.Build(buf).Start();
         if (result.GetCode() < kCodeSuccess) {
           std::cout << result.GetDetail() << std::endl;
+          trace::Log(result);
         }
       }
     }
@@ -95,7 +96,7 @@ int main(int argc, char **argv) {
   
 #ifdef _ENABLE_DEBUGGING_
   auto &base = kagami::entry::GetObjectStack();
-  scriptCore.ExecScriptFile("C:\\workspace\\benmark_1.kagami");
+  scriptCore.ExecScriptFile("C:\\workspace\\InternalTypeTest.kagami");
   atexit(AtExitHandler);
 #else
 #ifndef _NO_CUI_
