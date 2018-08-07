@@ -49,11 +49,12 @@ namespace kagami {
     const auto typeId = initValue.GetTypeId();
     const auto methods = initValue.GetMethods();
     const auto tokenType = initValue.GetTokenType();
+    shared_ptr<void> initPtr;
     base.reserve(sizeValue);
 
     for (auto count = 0; count < sizeValue; count++) {
-      auto initPtr = type::GetObjectCopy(initValue);
-      base.emplace_back(std::move(Object()
+      initPtr = type::GetObjectCopy(initValue);
+      base.emplace_back((Object()
         .Set(initPtr, typeId)
         .SetMethods(methods)
         .SetTokenType(tokenType).SetRo(false)));

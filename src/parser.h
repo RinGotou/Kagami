@@ -27,6 +27,21 @@ namespace kagami {
   const string kStrRef     = "__ref";
   const string kStrCodeSub = "__code_sub";
   const string kStrSub     = "__sub";
+  const string kStrBinOp   = "BinOp";
+  const string kStrIf      = "if";
+  const string kStrElif    = "elif";
+  const string kStrEnd     = "end";
+  const string kStrElse    = "else";
+  const string kStrVar     = "var";
+  const string kStrSet     = "__set";
+  const string kStrWhile   = "while";
+  const string kStrFor     = "for";
+  const string kStrLeftSelfInc  = "lSelfInc";
+  const string kStrLeftSelfDec  = "lSelfDec";
+  const string kStrRightSelfInc = "rSelfInc";
+  const string kStrRightSelfDec = "rSelfDec";
+
+
 
   enum BasicTokenValue {
     TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT, 
@@ -90,7 +105,7 @@ namespace kagami {
         }
       }
       base.clear();
-      base = temp;
+      base.copy(temp);
     }
     bool Empty() const {
       return base.empty();

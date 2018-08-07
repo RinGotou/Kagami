@@ -13,7 +13,6 @@ namespace kagami {
   using std::vector;
   using std::map;
   using std::deque;
-
   using std::shared_ptr;
   using std::static_pointer_cast;
   using std::regex;
@@ -27,14 +26,14 @@ namespace kagami {
   class ObjTemplate;
   class Object;
 
-  using ObjectMap = map<string, Object>;
-  using Parameter = pair<string, Object>;
-  using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
-  using CastFunc = pair<string, CopyCreator>;
-  using Activity = Message(*)(ObjectMap &);
+  using ObjectMap      = map<string, Object>;
+  using Parameter      = pair<string, Object>;
+  using CopyCreator    = shared_ptr<void>(*)(shared_ptr<void>);
+  using CastFunc       = pair<string, CopyCreator>;
+  using Activity       = Message(*)(ObjectMap &);
   using CastAttachment = map<string, ObjTemplate> *(*)();
-  using MemoryDeleter = int(*)(void *);
-  using Attachment = vector<ActivityTemplate> * (*)();
+  using MemoryDeleter  = int(*)(void *);
+  using Attachment     = vector<ActivityTemplate> * (*)();
 
 #if defined(_WIN32)
   const string kEngineVersion = "0.7";
@@ -47,16 +46,7 @@ namespace kagami {
   const string kEngineAuthor = "Suzu Nakamura";
   const string kCopyright = "Copyright(c) 2017-2018";
 
-  const string kStrVar        = "var";
-  const string kStrSet        = "__set";
-  const string kStrWhile      = "while";
-  const string kStrEnd        = "end";
-  const string kStrIf         = "if";
-  const string kStrElse       = "else";
-  const string kStrElif       = "elif";
-  const string kStrFor        = "for";
   const string kStrNull       = "null";
-
   const string kStrEmpty      = "";
   const string kStrFatalError = "__FATAL__";
   const string kStrWarning    = "__WARNING__";
@@ -120,13 +110,13 @@ namespace kagami {
   const size_t kModeCycleJump     = 3;
   const size_t kModeCondition     = 4;
 
-  const regex kPatternGenericToken(R"([a-zA-Z_][a-zA-Z_0-9]*)");
-  const regex kPatternNumber(R"(\d+\.?\d*)");
-  const regex kPatternInteger(R"([-]?\d+)");
-  const regex kPatternDouble(R"([-]?\d+\.\d+)");
-  const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
+  //const regex kPatternGenericToken(R"([a-zA-Z_][a-zA-Z_0-9]*)");
+  //const regex kPatternNumber(R"(\d+\.?\d*)");
+  //const regex kPatternInteger(R"([-]?\d+)");
+  //const regex kPatternDouble(R"([-]?\d+\.\d+)");
+  //const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
   const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
-  const regex kPatternBlank(R"([[:blank:]])");
+  //const regex kPatternBlank(R"([[:blank:]])");
 
   /*Activity Template class
     no description yet.
@@ -333,7 +323,7 @@ namespace kagami {
     Object() {
       //hold a null pointer will cause some mysterious ploblems,
       //so this will hold a specific value intead of nullptr
-      ptr = make_shared<int>(0);
+      ptr = nullptr;
       option = kTypeIdNull;
       tokenType = kTypeNull;
       ro = false;
