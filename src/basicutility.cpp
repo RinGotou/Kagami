@@ -173,8 +173,8 @@ namespace kagami {
       auto dataB = *static_pointer_cast<string>(second.Get());
       const auto datatypeA = first.GetTokenType();
       const auto datatypeB = second.GetTokenType();
-      if (datatypeA == kTypeDouble || datatypeB == kTypeDouble) enumtype = enum_double;
-      if (datatypeA == kTypeInteger && datatypeB == kTypeInteger) enumtype = enum_int;
+      if (datatypeA == T_DOUBLE || datatypeB == T_DOUBLE) enumtype = enum_double;
+      if (datatypeA == T_INTEGER && datatypeB == T_INTEGER) enumtype = enum_int;
       if (kit.IsString(dataA) || kit.IsString(dataB)) enumtype = enum_str;
 
       if (enumtype == enum_int || enumtype == enum_double) {
@@ -267,13 +267,13 @@ namespace kagami {
 
     if(object.GetTypeId() == kTypeIdRawString) {
       const auto origin = *static_pointer_cast<string>(object.Get());
-      if (object.GetTokenType() == kTypeInteger) {
+      if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
         ++data;
         result = to_string(data);
         object.Set(make_shared<string>(result), kTypeIdRawString);
       }
-      else if (object.GetTokenType() == kTypeDouble) {
+      else if (object.GetTokenType() == T_DOUBLE) {
         auto data = stod(origin);
         data += 1.0f;
         result = to_string(data);
@@ -290,13 +290,13 @@ namespace kagami {
 
     if (object.GetTypeId() == kTypeIdRawString) {
       const auto origin = *static_pointer_cast<string>(object.Get());
-      if (object.GetTokenType() == kTypeInteger) {
+      if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
         --data;
         result = to_string(data);
         object.Set(make_shared<string>(result), kTypeIdRawString);
       }
-      else if (object.GetTokenType() == kTypeDouble) {
+      else if (object.GetTokenType() == T_DOUBLE) {
         auto data = stod(origin);
         data -= 1.0f;
         result = to_string(data);
@@ -314,12 +314,12 @@ namespace kagami {
     if (object.GetTypeId() == kTypeIdRawString) {
       auto origin = *static_pointer_cast<string>(object.Get());
       result = origin;
-      if (object.GetTokenType() == kTypeInteger) {
+      if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
         ++data;
         object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
       }
-      else if (object.GetTokenType() == kTypeDouble) {
+      else if (object.GetTokenType() == T_DOUBLE) {
         auto data = stod(origin);
         data += 1.0f;
         object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
@@ -336,12 +336,12 @@ namespace kagami {
     if (object.GetTypeId() == kTypeIdRawString) {
       auto origin = *static_pointer_cast<string>(object.Get());
       result = origin;
-      if (object.GetTokenType() == kTypeInteger) {
+      if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
         --data;
         object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
       }
-      else if (object.GetTokenType() == kTypeDouble) {
+      else if (object.GetTokenType() == T_DOUBLE) {
         auto data = stod(origin);
         data -= 1.0f;
         object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
@@ -399,7 +399,7 @@ namespace kagami {
         else if (msg.GetValue() == kStrRedirect) {
           objUnit->Manage(msg.GetDetail())
                   .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
-                  .SetTokenType(kit.GetDataType(msg.GetDetail()));
+                  .SetTokenType(kit.GetTokenType(msg.GetDetail()));
           result = true;
         }
         else {
@@ -432,11 +432,11 @@ namespace kagami {
 
     if (!target.IsRo()) {
       auto typeId    = source.GetTypeId();
-      auto tokenType = source.GetTokenType();
+      auto TokenTypeEnum = source.GetTokenType();
       auto methods   = source.GetMethods();
       target.Set(ptr, typeId)
             .SetMethods(methods)
-            .SetTokenType(tokenType);
+            .SetTokenType(TokenTypeEnum);
     }
     return result;
   }
@@ -523,19 +523,19 @@ namespace kagami {
   void LoadGenericProvider() {
     using T = ActivityTemplate;
     using namespace entry;
-    LoadGenProvider(BINOP, T(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
-    LoadGenProvider(ELIF, T(kStrElif, ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(ELSE, T(kStrElse, ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
-    LoadGenProvider(END, T(kStrEnd, TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
-    LoadGenProvider(FOR, T(kStrFor, ForEachHead, kFlagNormalEntry, kCodeNormalParm, "%unit|%object"));
-    LoadGenProvider(IF, T(kStrIf, ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(VAR, T(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
-    LoadGenProvider(SET, T(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
-    LoadGenProvider(WHILE, T(kStrWhile, WhileCycle, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(LSELF_INC, T(kStrLeftSelfInc, LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(LSELF_DEC, T(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(RSELF_INC, T(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(RSELF_DEC, T(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_BINOP, T(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
+    LoadGenProvider(BG_ELIF, T(kStrElif, ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
+    LoadGenProvider(BG_ELSE, T(kStrElse, ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
+    LoadGenProvider(BG_END, T(kStrEnd, TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
+    LoadGenProvider(BG_FOR, T(kStrFor, ForEachHead, kFlagNormalEntry, kCodeNormalParm, "%unit|%object"));
+    LoadGenProvider(BG_IF, T(kStrIf, ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
+    LoadGenProvider(BG_VAR, T(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
+    LoadGenProvider(BG_SET, T(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
+    LoadGenProvider(BG_WHILE, T(kStrWhile, WhileCycle, kFlagNormalEntry, kCodeNormalParm, "state"));
+    LoadGenProvider(BG_LSELF_INC, T(kStrLeftSelfInc, LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_LSELF_DEC, T(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_RSELF_INC, T(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_RSELF_DEC, T(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
   }
 
   void Activiate() {

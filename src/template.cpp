@@ -2,17 +2,6 @@
 #include <iostream>
 
 namespace kagami {
-  //FileStream
-
-  //WideString
-
-
-  //RawString
-  //shared_ptr<void> StringCopy(shared_ptr<void> target) {
-  //  auto temp(*static_pointer_cast<string>(target));
-  //  return make_shared<string>(temp);
-  //}
-
   //Array
   shared_ptr<void> ArrayCopy(shared_ptr<void> target) {
     const auto ptr = static_pointer_cast<vector<Object>>(target);
@@ -23,10 +12,6 @@ namespace kagami {
     }
     return make_shared<vector<Object>>(std::move(base));
   }
-
-  //Cube
-
-  //Regex
 
   //Null
   shared_ptr<void> NullCopy(shared_ptr<void> target) {
@@ -47,7 +32,7 @@ namespace kagami {
 
     const auto typeId = initValue.GetTypeId();
     const auto methods = initValue.GetMethods();
-    const auto tokenType = initValue.GetTokenType();
+    const auto TokenTypeEnum = initValue.GetTokenType();
     shared_ptr<void> initPtr;
     base.reserve(sizeValue);
 
@@ -56,7 +41,7 @@ namespace kagami {
       base.emplace_back((Object()
         .Set(initPtr, typeId)
         .SetMethods(methods)
-        .SetTokenType(tokenType).SetRo(false)));
+        .SetTokenType(TokenTypeEnum).SetRo(false)));
     }
 
     result.SetObject(Object()
