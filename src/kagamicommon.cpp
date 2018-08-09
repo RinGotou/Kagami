@@ -48,29 +48,17 @@ namespace kagami {
     return true;
   }
 
-  TokenType Kit::GetTokenType(string src) {
-
-    return TokenType::NUL;
-  }
-
-  size_t Kit::GetDataType(string target) {
-    using std::regex_match;
-    size_t result;
-    const auto match = [&](const regex &pat) -> bool {
-      return regex_match(target, pat);
-    };
-
-    if (target == kStrNull || target == kStrEmpty)      result = kTypeNull;
-    else if (target == kStrTrue || target == kStrFalse) result = kTypeBoolean;
-    else if (IsGenericToken(target)) result = kGenericToken;
-    else if (IsInteger(target))      result = kTypeInteger;
-    else if (IsDouble(target))       result = kTypeDouble;
-    else if (match(kPatternSymbol))  result = kTypeSymbol;
-    else if (IsBlank(target))        result = kTypeBlank;
-    else if (IsString(target))       result = kTypeString;
-    else result = kTypeNull;
-
-    return result;
+  TokenTypeEnum Kit::GetTokenType(string src) {
+    TokenTypeEnum type = TokenTypeEnum::T_NUL;
+    if (src == kStrNull || src.empty())             type = TokenTypeEnum::T_NUL;
+    else if (src == kStrTrue || src == kStrFalse)   type = TokenTypeEnum::T_BOOLEAN;
+    else if (IsGenericToken(src))                   type = TokenTypeEnum::T_GENERIC;
+    else if (IsInteger(src))                        type = TokenTypeEnum::T_INTEGER;
+    else if (IsDouble(src))                         type = TokenTypeEnum::T_DOUBLE;
+    else if (std::regex_match(src, kPatternSymbol)) type = TokenTypeEnum::T_SYMBOL;
+    else if (IsBlank(src))                          type = TokenTypeEnum::T_BLANK;
+    else if (IsString(src))                         type = TokenTypeEnum::T_STRING;
+    return type;
   }
 
   bool Kit::FindInStringGroup(string target, string source) {

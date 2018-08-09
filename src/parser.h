@@ -47,13 +47,16 @@ namespace kagami {
   const string kStrRightSelfInc = "rSelfInc";
   const string kStrRightSelfDec = "rSelfDec";
 
-  enum BasicGenToken {
-    NOP, DEF, REF, CODE_SUB, SUB, BINOP, IF, ELIF, END, ELSE, VAR,
-    SET, WHILE, FOR, LSELF_INC, LSELF_DEC, RSELF_INC, RSELF_DEC,
-    NUL
+  enum GenericTokenEnum {
+    BG_NOP, BG_DEF, BG_REF, BG_CODE_SUB, 
+    BG_SUB, BG_BINOP, BG_IF, BG_ELIF, 
+    BG_END, BG_ELSE, BG_VAR, BG_SET, 
+    BG_WHILE, BG_FOR, BG_LSELF_INC, BG_LSELF_DEC, 
+    BG_RSELF_INC, BG_RSELF_DEC,
+    BG_NUL
   };
 
-  enum BasicTokenValue {
+  enum BasicTokenEnum {
     TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT, 
     TOKEN_COLON, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_SQRBRACKET, TOKEN_RIGHT_BRACKET, 
     TOKEN_SELFOP, TOKEN_OTHERS
@@ -127,7 +130,7 @@ namespace kagami {
   parsed here.Processed data will be delivered to entry provider.
   */
   class Processor {
-    using Token = pair<string, size_t>;
+    using Token = pair<string, TokenTypeEnum>;
     bool                health;
     vector<Token>       origin;
     map<string, Object> lambdamap;
@@ -336,7 +339,7 @@ namespace kagami {
     ObjectManager       &GetCurrentManager();
     string              GetTypeId(string sign);
     void                Inject(ActivityTemplate temp);
-    void                LoadGenProvider(BasicGenToken token, ActivityTemplate temp);
+    void                LoadGenProvider(GenericTokenEnum token, ActivityTemplate temp);
     void                RemoveByTemplate(ActivityTemplate temp);
     Object              *FindObject(string name);
     ObjectManager       &CreateManager();

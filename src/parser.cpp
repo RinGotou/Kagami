@@ -26,49 +26,49 @@ namespace kagami {
   }
 
   namespace entry {
-    BasicGenToken GetGenericToken(string src) {
-      if (src == kStrNop)          return BasicGenToken::NOP;
-      if (src == kStrDef)          return BasicGenToken::DEF;
-      if (src == kStrRef)          return BasicGenToken::REF;
-      if (src == kStrCodeSub)      return BasicGenToken::CODE_SUB;
-      if (src == kStrSub)          return BasicGenToken::SUB;
-      if (src == kStrBinOp)        return BasicGenToken::BINOP;
-      if (src == kStrIf)           return BasicGenToken::IF;
-      if (src == kStrElif)         return BasicGenToken::ELIF;
-      if (src == kStrEnd)          return BasicGenToken::END;
-      if (src == kStrElse)         return BasicGenToken::ELSE;
-      if (src == kStrVar)          return BasicGenToken::VAR;
-      if (src == kStrSet)          return BasicGenToken::SET;
-      if (src == kStrWhile)        return BasicGenToken::WHILE;
-      if (src == kStrFor)          return BasicGenToken::FOR;
-      if (src == kStrLeftSelfInc)  return BasicGenToken::LSELF_INC;
-      if (src == kStrLeftSelfDec)  return BasicGenToken::LSELF_DEC;
-      if (src == kStrRightSelfInc) return BasicGenToken::RSELF_INC;
-      if (src == kStrRightSelfDec) return BasicGenToken::RSELF_DEC;
-      return BasicGenToken::NUL;
+    GenericTokenEnum GetGenericToken(string src) {
+      if (src == kStrNop)          return BG_NOP;
+      if (src == kStrDef)          return BG_DEF;
+      if (src == kStrRef)          return BG_REF;
+      if (src == kStrCodeSub)      return BG_CODE_SUB;
+      if (src == kStrSub)          return BG_SUB;
+      if (src == kStrBinOp)        return BG_BINOP;
+      if (src == kStrIf)           return BG_IF;
+      if (src == kStrElif)         return BG_ELIF;
+      if (src == kStrEnd)          return BG_END;
+      if (src == kStrElse)         return BG_ELSE;
+      if (src == kStrVar)          return BG_VAR;
+      if (src == kStrSet)          return BG_SET;
+      if (src == kStrWhile)        return BG_WHILE;
+      if (src == kStrFor)          return BG_FOR;
+      if (src == kStrLeftSelfInc)  return BG_LSELF_INC;
+      if (src == kStrLeftSelfDec)  return BG_LSELF_DEC;
+      if (src == kStrRightSelfInc) return BG_RSELF_INC;
+      if (src == kStrRightSelfDec) return BG_RSELF_DEC;
+      return BG_NUL;
     }
 
-    string GetGenTokenValue(BasicGenToken token) {
+    string GetGenTokenValue(GenericTokenEnum token) {
       string result;
       switch (token) {
-      case BasicGenToken::NOP:result       = kStrNop;                 break;
-      case BasicGenToken::DEF:result       = kStrDef;                 break;
-      case BasicGenToken::REF:result       = kStrRef;                 break;
-      case BasicGenToken::CODE_SUB:result  = kStrCodeSub;             break;
-      case BasicGenToken::SUB:result       = kStrSub;                 break;
-      case BasicGenToken::BINOP:result     = kStrBinOp;               break;
-      case BasicGenToken::IF:result        = kStrIf;                  break;
-      case BasicGenToken::ELIF:result      = kStrElif;                break;
-      case BasicGenToken::END:result       = kStrEnd;                 break;
-      case BasicGenToken::ELSE:result      = kStrElse;                break;
-      case BasicGenToken::VAR:result       = kStrVar;                 break;
-      case BasicGenToken::SET:result       = kStrSet;                 break;
-      case BasicGenToken::WHILE:result     = kStrWhile;               break;
-      case BasicGenToken::FOR:result       = kStrFor;                 break;
-      case BasicGenToken::LSELF_INC:result = kStrLeftSelfInc;         break;
-      case BasicGenToken::LSELF_DEC:result = kStrLeftSelfDec;         break;
-      case BasicGenToken::RSELF_INC:result = kStrRightSelfInc;        break;
-      case BasicGenToken::RSELF_DEC:result = kStrRightSelfDec;        break;
+      case BG_NOP:result       = kStrNop;                 break;
+      case BG_DEF:result       = kStrDef;                 break;
+      case BG_REF:result       = kStrRef;                 break;
+      case BG_CODE_SUB:result  = kStrCodeSub;             break;
+      case BG_SUB:result       = kStrSub;                 break;
+      case BG_BINOP:result     = kStrBinOp;               break;
+      case BG_IF:result        = kStrIf;                  break;
+      case BG_ELIF:result      = kStrElif;                break;
+      case BG_END:result       = kStrEnd;                 break;
+      case BG_ELSE:result      = kStrElse;                break;
+      case BG_VAR:result       = kStrVar;                 break;
+      case BG_SET:result       = kStrSet;                 break;
+      case BG_WHILE:result     = kStrWhile;               break;
+      case BG_FOR:result       = kStrFor;                 break;
+      case BG_LSELF_INC:result = kStrLeftSelfInc;         break;
+      case BG_LSELF_DEC:result = kStrLeftSelfDec;         break;
+      case BG_RSELF_INC:result = kStrRightSelfInc;        break;
+      case BG_RSELF_DEC:result = kStrRightSelfDec;        break;
       }
       return result;
     }
@@ -95,8 +95,8 @@ namespace kagami {
       return base;
     }
 
-    map<BasicGenToken, EntryProvider> &GetGenProviderBase() {
-      static map<BasicGenToken, EntryProvider> base;
+    map<GenericTokenEnum, EntryProvider> &GetGenProviderBase() {
+      static map<GenericTokenEnum, EntryProvider> base;
       return base;
     }
 
@@ -104,21 +104,21 @@ namespace kagami {
       GetEntryBase().emplace_back(EntryProvider(temp));
     }
 
-    void LoadGenProvider(BasicGenToken token, ActivityTemplate temp) {
-      GetGenProviderBase().insert(pair<BasicGenToken, EntryProvider>(
+    void LoadGenProvider(GenericTokenEnum token, ActivityTemplate temp) {
+      GetGenProviderBase().insert(pair<GenericTokenEnum, EntryProvider>(
         token, EntryProvider(temp)));
     }
 
-    EntryProvider GetGenericProvider(BasicGenToken token) {
+    EntryProvider GetGenericProvider(GenericTokenEnum token) {
       auto &base = GetGenProviderBase();
-      map<BasicGenToken, EntryProvider>::iterator it = base.find(token);
+      map<GenericTokenEnum, EntryProvider>::iterator it = base.find(token);
       if (it != base.end()) return it->second;
       return EntryProvider();
     }
 
     EntryProvider Order(string id,string type = kTypeIdNull,int size = -1) {
-      BasicGenToken basicOpCode = GetGenericToken(id);
-      if (basicOpCode != BasicGenToken::NUL) {
+      GenericTokenEnum basicOpCode = GetGenericToken(id);
+      if (basicOpCode != BG_NUL) {
         return GetGenericProvider(basicOpCode);
       }
 
@@ -157,7 +157,7 @@ namespace kagami {
     }
   }
 
-  BasicTokenValue GetBasicToken(string src) {
+  BasicTokenEnum GetBasicToken(string src) {
     if (src == "=")   return TOKEN_EQUAL;
     if (src == ",")   return TOKEN_COMMA;
     if (src == "[")   return TOKEN_LEFT_SQRBRACKET;
@@ -388,13 +388,13 @@ namespace kagami {
       processor.Build(buf);
       auto tokenValue = entry::GetGenericToken(processor.GetFirstToken().first);
       switch (tokenValue) {
-      case BasicGenToken::IF:
-      case BasicGenToken::WHILE:
-      case BasicGenToken::FOR:
+      case BG_IF:
+      case BG_WHILE:
+      case BG_FOR:
         subProcess = true;
         head = kStrDotGroup;
         break;
-      case BasicGenToken::END:
+      case BG_END:
         subProcess = false;
         storage.emplace_back(processor);
         head = kStrNormalArrow;
@@ -402,7 +402,7 @@ namespace kagami {
         storage.clear();
         current = 0;
         break;
-      case BasicGenToken::DEF:
+      case BG_DEF:
         //
         break;
       default:
@@ -443,8 +443,8 @@ namespace kagami {
     symbol.clear();
     for (size_t count = 0; count < target.size(); ++count) {
       currentChar = target[count];
-      if (kit.GetDataType(toString(currentChar)) != kTypeBlank
-        && exemptBlankChar) {
+      auto type = kit.GetTokenType(toString(currentChar));
+      if (type != TokenTypeEnum::T_BLANK && exemptBlankChar) {
         head = count;
         exemptBlankChar = false;
       }
@@ -459,26 +459,28 @@ namespace kagami {
     if (tail > head) data = target.substr(head, tail - head);
     else data = target.substr(head, target.size() - head);
 
-    while (kit.GetDataType(toString(data.back())) == kTypeBlank) data.pop_back();
-    
+    while (kit.GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
+      data.pop_back();
+    }
+      
     //Spilt
     forwardChar = 0;
     for (size_t count = 0; count < data.size(); ++count) {
       currentChar = data[count];
       if (currentChar == '\'' && forwardChar != '\\') {
-        if (kit.GetDataType(current) == kTypeBlank) {
+        if (kit.GetTokenType(current) == TokenTypeEnum::T_BLANK) {
           current.clear();
         }
         stringProcessing = !stringProcessing;
       }
       current.append(1, currentChar);
-      if (kit.GetDataType(current) != kTypeNull) {
+      if (kit.GetTokenType(current) != TokenTypeEnum::T_NUL) {
         forwardChar = data[count];
         continue;
       }
       else {
         current = current.substr(0, current.size() - 1);
-        if (kit.GetDataType(current) == kTypeBlank) {
+        if (kit.GetTokenType(current) == TokenTypeEnum::T_BLANK) {
           if (stringProcessing) origin.emplace_back(current);
           current.clear();
           current.append(1, currentChar);
@@ -492,8 +494,14 @@ namespace kagami {
       forwardChar = data[count];
     }
 
-    const auto type = kit.GetDataType(current);
-    if (type != kTypeNull && type != kTypeBlank) origin.emplace_back(current);
+    switch (kit.GetTokenType(current)) {
+    case TokenTypeEnum::T_NUL:
+    case TokenTypeEnum::T_BLANK:
+      break;
+    default:
+      origin.emplace_back(current);
+      break;
+    }
     current.clear();
 
     //third cycle
@@ -513,7 +521,9 @@ namespace kagami {
         if (current == "(" || current == "[") nest++;
         if (current == ")" || current == "]") nest--;
         if (current == "[") {
-          if (kit.GetDataType(forward) != kGenericToken && forward != "]" && forward != ")") {
+          if (kit.GetTokenType(forward) != TokenTypeEnum::T_GENERIC 
+            && forward != "]" 
+            && forward != ")") {
             errorString = "Illegal subscript operation.";
             nest = 0;
             health = false;
@@ -521,7 +531,7 @@ namespace kagami {
           }
         }
         if (current == ",") {
-          if (kit.GetDataType(forward) == kTypeSymbol &&
+          if (kit.GetTokenType(forward) == TokenTypeEnum::T_SYMBOL &&
             forward != "]" && forward != ")" &&
             forward != "++" && forward != "--" &&
             forward != "'") {
@@ -589,7 +599,7 @@ namespace kagami {
       for (auto &unit : output) {
         Token token;
         token.first = unit;
-        token.second = kit.GetDataType(unit);
+        token.second = kit.GetTokenType(unit);
         this->origin.push_back(token);
       }
     }
@@ -741,7 +751,7 @@ namespace kagami {
         }
         
         switch (tokens[count].second) {
-        case kGenericToken:
+        case TokenTypeEnum::T_GENERIC:
           if (args[count].front() == '&') {
             origin = GetObj(tokens[count].first);
             temp.Ref(*origin);
@@ -749,7 +759,7 @@ namespace kagami {
           else if (args[count].front() == '%') {
             temp.Manage(tokens[count].first)
                 .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
-                .SetTokenType(kGenericToken);
+                .SetTokenType(TokenTypeEnum::T_GENERIC);
           }
           else {
             auto ptr = GetObj(tokens[count].first);
@@ -778,7 +788,7 @@ namespace kagami {
         map.insert(Parameter(kStrCodeSub,Object()
            .Manage(sub)
            .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
-           .SetTokenType(kTypeInteger)));
+           .SetTokenType(TokenTypeEnum::T_INTEGER)));
       }
 
       switch (priority) {
@@ -786,7 +796,7 @@ namespace kagami {
         map.insert(Parameter(kStrOperator, Object()
            .Manage(symbol.back().first)
            .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
-           .SetTokenType(kTypeSymbol)));
+           .SetTokenType(TokenTypeEnum::T_SYMBOL)));
         break;
       case kFlagMethod:
         origin = GetObj(item.back().first);
@@ -829,12 +839,12 @@ namespace kagami {
       if (code == kCodeObject) {
         temp = msg.GetObj();
         auto tempId = detail + to_string(lambdaObjectCount); //detail start with "__"
-        item.emplace_back(Token(tempId, kGenericToken));
+        item.emplace_back(Token(tempId, TokenTypeEnum::T_GENERIC));
         lambdamap.insert(Parameter(tempId, temp));
         ++lambdaObjectCount;
       }
       else if (value == kStrRedirect && (code == kCodeSuccess || code == kCodeFillingSign)) {
-        item.emplace_back(Token(detail, kit.GetDataType(detail)));
+        item.emplace_back(Token(detail, kit.GetTokenType(detail)));
       }
 
       health = (value != kStrFatalError && value != kStrWarning);
@@ -862,7 +872,7 @@ namespace kagami {
       disableSetEntry = true;
     }
     if (disableSetEntry) {
-      symbol.emplace_back(Token(kStrVar,kGenericToken));
+      symbol.emplace_back(Token(kStrVar,TokenTypeEnum::T_GENERIC));
       item.emplace_back(currentToken);
     }
   }
@@ -874,8 +884,8 @@ namespace kagami {
       result = false;
     }
     else {
-      if(forwardToken.second != kGenericToken) {
-        symbol.emplace_back(Token(kStrNop,kGenericToken));
+      if(forwardToken.second != TokenTypeEnum::T_GENERIC) {
+        symbol.emplace_back(Token(kStrNop,TokenTypeEnum::T_GENERIC));
       }
       symbol.emplace_back(currentToken);
       item.emplace_back(currentToken);
@@ -931,8 +941,8 @@ namespace kagami {
       if (item.back().first == "[") item.pop_back();
       if (!container.empty()) {
         switch (container.size()) {
-        case 1:symbol.emplace_back(Token("at:" + operatorTargetType + "|1",kGenericToken)); break;
-        case 2:symbol.emplace_back(Token("at:" + operatorTargetType + "|2", kGenericToken)); break;
+        case 1:symbol.emplace_back(Token("at:" + operatorTargetType + "|1",TokenTypeEnum::T_GENERIC)); break;
+        case 2:symbol.emplace_back(Token("at:" + operatorTargetType + "|2", TokenTypeEnum::T_GENERIC)); break;
         default:break;
         }
 
@@ -987,7 +997,7 @@ namespace kagami {
       if (kit.FindInStringGroup(currentToken.first, type::GetTemplate(id)->GetMethods())) {
         auto provider = entry::Order(currentToken.first, id);
         if (provider.Good()) {
-          symbol.emplace_back(Token(currentToken.first + ':' + id, kGenericToken));
+          symbol.emplace_back(Token(currentToken.first + ':' + id, TokenTypeEnum::T_GENERIC));
           function = true;
         }
         else {
@@ -1057,7 +1067,7 @@ namespace kagami {
 
   void Processor::FinalProcessing(Message &msg) {
     if (symbol.empty() && !item.empty()) {
-      if (item.back().second == kGenericToken) {
+      if (item.back().second == TokenTypeEnum::T_GENERIC) {
         msg.combo(kStrFatalError, kCodeIllegalCall, "Unrecognized token.");
       }
     }
@@ -1073,17 +1083,17 @@ namespace kagami {
   bool Processor::SelfOperator(Message &msg) {
     using entry::OperatorCode;
     auto OPValue = entry::GetOperatorCode(currentToken.first);
-    if (forwardToken.second != kGenericToken) {
+    if (forwardToken.second != TokenTypeEnum::T_GENERIC) {
       switch (OPValue) {
-      case OperatorCode::SELFINC:symbol.emplace_back(kStrLeftSelfInc, kGenericToken); break;
-      case OperatorCode::SELFDEC:symbol.emplace_back(kStrLeftSelfDec, kGenericToken); break;
+      case OperatorCode::SELFINC:symbol.emplace_back(kStrLeftSelfInc, TokenTypeEnum::T_GENERIC); break;
+      case OperatorCode::SELFDEC:symbol.emplace_back(kStrLeftSelfDec, TokenTypeEnum::T_GENERIC); break;
       default:break;
       }
     }
     else {
       switch (OPValue) {
-      case OperatorCode::SELFINC:symbol.emplace_back(kStrRightSelfInc, kGenericToken); break;
-      case OperatorCode::SELFDEC:symbol.emplace_back(kStrRightSelfDec, kGenericToken); break;
+      case OperatorCode::SELFINC:symbol.emplace_back(kStrRightSelfInc, TokenTypeEnum::T_GENERIC); break;
+      case OperatorCode::SELFDEC:symbol.emplace_back(kStrRightSelfDec, TokenTypeEnum::T_GENERIC); break;
       }
     }
     return true;
@@ -1125,13 +1135,15 @@ namespace kagami {
       if (!state)  break;
 
       currentToken = origin[i];
-      i < size - 1 ? nextToken = origin[i + 1] : nextToken = Token(kStrNull, kTypeNull);
+      i < size - 1 ? 
+        nextToken = origin[i + 1] : 
+        nextToken = Token(kStrNull, TokenTypeEnum::T_NUL);
 
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
-      const auto tokenType  = currentToken.second;
+      const auto TokenTypeEnum  = currentToken.second;
       const auto tokenValue = currentToken.first;
-      if (tokenType == kTypeSymbol) {
-        BasicTokenValue value = GetBasicToken(tokenValue);
+      if (TokenTypeEnum == TokenTypeEnum::T_SYMBOL) {
+        BasicTokenEnum value = GetBasicToken(tokenValue);
         switch (value) {
         case TOKEN_EQUAL:           EqualMark(); break;
         case TOKEN_COMMA:           Comma(); break;
@@ -1146,8 +1158,8 @@ namespace kagami {
         default:break;
         }
       }
-      else if (tokenType == kGenericToken) state = FunctionAndObject(result);
-      else if (tokenType == kTypeNull) {
+      else if (TokenTypeEnum == TokenTypeEnum::T_GENERIC) state = FunctionAndObject(result);
+      else if (TokenTypeEnum == TokenTypeEnum::T_NUL) {
         result.combo(kStrFatalError, kCodeIllegalParm, "Illegal token.");
         state = false;
       }

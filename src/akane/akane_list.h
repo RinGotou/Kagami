@@ -1,4 +1,6 @@
 #pragma once
+#include "akane_util.h"
+
 namespace akane {
     //Node class for linked list
   template <class T>
