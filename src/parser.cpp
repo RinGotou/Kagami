@@ -422,7 +422,6 @@ namespace kagami {
     }
 
     entry::DisposeManager();
-    entry::ResetPlugin();
   }
 
   Processor &Processor::Build(string target) {

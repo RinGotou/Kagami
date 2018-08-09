@@ -48,6 +48,11 @@ namespace kagami {
     return true;
   }
 
+  TokenType Kit::GetTokenType(string src) {
+
+    return TokenType::NUL;
+  }
+
   size_t Kit::GetDataType(string target) {
     using std::regex_match;
     size_t result;
