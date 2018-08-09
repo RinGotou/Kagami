@@ -1,5 +1,7 @@
 #pragma once
 #include <cstddef>
+#include <cstring>
+
 namespace akane {
   using std::size_t;
   extern size_t strlen(const char *str);
