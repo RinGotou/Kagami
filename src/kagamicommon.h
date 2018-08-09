@@ -89,20 +89,20 @@ namespace kagami {
   const int kFlagOperatorEntry  = 2;
   const int kFlagMethod         = 3;
 
-  enum TokenType {
-    GENERICTOKEN, STRING, INTEGER, DOUBLE, 
-    BOOLEAN, SYMBOL, BLANK, CHAR, NUL
+  enum TokenTypeEnum {
+    T_GENERIC, T_STRING, T_INTEGER, T_DOUBLE,
+    T_BOOLEAN, T_SYMBOL, T_BLANK, T_CHAR, T_NUL
   };
 
-  const size_t kGenericToken    = 0;
-  const size_t kTypeString      = 1;
-  const size_t kTypeInteger     = 2;
-  const size_t kTypeDouble      = 3;
-  const size_t kTypeBoolean     = 4;
-  const size_t kTypeSymbol      = 5;
-  const size_t kTypeBlank       = 6;
-  const size_t kTypeChar        = 7;
-  const size_t kTypeNull        = 100;
+  //const size_t kGenericToken    = 0;
+  //const size_t kTypeString      = 1;
+  //const size_t kTypeInteger     = 2;
+  //const size_t kTypeDouble      = 3;
+  //const size_t kTypeBoolean     = 4;
+  //const size_t kTypeSymbol      = 5;
+  //const size_t kTypeBlank       = 6;
+  //const size_t kTypeChar        = 7;
+  //const size_t kTypeNull        = 100;
 
   const string kTypeIdNull      = "null";
   const string kTypeIdInt       = "int";
@@ -307,8 +307,7 @@ namespace kagami {
     static bool IsInteger(string target);
     static bool IsDouble(string target);
     static bool IsBlank(string target);
-    static TokenType GetTokenType(string target);
-    static size_t GetDataType(string target);
+    static TokenTypeEnum GetTokenType(string target);
     bool FindInStringGroup(string target, string source);
     static vector<string> BuildStringVector(string source);
     static char ConvertChar(char target);
@@ -327,7 +326,7 @@ namespace kagami {
     std::shared_ptr<void> ptr;
     string option;
     string methods;
-    size_t tokenType;
+    TokenTypeEnum tokenTypeEnum;
     bool ro;
     bool permanent;
   public:
@@ -336,7 +335,7 @@ namespace kagami {
       //so this will hold a specific value intead of nullptr
       ptr = nullptr;
       option = kTypeIdNull;
-      tokenType = kTypeNull;
+      tokenTypeEnum = TokenTypeEnum::T_NUL;
       ro = false;
       permanent = false;
     }
@@ -407,13 +406,13 @@ namespace kagami {
       this->methods = methods;
       return *this;
     }
-    Object &SetTokenType(size_t tokenType) {
+    Object &SetTokenType(TokenTypeEnum tokenTypeEnum) {
       if (option == kTypeIdRef) {
         return static_pointer_cast<TargetObject>(ptr)
           ->ptr
-          ->SetTokenType(tokenType);
+          ->SetTokenType(tokenTypeEnum);
       }
-      this->tokenType = tokenType;
+      this->tokenTypeEnum = tokenTypeEnum;
       return *this;
     }
     Object &SetRo(bool ro) {
@@ -437,13 +436,13 @@ namespace kagami {
       }
       return methods;
     }
-    size_t GetTokenType() const {
+    TokenTypeEnum GetTokenType() const {
       if (option == kTypeIdRef) {
         return static_pointer_cast<TargetObject>(ptr)
           ->ptr
           ->GetTokenType();
       }
-      return tokenType;
+      return tokenTypeEnum;
     }
     bool IsRo() const {
       if (option == kTypeIdRef) {
@@ -460,7 +459,7 @@ namespace kagami {
       ptr = make_shared<int>(0);
       option = kTypeIdNull;
       methods.clear();
-      tokenType = kTypeNull;
+      tokenTypeEnum = TokenTypeEnum::T_NUL;
       ro = false;
       permanent = false;
     }
@@ -471,21 +470,21 @@ namespace kagami {
       return (ptr == object.ptr &&
         option == object.option &&
         methods == object.methods &&
-        tokenType == object.tokenType &&
+        tokenTypeEnum == object.tokenTypeEnum &&
         ro == object.ro);
     }
     bool operator!=(Object &object) const {
       return (ptr != object.ptr &&
         option != object.option &&
         methods != object.methods &&
-        tokenType != object.tokenType &&
+        tokenTypeEnum != object.tokenTypeEnum &&
         ro != object.ro);
     }
     Object &Copy(Object &object) {
       ptr = object.ptr;
       option = object.option;
       methods = object.methods;
-      tokenType = object.tokenType;
+      tokenTypeEnum = object.tokenTypeEnum;
       ro = object.ro;
       return *this;
     }
@@ -493,7 +492,7 @@ namespace kagami {
       ptr = object.ptr;
       option = object.option;
       methods = object.methods;
-      tokenType = object.tokenType;
+      tokenTypeEnum = object.tokenTypeEnum;
       ro = object.ro;
       return *this;
     }
