@@ -1,16 +1,17 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #define _ENABLE_FASTRING_
-#include "akane/akane.h"
+#include "suzu.akane/akane.h"
 #include <stack>
 #include <fstream>
+#include <cstddef>
 #include "kagamicommon.h"
 #if defined(_WIN32)
 #include "windows.h"
 #define WIN32_LEAN_AND_MEAN
 #else
+#include <dlfcn.h>
 #endif
-//#define _NO_CUI_
 
 namespace kagami {
   using std::ifstream;
@@ -20,7 +21,9 @@ namespace kagami {
   using std::stoi;
   using std::stof;
   using std::stod;
+  using std::size_t;
   using akane::list;
+
 
   const string kStrNormalArrow = ">>>";
   const string kStrDotGroup    = "...";
@@ -327,23 +330,6 @@ namespace kagami {
 
     OperatorCode GetOperatorCode(string src);
 
-#if defined(_WIN32)
-    //Windows Verison
-    class Instance : public pair<string, HINSTANCE> {
-      bool health;
-      vector<ActivityTemplate> actTemp;
-    public:
-      Instance() { health = false; }
-      bool Load(string name, HINSTANCE h);
-      bool GetHealth()                  const { return health; }
-      vector<ActivityTemplate> GetMap() const { return actTemp; }
-      CastAttachment GetObjTemplate()   const { return CastAttachment(GetProcAddress(this->second, "CastAttachment")); }
-      MemoryDeleter GetDeleter()        const { return MemoryDeleter(GetProcAddress(this->second, "FreeMemory")); }
-    };
-    size_t ResetPlugin();
-#else
-    //Linux Version
-#endif
     using EntryMapUnit = map<string, EntryProvider>::value_type;
 
     list<ObjectManager> &GetObjectStack();

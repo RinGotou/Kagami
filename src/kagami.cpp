@@ -5,7 +5,6 @@
 #endif
 
 namespace kagami {
-  
   void ScriptCore::PrintEvents() {
     using namespace trace;
     ofstream ofs("event.log", std::ios::trunc);
@@ -42,9 +41,6 @@ namespace kagami {
     }
     Activiate();
     machine.Run();
-#if defined(_WIN32)
-    entry::ResetPlugin();
-#endif
     return result;
   }
 
@@ -64,24 +60,24 @@ namespace kagami {
 #endif
 }
 
-#ifndef _NO_CUI_
-void AtExitHandler() {
-  std::cout << "Press enter to close..." << std::endl;
-  std::cin.get();
-}
-#endif
+//#ifndef _NO_CUI_
+//void AtExitHandler() {
+//  std::cout << "Press enter to close..." << std::endl;
+//  std::cin.get();
+//}
+//#endif
 
 int main(int argc, char **argv) {
   kagami::ScriptCore scriptCore;
   
+  //switch main code between test case and normal case.
+  //this macro can be found in the head of this file.
 #ifdef _ENABLE_DEBUGGING_
   auto &base = kagami::entry::GetObjectStack();
   scriptCore.ExecScriptFile("C:\\workspace\\ErrorTest.kagami");
   atexit(AtExitHandler);
 #else
 #ifndef _NO_CUI_
-  //atexit(AtExitHandler);
-
   if (argc > 1) {
     scriptCore.ExecScriptFile(argv[1]);
   }

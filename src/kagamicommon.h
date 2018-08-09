@@ -6,6 +6,7 @@
 #include <map>
 #include <deque>
 #include <regex>
+#include <cstddef>
 
 namespace kagami {
   using std::string;
@@ -20,21 +21,18 @@ namespace kagami {
   using std::shared_ptr;
   using std::static_pointer_cast;
   using std::make_shared;
+  using std::size_t;
 
   struct ActivityTemplate;
   class Message;
   class ObjTemplate;
   class Object;
 
-  using ObjectMap      = map<string, Object>;
-  using Parameter      = pair<string, Object>;
-  using CopyCreator    = shared_ptr<void>(*)(shared_ptr<void>);
-  using CastFunc       = pair<string, CopyCreator>;
-  using Activity       = Message(*)(ObjectMap &);
-  using CastAttachment = map<string, ObjTemplate> *(*)();
-  //using MemoryDeleter  = int(*)(void *);
-  using MemoryDeleter  = int(*)(void *, int);
-  using Attachment     = vector<ActivityTemplate> * (*)();
+  using ObjectMap = map<string, Object>;
+  using Parameter = pair<string, Object>;
+  using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
+  using CastFunc = pair<string, CopyCreator>;
+  using Activity = Message(*)(ObjectMap &);
 
 #if defined(_WIN32)
   const string kEngineVersion = "0.7";
@@ -91,6 +89,11 @@ namespace kagami {
   const int kFlagOperatorEntry  = 2;
   const int kFlagMethod         = 3;
 
+  enum TokenType {
+    GENERICTOKEN, STRING, INTEGER, DOUBLE, 
+    BOOLEAN, SYMBOL, BLANK, CHAR, NUL
+  };
+
   const size_t kGenericToken    = 0;
   const size_t kTypeString      = 1;
   const size_t kTypeInteger     = 2;
@@ -114,12 +117,6 @@ namespace kagami {
   const size_t kModeCycleJump     = 3;
   const size_t kModeCondition     = 4;
 
-  //const regex kPatternGenericToken(R"([a-zA-Z_][a-zA-Z_0-9]*)");
-  //const regex kPatternNumber(R"(\d+\.?\d*)");
-  //const regex kPatternInteger(R"([-]?\d+)");
-  //const regex kPatternDouble(R"([-]?\d+\.\d+)");
-  //const regex kPatternBoolean(R"(\btrue\b|\bfalse\b)");
-  //const regex kPatternBlank(R"([[:blank:]])");
   const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
 
   /*Activity Template class
@@ -310,6 +307,7 @@ namespace kagami {
     static bool IsInteger(string target);
     static bool IsDouble(string target);
     static bool IsBlank(string target);
+    static TokenType GetTokenType(string target);
     static size_t GetDataType(string target);
     bool FindInStringGroup(string target, string source);
     static vector<string> BuildStringVector(string source);

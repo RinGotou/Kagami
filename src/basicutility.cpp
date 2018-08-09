@@ -43,13 +43,6 @@ namespace kagami {
   }
 
   namespace entry {
-#if defined(_WIN32)
-    vector<Instance> &GetInstanceList() {
-      static vector<Instance> base;
-      return base;
-    }
-#endif
-
     list<ObjectManager> &GetObjectStack() {
       static list<ObjectManager> base;
       return base;
@@ -127,95 +120,6 @@ namespace kagami {
       return GetObjectStack().empty();
     } 
 
-#if defined(_WIN32)
-    bool Instance::Load(string name, HINSTANCE h) {
-      this->first  = name;
-      this->second = h;
-
-      const auto attachment = Attachment(GetProcAddress(this->second, "Attachment"));
-      const auto deleter    = this->GetDeleter();
-      if (attachment != nullptr) {
-        const auto ptr = attachment();
-        actTemp = *ptr;
-        deleter(ptr, 1);
-        health = true;
-      }
-      else {
-        health = false;
-      }
-
-      return health;
-    }
-
-    void AddInstance(const string name, const HINSTANCE h) {
-      auto &base = GetInstanceList();
-      base.push_back(Instance());
-      base.back().Load(name, h);
-
-      if (base.back().GetHealth()) {
-        auto &ins = base.back().second;
-        auto temp = base.back().GetMap();
-        const auto castAttachment = CastAttachment(GetProcAddress(ins, "CastAttachment"));
-
-        for (auto &unit : temp) {
-          Inject(unit);
-        }
-        if (castAttachment != nullptr) {
-          const auto objtemps = castAttachment();
-          for (auto &unit : *objtemps) {
-            type::AddTemplate(unit.first, unit.second);
-          }
-        }
-      }
-    }
-
-    void UnloadInstance(const string name) {
-      HINSTANCE *hinstance              = nullptr;
-      map<string, ObjTemplate> *objTemp = nullptr;
-      auto &instanceList                = GetInstanceList();
-
-      auto instanceI = instanceList.begin();
-      while (instanceI != instanceList.end()) {
-        if (instanceI->first == name) break;
-        ++instanceI;
-      }
-      if (instanceI == instanceList.end() && instanceI->first != name) {
-        trace::Log(Message(kStrWarning, kCodeIllegalCall, "Instance is not found, is it loaded?"));
-        return;
-      }
-
-      if (instanceI->GetHealth() == true) {
-        hinstance                 = &(instanceI->second);
-        const auto castAttachment = instanceI->GetObjTemplate();
-        const auto deleter        = instanceI->GetDeleter();
-        //delete entries
-        auto actTemp              = instanceI->GetMap();
-        for (auto unit : actTemp) {
-          RemoveByTemplate(unit);
-        }
-        //delete object templates
-        if (castAttachment != nullptr) {
-          objTemp = castAttachment();
-          for (auto &unit : *objTemp) {
-            type::DisposeTemplate(unit.first);
-          }
-        }
-        //delete memory
-        deleter(objTemp, 2);
-      }
-      FreeLibrary(*hinstance);
-      instanceList.erase(instanceI);
-    }
-
-    size_t ResetPlugin() {
-      auto &base  = GetInstanceList();
-      size_t count = 0;
-      while (!base.empty()) {
-        UnloadInstance(base.back().first);
-        count++;
-      }
-      return count;
-    }
 
     //from MSDN
     std::wstring s2ws(const std::string& s) {
@@ -227,9 +131,6 @@ namespace kagami {
       delete[] buf;
       return r;
     }
-#else
-    //Linux Version
-#endif
   }
 
   Message WriteLog(ObjectMap &p) {
@@ -565,31 +466,6 @@ namespace kagami {
     return result;
   }
 
-//plugin init code for Windows/Linux
-#if defined(_WIN32)
-  //Windows Version
-  Message LoadPlugin(ObjectMap &p) {
-    using namespace entry;
-    const auto path = CastToString(p["path"].Get());
-    Message result;
-    auto wpath = s2ws(Kit().GetRawString(path));
-
-#if defined(__clang__)
-    auto hinstance = LoadLibrary(path.c_str());
-#else
-    auto hinstance = LoadLibrary(wpath.c_str());
-#endif
-    if (hinstance != nullptr) {
-      AddInstance(path, hinstance);
-    }
-    else {
-      result.combo(kStrWarning, kCodeIllegalCall, "Plugin not found.");
-    }
-    return result;
-  }
-#else
-  //Linux Version
-#endif
   Message VersionInfo(ObjectMap &p) {
     return Message(kStrRedirect, kCodeSuccess, "'" + kEngineVersion + "'");
   }
@@ -675,10 +551,6 @@ namespace kagami {
     Inject(T("platform", PlatformInfo, kFlagNormalEntry, kCodeNormalParm, ""));
     Inject(T("codename", InsideNameInfo, kFlagNormalEntry, kCodeNormalParm, ""));
     Inject(T("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
-#if defined(_WIN32)
-    Inject(T("plugin", LoadPlugin, kFlagNormalEntry, kCodeNormalParm, "path"));
-#else
     //Linux Version
-#endif
   }
 }
