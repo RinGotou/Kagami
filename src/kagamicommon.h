@@ -34,9 +34,9 @@ namespace kagami {
   using CastFunc = pair<string, CopyCreator>;
   using Activity = Message(*)(ObjectMap &);
 
-#if defined(_WIN32)
   const string kEngineVersion = "0.7";
   const string kInsideName = "Clover";
+#if defined(_WIN32)
   const string kPlatformType = "Windows";
 #else
   const string kPlatformType = "Linux";

@@ -120,7 +120,7 @@ namespace kagami {
       return GetObjectStack().empty();
     } 
 
-
+#if defined(_WIN32)
     //from MSDN
     std::wstring s2ws(const std::string& s) {
       const auto slength = static_cast<int>(s.length()) + 1;
@@ -131,7 +131,9 @@ namespace kagami {
       delete[] buf;
       return r;
     }
+#endif
   }
+
 
   Message WriteLog(ObjectMap &p) {
     Kit kit;
@@ -466,18 +468,6 @@ namespace kagami {
     return result;
   }
 
-  Message VersionInfo(ObjectMap &p) {
-    return Message(kStrRedirect, kCodeSuccess, "'" + kEngineVersion + "'");
-  }
-
-  Message PlatformInfo(ObjectMap &p) {
-    return Message(kStrRedirect, kCodeSuccess, "'" + kPlatformType + "'");
-  }
-
-  Message InsideNameInfo(ObjectMap &p) {
-    return Message(kStrRedirect, kCodeSuccess, "'" + kInsideName + "'");
-  }
-
   Message Print(ObjectMap &p) {
     Kit kit;
     Message result;
@@ -547,9 +537,6 @@ namespace kagami {
     Inject(T("log", WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
     Inject(T("print", Print, kFlagNormalEntry, kCodeNormalParm, "object"));
     Inject(T("time", TimeReport, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T("version", VersionInfo, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T("platform", PlatformInfo, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T("codename", InsideNameInfo, kFlagNormalEntry, kCodeNormalParm, ""));
     Inject(T("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
     //Linux Version
   }
