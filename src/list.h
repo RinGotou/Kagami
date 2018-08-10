@@ -151,7 +151,7 @@ namespace kagami {
     }
 
     T &at(size_t pos) {
-      auto node = idxBase.at(pos);
+      auto &node = idxBase.at(pos);
       return node->data;
     }
 
