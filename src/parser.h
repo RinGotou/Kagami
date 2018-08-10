@@ -1,10 +1,9 @@
 #pragma once
 #pragma execution_character_set("utf-8")
 #define _ENABLE_FASTRING_
-#include "suzu.akane/akane.h"
+#include "list.h" 
 #include <stack>
 #include <fstream>
-#include <cstddef>
 #include "kagamicommon.h"
 #if defined(_WIN32)
 #include "windows.h"
@@ -21,9 +20,6 @@ namespace kagami {
   using std::stoi;
   using std::stof;
   using std::stod;
-  using std::size_t;
-  using akane::list;
-
 
   const string kStrNormalArrow = ">>>";
   const string kStrDotGroup    = "...";
