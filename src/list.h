@@ -1,6 +1,8 @@
 #pragma once
-namespace akane {
-    //Node class for linked list
+#include <cstddef>
+#include <deque>
+
+namespace kagami {
   template <class T>
   class sl_node {
   public:
@@ -18,7 +20,6 @@ namespace akane {
     ref_blk() : count(1) {}
   };
 
-  //Simple linked list base with refenrence count.
   template <class T>
   class list {
     using _DataNode = sl_node<T>;
@@ -26,6 +27,7 @@ namespace akane {
     size_t count;
     _DataNode *root;
     _DataNode *tail;
+    std::deque<_DataNode *> idxBase;
     bool health;
   public:
     list() : root(nullptr), 
@@ -39,6 +41,7 @@ namespace akane {
     tail(lst.tail) {
       blk->count++;
       this->health = lst.health;
+      this->idxBase = lst.idxBase;
     }
 
     ~list() {
@@ -58,6 +61,7 @@ namespace akane {
           delete root;
         }
       }
+      idxBase.clear();
     }
 
     list &operator=(list &lst) {
@@ -71,6 +75,7 @@ namespace akane {
       root = lst.root;
       tail = lst.tail;
       health = lst.health;
+      idxBase = lst.idxBase;
       return *this;
     }
 
@@ -79,6 +84,7 @@ namespace akane {
         root = new _DataNode(t);
         if (root == nullptr) health = false;
         tail = root;
+        idxBase.push_back(root);
       }
       else {
         tail->next = new _DataNode(t);
@@ -86,6 +92,7 @@ namespace akane {
         if (tail->next != nullptr) {
           tail = tail->next;
           tail->next = nullptr;
+          idxBase.push_back(tail);
         }
         else health = false;
       }
@@ -108,12 +115,13 @@ namespace akane {
         tail = nullptr;
         count = 0;
       }
+      idxBase.pop_back();
     }
 
     void push_front(T t) {
       if (root == nullptr) {
         root = new _DataNode(t);
-        if (root == nullptr) health = false;
+        if (root == nullptr) return;
         tail = root;
       }
       else {
@@ -122,6 +130,7 @@ namespace akane {
         ptr->next = root;
         root = ptr;
       }
+      idxBase.push_front(root);
       ++count;
     }
 
@@ -137,17 +146,13 @@ namespace akane {
         root = root->next;
         delete ptr;
       }
+      idxBase.pop_front();
       --count;
     }
 
     T &at(size_t pos) {
-      size_t sub = 0;
-      _DataNode *ptr = root;
-      while (sub < pos) {
-        ++sub;
-        ptr = ptr->next;
-      }
-      return ptr->data;
+      auto &node = idxBase.at(pos);
+      return node->data;
     }
 
     void clear() {
@@ -168,6 +173,7 @@ namespace akane {
         tail = nullptr;
       }
       count = 0;
+      idxBase.clear();
     }
 
     void replace(size_t pos, T t) {
@@ -198,6 +204,7 @@ namespace akane {
       if (empty()) return;
       size_t sub = 0;
       _DataNode *ptr = root, *forward = nullptr;
+      idxBase.erase(idxBase.begin() + pos);
       while (sub < pos) {
         ++sub;
         forward = ptr;
@@ -213,6 +220,7 @@ namespace akane {
         tail->next = new _DataNode(t);
         ++count;
         tail = tail->next;
+        idxBase.push_back(tail);
       }
       else {
         size_t sub = 0;
@@ -226,6 +234,7 @@ namespace akane {
         _DataNode *newNode = new _DataNode(t);
         forward->next = newNode;
         newNode->next = ptr;
+        idxBase.insert(idxBase.begin() + pos, newNode);
         ++count;
       }
     }

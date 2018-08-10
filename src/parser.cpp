@@ -1140,9 +1140,9 @@ namespace kagami {
         nextToken = Token(kStrNull, TokenTypeEnum::T_NUL);
 
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
-      const auto TokenTypeEnum  = currentToken.second;
+      const auto tokenTypeEnum  = currentToken.second;
       const auto tokenValue = currentToken.first;
-      if (TokenTypeEnum == TokenTypeEnum::T_SYMBOL) {
+      if (tokenTypeEnum == TokenTypeEnum::T_SYMBOL) {
         BasicTokenEnum value = GetBasicToken(tokenValue);
         switch (value) {
         case TOKEN_EQUAL:           EqualMark(); break;
@@ -1158,8 +1158,8 @@ namespace kagami {
         default:break;
         }
       }
-      else if (TokenTypeEnum == TokenTypeEnum::T_GENERIC) state = FunctionAndObject(result);
-      else if (TokenTypeEnum == TokenTypeEnum::T_NUL) {
+      else if (tokenTypeEnum == TokenTypeEnum::T_GENERIC) state = FunctionAndObject(result);
+      else if (tokenTypeEnum == TokenTypeEnum::T_NUL) {
         result.combo(kStrFatalError, kCodeIllegalParm, "Illegal token.");
         state = false;
       }
