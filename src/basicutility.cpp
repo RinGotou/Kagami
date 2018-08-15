@@ -6,8 +6,8 @@
 
 namespace kagami {
   namespace type {
-    map <string, ObjTemplate> &GetTemplateMap() {
-      static map<string, ObjTemplate> base;
+    map <string, ObjectPlanner> &GetTemplateMap() {
+      static map<string, ObjectPlanner> base;
       return base;
     }
 
@@ -22,8 +22,8 @@ namespace kagami {
       return result;
     }
 
-    ObjTemplate *GetTemplate(const string name) {
-      ObjTemplate *result = nullptr;
+    ObjectPlanner *GetPlanner(const string name) {
+      ObjectPlanner *result = nullptr;
       const auto it       = GetTemplateMap().find(name);
 
       if (it != GetTemplateMap().end()) {
@@ -32,8 +32,8 @@ namespace kagami {
       return result;
     }
 
-    void AddTemplate(string name, ObjTemplate temp) {
-      GetTemplateMap().insert(pair<string, ObjTemplate>(name, temp));
+    void AddTemplate(string name, ObjectPlanner temp) {
+      GetTemplateMap().insert(pair<string, ObjectPlanner>(name, temp));
     }
 
     void DisposeTemplate(const string name) {
@@ -42,7 +42,7 @@ namespace kagami {
     }
   }
 
-  namespace entry {
+  namespace management {
     list<ObjectManager> &GetObjectStack() {
       static list<ObjectManager> base;
       return base;
@@ -124,8 +124,8 @@ namespace kagami {
     //from MSDN
     std::wstring s2ws(const std::string& s) {
       const auto slength = static_cast<int>(s.length()) + 1;
-      const auto len     = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
-      auto *buf          = new wchar_t[len];
+      const auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
+      auto *buf = new wchar_t[len];
       MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
       std::wstring r(buf);
       delete[] buf;
@@ -158,7 +158,7 @@ namespace kagami {
   }
 
   Message BinaryOperands(ObjectMap &p) {
-    using entry::OperatorCode;
+    using management::OperatorCode;
 
     Kit kit;
     Message result(kStrRedirect, kCodeSuccess, "0");
@@ -168,7 +168,7 @@ namespace kagami {
     enum { enum_int, enum_double, enum_str, enum_null } enumtype = enum_null;
 
     if (op.Get() != nullptr) dataOP = *static_pointer_cast<string>(op.Get());
-    auto opCode = entry::GetOperatorCode(dataOP);
+    auto opCode = management::GetOperatorCode(dataOP);
 
     if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
       auto dataA = *static_pointer_cast<string>(first.Get());
@@ -359,7 +359,7 @@ namespace kagami {
     string unitName      = *static_pointer_cast<string>(p["unit"].Get());
     string codeSubscript = *static_pointer_cast<string>(p[kStrCodeSub].Get());
     string objectName    = *static_pointer_cast<string>(p["object"].Get());
-    Object *object       = entry::FindObject(objectName);
+    Object *object       = management::FindObject(objectName);
     bool result;
     size_t currentSub  = 0;
     const auto methods = object->GetMethods();
@@ -373,18 +373,18 @@ namespace kagami {
 
     if (subscriptStack.empty() || subscriptStack.top() != codeSubscript) {
       subscriptStack.push(codeSubscript);
-      auto &manager = entry::CreateManager();
+      auto &manager = management::CreateManager();
       manager.Add(kStrSub,  Object().Manage("0", kTypeIdNull).SetPermanent(true));
       manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull).SetPermanent(true));
     }
     else if (subscriptStack.top() == codeSubscript) {
-      const auto objSub = entry::FindObjectInCurrentManager(kStrSub);
+      const auto objSub = management::FindObjectInCurrentManager(kStrSub);
       currentSub        = stoi(*static_pointer_cast<string>(objSub->Get()));
     }
-    objUnit = entry::FindObjectInCurrentManager(unitName);
+    objUnit = management::FindObjectInCurrentManager(unitName);
 
-    auto providerAt      = entry::Order("at", typeId, 1);
-    auto providerGetSize = entry::Order("size", typeId, -1);
+    auto providerAt      = management::Order("at", typeId, 1);
+    auto providerGetSize = management::Order("size", typeId, -1);
     if (providerAt.Good() && providerGetSize.Good()) {
       ObjectMap map;
       auto subStr = to_string(currentSub);
@@ -400,7 +400,7 @@ namespace kagami {
         }
         else if (msg.GetValue() == kStrRedirect) {
           objUnit->Manage(msg.GetDetail())
-                  .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+                  .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
                   .SetTokenType(kit.GetTokenType(msg.GetDetail()));
           result = true;
         }
@@ -414,7 +414,7 @@ namespace kagami {
 
       kit.CleanupMap(map);
       currentSub++;
-      Object *objSub = entry::FindObjectInCurrentManager(kStrSub);
+      Object *objSub = management::FindObjectInCurrentManager(kStrSub);
       objSub->Manage(to_string(currentSub));
     }
     else {
@@ -447,7 +447,7 @@ namespace kagami {
     Message result;
     auto name = p["name"], source = p["source"];
     const auto nameValue = CastToString(name.Get());
-    const auto ptr = entry::FindObject(nameValue);
+    const auto ptr = management::FindObject(nameValue);
 
     if (ptr == nullptr) {
       const auto targetPtr = type::GetObjectCopy(source);
@@ -456,7 +456,7 @@ namespace kagami {
             .SetMethods(source.GetMethods())
             .SetTokenType(source.GetTokenType())
             .SetRo(false);
-      auto re = entry::CreateObject(CastToString(name.Get()), object);
+      auto re = management::CreateObject(CastToString(name.Get()), object);
       if (re == nullptr) {
         result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
       }
@@ -474,7 +474,7 @@ namespace kagami {
     auto object = p["object"];
 
     if (kit.FindInStringGroup("__print", object.GetMethods())) {
-      auto provider = entry::Order("__print", object.GetTypeId(), -1);
+      auto provider = management::Order("__print", object.GetTypeId(), -1);
       if (provider.Good()) {
         result = provider.Start(p);
       }
@@ -511,33 +511,32 @@ namespace kagami {
   Just do not edit unless you want to change processor's basic behaviors.
   */
   void LoadGenericProvider() {
-    using T = ActivityTemplate;
-    using namespace entry;
-    LoadGenProvider(BG_BINOP, T(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
-    LoadGenProvider(BG_ELIF, T(kStrElif, ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(BG_ELSE, T(kStrElse, ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
-    LoadGenProvider(BG_END, T(kStrEnd, TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
-    LoadGenProvider(BG_FOR, T(kStrFor, ForEachHead, kFlagNormalEntry, kCodeNormalParm, "%unit|%object"));
-    LoadGenProvider(BG_IF, T(kStrIf, ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(BG_VAR, T(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
-    LoadGenProvider(BG_SET, T(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
-    LoadGenProvider(BG_WHILE, T(kStrWhile, WhileCycle, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(BG_LSELF_INC, T(kStrLeftSelfInc, LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(BG_LSELF_DEC, T(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(BG_RSELF_INC, T(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(BG_RSELF_DEC, T(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    using namespace management;
+    LoadGenProvider(BG_BINOP, Entry(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
+    LoadGenProvider(BG_ELIF, Entry(kStrElif, ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
+    LoadGenProvider(BG_ELSE, Entry(kStrElse, ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
+    LoadGenProvider(BG_END, Entry(kStrEnd, TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
+    LoadGenProvider(BG_FOR, Entry(kStrFor, ForEachHead, kFlagNormalEntry, kCodeNormalParm, "%unit|%object"));
+    LoadGenProvider(BG_IF, Entry(kStrIf, ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
+    LoadGenProvider(BG_VAR, Entry(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
+    LoadGenProvider(BG_SET, Entry(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
+    LoadGenProvider(BG_WHILE, Entry(kStrWhile, WhileCycle, kFlagNormalEntry, kCodeNormalParm, "state"));
+    LoadGenProvider(BG_LSELF_INC, Entry(kStrLeftSelfInc, LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_LSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_RSELF_INC, Entry(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_RSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
   }
 
   void Activiate() {
     using T = ActivityTemplate;
-    using namespace entry;
+    using namespace management;
     InitTemplates();
     InitMethods();
     LoadGenericProvider();
-    Inject(T("log", WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
-    Inject(T("print", Print, kFlagNormalEntry, kCodeNormalParm, "object"));
-    Inject(T("time", TimeReport, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(Entry("log", WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
+    Inject(Entry("print", Print, kFlagNormalEntry, kCodeNormalParm, "object"));
+    Inject(Entry("time", TimeReport, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(Entry("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
     //Linux Version
   }
 }

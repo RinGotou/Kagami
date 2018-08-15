@@ -46,7 +46,7 @@ namespace kagami {
 
     result.SetObject(Object()
       .Set(make_shared<vector<Object>>(base), kTypeIdArrayBase)
-      .SetMethods(type::GetTemplate(kTypeIdArrayBase)->GetMethods())
+      .SetMethods(type::GetPlanner(kTypeIdArrayBase)->GetMethods())
       .SetRo(false)
       , "__result");
     return result;
@@ -147,7 +147,7 @@ namespace kagami {
     ObjectMap map;
     if (object.GetTypeId() == kTypeIdArrayBase) {
       auto &base = *static_pointer_cast<vector<Object>>(object.Get());
-      auto provider = entry::Order("print", kTypeIdNull, -1);
+      auto provider = management::Order("print", kTypeIdNull, -1);
       for (auto &unit : base) {
         map.insert(pair<string, Object>("object", unit));
         result = provider.Start(map);
@@ -159,23 +159,22 @@ namespace kagami {
 
   void InitTemplates() {
     using type::AddTemplate;
-    AddTemplate(kTypeIdRawString, ObjTemplate(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
-    AddTemplate(kTypeIdArrayBase, ObjTemplate(ArrayCopy, "size|at|__print"));
-    AddTemplate(kTypeIdNull, ObjTemplate(NullCopy, ""));
+    AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
+    AddTemplate(kTypeIdArrayBase, ObjectPlanner(ArrayCopy, "size|at|__print"));
+    AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, ""));
   }
 
   void InitMethods() {
-    using namespace entry;
-    using T = ActivityTemplate;
+    using namespace management;
     //constructor
-    Inject(T("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
+    Inject(Entry("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
     //methods
-    Inject(T("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdRawString));
-    Inject(T("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdArrayBase));
-    Inject(T("__print", PrintRawString, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
-    Inject(T("__print", PrintArray, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
-    Inject(T("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
-    Inject(T("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
+    Inject(Entry("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdRawString));
+    Inject(Entry("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdArrayBase));
+    Inject(Entry("__print", PrintRawString, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
+    Inject(Entry("__print", PrintArray, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
+    Inject(Entry("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
+    Inject(Entry("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
   }
 
 
