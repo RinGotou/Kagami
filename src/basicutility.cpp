@@ -42,99 +42,6 @@ namespace kagami {
     }
   }
 
-  namespace management {
-    list<ObjectManager> &GetObjectStack() {
-      static list<ObjectManager> base;
-      return base;
-    }
-
-    Object *FindObject(string sign) {
-      Object *object = nullptr;
-      size_t count   = GetObjectStack().size();
-      list<ObjectManager> &base = GetObjectStack();
-
-      while (!base.empty() && count > 0) {
-        object = base[count - 1].Find(sign);
-        if (object != nullptr) {
-          break;
-        }
-        count--;
-      }
-      return object;
-    }
-
-    ObjectManager &GetCurrentManager() {
-      return GetObjectStack().back();
-    }
-
-    Object *FindObjectInCurrentManager(string sign) {
-      Object *object      = nullptr;
-      ObjectManager &base = GetObjectStack().back();
-
-      while(!base.Empty()) {
-        object = base.Find(sign);
-        if(object != nullptr) {
-          break;
-        }
-      }
-
-      return object;
-    }
-
-    Object *CreateObject(string sign, Object &object) {
-      ObjectManager &base = GetObjectStack().back();
-
-      base.Add(sign, object);
-      const auto result = base.Find(sign);
-      return result;
-    }
-
-    string GetTypeId(const string sign) {
-      auto result = kTypeIdNull;
-      auto count  = GetObjectStack().size();
-      auto &base  = GetObjectStack(); 
-
-      while (count > 0) {
-        const auto object = base[count - 1].Find(sign);
-        if (object != nullptr) {
-          result = object->GetTypeId();
-        }
-        count--;
-      }
-
-      return result;
-    }
-
-    void ResetObject() {
-      while (!GetObjectStack().empty()) GetObjectStack().pop_back();
-    }
-
-    ObjectManager &CreateManager() {
-      auto &base = GetObjectStack();
-      base.push_back(std::move(ObjectManager()));
-      return GetObjectStack().back();
-    }
-
-    bool DisposeManager() {
-      if (!GetObjectStack().empty()) { GetObjectStack().pop_back(); }
-      return GetObjectStack().empty();
-    } 
-
-#if defined(_WIN32)
-    //from MSDN
-    std::wstring s2ws(const std::string& s) {
-      const auto slength = static_cast<int>(s.length()) + 1;
-      const auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
-      auto *buf = new wchar_t[len];
-      MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-      std::wstring r(buf);
-      delete[] buf;
-      return r;
-    }
-#endif
-  }
-
-
   Message WriteLog(ObjectMap &p) {
     Kit kit;
     Message result;
@@ -158,7 +65,7 @@ namespace kagami {
   }
 
   Message BinaryOperands(ObjectMap &p) {
-    using management::OperatorCode;
+    using entry::OperatorCode;
 
     Kit kit;
     Message result(kStrRedirect, kCodeSuccess, "0");
@@ -168,7 +75,7 @@ namespace kagami {
     enum { enum_int, enum_double, enum_str, enum_null } enumtype = enum_null;
 
     if (op.Get() != nullptr) dataOP = *static_pointer_cast<string>(op.Get());
-    auto opCode = management::GetOperatorCode(dataOP);
+    auto opCode = entry::GetOperatorCode(dataOP);
 
     if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
       auto dataA = *static_pointer_cast<string>(first.Get());
@@ -359,7 +266,7 @@ namespace kagami {
     string unitName      = *static_pointer_cast<string>(p["unit"].Get());
     string codeSubscript = *static_pointer_cast<string>(p[kStrCodeSub].Get());
     string objectName    = *static_pointer_cast<string>(p["object"].Get());
-    Object *object       = management::FindObject(objectName);
+    Object *object       = entry::FindObject(objectName);
     bool result;
     size_t currentSub  = 0;
     const auto methods = object->GetMethods();
@@ -373,18 +280,18 @@ namespace kagami {
 
     if (subscriptStack.empty() || subscriptStack.top() != codeSubscript) {
       subscriptStack.push(codeSubscript);
-      auto &manager = management::CreateManager();
+      auto &manager = entry::CreateManager();
       manager.Add(kStrSub,  Object().Manage("0", kTypeIdNull).SetPermanent(true));
       manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull).SetPermanent(true));
     }
     else if (subscriptStack.top() == codeSubscript) {
-      const auto objSub = management::FindObjectInCurrentManager(kStrSub);
+      const auto objSub = entry::FindObjectInCurrentManager(kStrSub);
       currentSub        = stoi(*static_pointer_cast<string>(objSub->Get()));
     }
-    objUnit = management::FindObjectInCurrentManager(unitName);
+    objUnit = entry::FindObjectInCurrentManager(unitName);
 
-    auto providerAt      = management::Order("at", typeId, 1);
-    auto providerGetSize = management::Order("size", typeId, -1);
+    auto providerAt      = entry::Order("at", typeId, 1);
+    auto providerGetSize = entry::Order("size", typeId, -1);
     if (providerAt.Good() && providerGetSize.Good()) {
       ObjectMap map;
       auto subStr = to_string(currentSub);
@@ -410,11 +317,12 @@ namespace kagami {
       }
       else {
         result = false;
+        subscriptStack.pop();
       }
 
       kit.CleanupMap(map);
       currentSub++;
-      Object *objSub = management::FindObjectInCurrentManager(kStrSub);
+      Object *objSub = entry::FindObjectInCurrentManager(kStrSub);
       objSub->Manage(to_string(currentSub));
     }
     else {
@@ -447,7 +355,7 @@ namespace kagami {
     Message result;
     auto name = p["name"], source = p["source"];
     const auto nameValue = CastToString(name.Get());
-    const auto ptr = management::FindObject(nameValue);
+    const auto ptr = entry::FindObject(nameValue);
 
     if (ptr == nullptr) {
       const auto targetPtr = type::GetObjectCopy(source);
@@ -456,7 +364,7 @@ namespace kagami {
             .SetMethods(source.GetMethods())
             .SetTokenType(source.GetTokenType())
             .SetRo(false);
-      auto re = management::CreateObject(CastToString(name.Get()), object);
+      auto re = entry::CreateObject(CastToString(name.Get()), object);
       if (re == nullptr) {
         result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
       }
@@ -474,7 +382,7 @@ namespace kagami {
     auto object = p["object"];
 
     if (kit.FindInStringGroup("__print", object.GetMethods())) {
-      auto provider = management::Order("__print", object.GetTypeId(), -1);
+      auto provider = entry::Order("__print", object.GetTypeId(), -1);
       if (provider.Good()) {
         result = provider.Start(p);
       }
@@ -511,7 +419,7 @@ namespace kagami {
   Just do not edit unless you want to change processor's basic behaviors.
   */
   void LoadGenericProvider() {
-    using namespace management;
+    using namespace entry;
     LoadGenProvider(BG_BINOP, Entry(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
     LoadGenProvider(BG_ELIF, Entry(kStrElif, ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
     LoadGenProvider(BG_ELSE, Entry(kStrElse, ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
@@ -529,7 +437,7 @@ namespace kagami {
 
   void Activiate() {
     using T = ActivityTemplate;
-    using namespace management;
+    using namespace entry;
     InitTemplates();
     InitMethods();
     LoadGenericProvider();

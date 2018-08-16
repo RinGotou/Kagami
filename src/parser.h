@@ -3,10 +3,9 @@
 #define _ENABLE_FASTRING_
 
 #include <fstream>
-#include "common.h"
-#include "kit.h"
 #include "object.h"
 #include "message.h"
+#include "entry.h"
 
 #if defined(_WIN32)
 #include "windows.h"
@@ -16,45 +15,6 @@
 #endif
 
 namespace kagami {
-  using Token = pair<string, TokenTypeEnum>;
-
-  const string kStrNormalArrow = ">>>";
-  const string kStrDotGroup    = "...";
-  const string kStrHostArgHead = "arg";
-  const string kStrNop         = "nop";
-  const string kStrDef         = "def";
-  const string kStrRef         = "__ref";
-  const string kStrCodeSub     = "__code_sub";
-  const string kStrSub         = "__sub";
-  const string kStrBinOp       = "BinOp";
-  const string kStrIf          = "if";
-  const string kStrElif        = "elif";
-  const string kStrEnd         = "end";
-  const string kStrElse        = "else";
-  const string kStrVar         = "var";
-  const string kStrSet         = "__set";
-  const string kStrWhile       = "while";
-  const string kStrFor         = "for";
-  const string kStrLeftSelfInc  = "lSelfInc";
-  const string kStrLeftSelfDec  = "lSelfDec";
-  const string kStrRightSelfInc = "rSelfInc";
-  const string kStrRightSelfDec = "rSelfDec";
-
-  enum GenericTokenEnum {
-    BG_NOP, BG_DEF, BG_REF, BG_CODE_SUB, 
-    BG_SUB, BG_BINOP, BG_IF, BG_ELIF, 
-    BG_END, BG_ELSE, BG_VAR, BG_SET, 
-    BG_WHILE, BG_FOR, BG_LSELF_INC, BG_LSELF_DEC, 
-    BG_RSELF_INC, BG_RSELF_DEC,
-    BG_NUL
-  };
-
-  enum BasicTokenEnum {
-    TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT, 
-    TOKEN_COLON, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_SQRBRACKET, TOKEN_RIGHT_BRACKET, 
-    TOKEN_SELFOP, TOKEN_OTHERS
-  };
-
   /*Processor Class
   The most important part of script processor.Original string will be tokenized and
   parsed here.Processed data will be delivered to entry provider.
@@ -172,56 +132,7 @@ namespace kagami {
     void Terminal();
   };
 
-  /*Entry Class
-  contains function pointer.Processed argument tokens are used for building
-  new argument map.entry provider have two mode:internal function and plugin
-  function.
-  */
-  class Entry {
-  public:
-    Entry() : id(kStrNull), priority(0), activity(nullptr), minsize(0) {
-      parmMode = kCodeIllegalParm;
-      specifictype = kTypeIdNull;
-    }
 
-    Entry(string id, Activity activity, int priority, int parmMode, string args, string type = kTypeIdNull) : 
-    id(id), priority(priority), parmMode(parmMode), args(Kit().BuildStringVector(args)),
-    specifictype(type) {
-      this->activity = activity;
-    }
-
-
-    bool operator==(Entry &target) const {
-      return (target.id    == this->id &&
-        target.activity    == this->activity &&
-        target.parmMode    == this->parmMode &&
-        target.priority    == this->priority &&
-        this->specifictype == target.specifictype &&
-        target.args        == this->args);
-    }
-
-    Entry &SetSpecificType(string type) {
-      this->specifictype = type;
-      return *this;
-    }
-
-    string GetSpecificType()      const { return specifictype; }
-    string GetId()                const { return this->id; }
-    int GetArgumentMode()         const { return this->parmMode; }
-    vector<string> GetArguments() const { return args; }
-    size_t GetParameterSIze()     const { return this->args.size(); }
-    int GetPriority()             const { return this->priority; }
-    bool Good()                   const { return ((activity != nullptr) && parmMode != kCodeIllegalParm); }
-    Message Start(ObjectMap &map) const;
-  private:
-    string id;
-    int parmMode;
-    int priority;
-    vector<string> args;
-    Activity activity;
-    string specifictype;
-    size_t minsize;
-  };
 
   inline string CastToString(shared_ptr<void> ptr) {
     return *static_pointer_cast<string>(ptr);
@@ -241,30 +152,6 @@ namespace kagami {
     using log_t = pair<string, Message>;
     void Log(kagami::Message msg);
     vector<log_t> &GetLogger();
-  }
-
-  namespace management {
-    enum OperatorCode {
-      ADD, SUB, MUL, DIV, EQUAL, IS, NOT,
-      MORE, LESS, NOT_EQUAL, MORE_OR_EQUAL, LESS_OR_EQUAL,
-      SELFINC, SELFDEC,
-      NUL
-    };
-
-    OperatorCode GetOperatorCode(string src);
-
-    using EntryMapUnit = map<string, Entry>::value_type;
-
-    list<ObjectManager> &GetObjectStack();
-    ObjectManager       &GetCurrentManager();
-    string              GetTypeId(string sign);
-    void                Inject(Entry temp);
-    void                LoadGenProvider(GenericTokenEnum token, Entry temp);
-    Object              *FindObject(string name);
-    ObjectManager       &CreateManager();
-    bool                DisposeManager();
-    Entry       Order(string id, string type, int size);
-    std::wstring        s2ws(const std::string& s);
   }
 }
 
