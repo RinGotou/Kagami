@@ -30,9 +30,7 @@ namespace kagami {
     std::deque<_DataNode *> idxBase;
     bool health;
   public:
-    list() : root(nullptr), 
-    tail(nullptr), 
-    count(0),
+    list() : count(0), root(nullptr), tail(nullptr), 
     health(true) {
       blk = new ref_blk();
     }

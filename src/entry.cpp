@@ -154,6 +154,8 @@ namespace kagami {
       case BG_LSELF_DEC:result = kStrLeftSelfDec; break;
       case BG_RSELF_INC:result = kStrRightSelfInc; break;
       case BG_RSELF_DEC:result = kStrRightSelfDec; break;
+      case BG_NUL:result = kStrNull; break;
+      default:break;
       }
       return result;
     }

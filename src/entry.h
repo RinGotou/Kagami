@@ -9,6 +9,13 @@ namespace kagami {
   function.
   */
   class Entry {
+    string id;
+    int parmMode;
+    int priority;
+    vector<string> args;
+    Activity activity;
+    string specifictype;
+    size_t minsize;
   public:
     Entry() : id(kStrNull), priority(0), activity(nullptr), minsize(0) {
       parmMode = kCodeIllegalParm;
@@ -16,7 +23,7 @@ namespace kagami {
     }
 
     Entry(string id, Activity activity, int priority, int parmMode, string args, string type = kTypeIdNull) :
-      id(id), priority(priority), parmMode(parmMode), args(Kit().BuildStringVector(args)),
+      id(id),parmMode(parmMode), priority(priority), args(Kit().BuildStringVector(args)),
       specifictype(type) {
       this->activity = activity;
     }
@@ -33,14 +40,6 @@ namespace kagami {
     int GetPriority() const { return this->priority; }
     bool Good() const { return ((activity != nullptr) && parmMode != kCodeIllegalParm); }
     Message Start(ObjectMap &map) const;
-  private:
-    string id;
-    int parmMode;
-    int priority;
-    vector<string> args;
-    Activity activity;
-    string specifictype;
-    size_t minsize;
   };
 
   namespace entry {

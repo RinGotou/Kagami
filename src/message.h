@@ -9,11 +9,16 @@ namespace kagami {
   value,detail and castpath to deliver Object class.
   */
   class Message {
+    string value;
+    string detail;
+    int code;
+    shared_ptr<void> object;
+    size_t idx;
   public:
     Message() :
       value(kStrEmpty), detail(kStrEmpty), code(kCodeSuccess), idx(0) {}
     Message(string value, int code, string detail) :
-      value(value), code(code), detail(detail), idx(0) {}
+      value(value), detail(detail), code(code), idx(0) {}
 
     Object GetObj() const;
     void SetObject(Object &object, string id);
@@ -28,11 +33,5 @@ namespace kagami {
     string GetDetail() const { return this->detail; }
     size_t GetIndex() const { return idx; }
 
-  private:
-    string value;
-    string detail;
-    int code;
-    shared_ptr<void> object;
-    size_t idx;
   };
 }
