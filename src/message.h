@@ -11,7 +11,7 @@ namespace kagami {
   class Message {
   public:
     Message() :
-      value(kStrEmpty), code(kCodeSuccess), detail(kStrEmpty), idx(0) {}
+      value(kStrEmpty), detail(kStrEmpty), code(kCodeSuccess), idx(0) {}
     Message(string value, int code, string detail) :
       value(value), code(code), detail(detail), idx(0) {}
 

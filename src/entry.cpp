@@ -17,10 +17,8 @@ namespace kagami {
 
   Message Entry::Start(ObjectMap &map) const {
     Message result;
-    switch (this->Good()) {
-    case true:result = activity(map); break;
-    case false:result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry."); break;
-    }
+    if (Good()) result = activity(map);
+    else result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
     return result;
   }
 
@@ -113,48 +111,49 @@ namespace kagami {
     }
 
     GenericTokenEnum GetGenericToken(string src) {
-      if (src == kStrNop)          return BG_NOP;
-      if (src == kStrDef)          return BG_DEF;
-      if (src == kStrRef)          return BG_REF;
-      if (src == kStrCodeSub)      return BG_CODE_SUB;
-      if (src == kStrSub)          return BG_SUB;
-      if (src == kStrBinOp)        return BG_BINOP;
-      if (src == kStrIf)           return BG_IF;
-      if (src == kStrElif)         return BG_ELIF;
-      if (src == kStrEnd)          return BG_END;
-      if (src == kStrElse)         return BG_ELSE;
-      if (src == kStrVar)          return BG_VAR;
-      if (src == kStrSet)          return BG_SET;
-      if (src == kStrWhile)        return BG_WHILE;
-      if (src == kStrFor)          return BG_FOR;
-      if (src == kStrLeftSelfInc)  return BG_LSELF_INC;
-      if (src == kStrLeftSelfDec)  return BG_LSELF_DEC;
+      if (src == kStrIf) return BG_IF;
+      if (src == kStrNop) return BG_NOP;
+      if (src == kStrDef) return BG_DEF;
+      if (src == kStrRef) return BG_REF;
+      if (src == kStrSub) return BG_SUB;
+      if (src == kStrEnd) return BG_END;
+      if (src == kStrVar) return BG_VAR;
+      if (src == kStrSet) return BG_SET;
+      if (src == kStrFor) return BG_FOR;
+      if (src == kStrElse) return BG_ELSE;
+      if (src == kStrElif) return BG_ELIF;
+      if (src == kStrWhile) return BG_WHILE;
+      if (src == kStrBinOp) return BG_BINOP;
+      if (src == kStrCodeSub) return BG_CODE_SUB;
+      if (src == kStrLeftSelfInc) return BG_LSELF_INC;
+      if (src == kStrLeftSelfDec) return BG_LSELF_DEC;
       if (src == kStrRightSelfInc) return BG_RSELF_INC;
       if (src == kStrRightSelfDec) return BG_RSELF_DEC;
+      if (src == kStrNull) return BG_NUL;
       return BG_NUL;
     }
 
     string GetGenTokenValue(GenericTokenEnum token) {
       string result;
       switch (token) {
-      case BG_NOP:result = kStrNop;                 break;
-      case BG_DEF:result = kStrDef;                 break;
-      case BG_REF:result = kStrRef;                 break;
-      case BG_CODE_SUB:result = kStrCodeSub;             break;
-      case BG_SUB:result = kStrSub;                 break;
-      case BG_BINOP:result = kStrBinOp;               break;
-      case BG_IF:result = kStrIf;                  break;
-      case BG_ELIF:result = kStrElif;                break;
-      case BG_END:result = kStrEnd;                 break;
-      case BG_ELSE:result = kStrElse;                break;
-      case BG_VAR:result = kStrVar;                 break;
-      case BG_SET:result = kStrSet;                 break;
-      case BG_WHILE:result = kStrWhile;               break;
-      case BG_FOR:result = kStrFor;                 break;
-      case BG_LSELF_INC:result = kStrLeftSelfInc;         break;
-      case BG_LSELF_DEC:result = kStrLeftSelfDec;         break;
-      case BG_RSELF_INC:result = kStrRightSelfInc;        break;
-      case BG_RSELF_DEC:result = kStrRightSelfDec;        break;
+      case BG_NOP:result = kStrNop; break;
+      case BG_DEF:result = kStrDef; break;
+      case BG_REF:result = kStrRef; break;
+      case BG_CODE_SUB:result = kStrCodeSub; break;
+      case BG_SUB:result = kStrSub; break;
+      case BG_BINOP:result = kStrBinOp; break;
+      case BG_IF:result = kStrIf; break;
+      case BG_ELIF:result = kStrElif; break;
+      case BG_END:result = kStrEnd; break;
+      case BG_ELSE:result = kStrElse; break;
+      case BG_VAR:result = kStrVar; break;
+      case BG_SET:result = kStrSet; break;
+      case BG_WHILE:result = kStrWhile; break;
+      case BG_FOR:result = kStrFor; break;
+      case BG_LSELF_INC:result = kStrLeftSelfInc; break;
+      case BG_LSELF_DEC:result = kStrLeftSelfDec; break;
+      case BG_RSELF_INC:result = kStrRightSelfInc; break;
+      case BG_RSELF_DEC:result = kStrRightSelfDec; break;
       }
       return result;
     }
@@ -205,9 +204,10 @@ namespace kagami {
       else if (opCode != NUL) return Order(kStrBinOp);
 
       Entry result;
+      //TODO:rewrite here
       for (auto &unit : base) {
         if (id == unit.GetId() && type == unit.GetSpecificType()
-          && (size == -1 || size == unit.GetParameterSIze())) {
+          && (size == -1 || size == int(unit.GetParameterSIze()))) {
           result = unit;
           break;
         }

@@ -1,6 +1,4 @@
 #pragma once
-#pragma execution_character_set("utf-8")
-#define _ENABLE_FASTRING_
 
 #include <fstream>
 #include "object.h"
@@ -8,6 +6,9 @@
 #include "entry.h"
 
 #if defined(_WIN32)
+#if defined(_MSC_VER)
+#pragma execution_character_set("utf-8")
+#endif
 #include "windows.h"
 #define WIN32_LEAN_AND_MEAN
 #else
@@ -131,12 +132,6 @@ namespace kagami {
     Message Run();
     void Terminal();
   };
-
-
-
-  inline string CastToString(shared_ptr<void> ptr) {
-    return *static_pointer_cast<string>(ptr);
-  }
 
   void Activiate();
   void InitTemplates();
