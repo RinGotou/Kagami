@@ -950,6 +950,7 @@ namespace kagami {
       switch (OPValue) {
       case OperatorCode::SELFINC:symbol.emplace_back(kStrRightSelfInc, TokenTypeEnum::T_GENERIC); break;
       case OperatorCode::SELFDEC:symbol.emplace_back(kStrRightSelfDec, TokenTypeEnum::T_GENERIC); break;
+      default:break;
       }
     }
     return true;

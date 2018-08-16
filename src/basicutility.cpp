@@ -107,6 +107,7 @@ namespace kagami {
           }
           tempresult ? temp = kStrTrue : temp = kStrFalse;
           break;
+        default:break;
         }
       }
       else if (enumtype == enum_str) {

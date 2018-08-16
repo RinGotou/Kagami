@@ -21,36 +21,6 @@ namespace kagami {
   parsed here.Processed data will be delivered to entry provider.
   */
   class Processor {
-  public:
-    Processor() : health(false), commaExpFunc(false), insertBtnSymbols(false), dotOperator(false),
-      disableSetEntry(false),  defineLine(false), functionLine(false), subscriptProcessing(false),
-       mode(0), nextInsertSubscript(0), lambdaObjectCount(0), index(0) {}
-
-    bool IsHealth() const { return health; }
-    string GetErrorString() const { return errorString; }
-
-    bool IsSelfObjectManagement() const {
-      string front = origin.front().first;
-      return (front == kStrFor || front == kStrDef);
-    }
-
-    Processor &SetIndex(size_t idx) {
-      this->index = idx;
-      return *this;
-    }
-
-    size_t GetIndex() const {
-      return index;
-    }
-
-    Token GetFirstToken() const {
-      return origin.front();
-    }
-
-    Message Start(size_t mode = kModeNormal);
-    Processor &Build(string target);
-  private:
-    
     bool                health;
     vector<Token>       origin;
     map<string, Object> lambdamap;
@@ -81,6 +51,34 @@ namespace kagami {
     static string GetHead(string target);
     static int GetPriority(string target);
     bool   Assemble(Message &msg);
+  public:
+    Processor() : health(false), commaExpFunc(false), insertBtnSymbols(false), disableSetEntry(false),
+      dotOperator(false), defineLine(false), functionLine(false), subscriptProcessing(false),
+       mode(0), nextInsertSubscript(0), lambdaObjectCount(0), index(0) {}
+
+    bool IsHealth() const { return health; }
+    string GetErrorString() const { return errorString; }
+
+    bool IsSelfObjectManagement() const {
+      string front = origin.front().first;
+      return (front == kStrFor || front == kStrDef);
+    }
+
+    Processor &SetIndex(size_t idx) {
+      this->index = idx;
+      return *this;
+    }
+
+    size_t GetIndex() const {
+      return index;
+    }
+
+    Token GetFirstToken() const {
+      return origin.front();
+    }
+
+    Message Start(size_t mode = kModeNormal);
+    Processor &Build(string target);
   };
 
   /*ScriptMachine class

@@ -9,6 +9,14 @@ namespace kagami {
   in ObjectManager class.
   */
   class Object {
+    using TargetObject = struct { Object *ptr; };
+    std::shared_ptr<void> ptr;
+    string typeId;
+    string methods;
+    TokenTypeEnum tokenTypeEnum;
+    bool ro, permanent, ref;
+
+    Object *GetTargetObject() { return static_pointer_cast<TargetObject>(ptr)->ptr; }
   public:
     Object();
     Object &Manage(string t, string typeId = kTypeIdRawString);
@@ -32,15 +40,7 @@ namespace kagami {
     bool IsRef() const { return ref; }
     bool operator==(Object &object) const { return Compare(object); }
     bool operator!=(Object &object) const { return !Compare(object); }
-  private:
-    using TargetObject = struct { Object *ptr; };
-    std::shared_ptr<void> ptr;
-    string typeId;
-    string methods;
-    TokenTypeEnum tokenTypeEnum;
-    bool ro, permanent, ref;
 
-    Object *GetTargetObject() { return static_pointer_cast<TargetObject>(ptr)->ptr; }
   };
 
   /* Object Template Class
