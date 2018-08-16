@@ -14,7 +14,7 @@ namespace kagami {
 
     void Log(Message msg) {
       auto now = time(nullptr);
-#if defined(_WIN32)
+#if defined(_WIN32) && defined(_MSC_VER)
       char nowtime[30] = { ' ' };
       ctime_s(nowtime, sizeof(nowtime), &now);
       GetLogger().emplace_back(log_t(string(nowtime), msg));
@@ -69,16 +69,14 @@ namespace kagami {
 
   void ScriptMachine::ConditionRoot(bool value) {
     modeStack.push(currentMode);
-    switch (value) {
-    case true:
+    if (value == true) {
       entry::CreateManager();
       currentMode = kModeCondition;
       conditionStack.push(true);
-      break;
-    case false:
+    }
+    else {
       currentMode = kModeNextCondition;
       conditionStack.push(false);
-      break;
     }
   }
 
@@ -99,15 +97,13 @@ namespace kagami {
 
   void ScriptMachine::ConditionLeaf() {
     if (!conditionStack.empty()) {
-      switch (conditionStack.top()) {
-      case true:
+      if (conditionStack.top() == true) {
         currentMode = kModeNextCondition;
-        break;
-      case false:
+      }
+      else {
         entry::CreateManager();
         conditionStack.top() = true;
         currentMode = kModeCondition;
-        break;
       }
     }
     else {
@@ -722,16 +718,12 @@ namespace kagami {
   }
 
   void Processor::EqualMark() {
-    switch (symbol.empty()) {
-    case true:
-      symbol.emplace_back(currentToken); 
-      break;
-    case false:
-      switch (defineLine) {
-      case true: defineLine = false; break;
-      case false:symbol.emplace_back(currentToken); break;
-      }
-      break;
+    if (symbol.empty()) {
+      symbol.emplace_back(currentToken);
+    }
+    else {
+      if (defineLine) defineLine = false;
+      else symbol.emplace_back(currentToken);
     }
   }
 
@@ -880,13 +872,12 @@ namespace kagami {
       }
     }
     else {
-      switch (functionLine) {
-      case true:
+      if (functionLine) {
         item.emplace_back(currentToken);
-        break;
-      case false:
+      }
+      else {
         if (entry::Order(currentToken.first).Good()) {
-          symbol.emplace_back(currentToken); 
+          symbol.emplace_back(currentToken);
           function = true;
         }
         else {
@@ -897,7 +888,6 @@ namespace kagami {
             item.emplace_back(currentToken);
           }
         }
-        break;
       }
     }
 
@@ -922,14 +912,12 @@ namespace kagami {
   }
 
   void Processor::OtherTokens() {
-    switch (insertBtnSymbols) {
-    case true:
+    if (insertBtnSymbols) {
       item.insert(item.begin() + nextInsertSubscript, currentToken);
       insertBtnSymbols = false;
-      break;
-    case false:
+    }
+    else {
       item.emplace_back(currentToken);
-      break;
     }
   }
 

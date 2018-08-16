@@ -9,6 +9,14 @@
 #include <cstddef>
 #include <stack>
 
+#ifndef _NO_CUI_
+#include <iostream>
+#endif
+
+#if defined(_WIN32)
+#include "windows.h"
+#endif
+
 namespace kagami {
   using std::string;
   using std::pair;

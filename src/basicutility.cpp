@@ -1,12 +1,8 @@
 #include "parser.h"
-#if defined(_WIN32)
-#include "windows.h"
-#endif
-#include <iostream>
 
 namespace kagami {
   namespace type {
-    map <string, ObjectPlanner> &GetTemplateMap() {
+    map <string, ObjectPlanner> &GetPlannerBase() {
       static map<string, ObjectPlanner> base;
       return base;
     }
@@ -14,9 +10,9 @@ namespace kagami {
     shared_ptr<void> GetObjectCopy(Object &object) {
       shared_ptr<void> result = nullptr;
       const auto option       = object.GetTypeId();
-      const auto it           = GetTemplateMap().find(option);
+      const auto it           = GetPlannerBase().find(option);
 
-      if (it != GetTemplateMap().end()) {
+      if (it != GetPlannerBase().end()) {
         result = it->second.CreateObjectCopy(object.Get());
       }
       return result;
@@ -24,21 +20,21 @@ namespace kagami {
 
     ObjectPlanner *GetPlanner(const string name) {
       ObjectPlanner *result = nullptr;
-      const auto it       = GetTemplateMap().find(name);
+      const auto it       = GetPlannerBase().find(name);
 
-      if (it != GetTemplateMap().end()) {
+      if (it != GetPlannerBase().end()) {
         result = &(it->second);
       }
       return result;
     }
 
     void AddTemplate(string name, ObjectPlanner temp) {
-      GetTemplateMap().insert(pair<string, ObjectPlanner>(name, temp));
+      GetPlannerBase().insert(pair<string, ObjectPlanner>(name, temp));
     }
 
     void DisposeTemplate(const string name) {
-      const auto it = GetTemplateMap().find(name);
-      if (it != GetTemplateMap().end()) GetTemplateMap().erase(it);
+      const auto it = GetPlannerBase().find(name);
+      if (it != GetPlannerBase().end()) GetPlannerBase().erase(it);
     }
   }
 
@@ -151,11 +147,11 @@ namespace kagami {
   }
 
   Message ConditionRoot(ObjectMap &p) {
-    return Message(CastToString(p["state"].Get()), kCodeConditionRoot, kStrEmpty);
+    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty);
   }
 
   Message ConditionBranch(ObjectMap &p) {
-    return Message(CastToString(p["state"].Get()), kCodeConditionBranch, kStrEmpty);
+    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty);
   }
 
   Message ConditionLeaf(ObjectMap &p) {
@@ -163,7 +159,7 @@ namespace kagami {
   }
 
   Message WhileCycle(ObjectMap &p) {
-    return Message(CastToString(p["state"].Get()), kCodeHeadSign, kStrEmpty);
+    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty);
   }
 
   Message TailSign(ObjectMap &p) {
@@ -260,80 +256,7 @@ namespace kagami {
     return Message(kStrRedirect, kCodeSuccess, result);
   }
 
-  Message ForEachHead(ObjectMap &p) {
-    static stack<string> subscriptStack;
-    Kit kit;
-    string unitName      = *static_pointer_cast<string>(p["unit"].Get());
-    string codeSubscript = *static_pointer_cast<string>(p[kStrCodeSub].Get());
-    string objectName    = *static_pointer_cast<string>(p["object"].Get());
-    Object *object       = entry::FindObject(objectName);
-    bool result;
-    size_t currentSub  = 0;
-    const auto methods = object->GetMethods();
-    const auto typeId  = object->GetTypeId();
-    Object *objUnit    = nullptr;
 
-    if (!kit.FindInStringGroup("at",methods) && !kit.FindInStringGroup("size",methods)) {
-      return Message(kStrFatalError, kCodeIllegalCall, 
-        "This object isn't compatible with For-Each method.");
-    }
-
-    if (subscriptStack.empty() || subscriptStack.top() != codeSubscript) {
-      subscriptStack.push(codeSubscript);
-      auto &manager = entry::CreateManager();
-      manager.Add(kStrSub,  Object().Manage("0", kTypeIdNull).SetPermanent(true));
-      manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull).SetPermanent(true));
-    }
-    else if (subscriptStack.top() == codeSubscript) {
-      const auto objSub = entry::FindObjectInCurrentManager(kStrSub);
-      currentSub        = stoi(*static_pointer_cast<string>(objSub->Get()));
-    }
-    objUnit = entry::FindObjectInCurrentManager(unitName);
-
-    auto providerAt      = entry::Order("at", typeId, 1);
-    auto providerGetSize = entry::Order("size", typeId, -1);
-    if (providerAt.Good() && providerGetSize.Good()) {
-      ObjectMap map;
-      auto subStr = to_string(currentSub);
-      map.insert(Parameter(kStrObject, Object().Ref(*object)));
-      Message msg = providerGetSize.Start(map);
-      size_t size = stoi(msg.GetDetail());
-      if (size > currentSub) {
-        map.insert(Parameter("subscript_1", Object().Manage(subStr)));
-        msg = providerAt.Start(map);
-        if (msg.GetCode() == kCodeObject) {
-          objUnit->Copy(msg.GetObj());
-          result = true;
-        }
-        else if (msg.GetValue() == kStrRedirect) {
-          objUnit->Manage(msg.GetDetail())
-                  .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-                  .SetTokenType(kit.GetTokenType(msg.GetDetail()));
-          result = true;
-        }
-        else {
-          result = false;
-        }
-      }
-      else {
-        result = false;
-        subscriptStack.pop();
-      }
-
-      kit.CleanupMap(map);
-      currentSub++;
-      Object *objSub = entry::FindObjectInCurrentManager(kStrSub);
-      objSub->Manage(to_string(currentSub));
-    }
-    else {
-      return Message(kStrFatalError, kCodeIllegalCall,
-        "This object isn't compatible with For-Each method.");
-    }
-
-    string value;
-    result ? value = kStrTrue : value = kStrFalse;
-    return Message(value, kCodeHeadSign, kStrEmpty);
-  }
 
   Message SetOperand(ObjectMap &p) {
     Message result;
@@ -354,7 +277,7 @@ namespace kagami {
   Message CreateOperand(ObjectMap &p) {
     Message result;
     auto name = p["name"], source = p["source"];
-    const auto nameValue = CastToString(name.Get());
+    const auto nameValue = *static_pointer_cast<string>(name.Get());
     const auto ptr = entry::FindObject(nameValue);
 
     if (ptr == nullptr) {
@@ -364,7 +287,7 @@ namespace kagami {
             .SetMethods(source.GetMethods())
             .SetTokenType(source.GetTokenType())
             .SetRo(false);
-      auto re = entry::CreateObject(CastToString(name.Get()), object);
+      auto re = entry::CreateObject(*static_pointer_cast<string>(name.Get()), object);
       if (re == nullptr) {
         result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
       }
@@ -399,8 +322,8 @@ namespace kagami {
 
   Message TimeReport(ObjectMap &p) {
     auto now = time(nullptr);
+#if defined(_WIN32) && defined(_MSC_VER)
     char nowTime[30] = { ' ' };
-#if defined(_WIN32)
     ctime_s(nowTime, sizeof(nowTime), &now);
     return Message(kStrRedirect, kCodeSuccess, "'" + string(nowTime) + "'");
 #else
@@ -414,17 +337,12 @@ namespace kagami {
     return result;
   }
 
-  /*
-  Init all basic objects and entries
-  Just do not edit unless you want to change processor's basic behaviors.
-  */
   void LoadGenericProvider() {
     using namespace entry;
     LoadGenProvider(BG_BINOP, Entry(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
     LoadGenProvider(BG_ELIF, Entry(kStrElif, ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
     LoadGenProvider(BG_ELSE, Entry(kStrElse, ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
     LoadGenProvider(BG_END, Entry(kStrEnd, TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
-    LoadGenProvider(BG_FOR, Entry(kStrFor, ForEachHead, kFlagNormalEntry, kCodeNormalParm, "%unit|%object"));
     LoadGenProvider(BG_IF, Entry(kStrIf, ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
     LoadGenProvider(BG_VAR, Entry(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
     LoadGenProvider(BG_SET, Entry(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
@@ -436,7 +354,6 @@ namespace kagami {
   }
 
   void Activiate() {
-    using T = ActivityTemplate;
     using namespace entry;
     InitTemplates();
     InitMethods();
