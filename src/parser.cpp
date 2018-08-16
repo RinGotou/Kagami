@@ -14,7 +14,7 @@ namespace kagami {
 
     void Log(Message msg) {
       auto now = time(nullptr);
-#if defined(_WIN32)
+#if defined(_WIN32) && defined(_MSC_VER)
       char nowtime[30] = { ' ' };
       ctime_s(nowtime, sizeof(nowtime), &now);
       GetLogger().emplace_back(log_t(string(nowtime), msg));
@@ -22,138 +22,6 @@ namespace kagami {
       string nowtime(ctime(&now));
       GetLogger().emplace_back(log_t(nowtime, msg));
 #endif
-    }
-  }
-
-  namespace entry {
-    GenericTokenEnum GetGenericToken(string src) {
-      if (src == kStrNop)          return BG_NOP;
-      if (src == kStrDef)          return BG_DEF;
-      if (src == kStrRef)          return BG_REF;
-      if (src == kStrCodeSub)      return BG_CODE_SUB;
-      if (src == kStrSub)          return BG_SUB;
-      if (src == kStrBinOp)        return BG_BINOP;
-      if (src == kStrIf)           return BG_IF;
-      if (src == kStrElif)         return BG_ELIF;
-      if (src == kStrEnd)          return BG_END;
-      if (src == kStrElse)         return BG_ELSE;
-      if (src == kStrVar)          return BG_VAR;
-      if (src == kStrSet)          return BG_SET;
-      if (src == kStrWhile)        return BG_WHILE;
-      if (src == kStrFor)          return BG_FOR;
-      if (src == kStrLeftSelfInc)  return BG_LSELF_INC;
-      if (src == kStrLeftSelfDec)  return BG_LSELF_DEC;
-      if (src == kStrRightSelfInc) return BG_RSELF_INC;
-      if (src == kStrRightSelfDec) return BG_RSELF_DEC;
-      return BG_NUL;
-    }
-
-    string GetGenTokenValue(GenericTokenEnum token) {
-      string result;
-      switch (token) {
-      case BG_NOP:result       = kStrNop;                 break;
-      case BG_DEF:result       = kStrDef;                 break;
-      case BG_REF:result       = kStrRef;                 break;
-      case BG_CODE_SUB:result  = kStrCodeSub;             break;
-      case BG_SUB:result       = kStrSub;                 break;
-      case BG_BINOP:result     = kStrBinOp;               break;
-      case BG_IF:result        = kStrIf;                  break;
-      case BG_ELIF:result      = kStrElif;                break;
-      case BG_END:result       = kStrEnd;                 break;
-      case BG_ELSE:result      = kStrElse;                break;
-      case BG_VAR:result       = kStrVar;                 break;
-      case BG_SET:result       = kStrSet;                 break;
-      case BG_WHILE:result     = kStrWhile;               break;
-      case BG_FOR:result       = kStrFor;                 break;
-      case BG_LSELF_INC:result = kStrLeftSelfInc;         break;
-      case BG_LSELF_DEC:result = kStrLeftSelfDec;         break;
-      case BG_RSELF_INC:result = kStrRightSelfInc;        break;
-      case BG_RSELF_DEC:result = kStrRightSelfDec;        break;
-      }
-      return result;
-    }
-
-    OperatorCode GetOperatorCode(string src) {
-      if (src == "+")  return ADD;
-      if (src == "-")  return SUB;
-      if (src == "*")  return MUL;
-      if (src == "/")  return DIV;
-      if (src == "=")  return EQUAL;
-      if (src == "==") return IS;
-      if (src == "<=") return LESS_OR_EQUAL;
-      if (src == ">=") return MORE_OR_EQUAL;
-      if (src == "!=") return NOT_EQUAL;
-      if (src == ">")  return MORE;
-      if (src == "<")  return LESS;
-      if (src == "++") return SELFINC;
-      if (src == "--") return SELFDEC;
-      return NUL;
-    }
-
-    vector<EntryProvider> &GetEntryBase() {
-      static vector<EntryProvider> base;
-      return base;
-    }
-
-    map<GenericTokenEnum, EntryProvider> &GetGenProviderBase() {
-      static map<GenericTokenEnum, EntryProvider> base;
-      return base;
-    }
-
-    void Inject(ActivityTemplate temp) { 
-      GetEntryBase().emplace_back(EntryProvider(temp));
-    }
-
-    void LoadGenProvider(GenericTokenEnum token, ActivityTemplate temp) {
-      GetGenProviderBase().insert(pair<GenericTokenEnum, EntryProvider>(
-        token, EntryProvider(temp)));
-    }
-
-    EntryProvider GetGenericProvider(GenericTokenEnum token) {
-      auto &base = GetGenProviderBase();
-      map<GenericTokenEnum, EntryProvider>::iterator it = base.find(token);
-      if (it != base.end()) return it->second;
-      return EntryProvider();
-    }
-
-    EntryProvider Order(string id,string type = kTypeIdNull,int size = -1) {
-      GenericTokenEnum basicOpCode = GetGenericToken(id);
-      if (basicOpCode != BG_NUL) {
-        return GetGenericProvider(basicOpCode);
-      }
-
-      vector<EntryProvider> &base = GetEntryBase();
-      OperatorCode opCode = GetOperatorCode(id);
-
-      if (opCode == EQUAL)    return Order(kStrSet); 
-      else if (opCode != NUL) return Order(kStrBinOp); 
-
-      EntryProvider result;
-      for (auto &unit : base) {
-        if (id == unit.GetId() && type == unit.GetSpecificType()
-          && (size == -1 || size == unit.GetParameterSIze())) {
-          result = unit;
-          break;
-        }
-      }
-      return result;
-    }
-
-    size_t GetRequiredCount(string id) {
-      OperatorCode opCode = GetOperatorCode(id);
-      if (opCode == EQUAL) return Order(kStrSet).GetParameterSIze();
-      if (opCode != NUL)   return Order(kStrBinOp).GetParameterSIze();
-      auto provider = Order(id);
-      if (provider.Good()) return provider.GetParameterSIze();
-      
-      return 0;
-    }
-
-    void RemoveByTemplate(ActivityTemplate temp) {
-      auto &base = GetEntryBase();
-      vector<EntryProvider>::iterator it;
-      for (it = base.begin(); it != base.end(); ++it) if (*it == temp) break;
-      if (it != base.end()) base.erase(it);
     }
   }
 
@@ -201,16 +69,14 @@ namespace kagami {
 
   void ScriptMachine::ConditionRoot(bool value) {
     modeStack.push(currentMode);
-    switch (value) {
-    case true:
+    if (value == true) {
       entry::CreateManager();
       currentMode = kModeCondition;
       conditionStack.push(true);
-      break;
-    case false:
+    }
+    else {
       currentMode = kModeNextCondition;
       conditionStack.push(false);
-      break;
     }
   }
 
@@ -231,15 +97,13 @@ namespace kagami {
 
   void ScriptMachine::ConditionLeaf() {
     if (!conditionStack.empty()) {
-      switch (conditionStack.top()) {
-      case true:
+      if (conditionStack.top() == true) {
         currentMode = kModeNextCondition;
-        break;
-      case false:
+      }
+      else {
         entry::CreateManager();
         conditionStack.top() = true;
         currentMode = kModeCondition;
-        break;
       }
     }
     else {
@@ -674,12 +538,12 @@ namespace kagami {
     size_t        count;
     deque<Token>  tokens;
     ObjectMap     map;
-    auto          providerSize = -1;
-    auto          health       = true;
-    auto          providerType = kTypeIdNull;
-    auto          tags         = Spilt(symbol.back().first);
-    const auto    id           = GetHead(symbol.back().first);
-    EntryProvider provider;
+    auto providerSize = -1;
+    auto health       = true;
+    auto providerType = kTypeIdNull;
+    auto tags         = Spilt(symbol.back().first);
+    const auto    id  = GetHead(symbol.back().first);
+    Entry provider;
 
     auto getName = [](string target) ->string {
       if (target.front() == '&' || target.front() == '%') {
@@ -758,7 +622,7 @@ namespace kagami {
           }
           else if (args[count].front() == '%') {
             temp.Manage(tokens[count].first)
-                .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+                .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
                 .SetTokenType(TokenTypeEnum::T_GENERIC);
           }
           else {
@@ -774,7 +638,7 @@ namespace kagami {
           break;
         default:
           temp.Manage(tokens[count].first)
-              .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+              .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
               .SetTokenType(tokens[count].second);
           break;
         }
@@ -787,7 +651,7 @@ namespace kagami {
         const auto sub = to_string(this->index);
         map.insert(Parameter(kStrCodeSub,Object()
            .Manage(sub)
-           .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
            .SetTokenType(TokenTypeEnum::T_INTEGER)));
       }
 
@@ -795,7 +659,7 @@ namespace kagami {
       case kFlagOperatorEntry:
         map.insert(Parameter(kStrOperator, Object()
            .Manage(symbol.back().first)
-           .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
+           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
            .SetTokenType(TokenTypeEnum::T_SYMBOL)));
         break;
       case kFlagMethod:
@@ -854,16 +718,12 @@ namespace kagami {
   }
 
   void Processor::EqualMark() {
-    switch (symbol.empty()) {
-    case true:
-      symbol.emplace_back(currentToken); 
-      break;
-    case false:
-      switch (defineLine) {
-      case true: defineLine = false; break;
-      case false:symbol.emplace_back(currentToken); break;
-      }
-      break;
+    if (symbol.empty()) {
+      symbol.emplace_back(currentToken);
+    }
+    else {
+      if (defineLine) defineLine = false;
+      else symbol.emplace_back(currentToken);
     }
   }
 
@@ -994,7 +854,7 @@ namespace kagami {
 
     if (dotOperator) {
       const auto id = entry::GetTypeId(item.back().first);
-      if (kit.FindInStringGroup(currentToken.first, type::GetTemplate(id)->GetMethods())) {
+      if (kit.FindInStringGroup(currentToken.first, type::GetPlanner(id)->GetMethods())) {
         auto provider = entry::Order(currentToken.first, id);
         if (provider.Good()) {
           symbol.emplace_back(Token(currentToken.first + ':' + id, TokenTypeEnum::T_GENERIC));
@@ -1012,13 +872,12 @@ namespace kagami {
       }
     }
     else {
-      switch (functionLine) {
-      case true:
+      if (functionLine) {
         item.emplace_back(currentToken);
-        break;
-      case false:
+      }
+      else {
         if (entry::Order(currentToken.first).Good()) {
-          symbol.emplace_back(currentToken); 
+          symbol.emplace_back(currentToken);
           function = true;
         }
         else {
@@ -1029,7 +888,6 @@ namespace kagami {
             item.emplace_back(currentToken);
           }
         }
-        break;
       }
     }
 
@@ -1054,14 +912,12 @@ namespace kagami {
   }
 
   void Processor::OtherTokens() {
-    switch (insertBtnSymbols) {
-    case true:
+    if (insertBtnSymbols) {
       item.insert(item.begin() + nextInsertSubscript, currentToken);
       insertBtnSymbols = false;
-      break;
-    case false:
+    }
+    else {
       item.emplace_back(currentToken);
-      break;
     }
   }
 
@@ -1094,6 +950,7 @@ namespace kagami {
       switch (OPValue) {
       case OperatorCode::SELFINC:symbol.emplace_back(kStrRightSelfInc, TokenTypeEnum::T_GENERIC); break;
       case OperatorCode::SELFDEC:symbol.emplace_back(kStrRightSelfDec, TokenTypeEnum::T_GENERIC); break;
+      default:break;
       }
     }
     return true;
@@ -1176,15 +1033,6 @@ namespace kagami {
     currentToken = Token();
 
     lambdamap.clear();
-    return result;
-  }
-
-  Message EntryProvider::Start(ObjectMap &map) const {
-    Message result;
-    switch (this->Good()) {
-    case true: result = activity(map); break;
-    case false:result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry."); break;
-    }
     return result;
   }
 }
