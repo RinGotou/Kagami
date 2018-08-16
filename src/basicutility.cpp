@@ -1,139 +1,42 @@
 #include "parser.h"
-#if defined(_WIN32)
-#include "windows.h"
-#endif
-#include <iostream>
 
 namespace kagami {
   namespace type {
-    map <string, ObjTemplate> &GetTemplateMap() {
-      static map<string, ObjTemplate> base;
+    map <string, ObjectPlanner> &GetPlannerBase() {
+      static map<string, ObjectPlanner> base;
       return base;
     }
 
     shared_ptr<void> GetObjectCopy(Object &object) {
       shared_ptr<void> result = nullptr;
       const auto option       = object.GetTypeId();
-      const auto it           = GetTemplateMap().find(option);
+      const auto it           = GetPlannerBase().find(option);
 
-      if (it != GetTemplateMap().end()) {
+      if (it != GetPlannerBase().end()) {
         result = it->second.CreateObjectCopy(object.Get());
       }
       return result;
     }
 
-    ObjTemplate *GetTemplate(const string name) {
-      ObjTemplate *result = nullptr;
-      const auto it       = GetTemplateMap().find(name);
+    ObjectPlanner *GetPlanner(const string name) {
+      ObjectPlanner *result = nullptr;
+      const auto it       = GetPlannerBase().find(name);
 
-      if (it != GetTemplateMap().end()) {
+      if (it != GetPlannerBase().end()) {
         result = &(it->second);
       }
       return result;
     }
 
-    void AddTemplate(string name, ObjTemplate temp) {
-      GetTemplateMap().insert(pair<string, ObjTemplate>(name, temp));
+    void AddTemplate(string name, ObjectPlanner temp) {
+      GetPlannerBase().insert(pair<string, ObjectPlanner>(name, temp));
     }
 
     void DisposeTemplate(const string name) {
-      const auto it = GetTemplateMap().find(name);
-      if (it != GetTemplateMap().end()) GetTemplateMap().erase(it);
+      const auto it = GetPlannerBase().find(name);
+      if (it != GetPlannerBase().end()) GetPlannerBase().erase(it);
     }
   }
-
-  namespace entry {
-    list<ObjectManager> &GetObjectStack() {
-      static list<ObjectManager> base;
-      return base;
-    }
-
-    Object *FindObject(string sign) {
-      Object *object = nullptr;
-      size_t count   = GetObjectStack().size();
-      list<ObjectManager> &base = GetObjectStack();
-
-      while (!base.empty() && count > 0) {
-        object = base[count - 1].Find(sign);
-        if (object != nullptr) {
-          break;
-        }
-        count--;
-      }
-      return object;
-    }
-
-    ObjectManager &GetCurrentManager() {
-      return GetObjectStack().back();
-    }
-
-    Object *FindObjectInCurrentManager(string sign) {
-      Object *object      = nullptr;
-      ObjectManager &base = GetObjectStack().back();
-
-      while(!base.Empty()) {
-        object = base.Find(sign);
-        if(object != nullptr) {
-          break;
-        }
-      }
-
-      return object;
-    }
-
-    Object *CreateObject(string sign, Object &object) {
-      ObjectManager &base = GetObjectStack().back();
-
-      base.Add(sign, object);
-      const auto result = base.Find(sign);
-      return result;
-    }
-
-    string GetTypeId(const string sign) {
-      auto result = kTypeIdNull;
-      auto count  = GetObjectStack().size();
-      auto &base  = GetObjectStack(); 
-
-      while (count > 0) {
-        const auto object = base[count - 1].Find(sign);
-        if (object != nullptr) {
-          result = object->GetTypeId();
-        }
-        count--;
-      }
-
-      return result;
-    }
-
-    void ResetObject() {
-      while (!GetObjectStack().empty()) GetObjectStack().pop_back();
-    }
-
-    ObjectManager &CreateManager() {
-      auto &base = GetObjectStack();
-      base.push_back(std::move(ObjectManager()));
-      return GetObjectStack().back();
-    }
-
-    bool DisposeManager() {
-      if (!GetObjectStack().empty()) { GetObjectStack().pop_back(); }
-      return GetObjectStack().empty();
-    } 
-
-#if defined(_WIN32)
-    //from MSDN
-    std::wstring s2ws(const std::string& s) {
-      const auto slength = static_cast<int>(s.length()) + 1;
-      const auto len     = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, nullptr, 0);
-      auto *buf          = new wchar_t[len];
-      MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-      std::wstring r(buf);
-      delete[] buf;
-      return r;
-    }
-#endif
-  }
-
 
   Message WriteLog(ObjectMap &p) {
     Kit kit;
@@ -204,6 +107,7 @@ namespace kagami {
           }
           tempresult ? temp = kStrTrue : temp = kStrFalse;
           break;
+        default:break;
         }
       }
       else if (enumtype == enum_str) {
@@ -244,11 +148,11 @@ namespace kagami {
   }
 
   Message ConditionRoot(ObjectMap &p) {
-    return Message(CastToString(p["state"].Get()), kCodeConditionRoot, kStrEmpty);
+    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty);
   }
 
   Message ConditionBranch(ObjectMap &p) {
-    return Message(CastToString(p["state"].Get()), kCodeConditionBranch, kStrEmpty);
+    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty);
   }
 
   Message ConditionLeaf(ObjectMap &p) {
@@ -256,7 +160,7 @@ namespace kagami {
   }
 
   Message WhileCycle(ObjectMap &p) {
-    return Message(CastToString(p["state"].Get()), kCodeHeadSign, kStrEmpty);
+    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty);
   }
 
   Message TailSign(ObjectMap &p) {
@@ -353,79 +257,7 @@ namespace kagami {
     return Message(kStrRedirect, kCodeSuccess, result);
   }
 
-  Message ForEachHead(ObjectMap &p) {
-    static stack<string> subscriptStack;
-    Kit kit;
-    string unitName      = *static_pointer_cast<string>(p["unit"].Get());
-    string codeSubscript = *static_pointer_cast<string>(p[kStrCodeSub].Get());
-    string objectName    = *static_pointer_cast<string>(p["object"].Get());
-    Object *object       = entry::FindObject(objectName);
-    bool result;
-    size_t currentSub  = 0;
-    const auto methods = object->GetMethods();
-    const auto typeId  = object->GetTypeId();
-    Object *objUnit    = nullptr;
 
-    if (!kit.FindInStringGroup("at",methods) && !kit.FindInStringGroup("size",methods)) {
-      return Message(kStrFatalError, kCodeIllegalCall, 
-        "This object isn't compatible with For-Each method.");
-    }
-
-    if (subscriptStack.empty() || subscriptStack.top() != codeSubscript) {
-      subscriptStack.push(codeSubscript);
-      auto &manager = entry::CreateManager();
-      manager.Add(kStrSub,  Object().Manage("0", kTypeIdNull).SetPermanent(true));
-      manager.Add(unitName, Object().Manage(kStrNull, kTypeIdNull).SetPermanent(true));
-    }
-    else if (subscriptStack.top() == codeSubscript) {
-      const auto objSub = entry::FindObjectInCurrentManager(kStrSub);
-      currentSub        = stoi(*static_pointer_cast<string>(objSub->Get()));
-    }
-    objUnit = entry::FindObjectInCurrentManager(unitName);
-
-    auto providerAt      = entry::Order("at", typeId, 1);
-    auto providerGetSize = entry::Order("size", typeId, -1);
-    if (providerAt.Good() && providerGetSize.Good()) {
-      ObjectMap map;
-      auto subStr = to_string(currentSub);
-      map.insert(Parameter(kStrObject, Object().Ref(*object)));
-      Message msg = providerGetSize.Start(map);
-      size_t size = stoi(msg.GetDetail());
-      if (size > currentSub) {
-        map.insert(Parameter("subscript_1", Object().Manage(subStr)));
-        msg = providerAt.Start(map);
-        if (msg.GetCode() == kCodeObject) {
-          objUnit->Copy(msg.GetObj());
-          result = true;
-        }
-        else if (msg.GetValue() == kStrRedirect) {
-          objUnit->Manage(msg.GetDetail())
-                  .SetMethods(type::GetTemplate(kTypeIdRawString)->GetMethods())
-                  .SetTokenType(kit.GetTokenType(msg.GetDetail()));
-          result = true;
-        }
-        else {
-          result = false;
-        }
-      }
-      else {
-        result = false;
-      }
-
-      kit.CleanupMap(map);
-      currentSub++;
-      Object *objSub = entry::FindObjectInCurrentManager(kStrSub);
-      objSub->Manage(to_string(currentSub));
-    }
-    else {
-      return Message(kStrFatalError, kCodeIllegalCall,
-        "This object isn't compatible with For-Each method.");
-    }
-
-    string value;
-    result ? value = kStrTrue : value = kStrFalse;
-    return Message(value, kCodeHeadSign, kStrEmpty);
-  }
 
   Message SetOperand(ObjectMap &p) {
     Message result;
@@ -446,7 +278,7 @@ namespace kagami {
   Message CreateOperand(ObjectMap &p) {
     Message result;
     auto name = p["name"], source = p["source"];
-    const auto nameValue = CastToString(name.Get());
+    const auto nameValue = *static_pointer_cast<string>(name.Get());
     const auto ptr = entry::FindObject(nameValue);
 
     if (ptr == nullptr) {
@@ -456,7 +288,7 @@ namespace kagami {
             .SetMethods(source.GetMethods())
             .SetTokenType(source.GetTokenType())
             .SetRo(false);
-      auto re = entry::CreateObject(CastToString(name.Get()), object);
+      auto re = entry::CreateObject(*static_pointer_cast<string>(name.Get()), object);
       if (re == nullptr) {
         result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
       }
@@ -491,8 +323,8 @@ namespace kagami {
 
   Message TimeReport(ObjectMap &p) {
     auto now = time(nullptr);
+#if defined(_WIN32) && defined(_MSC_VER)
     char nowTime[30] = { ' ' };
-#if defined(_WIN32)
     ctime_s(nowTime, sizeof(nowTime), &now);
     return Message(kStrRedirect, kCodeSuccess, "'" + string(nowTime) + "'");
 #else
@@ -506,38 +338,31 @@ namespace kagami {
     return result;
   }
 
-  /*
-  Init all basic objects and entries
-  Just do not edit unless you want to change processor's basic behaviors.
-  */
   void LoadGenericProvider() {
-    using T = ActivityTemplate;
     using namespace entry;
-    LoadGenProvider(BG_BINOP, T(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
-    LoadGenProvider(BG_ELIF, T(kStrElif, ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(BG_ELSE, T(kStrElse, ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
-    LoadGenProvider(BG_END, T(kStrEnd, TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
-    LoadGenProvider(BG_FOR, T(kStrFor, ForEachHead, kFlagNormalEntry, kCodeNormalParm, "%unit|%object"));
-    LoadGenProvider(BG_IF, T(kStrIf, ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(BG_VAR, T(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
-    LoadGenProvider(BG_SET, T(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
-    LoadGenProvider(BG_WHILE, T(kStrWhile, WhileCycle, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(BG_LSELF_INC, T(kStrLeftSelfInc, LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(BG_LSELF_DEC, T(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(BG_RSELF_INC, T(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(BG_RSELF_DEC, T(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_BINOP, Entry(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
+    LoadGenProvider(BG_ELIF, Entry(kStrElif, ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
+    LoadGenProvider(BG_ELSE, Entry(kStrElse, ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
+    LoadGenProvider(BG_END, Entry(kStrEnd, TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
+    LoadGenProvider(BG_IF, Entry(kStrIf, ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
+    LoadGenProvider(BG_VAR, Entry(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
+    LoadGenProvider(BG_SET, Entry(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
+    LoadGenProvider(BG_WHILE, Entry(kStrWhile, WhileCycle, kFlagNormalEntry, kCodeNormalParm, "state"));
+    LoadGenProvider(BG_LSELF_INC, Entry(kStrLeftSelfInc, LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_LSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_RSELF_INC, Entry(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+    LoadGenProvider(BG_RSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
   }
 
   void Activiate() {
-    using T = ActivityTemplate;
     using namespace entry;
     InitTemplates();
     InitMethods();
     LoadGenericProvider();
-    Inject(T("log", WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
-    Inject(T("print", Print, kFlagNormalEntry, kCodeNormalParm, "object"));
-    Inject(T("time", TimeReport, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(T("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(Entry("log", WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
+    Inject(Entry("print", Print, kFlagNormalEntry, kCodeNormalParm, "object"));
+    Inject(Entry("time", TimeReport, kFlagNormalEntry, kCodeNormalParm, ""));
+    Inject(Entry("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
     //Linux Version
   }
 }

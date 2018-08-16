@@ -1,15 +1,10 @@
-#include "kagamicommon.h"
-
+#include "kit.h"
 namespace kagami {
-  void Message::SetObject(Object &object, string id) {
-    this->object = make_shared<Object>(object);
-    this->code = kCodeObject;
-    this->detail = id;
+  bool Kit::IsString(string target) {
+    if (target.empty()) return false;
+    return(target.front() == '\'' && target.back() == '\'');
   }
 
-  Object Message::GetObj() const {
-    return *static_pointer_cast<Object>(this->object);
-  }
 
   bool Kit::IsGenericToken(string target) {
     const auto head = target.front();
@@ -24,7 +19,7 @@ namespace kagami {
     const auto head = target.front();
     if (head == '-' && target.size() == 1) return false;
     if (!IsDigit(head) && head != '-')     return false;
-    for (size_t i = 1;i < target.size();++i) {
+    for (size_t i = 1; i < target.size(); ++i) {
       if (!IsDigit(target[i])) return false;
     }
     return true;
@@ -34,7 +29,7 @@ namespace kagami {
     const auto head = target.front();
     if (head == '-' && target.size() == 1) return false;
     if (!IsDigit(head) && head != '-')     return false;
-    for(size_t i = 1;i < target.size();++i) {
+    for (size_t i = 1; i < target.size(); ++i) {
       if (!IsDigit(target[i]) && target[i] != '.')       return false;
       if (i == target.size() - 1 && !IsDigit(target[i])) return false;
     }

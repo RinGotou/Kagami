@@ -60,23 +60,23 @@ namespace kagami {
 #endif
 }
 
-#ifndef _NO_CUI_
-void AtExitHandler() {
-  std::cout << "Press enter to close..." << std::endl;
-  std::cin.get();
-}
-#endif
+//#ifndef _NO_CUI_
+//void AtExitHandler() {
+//  std::cout << "Press enter to close..." << std::endl;
+//  std::cin.get();
+//}
+//#endif
 
 int main(int argc, char **argv) {
   kagami::ScriptCore scriptCore;
-  atexit(AtExitHandler);
+  //atexit(AtExitHandler);
 
   //switch main code between test case and normal case.
   //this macro can be found in the head of this file.
 #ifdef _ENABLE_DEBUGGING_
   auto &base = kagami::entry::GetObjectStack();
   scriptCore.ExecScriptFile("C:\\workspace\\ErrorTest.kagami");
-  atexit(AtExitHandler);
+  //atexit(AtExitHandler);
 #else
 #ifndef _NO_CUI_
   if (argc > 1) {
