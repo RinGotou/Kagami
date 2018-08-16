@@ -147,7 +147,7 @@ namespace kagami {
     ObjectMap map;
     if (object.GetTypeId() == kTypeIdArrayBase) {
       auto &base = *static_pointer_cast<vector<Object>>(object.Get());
-      auto provider = management::Order("print", kTypeIdNull, -1);
+      auto provider = entry::Order("print", kTypeIdNull, -1);
       for (auto &unit : base) {
         map.insert(pair<string, Object>("object", unit));
         result = provider.Start(map);
@@ -165,7 +165,7 @@ namespace kagami {
   }
 
   void InitMethods() {
-    using namespace management;
+    using namespace entry;
     //constructor
     Inject(Entry("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
     //methods

@@ -42,6 +42,7 @@ namespace kagami {
   using CastFunc = pair<string, CopyCreator>;
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
+  
 
   const string kEngineVersion = "0.7";
   const string kInsideName = "Clover";
@@ -100,6 +101,23 @@ namespace kagami {
     T_BOOLEAN, T_SYMBOL, T_BLANK, T_CHAR, T_NUL
   };
 
+  using Token = pair<string, TokenTypeEnum>;
+
+  enum GenericTokenEnum {
+    BG_NOP, BG_DEF, BG_REF, BG_CODE_SUB,
+    BG_SUB, BG_BINOP, BG_IF, BG_ELIF,
+    BG_END, BG_ELSE, BG_VAR, BG_SET,
+    BG_WHILE, BG_FOR, BG_LSELF_INC, BG_LSELF_DEC,
+    BG_RSELF_INC, BG_RSELF_DEC,
+    BG_NUL
+  };
+
+  enum BasicTokenEnum {
+    TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT,
+    TOKEN_COLON, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_SQRBRACKET, TOKEN_RIGHT_BRACKET,
+    TOKEN_SELFOP, TOKEN_OTHERS
+  };
+
   const string kTypeIdNull      = "null";
   const string kTypeIdInt       = "int";
   const string kTypeIdRawString = "string";
@@ -112,6 +130,30 @@ namespace kagami {
   const size_t kModeCycle         = 2;
   const size_t kModeCycleJump     = 3;
   const size_t kModeCondition     = 4;
+
+
+
+  const string kStrNormalArrow = ">>>";
+  const string kStrDotGroup = "...";
+  const string kStrHostArgHead = "arg";
+  const string kStrNop = "nop";
+  const string kStrDef = "def";
+  const string kStrRef = "__ref";
+  const string kStrCodeSub = "__code_sub";
+  const string kStrSub = "__sub";
+  const string kStrBinOp = "BinOp";
+  const string kStrIf = "if";
+  const string kStrElif = "elif";
+  const string kStrEnd = "end";
+  const string kStrElse = "else";
+  const string kStrVar = "var";
+  const string kStrSet = "__set";
+  const string kStrWhile = "while";
+  const string kStrFor = "for";
+  const string kStrLeftSelfInc = "lSelfInc";
+  const string kStrLeftSelfDec = "lSelfDec";
+  const string kStrRightSelfInc = "rSelfInc";
+  const string kStrRightSelfDec = "rSelfDec";
 
   const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
 }

@@ -47,6 +47,7 @@ namespace kagami {
     tokenTypeEnum = TokenTypeEnum::T_NUL;
     ro = false;
     permanent = false;
+    ref = false;
   }
 
   bool Object::Compare(Object &object) const {
@@ -68,12 +69,12 @@ namespace kagami {
     return *this;
   }
 
-  shared_ptr<void> Object::Get() const {
+  shared_ptr<void> Object::Get() {
     if (ref) return GetTargetObject()->Get();
     return ptr;
   }
 
-  string Object::GetTypeId() const {
+  string Object::GetTypeId() {
     if (ref) return GetTargetObject()->GetTypeId();
     return typeId;
   }
@@ -97,15 +98,15 @@ namespace kagami {
     this->permanent = permanent;
     return *this;
   }
-  string Object::GetMethods() const {
+  string Object::GetMethods() {
     if (ref) return GetTargetObject()->GetMethods();
     return methods;
   }
-  TokenTypeEnum Object::GetTokenType() const {
+  TokenTypeEnum Object::GetTokenType() {
     if (ref) return GetTargetObject()->GetTokenType();
     return tokenTypeEnum;
   }
-  bool Object::IsRo() const {
+  bool Object::IsRo() {
     if (ref) return GetTargetObject()->IsRo();
     return ro;
   }

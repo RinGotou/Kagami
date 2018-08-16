@@ -17,15 +17,15 @@ namespace kagami {
     void Clear();
     bool Compare(Object &object) const;
     Object &Copy(Object &object);
-    shared_ptr<void> Get() const;
-    string GetTypeId() const;
+    shared_ptr<void> Get();
+    string GetTypeId();
     Object &SetMethods(string methods);
     Object &SetTokenType(TokenTypeEnum tokenTypeEnum);
     Object &SetRo(bool ro);
     Object &SetPermanent(bool permanent);
-    string GetMethods() const;
-    TokenTypeEnum GetTokenType() const;
-    bool IsRo() const;
+    string GetMethods();
+    TokenTypeEnum GetTokenType();
+    bool IsRo();
 
     bool IsPermanent() const { return permanent; }
     Object &Copy(Object &&object) { return this->Copy(object); }
@@ -40,7 +40,7 @@ namespace kagami {
     TokenTypeEnum tokenTypeEnum;
     bool ro, permanent, ref;
 
-    Object *GetTargetObject() const { return static_pointer_cast<TargetObject>(ptr)->ptr; }
+    Object *GetTargetObject() { return static_pointer_cast<TargetObject>(ptr)->ptr; }
   };
 
   /* Object Template Class

@@ -25,131 +25,6 @@ namespace kagami {
     }
   }
 
-  namespace management {
-    GenericTokenEnum GetGenericToken(string src) {
-      if (src == kStrNop)          return BG_NOP;
-      if (src == kStrDef)          return BG_DEF;
-      if (src == kStrRef)          return BG_REF;
-      if (src == kStrCodeSub)      return BG_CODE_SUB;
-      if (src == kStrSub)          return BG_SUB;
-      if (src == kStrBinOp)        return BG_BINOP;
-      if (src == kStrIf)           return BG_IF;
-      if (src == kStrElif)         return BG_ELIF;
-      if (src == kStrEnd)          return BG_END;
-      if (src == kStrElse)         return BG_ELSE;
-      if (src == kStrVar)          return BG_VAR;
-      if (src == kStrSet)          return BG_SET;
-      if (src == kStrWhile)        return BG_WHILE;
-      if (src == kStrFor)          return BG_FOR;
-      if (src == kStrLeftSelfInc)  return BG_LSELF_INC;
-      if (src == kStrLeftSelfDec)  return BG_LSELF_DEC;
-      if (src == kStrRightSelfInc) return BG_RSELF_INC;
-      if (src == kStrRightSelfDec) return BG_RSELF_DEC;
-      return BG_NUL;
-    }
-
-    string GetGenTokenValue(GenericTokenEnum token) {
-      string result;
-      switch (token) {
-      case BG_NOP:result       = kStrNop;                 break;
-      case BG_DEF:result       = kStrDef;                 break;
-      case BG_REF:result       = kStrRef;                 break;
-      case BG_CODE_SUB:result  = kStrCodeSub;             break;
-      case BG_SUB:result       = kStrSub;                 break;
-      case BG_BINOP:result     = kStrBinOp;               break;
-      case BG_IF:result        = kStrIf;                  break;
-      case BG_ELIF:result      = kStrElif;                break;
-      case BG_END:result       = kStrEnd;                 break;
-      case BG_ELSE:result      = kStrElse;                break;
-      case BG_VAR:result       = kStrVar;                 break;
-      case BG_SET:result       = kStrSet;                 break;
-      case BG_WHILE:result     = kStrWhile;               break;
-      case BG_FOR:result       = kStrFor;                 break;
-      case BG_LSELF_INC:result = kStrLeftSelfInc;         break;
-      case BG_LSELF_DEC:result = kStrLeftSelfDec;         break;
-      case BG_RSELF_INC:result = kStrRightSelfInc;        break;
-      case BG_RSELF_DEC:result = kStrRightSelfDec;        break;
-      }
-      return result;
-    }
-
-    OperatorCode GetOperatorCode(string src) {
-      if (src == "+")  return ADD;
-      if (src == "-")  return SUB;
-      if (src == "*")  return MUL;
-      if (src == "/")  return DIV;
-      if (src == "=")  return EQUAL;
-      if (src == "==") return IS;
-      if (src == "<=") return LESS_OR_EQUAL;
-      if (src == ">=") return MORE_OR_EQUAL;
-      if (src == "!=") return NOT_EQUAL;
-      if (src == ">")  return MORE;
-      if (src == "<")  return LESS;
-      if (src == "++") return SELFINC;
-      if (src == "--") return SELFDEC;
-      return NUL;
-    }
-
-    vector<Entry> &GetEntryBase() {
-      static vector<Entry> base;
-      return base;
-    }
-
-    map<GenericTokenEnum, Entry> &GetGenProviderBase() {
-      static map<GenericTokenEnum, Entry> base;
-      return base;
-    }
-
-    void Inject(Entry temp) { 
-      GetEntryBase().emplace_back(temp);
-    }
-
-    void LoadGenProvider(GenericTokenEnum token, Entry temp) {
-      GetGenProviderBase().insert(pair<GenericTokenEnum, Entry>(
-        token, temp));
-    }
-
-    Entry GetGenericProvider(GenericTokenEnum token) {
-      auto &base = GetGenProviderBase();
-      map<GenericTokenEnum, Entry>::iterator it = base.find(token);
-      if (it != base.end()) return it->second;
-      return Entry();
-    }
-
-    Entry Order(string id,string type = kTypeIdNull,int size = -1) {
-      GenericTokenEnum basicOpCode = GetGenericToken(id);
-      if (basicOpCode != BG_NUL) {
-        return GetGenericProvider(basicOpCode);
-      }
-
-      vector<Entry> &base = GetEntryBase();
-      OperatorCode opCode = GetOperatorCode(id);
-
-      if (opCode == EQUAL)    return Order(kStrSet); 
-      else if (opCode != NUL) return Order(kStrBinOp); 
-
-      Entry result;
-      for (auto &unit : base) {
-        if (id == unit.GetId() && type == unit.GetSpecificType()
-          && (size == -1 || size == unit.GetParameterSIze())) {
-          result = unit;
-          break;
-        }
-      }
-      return result;
-    }
-
-    size_t GetRequiredCount(string id) {
-      OperatorCode opCode = GetOperatorCode(id);
-      if (opCode == EQUAL) return Order(kStrSet).GetParameterSIze();
-      if (opCode != NUL)   return Order(kStrBinOp).GetParameterSIze();
-      auto provider = Order(id);
-      if (provider.Good()) return provider.GetParameterSIze();
-      
-      return 0;
-    }
-  }
-
   BasicTokenEnum GetBasicToken(string src) {
     if (src == "=")   return TOKEN_EQUAL;
     if (src == ",")   return TOKEN_COMMA;
@@ -196,7 +71,7 @@ namespace kagami {
     modeStack.push(currentMode);
     switch (value) {
     case true:
-      management::CreateManager();
+      entry::CreateManager();
       currentMode = kModeCondition;
       conditionStack.push(true);
       break;
@@ -211,7 +86,7 @@ namespace kagami {
     if (!conditionStack.empty()) {
       if (conditionStack.top() == false && currentMode == kModeNextCondition
         && value == true) {
-        management::CreateManager();
+        entry::CreateManager();
         currentMode = kModeCondition;
         conditionStack.top() = true;
       }
@@ -229,7 +104,7 @@ namespace kagami {
         currentMode = kModeNextCondition;
         break;
       case false:
-        management::CreateManager();
+        entry::CreateManager();
         conditionStack.top() = true;
         currentMode = kModeCondition;
         break;
@@ -244,12 +119,12 @@ namespace kagami {
   void ScriptMachine::HeadSign(bool value, bool selfObjectManagement) {
     if (cycleNestStack.empty()) {
       modeStack.push(currentMode);
-      if (!selfObjectManagement) management::CreateManager();
+      if (!selfObjectManagement) entry::CreateManager();
     }
     else {
       if (cycleNestStack.top() != current - 1) {
         modeStack.push(currentMode);
-        if (!selfObjectManagement) management::CreateManager();
+        if (!selfObjectManagement) entry::CreateManager();
       }
     }
     if (value == true) {
@@ -277,7 +152,7 @@ namespace kagami {
       conditionStack.pop();
       currentMode = modeStack.top();
       modeStack.pop();
-      management::DisposeManager();
+      entry::DisposeManager();
     }
     if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
       switch (currentMode) {
@@ -286,14 +161,14 @@ namespace kagami {
           cycleTailStack.push(current - 1);
         }
         current = cycleNestStack.top();
-        management::GetCurrentManager().clear();
+        entry::GetCurrentManager().clear();
         break;
       case kModeCycleJump:
         currentMode = modeStack.top();
         modeStack.pop();
         cycleNestStack.pop();
         cycleTailStack.pop();
-        management::DisposeManager();
+        entry::DisposeManager();
         break;
       default:break;
       }
@@ -310,7 +185,7 @@ namespace kagami {
 
     if (storage.empty()) return result;
 
-    management::CreateManager();
+    entry::CreateManager();
 
     //Main state machine
     while (current < storage.size()) {
@@ -361,7 +236,7 @@ namespace kagami {
       ++current;
     }
 
-    management::DisposeManager();
+    entry::DisposeManager();
 
     return result;
   }
@@ -373,13 +248,13 @@ namespace kagami {
     Processor processor;
     bool subProcess = false;
 
-    management::CreateManager();
+    entry::CreateManager();
 
     while (msg.GetCode() != kCodeQuit) {
       std::cout << head;
       std::getline(std::cin, buf);
       processor.Build(buf);
-      auto tokenValue = management::GetGenericToken(processor.GetFirstToken().first);
+      auto tokenValue = entry::GetGenericToken(processor.GetFirstToken().first);
       switch (tokenValue) {
       case BG_IF:
       case BG_WHILE:
@@ -414,7 +289,7 @@ namespace kagami {
       }
     }
 
-    management::DisposeManager();
+    entry::DisposeManager();
   }
 
   Processor &Processor::Build(string target) {
@@ -630,7 +505,7 @@ namespace kagami {
       if (it != lambdamap.end()) result = &(it->second);
     }
     else {
-      const auto ptr = management::FindObject(name);
+      const auto ptr = entry::FindObject(name);
       if (ptr != nullptr) result = ptr;
     }
     return result;
@@ -687,7 +562,7 @@ namespace kagami {
     }
 
     if (id != kStrNop) {
-      provider = management::Order(id, providerType, providerSize);
+      provider = entry::Order(id, providerType, providerSize);
       if (!provider.Good()) {
         msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found - " + id);
         symbol.pop_back();
@@ -906,7 +781,7 @@ namespace kagami {
       operatorTargetType = lambdamap.find(item.back().first)->second.GetTypeId();
     }
     else {
-      operatorTargetType = management::FindObject(item.back().first)->GetTypeId();
+      operatorTargetType = entry::FindObject(item.back().first)->GetTypeId();
     }
     item.emplace_back(currentToken);
     symbol.emplace_back(currentToken);
@@ -965,8 +840,8 @@ namespace kagami {
       while (symbol[j].first != "(" && symbol.back().first != "[" && 
         GetPriority(currentToken.first) < GetPriority(symbol[j].first)) {
         k == item.size()?
-          k -= management::GetRequiredCount(symbol[j].first):
-          k -= management::GetRequiredCount(symbol[j].first) - 1;
+          k -= entry::GetRequiredCount(symbol[j].first):
+          k -= entry::GetRequiredCount(symbol[j].first) - 1;
         --j;
       }
       symbol.insert(symbol.begin() + j + 1, currentToken);
@@ -986,9 +861,9 @@ namespace kagami {
     if (currentToken.first == kStrDef) functionLine = true;
 
     if (dotOperator) {
-      const auto id = management::GetTypeId(item.back().first);
+      const auto id = entry::GetTypeId(item.back().first);
       if (kit.FindInStringGroup(currentToken.first, type::GetPlanner(id)->GetMethods())) {
-        auto provider = management::Order(currentToken.first, id);
+        auto provider = entry::Order(currentToken.first, id);
         if (provider.Good()) {
           symbol.emplace_back(Token(currentToken.first + ':' + id, TokenTypeEnum::T_GENERIC));
           function = true;
@@ -1010,7 +885,7 @@ namespace kagami {
         item.emplace_back(currentToken);
         break;
       case false:
-        if (management::Order(currentToken.first).Good()) {
+        if (entry::Order(currentToken.first).Good()) {
           symbol.emplace_back(currentToken); 
           function = true;
         }
@@ -1074,8 +949,8 @@ namespace kagami {
   }
 
   bool Processor::SelfOperator(Message &msg) {
-    using management::OperatorCode;
-    auto OPValue = management::GetOperatorCode(currentToken.first);
+    using entry::OperatorCode;
+    auto OPValue = entry::GetOperatorCode(currentToken.first);
     if (forwardToken.second != TokenTypeEnum::T_GENERIC) {
       switch (OPValue) {
       case OperatorCode::SELFINC:symbol.emplace_back(kStrLeftSelfInc, TokenTypeEnum::T_GENERIC); break;
@@ -1101,7 +976,7 @@ namespace kagami {
   }
 
   Message Processor::Start(size_t mode) {
-    using namespace management;
+    using namespace entry;
     Kit kit;
     Message result;
     auto state = true;
@@ -1169,15 +1044,6 @@ namespace kagami {
     currentToken = Token();
 
     lambdamap.clear();
-    return result;
-  }
-
-  Message Entry::Start(ObjectMap &map) const {
-    Message result;
-    switch (this->Good()) {
-    case true: result = activity(map); break;
-    case false:result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry."); break;
-    }
     return result;
   }
 }
