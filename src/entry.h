@@ -8,36 +8,56 @@ namespace kagami {
   new argument map.entry provider have two mode:internal function and plugin
   function.
   */
+
   class Entry {
     string id;
-    int parmMode;
-    int priority;
+    GenericTokenEnum tokenEnum;
+    int parmMode, priority, flag;
     vector<string> args;
     Activity activity;
-    string specifictype;
-    size_t minsize;
+    string type;
+    bool placeholder;
   public:
-    Entry() : id(kStrNull), priority(0), activity(nullptr), minsize(0) {
+    Entry() : id(kStrNull), priority(0), activity(nullptr), flag(kFlagNormalEntry) {
       parmMode = kCodeIllegalParm;
-      specifictype = kTypeIdNull;
+      type = kTypeIdNull;
+      placeholder = false;
+      tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
-    Entry(string id, Activity activity, int priority, int parmMode, string args, string type = kTypeIdNull) :
+    Entry(Activity activity, int parmMode, string args,string id = kStrEmpty, string type = kTypeIdNull, int flag = kFlagNormalEntry, int priority = 4) :
       id(id),parmMode(parmMode), priority(priority), args(Kit().BuildStringVector(args)),
-      specifictype(type) {
+      type(type), flag(flag) {
       this->activity = activity;
+      placeholder = false;
+      tokenEnum = GenericTokenEnum::GT_NUL;
+    }
+
+    Entry(Activity activity, string args, GenericTokenEnum tokenEnum, int parmMode = kCodeNormalParm, int priority = 4) :
+      id(), parmMode(parmMode), priority(priority), args(Kit().BuildStringVector(args)) {
+      this->activity = activity;
+      this->tokenEnum = tokenEnum;
+      placeholder = false;
+    }
+
+    Entry(string id) :id(id), priority(0), activity(nullptr) {
+      parmMode = kCodeNormalParm;
+      type = kTypeIdNull;
+      placeholder = true;
+      tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
     bool Compare(Entry &target) const;
-    Entry &SetSpecificType(string type);
 
     bool operator==(Entry &target) const { return Compare(target); }
-    string GetSpecificType() const { return specifictype; }
+    string GetSpecificType() const { return type; }
+    GenericTokenEnum GetTokenEnum() const { return tokenEnum; }
     string GetId() const { return this->id; }
     int GetArgumentMode() const { return this->parmMode; }
     vector<string> GetArguments() const { return args; }
-    size_t GetParameterSIze() const { return this->args.size(); }
+    size_t GetParmSize() const { return this->args.size(); }
     int GetPriority() const { return this->priority; }
+    int GetFlag() const { return flag; }
     bool Good() const { return ((activity != nullptr) && parmMode != kCodeIllegalParm); }
     Message Start(ObjectMap &map) const;
   };
