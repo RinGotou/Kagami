@@ -14,7 +14,8 @@ namespace kagami {
     string typeId;
     string methods;
     TokenTypeEnum tokenTypeEnum;
-    bool ro, permanent, ref;
+    bool ro, permanent, ref, constructor, placeholder;
+    Object *parent;
 
     Object *GetTargetObject() { return static_pointer_cast<TargetObject>(ptr)->ptr; }
   public:
@@ -34,10 +35,16 @@ namespace kagami {
     string GetMethods();
     TokenTypeEnum GetTokenType();
     bool IsRo();
+    bool ConstructorFlag();
+    Object &SetPlaceholder();
 
+    void SetParentObject(Object &object) { parent = &object; }
+    Object *GetParentObject() { return parent; }
     bool IsPermanent() const { return permanent; }
+    Object &SetConstructorFlag() { constructor = true; }
     Object &Copy(Object &&object) { return this->Copy(object); }
     bool IsRef() const { return ref; }
+    bool IsPlaceholder() const { return placeholder; }
     bool operator==(Object &object) const { return Compare(object); }
     bool operator!=(Object &object) const { return !Compare(object); }
 

@@ -52,8 +52,8 @@ namespace kagami {
   using NamedObject = pair<string, Object>;
   
 
-  const string kEngineVersion = "0.7";
-  const string kInsideName = "Clover";
+  const string kEngineVersion = "0.9";
+  const string kCodeName = "Skyline";
 #if defined(_WIN32)
   const string kPlatformType = "Windows";
 #else
@@ -112,12 +112,12 @@ namespace kagami {
   using Token = pair<string, TokenTypeEnum>;
 
   enum GenericTokenEnum {
-    BG_NOP, BG_DEF, BG_REF, BG_CODE_SUB,
-    BG_SUB, BG_BINOP, BG_IF, BG_ELIF,
-    BG_END, BG_ELSE, BG_VAR, BG_SET,
-    BG_WHILE, BG_FOR, BG_LSELF_INC, BG_LSELF_DEC,
-    BG_RSELF_INC, BG_RSELF_DEC,
-    BG_NUL
+    GT_NOP, GT_DEF, GT_REF, GT_CODE_SUB,
+    GT_SUB, GT_BINOP, GT_IF, GT_ELIF,
+    GT_END, GT_ELSE, GT_VAR, GT_SET, GT_BIND, 
+    GT_WHILE, GT_FOR, GT_LSELF_INC, GT_LSELF_DEC,
+    GT_RSELF_INC, GT_RSELF_DEC,
+    GT_NUL
   };
 
   enum BasicTokenEnum {
@@ -144,7 +144,7 @@ namespace kagami {
   const string kStrNormalArrow = ">>>";
   const string kStrDotGroup = "...";
   const string kStrHostArgHead = "arg";
-  const string kStrNop = "nop";
+  const string kStrNop = "__nop";
   const string kStrDef = "def";
   const string kStrRef = "__ref";
   const string kStrCodeSub = "__code_sub";
@@ -156,6 +156,7 @@ namespace kagami {
   const string kStrElse = "else";
   const string kStrVar = "var";
   const string kStrSet = "__set";
+  const string kStrBind = "__bind";
   const string kStrWhile = "while";
   const string kStrFor = "for";
   const string kStrLeftSelfInc = "lSelfInc";

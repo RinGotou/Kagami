@@ -8,9 +8,13 @@ namespace kagami {
     }
 
     shared_ptr<void> GetObjectCopy(Object &object) {
+      if (object.ConstructorFlag()) {
+        return object.Get();
+      }
+
       shared_ptr<void> result = nullptr;
-      const auto option       = object.GetTypeId();
-      const auto it           = GetPlannerBase().find(option);
+      const auto option = object.GetTypeId();
+      const auto it = GetPlannerBase().find(option);
 
       if (it != GetPlannerBase().end()) {
         result = it->second.CreateObjectCopy(object.Get());
@@ -259,45 +263,42 @@ namespace kagami {
 
 
 
-  Message SetOperand(ObjectMap &p) {
-    Message result;
-    Object source = p["source"], target = p["target"];
-    const auto ptr = type::GetObjectCopy(source);
+  Message Set(ObjectMap &p) {
+    Message msg;
+    Object object = p["object"], source = p["source"];
+    auto copy = type::GetObjectCopy(source);
 
-    if (!target.IsRo()) {
-      auto typeId    = source.GetTypeId();
-      auto TokenTypeEnum = source.GetTokenType();
-      auto methods   = source.GetMethods();
-      target.Set(ptr, typeId)
-            .SetMethods(methods)
-            .SetTokenType(TokenTypeEnum);
-    }
-    return result;
-  }
-
-  Message CreateOperand(ObjectMap &p) {
-    Message result;
-    auto name = p["name"], source = p["source"];
-    const auto nameValue = *static_pointer_cast<string>(name.Get());
-    const auto ptr = entry::FindObject(nameValue);
-
-    if (ptr == nullptr) {
-      const auto targetPtr = type::GetObjectCopy(source);
-      Object object;
-      object.Set(targetPtr, source.GetTypeId())
-            .SetMethods(source.GetMethods())
-            .SetTokenType(source.GetTokenType())
-            .SetRo(false);
-      auto re = entry::CreateObject(*static_pointer_cast<string>(name.Get()), object);
-      if (re == nullptr) {
-        result.combo(kStrFatalError, kCodeIllegalCall, "Object creation fail.");
-      }
+    if (object.IsRo()) {
+      msg.combo(kStrFatalError, kCodeIllegalCall, "Object is read-only.");
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Object is already existed.");
+      object.Set(copy, source.GetTypeId())
+        .SetMethods(source.GetMethods())
+        .SetTokenType(source.GetTokenType());
     }
+    
+    return msg;
+  }
 
-    return result;
+  Message Bind(ObjectMap &p) {
+    Message msg;
+    Object object = p["object"], source = p["source"];
+    auto id = *static_pointer_cast<string>(object.Get());
+    auto ptr = entry::FindObject(id);
+    auto copy = type::GetObjectCopy(source);
+
+
+    Object base;
+    base.Set(copy, source.GetTypeId())
+      .SetMethods(source.GetMethods())
+      .SetTokenType(source.GetTokenType())
+      .SetRo(false);
+    auto result = entry::CreateObject(id, base);
+    if (result == nullptr) {
+      msg.combo(kStrFatalError, kCodeIllegalCall, "Object creation failed.");
+    }
+    
+    return msg;
   }
 
   Message Print(ObjectMap &p) {
@@ -340,29 +341,30 @@ namespace kagami {
 
   void LoadGenericProvider() {
     using namespace entry;
-    LoadGenProvider(BG_BINOP, Entry(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
-    LoadGenProvider(BG_ELIF, Entry(kStrElif, ConditionBranch, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(BG_ELSE, Entry(kStrElse, ConditionLeaf, kFlagNormalEntry, kCodeNormalParm, ""));
-    LoadGenProvider(BG_END, Entry(kStrEnd, TailSign, kFlagNormalEntry, kCodeNormalParm, ""));
-    LoadGenProvider(BG_IF, Entry(kStrIf, ConditionRoot, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(BG_VAR, Entry(kStrVar, CreateOperand, kFlagNormalEntry, kCodeAutoFill, "%name|source"));
-    LoadGenProvider(BG_SET, Entry(kStrSet, SetOperand, kFlagNormalEntry, kCodeAutoFill, "&target|source"));
-    LoadGenProvider(BG_WHILE, Entry(kStrWhile, WhileCycle, kFlagNormalEntry, kCodeNormalParm, "state"));
-    LoadGenProvider(BG_LSELF_INC, Entry(kStrLeftSelfInc, LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(BG_LSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(BG_RSELF_INC, Entry(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
-    LoadGenProvider(BG_RSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "&object"));
+
+    LoadGenProvider(GT_END, Entry(nullptr, "", GT_END));
+    LoadGenProvider(GT_ELSE, Entry(nullptr, "", GT_ELSE));
+    LoadGenProvider(GT_IF, Entry(ConditionRoot, "state", GT_IF));
+    LoadGenProvider(GT_SET, Entry(Set, "object|source", GT_SET));
+    LoadGenProvider(GT_WHILE, Entry(WhileCycle, "state", GT_WHILE));
+    LoadGenProvider(GT_BIND, Entry(Bind, "object|source", GT_BIND));
+    LoadGenProvider(GT_ELIF, Entry(ConditionBranch, "state", GT_ELIF));
+
+    //LoadGenProvider(GT_BINOP, Entry(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
+    //LoadGenProvider(GT_LSELF_INC, Entry(kStrLeftSelfInc, LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "object"));
+    //LoadGenProvider(GT_LSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "object"));
+    //LoadGenProvider(GT_RSELF_INC, Entry(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "object"));
+    //LoadGenProvider(GT_RSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "object"));
   }
 
   void Activiate() {
     using namespace entry;
-    InitTemplates();
-    InitMethods();
     LoadGenericProvider();
-    Inject(Entry("log", WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
-    Inject(Entry("print", Print, kFlagNormalEntry, kCodeNormalParm, "object"));
-    Inject(Entry("time", TimeReport, kFlagNormalEntry, kCodeNormalParm, ""));
-    Inject(Entry("quit", Quit, kFlagNormalEntry, kCodeNormalParm, ""));
-    //Linux Version
+    InitPlanners();
+
+    Inject(Entry(Print, kCodeNormalParm, "object", "print"));
+    Inject(Entry(TimeReport, kCodeNormalParm, "", "time"));
+    Inject(Entry(Quit, kCodeNormalParm, "", "quit"));
+    //Inject(Entry("log", WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
   }
 }
