@@ -25,7 +25,7 @@ namespace kagami {
     vector<Token> origin;
     deque<Object> item;
     deque<Entry> symbol;
-    bool commaExpFunc, insertBetweenObject, disableSetEntry, dotOperator,
+    bool insertBetweenObject, dotOperator, needReverse, 
       defineLine, functionLine, subscriptProcessing;
     Token currentToken;
     Token nextToken;
@@ -40,12 +40,14 @@ namespace kagami {
     bool Colon();
     void LeftBracket(Message &msg);
     bool RightBracket(Message &msg);
+    bool LeftSqrBracket(Message &msg);
+    bool RightSqrBracket(Message &msg);
     bool FunctionAndObject(Message &msg);
     void OtherToken();
     void OtherSymbol();
     void FinalProcessing(Message &msg);
   public:
-    Processor() : health(false), commaExpFunc(false), insertBetweenObject(false), disableSetEntry(false),
+    Processor() : health(false), insertBetweenObject(false),
       dotOperator(false), defineLine(false), functionLine(false), subscriptProcessing(false),
       mode(0), nextInsertSubscript(0), lambdaObjectCount(0), index(0) {}
 
