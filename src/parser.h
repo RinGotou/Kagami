@@ -21,43 +21,33 @@ namespace kagami {
   parsed here.Processed data will be delivered to entry provider.
   */
   class Processor {
-    bool                health;
-    vector<Token>       origin;
-    map<string, Object> lambdamap;
-    deque<Token>  item, symbol;
-    bool          commaExpFunc, insertBtnSymbols, disableSetEntry, dotOperator,
+    bool health;
+    vector<Token> origin;
+    deque<Object> item;
+    deque<Entry> symbol;
+    bool commaExpFunc, insertBetweenObject, disableSetEntry, dotOperator,
       defineLine, functionLine, subscriptProcessing;
-    Token         currentToken;
-    Token         nextToken;
-    Token         forwardToken;
-    string        operatorTargetType;
-    string        errorString;
-    size_t        mode, nextInsertSubscript, lambdaObjectCount, index;
+    Token currentToken;
+    Token nextToken;
+    Token forwardToken;
+    string operatorTargetType;
+    string errorString;
+    size_t mode, nextInsertSubscript, lambdaObjectCount, index;
 
-    void   EqualMark();
-    void   Comma();
-    bool   LeftBracket(Message &msg);
-    bool   RightBracket(Message &msg);
-    void   LeftSquareBracket();
-    bool   RightSquareBracket(Message &msg);
-    void   OtherSymbols();
-    bool   FunctionAndObject(Message &msg);
-    void   OtherTokens();
-    void   FinalProcessing(Message &msg);
-    bool   SelfOperator(Message &msg);
-    bool   Colon();
+    bool TakeAction(Message &msg);
     Object *GetObj(string name);
-    static vector<string> Spilt(string target);
-    static string GetHead(string target);
-    static int GetPriority(string target);
-    bool   Assemble(Message &msg);
+    void EqualMark();
+    bool Colon();
+    void LeftBracket(Message &msg);
+    bool RightBracket(Message &msg);
+    bool FunctionAndObject(Message &msg);
+    void OtherToken();
+    void OtherSymbol();
+    void FinalProcessing(Message &msg);
   public:
-    Processor() : health(false), commaExpFunc(false), insertBtnSymbols(false), disableSetEntry(false),
+    Processor() : health(false), commaExpFunc(false), insertBetweenObject(false), disableSetEntry(false),
       dotOperator(false), defineLine(false), functionLine(false), subscriptProcessing(false),
-       mode(0), nextInsertSubscript(0), lambdaObjectCount(0), index(0) {}
-
-    bool IsHealth() const { return health; }
-    string GetErrorString() const { return errorString; }
+      mode(0), nextInsertSubscript(0), lambdaObjectCount(0), index(0) {}
 
     bool IsSelfObjectManagement() const {
       string front = origin.front().first;
@@ -69,16 +59,13 @@ namespace kagami {
       return *this;
     }
 
-    size_t GetIndex() const {
-      return index;
-    }
-
-    Token GetFirstToken() const {
-      return origin.front();
-    }
-
-    Message Start(size_t mode = kModeNormal);
+    Message Activiate(size_t mode = kModeNormal);
     Processor &Build(string target);
+
+    size_t GetIndex() const { return index; }
+    Token GetFirstToken() const { return origin.front(); }
+    bool IsHealth() const { return health; }
+    string GetErrorString() const { return errorString; }
   };
 
   /*ScriptMachine class
@@ -102,38 +89,33 @@ namespace kagami {
     void ConditionLeaf();
     void HeadSign(bool value, bool selfObjectManagement);
     void TailSign();
-
-    void AddLoader(string raw) { 
-      storage.push_back(Processor().Build(raw)); 
-    }
-
-    static bool IsBlankStr(string target) {
-      if (target == kStrEmpty || target.size() == 0) return true;
-      for (const auto unit : target) {
-        if (unit != ' ' || unit != '\n' || unit != '\t' || unit != '\r') {
-          return false;
-        }
-      }
-      return true;
-    }
+    static bool IsBlankStr(string target);
   public:
     ~ScriptMachine() {
       stream.close();
       Kit().CleanupVector(storage).CleanupVector(parameters);
     }
+    ScriptMachine() : current(0), end(false), currentMode(kModeNormal),
+    nestHeadCount(0), health(false), isTerminal(true) {}
+    ScriptMachine(vector<Processor> storage) : current(0), end(false), currentMode(kModeNormal),
+      nestHeadCount(0), health(true), isTerminal(true) {
+      this->storage = storage;
+    }
 
-    bool GetHealth() const { return health; }
-    bool Eof() const { return end; }
-    void ResetCounter() { current = 0; }
-    ScriptMachine() { isTerminal = true; }
     explicit ScriptMachine(const char *target);
     Message Run();
     void Terminal();
+
+    bool GetHealth() const { return health; }
+    bool Eof() const { return end; }
+    void ResetCounter() {
+      current = 0;
+      end = false;
+    }
   };
 
   void Activiate();
-  void InitTemplates();
-  void InitMethods();
+  void InitPlanners();
 
   namespace type {
     ObjectPlanner *GetPlanner(string name);

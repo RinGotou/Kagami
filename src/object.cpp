@@ -5,11 +5,14 @@ namespace kagami {
     //hold a null pointer will cause some mysterious ploblems,
     //so this will hold a specific value intead of nullptr
     ptr = nullptr;
+    parent = nullptr;
     typeId = kTypeIdNull;
     tokenTypeEnum = TokenTypeEnum::T_NUL;
     ro = false;
     permanent = false;
     ref = false;
+    constructor = false;
+    placeholder = false;
   }
 
   Object &Object::Manage(string t, string typeId) {
@@ -29,14 +32,15 @@ namespace kagami {
   Object &Object::Ref(Object &object) {
     this->typeId = kTypeIdRef;
     this->ref = true;
+
+    TargetObject target;
     if (!object.IsRef()) {
-      TargetObject target;
       target.ptr = &object;
-      ptr = make_shared<TargetObject>(target);
     }
     else {
-      this->ptr = object.ptr;
+      target.ptr = static_pointer_cast<TargetObject>(object.ptr)->ptr;
     }
+    ptr = make_shared<TargetObject>(target);
     return *this;
   }
 
@@ -56,6 +60,9 @@ namespace kagami {
       methods == object.methods &&
       tokenTypeEnum == object.tokenTypeEnum &&
       ro == object.ro &&
+      permanent == object.permanent &&
+      constructor == object.constructor &&
+      placeholder == object.placeholder &&
       ref == object.ref);
   }
 
@@ -84,31 +91,48 @@ namespace kagami {
     this->methods = methods;
     return *this;
   }
+
   Object &Object::SetTokenType(TokenTypeEnum tokenTypeEnum) {
     if (ref) return GetTargetObject()->SetTokenType(tokenTypeEnum);
     this->tokenTypeEnum = tokenTypeEnum;
     return *this;
   }
+
   Object &Object::SetRo(bool ro) {
     if (ref) return GetTargetObject()->SetRo(ro);
     this->ro = ro;
     return *this;
   }
+
   Object &Object::SetPermanent(bool permanent) {
     this->permanent = permanent;
     return *this;
   }
+
   string Object::GetMethods() {
     if (ref) return GetTargetObject()->GetMethods();
     return methods;
   }
+
   TokenTypeEnum Object::GetTokenType() {
     if (ref) return GetTargetObject()->GetTokenType();
     return tokenTypeEnum;
   }
+
   bool Object::IsRo() {
     if (ref) return GetTargetObject()->IsRo();
     return ro;
+  }
+
+  bool Object::ConstructorFlag() {
+    bool result = constructor;
+    constructor = false;
+    return result;
+  }
+
+  Object &Object::SetPlaceholder() {
+    placeholder = true;
+    return *this;
   }
 
   bool ObjectManager::Add(string sign, Object source) {
