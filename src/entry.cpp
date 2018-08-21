@@ -120,15 +120,30 @@ namespace kagami {
       if (src == kStrElse) return GT_ELSE;
       if (src == kStrElif) return GT_ELIF;
       if (src == kStrWhile) return GT_WHILE;
-      if (src == kStrBinOp) return GT_BINOP;
       if (src == kStrCodeSub) return GT_CODE_SUB;
       if (src == kStrLeftSelfInc) return GT_LSELF_INC;
       if (src == kStrLeftSelfDec) return GT_LSELF_DEC;
       if (src == kStrRightSelfInc) return GT_RSELF_INC;
       if (src == kStrRightSelfDec) return GT_RSELF_DEC;
+      if (src == kStrAdd) return GT_ADD;
+      if (src == kStrSub) return GT_SUB;
+      if (src == kStrMul) return GT_MUL;
+      if (src == kStrDiv) return GT_DIV;
+      if (src == kStrIs) return GT_IS;
+      if (src == kStrLessOrEqual) return GT_LESS_OR_EQUAL;
+      if (src == kStrMoreOrEqual) return GT_MORE_OR_EQUAL;
+      if (src == kStrNotEqual) return GT_NOT_EQUAL;
+      if (src == kStrMore) return GT_MORE;
+      if (src == kStrLess) return GT_LESS;
       if (src == kStrNop) return GT_NOP;
       if (src == kStrNull) return GT_NUL;
       return GT_NUL;
+    }
+
+    bool IsOperatorToken(GenericTokenEnum token) {
+      return(token == GT_ADD || token == GT_SUB || token == GT_MUL || token == GT_DIV
+        || token == GT_IS || token == GT_LESS_OR_EQUAL || token == GT_MORE_OR_EQUAL
+        || token == GT_NOT_EQUAL || token == GT_MORE || token == GT_LESS);
     }
 
     string GetGenTokenValue(GenericTokenEnum token) {
@@ -139,7 +154,6 @@ namespace kagami {
       case GT_REF:result = kStrRef; break;
       case GT_CODE_SUB:result = kStrCodeSub; break;
       case GT_SUB:result = kStrSub; break;
-      case GT_BINOP:result = kStrBinOp; break;
       case GT_IF:result = kStrIf; break;
       case GT_ELIF:result = kStrElif; break;
       case GT_END:result = kStrEnd; break;
@@ -176,11 +190,11 @@ namespace kagami {
       return NUL;
     }
 
-    void Inject(Entry temp) {
+    void AddEntry(Entry temp) {
       GetEntryBase().emplace_back(temp);
     }
 
-    void LoadGenProvider(GenericTokenEnum token, Entry temp) {
+    void AddGenericEntry(GenericTokenEnum token, Entry temp) {
       GetGenProviderBase().insert(pair<GenericTokenEnum, Entry>(
         token, temp));
     }
@@ -192,6 +206,7 @@ namespace kagami {
       return Entry();
     }
 
+
     Entry Order(string id, string type, int size) {
       GenericTokenEnum basicOpCode = GetGenericToken(id);
       if (basicOpCode != GT_NUL) {
@@ -199,11 +214,6 @@ namespace kagami {
       }
 
       vector<Entry> &base = GetEntryBase();
-      OperatorCode opCode = GetOperatorCode(id);
-
-      if (opCode == EQUAL)    return Order(kStrSet);
-      else if (opCode != NUL) return Order(kStrBinOp);
-
       Entry result;
       //TODO:rewrite here
       for (auto &unit : base) {
@@ -216,25 +226,5 @@ namespace kagami {
       return result;
     }
 
-    size_t GetRequiredCount(string id) {
-      OperatorCode opCode = GetOperatorCode(id);
-      Entry ent;
-      size_t count;
-      switch (opCode) {
-      case SELFINC:
-      case SELFDEC:
-        count = 1;
-        break;
-      case NUL:
-        ent = Order(id);
-        if (ent.Good()) count = ent.GetParmSize();
-        else count = 0;
-        break;
-      default:
-        count = 2;
-        break;
-      }
-      return count;
-    }
   }
 }

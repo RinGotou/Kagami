@@ -42,11 +42,93 @@ namespace kagami {
     }
   }
 
+  enum GroupTypeEnum { G_INT, G_DOUBLE, G_STR, G_NUL } ;
+
+  GroupTypeEnum GetGroupType(TokenTypeEnum dataTypeA, TokenTypeEnum dataTypeB,
+    string dataA, string dataB) {
+    Kit kit;
+
+    GroupTypeEnum groupType = GroupTypeEnum::G_NUL;
+    if (dataTypeA == T_DOUBLE || dataTypeB == T_DOUBLE) groupType = G_DOUBLE;
+    if (dataTypeA == T_INTEGER && dataTypeB == T_INTEGER) groupType = G_INT;
+    if (kit.IsString(dataA) || kit.IsString(dataB)) groupType = G_STR;
+    return groupType;
+  }
+
+  string BinaryOperations(Object &A, Object &B, string OP) {
+    Kit kit;
+    string temp;
+    using entry::OperatorCode;
+    auto OPCode = entry::GetOperatorCode(OP);
+    auto dataA = *static_pointer_cast<string>(A.Get()),
+      dataB = *static_pointer_cast<string>(B.Get());
+    auto dataTypeA = A.GetTokenType(), dataTypeB = B.GetTokenType();
+    auto groupType = GetGroupType(dataTypeA, dataTypeB, dataA, dataB);
+
+    if (groupType == G_INT || groupType == G_DOUBLE) {
+      switch (OPCode) {
+      case OperatorCode::ADD:
+      case OperatorCode::SUB:
+      case OperatorCode::MUL:
+      case OperatorCode::DIV:
+        switch (groupType) {
+        case G_INT:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), OP)); break;
+        case G_DOUBLE:temp = to_string(kit.Calc(stod(dataA), stod(dataB), OP)); break;
+        default:break;
+        }
+        break;
+      case OperatorCode::IS:
+      case OperatorCode::MORE_OR_EQUAL:
+      case OperatorCode::LESS_OR_EQUAL:
+      case OperatorCode::NOT_EQUAL:
+      case OperatorCode::MORE:
+      case OperatorCode::LESS:
+        switch (groupType) {
+        case G_INT:
+          kit.Logic(stoi(dataA), stoi(dataB), OP) ? temp = kStrTrue : temp = kStrFalse;
+          break;
+        case G_DOUBLE:
+          kit.Logic(stod(dataA), stod(dataB), OP) ? temp = kStrTrue : temp = kStrFalse;
+          break;
+        }
+        break;
+      }
+    }
+    else if (groupType = G_STR) {
+      switch (OPCode) {
+      case OperatorCode::ADD:
+        if (dataA.front() != '\'') dataA = "'" + dataA;
+        if (dataA.back() == '\'') dataA = dataA.substr(0, dataA.size() - 1);
+        if (dataB.front() == '\'') dataB = dataB.substr(1, dataB.size() - 1);
+        if (dataB.back() != '\'') dataB = dataB + "'";
+        temp = dataA + dataB;
+      case OperatorCode::IS:
+      case OperatorCode::NOT_EQUAL:
+        kit.Logic(dataA, dataB, OP) ? temp = kStrTrue : temp = kStrFalse;
+        break;
+      default:
+        break;
+      }
+    }
+    return temp;
+  }
+
+  Message Plus(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "+")); }
+  Message Sub(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "-")); }
+  Message Multiply(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "*")); }
+  Message Divide(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "/")); }
+  Message LogicEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "==")); }
+  Message LogicNotEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "!=")); }
+  Message Less(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<")); }
+  Message More(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">")); }
+  Message LessOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<=")); }
+  Message MoreOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">=")); }
+
   Message WriteLog(ObjectMap &p) {
     Kit kit;
     Message result;
     auto data = p["data"];
-    ofstream ofs("script.log", std::ios::out | std::ios::app);
+    ofstream ofs("kagami-script.log", std::ios::out | std::ios::app);
 
     if (data.GetTypeId() == kTypeIdRawString) {
       const auto ptr = static_pointer_cast<string>(data.Get());
@@ -57,97 +139,8 @@ namespace kagami {
         ofs << *ptr << "\n";
       }
     }
-    else {
-      //TODO:query
-    }
+
     ofs.close();
-    return result;
-  }
-
-  Message BinaryOperands(ObjectMap &p) {
-    using entry::OperatorCode;
-
-    Kit kit;
-    Message result(kStrRedirect, kCodeSuccess, "0");
-    string temp, dataOP;
-    auto first = p["first"], second = p["second"], op = p[kStrOperator];
-    auto tempresult = false;
-    enum { enum_int, enum_double, enum_str, enum_null } enumtype = enum_null;
-
-    if (op.Get() != nullptr) dataOP = *static_pointer_cast<string>(op.Get());
-    auto opCode = entry::GetOperatorCode(dataOP);
-
-    if (first.GetTypeId() == kTypeIdRawString && second.GetTypeId() == kTypeIdRawString) {
-      auto dataA = *static_pointer_cast<string>(first.Get());
-      auto dataB = *static_pointer_cast<string>(second.Get());
-      const auto datatypeA = first.GetTokenType();
-      const auto datatypeB = second.GetTokenType();
-      if (datatypeA == T_DOUBLE || datatypeB == T_DOUBLE) enumtype = enum_double;
-      if (datatypeA == T_INTEGER && datatypeB == T_INTEGER) enumtype = enum_int;
-      if (kit.IsString(dataA) || kit.IsString(dataB)) enumtype = enum_str;
-
-      if (enumtype == enum_int || enumtype == enum_double) {
-        switch (opCode) {
-        case OperatorCode::ADD:
-        case OperatorCode::SUB:
-        case OperatorCode::MUL:
-        case OperatorCode::DIV:
-          switch (enumtype) {
-          case enum_int:   temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), dataOP)); break;
-          case enum_double:temp = to_string(kit.Calc(stod(dataA), stod(dataB), dataOP)); break;
-          default:;
-          }
-          break;
-        case OperatorCode::IS:
-        case OperatorCode::MORE_OR_EQUAL:
-        case OperatorCode::LESS_OR_EQUAL:
-        case OperatorCode::NOT_EQUAL:
-        case OperatorCode::MORE:
-        case OperatorCode::LESS:
-          switch (enumtype) {
-          case enum_int:   tempresult = kit.Logic(stoi(dataA), stoi(dataB), dataOP); break;
-          case enum_double:tempresult = kit.Logic(stod(dataA), stod(dataB), dataOP); break;
-          default:;
-          }
-          tempresult ? temp = kStrTrue : temp = kStrFalse;
-          break;
-        default:break;
-        }
-      }
-      else if (enumtype == enum_str) {
-        switch (opCode) {
-        case OperatorCode::ADD:
-          if (dataA.back() == '\'') {
-            temp  = dataA.substr(0, dataA.size() - 1);
-            dataA = temp;
-          }
-          if (dataB.front() == '\'') {
-            temp  = dataB.substr(1, dataB.size() - 1);
-            dataB = temp;
-          }
-          if (dataB.back() != '\'') {
-            dataB.append(1, '\'');
-          }
-          temp = dataA + dataB;
-          break;
-        case OperatorCode::NOT_EQUAL:
-        case OperatorCode::EQUAL:
-          tempresult = kit.Logic(dataA, dataB, dataOP);
-          tempresult ? temp = kStrTrue : temp = kStrFalse;
-          break;
-        case OperatorCode::MORE_OR_EQUAL:
-        case OperatorCode::LESS_OR_EQUAL:
-          //TODO:add in Kit::Logic()
-          break;
-        default:break;
-        }
-      }
-      else {
-        //TODO:other type
-      }
-    }
-    result.SetDetail(temp);
-
     return result;
   }
 
@@ -327,7 +320,9 @@ namespace kagami {
 #if defined(_WIN32) && defined(_MSC_VER)
     char nowTime[30] = { ' ' };
     ctime_s(nowTime, sizeof(nowTime), &now);
-    return Message(kStrRedirect, kCodeSuccess, "'" + string(nowTime) + "'");
+    string str(nowTime);
+    str.pop_back(); //erase '\n'
+    return Message(kStrRedirect, kCodeSuccess, "'" + str + "'");
 #else
     string TimeData(ctime(&now));
     return Message(kStrRedirect, kCodeSuccess, "'" + TimeData + "'");
@@ -339,32 +334,36 @@ namespace kagami {
     return result;
   }
 
-  void LoadGenericProvider() {
+  void AddGenEntries() {
     using namespace entry;
 
-    LoadGenProvider(GT_END, Entry(nullptr, "", GT_END));
-    LoadGenProvider(GT_ELSE, Entry(nullptr, "", GT_ELSE));
-    LoadGenProvider(GT_IF, Entry(ConditionRoot, "state", GT_IF));
-    LoadGenProvider(GT_SET, Entry(Set, "object|source", GT_SET));
-    LoadGenProvider(GT_WHILE, Entry(WhileCycle, "state", GT_WHILE));
-    LoadGenProvider(GT_BIND, Entry(Bind, "object|source", GT_BIND));
-    LoadGenProvider(GT_ELIF, Entry(ConditionBranch, "state", GT_ELIF));
-
-    //LoadGenProvider(GT_BINOP, Entry(kStrBinOp, BinaryOperands, kFlagOperatorEntry, kCodeNormalParm, "first|second"));
-    //LoadGenProvider(GT_LSELF_INC, Entry(kStrLeftSelfInc, LeftSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "object"));
-    //LoadGenProvider(GT_LSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "object"));
-    //LoadGenProvider(GT_RSELF_INC, Entry(kStrRightSelfInc, RightSelfIncreament, kFlagNormalEntry, kCodeNormalParm, "object"));
-    //LoadGenProvider(GT_RSELF_DEC, Entry(kStrLeftSelfDec, LeftSelfDecreament, kFlagNormalEntry, kCodeNormalParm, "object"));
+    AddGenericEntry(GT_NOP, Entry(nullptr, "", GT_NOP));
+    AddGenericEntry(GT_END, Entry(nullptr, "", GT_END));
+    AddGenericEntry(GT_ELSE, Entry(nullptr, "", GT_ELSE));
+    AddGenericEntry(GT_IF, Entry(ConditionRoot, "state", GT_IF));
+    AddGenericEntry(GT_WHILE, Entry(WhileCycle, "state", GT_WHILE));
+    AddGenericEntry(GT_ELIF, Entry(ConditionBranch, "state", GT_ELIF));
+    AddGenericEntry(GT_SET, Entry(Set, "object|source", GT_SET, kCodeNormalParm, 0));
+    AddGenericEntry(GT_BIND, Entry(Bind, "object|source", GT_BIND, kCodeNormalParm, 0));
+    AddGenericEntry(GT_ADD, Entry(Plus, "second|first", GT_ADD, kCodeNormalParm, 2));
+    AddGenericEntry(GT_SUB, Entry(Sub, "second|first", GT_SUB, kCodeNormalParm, 2));
+    AddGenericEntry(GT_MUL, Entry(Multiply, "second|first", GT_MUL, kCodeNormalParm, 3));
+    AddGenericEntry(GT_DIV, Entry(Divide, "second|first", GT_DIV, kCodeNormalParm, 3));
+    AddGenericEntry(GT_IS, Entry(LogicEqual, "second|first", GT_IS, kCodeNormalParm, 1));
+    AddGenericEntry(GT_LESS_OR_EQUAL, Entry(LessOrEqual, "second|first", GT_LESS_OR_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(GT_MORE_OR_EQUAL, Entry(MoreOrEqual, "second|first", GT_MORE_OR_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(GT_NOT_EQUAL, Entry(LogicNotEqual, "second|first", GT_NOT_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(GT_MORE, Entry(More, "second|first", GT_MORE, kCodeNormalParm, 1));
+    AddGenericEntry(GT_LESS, Entry(Less, "second|first", GT_LESS, kCodeNormalParm, 1));
   }
 
   void Activiate() {
     using namespace entry;
-    LoadGenericProvider();
+    AddGenEntries();
     InitPlanners();
 
-    Inject(Entry(Print, kCodeNormalParm, "object", "print"));
-    Inject(Entry(TimeReport, kCodeNormalParm, "", "time"));
-    Inject(Entry(Quit, kCodeNormalParm, "", "quit"));
-    //Inject(Entry("log", WriteLog, kFlagNormalEntry, kCodeNormalParm, "data"));
+    AddEntry(Entry(Print, kCodeNormalParm, "object", "print"));
+    AddEntry(Entry(TimeReport, kCodeNormalParm, "", "time"));
+    AddEntry(Entry(Quit, kCodeNormalParm, "", "quit"));
   }
 }

@@ -12,6 +12,7 @@ namespace kagami {
     permanent = false;
     ref = false;
     constructor = false;
+    placeholder = false;
   }
 
   Object &Object::Manage(string t, string typeId) {

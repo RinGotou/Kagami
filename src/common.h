@@ -63,46 +63,46 @@ namespace kagami {
   const string kEngineAuthor = "Suzu Nakamura and Contributor(s)";
   const string kCopyright = "Copyright(c) 2017-2018";
 
-  const string kStrNull       = "null";
-  const string kStrEmpty      = "";
-  const string kStrFatalError = "__FATAL__";
-  const string kStrWarning    = "__WARNING__";
-  const string kStrSuccess    = "__SUCCESS__";
-  const string kStrEOF        = "__EOF__";
-  const string kStrPass       = "__PASS__";
-  const string kStrRedirect   = "__*__";
-  const string kStrTrue       = "true";
-  const string kStrFalse      = "false";
-  const string kStrOperator   = "__operator";
-  const string kStrObject     = "__object";
-  const string kMethodPrint   = "__print";
+  const string kStrNull = "null",
+    kStrEmpty = "",
+    kStrFatalError = "__FATAL__",
+    kStrWarning = "__WARNING__",
+    kStrSuccess = "__SUCCESS__",
+    kStrEOF = "__EOF__",
+    kStrPass = "__PASS__",
+    kStrRedirect = "__*__",
+    kStrTrue = "true",
+    kStrFalse = "false",
+    kStrOperator = "__operator",
+    kStrObject = "__object",
+    kMethodPrint = "__print";
 
-  const int kCodeAutoFill        = 14;
-  const int kCodeNormalParm      = 13;
-  const int kCodeFillingSign     = 12;
-  const int kCodeReturn          = 11;
-  const int kCodeConditionLeaf   = 10;
-  const int kCodeConditionBranch = 9;
-  const int kCodeConditionRoot   = 8;
-  const int kCodeObject          = 7;
-  const int kCodeTailSign        = 5;
-  const int kCodeHeadSign        = 4;
-  const int kCodeQuit            = 3;
-  const int kCodeRedirect        = 2;
-  const int kCodeNothing         = 1;
-  const int kCodeSuccess         = 0;
-  const int kCodeBrokenEntry     = -1;
-  const int kCodeOverflow        = -2;
-  const int kCodeIllegalParm     = -3;
-  const int kCodeIllegalCall     = -4;
-  const int kCodeIllegalSymbol   = -5;
-  const int kCodeBadStream       = -6;
-  const int kCodeBadExpression   = -7;
+  const int kCodeAutoFill = 14,
+    kCodeNormalParm = 13,
+    kCodeFillingSign = 12,
+    kCodeReturn = 11,
+    kCodeConditionLeaf = 10,
+    kCodeConditionBranch = 9,
+    kCodeConditionRoot = 8,
+    kCodeObject = 7,
+    kCodeTailSign = 5,
+    kCodeHeadSign = 4,
+    kCodeQuit = 3,
+    kCodeRedirect = 2,
+    kCodeNothing = 1,
+    kCodeSuccess = 0,
+    kCodeBrokenEntry = -1,
+    kCodeOverflow = -2,
+    kCodeIllegalParm = -3,
+    kCodeIllegalCall = -4,
+    kCodeIllegalSymbol = -5,
+    kCodeBadStream = -6,
+    kCodeBadExpression = -7;
 
-  const int kFlagCoreEntry      = 0;
-  const int kFlagNormalEntry    = 1;
-  const int kFlagOperatorEntry  = 2;
-  const int kFlagMethod         = 3;
+  const int kFlagCoreEntry = 0,
+    kFlagNormalEntry = 1,
+    kFlagOperatorEntry = 2,
+    kFlagMethod = 3;
 
   enum TokenTypeEnum {
     T_GENERIC, T_STRING, T_INTEGER, T_DOUBLE,
@@ -113,10 +113,13 @@ namespace kagami {
 
   enum GenericTokenEnum {
     GT_NOP, GT_DEF, GT_REF, GT_CODE_SUB,
-    GT_SUB, GT_BINOP, GT_IF, GT_ELIF,
-    GT_END, GT_ELSE, GT_VAR, GT_SET, GT_BIND, 
+    GT_IF, GT_ELIF, GT_END, GT_ELSE, 
+    GT_VAR, GT_SET, GT_BIND, 
     GT_WHILE, GT_FOR, GT_LSELF_INC, GT_LSELF_DEC,
     GT_RSELF_INC, GT_RSELF_DEC,
+    GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_IS, 
+    GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
+    GT_MORE, GT_LESS,
     GT_NUL
   };
 
@@ -139,30 +142,56 @@ namespace kagami {
   const size_t kModeCycleJump     = 3;
   const size_t kModeCondition     = 4;
 
+  /*Generic Token*/
+  const string kStrIf = "if",
+    kStrDef = "def",
+    kStrRef = "__ref",
+    kStrEnd = "end",
+    kStrVar = "var",
+    kStrSet = "__set",
+    kStrBind = "__bind",
+    kStrFor = "for",
+    kStrElse = "else",
+    kStrElif = "elif",
+    kStrWhile = "while",
+    kStrCodeSub = "__code_sub",
+    kStrLeftSelfInc = "lSelfInc",
+    kStrLeftSelfDec = "lSelfDec",
+    kStrRightSelfInc = "rSelfInc",
+    kStrRightSelfDec = "rSelfDec",
+    kStrAdd = "+",
+    kStrSub = "-",
+    kStrMul = "*",
+    kStrDiv = "/",
+    kStrIs = "==",
+    kStrLessOrEqual = "<=",
+    kStrMoreOrEqual = ">=",
+    kStrNotEqual = "!=",
+    kStrMore = ">",
+    kStrLess = "<",
+    kStrNop = "__nop";
 
+  /*Prompt for terminal*/
+  const string kStrNormalArrow = ">>>",
+    kStrDotGroup = "...";
 
-  const string kStrNormalArrow = ">>>";
-  const string kStrDotGroup = "...";
-  const string kStrHostArgHead = "arg";
-  const string kStrNop = "__nop";
-  const string kStrDef = "def";
-  const string kStrRef = "__ref";
-  const string kStrCodeSub = "__code_sub";
-  const string kStrSub = "__sub";
-  const string kStrBinOp = "BinOp";
-  const string kStrIf = "if";
-  const string kStrElif = "elif";
-  const string kStrEnd = "end";
-  const string kStrElse = "else";
-  const string kStrVar = "var";
-  const string kStrSet = "__set";
-  const string kStrBind = "__bind";
-  const string kStrWhile = "while";
-  const string kStrFor = "for";
-  const string kStrLeftSelfInc = "lSelfInc";
-  const string kStrLeftSelfDec = "lSelfDec";
-  const string kStrRightSelfInc = "rSelfInc";
-  const string kStrRightSelfDec = "rSelfDec";
+  const string kOpAdd = "__add",
+    kOpSub = "__sub",
+    kOpMul = "__mul",
+    kOpDiv = "__div",
+    kOpEqual = "__eq",
+    kOpIs = "__is",
+    kOpLessOrEqual = "__loeq",
+    kOpMoreOrEqual = "__moeq",
+    kOpNotEqual = "__neq",
+    kOpNot = "__not",
+    kOpLess = "__less",
+    kOpMore = "__more",
+    kOpLSelfInc = "__lsinc",
+    kOpRSelfInc = "__rsinc",
+    kOpLSelfDec = "__lsdec",
+    kOpRSelfDec = "__rsdec";
+
 
   const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
 }
