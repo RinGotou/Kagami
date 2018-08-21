@@ -159,22 +159,22 @@ namespace kagami {
 
   void InitPlanners() {
     using type::AddTemplate;
-    using entry::Inject;
+    using entry::AddEntry;
     AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
     AddTemplate(kTypeIdArrayBase, ObjectPlanner(ArrayCopy, "size|at|__print"));
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, ""));
 
 
-    Inject(Entry(PrintRawString, kCodeNormalParm, "", "__print", kTypeIdRawString));
+    AddEntry(Entry(PrintRawString, kCodeNormalParm, "", "__print", kTypeIdRawString));
     ////constructor
-    //Inject(Entry("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
+    //AddEntry(Entry("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
     ////methods
-    //Inject(Entry("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdRawString));
-    //Inject(Entry("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdArrayBase));
-    //Inject(Entry("__print", PrintRawString, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
-    //Inject(Entry("__print", PrintArray, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
-    //Inject(Entry("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
-    //Inject(Entry("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
+    //AddEntry(Entry("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdRawString));
+    //AddEntry(Entry("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdArrayBase));
+    //AddEntry(Entry("__print", PrintRawString, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
+    //AddEntry(Entry("__print", PrintArray, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
+    //AddEntry(Entry("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
+    //AddEntry(Entry("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
   }
 
 

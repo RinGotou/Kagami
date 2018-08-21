@@ -487,8 +487,6 @@ break;
     deque<Object> parms;
     ObjectMap map;
     size_t idx = 0;
-
-    if (symbol.back().GetId() == "(") symbol.pop_back();
     Entry &ent = symbol.back();
 
     if (ent.GetId() == kStrNop) {
@@ -499,7 +497,7 @@ break;
     const size_t size = ent.GetParmSize();
     auto args = ent.GetArguments();
     idx = size;
-    while (idx > 0 && !item.empty() && item.back().IsPlaceholder()) {
+    while (idx > 0 && !item.empty() && !item.back().IsPlaceholder()) {
       parms.push_front(item.back());
       item.pop_back();
       idx--;
@@ -558,9 +556,9 @@ break;
     }
     else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeFillingSign) {
       item.push_back(Object()
-        .Manage(kStrTrue)
+        .Manage(detail)
         .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(TokenTypeEnum::T_BOOLEAN));
+        .SetTokenType(Kit().GetTokenType(detail)));
     }
 
     health = (value != kStrFatalError && code >= kCodeSuccess);
@@ -605,7 +603,47 @@ break;
 
   bool Processor::RightBracket(Message &msg) {
     bool result = true;
-    while (symbol.back().GetId() != "(") {
+    deque<Entry> tempSymbol;
+    deque<Object> tempObject;
+    bool checked = false;
+
+    while (!symbol.empty() && symbol.back().GetId() != "(") {
+      if (!checked
+        && symbol.back().GetTokenEnum() != GT_NUL
+        && symbol[symbol.size() - 2].GetTokenEnum() != GT_NUL) {
+        checked = true;
+        while (!symbol.empty()
+          && symbol.back().GetPriority() == symbol[symbol.size() - 2].GetPriority()) {
+          tempSymbol.push_back(symbol.back());
+          tempObject.push_back(item.back());
+          symbol.pop_back();
+          item.pop_back();
+        }
+        tempSymbol.push_back(symbol.back());
+        symbol.pop_back();
+        int i = 2;
+        while (i > 0) {
+          tempObject.push_back(item.back());
+          item.pop_back();
+          --i;
+        }
+        while (!tempSymbol.empty()) {
+          symbol.push_back(tempSymbol.front());
+          tempSymbol.pop_front();
+        }
+        while (!tempObject.empty()) {
+          item.push_back(tempObject.front());
+          tempObject.pop_front();
+        }
+      }
+      else if (checked 
+        && symbol.back().GetTokenEnum() != GT_NUL 
+        && symbol[symbol.size() - 2].GetTokenEnum() != GT_NUL) {
+        if (symbol.back().GetPriority() != symbol[symbol.size() - 2].GetPriority()) {
+          checked = false;
+        }
+      }
+      
       result = TakeAction(msg);
       if (result == false) break;
     }

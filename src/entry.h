@@ -77,8 +77,8 @@ namespace kagami {
     list<ObjectManager> &GetObjectStack();
     ObjectManager &GetCurrentManager();
     string GetTypeId(string sign);
-    void Inject(Entry temp);
-    void LoadGenProvider(GenericTokenEnum token, Entry temp);
+    void AddEntry(Entry temp);
+    void AddGenericEntry(GenericTokenEnum token, Entry temp);
     Object *FindObject(string name);
     ObjectManager &CreateManager();
     bool DisposeManager();
@@ -89,6 +89,6 @@ namespace kagami {
     string GetGenTokenValue(GenericTokenEnum token);
     OperatorCode GetOperatorCode(string src);
     Entry Order(string id, string type = kTypeIdNull, int size = -1);
-    size_t GetRequiredCount(string id);
+    bool IsOperatorToken(GenericTokenEnum token);
   }
 }
