@@ -259,6 +259,7 @@ namespace kagami {
     while (msg.GetCode() != kCodeQuit) {
       std::cout << head;
       std::getline(std::cin, buf);
+      if (buf.empty()) continue;
       processor.Build(buf);
       auto tokenValue = entry::GetGenericToken(processor.GetFirstToken().first);
       switch (tokenValue) {
@@ -575,8 +576,9 @@ break;
 
   void Processor::EqualMark() {
     if (!item.empty()) {
-      auto typeId = item.back().GetTypeId();
-      if (typeId == kTypeIdRawString) {
+      bool ref = item.back().IsRef();
+      //auto typeId = item.back().GetTypeId();
+      if (!ref) {
         symbol.push_back(entry::Order(kStrBind));
       }
       else {
@@ -700,10 +702,16 @@ break;
         }
         else {
           if (nextToken.first == "=") {
-            item.push_back(Object()
-              .Manage(currentToken.first)
-              .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-              .SetTokenType(currentToken.second));
+            Object *object = entry::FindObject(currentToken.first);
+            if (object != nullptr) {
+              item.push_back(Object().Ref(*object));
+            }
+            else {
+              item.push_back(Object()
+                .Manage(currentToken.first)
+                .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+                .SetTokenType(currentToken.second));
+            }
           }
           else {
             Object *object = entry::FindObject(currentToken.first);
