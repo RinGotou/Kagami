@@ -259,6 +259,7 @@ namespace kagami {
     while (msg.GetCode() != kCodeQuit) {
       std::cout << head;
       std::getline(std::cin, buf);
+      if (buf.empty()) continue;
       processor.Build(buf);
       auto tokenValue = entry::GetGenericToken(processor.GetFirstToken().first);
       switch (tokenValue) {
@@ -339,13 +340,16 @@ namespace kagami {
 
     //Spilt
     forwardChar = 0;
+    bool delaySuspend = false;
     for (size_t count = 0; count < data.size(); ++count) {
       currentChar = data[count];
+      if (delaySuspend) stringProcessing = false;
       if (currentChar == '\'' && forwardChar != '\\') {
-        if (kit.GetTokenType(current) == TokenTypeEnum::T_BLANK) {
+        if (!stringProcessing 
+          && kit.GetTokenType(current) == TokenTypeEnum::T_BLANK) {
           current.clear();
         }
-        stringProcessing = !stringProcessing;
+        stringProcessing ? delaySuspend = true : stringProcessing = true;
       }
       current.append(1, currentChar);
       if (kit.GetTokenType(current) != TokenTypeEnum::T_NUL) {
@@ -408,10 +412,10 @@ namespace kagami {
           if (kit.GetTokenType(forward) == TokenTypeEnum::T_SYMBOL &&
             forward != "]" && forward != ")" &&
             forward != "++" && forward != "--" &&
-forward != "'") {
-errorString = "Illegal comma location.";
-health = false;
-break;
+              forward != "'") {
+              errorString = "Illegal comma location.";
+              health = false;
+              break;
           }
         }
       }
@@ -496,9 +500,12 @@ break;
 
     const size_t size = ent.GetParmSize();
     auto args = ent.GetArguments();
+    bool reversed = entry::IsOperatorToken(ent.GetTokenEnum()) && needReverse;
+
     idx = size;
     while (idx > 0 && !item.empty() && !item.back().IsPlaceholder()) {
-      parms.push_front(item.back());
+      if (reversed) parms.push_back(item.back());
+      else parms.push_front(item.back());
       item.pop_back();
       idx--;
     }
@@ -575,8 +582,9 @@ break;
 
   void Processor::EqualMark() {
     if (!item.empty()) {
-      auto typeId = item.back().GetTypeId();
-      if (typeId == kTypeIdRawString) {
+      bool ref = item.back().IsRef();
+      //auto typeId = item.back().GetTypeId();
+      if (!ref) {
         symbol.push_back(entry::Order(kStrBind));
       }
       else {
@@ -612,6 +620,7 @@ break;
         && symbol.back().GetTokenEnum() != GT_NUL
         && symbol[symbol.size() - 2].GetTokenEnum() != GT_NUL) {
         checked = true;
+        needReverse = true;
         while (!symbol.empty()
           && symbol.back().GetPriority() == symbol[symbol.size() - 2].GetPriority()) {
           tempSymbol.push_back(symbol.back());
@@ -648,10 +657,33 @@ break;
       if (result == false) break;
     }
     if (result == true) {
-      if (symbol.back().GetId() == "(") symbol.pop_back();
+      if (needReverse) needReverse = false;
+      if (symbol.back().GetId() == "(" || symbol.back().GetId() == "[") symbol.pop_back();
       result = TakeAction(msg);
     }
     return result;
+  }
+
+  bool Processor::LeftSqrBracket(Message &msg) {
+    bool result = true;
+    bool methodExisted = Kit().FindInStringGroup("__at", item.back().GetMethods());
+    if (methodExisted) {
+      Entry ent = entry::Order("__at", item.back().GetTypeId());
+      if (ent.Good()) {
+        symbol.push_back(ent);
+        symbol.push_back(Entry("("));
+        item.push_back(Object().SetPlaceholder());
+      }
+      else {
+        msg.combo(kStrFatalError, kCodeIllegalCall, "Function is not found - __at");
+        result = false;
+      }
+    }
+    return result;
+  }
+
+  bool Processor::RightSqrBracket(Message &msg) {
+    return this->RightBracket(msg);
   }
 
   bool Processor::FunctionAndObject(Message &msg) {
@@ -700,10 +732,16 @@ break;
         }
         else {
           if (nextToken.first == "=") {
-            item.push_back(Object()
-              .Manage(currentToken.first)
-              .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-              .SetTokenType(currentToken.second));
+            Object *object = entry::FindObject(currentToken.first);
+            if (object != nullptr) {
+              item.push_back(Object().Ref(*object));
+            }
+            else {
+              item.push_back(Object()
+                .Manage(currentToken.first)
+                .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+                .SetTokenType(currentToken.second));
+            }
           }
           else {
             Object *object = entry::FindObject(currentToken.first);
@@ -795,10 +833,9 @@ break;
     lambdaObjectCount = 0;
     nextInsertSubscript = 0;
     operatorTargetType = kTypeIdNull;
-    commaExpFunc = false,
-    insertBetweenObject = false,
-    disableSetEntry = false,
-    dotOperator = false,
+    insertBetweenObject = false;
+    dotOperator = false;
+    needReverse = false;
     subscriptProcessing = false;
     functionLine = false;
     defineLine = false;
@@ -820,11 +857,11 @@ break;
         switch (value) {
         case TOKEN_EQUAL: EqualMark(); break;
         case TOKEN_COMMA: break;
-        case TOKEN_LEFT_SQRBRACKET: /*TODO:*/; break;
+        case TOKEN_LEFT_SQRBRACKET: state = LeftSqrBracket(result); break;
         case TOKEN_DOT:             dotOperator = true; break;
         case TOKEN_LEFT_BRACKET:    LeftBracket(result); break;
         case TOKEN_COLON:           state = Colon(); break;
-        case TOKEN_RIGHT_SQRBRACKET:/*TODO:*/; break;
+        case TOKEN_RIGHT_SQRBRACKET:state = RightSqrBracket(result); break;
         case TOKEN_RIGHT_BRACKET:   state = RightBracket(result); break;
         case TOKEN_SELFOP:          /*TODO:*/ break;
         case TOKEN_OTHERS:          OtherSymbol(); break;

@@ -140,15 +140,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\entry.h" />
     <ClInclude Include="..\..\src\kagami.h" />
-    <ClInclude Include="..\..\src\kagamicommon.h" />
+    <ClInclude Include="..\..\src\common.h" />
+    <ClInclude Include="..\..\src\kit.h" />
+    <ClInclude Include="..\..\src\list.h" />
+    <ClInclude Include="..\..\src\message.h" />
+    <ClInclude Include="..\..\src\object.h" />
     <ClInclude Include="..\..\src\parser.h" />
     <ClInclude Include="..\..\src\template.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\basicutility.cpp" />
+    <ClCompile Include="..\..\src\entry.cpp" />
     <ClCompile Include="..\..\src\kagami.cpp" />
-    <ClCompile Include="..\..\src\kagamicommon.cpp" />
+    <ClCompile Include="..\..\src\kit.cpp" />
+    <ClCompile Include="..\..\src\message.cpp" />
+    <ClCompile Include="..\..\src\object.cpp" />
     <ClCompile Include="..\..\src\parser.cpp" />
     <ClCompile Include="..\..\src\template.cpp" />
   </ItemGroup>

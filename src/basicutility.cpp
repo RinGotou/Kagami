@@ -102,6 +102,7 @@ namespace kagami {
         if (dataB.front() == '\'') dataB = dataB.substr(1, dataB.size() - 1);
         if (dataB.back() != '\'') dataB = dataB + "'";
         temp = dataA + dataB;
+        break;
       case OperatorCode::IS:
       case OperatorCode::NOT_EQUAL:
         kit.Logic(dataA, dataB, OP) ? temp = kStrTrue : temp = kStrFalse;
@@ -345,16 +346,16 @@ namespace kagami {
     AddGenericEntry(GT_ELIF, Entry(ConditionBranch, "state", GT_ELIF));
     AddGenericEntry(GT_SET, Entry(Set, "object|source", GT_SET, kCodeNormalParm, 0));
     AddGenericEntry(GT_BIND, Entry(Bind, "object|source", GT_BIND, kCodeNormalParm, 0));
-    AddGenericEntry(GT_ADD, Entry(Plus, "second|first", GT_ADD, kCodeNormalParm, 2));
-    AddGenericEntry(GT_SUB, Entry(Sub, "second|first", GT_SUB, kCodeNormalParm, 2));
-    AddGenericEntry(GT_MUL, Entry(Multiply, "second|first", GT_MUL, kCodeNormalParm, 3));
-    AddGenericEntry(GT_DIV, Entry(Divide, "second|first", GT_DIV, kCodeNormalParm, 3));
-    AddGenericEntry(GT_IS, Entry(LogicEqual, "second|first", GT_IS, kCodeNormalParm, 1));
-    AddGenericEntry(GT_LESS_OR_EQUAL, Entry(LessOrEqual, "second|first", GT_LESS_OR_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(GT_MORE_OR_EQUAL, Entry(MoreOrEqual, "second|first", GT_MORE_OR_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(GT_NOT_EQUAL, Entry(LogicNotEqual, "second|first", GT_NOT_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(GT_MORE, Entry(More, "second|first", GT_MORE, kCodeNormalParm, 1));
-    AddGenericEntry(GT_LESS, Entry(Less, "second|first", GT_LESS, kCodeNormalParm, 1));
+    AddGenericEntry(GT_ADD, Entry(Plus, "first|second", GT_ADD, kCodeNormalParm, 2));
+    AddGenericEntry(GT_SUB, Entry(Sub, "first|second", GT_SUB, kCodeNormalParm, 2));
+    AddGenericEntry(GT_MUL, Entry(Multiply, "first|second", GT_MUL, kCodeNormalParm, 3));
+    AddGenericEntry(GT_DIV, Entry(Divide, "first|second", GT_DIV, kCodeNormalParm, 3));
+    AddGenericEntry(GT_IS, Entry(LogicEqual, "first|second", GT_IS, kCodeNormalParm, 1));
+    AddGenericEntry(GT_LESS_OR_EQUAL, Entry(LessOrEqual, "first|second", GT_LESS_OR_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(GT_MORE_OR_EQUAL, Entry(MoreOrEqual, "first|second", GT_MORE_OR_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(GT_NOT_EQUAL, Entry(LogicNotEqual, "first|second", GT_NOT_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(GT_MORE, Entry(More, "first|second", GT_MORE, kCodeNormalParm, 1));
+    AddGenericEntry(GT_LESS, Entry(Less, "first|second", GT_LESS, kCodeNormalParm, 1));
   }
 
   void Activiate() {
