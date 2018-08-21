@@ -160,12 +160,14 @@ namespace kagami {
   void InitPlanners() {
     using type::AddTemplate;
     using entry::AddEntry;
-    AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, "size|substr|at|__print"));
-    AddTemplate(kTypeIdArrayBase, ObjectPlanner(ArrayCopy, "size|at|__print"));
+    AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, "size|substr|__at|__print"));
+    AddTemplate(kTypeIdArrayBase, ObjectPlanner(ArrayCopy, "size|__at|__print"));
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, ""));
 
 
-    AddEntry(Entry(PrintRawString, kCodeNormalParm, "", "__print", kTypeIdRawString));
+    AddEntry(Entry(PrintRawString, kCodeNormalParm, "", "__print", kTypeIdRawString, kFlagMethod));
+    AddEntry(Entry(GetElement, kCodeNormalParm, "subscript_1", "__at", kTypeIdRawString, kFlagMethod));
+
     ////constructor
     //AddEntry(Entry("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
     ////methods
