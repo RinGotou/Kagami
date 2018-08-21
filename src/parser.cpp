@@ -39,7 +39,6 @@ namespace kagami {
     return TOKEN_OTHERS;
   }
 
-  //TODO:processing for integer
   bool GetBooleanValue(string src) {
     if (src == kStrTrue) return true;
     if (src == kStrFalse) return false;
@@ -51,6 +50,7 @@ namespace kagami {
     string temp;
     end = false;
     isTerminal = false;
+    health = true;
     current = 0;
     size_t subscript = 0;
 
@@ -163,12 +163,22 @@ namespace kagami {
         currentMode = modeStack.top();
         modeStack.pop();
         cycleNestStack.pop();
-        cycleTailStack.pop();
+        if (!cycleTailStack.empty()) cycleTailStack.pop();
         entry::DisposeManager();
         break;
       default:break;
       }
     }
+  }
+
+  bool ScriptMachine::IsBlankStr(string target) {
+    if (target == kStrEmpty || target.size() == 0) return true;
+    for (const auto unit : target) {
+      if (unit != ' ' || unit != '\n' || unit != '\t' || unit != '\r') {
+        return false;
+      }
+    }
+    return true;
   }
 
   Message ScriptMachine::Run() {
@@ -187,7 +197,7 @@ namespace kagami {
     while (current < storage.size()) {
       if (!health) break;
 
-      result = storage[current].Start(currentMode);
+      result = storage[current].Activiate(currentMode);
       const auto value = result.GetValue();
       const auto code  = result.GetCode();
       const auto selfObjectManagement = storage[current].IsSelfObjectManagement();
@@ -252,13 +262,13 @@ namespace kagami {
       processor.Build(buf);
       auto tokenValue = entry::GetGenericToken(processor.GetFirstToken().first);
       switch (tokenValue) {
-      case BG_IF:
-      case BG_WHILE:
-      case BG_FOR:
+      case GT_IF:
+      case GT_WHILE:
+      case GT_FOR:
         subProcess = true;
         head = kStrDotGroup;
         break;
-      case BG_END:
+      case GT_END:
         subProcess = false;
         storage.emplace_back(processor);
         head = kStrNormalArrow;
@@ -266,7 +276,7 @@ namespace kagami {
         storage.clear();
         current = 0;
         break;
-      case BG_DEF:
+      case GT_DEF:
         //
         break;
       default:
@@ -276,7 +286,7 @@ namespace kagami {
         storage.emplace_back(processor);
       }
       else {
-        msg = processor.Start();
+        msg = processor.Activiate();
       }
 
       if (msg.GetCode() < kCodeSuccess) {
@@ -326,7 +336,7 @@ namespace kagami {
     while (kit.GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
       data.pop_back();
     }
-      
+
     //Spilt
     forwardChar = 0;
     for (size_t count = 0; count < data.size(); ++count) {
@@ -385,8 +395,8 @@ namespace kagami {
         if (current == "(" || current == "[") nest++;
         if (current == ")" || current == "]") nest--;
         if (current == "[") {
-          if (kit.GetTokenType(forward) != TokenTypeEnum::T_GENERIC 
-            && forward != "]" 
+          if (kit.GetTokenType(forward) != TokenTypeEnum::T_GENERIC
+            && forward != "]"
             && forward != ")") {
             errorString = "Illegal subscript operation.";
             nest = 0;
@@ -398,10 +408,10 @@ namespace kagami {
           if (kit.GetTokenType(forward) == TokenTypeEnum::T_SYMBOL &&
             forward != "]" && forward != ")" &&
             forward != "++" && forward != "--" &&
-            forward != "'") {
-            errorString = "Illegal comma location.";
-            health = false;
-            break;
+forward != "'") {
+errorString = "Illegal comma location.";
+health = false;
+break;
           }
         }
       }
@@ -473,498 +483,304 @@ namespace kagami {
     return *this;
   }
 
-  int Processor::GetPriority(const string target) {
-    int priority;
-    if (target == "=" || target == "var") {
-      priority = 0;
+  bool Processor::TakeAction(Message &msg) {
+    deque<Object> parms;
+    ObjectMap map;
+    size_t idx = 0;
+    Entry &ent = symbol.back();
+
+    if (ent.GetId() == kStrNop) {
+      /*Pending*/
+      return true;
     }
-    else if (target == "==" || target == ">=" || target == "<="
-      || target == "!=" || target == "<" || target == ">") {
-      priority = 1;
+
+    const size_t size = ent.GetParmSize();
+    auto args = ent.GetArguments();
+    idx = size;
+    while (idx > 0 && !item.empty() && !item.back().IsPlaceholder()) {
+      parms.push_front(item.back());
+      item.pop_back();
+      idx--;
     }
-    else if (target == "+" || target == "-") {
-      priority = 2;
+    if (!item.empty() && item.back().IsPlaceholder()) item.pop_back();
+
+    for (idx = 0; idx < size; ++idx) {
+      map.insert(pair<string, Object>(args[idx], parms[idx]));
     }
-    else if (target == "*" || target == "/" || target == "\\") {
-      priority = 3;
+
+    auto flag = ent.GetFlag();
+    if (flag == kFlagMethod) {
+      map.insert(pair<string, Object>(kStrObject, item.back()));
+      item.pop_back();
     }
-    else {
-      priority = 4;
+
+    /*TODO:Execute*/
+    GenericTokenEnum headEnt = symbol.front().GetTokenEnum(),
+      currentEnum = ent.GetTokenEnum();
+    switch (mode) {
+    case kModeCycleJump:
+      if (currentEnum == GT_END) {
+        msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
+      }
+      else if (headEnt == GT_IF || headEnt == GT_WHILE) {
+        msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+      }
+      break;
+    case kModeNextCondition:
+      if (headEnt == GT_IF || headEnt == GT_WHILE) {
+        msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+      }
+      else if (currentEnum == GT_ELSE) {
+        msg.combo(kStrTrue, kCodeConditionLeaf, kStrEmpty);
+      }
+      else if (currentEnum == GT_END) {
+        msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
+      }
+      else if (currentEnum == GT_ELIF) {
+        msg = ent.Start(map);
+      }
+      break;
+    case kModeNormal:
+    case kModeCondition:
+    default:
+      msg = ent.Start(map);
     }
-    return priority;
+
+    const auto code = msg.GetCode();
+    const auto value = msg.GetValue();
+    const auto detail = msg.GetDetail();
+
+    if (code == kCodeObject) {
+      auto object = msg.GetObj();
+      item.push_back(object);
+    }
+    else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeFillingSign) {
+      item.push_back(Object()
+        .Manage(detail)
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+        .SetTokenType(Kit().GetTokenType(detail)));
+    }
+
+    health = (value != kStrFatalError && code >= kCodeSuccess);
+    symbol.pop_back();
+    return health;
   }
 
   Object *Processor::GetObj(string name) {
     Object *result = nullptr;
-    if (name.substr(0, 2) == "__") {
-      const auto it = lambdamap.find(name);
-      if (it != lambdamap.end()) result = &(it->second);
-    }
-    else {
-      const auto ptr = entry::FindObject(name);
-      if (ptr != nullptr) result = ptr;
-    }
+    const auto ptr = entry::FindObject(name);
+    if (ptr != nullptr) result = ptr;
     return result;
-  }
-
-  vector<string> Processor::Spilt(string target) {
-    string temp;
-    auto start = false;
-    for (auto &unit : target) {
-      if (unit == ':') {
-        start = true;
-        continue;
-      }
-      if (start) {
-        temp.append(1, unit);
-      }
-    }
-    auto result = Kit().BuildStringVector(temp);
-    return result;
-  }
-
-  string Processor::GetHead(string target) {
-    string result;
-    for (auto &unit : target) {
-      if (unit == ':') break;
-      else result.append(1, unit);
-    }
-    return result;
-  }
-
-  bool Processor::Assemble(Message &msg) {
-    Kit           kit;
-    Object        temp, *origin;
-    size_t        count;
-    deque<Token>  tokens;
-    ObjectMap     map;
-    auto providerSize = -1;
-    auto health       = true;
-    auto providerType = kTypeIdNull;
-    auto tags         = Spilt(symbol.back().first);
-    const auto    id  = GetHead(symbol.back().first);
-    Entry provider;
-
-    auto getName = [](string target) ->string {
-      if (target.front() == '&' || target.front() == '%') {
-        return target.substr(1, target.size() - 1);
-      }
-      else return target;
-    };
-
-    if (!tags.empty()) {
-      providerType = tags.front();
-      tags.size() > 1 ? providerSize = stoi(tags[1]) : providerSize = -1;
-    }
-
-    if (id != kStrNop) {
-      provider = entry::Order(id, providerType, providerSize);
-      if (!provider.Good()) {
-        msg.combo(kStrFatalError, kCodeIllegalCall, "Activity not found - " + id);
-        symbol.pop_back();
-        return false;
-      }
-    }
-    
-    const auto size     = provider.GetParameterSIze();
-    const auto parmMode = provider.GetArgumentMode();
-    const auto priority = provider.GetPriority();
-    auto args           = provider.GetArguments();
-
-    if (id == kStrNop) {
-      auto res = item.back();
-      while (!item.empty() && item.back().first != "(") {
-        item.pop_back();
-      }
-      if (!item.empty() && item.back().first == "(") item.pop_back();
-      item.push_back(tokens.back());
-      symbol.pop_back();
-      kit.CleanupDeque(tokens);
-      return true;
-    }
-
-    if (!disableSetEntry) {
-      count = size;
-      while (count > 0 && !item.empty() && item.back().first != "(") {
-        tokens.push_front(item.back());
-        item.pop_back();
-        count--;
-      }
-      if (!item.empty() && item.back().first == "(") item.pop_back();
-    }
-    else {
-      while (item.back().first != "," && !item.empty()) {
-        tokens.push_front(item.back());
-        item.pop_back();
-      }
-    }
-
-    if (parmMode == kCodeNormalParm && (tokens.size() < size || tokens.size() > size)) {
-      msg.combo(kStrFatalError, kCodeIllegalParm, "Parameter doesn't match expected count.(01)");
-      health = false;
-    }
-    else if (parmMode == kCodeAutoFill && tokens.size() < 1) {
-      msg.combo(kStrFatalError, kCodeIllegalParm, "You should provide at least one parameter.(02)");
-      health = false;
-    }
-    else {
-      for (count = 0; count < size; count++) {
-        if (tokens.size() - 1 < count) {
-          map.insert(Parameter(getName(args[count]), Object()));
-          continue;
-        }
-        
-        switch (tokens[count].second) {
-        case TokenTypeEnum::T_GENERIC:
-          if (args[count].front() == '&') {
-            origin = GetObj(tokens[count].first);
-            temp.Ref(*origin);
-          }
-          else if (args[count].front() == '%') {
-            temp.Manage(tokens[count].first)
-                .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-                .SetTokenType(TokenTypeEnum::T_GENERIC);
-          }
-          else {
-            auto ptr = GetObj(tokens[count].first);
-            if (ptr == nullptr) {
-              msg.combo(kStrFatalError, kCodeIllegalCall, "Object not found - " + tokens[count].first);
-              health = false;
-            }
-            else {
-              temp = *GetObj(tokens[count].first);
-            }
-          }
-          break;
-        default:
-          temp.Manage(tokens[count].first)
-              .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-              .SetTokenType(tokens[count].second);
-          break;
-        }
-        map.insert(pair<string,Object>(getName(args[count]), temp));
-        temp.Clear();
-        
-      }
-
-      if (id == kStrFor) {
-        const auto sub = to_string(this->index);
-        map.insert(Parameter(kStrCodeSub,Object()
-           .Manage(sub)
-           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-           .SetTokenType(TokenTypeEnum::T_INTEGER)));
-      }
-
-      switch (priority) {
-      case kFlagOperatorEntry:
-        map.insert(Parameter(kStrOperator, Object()
-           .Manage(symbol.back().first)
-           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-           .SetTokenType(TokenTypeEnum::T_SYMBOL)));
-        break;
-      case kFlagMethod:
-        origin = GetObj(item.back().first);
-        map.insert(Parameter(kStrObject, Object()
-           .Ref(*origin)));
-        item.pop_back();
-        break;
-      default:
-        break;
-      }
-    }
-    
-    if (health) {
-      switch (mode) {
-      case kModeCycleJump:
-        if (id == kStrEnd) msg = provider.Start(map);
-        else if (symbol.front().first == kStrIf || symbol.front().first == kStrWhile) {
-          msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
-        }
-        break;
-      case kModeNextCondition:
-        if (symbol.front().first == kStrIf || symbol.front().first == kStrWhile) {
-          msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
-        }
-        else if (id == kStrElse || id == kStrEnd) msg = provider.Start(map);
-        else if (symbol.front().first == kStrElif) msg = provider.Start(map);
-        else msg.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
-        break;
-      case kModeNormal:
-      case kModeCondition:
-      default:
-        msg = provider.Start(map);
-        break;
-      }
-
-      const auto code   = msg.GetCode();
-      const auto value  = msg.GetValue();
-      const auto detail = msg.GetDetail();
-
-      if (code == kCodeObject) {
-        temp = msg.GetObj();
-        auto tempId = detail + to_string(lambdaObjectCount); //detail start with "__"
-        item.emplace_back(Token(tempId, TokenTypeEnum::T_GENERIC));
-        lambdamap.insert(Parameter(tempId, temp));
-        ++lambdaObjectCount;
-      }
-      else if (value == kStrRedirect && (code == kCodeSuccess || code == kCodeFillingSign)) {
-        item.emplace_back(Token(detail, kit.GetTokenType(detail)));
-      }
-
-      health = (value != kStrFatalError && value != kStrWarning);
-      symbol.pop_back();
-    }
-    return health;
   }
 
   void Processor::EqualMark() {
-    if (symbol.empty()) {
-      symbol.emplace_back(currentToken);
-    }
-    else {
-      if (defineLine) defineLine = false;
-      else symbol.emplace_back(currentToken);
-    }
-  }
-
-  void Processor::Comma() {
-    if (symbol.back().first == kStrVar) {
-      disableSetEntry = true;
-    }
-    if (disableSetEntry) {
-      symbol.emplace_back(Token(kStrVar,TokenTypeEnum::T_GENERIC));
-      item.emplace_back(currentToken);
-    }
-  }
-
-  bool Processor::LeftBracket(Message &msg) {
-    auto result = true;
-    if (forwardToken.first == kStrVar) {
-      msg.combo(kStrFatalError, kCodeIllegalCall, "Illegal pattern of definition.");
-      result = false;
-    }
-    else {
-      if(forwardToken.second != TokenTypeEnum::T_GENERIC) {
-        symbol.emplace_back(Token(kStrNop,TokenTypeEnum::T_GENERIC));
-      }
-      symbol.emplace_back(currentToken);
-      item.emplace_back(currentToken);
-    }
-    return result;
-  }
-
-  bool Processor::RightBracket(Message &msg) {
-    auto result = true;
-    while (symbol.back().first != "(" && !symbol.empty()) {
-      result = Assemble(msg);
-      if (!result) break;
-    }
-
-    if (result) {
-      if (symbol.back().first == "(") symbol.pop_back();
-      result = Assemble(msg);
-    }
-
-    return result;
-  }
-
-  void Processor::LeftSquareBracket() {
-    if (item.back().first.substr(0, 2) == "__") {
-      operatorTargetType = lambdamap.find(item.back().first)->second.GetTypeId();
-    }
-    else {
-      operatorTargetType = entry::FindObject(item.back().first)->GetTypeId();
-    }
-    item.emplace_back(currentToken);
-    symbol.emplace_back(currentToken);
-    subscriptProcessing = true;
-  }
-
-  bool Processor::RightSquareBracket(Message &msg) {
-    bool result;
-    deque<Token> container;
-    if (!subscriptProcessing) {
-      //msg.combo
-      result = false;
-    }
-    else {
-      subscriptProcessing = false;
-      while (symbol.back().first != "[" && !symbol.empty()) {
-        result = Assemble(msg);
-        if (!result) break;
-      }
-      if (symbol.back().first == "[") symbol.pop_back();
-      while (item.back().first != "[" && !item.empty()) {
-        container.emplace_back(item.back());
-        item.pop_back();
-      }
-      if (item.back().first == "[") item.pop_back();
-      if (!container.empty()) {
-        switch (container.size()) {
-        case 1:symbol.emplace_back(Token("at:" + operatorTargetType + "|1",TokenTypeEnum::T_GENERIC)); break;
-        case 2:symbol.emplace_back(Token("at:" + operatorTargetType + "|2", TokenTypeEnum::T_GENERIC)); break;
-        default:break;
-        }
-
-        while (!container.empty()) {
-          item.emplace_back(container.back());
-          container.pop_back();
-        }
-
-        result = Assemble(msg);
+    if (!item.empty()) {
+      auto typeId = item.back().GetTypeId();
+      if (typeId == kTypeIdRawString) {
+        symbol.push_back(entry::Order(kStrBind));
       }
       else {
-        //msg.combo
-        result = false;
+        symbol.push_back(entry::Order(kStrSet));
       }
     }
-
-    Kit().CleanupDeque(container);
-    return result;
-  }
-
-  void Processor::OtherSymbols() {
-    if (symbol.empty()) symbol.emplace_back(currentToken);
-    else if (GetPriority(currentToken.first) < GetPriority(symbol.back().first) && 
-      symbol.back().first != "(" && symbol.back().first != "[") {
-      auto j = symbol.size() - 1;
-      auto k = item.size();
-      while (symbol[j].first != "(" && symbol.back().first != "[" && 
-        GetPriority(currentToken.first) < GetPriority(symbol[j].first)) {
-        k == item.size()?
-          k -= entry::GetRequiredCount(symbol[j].first):
-          k -= entry::GetRequiredCount(symbol[j].first) - 1;
-        --j;
-      }
-      symbol.insert(symbol.begin() + j + 1, currentToken);
-      nextInsertSubscript = k;
-      insertBtnSymbols = true;
-    }
-    else {
-      symbol.emplace_back(currentToken);
-    }
-  }
-
-  bool Processor::FunctionAndObject(Message &msg) {
-    Kit kit;
-    auto result = true, function = false;
-
-    if (currentToken.first == kStrVar) defineLine = true;
-    if (currentToken.first == kStrDef) functionLine = true;
-
-    if (dotOperator) {
-      const auto id = entry::GetTypeId(item.back().first);
-      if (kit.FindInStringGroup(currentToken.first, type::GetPlanner(id)->GetMethods())) {
-        auto provider = entry::Order(currentToken.first, id);
-        if (provider.Good()) {
-          symbol.emplace_back(Token(currentToken.first + ':' + id, TokenTypeEnum::T_GENERIC));
-          function = true;
-        }
-        else {
-          //TODO:???
-        }
-        
-        dotOperator = false;
-      }
-      else {
-        msg.combo(kStrFatalError, kCodeIllegalCall, "No such method/member in " + id + ".");
-        result = false;
-      }
-    }
-    else {
-      if (functionLine) {
-        item.emplace_back(currentToken);
-      }
-      else {
-        if (entry::Order(currentToken.first).Good()) {
-          symbol.emplace_back(currentToken);
-          function = true;
-        }
-        else {
-          if (nextToken.first == "(") {
-            symbol.emplace_back(currentToken);
-          }
-          else {
-            item.emplace_back(currentToken);
-          }
-        }
-      }
-    }
-
-    if (!defineLine && function 
-      && nextToken.first    != "(" 
-      && currentToken.first != kStrElse
-      && currentToken.first != kStrEnd) {
-      errorString = "Bracket after function is missing.";
-      this->health = false;
-      result = false;
-    }
-    if (functionLine 
-      && forwardToken.first == kStrDef 
-      && nextToken.first != "(" 
-      && currentToken.first != kStrEnd) {
-      errorString = "Illegal declaration of function.";
-      this->health = false;
-      result = false;
-    }
-
-    return result;
-  }
-
-  void Processor::OtherTokens() {
-    if (insertBtnSymbols) {
-      item.insert(item.begin() + nextInsertSubscript, currentToken);
-      insertBtnSymbols = false;
-    }
-    else {
-      item.emplace_back(currentToken);
-    }
-  }
-
-  void Processor::FinalProcessing(Message &msg) {
-    if (symbol.empty() && !item.empty()) {
-      if (item.back().second == TokenTypeEnum::T_GENERIC) {
-        msg.combo(kStrFatalError, kCodeIllegalCall, "Unrecognized token.");
-      }
-    }
-    while (symbol.empty() != true) {
-      if (symbol.back().first == "(" || symbol.back().first == ")") {
-        msg.combo(kStrFatalError, kCodeIllegalSymbol, "Another bracket is expected.");
-        break;
-      }
-      Assemble(msg);
-    }
-  }
-
-  bool Processor::SelfOperator(Message &msg) {
-    using entry::OperatorCode;
-    auto OPValue = entry::GetOperatorCode(currentToken.first);
-    if (forwardToken.second != TokenTypeEnum::T_GENERIC) {
-      switch (OPValue) {
-      case OperatorCode::SELFINC:symbol.emplace_back(kStrLeftSelfInc, TokenTypeEnum::T_GENERIC); break;
-      case OperatorCode::SELFDEC:symbol.emplace_back(kStrLeftSelfDec, TokenTypeEnum::T_GENERIC); break;
-      default:break;
-      }
-    }
-    else {
-      switch (OPValue) {
-      case OperatorCode::SELFINC:symbol.emplace_back(kStrRightSelfInc, TokenTypeEnum::T_GENERIC); break;
-      case OperatorCode::SELFDEC:symbol.emplace_back(kStrRightSelfDec, TokenTypeEnum::T_GENERIC); break;
-      default:break;
-      }
-    }
-    return true;
   }
 
   bool Processor::Colon() {
-    if (symbol.front().first != kStrFor) {
+    if (symbol.front().GetTokenEnum() == GenericTokenEnum::GT_FOR) {
       errorString = "Illegal colon location.";
       return false;
     }
     return true;
   }
 
-  Message Processor::Start(size_t mode) {
+  void Processor::LeftBracket(Message &msg) {
+    if (forwardToken.second != TokenTypeEnum::T_GENERIC) {
+      symbol.push_back(Entry(kStrNop));
+    }
+    symbol.push_back(Entry(currentToken.first));
+    item.push_back(Object().SetPlaceholder());
+  }
+
+  bool Processor::RightBracket(Message &msg) {
+    bool result = true;
+    deque<Entry> tempSymbol;
+    deque<Object> tempObject;
+    bool checked = false;
+
+    while (!symbol.empty() && symbol.back().GetId() != "(") {
+      if (!checked
+        && symbol.back().GetTokenEnum() != GT_NUL
+        && symbol[symbol.size() - 2].GetTokenEnum() != GT_NUL) {
+        checked = true;
+        while (!symbol.empty()
+          && symbol.back().GetPriority() == symbol[symbol.size() - 2].GetPriority()) {
+          tempSymbol.push_back(symbol.back());
+          tempObject.push_back(item.back());
+          symbol.pop_back();
+          item.pop_back();
+        }
+        tempSymbol.push_back(symbol.back());
+        symbol.pop_back();
+        int i = 2;
+        while (i > 0) {
+          tempObject.push_back(item.back());
+          item.pop_back();
+          --i;
+        }
+        while (!tempSymbol.empty()) {
+          symbol.push_back(tempSymbol.front());
+          tempSymbol.pop_front();
+        }
+        while (!tempObject.empty()) {
+          item.push_back(tempObject.front());
+          tempObject.pop_front();
+        }
+      }
+      else if (checked 
+        && symbol.back().GetTokenEnum() != GT_NUL 
+        && symbol[symbol.size() - 2].GetTokenEnum() != GT_NUL) {
+        if (symbol.back().GetPriority() != symbol[symbol.size() - 2].GetPriority()) {
+          checked = false;
+        }
+      }
+      
+      result = TakeAction(msg);
+      if (result == false) break;
+    }
+    if (result == true) {
+      if (symbol.back().GetId() == "(") symbol.pop_back();
+      result = TakeAction(msg);
+    }
+    return result;
+  }
+
+  bool Processor::FunctionAndObject(Message &msg) {
+    bool function = false;
+    bool result = true;
+    bool defLine = false;
+
+    if (currentToken.first == kStrDef) defLine = true;
+
+    if (dotOperator) {
+      string methods = item.back().GetMethods();
+      bool isExisted = Kit().FindInStringGroup(currentToken.first, methods);
+      if (isExisted) {
+        auto ent = entry::Order(currentToken.first, item.back().GetTypeId());
+        if (ent.Good()) {
+          symbol.push_back(ent);
+          function = true;
+        }
+        /*TODO:find member*/
+        else {
+          result = false;
+          msg.combo(kStrFatalError, kCodeIllegalCall, "Method or member is not found.");
+        }
+      }
+      dotOperator = false;
+    }
+    else {
+      if (defLine) {
+        item.push_back(Object()
+          .Manage(currentToken.first)
+          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetTokenType(currentToken.second));
+      }
+      else {
+        if (nextToken.first == "(") {
+          auto ent = entry::Order(currentToken.first);
+          if (ent.Good()) {
+            symbol.push_back(ent);
+          }
+          else {
+            result = false;
+            msg.combo(kStrFatalError,
+              kCodeIllegalCall,
+              "Function is not found - " + currentToken.first);
+          }
+        }
+        else {
+          if (nextToken.first == "=") {
+            item.push_back(Object()
+              .Manage(currentToken.first)
+              .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+              .SetTokenType(currentToken.second));
+          }
+          else {
+            Object *object = entry::FindObject(currentToken.first);
+            if (object != nullptr) {
+              item.push_back(Object().Ref(*object));
+            }
+            else {
+              result = false;
+              msg.combo(kStrFatalError,
+                kCodeIllegalCall,
+                "Object is not found - " + currentToken.first);
+            }
+          }
+        }
+      }
+    }
+
+    //TODO:function definition checking
+    if (function && nextToken.first != "(" 
+      && currentToken.first != kStrElse && currentToken.first != kStrEnd) {
+      this->health = false;
+      result = false;
+      errorString = "Left bracket after function is missing";
+    }
+
+    return result;
+  }
+
+  void Processor::OtherToken() {
+    if (insertBetweenObject) {
+      item.insert(item.begin() + nextInsertSubscript,
+        Object().Manage(currentToken.first)
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+        .SetTokenType(currentToken.second));
+      insertBetweenObject = false;
+    }
+    else {
+      item.push_back(Object().Manage(currentToken.first)
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+        .SetTokenType(currentToken.second));
+    }
+  }
+
+  void Processor::OtherSymbol() {
+    Entry ent = entry::Order(currentToken.first);
+    int currentPriority = ent.GetPriority();
+    if (symbol.empty()) {
+      symbol.push_back(ent);
+    }
+    else if (currentPriority < symbol.back().GetPriority()) {
+      auto j = symbol.size() - 1;
+      auto k = item.size();
+      while (symbol[j].GetId() != "(" && symbol[j].GetId() != "[" &&
+        currentPriority < symbol[j].GetPriority()) {
+        k == item.size() ? k -= 2 : k -= 1;
+        --j;
+      }
+      symbol.insert(symbol.begin() + j + 1, ent);
+      nextInsertSubscript = k;
+      insertBetweenObject = true;
+    }
+    else {
+      symbol.push_back(ent);
+    }
+  }
+
+  void Processor::FinalProcessing(Message &msg) {
+    while (symbol.empty() != true) {
+      if (symbol.back().GetId() == "(") {
+        msg.combo(kStrFatalError, kCodeIllegalSymbol, "Right bracket is missing.");
+        break;
+      }
+      TakeAction(msg);
+    }
+  }
+
+  Message Processor::Activiate(size_t mode) {
     using namespace entry;
     Kit kit;
     Message result;
@@ -975,64 +791,65 @@ namespace kagami {
       return Message(kStrFatalError, kCodeBadExpression, errorString);
     }
 
-    this->mode          = mode;
-    lambdaObjectCount   = 0;
+    this->mode = mode;
+    lambdaObjectCount = 0;
     nextInsertSubscript = 0;
-    operatorTargetType  = kTypeIdNull;
-    commaExpFunc        = false,
-    insertBtnSymbols    = false,
-    disableSetEntry     = false,
-    dotOperator         = false,
+    operatorTargetType = kTypeIdNull;
+    commaExpFunc = false,
+    insertBetweenObject = false,
+    disableSetEntry = false,
+    dotOperator = false,
     subscriptProcessing = false;
-    functionLine        = false;
-    defineLine          = false;
+    functionLine = false;
+    defineLine = false;
 
     for (size_t i = 0; i < size; ++i) {
       if (!health) break;
       if (!state)  break;
 
       currentToken = origin[i];
-      i < size - 1 ? 
-        nextToken = origin[i + 1] : 
+      i < size - 1 ?
+        nextToken = origin[i + 1] :
         nextToken = Token(kStrNull, TokenTypeEnum::T_NUL);
 
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
-      const auto tokenTypeEnum  = currentToken.second;
+      const auto tokenTypeEnum = currentToken.second;
       const auto tokenValue = currentToken.first;
       if (tokenTypeEnum == TokenTypeEnum::T_SYMBOL) {
         BasicTokenEnum value = GetBasicToken(tokenValue);
         switch (value) {
-        case TOKEN_EQUAL:           EqualMark(); break;
-        case TOKEN_COMMA:           Comma(); break;
-        case TOKEN_LEFT_SQRBRACKET: LeftSquareBracket(); break;
+        case TOKEN_EQUAL: EqualMark(); break;
+        case TOKEN_COMMA: break;
+        case TOKEN_LEFT_SQRBRACKET: /*TODO:*/; break;
         case TOKEN_DOT:             dotOperator = true; break;
+        case TOKEN_LEFT_BRACKET:    LeftBracket(result); break;
         case TOKEN_COLON:           state = Colon(); break;
-        case TOKEN_LEFT_BRACKET:    state = LeftBracket(result); break;
-        case TOKEN_RIGHT_SQRBRACKET:state = RightSquareBracket(result); break;
+        case TOKEN_RIGHT_SQRBRACKET:/*TODO:*/; break;
         case TOKEN_RIGHT_BRACKET:   state = RightBracket(result); break;
-        case TOKEN_SELFOP:          state = SelfOperator(result); break;
-        case TOKEN_OTHERS:          OtherSymbols(); break;
+        case TOKEN_SELFOP:          /*TODO:*/ break;
+        case TOKEN_OTHERS:          OtherSymbol(); break;
         default:break;
         }
       }
-      else if (tokenTypeEnum == TokenTypeEnum::T_GENERIC) state = FunctionAndObject(result);
+      else if (tokenTypeEnum == TokenTypeEnum::T_GENERIC) {
+        state = FunctionAndObject(result);
+      }
       else if (tokenTypeEnum == TokenTypeEnum::T_NUL) {
         result.combo(kStrFatalError, kCodeIllegalParm, "Illegal token.");
         state = false;
       }
-      else OtherTokens();
+      else OtherToken();
       forwardToken = currentToken;
     }
 
     if (state == true) FinalProcessing(result);
     if (!health) result.combo(kStrFatalError, kCodeBadExpression, errorString);
-    
+
     kit.CleanupDeque(item).CleanupDeque(symbol);
     nextToken = Token();
     forwardToken = Token();
     currentToken = Token();
 
-    lambdamap.clear();
     return result;
   }
 }

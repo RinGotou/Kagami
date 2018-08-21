@@ -51,7 +51,7 @@ namespace kagami {
 
     std::cout << kEngineName
       << ' ' << "verison:" << kEngineVersion
-      << '(' << kInsideName << ')' << std::endl;
+      << '(' << kCodeName << ')' << std::endl;
     std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
 
     Activiate();
