@@ -667,7 +667,7 @@ namespace kagami {
 
   bool Processor::LeftSqrBracket(Message &msg) {
     bool result = true;
-    bool methodExisted = Kit().FindInStringGroup("__at", item.back().GetMethods());
+    bool methodExisted = Kit::FindInStringGroup("__at", item.back().GetMethods());
     if (methodExisted) {
       Entry ent = entry::Order("__at", item.back().GetTypeId());
       if (ent.Good()) {
@@ -696,7 +696,7 @@ namespace kagami {
 
     if (dotOperator) {
       string methods = item.back().GetMethods();
-      bool isExisted = Kit().FindInStringGroup(currentToken.first, methods);
+      bool isExisted = Kit::FindInStringGroup(currentToken.first, methods);
       if (isExisted) {
         auto ent = entry::Order(currentToken.first, item.back().GetTypeId());
         if (ent.Good()) {

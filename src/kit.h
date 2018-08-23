@@ -74,7 +74,7 @@ namespace kagami {
     static bool IsDouble(string target);
     static bool IsBlank(string target);
     static TokenTypeEnum GetTokenType(string target);
-    bool FindInStringGroup(string target, string source);
+    static bool FindInStringGroup(string target, string source);
     static vector<string> BuildStringVector(string source);
     static char ConvertChar(char target);
     static wchar_t ConvertWideChar(wchar_t target);
