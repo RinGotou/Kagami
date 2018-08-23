@@ -26,7 +26,7 @@ namespace kagami {
     }
 
     Entry(Activity activity, int parmMode, string args,string id = kStrEmpty, string type = kTypeIdNull, int flag = kFlagNormalEntry, int priority = 4) :
-      id(id),parmMode(parmMode), priority(priority), args(Kit().BuildStringVector(args)),
+      id(id),parmMode(parmMode), priority(priority), args(Kit::BuildStringVector(args)),
       type(type), flag(flag) {
       this->activity = activity;
       placeholder = false;
@@ -34,7 +34,7 @@ namespace kagami {
     }
 
     Entry(Activity activity, string args, GenericTokenEnum tokenEnum, int parmMode = kCodeNormalParm, int priority = 4) :
-      id(), parmMode(parmMode), priority(priority), args(Kit().BuildStringVector(args)) {
+      id(), parmMode(parmMode), priority(priority), args(Kit::BuildStringVector(args)) {
       this->activity = activity;
       this->tokenEnum = tokenEnum;
       placeholder = false;

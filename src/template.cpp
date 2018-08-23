@@ -67,8 +67,8 @@ namespace kagami {
 
     if (typeId == kTypeIdRawString) {
       auto data = *static_pointer_cast<string>(object.Get());
-      if (kit.IsString(data)) {
-        data = kit.GetRawString(data);
+      if (Kit::IsString(data)) {
+        data = Kit::GetRawString(data);
       }
       count0 = stoi(*static_pointer_cast<string>(subscript1.Get()));
       size = data.size();
@@ -105,7 +105,7 @@ namespace kagami {
     }
     else if (typeId == kTypeIdRawString) {
       auto str = *static_pointer_cast<string>(object.Get());
-      if (Kit().IsString(str)) str = Kit().GetRawString(str);
+      if (Kit::IsString(str)) str = Kit::GetRawString(str);
       result.SetDetail(to_string(str.size()));
     }
 
@@ -121,14 +121,14 @@ namespace kagami {
 
     if (object.GetTypeId() == kTypeIdRawString) {
       auto data = *static_pointer_cast<string>(object.Get());
-      if (Kit().IsString(data)) data = Kit().GetRawString(data);
+      if (Kit::IsString(data)) data = Kit::GetRawString(data);
       for (size_t count = 0; count < data.size(); ++count) {
         if (data.at(count) == '\\') {
           needConvert = true;
           continue;
         }
         if (needConvert) {
-          msg.append(1, Kit().ConvertChar(data.at(count)));
+          msg.append(1, Kit::ConvertChar(data.at(count)));
           needConvert = false;
         }
         else {
