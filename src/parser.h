@@ -6,9 +6,6 @@
 #include "entry.h"
 
 #if defined(_WIN32)
-#if defined(_MSC_VER)
-#pragma execution_character_set("utf-8")
-#endif
 #include "windows.h"
 #define WIN32_LEAN_AND_MEAN
 #else
@@ -35,7 +32,7 @@ namespace kagami {
     size_t mode, nextInsertSubscript, lambdaObjectCount, index;
 
     bool TakeAction(Message &msg);
-    Object *GetObj(string name);
+    static Object *GetObj(string name);
     void EqualMark();
     bool Colon();
     void LeftBracket(Message &msg);
@@ -93,10 +90,6 @@ namespace kagami {
     void TailSign();
     static bool IsBlankStr(string target);
   public:
-    ~ScriptMachine() {
-      stream.close();
-      Kit().CleanupVector(storage).CleanupVector(parameters);
-    }
     ScriptMachine() : current(0), end(false), currentMode(kModeNormal),
     nestHeadCount(0), health(false), isTerminal(true) {}
     ScriptMachine(vector<Processor> storage) : current(0), end(false), currentMode(kModeNormal),

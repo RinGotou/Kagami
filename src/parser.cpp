@@ -174,7 +174,7 @@ namespace kagami {
   bool ScriptMachine::IsBlankStr(string target) {
     if (target == kStrEmpty || target.size() == 0) return true;
     for (const auto unit : target) {
-      if (unit != ' ' || unit != '\n' || unit != '\t' || unit != '\r') {
+      if (unit != '\n' && unit != ' ' && unit != '\t' && unit != '\r') {
         return false;
       }
     }
@@ -318,7 +318,7 @@ namespace kagami {
     symbol.clear();
     for (size_t count = 0; count < target.size(); ++count) {
       currentChar = target[count];
-      auto type = kit.GetTokenType(toString(currentChar));
+      auto type = kagami::Kit::GetTokenType(toString(currentChar));
       if (type != TokenTypeEnum::T_BLANK && exemptBlankChar) {
         head = count;
         exemptBlankChar = false;
@@ -334,7 +334,7 @@ namespace kagami {
     if (tail > head) data = target.substr(head, tail - head);
     else data = target.substr(head, target.size() - head);
 
-    while (kit.GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
+    while (kagami::Kit::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
       data.pop_back();
     }
 
@@ -346,19 +346,19 @@ namespace kagami {
       if (delaySuspend) stringProcessing = false;
       if (currentChar == '\'' && forwardChar != '\\') {
         if (!stringProcessing 
-          && kit.GetTokenType(current) == TokenTypeEnum::T_BLANK) {
+          && Kit::GetTokenType(current) == TokenTypeEnum::T_BLANK) {
           current.clear();
         }
         stringProcessing ? delaySuspend = true : stringProcessing = true;
       }
       current.append(1, currentChar);
-      if (kit.GetTokenType(current) != TokenTypeEnum::T_NUL) {
+      if (kagami::Kit::GetTokenType(current) != TokenTypeEnum::T_NUL) {
         forwardChar = data[count];
         continue;
       }
       else {
         current = current.substr(0, current.size() - 1);
-        if (kit.GetTokenType(current) == TokenTypeEnum::T_BLANK) {
+        if (kagami::Kit::GetTokenType(current) == TokenTypeEnum::T_BLANK) {
           if (stringProcessing) origin.emplace_back(current);
           current.clear();
           current.append(1, currentChar);
@@ -372,7 +372,7 @@ namespace kagami {
       forwardChar = data[count];
     }
 
-    switch (kit.GetTokenType(current)) {
+    switch (kagami::Kit::GetTokenType(current)) {
     case TokenTypeEnum::T_NUL:
     case TokenTypeEnum::T_BLANK:
       break;
@@ -390,7 +390,8 @@ namespace kagami {
       current = origin[count];
       if (!stringProcessing) {
         if (current == ".") {
-          if (kit.IsInteger(forward) && kit.IsInteger(next)) {
+          if (kagami::Kit::IsInteger(forward) 
+            && kagami::Kit::IsInteger(next)) {
             output.back().append(current);
             appendingOnce = true;
             continue;
@@ -399,7 +400,7 @@ namespace kagami {
         if (current == "(" || current == "[") nest++;
         if (current == ")" || current == "]") nest--;
         if (current == "[") {
-          if (kit.GetTokenType(forward) != TokenTypeEnum::T_GENERIC
+          if (kagami::Kit::GetTokenType(forward) != TokenTypeEnum::T_GENERIC
             && forward != "]"
             && forward != ")") {
             errorString = "Illegal subscript operation.";
@@ -409,7 +410,7 @@ namespace kagami {
           }
         }
         if (current == ",") {
-          if (kit.GetTokenType(forward) == TokenTypeEnum::T_SYMBOL &&
+          if (kagami::Kit::GetTokenType(forward) == TokenTypeEnum::T_SYMBOL &&
             forward != "]" && forward != ")" &&
             forward != "++" && forward != "--" &&
               forward != "'") {
@@ -463,7 +464,7 @@ namespace kagami {
       forward = origin[count];
     }
 
-    if (stringProcessing == true) {
+    if (stringProcessing) {
       errorString = "Quotation mark is missing.";
       health = false;
     }
@@ -477,7 +478,7 @@ namespace kagami {
       for (auto &unit : output) {
         Token token;
         token.first = unit;
-        token.second = kit.GetTokenType(unit);
+        token.second = kagami::Kit::GetTokenType(unit);
         this->origin.push_back(token);
       }
     }
@@ -565,7 +566,7 @@ namespace kagami {
       item.push_back(Object()
         .Manage(detail)
         .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(Kit().GetTokenType(detail)));
+        .SetTokenType(kagami::Kit::GetTokenType(detail)));
     }
 
     health = (value != kStrFatalError && code >= kCodeSuccess);
@@ -603,9 +604,9 @@ namespace kagami {
 
   void Processor::LeftBracket(Message &msg) {
     if (forwardToken.second != TokenTypeEnum::T_GENERIC) {
-      symbol.push_back(Entry(kStrNop));
+      symbol.emplace_back(kStrNop);
     }
-    symbol.push_back(Entry(currentToken.first));
+    symbol.emplace_back(currentToken.first);
     item.push_back(Object().SetPlaceholder());
   }
 
@@ -654,9 +655,9 @@ namespace kagami {
       }
       
       result = TakeAction(msg);
-      if (result == false) break;
+      if (!result) break;
     }
-    if (result == true) {
+    if (result) {
       if (needReverse) needReverse = false;
       if (symbol.back().GetId() == "(" || symbol.back().GetId() == "[") symbol.pop_back();
       result = TakeAction(msg);
@@ -671,7 +672,7 @@ namespace kagami {
       Entry ent = entry::Order("__at", item.back().GetTypeId());
       if (ent.Good()) {
         symbol.push_back(ent);
-        symbol.push_back(Entry("("));
+        symbol.emplace_back("(");
         item.push_back(Object().SetPlaceholder());
       }
       else {
@@ -809,7 +810,7 @@ namespace kagami {
   }
 
   void Processor::FinalProcessing(Message &msg) {
-    while (symbol.empty() != true) {
+    while (!symbol.empty()) {
       if (symbol.back().GetId() == "(") {
         msg.combo(kStrFatalError, kCodeIllegalSymbol, "Right bracket is missing.");
         break;
@@ -825,7 +826,7 @@ namespace kagami {
     auto state = true;
     const auto size = origin.size();
 
-    if (health == false) {
+    if (!health) {
       return Message(kStrFatalError, kCodeBadExpression, errorString);
     }
 
@@ -879,7 +880,7 @@ namespace kagami {
       forwardToken = currentToken;
     }
 
-    if (state == true) FinalProcessing(result);
+    if (state) FinalProcessing(result);
     if (!health) result.combo(kStrFatalError, kCodeBadExpression, errorString);
 
     kit.CleanupDeque(item).CleanupDeque(symbol);
