@@ -133,7 +133,7 @@ namespace kagami {
 
     if (data.GetTypeId() == kTypeIdRawString) {
       const auto ptr = static_pointer_cast<string>(data.Get());
-      if (kit.IsString(*ptr)) {
+      if (Kit::IsString(*ptr)) {
         ofs << ptr->substr(1, ptr->size() - 2) << "\n";
       }
       else {
@@ -296,11 +296,10 @@ namespace kagami {
   }
 
   Message Print(ObjectMap &p) {
-    Kit kit;
     Message result;
     auto object = p["object"];
 
-    if (kit.FindInStringGroup("__print", object.GetMethods())) {
+    if (Kit::FindInStringGroup("__print", object.GetMethods())) {
       auto provider = entry::Order("__print", object.GetTypeId(), -1);
       if (provider.Good()) {
         result = provider.Start(p);
