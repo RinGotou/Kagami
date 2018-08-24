@@ -24,7 +24,6 @@ namespace kagami {
     const auto sizeValue = stoi(*static_pointer_cast<string>(size.Get()));
     vector<Object> base;
 
-    //error:wrong size
     if (sizeValue <= 0) {
       result.combo(kStrFatalError, kCodeIllegalParm, "Illegal array size.");
       return result;
@@ -53,7 +52,6 @@ namespace kagami {
   }
   
   Message GetElement(ObjectMap &p) {
-    Kit kit;
     Message result;
     Object temp;
     size_t size;
