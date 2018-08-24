@@ -13,10 +13,12 @@
 #endif
 
 namespace kagami {
+  using Instruction = pair<Entry, ObjectMap>;
   /*Processor Class
   The most important part of script processor.Original string will be tokenized and
   parsed here.Processed data will be delivered to entry provider.
   */
+
   class Processor {
     bool health;
     vector<Token> origin;
@@ -82,6 +84,7 @@ namespace kagami {
     int nestHeadCount;
     bool health;
     bool isTerminal;
+    size_t endIdx;
 
     void ConditionRoot(bool value);
     void ConditionBranch(bool value);
@@ -93,7 +96,7 @@ namespace kagami {
     ScriptMachine() : current(0), end(false), currentMode(kModeNormal),
     nestHeadCount(0), health(false), isTerminal(true) {}
     ScriptMachine(vector<Processor> storage) : current(0), end(false), currentMode(kModeNormal),
-      nestHeadCount(0), health(true), isTerminal(true) {
+      nestHeadCount(0), health(true), isTerminal(true), endIdx(0) {
       this->storage = storage;
     }
 
@@ -107,6 +110,16 @@ namespace kagami {
       current = 0;
       end = false;
     }
+  };
+
+  /*New script machine*/
+  class Machine {
+  private:
+    vector<Instruction> instStorage;
+    pair<string, size_t> jumpPointStorage;
+    size_t current;
+    bool good;
+
   };
 
   void Activiate();

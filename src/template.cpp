@@ -20,7 +20,11 @@ namespace kagami {
 
   Message ArrayConstructor(ObjectMap &p) {
     Message result;
-    auto size = p["size"], initValue = p["init_value"];
+    auto size = p["size"];
+    Object initValue = Object();
+    auto it = p.find("init_value");
+    if (it != p.end()) initValue = it->second;
+
     const auto sizeValue = stoi(*static_pointer_cast<string>(size.Get()));
     vector<Object> base;
 
@@ -44,6 +48,7 @@ namespace kagami {
     }
 
     result.SetObject(Object()
+      .SetConstructorFlag()
       .Set(make_shared<vector<Object>>(base), kTypeIdArrayBase)
       .SetMethods(type::GetPlanner(kTypeIdArrayBase)->GetMethods())
       .SetRo(false)
@@ -165,16 +170,11 @@ namespace kagami {
 
     AddEntry(Entry(PrintRawString, kCodeNormalParm, "", "__print", kTypeIdRawString, kFlagMethod));
     AddEntry(Entry(GetElement, kCodeNormalParm, "subscript_1", "__at", kTypeIdRawString, kFlagMethod));
-
-    ////constructor
-    //AddEntry(Entry("array", ArrayConstructor, kFlagNormalEntry, kCodeAutoFill, "size|init_value"));
-    ////methods
-    //AddEntry(Entry("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdRawString));
-    //AddEntry(Entry("at", GetElement, kFlagMethod, kCodeNormalParm, "subscript_1", kTypeIdArrayBase));
-    //AddEntry(Entry("__print", PrintRawString, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
-    //AddEntry(Entry("__print", PrintArray, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
-    //AddEntry(Entry("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdRawString));
-    //AddEntry(Entry("size", GetSize, kFlagMethod, kCodeNormalParm, "", kTypeIdArrayBase));
+    AddEntry(Entry(ArrayConstructor, kCodeAutoFill, "size|init_value", "array"));
+    AddEntry(Entry(GetElement, kCodeNormalParm, "subscript_1", "__at", kTypeIdArrayBase, kFlagMethod));
+    AddEntry(Entry(PrintArray, kCodeNormalParm, "", "__print", kTypeIdArrayBase, kFlagMethod));
+    AddEntry(Entry(GetSize, kCodeNormalParm, "", "size", kTypeIdRawString, kFlagMethod));
+    AddEntry(Entry(GetSize, kCodeNormalParm, "", "size", kTypeIdArrayBase, kFlagMethod));
   }
 
 

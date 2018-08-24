@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
   //this macro can be found in the head of this file.
 #ifdef _ENABLE_DEBUGGING_
   auto &base = kagami::entry::GetObjectStack();
-  scriptCore.ExecScriptFile("C:\\workspace\\ErrorTest.kagami");
+  scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
   //atexit(AtExitHandler);
 #else
 #ifndef _NO_CUI_
