@@ -110,37 +110,43 @@ namespace kagami {
       return GetObjectStack().empty();
     }
 
+    map<string, GenericTokenEnum> &GetGTBase() {
+      using T = pair<string, GenericTokenEnum>;
+      static map<string, GenericTokenEnum> base = {
+        T(kStrIf,GT_IF),
+        T(kStrNop,GT_NOP),
+        T(kStrDef,GT_DEF),
+        T(kStrRef,GT_REF),
+        T(kStrEnd,GT_END),
+        T(kStrSet,GT_SET),
+        T(kStrBind,GT_BIND),
+        T(kStrFor,GT_FOR),
+        T(kStrElse,GT_ELSE),
+        T(kStrElif,GT_ELIF),
+        T(kStrWhile,GT_WHILE),
+        T(kStrCodeSub,GT_CODE_SUB),
+        T(kStrLeftSelfInc,GT_LSELF_INC),
+        T(kStrLeftSelfDec,GT_LSELF_DEC),
+        T(kStrRightSelfInc,GT_RSELF_INC),
+        T(kStrRightSelfDec,GT_RSELF_DEC),
+        T(kStrAdd,GT_ADD),
+        T(kStrSub,GT_SUB),
+        T(kStrMul,GT_MUL),
+        T(kStrDiv,GT_DIV),
+        T(kStrIs,GT_IS),
+        T(kStrLessOrEqual,GT_LESS_OR_EQUAL),
+        T(kStrMoreOrEqual,GT_MORE_OR_EQUAL),
+        T(kStrNotEqual,GT_NOT_EQUAL),
+        T(kStrMore,GT_MORE),
+        T(kStrLess,GT_LESS)
+      };
+      return base;
+    }
+
     GenericTokenEnum GetGenericToken(string src) {
-      if (src == kStrIf) return GT_IF;
-      if (src == kStrNop) return GT_NOP;
-      if (src == kStrDef) return GT_DEF;
-      if (src == kStrRef) return GT_REF;
-      if (src == kStrSub) return GT_SUB;
-      if (src == kStrEnd) return GT_END;
-      if (src == kStrVar) return GT_VAR;
-      if (src == kStrSet) return GT_SET;
-      if (src == kStrBind) return GT_BIND;
-      if (src == kStrFor) return GT_FOR;
-      if (src == kStrElse) return GT_ELSE;
-      if (src == kStrElif) return GT_ELIF;
-      if (src == kStrWhile) return GT_WHILE;
-      if (src == kStrCodeSub) return GT_CODE_SUB;
-      if (src == kStrLeftSelfInc) return GT_LSELF_INC;
-      if (src == kStrLeftSelfDec) return GT_LSELF_DEC;
-      if (src == kStrRightSelfInc) return GT_RSELF_INC;
-      if (src == kStrRightSelfDec) return GT_RSELF_DEC;
-      if (src == kStrAdd) return GT_ADD;
-      if (src == kStrSub) return GT_SUB;
-      if (src == kStrMul) return GT_MUL;
-      if (src == kStrDiv) return GT_DIV;
-      if (src == kStrIs) return GT_IS;
-      if (src == kStrLessOrEqual) return GT_LESS_OR_EQUAL;
-      if (src == kStrMoreOrEqual) return GT_MORE_OR_EQUAL;
-      if (src == kStrNotEqual) return GT_NOT_EQUAL;
-      if (src == kStrMore) return GT_MORE;
-      if (src == kStrLess) return GT_LESS;
-      if (src == kStrNop) return GT_NOP;
-      if (src == kStrNull) return GT_NUL;
+      auto &base = GetGTBase();
+      auto it = base.find(src);
+      if (it != base.end()) return it->second;
       return GT_NUL;
     }
 
@@ -151,28 +157,13 @@ namespace kagami {
     }
 
     string GetGenTokenValue(GenericTokenEnum token) {
-      string result;
-      switch (token) {
-      case GT_NOP:result = kStrNop; break;
-      case GT_DEF:result = kStrDef; break;
-      case GT_REF:result = kStrRef; break;
-      case GT_CODE_SUB:result = kStrCodeSub; break;
-      case GT_SUB:result = kStrSub; break;
-      case GT_IF:result = kStrIf; break;
-      case GT_ELIF:result = kStrElif; break;
-      case GT_END:result = kStrEnd; break;
-      case GT_ELSE:result = kStrElse; break;
-      case GT_VAR:result = kStrVar; break;
-      case GT_SET:result = kStrSet; break;
-      case GT_BIND:result = kStrBind; break;
-      case GT_WHILE:result = kStrWhile; break;
-      case GT_FOR:result = kStrFor; break;
-      case GT_LSELF_INC:result = kStrLeftSelfInc; break;
-      case GT_LSELF_DEC:result = kStrLeftSelfDec; break;
-      case GT_RSELF_INC:result = kStrRightSelfInc; break;
-      case GT_RSELF_DEC:result = kStrRightSelfDec; break;
-      case GT_NUL:result = kStrNull; break;
-      default:break;
+      auto &base = GetGTBase();
+      string result = kStrNull;
+      for (auto &unit : base) {
+        if (unit.second == token) {
+          result = unit.first;
+          break;
+        }
       }
       return result;
     }

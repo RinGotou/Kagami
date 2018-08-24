@@ -282,7 +282,7 @@ namespace kagami {
 
   Message Print(ObjectMap &p) {
     Message result;
-    auto object = p["object"];
+    auto &object = p["object"];
     auto errorMsg = []() {
       std::cout << "You can't print this object." << std::endl;
     };

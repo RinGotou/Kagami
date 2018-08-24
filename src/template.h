@@ -1,5 +1,6 @@
 #pragma once
 #include "parser.h"
+#include "basic_string.h"
 
 namespace kagami {
   template <class T>
