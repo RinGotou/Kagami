@@ -548,7 +548,7 @@ namespace kagami {
       else if (currentEnum == GT_END) {
         msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
       }
-      else if (currentEnum == GT_ELIF) {
+      else if (headEnt == GT_ELIF) {
         msg = ent.Start(objMap);
       }
       break;
@@ -560,8 +560,15 @@ namespace kagami {
         msg = ent.Start(objMap);
       }
       break;
-    case kModeNormal:
     case kModeCondition:
+      if (headEnt == GT_ELSE) {
+        msg.combo(kStrTrue, kCodeConditionLeaf, kStrEmpty);
+      }
+      else {
+        msg = ent.Start(objMap);
+      }
+      break;
+    case kModeNormal:
     default:
       msg = ent.Start(objMap);
     }
@@ -920,7 +927,7 @@ namespace kagami {
     if (state) {
       FinalProcessing(result);
     }
-    if (!health && result.GetDetail() != kStrEmpty) {
+    if (!health && result.GetDetail() == kStrEmpty) {
       result.combo(kStrFatalError, kCodeBadExpression, errorString);
     }
       
