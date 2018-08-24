@@ -1,5 +1,5 @@
 #include "kagami.h"
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
