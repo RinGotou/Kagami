@@ -79,7 +79,7 @@ namespace kagami {
 
   const int kCodeAutoFill = 14,
     kCodeNormalParm = 13,
-    kCodeFillingSign = 12,
+    kCodeHeadPlaceholder = 12,
     kCodeReturn = 11,
     kCodeConditionLeaf = 10,
     kCodeConditionBranch = 9,
@@ -169,7 +169,8 @@ namespace kagami {
     kStrNotEqual = "!=",
     kStrMore = ">",
     kStrLess = "<",
-    kStrNop = "__nop";
+    kStrNop = "__nop",
+    kStrPlaceHolder = "__ph";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",

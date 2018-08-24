@@ -46,6 +46,7 @@ namespace kagami {
       blk->count--;
       if (blk->count == 0) {
         delete blk;
+        idxBase.clear();
         if (root == nullptr && tail == nullptr) return;
         if (root != tail) {
           _DataNode *ptr = nullptr;

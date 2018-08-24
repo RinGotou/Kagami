@@ -41,7 +41,7 @@ namespace kagami {
     void SetParentObject(Object &object) { parent = &object; }
     Object *GetParentObject() { return parent; }
     bool IsPermanent() const { return permanent; }
-    Object &SetConstructorFlag() { constructor = true; }
+    Object &SetConstructorFlag() { constructor = true; return *this; }
     Object &Copy(Object &&object) { return this->Copy(object); }
     bool IsRef() const { return ref; }
     bool IsPlaceholder() const { return placeholder; }
@@ -83,7 +83,7 @@ namespace kagami {
     ObjectManager() {}
     ObjectManager(ObjectManager &&mgr) {}
 
-    bool Add(string sign, Object source);
+    bool Add(string sign, Object &source);
     Object *Find(string sign);
     void Dispose(string sign);
     void clear();
