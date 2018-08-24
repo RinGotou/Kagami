@@ -125,6 +125,12 @@ namespace kagami {
   Message LessOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<=")); }
   Message MoreOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">=")); }
 
+  Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
+  Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
+  Message If(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty); }
+  Message Elif(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty); }
+  Message While(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty); }
+
   Message WriteLog(ObjectMap &p) {
     Message result;
     auto data = p["data"];
@@ -142,26 +148,6 @@ namespace kagami {
 
     ofs.close();
     return result;
-  }
-
-  Message ConditionRoot(ObjectMap &p) {
-    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty);
-  }
-
-  Message ConditionBranch(ObjectMap &p) {
-    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty);
-  }
-
-  Message ConditionLeaf(ObjectMap &p) {
-    return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty);
-  }
-
-  Message WhileCycle(ObjectMap &p) {
-    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty);
-  }
-
-  Message TailSign(ObjectMap &p) {
-    return Message(kStrEmpty, kCodeTailSign, kStrEmpty);
   }
 
   Message LeftSelfIncreament(ObjectMap &p) {
@@ -340,11 +326,11 @@ namespace kagami {
     using namespace entry;
 
     AddGenericEntry(GT_NOP, Entry(nullptr, "", GT_NOP));
-    AddGenericEntry(GT_END, Entry(nullptr, "", GT_END));
-    AddGenericEntry(GT_ELSE, Entry(nullptr, "", GT_ELSE));
-    AddGenericEntry(GT_IF, Entry(ConditionRoot, "state", GT_IF));
-    AddGenericEntry(GT_WHILE, Entry(WhileCycle, "state", GT_WHILE));
-    AddGenericEntry(GT_ELIF, Entry(ConditionBranch, "state", GT_ELIF));
+    AddGenericEntry(GT_END, Entry(End, "", GT_END));
+    AddGenericEntry(GT_ELSE, Entry(Else, "", GT_ELSE));
+    AddGenericEntry(GT_IF, Entry(If, "state", GT_IF));
+    AddGenericEntry(GT_WHILE, Entry(While, "state", GT_WHILE));
+    AddGenericEntry(GT_ELIF, Entry(Elif, "state", GT_ELIF));
     AddGenericEntry(GT_SET, Entry(Set, "object|source", GT_SET, kCodeNormalParm, 0));
     AddGenericEntry(GT_BIND, Entry(Bind, "object|source", GT_BIND, kCodeNormalParm, 0));
     AddGenericEntry(GT_ADD, Entry(Plus, "first|second", GT_ADD, kCodeNormalParm, 2));

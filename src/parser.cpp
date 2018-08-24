@@ -52,6 +52,7 @@ namespace kagami {
     isTerminal = false;
     health = true;
     current = 0;
+    endIdx = 0;
     size_t subscript = 0;
 
     stream.open(target, std::ios::in);
@@ -227,7 +228,7 @@ namespace kagami {
       case kCodeHeadSign:
         HeadSign(GetBooleanValue(value), selfObjectManagement);
         break;
-      case kCodeFillingSign:
+      case kCodeHeadPlaceholder:
         nestHeadCount++;
         break;
       case kCodeTailSign:
@@ -277,7 +278,8 @@ namespace kagami {
         storage.emplace_back(processor);
         head = kStrNormalArrow;
         msg = this->Run();
-        storage.clear();
+        Kit().CleanupVector(storage);
+        //storage.clear();
         current = 0;
         break;
       case GT_DEF:
@@ -499,7 +501,9 @@ namespace kagami {
     Entry &ent = symbol.back();
 
     if (ent.GetId() == kStrNop) {
-      /*Pending*/
+      auto rit = item.rbegin();
+      while (rit != item.rend() && !rit->IsPlaceholder()) rit--;
+      if (rit != item.rend()) item.erase(rit.base());
       return true;
     }
 
@@ -516,8 +520,12 @@ namespace kagami {
     }
     if (!item.empty() && item.back().IsPlaceholder()) item.pop_back();
 
-    for (idx = 0; idx < size; ++idx) {
+    idx = 0;
+    const size_t parmSize = parms.size();
+    while (idx < size) {
+      if (idx >= parmSize && ent.GetArgumentMode() == kCodeAutoFill) break;
       objMap.insert(pair<string, Object>(args[idx], parms[idx]));
+      ++idx;
     }
 
     auto flag = ent.GetFlag();
@@ -526,48 +534,30 @@ namespace kagami {
       item.pop_back();
     }
 
-    /*TODO:Execute*/
     GenericTokenEnum headEnt = symbol.front().GetTokenEnum(),
       currentEnum = ent.GetTokenEnum();
     switch (mode) {
     case kModeCycleJump:
-      if (currentEnum == GT_END) {
-        msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
+      if (currentEnum == GT_END || headEnt == GT_IF || headEnt == GT_WHILE) {
+        msg = ent.Start(objMap);
       }
-      else if (headEnt == GT_IF || headEnt == GT_WHILE) {
-        msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+      else {
+        msg.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
       }
       break;
     case kModeNextCondition:
       if (headEnt == GT_IF || headEnt == GT_WHILE) {
-        msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+        msg.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
       }
-      else if (currentEnum == GT_ELSE) {
-        msg.combo(kStrTrue, kCodeConditionLeaf, kStrEmpty);
-      }
-      else if (currentEnum == GT_END) {
-        msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
-      }
-      else if (headEnt == GT_ELIF) {
+      else if (currentEnum == GT_ELSE || currentEnum == GT_END || headEnt == GT_ELIF) {
         msg = ent.Start(objMap);
+      }
+      else {
+        msg.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
       }
       break;
     case kModeCycle:
-      if (currentEnum == GT_END) {
-        msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
-      }
-      else {
-        msg = ent.Start(objMap);
-      }
-      break;
     case kModeCondition:
-      if (headEnt == GT_ELSE) {
-        msg.combo(kStrTrue, kCodeConditionLeaf, kStrEmpty);
-      }
-      else {
-        msg = ent.Start(objMap);
-      }
-      break;
     case kModeNormal:
     default:
       msg = ent.Start(objMap);
@@ -581,7 +571,7 @@ namespace kagami {
       auto object = msg.GetObj();
       item.push_back(object);
     }
-    else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeFillingSign) {
+    else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeHeadPlaceholder) {
       item.push_back(Object()
         .Manage(detail)
         .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
@@ -865,7 +855,6 @@ namespace kagami {
 
   Message Processor::Activiate(size_t mode) {
     using namespace entry;
-    Kit kit;
     Message result;
     auto state = true;
     const auto size = origin.size();
@@ -931,8 +920,8 @@ namespace kagami {
       result.combo(kStrFatalError, kCodeBadExpression, errorString);
     }
       
-
-    kit.CleanupDeque(item).CleanupDeque(symbol);
+    item.clear();
+    symbol.clear();
     nextToken = Token();
     forwardToken = Token();
     currentToken = Token();
