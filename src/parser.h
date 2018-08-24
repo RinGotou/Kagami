@@ -38,7 +38,7 @@ namespace kagami {
     void LeftBracket(Message &msg);
     bool RightBracket(Message &msg);
     bool LeftSqrBracket(Message &msg);
-    bool RightSqrBracket(Message &msg);
+    bool SelfOperator(Message &msg);
     bool FunctionAndObject(Message &msg);
     void OtherToken();
     void OtherSymbol();

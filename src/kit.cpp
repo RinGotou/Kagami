@@ -58,7 +58,7 @@ namespace kagami {
 
   bool Kit::FindInStringGroup(string target, string source) {
     bool result = false;
-    auto methods = this->BuildStringVector(source);
+    auto methods = Kit::BuildStringVector(source);
     for (auto &unit : methods) {
       if (unit == target) {
         result = true;

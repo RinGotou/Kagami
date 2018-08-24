@@ -490,7 +490,7 @@ namespace kagami {
 
   bool Processor::TakeAction(Message &msg) {
     deque<Object> parms;
-    ObjectMap map;
+    ObjectMap objMap;
     size_t idx = 0;
     Entry &ent = symbol.back();
 
@@ -513,12 +513,12 @@ namespace kagami {
     if (!item.empty() && item.back().IsPlaceholder()) item.pop_back();
 
     for (idx = 0; idx < size; ++idx) {
-      map.insert(pair<string, Object>(args[idx], parms[idx]));
+      objMap.insert(pair<string, Object>(args[idx], parms[idx]));
     }
 
     auto flag = ent.GetFlag();
     if (flag == kFlagMethod) {
-      map.insert(pair<string, Object>(kStrObject, item.back()));
+      objMap.insert(pair<string, Object>(kStrObject, item.back()));
       item.pop_back();
     }
 
@@ -545,13 +545,13 @@ namespace kagami {
         msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
       }
       else if (currentEnum == GT_ELIF) {
-        msg = ent.Start(map);
+        msg = ent.Start(objMap);
       }
       break;
     case kModeNormal:
     case kModeCondition:
     default:
-      msg = ent.Start(map);
+      msg = ent.Start(objMap);
     }
 
     const auto code = msg.GetCode();
@@ -683,8 +683,29 @@ namespace kagami {
     return result;
   }
 
-  bool Processor::RightSqrBracket(Message &msg) {
-    return this->RightBracket(msg);
+  bool Processor::SelfOperator(Message &msg) {
+    bool result = true;
+    if (forwardToken.second == T_GENERIC) {
+      if (currentToken.first == "++") {
+        symbol.push_back(entry::Order(kStrRightSelfInc));
+      }
+      else if (currentToken.first == "--") {
+        symbol.push_back(entry::Order(kStrRightSelfDec));
+      }
+    }
+    else if (forwardToken.second != T_GENERIC && nextToken.second == T_GENERIC) {
+      if (currentToken.first == "++") {
+        symbol.push_back(entry::Order(kStrLeftSelfInc));
+      }
+      else if (currentToken.first == "--") {
+        symbol.push_back(entry::Order(kStrLeftSelfDec));
+      }
+    }
+    else {
+      msg.combo(kStrFatalError, kCodeIllegalCall, "Unknown self operation");
+      result = false;
+    }
+    return result;
   }
 
   bool Processor::FunctionAndObject(Message &msg) {
@@ -862,9 +883,9 @@ namespace kagami {
         case TOKEN_DOT:             dotOperator = true; break;
         case TOKEN_LEFT_BRACKET:    LeftBracket(result); break;
         case TOKEN_COLON:           state = Colon(); break;
-        case TOKEN_RIGHT_SQRBRACKET:state = RightSqrBracket(result); break;
+        case TOKEN_RIGHT_SQRBRACKET:state = RightBracket(result); break;
         case TOKEN_RIGHT_BRACKET:   state = RightBracket(result); break;
-        case TOKEN_SELFOP:          /*TODO:*/ break;
+        case TOKEN_SELFOP:          state = SelfOperator(result); break;
         case TOKEN_OTHERS:          OtherSymbol(); break;
         default:break;
         }
