@@ -125,8 +125,13 @@ namespace kagami {
   Message LessOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<=")); }
   Message MoreOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">=")); }
 
+  Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
+  Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
+  Message If(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty); }
+  Message Elif(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty); }
+  Message While(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty); }
+
   Message WriteLog(ObjectMap &p) {
-    Kit kit;
     Message result;
     auto data = p["data"];
     ofstream ofs("kagami-script.log", std::ios::out | std::ios::app);
@@ -143,26 +148,6 @@ namespace kagami {
 
     ofs.close();
     return result;
-  }
-
-  Message ConditionRoot(ObjectMap &p) {
-    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty);
-  }
-
-  Message ConditionBranch(ObjectMap &p) {
-    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty);
-  }
-
-  Message ConditionLeaf(ObjectMap &p) {
-    return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty);
-  }
-
-  Message WhileCycle(ObjectMap &p) {
-    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty);
-  }
-
-  Message TailSign(ObjectMap &p) {
-    return Message(kStrEmpty, kCodeTailSign, kStrEmpty);
   }
 
   Message LeftSelfIncreament(ObjectMap &p) {
@@ -298,6 +283,9 @@ namespace kagami {
   Message Print(ObjectMap &p) {
     Message result;
     auto object = p["object"];
+    auto errorMsg = []() {
+      std::cout << "You can't print this object." << std::endl;
+    };
 
     if (Kit::FindInStringGroup("__print", object.GetMethods())) {
       auto provider = entry::Order("__print", object.GetTypeId(), -1);
@@ -305,11 +293,11 @@ namespace kagami {
         result = provider.Start(p);
       }
       else {
-        std::cout << "You can't print this object." << std::endl;
+        errorMsg();
       }
     } 
     else {
-      std::cout << "You can't print this object." << std::endl;
+      errorMsg();
     }
 
     return result;
@@ -338,11 +326,11 @@ namespace kagami {
     using namespace entry;
 
     AddGenericEntry(GT_NOP, Entry(nullptr, "", GT_NOP));
-    AddGenericEntry(GT_END, Entry(nullptr, "", GT_END));
-    AddGenericEntry(GT_ELSE, Entry(nullptr, "", GT_ELSE));
-    AddGenericEntry(GT_IF, Entry(ConditionRoot, "state", GT_IF));
-    AddGenericEntry(GT_WHILE, Entry(WhileCycle, "state", GT_WHILE));
-    AddGenericEntry(GT_ELIF, Entry(ConditionBranch, "state", GT_ELIF));
+    AddGenericEntry(GT_END, Entry(End, "", GT_END));
+    AddGenericEntry(GT_ELSE, Entry(Else, "", GT_ELSE));
+    AddGenericEntry(GT_IF, Entry(If, "state", GT_IF));
+    AddGenericEntry(GT_WHILE, Entry(While, "state", GT_WHILE));
+    AddGenericEntry(GT_ELIF, Entry(Elif, "state", GT_ELIF));
     AddGenericEntry(GT_SET, Entry(Set, "object|source", GT_SET, kCodeNormalParm, 0));
     AddGenericEntry(GT_BIND, Entry(Bind, "object|source", GT_BIND, kCodeNormalParm, 0));
     AddGenericEntry(GT_ADD, Entry(Plus, "first|second", GT_ADD, kCodeNormalParm, 2));
@@ -355,6 +343,10 @@ namespace kagami {
     AddGenericEntry(GT_NOT_EQUAL, Entry(LogicNotEqual, "first|second", GT_NOT_EQUAL, kCodeNormalParm, 1));
     AddGenericEntry(GT_MORE, Entry(More, "first|second", GT_MORE, kCodeNormalParm, 1));
     AddGenericEntry(GT_LESS, Entry(Less, "first|second", GT_LESS, kCodeNormalParm, 1));
+    AddGenericEntry(GT_LSELF_INC, Entry(LeftSelfIncreament, "object", GT_LSELF_INC));
+    AddGenericEntry(GT_LSELF_DEC, Entry(LeftSelfDecreament, "object", GT_LSELF_DEC));
+    AddGenericEntry(GT_RSELF_INC, Entry(RightSelfIncreament, "object", GT_RSELF_INC));
+    AddGenericEntry(GT_RSELF_DEC, Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
   }
 
   void Activiate() {

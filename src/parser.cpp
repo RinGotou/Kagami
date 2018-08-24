@@ -52,6 +52,7 @@ namespace kagami {
     isTerminal = false;
     health = true;
     current = 0;
+    endIdx = 0;
     size_t subscript = 0;
 
     stream.open(target, std::ios::in);
@@ -227,7 +228,7 @@ namespace kagami {
       case kCodeHeadSign:
         HeadSign(GetBooleanValue(value), selfObjectManagement);
         break;
-      case kCodeFillingSign:
+      case kCodeHeadPlaceholder:
         nestHeadCount++;
         break;
       case kCodeTailSign:
@@ -253,10 +254,12 @@ namespace kagami {
     string head = kStrNormalArrow;
     Processor processor;
     bool subProcess = false;
+    bool skip = false;
 
     entry::CreateManager();
 
     while (msg.GetCode() != kCodeQuit) {
+      msg = Message();
       std::cout << head;
       std::getline(std::cin, buf);
       if (buf.empty()) continue;
@@ -271,10 +274,12 @@ namespace kagami {
         break;
       case GT_END:
         subProcess = false;
+        skip = true;
         storage.emplace_back(processor);
         head = kStrNormalArrow;
         msg = this->Run();
-        storage.clear();
+        Kit().CleanupVector(storage);
+        //storage.clear();
         current = 0;
         break;
       case GT_DEF:
@@ -287,13 +292,14 @@ namespace kagami {
         storage.emplace_back(processor);
       }
       else {
-        msg = processor.Activiate();
+        if(!skip) msg = processor.Activiate();
       }
 
       if (msg.GetCode() < kCodeSuccess) {
         std::cout << msg.GetDetail() << std::endl;
         trace::Log(msg);
       }
+      if (skip == true) skip = false;
     }
 
     entry::DisposeManager();
@@ -490,12 +496,14 @@ namespace kagami {
 
   bool Processor::TakeAction(Message &msg) {
     deque<Object> parms;
-    ObjectMap map;
+    ObjectMap objMap;
     size_t idx = 0;
     Entry &ent = symbol.back();
 
     if (ent.GetId() == kStrNop) {
-      /*Pending*/
+      auto rit = item.rbegin();
+      while (rit != item.rend() && !rit->IsPlaceholder()) rit--;
+      if (rit != item.rend()) item.erase(rit.base());
       return true;
     }
 
@@ -512,46 +520,47 @@ namespace kagami {
     }
     if (!item.empty() && item.back().IsPlaceholder()) item.pop_back();
 
-    for (idx = 0; idx < size; ++idx) {
-      map.insert(pair<string, Object>(args[idx], parms[idx]));
+    idx = 0;
+    const size_t parmSize = parms.size();
+    while (idx < size) {
+      if (idx >= parmSize && ent.GetArgumentMode() == kCodeAutoFill) break;
+      objMap.insert(pair<string, Object>(args[idx], parms[idx]));
+      ++idx;
     }
 
     auto flag = ent.GetFlag();
     if (flag == kFlagMethod) {
-      map.insert(pair<string, Object>(kStrObject, item.back()));
+      objMap.insert(pair<string, Object>(kStrObject, item.back()));
       item.pop_back();
     }
 
-    /*TODO:Execute*/
     GenericTokenEnum headEnt = symbol.front().GetTokenEnum(),
       currentEnum = ent.GetTokenEnum();
     switch (mode) {
     case kModeCycleJump:
-      if (currentEnum == GT_END) {
-        msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
+      if (currentEnum == GT_END || headEnt == GT_IF || headEnt == GT_WHILE) {
+        msg = ent.Start(objMap);
       }
-      else if (headEnt == GT_IF || headEnt == GT_WHILE) {
-        msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+      else {
+        msg.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
       }
       break;
     case kModeNextCondition:
       if (headEnt == GT_IF || headEnt == GT_WHILE) {
-        msg.combo(kStrRedirect, kCodeFillingSign, kStrTrue);
+        msg.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
       }
-      else if (currentEnum == GT_ELSE) {
-        msg.combo(kStrTrue, kCodeConditionLeaf, kStrEmpty);
+      else if (currentEnum == GT_ELSE || currentEnum == GT_END || headEnt == GT_ELIF) {
+        msg = ent.Start(objMap);
       }
-      else if (currentEnum == GT_END) {
-        msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
-      }
-      else if (currentEnum == GT_ELIF) {
-        msg = ent.Start(map);
+      else {
+        msg.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
       }
       break;
-    case kModeNormal:
+    case kModeCycle:
     case kModeCondition:
+    case kModeNormal:
     default:
-      msg = ent.Start(map);
+      msg = ent.Start(objMap);
     }
 
     const auto code = msg.GetCode();
@@ -562,7 +571,7 @@ namespace kagami {
       auto object = msg.GetObj();
       item.push_back(object);
     }
-    else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeFillingSign) {
+    else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeHeadPlaceholder) {
       item.push_back(Object()
         .Manage(detail)
         .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
@@ -683,8 +692,29 @@ namespace kagami {
     return result;
   }
 
-  bool Processor::RightSqrBracket(Message &msg) {
-    return this->RightBracket(msg);
+  bool Processor::SelfOperator(Message &msg) {
+    bool result = true;
+    if (forwardToken.second == T_GENERIC) {
+      if (currentToken.first == "++") {
+        symbol.push_back(entry::Order(kStrRightSelfInc));
+      }
+      else if (currentToken.first == "--") {
+        symbol.push_back(entry::Order(kStrRightSelfDec));
+      }
+    }
+    else if (forwardToken.second != T_GENERIC && nextToken.second == T_GENERIC) {
+      if (currentToken.first == "++") {
+        symbol.push_back(entry::Order(kStrLeftSelfInc));
+      }
+      else if (currentToken.first == "--") {
+        symbol.push_back(entry::Order(kStrLeftSelfDec));
+      }
+    }
+    else {
+      msg.combo(kStrFatalError, kCodeIllegalCall, "Unknown self operation");
+      result = false;
+    }
+    return result;
   }
 
   bool Processor::FunctionAndObject(Message &msg) {
@@ -743,6 +773,10 @@ namespace kagami {
                 .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
                 .SetTokenType(currentToken.second));
             }
+          }
+          else if (currentToken.first == kStrEnd || currentToken.first == kStrElse) {
+            auto ent = entry::Order(currentToken.first);
+            symbol.push_back(ent);
           }
           else {
             Object *object = entry::FindObject(currentToken.first);
@@ -821,7 +855,6 @@ namespace kagami {
 
   Message Processor::Activiate(size_t mode) {
     using namespace entry;
-    Kit kit;
     Message result;
     auto state = true;
     const auto size = origin.size();
@@ -862,9 +895,9 @@ namespace kagami {
         case TOKEN_DOT:             dotOperator = true; break;
         case TOKEN_LEFT_BRACKET:    LeftBracket(result); break;
         case TOKEN_COLON:           state = Colon(); break;
-        case TOKEN_RIGHT_SQRBRACKET:state = RightSqrBracket(result); break;
+        case TOKEN_RIGHT_SQRBRACKET:state = RightBracket(result); break;
         case TOKEN_RIGHT_BRACKET:   state = RightBracket(result); break;
-        case TOKEN_SELFOP:          /*TODO:*/ break;
+        case TOKEN_SELFOP:          state = SelfOperator(result); break;
         case TOKEN_OTHERS:          OtherSymbol(); break;
         default:break;
         }
@@ -880,10 +913,15 @@ namespace kagami {
       forwardToken = currentToken;
     }
 
-    if (state) FinalProcessing(result);
-    if (!health) result.combo(kStrFatalError, kCodeBadExpression, errorString);
-
-    kit.CleanupDeque(item).CleanupDeque(symbol);
+    if (state) {
+      FinalProcessing(result);
+    }
+    if (!health && result.GetDetail() == kStrEmpty) {
+      result.combo(kStrFatalError, kCodeBadExpression, errorString);
+    }
+      
+    item.clear();
+    symbol.clear();
     nextToken = Token();
     forwardToken = Token();
     currentToken = Token();

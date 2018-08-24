@@ -135,7 +135,7 @@ namespace kagami {
     return *this;
   }
 
-  bool ObjectManager::Add(string sign, Object source) {
+  bool ObjectManager::Add(string sign, Object &source) {
     if (!CheckObject(sign)) return false;
     base.push_back(NamedObject(sign, source));
     return true;
