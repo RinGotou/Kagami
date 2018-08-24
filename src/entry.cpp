@@ -13,8 +13,12 @@ namespace kagami {
   Message Entry::Start(ObjectMap &map) const {
     if (placeholder) return Message();
     Message result;
-    if (Good()) result = activity(map);
-    else result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
+    if (Good()) {
+      result = activity(map);
+    }
+    else {
+      result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
+    }
     return result;
   }
 

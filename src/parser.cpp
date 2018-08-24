@@ -253,10 +253,12 @@ namespace kagami {
     string head = kStrNormalArrow;
     Processor processor;
     bool subProcess = false;
+    bool skip = false;
 
     entry::CreateManager();
 
     while (msg.GetCode() != kCodeQuit) {
+      msg = Message();
       std::cout << head;
       std::getline(std::cin, buf);
       if (buf.empty()) continue;
@@ -271,6 +273,7 @@ namespace kagami {
         break;
       case GT_END:
         subProcess = false;
+        skip = true;
         storage.emplace_back(processor);
         head = kStrNormalArrow;
         msg = this->Run();
@@ -287,13 +290,14 @@ namespace kagami {
         storage.emplace_back(processor);
       }
       else {
-        msg = processor.Activiate();
+        if(!skip) msg = processor.Activiate();
       }
 
       if (msg.GetCode() < kCodeSuccess) {
         std::cout << msg.GetDetail() << std::endl;
         trace::Log(msg);
       }
+      if (skip == true) skip = false;
     }
 
     entry::DisposeManager();
@@ -548,6 +552,14 @@ namespace kagami {
         msg = ent.Start(objMap);
       }
       break;
+    case kModeCycle:
+      if (currentEnum == GT_END) {
+        msg.combo(kStrEmpty, kCodeTailSign, kStrEmpty);
+      }
+      else {
+        msg = ent.Start(objMap);
+      }
+      break;
     case kModeNormal:
     case kModeCondition:
     default:
@@ -765,6 +777,10 @@ namespace kagami {
                 .SetTokenType(currentToken.second));
             }
           }
+          else if (currentToken.first == kStrEnd || currentToken.first == kStrElse) {
+            auto ent = entry::Order(currentToken.first);
+            symbol.push_back(ent);
+          }
           else {
             Object *object = entry::FindObject(currentToken.first);
             if (object != nullptr) {
@@ -901,8 +917,13 @@ namespace kagami {
       forwardToken = currentToken;
     }
 
-    if (state) FinalProcessing(result);
-    if (!health) result.combo(kStrFatalError, kCodeBadExpression, errorString);
+    if (state) {
+      FinalProcessing(result);
+    }
+    if (!health && result.GetDetail() != kStrEmpty) {
+      result.combo(kStrFatalError, kCodeBadExpression, errorString);
+    }
+      
 
     kit.CleanupDeque(item).CleanupDeque(symbol);
     nextToken = Token();
