@@ -1,7 +1,7 @@
 #pragma once
 
 #include <fstream>
-#include "processor.h"
+#include "trace.h"
 
 #if defined(_WIN32)
 #include "windows.h"
@@ -11,16 +11,11 @@
 #endif
 
 namespace kagami {
-
-  /*ScriptMachine class
-  Script provider caches original string data from script file.
-  */
-  class ScriptMachine {
+  class Machine {
     std::ifstream stream;
     size_t current;
     vector<Processor> storage;
     vector<string> parameters;
-    bool end;
     stack<size_t> cycleNestStack, cycleTailStack, modeStack;
     stack<bool> conditionStack;
     size_t currentMode;
@@ -32,39 +27,42 @@ namespace kagami {
     void ConditionRoot(bool value);
     void ConditionBranch(bool value);
     void ConditionLeaf();
-    void HeadSign(bool value, bool selfObjectManagement);
+    void HeadSign(bool value);
     void TailSign();
     static bool IsBlankStr(string target);
   public:
-    ScriptMachine() : current(0), end(false), currentMode(kModeNormal),
+    Machine() : current(0), currentMode(kModeNormal),
     nestHeadCount(0), health(false), isTerminal(true) {}
-    ScriptMachine(vector<Processor> storage) : current(0), end(false), currentMode(kModeNormal),
+    Machine(Machine &machine) {
+      this->storage = machine.storage;
+      this->parameters = machine.parameters;
+    }
+    Machine(Machine &&machine) : Machine(machine) {}
+    Machine(vector<Processor> storage) : current(0), currentMode(kModeNormal),
       nestHeadCount(0), health(true), isTerminal(true), endIdx(0) {
       this->storage = storage;
     }
+    void operator=(Machine &machine){
+      this->storage = machine.storage;
+      this->parameters = machine.parameters;
+    }
+    void operator=(Machine &&machine) {
+      this->storage = machine.storage;
+      this->parameters = machine.parameters;
+    }
 
-    explicit ScriptMachine(const char *target);
-    Message Run();
+    Machine &SetParameters(vector<string> parms);
+    explicit Machine(const char *target);
+    Message Run(bool createManager = true);
+    Message RunAsFunction(ObjectMap &p);
     void Terminal();
+    void Reset();
 
     bool GetHealth() const { return health; }
-    bool Eof() const { return end; }
-    void ResetCounter() {
-      current = 0;
-      end = false;
-    }
   };
 
   void Activiate();
   void InitPlanners();
-
-
-
-  namespace trace {
-    using log_t = pair<string, Message>;
-    void Log(kagami::Message msg);
-    vector<log_t> &GetLogger();
-  }
 }
 
 

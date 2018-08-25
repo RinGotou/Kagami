@@ -3,38 +3,64 @@
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
-#include "parser.h"
+#include "machine.h"
 
 namespace kagami {
-  namespace trace {
-    vector<log_t> &GetLogger() {
-      static vector<log_t> base;
-      return base;
-    }
-
-    void Log(Message msg) {
-      auto now = time(nullptr);
-#if defined(_WIN32) && defined(_MSC_VER)
-      char nowtime[30] = { ' ' };
-      ctime_s(nowtime, sizeof(nowtime), &now);
-      GetLogger().emplace_back(log_t(string(nowtime), msg));
-#else
-      string nowtime(ctime(&now));
-      GetLogger().emplace_back(log_t(nowtime, msg));
-#endif
-    }
+  map<string, Machine> &GetFunctionBase() {
+    static map<string, Machine> base;
+    return base;
   }
 
-  bool GetBooleanValue(string src) {
+  inline void AddFunction(string id, vector<Processor> proc, vector<string> parms) {
+    auto &base = GetFunctionBase();
+    base[id] = Machine(proc).SetParameters(parms);
+  }
+
+  inline Machine *GetFunction(string id) {
+    Machine *machine = nullptr;
+    auto &base = GetFunctionBase();
+    auto it = base.find(id);
+    if (it != base.end()) machine = &(it->second);
+    return machine;
+  }
+
+  Message FunctionTunnel(ObjectMap &p) {
+    Message msg;
+    Object &funcId = p[kStrUserFunc];
+    string id = *static_pointer_cast<string>(funcId.Get());
+    Machine *machine = GetFunction(id);
+    if (machine != nullptr) {
+      msg = machine->RunAsFunction(p);
+    }
+    return msg;
+  }
+
+  inline bool GetBooleanValue(string src) {
     if (src == kStrTrue) return true;
     if (src == kStrFalse) return false;
     if (src == "0" || src.empty()) return false;
     return true;
   }
 
-  ScriptMachine::ScriptMachine(const char *target) {
+  Machine &Machine::SetParameters(vector<string> parms) {
+    this->parameters = parms;
+    return *this;
+  }
+
+  void Machine::Reset() {
+    current = 0;
+    currentMode = kModeNormal;
+    nestHeadCount = 0;
+    isTerminal = false;
+    Kit().CleanupVector(storage);
+    while (!cycleNestStack.empty()) cycleNestStack.pop();
+    while (!cycleTailStack.empty()) cycleTailStack.pop();
+    while (!modeStack.empty()) modeStack.pop();
+    while (!conditionStack.empty()) conditionStack.pop();
+  }
+
+  Machine::Machine(const char *target) {
     string temp;
-    end = false;
     isTerminal = false;
     health = true;
     current = 0;
@@ -54,7 +80,7 @@ namespace kagami {
     stream.close();
   }
 
-  void ScriptMachine::ConditionRoot(bool value) {
+  void Machine::ConditionRoot(bool value) {
     modeStack.push(currentMode);
     if (value == true) {
       entry::CreateManager();
@@ -67,7 +93,7 @@ namespace kagami {
     }
   }
 
-  void ScriptMachine::ConditionBranch(bool value) {
+  void Machine::ConditionBranch(bool value) {
     if (!conditionStack.empty()) {
       if (conditionStack.top() == false && currentMode == kModeNextCondition
         && value == true) {
@@ -82,7 +108,7 @@ namespace kagami {
     }
   }
 
-  void ScriptMachine::ConditionLeaf() {
+  void Machine::ConditionLeaf() {
     if (!conditionStack.empty()) {
       if (conditionStack.top() == true) {
         currentMode = kModeNextCondition;
@@ -99,15 +125,15 @@ namespace kagami {
     }
   }
 
-  void ScriptMachine::HeadSign(bool value, bool selfObjectManagement) {
+  void Machine::HeadSign(bool value) {
     if (cycleNestStack.empty()) {
       modeStack.push(currentMode);
-      if (!selfObjectManagement) entry::CreateManager();
+      entry::CreateManager();
     }
     else {
       if (cycleNestStack.top() != current - 1) {
         modeStack.push(currentMode);
-        if (!selfObjectManagement) entry::CreateManager();
+         entry::CreateManager();
       }
     }
     if (value == true) {
@@ -130,7 +156,7 @@ namespace kagami {
     }
   }
 
-  void ScriptMachine::TailSign() {
+  void Machine::TailSign() {
     if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
       conditionStack.pop();
       currentMode = modeStack.top();
@@ -158,7 +184,7 @@ namespace kagami {
     }
   }
 
-  bool ScriptMachine::IsBlankStr(string target) {
+  bool Machine::IsBlankStr(string target) {
     if (target == kStrEmpty || target.size() == 0) return true;
     for (const auto unit : target) {
       if (unit != '\n' && unit != ' ' && unit != '\t' && unit != '\r') {
@@ -168,7 +194,7 @@ namespace kagami {
     return true;
   }
 
-  Message ScriptMachine::Run() {
+  Message Machine::Run(bool createManager) {
     Message result;
 
     currentMode = kModeNormal;
@@ -178,7 +204,7 @@ namespace kagami {
 
     if (storage.empty()) return result;
 
-    entry::CreateManager();
+    if (createManager) entry::CreateManager();
 
     //Main state machine
     while (current < storage.size()) {
@@ -187,7 +213,6 @@ namespace kagami {
       result = storage[current].Activiate(currentMode);
       const auto value = result.GetValue();
       const auto code  = result.GetCode();
-      const auto selfObjectManagement = storage[current].IsSelfObjectManagement();
 
       if (value == kStrFatalError) {
         trace::Log(result.SetIndex(storage[current].GetIndex()));
@@ -212,7 +237,7 @@ namespace kagami {
         ConditionLeaf();
         break;
       case kCodeHeadSign:
-        HeadSign(GetBooleanValue(value), selfObjectManagement);
+        HeadSign(GetBooleanValue(value));
         break;
       case kCodeHeadPlaceholder:
         nestHeadCount++;
@@ -229,12 +254,31 @@ namespace kagami {
       ++current;
     }
 
-    entry::DisposeManager();
+    if (createManager) entry::DisposeManager();
 
     return result;
   }
 
-  void ScriptMachine::Terminal() {
+  Message Machine::RunAsFunction(ObjectMap &p) {
+    Message msg;
+    auto &base = entry::CreateManager();
+    for (auto &unit : p) {
+      base.Add(unit.first, unit.second);
+    }
+    msg = Run(false);
+    if (msg.GetCode() >= kCodeSuccess) {
+      msg = Message();
+      Object *ret = base.Find(kStrRetValue);
+      if (ret != nullptr) {
+        Object obj;
+        obj.Copy(*ret);
+        msg.SetObject(obj, "__result");
+      }
+    }
+    return msg;
+  }
+
+  void Machine::Terminal() {
     Message msg;
     string buf;
     string head = kStrNormalArrow;

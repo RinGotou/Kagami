@@ -170,7 +170,9 @@ namespace kagami {
     kStrMore = ">",
     kStrLess = "<",
     kStrNop = "__nop",
-    kStrPlaceHolder = "__ph";
+    kStrPlaceHolder = "__ph",
+    kStrUserFunc = "__func",
+    kStrRetValue = "__ret";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",
