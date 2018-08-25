@@ -144,7 +144,8 @@ namespace kagami {
         T(kStrMoreOrEqual,GT_MORE_OR_EQUAL),
         T(kStrNotEqual,GT_NOT_EQUAL),
         T(kStrMore,GT_MORE),
-        T(kStrLess,GT_LESS)
+        T(kStrLess,GT_LESS),
+        T(kStrReturn,GT_RETURN)
       };
       return base;
     }
