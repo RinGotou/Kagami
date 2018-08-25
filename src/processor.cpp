@@ -586,12 +586,12 @@ namespace kagami {
       if (token == GT_IF || token == GT_WHILE) {
         return Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
       }
-      else if (token != GT_ELSE || token != GT_END || token != GT_ELIF) {
+      else if (token != GT_ELSE && token != GT_END && token != GT_ELIF) {
         return Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
       }
       break;
     case kModeCycleJump:
-      if (token != GT_END || token != GT_IF || token != GT_WHILE) {
+      if (token != GT_END && token != GT_IF && token != GT_WHILE) {
         return Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
       }
     default:break;

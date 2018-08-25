@@ -31,7 +31,8 @@ namespace kagami {
     string id = *static_pointer_cast<string>(funcId.Get());
     Machine *machine = GetFunction(id);
     if (machine != nullptr) {
-      msg = machine->RunAsFunction(p);
+      Machine machCopy(*machine);
+      msg = machCopy.RunAsFunction(p);
     }
     return msg;
   }
@@ -109,8 +110,8 @@ namespace kagami {
 
   void Machine::ConditionRoot(bool value) {
     modeStack.push(currentMode);
+    entry::CreateManager();
     if (value == true) {
-      entry::CreateManager();
       currentMode = kModeCondition;
       conditionStack.push(true);
     }
@@ -160,7 +161,7 @@ namespace kagami {
     else {
       if (cycleNestStack.top() != current - 1) {
         modeStack.push(currentMode);
-         entry::CreateManager();
+        entry::CreateManager();
       }
     }
     if (value == true) {
@@ -314,6 +315,7 @@ namespace kagami {
         msg.SetObject(obj, "__result");
       }
     }
+    entry::DisposeManager();
     Reset();
     return msg;
   }

@@ -142,6 +142,7 @@ namespace kagami {
   }
   Object *ObjectManager::Find(string sign) {
     Object *object = nullptr;
+    if (base.empty()) return object;
     for (size_t i = 0; i < base.size(); ++i) {
       if (base[i].first == sign) {
         object = &(base[i].second);

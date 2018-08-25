@@ -64,7 +64,7 @@ namespace kagami {
     }
 
     bool Compare(Entry &target) const;
-    Message Start(ObjectMap map) const;
+    Message Start(ObjectMap &map) const;
 
     bool operator==(Entry &target) const { return Compare(target); }
     string GetSpecificType() const { return type; }
