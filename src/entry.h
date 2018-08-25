@@ -16,7 +16,7 @@ namespace kagami {
     vector<string> args;
     Activity activity;
     string type;
-    bool placeholder;
+    bool placeholder, userFunc;
   public:
     Entry() : id(kStrNull), priority(0), activity(nullptr), flag(kFlagNormalEntry) {
       parmMode = kCodeIllegalParm;
@@ -47,7 +47,14 @@ namespace kagami {
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
+    Entry(Activity activity, string id) :priority(4) {
+      userFunc = true;
+      this->activity = activity;
+      this->id = id;
+    }
+
     bool Compare(Entry &target) const;
+    Message Start(ObjectMap map) const;
 
     bool operator==(Entry &target) const { return Compare(target); }
     string GetSpecificType() const { return type; }
@@ -59,7 +66,6 @@ namespace kagami {
     int GetPriority() const { return this->priority; }
     int GetFlag() const { return flag; }
     bool Good() const { return ((activity != nullptr) && parmMode != kCodeIllegalParm); }
-    Message Start(ObjectMap &map) const;
   };
 
   namespace entry {
@@ -90,5 +96,11 @@ namespace kagami {
     OperatorCode GetOperatorCode(string src);
     Entry Order(string id, string type = kTypeIdNull, int size = -1);
     bool IsOperatorToken(GenericTokenEnum token);
+  }
+
+  namespace type {
+    ObjectPlanner *GetPlanner(string name);
+    void AddTemplate(string name, ObjectPlanner temp);
+    shared_ptr<void> GetObjectCopy(Object &object);
   }
 }

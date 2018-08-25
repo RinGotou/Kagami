@@ -40,11 +40,6 @@ parsed here.Processed data will be delivered to entry provider.
       dotOperator(false), defineLine(false), functionLine(false), subscriptProcessing(false),
       mode(0), nextInsertSubscript(0), lambdaObjectCount(0), index(0) {}
 
-    bool IsSelfObjectManagement() const {
-      string front = origin.front().first;
-      return (front == kStrFor || front == kStrDef);
-    }
-
     Processor &SetIndex(size_t idx) {
       this->index = idx;
       return *this;
@@ -58,10 +53,4 @@ parsed here.Processed data will be delivered to entry provider.
     bool IsHealth() const { return health; }
     string GetErrorString() const { return errorString; }
   };
-
-  namespace type {
-    ObjectPlanner *GetPlanner(string name);
-    void AddTemplate(string name, ObjectPlanner temp);
-    shared_ptr<void> GetObjectCopy(Object &object);
-  }
 }

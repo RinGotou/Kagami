@@ -31,7 +31,7 @@ namespace kagami {
 
   Message ScriptCore::ExecScriptFile(string target) {
     Message result;
-    ScriptMachine machine(target.c_str());
+    Machine machine(target.c_str());
 
     isTerminal = false;
 
@@ -46,7 +46,7 @@ namespace kagami {
 
 #ifndef _NO_CUI_
   void ScriptCore::Terminal2() {
-    ScriptMachine machine;
+    Machine machine;
     isTerminal = true;
 
     std::cout << kEngineName
