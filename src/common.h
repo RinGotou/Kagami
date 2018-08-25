@@ -52,8 +52,8 @@ namespace kagami {
   using NamedObject = pair<string, Object>;
   
 
-  const string kEngineVersion = "1.0";
-  const string kCodeName = "Blossom";
+  const string kEngineVersion = "0.9";
+  const string kCodeName = "Skyline";
 #if defined(_WIN32)
   const string kPlatformType = "Windows";
 #else
