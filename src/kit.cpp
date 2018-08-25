@@ -115,4 +115,13 @@ namespace kagami {
     }
     return result;
   }
+
+  string Kit::CombineStringVector(vector<string> target) {
+    string result;
+    for (size_t i = 0; i < target.size(); ++i) {
+      result = result + target[i] + "|";
+    }
+    result.pop_back();
+    return result;
+  }
 }

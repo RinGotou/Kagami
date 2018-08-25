@@ -219,6 +219,7 @@ namespace kagami {
 
     const size_t size = ent.GetParmSize();
     auto args = ent.GetArguments();
+    auto mode = ent.GetArgumentMode();
     bool reversed = entry::IsOperatorToken(ent.GetTokenEnum()) && needReverse;
 
     idx = size;
@@ -231,12 +232,27 @@ namespace kagami {
     if (!item.empty() && item.back().IsPlaceholder()) item.pop_back();
 
     idx = 0;
-    const size_t parmSize = parms.size();
-    while (idx < size) {
-      if (idx >= parmSize && ent.GetArgumentMode() == kCodeAutoFill) break;
-      objMap.insert(pair<string, Object>(args[idx], parms[idx]));
-      ++idx;
+    if (mode == kCodeAutoSize) {
+      const size_t parmSize = size - 1;
+      while (idx < parmSize) {
+        objMap.insert(pair<string, Object>(args[idx], parms[idx]));
+        ++idx;
+      }
+      string argGroupHead = args.back();
+      size_t count = 0;
+      while (idx < parms.size()) {
+        objMap.insert(pair<string, Object>(argGroupHead + to_string(count), parms[idx]));
+        idx++;
+      }
     }
+    else {
+      while (idx < size) {
+        if (idx >= parms.size() && ent.GetArgumentMode() == kCodeAutoFill) break;
+        objMap.insert(pair<string, Object>(args[idx], parms[idx]));
+        ++idx;
+      }
+    }
+
 
     auto flag = ent.GetFlag();
     if (flag == kFlagMethod) {
@@ -266,6 +282,7 @@ namespace kagami {
         msg.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
       }
       break;
+    case kModeDef:
     case kModeCycle:
     case kModeCondition:
     case kModeNormal:
@@ -303,7 +320,6 @@ namespace kagami {
   void Processor::EqualMark() {
     if (!item.empty()) {
       bool ref = item.back().IsRef();
-      //auto typeId = item.back().GetTypeId();
       if (!ref) {
         symbol.push_back(entry::Order(kStrBind));
       }
@@ -322,6 +338,7 @@ namespace kagami {
   }
 
   void Processor::LeftBracket(Message &msg) {
+    if (defineLine) return;
     if (forwardToken.second != TokenTypeEnum::T_GENERIC) {
       symbol.emplace_back(kStrNop);
     }
@@ -430,9 +447,6 @@ namespace kagami {
   bool Processor::FunctionAndObject(Message &msg) {
     bool function = false;
     bool result = true;
-    bool defLine = false;
-
-    if (currentToken.first == kStrDef) defLine = true;
 
     if (dotOperator) {
       string methods = item.back().GetMethods();
@@ -452,7 +466,7 @@ namespace kagami {
       dotOperator = false;
     }
     else {
-      if (defLine) {
+      if (defineLine) {
         item.push_back(Object()
           .Manage(currentToken.first)
           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
@@ -488,6 +502,13 @@ namespace kagami {
             auto ent = entry::Order(currentToken.first);
             symbol.push_back(ent);
           }
+          else if (currentToken.first == kStrDef) {
+            auto ent = entry::Order(currentToken.first);
+            defineLine = true;
+            symbol.emplace_back(ent);
+            symbol.emplace_back("(");
+            item.push_back(Object().SetPlaceholder());
+          }
           else {
             Object *object = entry::FindObject(currentToken.first);
             if (object != nullptr) {
@@ -504,12 +525,17 @@ namespace kagami {
       }
     }
 
-    //TODO:function definition checking
     if (function && nextToken.first != "("
       && currentToken.first != kStrElse && currentToken.first != kStrEnd) {
       this->health = false;
       result = false;
       errorString = "Left bracket after function is missing";
+    }
+
+    if (defineLine && forwardToken.first == kStrDef && nextToken.first != "(") {
+      this->health = false;
+      result = false;
+      errorString = "Wrong definition pattern";
     }
 
     return result;
@@ -573,6 +599,16 @@ namespace kagami {
       return Message(kStrFatalError, kCodeBadExpression, errorString);
     }
 
+    if (mode == kModeDef) {
+      auto token = entry::GetGenericToken(origin.front().first);
+      if (token == GT_WHILE || token == GT_IF) {
+        return Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+      }
+      else if (token != GT_END) {
+        return Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+      }
+    }
+
     this->mode = mode;
     lambdaObjectCount = 0;
     nextInsertSubscript = 0;
@@ -581,7 +617,6 @@ namespace kagami {
     dotOperator = false;
     needReverse = false;
     subscriptProcessing = false;
-    functionLine = false;
     defineLine = false;
 
     for (size_t i = 0; i < size; ++i) {

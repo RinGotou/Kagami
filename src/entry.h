@@ -22,6 +22,7 @@ namespace kagami {
       parmMode = kCodeIllegalParm;
       type = kTypeIdNull;
       placeholder = false;
+      userFunc = false;
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
@@ -30,6 +31,7 @@ namespace kagami {
       type(type), flag(flag) {
       this->activity = activity;
       placeholder = false;
+      userFunc = false;
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
@@ -37,20 +39,28 @@ namespace kagami {
       id(), parmMode(parmMode), priority(priority), args(Kit::BuildStringVector(args)) {
       this->activity = activity;
       this->tokenEnum = tokenEnum;
+      userFunc = false;
       placeholder = false;
     }
 
     Entry(string id) :id(id), priority(0), activity(nullptr) {
       parmMode = kCodeNormalParm;
       type = kTypeIdNull;
+      userFunc = false;
       placeholder = true;
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
-    Entry(Activity activity, string id) :priority(4) {
+    Entry(Activity activity, string id,vector<string> args) : priority(4) {
+      type = kTypeIdNull;
+      placeholder = false;
+      parmMode = kCodeNormalParm;
+      flag = kFlagNormalEntry;
       userFunc = true;
       this->activity = activity;
       this->id = id;
+      this->args = args;
+      type = kTypeIdNull;
     }
 
     bool Compare(Entry &target) const;
@@ -65,7 +75,11 @@ namespace kagami {
     size_t GetParmSize() const { return this->args.size(); }
     int GetPriority() const { return this->priority; }
     int GetFlag() const { return flag; }
-    bool Good() const { return ((activity != nullptr) && parmMode != kCodeIllegalParm); }
+    bool Good() const { 
+      return ((activity != nullptr)
+        && parmMode != kCodeIllegalParm 
+        || (userFunc && id!=kStrEmpty));
+    }
   };
 
   namespace entry {

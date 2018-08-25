@@ -14,6 +14,7 @@ namespace kagami {
   inline void AddFunction(string id, vector<Processor> proc, vector<string> parms) {
     auto &base = GetFunctionBase();
     base[id] = Machine(proc).SetParameters(parms);
+    entry::AddEntry(Entry(FunctionTunnel, id, parms));
   }
 
   inline Machine *GetFunction(string id) {
@@ -40,6 +41,20 @@ namespace kagami {
     if (src == kStrFalse) return false;
     if (src == "0" || src.empty()) return false;
     return true;
+  }
+
+  void Machine::MakeFunction(size_t start,size_t end) {
+    if (start > end) return;
+    string id = defHead[0];
+    vector<string> parms;
+    vector<Processor> proc;
+    for (size_t i = 1; i < defHead.size(); ++i) {
+      parms.push_back(defHead[i]);
+    }
+    for (size_t j = start; j <= end; ++j) {
+      proc.push_back(storage[j]);
+    }
+    AddFunction(id, proc, parms);
   }
 
   Machine &Machine::SetParameters(vector<string> parms) {
@@ -78,6 +93,18 @@ namespace kagami {
       }
     }
     stream.close();
+  }
+
+  void Machine::DefineSign(string head) {
+    defHead = Kit::BuildStringVector(head);
+    if (currentMode != kModeDef && currentMode == kModeNormal) {
+      currentMode = kModeDef;
+      modeStack.push(kModeNormal);
+      defStart = current + 1;
+    }
+    else if (currentMode != kModeNormal) {
+      //?
+    }
   }
 
   void Machine::ConditionRoot(bool value) {
@@ -157,13 +184,19 @@ namespace kagami {
   }
 
   void Machine::TailSign() {
-    if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
+    if (currentMode == kModeDef) {
+      MakeFunction(defStart, current - 1);
+      currentMode = modeStack.top();
+      modeStack.pop();
+      Kit().CleanupVector(defHead);
+    }
+    else if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
       conditionStack.pop();
       currentMode = modeStack.top();
       modeStack.pop();
       entry::DisposeManager();
     }
-    if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
+    else if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
       switch (currentMode) {
       case kModeCycle:
         if (cycleTailStack.empty() || cycleTailStack.top() != current - 1) {
@@ -225,6 +258,9 @@ namespace kagami {
       //TODO:return
 
       switch (code) {
+      case kCodeDefineSign:
+        DefineSign(result.GetDetail());
+        break;
       case kCodeConditionRoot:
         ConditionRoot(GetBooleanValue(value)); 
         break;
@@ -334,7 +370,5 @@ namespace kagami {
 
     entry::DisposeManager();
   }
-
-
 }
 

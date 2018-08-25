@@ -7,26 +7,21 @@
 namespace kagami {
   void ScriptCore::PrintEvents() {
     using namespace trace;
-    ofstream ofs("event.log", std::ios::trunc);
     string priorityStr;
-    if (ofs.good()) {
-      if (GetLogger().empty()) {
-        ofs << "No Events.\n";
-      }
-      else {
-        for (log_t unit : GetLogger()) {
-          ofs << unit.first;
-          ofs << "At:" << to_string(unit.second.GetIndex()) << "\n";
-          const auto value = unit.second.GetValue();
-          if (value == kStrFatalError) priorityStr = "Fatal:";
-          else if (value == kStrWarning) priorityStr = "Warning:";
-          if (unit.second.GetDetail() != kStrEmpty) {
-            ofs << priorityStr << unit.second.GetDetail() << "\n";
-          }
-        }
+    if (!GetLogger().empty()) {
+      std::cout << "Tracking:\n";
+    }
+    for (log_t unit : GetLogger()) {
+      std::cout << unit.first;
+      std::cout << "At:" << to_string(unit.second.GetIndex()) << "\n";
+      const auto value = unit.second.GetValue();
+      if (value == kStrFatalError) priorityStr = "Fatal:";
+      else if (value == kStrWarning) priorityStr = "Warning:";
+      if (unit.second.GetDetail() != kStrEmpty) {
+        std::cout << priorityStr << unit.second.GetDetail() << "\n";
       }
     }
-    ofs.close();
+
   }
 
   Message ScriptCore::ExecScriptFile(string target) {
