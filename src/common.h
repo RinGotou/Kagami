@@ -121,7 +121,7 @@ namespace kagami {
     GT_RSELF_INC, GT_RSELF_DEC,
     GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_IS, 
     GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
-    GT_MORE, GT_LESS,
+    GT_MORE, GT_LESS, GT_RETURN,
     GT_NUL
   };
 
@@ -162,6 +162,7 @@ namespace kagami {
     kStrLeftSelfDec = "lSelfDec",
     kStrRightSelfInc = "rSelfInc",
     kStrRightSelfDec = "rSelfDec",
+    kStrReturn = "return",
     kStrAdd = "+",
     kStrSub = "-",
     kStrMul = "*",
@@ -175,7 +176,8 @@ namespace kagami {
     kStrNop = "__nop",
     kStrPlaceHolder = "__ph",
     kStrUserFunc = "__func",
-    kStrRetValue = "__ret";
+    kStrRetValue = "__ret",
+    kStrStopSign = "__stop";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",
