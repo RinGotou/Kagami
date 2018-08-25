@@ -90,6 +90,24 @@ namespace kagami {
   Message Elif(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty); }
   Message While(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty); }
 
+  Message Define(ObjectMap &p) {
+    vector<string> defHead;
+    Object &id = p["id"];
+    ObjectMap::iterator it;
+    size_t count = 0;
+    defHead.emplace_back(*static_pointer_cast<string>(id.Get()));
+    do {
+      it = p.find("arg" + to_string(count));
+      if (it != p.end()) {
+        string str = *static_pointer_cast<string>(it->second.Get());
+        defHead.emplace_back(str);
+        count++;
+      }
+    } while (it != p.end());
+    string defHeadStr = Kit::CombineStringVector(defHead);
+    return Message(kStrEmpty, kCodeDefineSign, defHeadStr);
+  }
+
   Message WriteLog(ObjectMap &p) {
     Message result;
     auto data = p["data"];
@@ -306,6 +324,7 @@ namespace kagami {
     AddGenericEntry(GT_LSELF_DEC, Entry(LeftSelfDecreament, "object", GT_LSELF_DEC));
     AddGenericEntry(GT_RSELF_INC, Entry(RightSelfIncreament, "object", GT_RSELF_INC));
     AddGenericEntry(GT_RSELF_DEC, Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
+    AddGenericEntry(GT_DEF, Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
   }
 
   void Activiate() {

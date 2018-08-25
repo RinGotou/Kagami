@@ -23,12 +23,16 @@ namespace kagami {
     bool health;
     bool isTerminal;
     size_t endIdx;
+    vector<string> defHead;
+    size_t defStart;
 
+    void DefineSign(string head);
     void ConditionRoot(bool value);
     void ConditionBranch(bool value);
     void ConditionLeaf();
     void HeadSign(bool value);
     void TailSign();
+    void MakeFunction(size_t start, size_t end);
     static bool IsBlankStr(string target);
   public:
     Machine() : current(0), currentMode(kModeNormal),
@@ -63,6 +67,7 @@ namespace kagami {
 
   void Activiate();
   void InitPlanners();
+  Message FunctionTunnel(ObjectMap &p);
 }
 
 

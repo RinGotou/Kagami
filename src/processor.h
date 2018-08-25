@@ -5,17 +5,16 @@
 
 namespace kagami {
   /*Processor Class
-The most important part of script processor.Original string will be tokenized and
-parsed here.Processed data will be delivered to entry provider.
-*/
-
+  The most important part of script processor.Original string will be tokenized and
+  parsed here.Processed data will be delivered to entry provider.
+  */
   class Processor {
     bool health;
     vector<Token> origin;
     deque<Object> item;
     deque<Entry> symbol;
     bool insertBetweenObject, dotOperator, needReverse,
-      defineLine, functionLine, subscriptProcessing;
+      defineLine, subscriptProcessing;
     Token currentToken;
     Token nextToken;
     Token forwardToken;
@@ -37,7 +36,7 @@ parsed here.Processed data will be delivered to entry provider.
     void FinalProcessing(Message &msg);
   public:
     Processor() : health(false), insertBetweenObject(false),
-      dotOperator(false), defineLine(false), functionLine(false), subscriptProcessing(false),
+      dotOperator(false), defineLine(false), subscriptProcessing(false),
       mode(0), nextInsertSubscript(0), lambdaObjectCount(0), index(0) {}
 
     Processor &SetIndex(size_t idx) {

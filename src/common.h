@@ -77,7 +77,9 @@ namespace kagami {
     kStrObject = "__object",
     kMethodPrint = "__print";
 
-  const int kCodeAutoFill = 14,
+  const int kCodeAutoSize = 16,
+    kCodeDefineSign = 15,
+    kCodeAutoFill = 14,
     kCodeNormalParm = 13,
     kCodeHeadPlaceholder = 12,
     kCodeReturn = 11,
@@ -141,6 +143,7 @@ namespace kagami {
   const size_t kModeCycle         = 2;
   const size_t kModeCycleJump     = 3;
   const size_t kModeCondition     = 4;
+  const size_t kModeDef           = 5;
 
   /*Generic Token*/
   const string kStrIf = "if",

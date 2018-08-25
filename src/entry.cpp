@@ -226,46 +226,46 @@ namespace kagami {
       }
       return result;
     }
+  }
 
-    namespace type {
-      map <string, ObjectPlanner> &GetPlannerBase() {
-        static map<string, ObjectPlanner> base;
-        return base;
+  namespace type {
+    map <string, ObjectPlanner> &GetPlannerBase() {
+      static map<string, ObjectPlanner> base;
+      return base;
+    }
+
+    shared_ptr<void> GetObjectCopy(Object &object) {
+      if (object.ConstructorFlag()) {
+        return object.Get();
       }
 
-      shared_ptr<void> GetObjectCopy(Object &object) {
-        if (object.ConstructorFlag()) {
-          return object.Get();
-        }
+      shared_ptr<void> result = nullptr;
+      const auto option = object.GetTypeId();
+      const auto it = GetPlannerBase().find(option);
 
-        shared_ptr<void> result = nullptr;
-        const auto option = object.GetTypeId();
-        const auto it = GetPlannerBase().find(option);
-
-        if (it != GetPlannerBase().end()) {
-          result = it->second.CreateObjectCopy(object.Get());
-        }
-        return result;
+      if (it != GetPlannerBase().end()) {
+        result = it->second.CreateObjectCopy(object.Get());
       }
+      return result;
+    }
 
-      ObjectPlanner *GetPlanner(const string name) {
-        ObjectPlanner *result = nullptr;
-        const auto it = GetPlannerBase().find(name);
+    ObjectPlanner *GetPlanner(const string name) {
+      ObjectPlanner *result = nullptr;
+      const auto it = GetPlannerBase().find(name);
 
-        if (it != GetPlannerBase().end()) {
-          result = &(it->second);
-        }
-        return result;
+      if (it != GetPlannerBase().end()) {
+        result = &(it->second);
       }
+      return result;
+    }
 
-      void AddTemplate(string name, ObjectPlanner temp) {
-        GetPlannerBase().insert(pair<string, ObjectPlanner>(name, temp));
-      }
+    void AddTemplate(string name, ObjectPlanner temp) {
+      GetPlannerBase().insert(pair<string, ObjectPlanner>(name, temp));
+    }
 
-      void DisposeTemplate(const string name) {
-        const auto it = GetPlannerBase().find(name);
-        if (it != GetPlannerBase().end()) GetPlannerBase().erase(it);
-      }
+    void DisposeTemplate(const string name) {
+      const auto it = GetPlannerBase().find(name);
+      if (it != GetPlannerBase().end()) GetPlannerBase().erase(it);
     }
   }
 }
