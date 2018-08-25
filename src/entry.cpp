@@ -1,4 +1,5 @@
 #include "entry.h"
+#include <iostream>
 
 namespace kagami {
   bool Entry::Compare(Entry &target) const {
@@ -10,7 +11,7 @@ namespace kagami {
       target.args == this->args);
   }
 
-  Message Entry::Start(ObjectMap objMap) const {
+  Message Entry::Start(ObjectMap &objMap) const {
     if (placeholder) return Message();
     Message result;
     if (userFunc) {

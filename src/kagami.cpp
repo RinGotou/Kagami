@@ -1,5 +1,5 @@
 #include "kagami.h"
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
@@ -85,7 +85,6 @@ int main(int argc, char **argv) {
 #endif
 #endif
   scriptCore.PrintEvents();
-  kagami::entry::DisposeManager();
 
   return 0;
 }
