@@ -13,7 +13,7 @@ namespace kagami {
     }
     for (log_t unit : GetLogger()) {
       std::cout << unit.first;
-      std::cout << "At:" << to_string(unit.second.GetIndex()) << "\n";
+      std::cout << "At:" << to_string(unit.second.GetIndex() + 1) << "\n";
       const auto value = unit.second.GetValue();
       if (value == kStrFatalError) priorityStr = "Fatal:";
       else if (value == kStrWarning) priorityStr = "Warning:";

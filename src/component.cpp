@@ -93,17 +93,17 @@ namespace kagami {
   Message Define(ObjectMap &p) {
     vector<string> defHead;
     Object &id = p["id"];
-    ObjectMap::iterator it;
     size_t count = 0;
     defHead.emplace_back(*static_pointer_cast<string>(id.Get()));
-    do {
-      it = p.find("arg" + to_string(count));
-      if (it != p.end()) {
-        string str = *static_pointer_cast<string>(it->second.Get());
+
+    for (auto &unit : p) {
+      if (unit.first == "arg" + to_string(count)) {
+        string str = *static_pointer_cast<string>(unit.second.Get());
         defHead.emplace_back(str);
         count++;
       }
-    } while (it != p.end());
+    }
+
     string defHeadStr = Kit::CombineStringVector(defHead);
     return Message(kStrEmpty, kCodeDefineSign, defHeadStr);
   }
