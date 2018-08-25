@@ -227,7 +227,7 @@ namespace kagami {
       if (reversed) parms.push_back(item.back());
       else parms.push_front(item.back());
       item.pop_back();
-      idx--;
+      if (mode !=kCodeAutoSize) idx--;
     }
     if (!item.empty() && item.back().IsPlaceholder()) item.pop_back();
 
@@ -243,6 +243,7 @@ namespace kagami {
       while (idx < parms.size()) {
         objMap.insert(pair<string, Object>(argGroupHead + to_string(count), parms[idx]));
         idx++;
+        count++;
       }
     }
     else {
@@ -260,36 +261,7 @@ namespace kagami {
       item.pop_back();
     }
 
-    GenericTokenEnum headEnt = symbol.front().GetTokenEnum(),
-      currentEnum = ent.GetTokenEnum();
-    switch (mode) {
-    case kModeCycleJump:
-      if (currentEnum == GT_END || headEnt == GT_IF || headEnt == GT_WHILE) {
-        msg = ent.Start(objMap);
-      }
-      else {
-        msg.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
-      }
-      break;
-    case kModeNextCondition:
-      if (headEnt == GT_IF || headEnt == GT_WHILE) {
-        msg.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
-      }
-      else if (currentEnum == GT_ELSE || currentEnum == GT_END || headEnt == GT_ELIF) {
-        msg = ent.Start(objMap);
-      }
-      else {
-        msg.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
-      }
-      break;
-    case kModeDef:
-    case kModeCycle:
-    case kModeCondition:
-    case kModeNormal:
-    default:
-      msg = ent.Start(objMap);
-    }
-
+    msg = ent.Start(objMap);
     const auto code = msg.GetCode();
     const auto value = msg.GetValue();
     const auto detail = msg.GetDetail();
@@ -599,17 +571,32 @@ namespace kagami {
       return Message(kStrFatalError, kCodeBadExpression, errorString);
     }
 
-    if (mode == kModeDef) {
-      auto token = entry::GetGenericToken(origin.front().first);
+    this->mode = mode;
+    auto token = entry::GetGenericToken(origin.front().first);
+    switch (mode) {
+    case kModeDef:
       if (token == GT_WHILE || token == GT_IF) {
         return Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
       }
       else if (token != GT_END) {
         return Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
       }
+      break;
+    case kModeNextCondition:
+      if (token == GT_IF || token == GT_WHILE) {
+        return Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+      }
+      else if (token != GT_ELSE || token != GT_END || token != GT_ELIF) {
+        return Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+      }
+      break;
+    case kModeCycleJump:
+      if (token != GT_END || token != GT_IF || token != GT_WHILE) {
+        return Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+      }
+    default:break;
     }
 
-    this->mode = mode;
     lambdaObjectCount = 0;
     nextInsertSubscript = 0;
     operatorTargetType = kTypeIdNull;

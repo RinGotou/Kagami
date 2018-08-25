@@ -311,6 +311,7 @@ namespace kagami {
         msg.SetObject(obj, "__result");
       }
     }
+    Reset();
     return msg;
   }
 
