@@ -1,47 +1,6 @@
-#include "parser.h"
+#include "machine.h"
 
 namespace kagami {
-  namespace type {
-    map <string, ObjectPlanner> &GetPlannerBase() {
-      static map<string, ObjectPlanner> base;
-      return base;
-    }
-
-    shared_ptr<void> GetObjectCopy(Object &object) {
-      if (object.ConstructorFlag()) {
-        return object.Get();
-      }
-
-      shared_ptr<void> result = nullptr;
-      const auto option = object.GetTypeId();
-      const auto it = GetPlannerBase().find(option);
-
-      if (it != GetPlannerBase().end()) {
-        result = it->second.CreateObjectCopy(object.Get());
-      }
-      return result;
-    }
-
-    ObjectPlanner *GetPlanner(const string name) {
-      ObjectPlanner *result = nullptr;
-      const auto it       = GetPlannerBase().find(name);
-
-      if (it != GetPlannerBase().end()) {
-        result = &(it->second);
-      }
-      return result;
-    }
-
-    void AddTemplate(string name, ObjectPlanner temp) {
-      GetPlannerBase().insert(pair<string, ObjectPlanner>(name, temp));
-    }
-
-    void DisposeTemplate(const string name) {
-      const auto it = GetPlannerBase().find(name);
-      if (it != GetPlannerBase().end()) GetPlannerBase().erase(it);
-    }
-  }
-
   enum GroupTypeEnum { G_INT, G_DOUBLE, G_STR, G_NUL } ;
 
   GroupTypeEnum GetGroupType(TokenTypeEnum dataTypeA, TokenTypeEnum dataTypeB,
@@ -130,6 +89,24 @@ namespace kagami {
   Message If(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty); }
   Message Elif(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty); }
   Message While(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty); }
+
+  Message Define(ObjectMap &p) {
+    vector<string> defHead;
+    Object &id = p["id"];
+    size_t count = 0;
+    defHead.emplace_back(*static_pointer_cast<string>(id.Get()));
+
+    for (auto &unit : p) {
+      if (unit.first == "arg" + to_string(count)) {
+        string str = *static_pointer_cast<string>(unit.second.Get());
+        defHead.emplace_back(str);
+        count++;
+      }
+    }
+
+    string defHeadStr = Kit::CombineStringVector(defHead);
+    return Message(kStrEmpty, kCodeDefineSign, defHeadStr);
+  }
 
   Message WriteLog(ObjectMap &p) {
     Message result;
@@ -282,7 +259,7 @@ namespace kagami {
 
   Message Print(ObjectMap &p) {
     Message result;
-    auto object = p["object"];
+    auto &object = p["object"];
     auto errorMsg = []() {
       std::cout << "You can't print this object." << std::endl;
     };
@@ -347,6 +324,7 @@ namespace kagami {
     AddGenericEntry(GT_LSELF_DEC, Entry(LeftSelfDecreament, "object", GT_LSELF_DEC));
     AddGenericEntry(GT_RSELF_INC, Entry(RightSelfIncreament, "object", GT_RSELF_INC));
     AddGenericEntry(GT_RSELF_DEC, Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
+    AddGenericEntry(GT_DEF, Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
   }
 
   void Activiate() {

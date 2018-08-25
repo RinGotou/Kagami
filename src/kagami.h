@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "machine.h"
 
 namespace kagami {
   /*Core Class
