@@ -18,6 +18,32 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\basic_string.h" />
+    <ClInclude Include="..\..\src\common.h" />
+    <ClInclude Include="..\..\src\entry.h" />
+    <ClInclude Include="..\..\src\kagami.h" />
+    <ClInclude Include="..\..\src\kit.h" />
+    <ClInclude Include="..\..\src\list.h" />
+    <ClInclude Include="..\..\src\message.h" />
+    <ClInclude Include="..\..\src\object.h" />
+    <ClInclude Include="..\..\src\machine.h" />
+    <ClInclude Include="..\..\src\processor.h" />
+    <ClInclude Include="..\..\src\template.h" />
+    <ClInclude Include="..\..\src\trace.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\component.cpp" />
+    <ClCompile Include="..\..\src\entry.cpp" />
+    <ClCompile Include="..\..\src\kagami.cpp" />
+    <ClCompile Include="..\..\src\kit.cpp" />
+    <ClCompile Include="..\..\src\message.cpp" />
+    <ClCompile Include="..\..\src\object.cpp" />
+    <ClCompile Include="..\..\src\machine.cpp" />
+    <ClCompile Include="..\..\src\processor.cpp" />
+    <ClCompile Include="..\..\src\template.cpp" />
+    <ClCompile Include="..\..\src\trace.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{1121773E-6D40-4532-88EF-6E8FE6D7EB81}</ProjectGuid>
@@ -139,27 +165,6 @@
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\src\entry.h" />
-    <ClInclude Include="..\..\src\kagami.h" />
-    <ClInclude Include="..\..\src\common.h" />
-    <ClInclude Include="..\..\src\kit.h" />
-    <ClInclude Include="..\..\src\list.h" />
-    <ClInclude Include="..\..\src\message.h" />
-    <ClInclude Include="..\..\src\object.h" />
-    <ClInclude Include="..\..\src\parser.h" />
-    <ClInclude Include="..\..\src\template.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\src\basicutility.cpp" />
-    <ClCompile Include="..\..\src\entry.cpp" />
-    <ClCompile Include="..\..\src\kagami.cpp" />
-    <ClCompile Include="..\..\src\kit.cpp" />
-    <ClCompile Include="..\..\src\message.cpp" />
-    <ClCompile Include="..\..\src\object.cpp" />
-    <ClCompile Include="..\..\src\parser.cpp" />
-    <ClCompile Include="..\..\src\template.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

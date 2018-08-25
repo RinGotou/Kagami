@@ -1,30 +1,6 @@
-//#include <iostream>
-#include <ctime>
-#ifndef _NO_CUI_
-#include <iostream>
-#endif
-#include "parser.h"
+#include "processor.h"
 
 namespace kagami {
-  namespace trace {
-    vector<log_t> &GetLogger() {
-      static vector<log_t> base;
-      return base;
-    }
-
-    void Log(Message msg) {
-      auto now = time(nullptr);
-#if defined(_WIN32) && defined(_MSC_VER)
-      char nowtime[30] = { ' ' };
-      ctime_s(nowtime, sizeof(nowtime), &now);
-      GetLogger().emplace_back(log_t(string(nowtime), msg));
-#else
-      string nowtime(ctime(&now));
-      GetLogger().emplace_back(log_t(nowtime, msg));
-#endif
-    }
-  }
-
   BasicTokenEnum GetBasicToken(string src) {
     if (src == "=")   return TOKEN_EQUAL;
     if (src == ",")   return TOKEN_COMMA;
@@ -37,272 +13,6 @@ namespace kagami {
     if (src == "++")  return TOKEN_SELFOP;
     if (src == "--")  return TOKEN_SELFOP;
     return TOKEN_OTHERS;
-  }
-
-  bool GetBooleanValue(string src) {
-    if (src == kStrTrue) return true;
-    if (src == kStrFalse) return false;
-    if (src == "0" || src.empty()) return false;
-    return true;
-  }
-
-  ScriptMachine::ScriptMachine(const char *target) {
-    string temp;
-    end = false;
-    isTerminal = false;
-    health = true;
-    current = 0;
-    endIdx = 0;
-    size_t subscript = 0;
-
-    stream.open(target, std::ios::in);
-    if (stream.good()) {
-      while (!stream.eof()) {
-        std::getline(stream, temp);
-        if (!IsBlankStr(temp) && temp.front() != '#') {
-          storage.push_back(Processor().Build(temp).SetIndex(subscript));
-        }
-        subscript++;
-      }
-    }
-    stream.close();
-  }
-
-  void ScriptMachine::ConditionRoot(bool value) {
-    modeStack.push(currentMode);
-    if (value == true) {
-      entry::CreateManager();
-      currentMode = kModeCondition;
-      conditionStack.push(true);
-    }
-    else {
-      currentMode = kModeNextCondition;
-      conditionStack.push(false);
-    }
-  }
-
-  void ScriptMachine::ConditionBranch(bool value) {
-    if (!conditionStack.empty()) {
-      if (conditionStack.top() == false && currentMode == kModeNextCondition
-        && value == true) {
-        entry::CreateManager();
-        currentMode = kModeCondition;
-        conditionStack.top() = true;
-      }
-    }
-    else {
-      //msg.combo
-      health = false;
-    }
-  }
-
-  void ScriptMachine::ConditionLeaf() {
-    if (!conditionStack.empty()) {
-      if (conditionStack.top() == true) {
-        currentMode = kModeNextCondition;
-      }
-      else {
-        entry::CreateManager();
-        conditionStack.top() = true;
-        currentMode = kModeCondition;
-      }
-    }
-    else {
-      //msg.combo
-      health = false;
-    }
-  }
-
-  void ScriptMachine::HeadSign(bool value, bool selfObjectManagement) {
-    if (cycleNestStack.empty()) {
-      modeStack.push(currentMode);
-      if (!selfObjectManagement) entry::CreateManager();
-    }
-    else {
-      if (cycleNestStack.top() != current - 1) {
-        modeStack.push(currentMode);
-        if (!selfObjectManagement) entry::CreateManager();
-      }
-    }
-    if (value == true) {
-      currentMode = kModeCycle;
-      if (cycleNestStack.empty()) {
-        cycleNestStack.push(current - 1);
-      }
-      else if (cycleNestStack.top() != current - 1) {
-        cycleNestStack.push(current - 1);
-      }
-    }
-    else if (value == false) {
-      currentMode = kModeCycleJump;
-      if (!cycleTailStack.empty()) {
-        current = cycleTailStack.top();
-      }
-    }
-    else {
-      health = false;
-    }
-  }
-
-  void ScriptMachine::TailSign() {
-    if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
-      conditionStack.pop();
-      currentMode = modeStack.top();
-      modeStack.pop();
-      entry::DisposeManager();
-    }
-    if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
-      switch (currentMode) {
-      case kModeCycle:
-        if (cycleTailStack.empty() || cycleTailStack.top() != current - 1) {
-          cycleTailStack.push(current - 1);
-        }
-        current = cycleNestStack.top();
-        entry::GetCurrentManager().clear();
-        break;
-      case kModeCycleJump:
-        currentMode = modeStack.top();
-        modeStack.pop();
-        cycleNestStack.pop();
-        if (!cycleTailStack.empty()) cycleTailStack.pop();
-        entry::DisposeManager();
-        break;
-      default:break;
-      }
-    }
-  }
-
-  bool ScriptMachine::IsBlankStr(string target) {
-    if (target == kStrEmpty || target.size() == 0) return true;
-    for (const auto unit : target) {
-      if (unit != '\n' && unit != ' ' && unit != '\t' && unit != '\r') {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  Message ScriptMachine::Run() {
-    Message result;
-
-    currentMode = kModeNormal;
-    nestHeadCount = 0;
-    current = 0;
-    health = true;
-
-    if (storage.empty()) return result;
-
-    entry::CreateManager();
-
-    //Main state machine
-    while (current < storage.size()) {
-      if (!health) break;
-
-      result = storage[current].Activiate(currentMode);
-      const auto value = result.GetValue();
-      const auto code  = result.GetCode();
-      const auto selfObjectManagement = storage[current].IsSelfObjectManagement();
-
-      if (value == kStrFatalError) {
-        trace::Log(result.SetIndex(storage[current].GetIndex()));
-        break;
-      }
-
-      if (value == kStrWarning) {
-        trace::Log(result.SetIndex(storage[current].GetIndex()));
-      }
-      //TODO:return
-
-      switch (code) {
-      case kCodeConditionRoot:
-        ConditionRoot(GetBooleanValue(value)); 
-        break;
-      case kCodeConditionBranch:
-        if (nestHeadCount > 0) break;
-        ConditionBranch(GetBooleanValue(value));
-        break;
-      case kCodeConditionLeaf:
-        if (nestHeadCount > 0) break;
-        ConditionLeaf();
-        break;
-      case kCodeHeadSign:
-        HeadSign(GetBooleanValue(value), selfObjectManagement);
-        break;
-      case kCodeHeadPlaceholder:
-        nestHeadCount++;
-        break;
-      case kCodeTailSign:
-        if (nestHeadCount > 0) {
-          nestHeadCount--;
-          break;
-        }
-        TailSign();
-        break;
-      default:break;
-      }
-      ++current;
-    }
-
-    entry::DisposeManager();
-
-    return result;
-  }
-
-  void ScriptMachine::Terminal() {
-    Message msg;
-    string buf;
-    string head = kStrNormalArrow;
-    Processor processor;
-    bool subProcess = false;
-    bool skip = false;
-
-    entry::CreateManager();
-
-    while (msg.GetCode() != kCodeQuit) {
-      msg = Message();
-      std::cout << head;
-      std::getline(std::cin, buf);
-      if (buf.empty()) continue;
-      processor.Build(buf);
-      auto tokenValue = entry::GetGenericToken(processor.GetFirstToken().first);
-      switch (tokenValue) {
-      case GT_IF:
-      case GT_WHILE:
-      case GT_FOR:
-        subProcess = true;
-        head = kStrDotGroup;
-        break;
-      case GT_END:
-        subProcess = false;
-        skip = true;
-        storage.emplace_back(processor);
-        head = kStrNormalArrow;
-        msg = this->Run();
-        Kit().CleanupVector(storage);
-        //storage.clear();
-        current = 0;
-        break;
-      case GT_DEF:
-        //
-        break;
-      default:
-        break;
-      }
-      if (subProcess) {
-        storage.emplace_back(processor);
-      }
-      else {
-        if(!skip) msg = processor.Activiate();
-      }
-
-      if (msg.GetCode() < kCodeSuccess) {
-        std::cout << msg.GetDetail() << std::endl;
-        trace::Log(msg);
-      }
-      if (skip == true) skip = false;
-    }
-
-    entry::DisposeManager();
   }
 
   Processor &Processor::Build(string target) {
@@ -351,7 +61,7 @@ namespace kagami {
       currentChar = data[count];
       if (delaySuspend) stringProcessing = false;
       if (currentChar == '\'' && forwardChar != '\\') {
-        if (!stringProcessing 
+        if (!stringProcessing
           && Kit::GetTokenType(current) == TokenTypeEnum::T_BLANK) {
           current.clear();
         }
@@ -396,7 +106,7 @@ namespace kagami {
       current = origin[count];
       if (!stringProcessing) {
         if (current == ".") {
-          if (kagami::Kit::IsInteger(forward) 
+          if (kagami::Kit::IsInteger(forward)
             && kagami::Kit::IsInteger(next)) {
             output.back().append(current);
             appendingOnce = true;
@@ -419,10 +129,10 @@ namespace kagami {
           if (kagami::Kit::GetTokenType(forward) == TokenTypeEnum::T_SYMBOL &&
             forward != "]" && forward != ")" &&
             forward != "++" && forward != "--" &&
-              forward != "'") {
-              errorString = "Illegal comma location.";
-              health = false;
-              break;
+            forward != "'") {
+            errorString = "Illegal comma location.";
+            health = false;
+            break;
           }
         }
       }
@@ -509,6 +219,7 @@ namespace kagami {
 
     const size_t size = ent.GetParmSize();
     auto args = ent.GetArguments();
+    auto mode = ent.GetArgumentMode();
     bool reversed = entry::IsOperatorToken(ent.GetTokenEnum()) && needReverse;
 
     idx = size;
@@ -516,17 +227,33 @@ namespace kagami {
       if (reversed) parms.push_back(item.back());
       else parms.push_front(item.back());
       item.pop_back();
-      idx--;
+      if (mode !=kCodeAutoSize) idx--;
     }
     if (!item.empty() && item.back().IsPlaceholder()) item.pop_back();
 
     idx = 0;
-    const size_t parmSize = parms.size();
-    while (idx < size) {
-      if (idx >= parmSize && ent.GetArgumentMode() == kCodeAutoFill) break;
-      objMap.insert(pair<string, Object>(args[idx], parms[idx]));
-      ++idx;
+    if (mode == kCodeAutoSize) {
+      const size_t parmSize = size - 1;
+      while (idx < parmSize) {
+        objMap.insert(pair<string, Object>(args[idx], parms[idx]));
+        ++idx;
+      }
+      string argGroupHead = args.back();
+      size_t count = 0;
+      while (idx < parms.size()) {
+        objMap.insert(pair<string, Object>(argGroupHead + to_string(count), parms[idx]));
+        idx++;
+        count++;
+      }
     }
+    else {
+      while (idx < size) {
+        if (idx >= parms.size() && ent.GetArgumentMode() == kCodeAutoFill) break;
+        objMap.insert(pair<string, Object>(args[idx], parms[idx]));
+        ++idx;
+      }
+    }
+
 
     auto flag = ent.GetFlag();
     if (flag == kFlagMethod) {
@@ -534,35 +261,7 @@ namespace kagami {
       item.pop_back();
     }
 
-    GenericTokenEnum headEnt = symbol.front().GetTokenEnum(),
-      currentEnum = ent.GetTokenEnum();
-    switch (mode) {
-    case kModeCycleJump:
-      if (currentEnum == GT_END || headEnt == GT_IF || headEnt == GT_WHILE) {
-        msg = ent.Start(objMap);
-      }
-      else {
-        msg.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
-      }
-      break;
-    case kModeNextCondition:
-      if (headEnt == GT_IF || headEnt == GT_WHILE) {
-        msg.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
-      }
-      else if (currentEnum == GT_ELSE || currentEnum == GT_END || headEnt == GT_ELIF) {
-        msg = ent.Start(objMap);
-      }
-      else {
-        msg.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
-      }
-      break;
-    case kModeCycle:
-    case kModeCondition:
-    case kModeNormal:
-    default:
-      msg = ent.Start(objMap);
-    }
-
+    msg = ent.Start(objMap);
     const auto code = msg.GetCode();
     const auto value = msg.GetValue();
     const auto detail = msg.GetDetail();
@@ -593,7 +292,6 @@ namespace kagami {
   void Processor::EqualMark() {
     if (!item.empty()) {
       bool ref = item.back().IsRef();
-      //auto typeId = item.back().GetTypeId();
       if (!ref) {
         symbol.push_back(entry::Order(kStrBind));
       }
@@ -612,6 +310,7 @@ namespace kagami {
   }
 
   void Processor::LeftBracket(Message &msg) {
+    if (defineLine) return;
     if (forwardToken.second != TokenTypeEnum::T_GENERIC) {
       symbol.emplace_back(kStrNop);
     }
@@ -655,14 +354,14 @@ namespace kagami {
           tempObject.pop_front();
         }
       }
-      else if (checked 
-        && symbol.back().GetTokenEnum() != GT_NUL 
+      else if (checked
+        && symbol.back().GetTokenEnum() != GT_NUL
         && symbol[symbol.size() - 2].GetTokenEnum() != GT_NUL) {
         if (symbol.back().GetPriority() != symbol[symbol.size() - 2].GetPriority()) {
           checked = false;
         }
       }
-      
+
       result = TakeAction(msg);
       if (!result) break;
     }
@@ -720,9 +419,6 @@ namespace kagami {
   bool Processor::FunctionAndObject(Message &msg) {
     bool function = false;
     bool result = true;
-    bool defLine = false;
-
-    if (currentToken.first == kStrDef) defLine = true;
 
     if (dotOperator) {
       string methods = item.back().GetMethods();
@@ -742,7 +438,7 @@ namespace kagami {
       dotOperator = false;
     }
     else {
-      if (defLine) {
+      if (defineLine) {
         item.push_back(Object()
           .Manage(currentToken.first)
           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
@@ -778,6 +474,13 @@ namespace kagami {
             auto ent = entry::Order(currentToken.first);
             symbol.push_back(ent);
           }
+          else if (currentToken.first == kStrDef) {
+            auto ent = entry::Order(currentToken.first);
+            defineLine = true;
+            symbol.emplace_back(ent);
+            symbol.emplace_back("(");
+            item.push_back(Object().SetPlaceholder());
+          }
           else {
             Object *object = entry::FindObject(currentToken.first);
             if (object != nullptr) {
@@ -794,12 +497,17 @@ namespace kagami {
       }
     }
 
-    //TODO:function definition checking
-    if (function && nextToken.first != "(" 
+    if (function && nextToken.first != "("
       && currentToken.first != kStrElse && currentToken.first != kStrEnd) {
       this->health = false;
       result = false;
       errorString = "Left bracket after function is missing";
+    }
+
+    if (defineLine && forwardToken.first == kStrDef && nextToken.first != "(") {
+      this->health = false;
+      result = false;
+      errorString = "Wrong definition pattern";
     }
 
     return result;
@@ -864,6 +572,31 @@ namespace kagami {
     }
 
     this->mode = mode;
+    auto token = entry::GetGenericToken(origin.front().first);
+    switch (mode) {
+    case kModeDef:
+      if (token == GT_WHILE || token == GT_IF) {
+        return Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+      }
+      else if (token != GT_END) {
+        return Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+      }
+      break;
+    case kModeNextCondition:
+      if (token == GT_IF || token == GT_WHILE) {
+        return Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+      }
+      else if (token != GT_ELSE || token != GT_END || token != GT_ELIF) {
+        return Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+      }
+      break;
+    case kModeCycleJump:
+      if (token != GT_END || token != GT_IF || token != GT_WHILE) {
+        return Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+      }
+    default:break;
+    }
+
     lambdaObjectCount = 0;
     nextInsertSubscript = 0;
     operatorTargetType = kTypeIdNull;
@@ -871,7 +604,6 @@ namespace kagami {
     dotOperator = false;
     needReverse = false;
     subscriptProcessing = false;
-    functionLine = false;
     defineLine = false;
 
     for (size_t i = 0; i < size; ++i) {
@@ -919,7 +651,7 @@ namespace kagami {
     if (!health && result.GetDetail() == kStrEmpty) {
       result.combo(kStrFatalError, kCodeBadExpression, errorString);
     }
-      
+
     item.clear();
     symbol.clear();
     nextToken = Token();
@@ -929,4 +661,3 @@ namespace kagami {
     return result;
   }
 }
-
