@@ -108,6 +108,11 @@ namespace kagami {
     return Message(kStrEmpty, kCodeDefineSign, defHeadStr);
   }
 
+  Message ReturnSign(ObjectMap &p) {
+    entry::GetCurrentManager().Add(kStrRetValue, p["value"]);
+    return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
+  }
+
   Message WriteLog(ObjectMap &p) {
     Message result;
     auto data = p["data"];
@@ -325,6 +330,7 @@ namespace kagami {
     AddGenericEntry(GT_RSELF_INC, Entry(RightSelfIncreament, "object", GT_RSELF_INC));
     AddGenericEntry(GT_RSELF_DEC, Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
     AddGenericEntry(GT_DEF, Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
+    AddGenericEntry(GT_RETURN, Entry(ReturnSign, "value", GT_RETURN));
   }
 
   void Activiate() {

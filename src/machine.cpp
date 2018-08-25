@@ -255,7 +255,10 @@ namespace kagami {
       if (value == kStrWarning) {
         trace::Log(result.SetIndex(storage[current].GetIndex()));
       }
-      //TODO:return
+
+      if (value == kStrStopSign) {
+        break;
+      }
 
       switch (code) {
       case kCodeDefineSign:
