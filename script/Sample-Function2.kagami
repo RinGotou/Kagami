@@ -1,0 +1,11 @@
+def Greet(name)
+	print('Hello,' + name)
+end
+
+def Calc(num)
+	result = num + 20
+	print('result is ' + result)
+end
+
+Greet(input('What is your name?> '))
+Calc(convert(input('Input a number> ')))

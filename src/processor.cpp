@@ -254,7 +254,6 @@ namespace kagami {
       }
     }
 
-
     auto flag = ent.GetFlag();
     if (flag == kFlagMethod) {
       objMap.insert(pair<string, Object>(kStrObject, item.back()));
