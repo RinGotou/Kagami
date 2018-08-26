@@ -1,0 +1,35 @@
+ar0 = array(3,'')
+
+def Calc(numA,numB)
+	return(numA + numB)
+end
+
+def Loop(count)
+	i = 0
+	while(i < count)
+		print('Loop Count' + i)
+		i++
+	end
+end
+
+def PrintArray()
+	i = 0
+	while(i < 3)
+		print(ar0[i])
+		i++
+	end
+end
+
+def SetArray(idx,str)
+	ar0[idx] = str
+end
+
+result = Calc(3,7)
+Loop(result)
+SetArray(0,'Once we held hands at the ticket wicket The same old noise, the brand new wind')
+SetArray(1,'Even though I was supposed to cheerfully see you off')
+SetArray(2,'I was just watching your back as I wasn\'t able to smile')
+PrintArray()
+
+
+

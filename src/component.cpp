@@ -1,4 +1,7 @@
 #include "machine.h"
+#ifndef _NO_CUI_
+#include <iostream>
+#endif
 
 namespace kagami {
   enum GroupTypeEnum { G_INT, G_DOUBLE, G_STR, G_NUL } ;
@@ -299,6 +302,38 @@ namespace kagami {
 #endif
   }
 
+  Message Input(ObjectMap &p) {
+    auto it = p.find("msg");
+    if (it != p.end()) {
+      string msg = *static_pointer_cast<string>(it->second.Get());
+      if (Kit::IsString(msg)) msg = Kit::GetRawString(msg);
+      std::cout << msg;
+    }
+    string buf;
+    std::getline(std::cin, buf);
+    return Message(kStrRedirect, kCodeSuccess, "'" + buf + "'");
+  }
+
+  Message Convert(ObjectMap &p) {
+    auto &str = p["object"];
+    if (str.GetTypeId() != kTypeIdRawString) {
+      return Message(kStrFatalError, kCodeBadExpression, "Cannot convert to basic type(01)");
+    }
+    Object obj;
+    string origin = *static_pointer_cast<string>(str.Get());
+    if (Kit::IsString(origin)) origin = Kit::GetRawString(origin);
+    auto type = Kit::GetTokenType(origin);
+    if (type == T_NUL || type == T_GENERIC) {
+      return Message(kStrFatalError, kCodeBadExpression, "Cannot convert to basic type(02)");
+    }
+    obj.Manage(origin)
+      .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+      .SetTokenType(type);
+    Message msg;
+    msg.SetObject(obj, "__result");
+    return msg;
+  }
+
   Message Quit(ObjectMap &p) {
     Message result(kStrEmpty, kCodeQuit, kStrEmpty);
     return result;
@@ -330,7 +365,7 @@ namespace kagami {
     AddGenericEntry(GT_RSELF_INC, Entry(RightSelfIncreament, "object", GT_RSELF_INC));
     AddGenericEntry(GT_RSELF_DEC, Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
     AddGenericEntry(GT_DEF, Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
-    AddGenericEntry(GT_RETURN, Entry(ReturnSign, "value", GT_RETURN));
+    AddGenericEntry(GT_RETURN, Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
   }
 
   void Activiate() {
@@ -338,6 +373,8 @@ namespace kagami {
     AddGenEntries();
     InitPlanners();
 
+    AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
+    AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
     AddEntry(Entry(Print, kCodeNormalParm, "object", "print"));
     AddEntry(Entry(TimeReport, kCodeNormalParm, "", "time"));
     AddEntry(Entry(Quit, kCodeNormalParm, "", "quit"));

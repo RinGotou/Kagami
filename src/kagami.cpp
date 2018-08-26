@@ -85,7 +85,5 @@ int main(int argc, char **argv) {
 #endif
 #endif
   scriptCore.PrintEvents();
-  kagami::entry::DisposeManager();
-
   return 0;
 }
