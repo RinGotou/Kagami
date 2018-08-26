@@ -8,9 +8,7 @@ namespace kagami {
   The most important part of script processor.Original string will be tokenized and
   parsed here.Processed data will be delivered to entry provider.
   */
-  class Processor {
-    bool health;
-    vector<Token> origin;
+  using ProcCtlBlk = struct {
     deque<Object> item;
     deque<Entry> symbol;
     bool insertBetweenObject, dotOperator, needReverse,
@@ -19,26 +17,29 @@ namespace kagami {
     Token nextToken;
     Token forwardToken;
     string operatorTargetType;
+    size_t mode, nextInsertSubscript, lambdaObjectCount;
+  };
+
+  class Processor {
+    bool health;
+    vector<Token> origin;
+    size_t index;
     string errorString;
-    size_t mode, nextInsertSubscript, lambdaObjectCount, index;
 
-    bool TakeAction(Message &msg);
-    static Object *GetObj(string name);
-    void EqualMark();
-    bool Colon();
-    void LeftBracket(Message &msg);
-    bool RightBracket(Message &msg);
-    bool LeftSqrBracket(Message &msg);
-    bool SelfOperator(Message &msg);
-    bool FunctionAndObject(Message &msg);
-    void OtherToken();
-    void OtherSymbol();
-    void FinalProcessing(Message &msg);
+    bool TakeAction(Message &msg, ProcCtlBlk *blk);
+    static Object *GetObj(string name, ProcCtlBlk *blk);
+    void EqualMark(ProcCtlBlk *blk);
+    bool Colon(ProcCtlBlk *blk);
+    void LeftBracket(Message &msg, ProcCtlBlk *blk);
+    bool RightBracket(Message &msg, ProcCtlBlk *blk);
+    bool LeftSqrBracket(Message &msg, ProcCtlBlk *blk);
+    bool SelfOperator(Message &msg, ProcCtlBlk *blk);
+    bool FunctionAndObject(Message &msg, ProcCtlBlk *blk);
+    void OtherToken(ProcCtlBlk *blk);
+    void OtherSymbol(ProcCtlBlk *blk);
+    void FinalProcessing(Message &msg, ProcCtlBlk *blk);
   public:
-    Processor() : health(false), insertBetweenObject(false),
-      dotOperator(false), defineLine(false), subscriptProcessing(false),
-      mode(0), nextInsertSubscript(0), lambdaObjectCount(0), index(0) {}
-
+    Processor() : health(false), index(0) {}
     Processor &SetIndex(size_t idx) {
       this->index = idx;
       return *this;
@@ -50,6 +51,5 @@ namespace kagami {
     size_t GetIndex() const { return index; }
     Token GetFirstToken() const { return origin.front(); }
     bool IsHealth() const { return health; }
-    string GetErrorString() const { return errorString; }
   };
 }
