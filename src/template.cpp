@@ -118,7 +118,7 @@ namespace kagami {
 
   Message PrintRawString(ObjectMap &p) {
     Message result;
-    auto object = p.at("object");
+    auto &object = p.at("object");
     string msg;
     auto needConvert = false;
 
