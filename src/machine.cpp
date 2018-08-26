@@ -315,6 +315,16 @@ namespace kagami {
         msg.SetObject(obj, "__result");
       }
     }
+    Object *funcSign = entry::GetCurrentManager().Find(kStrUserFunc);
+    string funcId = *static_pointer_cast<string>(p[kStrUserFunc].Get());
+    while (funcSign == nullptr) {
+      entry::DisposeManager();
+      funcSign = entry::GetCurrentManager().Find(kStrUserFunc);
+      if (funcSign != nullptr) {
+        string value = *static_pointer_cast<string>(p[kStrUserFunc].Get());
+        if (value == funcId) break;
+      }
+    }
     entry::DisposeManager();
     Reset();
     return msg;

@@ -268,10 +268,10 @@ namespace kagami {
 
     if (code == kCodeObject) {
       auto object = msg.GetObj();
-      item.push_back(object);
+      item.emplace_back(object);
     }
     else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeHeadPlaceholder) {
-      item.push_back(Object()
+      item.emplace_back(Object()
         .Manage(detail)
         .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
         .SetTokenType(kagami::Kit::GetTokenType(detail)));
@@ -616,10 +616,9 @@ namespace kagami {
         nextToken = Token(kStrNull, TokenTypeEnum::T_NUL);
 
       result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
-      const auto tokenTypeEnum = currentToken.second;
-      const auto tokenValue = currentToken.first;
+      auto tokenTypeEnum = currentToken.second;
       if (tokenTypeEnum == TokenTypeEnum::T_SYMBOL) {
-        BasicTokenEnum value = GetBasicToken(tokenValue);
+        BasicTokenEnum value = GetBasicToken(currentToken.first);
         switch (value) {
         case TOKEN_EQUAL: EqualMark(); break;
         case TOKEN_COMMA: break;

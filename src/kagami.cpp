@@ -85,6 +85,5 @@ int main(int argc, char **argv) {
 #endif
 #endif
   scriptCore.PrintEvents();
-
   return 0;
 }
