@@ -11,39 +11,39 @@
 #endif
 
 namespace kagami {
-  class Machine {
-    std::ifstream stream;
+  using MachCtlBlk = struct {
     size_t current;
-    vector<Processor> storage;
-    vector<string> parameters;
     stack<size_t> cycleNestStack, cycleTailStack, modeStack;
     stack<bool> conditionStack;
     size_t currentMode;
     int nestHeadCount;
-    bool health;
-    bool isTerminal;
-    size_t endIdx;
     vector<string> defHead;
     size_t defStart;
+  };
 
-    void DefineSign(string head);
-    void ConditionRoot(bool value);
-    void ConditionBranch(bool value);
-    void ConditionLeaf();
-    void HeadSign(bool value);
-    void TailSign();
-    void MakeFunction(size_t start, size_t end);
+  class Machine {
+    vector<Processor> storage;
+    vector<string> parameters;
+    bool health;
+    bool isTerminal;
+
+    void DefineSign(string head, MachCtlBlk *blk);
+    void ConditionRoot(bool value, MachCtlBlk *blk);
+    void ConditionBranch(bool value, MachCtlBlk *blk);
+    void ConditionLeaf(MachCtlBlk *blk);
+    void HeadSign(bool value, MachCtlBlk *blk);
+    void TailSign(MachCtlBlk *blk);
+
+    void MakeFunction(size_t start, size_t end, MachCtlBlk *blk);
     static bool IsBlankStr(string target);
   public:
-    Machine() : current(0), currentMode(kModeNormal),
-    nestHeadCount(0), health(false), isTerminal(true) {}
+    Machine() : health(false), isTerminal(true) {}
     Machine(Machine &machine) {
       this->storage = machine.storage;
       this->parameters = machine.parameters;
     }
     Machine(Machine &&machine) : Machine(machine) {}
-    Machine(vector<Processor> storage) : current(0), currentMode(kModeNormal),
-      nestHeadCount(0), health(true), isTerminal(true), endIdx(0) {
+    Machine(vector<Processor> storage) : health(true), isTerminal(true) {
       this->storage = storage;
     }
     void operator=(Machine &machine){
@@ -60,7 +60,7 @@ namespace kagami {
     Message Run(bool createManager = true);
     Message RunAsFunction(ObjectMap &p);
     void Terminal();
-    void Reset();
+    void Reset(MachCtlBlk *blk);
 
     bool GetHealth() const { return health; }
   };
