@@ -29,10 +29,9 @@ namespace kagami {
     Message msg;
     Object &funcId = p[kStrUserFunc];
     string id = *static_pointer_cast<string>(funcId.Get());
-    Machine *machine = GetFunction(id);
-    if (machine != nullptr) {
-      Machine machCopy(*machine);
-      msg = machCopy.RunAsFunction(p);
+    Machine *mach = GetFunction(id);
+    if (mach != nullptr) {
+      msg = mach->RunAsFunction(p);
     }
     return msg;
   }
@@ -44,11 +43,13 @@ namespace kagami {
     return true;
   }
 
-  void Machine::MakeFunction(size_t start,size_t end) {
+  void Machine::MakeFunction(size_t start,size_t end, MachCtlBlk *blk) {
     if (start > end) return;
+    auto &defHead = blk->defHead;
     string id = defHead[0];
     vector<string> parms;
     vector<Processor> proc;
+
     for (size_t i = 1; i < defHead.size(); ++i) {
       parms.push_back(defHead[i]);
     }
@@ -63,24 +64,21 @@ namespace kagami {
     return *this;
   }
 
-  void Machine::Reset() {
-    current = 0;
-    currentMode = kModeNormal;
-    nestHeadCount = 0;
+  void Machine::Reset(MachCtlBlk *blk) {
     isTerminal = false;
     Kit().CleanupVector(storage);
-    while (!cycleNestStack.empty()) cycleNestStack.pop();
-    while (!cycleTailStack.empty()) cycleTailStack.pop();
-    while (!modeStack.empty()) modeStack.pop();
-    while (!conditionStack.empty()) conditionStack.pop();
+    while (!blk->cycleNestStack.empty()) blk->cycleNestStack.pop();
+    while (!blk->cycleTailStack.empty()) blk->cycleTailStack.pop();
+    while (!blk->modeStack.empty()) blk->modeStack.pop();
+    while (!blk->conditionStack.empty()) blk->conditionStack.pop();
+    delete blk;
   }
 
   Machine::Machine(const char *target) {
+    std::ifstream stream;
     string temp;
     isTerminal = false;
     health = true;
-    current = 0;
-    endIdx = 0;
     size_t subscript = 0;
 
     stream.open(target, std::ios::in);
@@ -88,7 +86,7 @@ namespace kagami {
       while (!stream.eof()) {
         std::getline(stream, temp);
         if (!IsBlankStr(temp) && temp.front() != '#') {
-          storage.push_back(Processor().Build(temp).SetIndex(subscript));
+          storage.emplace_back(Processor().Build(temp).SetIndex(subscript));
         }
         subscript++;
       }
@@ -96,38 +94,38 @@ namespace kagami {
     stream.close();
   }
 
-  void Machine::DefineSign(string head) {
-    defHead = Kit::BuildStringVector(head);
-    if (currentMode != kModeDef && currentMode == kModeNormal) {
-      currentMode = kModeDef;
-      modeStack.push(kModeNormal);
-      defStart = current + 1;
+  void Machine::DefineSign(string head, MachCtlBlk *blk) {
+    blk->defHead = Kit::BuildStringVector(head);
+    if (blk->currentMode != kModeDef && blk->currentMode == kModeNormal) {
+      blk->currentMode = kModeDef;
+      blk->modeStack.push(kModeNormal);
+      blk->defStart = blk->current + 1;
     }
-    else if (currentMode != kModeNormal) {
+    else if (blk->currentMode != kModeNormal) {
       //?
     }
   }
 
-  void Machine::ConditionRoot(bool value) {
-    modeStack.push(currentMode);
+  void Machine::ConditionRoot(bool value, MachCtlBlk *blk) {
+    blk->modeStack.push(blk->currentMode);
     entry::CreateManager();
     if (value == true) {
-      currentMode = kModeCondition;
-      conditionStack.push(true);
+      blk->currentMode = kModeCondition;
+      blk->conditionStack.push(true);
     }
     else {
-      currentMode = kModeNextCondition;
-      conditionStack.push(false);
+      blk->currentMode = kModeNextCondition;
+      blk->conditionStack.push(false);
     }
   }
 
-  void Machine::ConditionBranch(bool value) {
-    if (!conditionStack.empty()) {
-      if (conditionStack.top() == false && currentMode == kModeNextCondition
+  void Machine::ConditionBranch(bool value, MachCtlBlk *blk) {
+    if (!blk->conditionStack.empty()) {
+      if (blk->conditionStack.top() == false && blk->currentMode == kModeNextCondition
         && value == true) {
         entry::CreateManager();
-        currentMode = kModeCondition;
-        conditionStack.top() = true;
+        blk->currentMode = kModeCondition;
+        blk->conditionStack.top() = true;
       }
     }
     else {
@@ -136,15 +134,15 @@ namespace kagami {
     }
   }
 
-  void Machine::ConditionLeaf() {
-    if (!conditionStack.empty()) {
-      if (conditionStack.top() == true) {
-        currentMode = kModeNextCondition;
+  void Machine::ConditionLeaf(MachCtlBlk *blk) {
+    if (!blk->conditionStack.empty()) {
+      if (blk->conditionStack.top() == true) {
+        blk->currentMode = kModeNextCondition;
       }
       else {
         entry::CreateManager();
-        conditionStack.top() = true;
-        currentMode = kModeCondition;
+        blk->conditionStack.top() = true;
+        blk->currentMode = kModeCondition;
       }
     }
     else {
@@ -153,30 +151,30 @@ namespace kagami {
     }
   }
 
-  void Machine::HeadSign(bool value) {
-    if (cycleNestStack.empty()) {
-      modeStack.push(currentMode);
+  void Machine::HeadSign(bool value, MachCtlBlk *blk) {
+    if (blk->cycleNestStack.empty()) {
+      blk->modeStack.push(blk->currentMode);
       entry::CreateManager();
     }
     else {
-      if (cycleNestStack.top() != current - 1) {
-        modeStack.push(currentMode);
+      if (blk->cycleNestStack.top() != blk->current - 1) {
+        blk->modeStack.push(blk->currentMode);
         entry::CreateManager();
       }
     }
     if (value == true) {
-      currentMode = kModeCycle;
-      if (cycleNestStack.empty()) {
-        cycleNestStack.push(current - 1);
+      blk->currentMode = kModeCycle;
+      if (blk->cycleNestStack.empty()) {
+        blk->cycleNestStack.push(blk->current - 1);
       }
-      else if (cycleNestStack.top() != current - 1) {
-        cycleNestStack.push(current - 1);
+      else if (blk->cycleNestStack.top() != blk->current - 1) {
+        blk->cycleNestStack.push(blk->current - 1);
       }
     }
     else if (value == false) {
-      currentMode = kModeCycleJump;
-      if (!cycleTailStack.empty()) {
-        current = cycleTailStack.top();
+      blk->currentMode = kModeCycleJump;
+      if (!blk->cycleTailStack.empty()) {
+        blk->current = blk->cycleTailStack.top();
       }
     }
     else {
@@ -184,33 +182,33 @@ namespace kagami {
     }
   }
 
-  void Machine::TailSign() {
-    if (currentMode == kModeDef) {
-      MakeFunction(defStart, current - 1);
-      currentMode = modeStack.top();
-      modeStack.pop();
-      Kit().CleanupVector(defHead);
+  void Machine::TailSign(MachCtlBlk *blk) {
+    if (blk->currentMode == kModeDef) {
+      MakeFunction(blk->defStart, blk->current - 1, blk);
+      blk->currentMode = blk->modeStack.top();
+      blk->modeStack.pop();
+      Kit().CleanupVector(blk->defHead);
     }
-    else if (currentMode == kModeCondition || currentMode == kModeNextCondition) {
-      conditionStack.pop();
-      currentMode = modeStack.top();
-      modeStack.pop();
+    else if (blk->currentMode == kModeCondition || blk->currentMode == kModeNextCondition) {
+      blk->conditionStack.pop();
+      blk->currentMode = blk->modeStack.top();
+      blk->modeStack.pop();
       entry::DisposeManager();
     }
-    else if (currentMode == kModeCycle || currentMode == kModeCycleJump) {
-      switch (currentMode) {
+    else if (blk->currentMode == kModeCycle || blk->currentMode == kModeCycleJump) {
+      switch (blk->currentMode) {
       case kModeCycle:
-        if (cycleTailStack.empty() || cycleTailStack.top() != current - 1) {
-          cycleTailStack.push(current - 1);
+        if (blk->cycleTailStack.empty() || blk->cycleTailStack.top() != blk->current - 1) {
+          blk->cycleTailStack.push(blk->current - 1);
         }
-        current = cycleNestStack.top();
+        blk->current = blk->cycleNestStack.top();
         entry::GetCurrentManager().clear();
         break;
       case kModeCycleJump:
-        currentMode = modeStack.top();
-        modeStack.pop();
-        cycleNestStack.pop();
-        if (!cycleTailStack.empty()) cycleTailStack.pop();
+        blk->currentMode = blk->modeStack.top();
+        blk->modeStack.pop();
+        blk->cycleNestStack.pop();
+        if (!blk->cycleTailStack.empty()) blk->cycleTailStack.pop();
         entry::DisposeManager();
         break;
       default:break;
@@ -230,10 +228,13 @@ namespace kagami {
 
   Message Machine::Run(bool createManager) {
     Message result;
+    MachCtlBlk *blk = new MachCtlBlk();
 
-    currentMode = kModeNormal;
-    nestHeadCount = 0;
-    current = 0;
+    blk->currentMode = kModeNormal;
+    blk->nestHeadCount = 0;
+    blk->current = 0;
+    blk->currentMode = kModeNormal;
+    blk->defStart = 0;
     health = true;
 
     if (storage.empty()) return result;
@@ -241,20 +242,20 @@ namespace kagami {
     if (createManager) entry::CreateManager();
 
     //Main state machine
-    while (current < storage.size()) {
+    while (blk->current < storage.size()) {
       if (!health) break;
 
-      result = storage[current].Activiate(currentMode);
+      result = storage[blk->current].Activiate(blk->currentMode);
       const auto value = result.GetValue();
       const auto code  = result.GetCode();
 
       if (value == kStrFatalError) {
-        trace::Log(result.SetIndex(storage[current].GetIndex()));
+        trace::Log(result.SetIndex(storage[blk->current].GetIndex()));
         break;
       }
 
       if (value == kStrWarning) {
-        trace::Log(result.SetIndex(storage[current].GetIndex()));
+        trace::Log(result.SetIndex(storage[blk->current].GetIndex()));
       }
 
       if (value == kStrStopSign) {
@@ -263,39 +264,39 @@ namespace kagami {
 
       switch (code) {
       case kCodeDefineSign:
-        DefineSign(result.GetDetail());
+        DefineSign(result.GetDetail(), blk);
         break;
       case kCodeConditionRoot:
-        ConditionRoot(GetBooleanValue(value)); 
+        ConditionRoot(GetBooleanValue(value), blk); 
         break;
       case kCodeConditionBranch:
-        if (nestHeadCount > 0) break;
-        ConditionBranch(GetBooleanValue(value));
+        if (blk->nestHeadCount > 0) break;
+        ConditionBranch(GetBooleanValue(value), blk);
         break;
       case kCodeConditionLeaf:
-        if (nestHeadCount > 0) break;
-        ConditionLeaf();
+        if (blk->nestHeadCount > 0) break;
+        ConditionLeaf(blk);
         break;
       case kCodeHeadSign:
-        HeadSign(GetBooleanValue(value));
+        HeadSign(GetBooleanValue(value), blk);
         break;
       case kCodeHeadPlaceholder:
-        nestHeadCount++;
+        blk->nestHeadCount++;
         break;
       case kCodeTailSign:
-        if (nestHeadCount > 0) {
-          nestHeadCount--;
+        if (blk->nestHeadCount > 0) {
+          blk->nestHeadCount--;
           break;
         }
-        TailSign();
+        TailSign(blk);
         break;
       default:break;
       }
-      ++current;
+      ++blk->current;
     }
 
     if (createManager) entry::DisposeManager();
-
+    delete blk;
     return result;
   }
 
@@ -326,7 +327,6 @@ namespace kagami {
       }
     }
     entry::DisposeManager();
-    Reset();
     return msg;
   }
 
@@ -361,8 +361,6 @@ namespace kagami {
         head = kStrNormalArrow;
         msg = this->Run();
         Kit().CleanupVector(storage);
-        //storage.clear();
-        current = 0;
         break;
       case GT_DEF:
         //
