@@ -29,6 +29,7 @@ namespace kagami {
     health = true;
 
     //PreProcessing
+    if (target.front() == '#') return *this;
     this->origin.clear();
     for (size_t count = 0; count < target.size(); ++count) {
       currentChar = target[count];
