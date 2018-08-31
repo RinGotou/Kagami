@@ -45,6 +45,7 @@ namespace kagami {
   class Object;
 
   using ObjectMap = map<string, Object>;
+  using ObjectPair = pair<string, Object>;
   using Parameter = pair<string, Object>;
   using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
   using CastFunc = pair<string, CopyCreator>;

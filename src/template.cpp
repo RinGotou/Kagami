@@ -119,6 +119,7 @@ namespace kagami {
   Message PrintRawString(ObjectMap &p) {
     Message result;
     auto &object = p.at("object");
+    bool doNotWrap = (p.find("not_wrap") != p.end());
     string msg;
     auto needConvert = false;
 
@@ -138,7 +139,8 @@ namespace kagami {
           msg.append(1, data.at(count));
         }
       }
-      std::cout << msg << std::endl;
+      std::cout << msg;
+      if (!doNotWrap) std::cout << std::endl;
     }
     return result;
   }

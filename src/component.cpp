@@ -118,7 +118,7 @@ namespace kagami {
 
   Message WriteLog(ObjectMap &p) {
     Message result;
-    auto data = p["data"];
+    auto data = p["msg"];
     ofstream ofs("kagami-script.log", std::ios::out | std::ios::app);
 
     if (data.GetTypeId() == kTypeIdRawString) {
@@ -305,9 +305,10 @@ namespace kagami {
   Message Input(ObjectMap &p) {
     auto it = p.find("msg");
     if (it != p.end()) {
-      string msg = *static_pointer_cast<string>(it->second.Get());
-      if (Kit::IsString(msg)) msg = Kit::GetRawString(msg);
-      std::cout << msg;
+      ObjectMap objMap;
+      objMap.insert(ObjectPair("not_wrap", Object()));
+      objMap.insert(ObjectPair("object", it->second));
+      Print(objMap);
     }
     string buf;
     std::getline(std::cin, buf);
@@ -373,6 +374,7 @@ namespace kagami {
     AddGenEntries();
     InitPlanners();
 
+    AddEntry(Entry(WriteLog, kCodeNormalParm, "msg", "log"));
     AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
     AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
     AddEntry(Entry(Print, kCodeNormalParm, "object", "print"));
