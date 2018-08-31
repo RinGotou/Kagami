@@ -1,0 +1,22 @@
+def PrintWithTime(msg)
+	print('[' + time() + ']' + msg)
+end
+
+def Greet(name)
+	print('Hello,' + name + '!')
+end
+
+def main()
+	print('Menu:\n1.Greet Test\n2.Time Test')
+	choice = convert(input('> '))
+	if(choice == 1)
+		Greet(input('What\'s your name? > '))
+	elif(choice == 2)
+		PrintWithTime('This is message with time head.')
+	else
+		print('Wrong item.')
+	end
+	print('Script exit.')
+end
+
+main()
