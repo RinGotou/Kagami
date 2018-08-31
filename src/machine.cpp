@@ -127,6 +127,9 @@ namespace kagami {
         blk->currentMode = kModeCondition;
         blk->conditionStack.top() = true;
       }
+      else if (blk->conditionStack.top() == true && blk->currentMode == kModeCondition) {
+        blk->currentMode = kModeNextCondition;
+      }
     }
     else {
       //msg.combo
