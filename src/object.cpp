@@ -137,7 +137,7 @@ namespace kagami {
 
   bool ObjectManager::Add(string sign, Object &source) {
     if (!CheckObject(sign)) return false;
-    base.push_back(NamedObject(sign, source));
+    base.push_back(NamedObject(sign, Object().Copy(source)));
     return true;
   }
   Object *ObjectManager::Find(string sign) {
