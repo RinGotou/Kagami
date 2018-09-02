@@ -112,7 +112,12 @@ namespace kagami {
   }
 
   Message ReturnSign(ObjectMap &p) {
-    entry::GetCurrentManager().Add(kStrRetValue, p["value"]);
+    Object &valueObj = p["value"];
+    string typeId = valueObj.GetTypeId();
+    Object obj;
+    obj.Set(valueObj.Get(), typeId)
+      .SetMethods(type::GetPlanner(typeId)->GetMethods());
+    entry::GetCurrentManager().Add(kStrRetValue, obj);
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
   }
 

@@ -211,8 +211,11 @@ namespace kagami {
 
     if (ent.GetId() == kStrNop) {
       auto rit = blk->item.rbegin();
-      while (rit != blk->item.rend() && !rit->IsPlaceholder()) rit--;
+      for (; rit != blk->item.rend(); rit++) {
+        if (rit->IsPlaceholder()) break;
+      }
       if (rit != blk->item.rend()) blk->item.erase(rit.base());
+      blk->symbol.pop_back();
       return true;
     }
 
