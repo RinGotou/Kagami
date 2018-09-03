@@ -65,7 +65,6 @@ namespace kagami {
   }
 
   void Machine::Reset(MachCtlBlk *blk) {
-    isTerminal = false;
     Kit().CleanupVector(storage);
     while (!blk->cycleNestStack.empty()) blk->cycleNestStack.pop();
     while (!blk->cycleTailStack.empty()) blk->cycleTailStack.pop();
@@ -77,7 +76,6 @@ namespace kagami {
   Machine::Machine(const char *target) {
     std::ifstream stream;
     string temp;
-    isTerminal = false;
     health = true;
     size_t subscript = 0;
 
@@ -331,61 +329,6 @@ namespace kagami {
     }
     entry::DisposeManager();
     return msg;
-  }
-
-  void Machine::Terminal() {
-    Message msg;
-    string buf;
-    string head = kStrNormalArrow;
-    Processor processor;
-    bool subProcess = false;
-    bool skip = false;
-
-    entry::CreateManager();
-
-    while (msg.GetCode() != kCodeQuit) {
-      msg = Message();
-      std::cout << head;
-      std::getline(std::cin, buf);
-      if (buf.empty()) continue;
-      processor.Build(buf);
-      auto tokenValue = entry::GetGenericToken(processor.GetFirstToken().first);
-      switch (tokenValue) {
-      case GT_IF:
-      case GT_WHILE:
-      case GT_FOR:
-        subProcess = true;
-        head = kStrDotGroup;
-        break;
-      case GT_END:
-        subProcess = false;
-        skip = true;
-        storage.emplace_back(processor);
-        head = kStrNormalArrow;
-        msg = this->Run();
-        Kit().CleanupVector(storage);
-        break;
-      case GT_DEF:
-        //
-        break;
-      default:
-        break;
-      }
-      if (subProcess) {
-        storage.emplace_back(processor);
-      }
-      else {
-        if(!skip) msg = processor.Activiate();
-      }
-
-      if (msg.GetCode() < kCodeSuccess) {
-        std::cout << msg.GetDetail() << std::endl;
-        trace::Log(msg);
-      }
-      if (skip == true) skip = false;
-    }
-
-    entry::DisposeManager();
   }
 }
 

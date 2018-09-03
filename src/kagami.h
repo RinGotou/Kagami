@@ -8,12 +8,9 @@ namespace kagami {
   class ScriptCore {
   private:
     bool ignoreFatalError;
-    bool isTerminal;
   public:
-    void PrintEvents();
-    Message ExecScriptFile(string target);
-#ifndef _NO_CUI_
-    void Terminal2();
-#endif
+    void PrintEvents(const char *path, char *scriptPath);
+    void ExecScriptFile(string target);
+    void MyInfo();
   };
 }
