@@ -71,19 +71,16 @@ int main(int argc, char **argv) {
 #ifdef _ENABLE_DEBUGGING_
   auto &base = kagami::entry::GetObjectStack();
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
+  scriptCore.PrintEvents();
   //atexit(AtExitHandler);
 #else
+  scriptCore.ExecScriptFile(argv[1]);
 #ifndef _NO_CUI_
-  if (argc > 1) {
-    scriptCore.ExecScriptFile(argv[1]);
-  }
-  else {
-    scriptCore.Terminal2();
-  }
-#else
-  scriptcore.ExecScriptFile(argv[1]);
-#endif
-#endif
   scriptCore.PrintEvents();
+#else
+  //TODO:write events to file
+#endif
+#endif
+  
   return 0;
 }
