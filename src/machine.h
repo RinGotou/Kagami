@@ -25,7 +25,6 @@ namespace kagami {
     vector<Processor> storage;
     vector<string> parameters;
     bool health;
-    bool isTerminal;
 
     void DefineSign(string head, MachCtlBlk *blk);
     void ConditionRoot(bool value, MachCtlBlk *blk);
@@ -37,13 +36,13 @@ namespace kagami {
     void MakeFunction(size_t start, size_t end, MachCtlBlk *blk);
     static bool IsBlankStr(string target);
   public:
-    Machine() : health(false), isTerminal(true) {}
+    Machine() : health(false) {}
     Machine(Machine &machine) {
       this->storage = machine.storage;
       this->parameters = machine.parameters;
     }
     Machine(Machine &&machine) : Machine(machine) {}
-    Machine(vector<Processor> storage) : health(true), isTerminal(true) {
+    Machine(vector<Processor> storage) : health(true) {
       this->storage = storage;
     }
     void operator=(Machine &machine){
@@ -59,7 +58,6 @@ namespace kagami {
     explicit Machine(const char *target);
     Message Run(bool createManager = true);
     Message RunAsFunction(ObjectMap &p);
-    void Terminal();
     void Reset(MachCtlBlk *blk);
 
     bool GetHealth() const { return health; }

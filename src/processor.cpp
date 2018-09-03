@@ -57,7 +57,9 @@ namespace kagami {
     bool delaySuspend = false, PNFlag = false;
     for (size_t count = 0; count < data.size(); ++count) {
       currentChar = data[count];
-      if (delaySuspend) stringProcessing = false;
+      if (delaySuspend) {
+        stringProcessing = false;
+      }
       if (currentChar == '\'' && forwardChar != '\\') {
         if (!stringProcessing
           && Kit::GetTokenType(current) == TokenTypeEnum::T_BLANK) {
@@ -66,14 +68,14 @@ namespace kagami {
         stringProcessing ? delaySuspend = true : stringProcessing = true;
       }
       if (currentChar == '+' || currentChar == '-') {
-        Kit::GetTokenType(string() += currentChar == T_SYMBOL) ?
+        Kit::GetTokenType(string().append(1, forwardChar)) == T_SYMBOL ?
           PNFlag = true: 
           PNFlag = false;
       }
       current.append(1, currentChar);
       auto tokenEnum = Kit::GetTokenType(current);
-      if (tokenEnum == T_INTEGER && PNFlag) {
-        if (PNFlag) {
+      if (tokenEnum == T_INTEGER) {
+        if (!PNFlag) {
           current.pop_back();
           origin.emplace_back(current);
           current.clear();
@@ -96,6 +98,10 @@ namespace kagami {
           origin.emplace_back(current);
           current.clear();
           current.append(1, currentChar);
+          if (!stringProcessing
+            && Kit::GetTokenType(string().append(1, currentChar)) == T_BLANK) {
+            continue;
+          }
         }
       }
       forwardChar = data[count];
@@ -377,16 +383,17 @@ namespace kagami {
       && blk->symbol.back().GetTokenEnum() != GT_SET) {
 
       auto firstEnum = blk->symbol.back().GetTokenEnum();
-      if (entry::IsOperatorToken(firstEnum)
-        && entry::IsOperatorToken(
+      if (entry::IsOperatorToken(firstEnum)) {
+        if (entry::IsOperatorToken(
           blk->symbol[blk->symbol.size() - 2].GetTokenEnum())) {
-        if (checked) {
-          checked = false;
-        }
-        else {
-          checked = true;
-          blk->needReverse = true;
-          Reversing(blk);
+          if (checked) {
+            checked = false;
+          }
+          else {
+            checked = true;
+            blk->needReverse = true;
+            Reversing(blk);
+          }
         }
       }
 
@@ -587,16 +594,17 @@ namespace kagami {
         break;
       }
       auto firstEnum = blk->symbol.back().GetTokenEnum();
-      if (entry::IsOperatorToken(firstEnum)
-        && entry::IsOperatorToken(
+      if (entry::IsOperatorToken(firstEnum)) {
+        if (entry::IsOperatorToken(
           blk->symbol[blk->symbol.size() - 2].GetTokenEnum())) {
-        if (checked) {
-          checked = false;
-        }
-        else {
-          checked = true;
-          blk->needReverse = true;
-          Reversing(blk);
+          if (checked) {
+            checked = false;
+          }
+          else {
+            checked = true;
+            blk->needReverse = true;
+            Reversing(blk);
+          }
         }
       }
       if (!entry::IsOperatorToken(blk->symbol.back().GetTokenEnum())) {
