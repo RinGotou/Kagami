@@ -12,9 +12,12 @@ namespace kagami {
 #if defined(_WIN32) && defined(_MSC_VER)
       char nowtime[30] = { ' ' };
       ctime_s(nowtime, sizeof(nowtime), &now);
-      GetLogger().emplace_back(log_t(string(nowtime), msg));
+      string str(nowtime);
+      str.pop_back();
+      GetLogger().emplace_back(log_t(str, msg));
 #else
       string nowtime(ctime(&now));
+      nowtime.pop_back();
       GetLogger().emplace_back(log_t(nowtime, msg));
 #endif
     }

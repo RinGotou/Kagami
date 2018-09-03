@@ -1,85 +1,157 @@
 #include "kagami.h"
 //#define _ENABLE_DEBUGGING_
-#ifndef _NO_CUI_
 #include <iostream>
-#endif
+
+using std::cout;
+using std::endl;
+using std::cin;
 
 namespace kagami {
-  void ScriptCore::PrintEvents() {
+  void ScriptCore::PrintEvents(const char *path, char *scriptPath) {
     using namespace trace;
     string priorityStr;
-    if (!GetLogger().empty()) {
-      std::cout << "Tracking:\n";
+    auto logger = GetLogger();
+
+    /*Write log to a file*/
+    if (path != nullptr) {
+      ofstream ofs;
+      ofs.open(path, std::ios::out | std::ios::app);
+      if (!ofs.good()) {
+        cout << "Cannot create event log.exit." << endl;
+        return;
+      }
+      if (!logger.empty()) ofs << "[Script:" << scriptPath << "]" << endl;
+      for (log_t unit : GetLogger()) {
+        //time
+        ofs << "[" << unit.first << "]";
+        //line
+        ofs << "(Line:" << to_string(unit.second.GetIndex() + 1) << ")";
+        //message string
+        const auto value = unit.second.GetValue();
+        if (value == kStrFatalError) priorityStr = "Fatal:";
+        else if (value == kStrWarning) priorityStr = "Warning:";
+        if (unit.second.GetDetail() != kStrEmpty) {
+          ofs << priorityStr << unit.second.GetDetail() << endl;
+        }
+      }
+      ofs.close();
     }
-    for (log_t unit : GetLogger()) {
-      std::cout << unit.first;
-      std::cout << "At:" << to_string(unit.second.GetIndex() + 1) << "\n";
-      const auto value = unit.second.GetValue();
-      if (value == kStrFatalError) priorityStr = "Fatal:";
-      else if (value == kStrWarning) priorityStr = "Warning:";
-      if (unit.second.GetDetail() != kStrEmpty) {
-        std::cout << priorityStr << unit.second.GetDetail() << "\n";
+    /*Print log to screen*/
+    else {
+      if (!logger.empty()) cout << "Tracking at :" << scriptPath << endl;
+      for (log_t unit : GetLogger()) {
+        //time
+        cout << "[" << unit.first << "]";
+        //line
+        cout << "(Line:" << to_string(unit.second.GetIndex() + 1) << ")";
+        //message string
+        const auto value = unit.second.GetValue();
+        if (value == kStrFatalError) priorityStr = "Fatal:";
+        else if (value == kStrWarning) priorityStr = "Warning:";
+        if (unit.second.GetDetail() != kStrEmpty) {
+          cout << priorityStr << unit.second.GetDetail() << endl;
+        }
       }
     }
-
   }
 
-  Message ScriptCore::ExecScriptFile(string target) {
-    Message result;
+  void ScriptCore::ExecScriptFile(string target) {
     Machine machine(target.c_str());
-
-    isTerminal = false;
-
-    if (target == kStrEmpty) {
-      trace::Log(result.combo(kStrFatalError, kCodeIllegalParm, "Empty path string."));
-      return result;
-    }
     Activiate();
     machine.Run();
-    return result;
+  }
+
+  void ScriptCore::MyInfo() {
+    //print application info
+    cout << kEngineName
+      << ' ' << "verison:" << kEngineVersion
+      << '(' << kCodeName << ')' << endl;
+    cout << kCopyright << ' ' << kEngineAuthor << endl;
+  }
+}
+
+  void HelpFile() {
+    cout << "\nargument with '*': you can leave it blank."
+      << endl;
+    cout << "run [script-path][*log-path] Open a script file to execute;\n"
+      << "\t[script-path] Directory path of Kagami script file;\n"
+      << "\t[log-path] Directory path of event log file.\n"
+      << "hint:if you doesn't provide a log-path, application will write into 'project-kagami.log' by default."
+      << "\n" << endl;
+    cout << "run-sae [script-path][*log-path] Same as 'run' but stop at application exit."
+      << "\n" << endl;
+    cout << "run-pd  [script-path] Same as 'run' but event info will print to standard output directly."
+      << "\n" << endl;
+    cout << "help    Show this message."
+      << "\n" << endl;
+  }
+
+  int GetOption(char *src) {
+    int res = -1;
+    if (strcmp(src, "run") == 0) res = 1;
+    else if (strcmp(src, "run-sae") == 0) res = 2;
+    else if (strcmp(src, "run-pd") == 0) res = 3;
+    else if (strcmp(src, "help") == 0) res = 4;
+    return res;
   }
 
 #ifndef _NO_CUI_
-  void ScriptCore::Terminal2() {
-    Machine machine;
-    isTerminal = true;
-
-    std::cout << kEngineName
-      << ' ' << "verison:" << kEngineVersion
-      << '(' << kCodeName << ')' << std::endl;
-    std::cout << kCopyright << ' ' << kEngineAuthor << std::endl;
-
-    Activiate();
-    machine.Terminal();
+  void AtExitHandler() {
+    cout << "Press enter to close..." << endl;
+    std::cin.get();
   }
 #endif
-}
-
-//#ifndef _NO_CUI_
-//void AtExitHandler() {
-//  std::cout << "Press enter to close..." << std::endl;
-//  std::cin.get();
-//}
-//#endif
 
 int main(int argc, char **argv) {
   kagami::ScriptCore scriptCore;
-  //atexit(AtExitHandler);
 
   //switch main code between test case and normal case.
   //this macro can be found in the head of this file.
 #ifdef _ENABLE_DEBUGGING_
   auto &base = kagami::entry::GetObjectStack();
+  //set your own test script path here
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
-  scriptCore.PrintEvents();
-  //atexit(AtExitHandler);
+  scriptCore.PrintEvents(nullptr);
 #else
-  scriptCore.ExecScriptFile(argv[1]);
-#ifndef _NO_CUI_
-  scriptCore.PrintEvents();
-#else
-  //TODO:write events to file
-#endif
+  if (argc < 2) {
+    scriptCore.MyInfo();
+    HelpFile();
+  }
+  else {
+    int op = GetOption(argv[1]);
+    switch (op) {
+    case 1:
+    case 2:
+    case 3:
+      if (argc < 3) {
+        scriptCore.MyInfo();
+        cout << "You must provide a script path.exit." << endl;
+      }
+      else {
+        if (op == 2) atexit(AtExitHandler);
+        scriptCore.ExecScriptFile(argv[2]);
+
+        if (op == 3) {
+          scriptCore.PrintEvents(nullptr, argv[2]);
+        }
+        else if (argc < 4) {
+          scriptCore.PrintEvents("project-kagami.log", argv[2]);
+        }
+        else if (argc == 4) {
+          scriptCore.PrintEvents(argv[3], argv[2]);
+        }
+      }
+      break;
+    case 4:
+      scriptCore.MyInfo();
+      HelpFile();
+    case -1:
+    default:
+      scriptCore.MyInfo();
+      cout << "unknown option.exit." << endl;
+      break;
+    }
+  }
 #endif
   
   return 0;

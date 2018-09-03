@@ -9,7 +9,8 @@ namespace kagami {
   private:
     bool ignoreFatalError;
   public:
-    void PrintEvents();
-    Message ExecScriptFile(string target);
+    void PrintEvents(const char *path, char *scriptPath);
+    void ExecScriptFile(string target);
+    void MyInfo();
   };
 }

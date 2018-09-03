@@ -6,17 +6,42 @@ def Greet(name)
 	print('Hello,' + name + '!')
 end
 
-def main()
-	print('Menu:\n1.Greet Test\n2.Time Test')
+def CalcTest()
+	result0 = 1 - 2 - 3
+	result1 = 1 - (2 - 3)
+	print(1+2*5)
+	if (result0 != -4)
+		print('Calc is broken.')
+	else
+		print('1-2-3=' + result0)
+	end
+	if (result1 != 2)
+		print('Calc is broken.')
+	else
+		print('1-(2-3)=' + result1)
+	end	
+end
+
+def Menu()
+	print('Menu:\n1.Greet Test\n2.Time Test\n3.Calculator Test\n4.Quit')
 	choice = convert(input('> '))
+	return(choice)
+end
+
+def main()
+	choice = Menu()
 	if(choice == 1)
 		Greet(input('What\'s your name? > '))
 	elif(choice == 2)
 		PrintWithTime('This is message with time head.')
+	elif(choice == 3)
+		CalcTest()
+	elif(choice == 4)
+		quit()
 	else
 		print('Wrong item.')
 	end
-	print('Script exit.')
+	input('Press enter to exit...')
 end
 
 main()
