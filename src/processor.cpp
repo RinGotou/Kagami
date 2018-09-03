@@ -54,7 +54,7 @@ namespace kagami {
 
     //Spilt
     forwardChar = 0;
-    bool delaySuspend = false, PNFlag = false;
+    bool delaySuspend = false;
     for (size_t count = 0; count < data.size(); ++count) {
       currentChar = data[count];
       if (delaySuspend) {
@@ -67,23 +67,9 @@ namespace kagami {
         }
         stringProcessing ? delaySuspend = true : stringProcessing = true;
       }
-      if (currentChar == '+' || currentChar == '-') {
-        Kit::GetTokenType(string().append(1, forwardChar)) == T_SYMBOL ?
-          PNFlag = true: 
-          PNFlag = false;
-      }
       current.append(1, currentChar);
       auto tokenEnum = Kit::GetTokenType(current);
-      if (tokenEnum == T_INTEGER) {
-        if (!PNFlag) {
-          current.pop_back();
-          origin.emplace_back(current);
-          current.clear();
-          current.append(1, currentChar);
-          PNFlag = false;
-        }
-      }
-      else if (Kit::GetTokenType(current) != TokenTypeEnum::T_NUL) {
+      if (Kit::GetTokenType(current) != TokenTypeEnum::T_NUL) {
         forwardChar = data[count];
         continue;
       }
@@ -119,11 +105,20 @@ namespace kagami {
 
     //third cycle
     stringProcessing = false;
+    bool PFlag = false;
     for (size_t count = 0; count < origin.size(); ++count) {
       if (count + 1 < origin.size()) next = origin[count + 1];
 
       current = origin[count];
+
       if (!stringProcessing) {
+        //Pos/Neg sign
+        if ((current == "+" || current == "-") && next != current && forward != current) {
+          if (Kit::IsSymbol(forward) && Kit::IsInteger(next)) {
+            PFlag = true;
+          }
+        }
+        //combine decimal
         if (current == ".") {
           if (kagami::Kit::IsInteger(forward)
             && kagami::Kit::IsInteger(next)) {
@@ -132,6 +127,7 @@ namespace kagami {
             continue;
           }
         }
+        //bracket checking
         if (current == "(" || current == "[") nest++;
         if (current == ")" || current == "]") nest--;
         if (current == "[") {
@@ -144,6 +140,7 @@ namespace kagami {
             break;
           }
         }
+        //comma checking
         if (current == ",") {
           if (kagami::Kit::GetTokenType(forward) == TokenTypeEnum::T_SYMBOL &&
             forward != "]" && forward != ")" &&
@@ -155,6 +152,8 @@ namespace kagami {
           }
         }
       }
+
+      //switching string processing mode
       if (current == "'" && forward != "\\") {
         if (stringProcessing) {
           output.back().append(current);
@@ -165,6 +164,7 @@ namespace kagami {
         }
         stringProcessing = !stringProcessing;
       }
+      //usual work
       else {
         if (stringProcessing) {
           output.back().append(current);
@@ -189,6 +189,10 @@ namespace kagami {
             else {
               output.emplace_back(current);
             }
+          }
+          else if ((forward == "+" || forward == "-") && PFlag) {
+            output.back().append(current);
+            PFlag = false;
           }
           else {
             output.emplace_back(current);
@@ -261,16 +265,6 @@ namespace kagami {
     size_t idx = 0;
     Entry &ent = blk->symbol.back();
 
-    if (ent.GetId() == kStrNop) {
-      auto rit = blk->item.rbegin();
-      for (; rit != blk->item.rend(); rit++) {
-        if (rit->IsPlaceholder()) break;
-      }
-      if (rit != blk->item.rend()) blk->item.erase(rit.base());
-      blk->symbol.pop_back();
-      return true;
-    }
-
     const size_t size = ent.GetParmSize();
     auto args = ent.GetArguments();
     auto mode = ent.GetArgumentMode();
@@ -289,28 +283,32 @@ namespace kagami {
     if (mode == kCodeAutoSize) {
       const size_t parmSize = size - 1;
       while (idx < parmSize) {
-        objMap.insert(pair<string, Object>(args[idx], parms[idx]));
+        objMap.insert(NamedObject(args[idx], parms[idx]));
         ++idx;
       }
       string argGroupHead = args.back();
       size_t count = 0;
       while (idx < parms.size()) {
-        objMap.insert(pair<string, Object>(argGroupHead + to_string(count), parms[idx]));
+        objMap.insert(NamedObject(argGroupHead + to_string(count), parms[idx]));
         idx++;
         count++;
       }
+      objMap.insert(NamedObject("__size", Object()
+        .Manage(to_string(parms.size()))
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+        .SetTokenType(T_INTEGER)));
     }
     else {
       while (idx < size) {
         if (idx >= parms.size() && ent.GetArgumentMode() == kCodeAutoFill) break;
-        objMap.insert(pair<string, Object>(args[idx], parms[idx]));
+        objMap.insert(NamedObject(args[idx], parms[idx]));
         ++idx;
       }
     }
 
     auto flag = ent.GetFlag();
     if (flag == kFlagMethod) {
-      objMap.insert(pair<string, Object>(kStrObject, blk->item.back()));
+      objMap.insert(NamedObject(kStrObject, blk->item.back()));
       blk->item.pop_back();
     }
 
@@ -321,16 +319,18 @@ namespace kagami {
 
     if (code == kCodeObject) {
       auto object = msg.GetObj();
-      blk->item.emplace_back(object);
+      blk->item.emplace_back(object.SetRetSign());
     }
     else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeHeadPlaceholder) {
       blk->item.emplace_back(Object()
         .Manage(detail)
+        .SetRetSign()
         .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
         .SetTokenType(kagami::Kit::GetTokenType(detail)));
     }
 
     health = (value != kStrFatalError && code >= kCodeSuccess);
+    instBase.push_back(Inst(ent, parms));
     blk->symbol.pop_back();
     return health;
   }
@@ -496,7 +496,10 @@ namespace kagami {
           if (blk->nextToken.first == "=") {
             Object *object = entry::FindObject(blk->currentToken.first);
             if (object != nullptr) {
-              blk->item.push_back(Object().Ref(*object));
+              Object obj;
+              obj.SetArgSign(blk->currentToken.first);
+              obj.Ref(*object);
+              blk->item.push_back(obj);
             }
             else {
               blk->item.push_back(Object()
@@ -519,7 +522,10 @@ namespace kagami {
           else {
             Object *object = entry::FindObject(blk->currentToken.first);
             if (object != nullptr) {
-              blk->item.push_back(Object().Ref(*object));
+              Object obj;
+              obj.SetArgSign(blk->currentToken.first);
+              obj.Ref(*object);
+              blk->item.push_back(obj);
             }
             else {
               result = false;
@@ -614,18 +620,92 @@ namespace kagami {
     }
   }
 
+  Message Processor::RunWithCache() {
+    deque<Object> retBase;
+    vector<Inst>::iterator it = instBase.begin();
+    Message msg;
+    auto &manager = entry::GetCurrentManager();
+
+    auto getObject = [&](Object &obj) -> Object{
+      if (obj.IsRetSign()) {
+        Object res = retBase.front();
+        retBase.pop_back();
+        return res;
+      }
+      if (obj.IsArgSign()) {
+        return Object().Ref(*entry::FindObject(obj.GetOriginId()));
+        //return Object().Ref(*manager.Find(obj.GetOriginId()));
+      }
+      return obj;
+    };
+
+    for (; it != instBase.end(); it++) {
+      ObjectMap objMap;
+      auto &ent = it->first;
+      auto &parms = it->second;
+      size_t entParmSize = ent.GetParmSize();
+
+      auto args = ent.GetArguments();
+      auto mode = ent.GetArgumentMode();
+      size_t idx = 0;
+      if (mode == kCodeAutoSize) {
+        const size_t parmSize = entParmSize - 1;
+        while (idx < parmSize) {
+          objMap.insert(NamedObject(args[idx], getObject(parms[idx])));
+          ++idx;
+        }
+        string argGroupHead = args.back();
+        size_t count = 0;
+        while (idx < parms.size()) {
+          objMap.insert(NamedObject(argGroupHead + to_string(count), getObject(parms[idx])));
+          idx++;
+          count++;
+        }
+        objMap.insert(NamedObject("__size", Object()
+          .Manage(to_string(parms.size()))
+          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetTokenType(T_INTEGER)));
+      }
+      else {
+        while (idx < entParmSize) {
+          if (idx >= parms.size() && ent.GetArgumentMode() == kCodeAutoFill) break;
+          objMap.insert(NamedObject(args[idx], getObject(parms[idx])));
+          ++idx;
+        }
+      }
+
+      msg = ent.Start(objMap);
+      const auto code = msg.GetCode();
+      const auto value = msg.GetValue();
+      const auto detail = msg.GetDetail();
+
+      if (value == kStrFatalError) break;
+
+      if (code == kCodeObject) {
+        auto object = msg.GetObj();
+        retBase.emplace_back(object);
+      }
+      else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeHeadPlaceholder) {
+        retBase.emplace_back(Object()
+          .Manage(detail)
+          .SetRetSign()
+          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetTokenType(kagami::Kit::GetTokenType(detail)));
+      }
+    }
+    return msg;
+  }
+
   Message Processor::Activiate(size_t mode) {
     using namespace entry;
     Message result;
     auto state = true;
     const auto size = origin.size();
-    ProcCtlBlk *blk = new ProcCtlBlk();
-
+    
     if (!health) {
       return Message(kStrFatalError, kCodeBadExpression, errorString);
     }
 
-    blk->mode = mode;
     auto token = entry::GetGenericToken(origin.front().first);
     switch (mode) {
     case kModeDef:
@@ -651,6 +731,12 @@ namespace kagami {
     default:break;
     }
 
+    if (cached) {
+      return RunWithCache();
+    }
+
+    ProcCtlBlk *blk = new ProcCtlBlk();
+    blk->mode = mode;
     blk->lambdaObjectCount = 0;
     blk->nextInsertSubscript = 0;
     blk->operatorTargetType = kTypeIdNull;
@@ -710,6 +796,9 @@ namespace kagami {
     blk->forwardToken = Token();
     blk->currentToken = Token();
     delete blk;
+    if (cached == false) {
+      cached = true;
+    }
 
     return result;
   }

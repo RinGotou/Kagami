@@ -43,6 +43,10 @@ namespace kagami {
     return true;
   }
 
+  bool Kit::IsSymbol(string target) {
+    return std::regex_match(target, kPatternSymbol);
+  }
+
   TokenTypeEnum Kit::GetTokenType(string src) {
     TokenTypeEnum type = TokenTypeEnum::T_NUL;
     if (src == kStrNull || src.empty())             type = TokenTypeEnum::T_NUL;
