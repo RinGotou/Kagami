@@ -26,6 +26,7 @@ namespace kagami {
     size_t index;
     string errorString;
 
+    void Reversing(ProcCtlBlk *blk);
     bool TakeAction(Message &msg, ProcCtlBlk *blk);
     static Object *GetObj(string name, ProcCtlBlk *blk);
     void EqualMark(ProcCtlBlk *blk);

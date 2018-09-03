@@ -29,7 +29,6 @@ namespace kagami {
     health = true;
 
     //PreProcessing
-    if (target.front() == '#') return *this;
     this->origin.clear();
     for (size_t count = 0; count < target.size(); ++count) {
       currentChar = target[count];
@@ -45,9 +44,9 @@ namespace kagami {
       }
       forwardChar = target[count];
     }
-
     if (tail > head) data = target.substr(head, tail - head);
     else data = target.substr(head, target.size() - head);
+    if (data.front() == '#') return *this;
 
     while (kagami::Kit::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
       data.pop_back();
@@ -55,7 +54,7 @@ namespace kagami {
 
     //Spilt
     forwardChar = 0;
-    bool delaySuspend = false;
+    bool delaySuspend = false, PNFlag = false;
     for (size_t count = 0; count < data.size(); ++count) {
       currentChar = data[count];
       if (delaySuspend) stringProcessing = false;
@@ -66,14 +65,29 @@ namespace kagami {
         }
         stringProcessing ? delaySuspend = true : stringProcessing = true;
       }
+      if (currentChar == '+' || currentChar == '-') {
+        Kit::GetTokenType(string() += currentChar == T_SYMBOL) ?
+          PNFlag = true: 
+          PNFlag = false;
+      }
       current.append(1, currentChar);
-      if (kagami::Kit::GetTokenType(current) != TokenTypeEnum::T_NUL) {
+      auto tokenEnum = Kit::GetTokenType(current);
+      if (tokenEnum == T_INTEGER && PNFlag) {
+        if (PNFlag) {
+          current.pop_back();
+          origin.emplace_back(current);
+          current.clear();
+          current.append(1, currentChar);
+          PNFlag = false;
+        }
+      }
+      else if (Kit::GetTokenType(current) != TokenTypeEnum::T_NUL) {
         forwardChar = data[count];
         continue;
       }
       else {
         current = current.substr(0, current.size() - 1);
-        if (kagami::Kit::GetTokenType(current) == TokenTypeEnum::T_BLANK) {
+        if (Kit::GetTokenType(current) == TokenTypeEnum::T_BLANK) {
           if (stringProcessing) origin.emplace_back(current);
           current.clear();
           current.append(1, currentChar);
@@ -203,6 +217,38 @@ namespace kagami {
     return *this;
   }
 
+  void Processor::Reversing(ProcCtlBlk *blk) {
+    deque<Entry> *tempSymbol = new deque<Entry>();
+    deque<Object> *tempObject = new deque<Object>();
+
+    while (!blk->symbol.empty()
+      && blk->symbol.back().GetPriority()
+      == blk->symbol[blk->symbol.size() - 2].GetPriority()) {
+      tempSymbol->push_back(blk->symbol.back());
+      tempObject->push_back(blk->item.back());
+      blk->symbol.pop_back();
+      blk->item.pop_back();
+    }
+    tempSymbol->push_back(blk->symbol.back());
+    blk->symbol.pop_back();
+    int i = 2;
+    while (i > 0) {
+      tempObject->push_back(blk->item.back());
+      blk->item.pop_back();
+      --i;
+    }
+    while (!tempSymbol->empty()) {
+      blk->symbol.push_back(tempSymbol->front());
+      tempSymbol->pop_front();
+    }
+    while (!tempObject->empty()) {
+      blk->item.push_back(tempObject->front());
+      tempObject->pop_front();
+    }
+    delete tempSymbol;
+    delete tempObject;
+  }
+
   bool Processor::TakeAction(Message &msg, ProcCtlBlk *blk) {
     deque<Object> parms;
     ObjectMap objMap;
@@ -325,42 +371,22 @@ namespace kagami {
     deque<Object> tempObject;
     bool checked = false;
 
-    while (!blk->symbol.empty() && blk->symbol.back().GetId() != "(") {
-      if (!checked
-        && blk->symbol.back().GetTokenEnum() != GT_NUL
-        && blk->symbol[blk->symbol.size() - 2].GetTokenEnum() != GT_NUL) {
-        checked = true;
-        blk->needReverse = true;
-        while (!blk->symbol.empty()
-          && blk->symbol.back().GetPriority() 
-          == blk->symbol[blk->symbol.size() - 2].GetPriority()) {
-          tempSymbol.push_back(blk->symbol.back());
-          tempObject.push_back(blk->item.back());
-          blk->symbol.pop_back();
-          blk->item.pop_back();
-        }
-        tempSymbol.push_back(blk->symbol.back());
-        blk->symbol.pop_back();
-        int i = 2;
-        while (i > 0) {
-          tempObject.push_back(blk->item.back());
-          blk->item.pop_back();
-          --i;
-        }
-        while (!tempSymbol.empty()) {
-          blk->symbol.push_back(tempSymbol.front());
-          tempSymbol.pop_front();
-        }
-        while (!tempObject.empty()) {
-          blk->item.push_back(tempObject.front());
-          tempObject.pop_front();
-        }
-      }
-      else if (checked
-        && blk->symbol.back().GetTokenEnum() != GT_NUL
-        && blk->symbol[blk->symbol.size() - 2].GetTokenEnum() != GT_NUL) {
-        if (blk->symbol.back().GetPriority() != blk->symbol[blk->symbol.size() - 2].GetPriority()) {
+    while (!blk->symbol.empty() 
+      && blk->symbol.back().GetId() != "(" 
+      && blk->symbol.back().GetTokenEnum() != GT_BIND
+      && blk->symbol.back().GetTokenEnum() != GT_SET) {
+
+      auto firstEnum = blk->symbol.back().GetTokenEnum();
+      if (entry::IsOperatorToken(firstEnum)
+        && entry::IsOperatorToken(
+          blk->symbol[blk->symbol.size() - 2].GetTokenEnum())) {
+        if (checked) {
           checked = false;
+        }
+        else {
+          checked = true;
+          blk->needReverse = true;
+          Reversing(blk);
         }
       }
 
@@ -554,12 +580,29 @@ namespace kagami {
   }
 
   void Processor::FinalProcessing(Message &msg, ProcCtlBlk *blk) {
+    bool checked = false;
     while (!blk->symbol.empty()) {
       if (blk->symbol.back().GetId() == "(") {
         msg.combo(kStrFatalError, kCodeIllegalSymbol, "Right bracket is missing.");
         break;
       }
-      TakeAction(msg, blk);
+      auto firstEnum = blk->symbol.back().GetTokenEnum();
+      if (entry::IsOperatorToken(firstEnum)
+        && entry::IsOperatorToken(
+          blk->symbol[blk->symbol.size() - 2].GetTokenEnum())) {
+        if (checked) {
+          checked = false;
+        }
+        else {
+          checked = true;
+          blk->needReverse = true;
+          Reversing(blk);
+        }
+      }
+      if (!entry::IsOperatorToken(blk->symbol.back().GetTokenEnum())) {
+        blk->needReverse = false;
+      }
+      if (!TakeAction(msg, blk)) break;
     }
   }
 
