@@ -8,6 +8,8 @@ namespace kagami {
   The most important part of script processor.Original string will be tokenized and
   parsed here.Processed data will be delivered to entry provider.
   */
+  using Inst = pair<Entry, deque<Object>>;
+
   using ProcCtlBlk = struct {
     deque<Object> item;
     deque<Entry> symbol;
@@ -23,8 +25,10 @@ namespace kagami {
   class Processor {
     bool health;
     vector<Token> origin;
+    vector<Inst> instBase;
     size_t index;
     string errorString;
+    bool cached;
 
     void Reversing(ProcCtlBlk *blk);
     bool TakeAction(Message &msg, ProcCtlBlk *blk);
@@ -39,8 +43,9 @@ namespace kagami {
     void OtherToken(ProcCtlBlk *blk);
     void OtherSymbol(ProcCtlBlk *blk);
     void FinalProcessing(Message &msg, ProcCtlBlk *blk);
+    Message RunWithCache();
   public:
-    Processor() : health(false), index(0) {}
+    Processor() : health(false), index(0), cached(false) {}
     Processor &SetIndex(size_t idx) {
       this->index = idx;
       return *this;

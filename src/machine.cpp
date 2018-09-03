@@ -305,7 +305,7 @@ namespace kagami {
     Message msg;
     auto &base = entry::CreateManager();
     for (auto &unit : p) {
-      base.Add(unit.first, unit.second);
+      base.Add(unit.first, unit.second.SetArgSign(unit.first));
     }
     msg = Run(false);
     if (msg.GetCode() >= kCodeSuccess) {

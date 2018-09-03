@@ -13,8 +13,9 @@ namespace kagami {
     std::shared_ptr<void> ptr;
     string typeId;
     string methods;
+    string originId;
     TokenTypeEnum tokenTypeEnum;
-    bool ro, permanent, ref, constructor, placeholder;
+    bool ro, permanent, ref, constructor, placeholder, retSign, argSign;
     Object *parent;
 
     Object *GetTargetObject() { return static_pointer_cast<TargetObject>(ptr)->ptr; }
@@ -37,13 +38,18 @@ namespace kagami {
     bool IsRo();
     bool ConstructorFlag();
     Object &SetPlaceholder();
+    Object &SetRetSign();
+    Object &SetArgSign(string id);
 
+    string GetOriginId() const { return originId; }
     void SetParentObject(Object &object) { parent = &object; }
     Object *GetParentObject() { return parent; }
     bool IsPermanent() const { return permanent; }
     Object &SetConstructorFlag() { constructor = true; return *this; }
     Object &Copy(Object &&object) { return this->Copy(object); }
     bool IsRef() const { return ref; }
+    bool IsRetSign() const { return retSign; }
+    bool IsArgSign() const { return argSign; }
     bool IsPlaceholder() const { return placeholder; }
     bool operator==(Object &object) const { return Compare(object); }
     bool operator!=(Object &object) const { return !Compare(object); }
