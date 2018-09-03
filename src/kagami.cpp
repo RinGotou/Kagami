@@ -1,5 +1,5 @@
 #include "kagami.h"
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 #include <iostream>
 
 using std::cout;
@@ -7,7 +7,7 @@ using std::endl;
 using std::cin;
 
 namespace kagami {
-  void ScriptCore::PrintEvents(const char *path, char *scriptPath) {
+  void ScriptCore::PrintEvents(const char *path, const char *scriptPath) {
     using namespace trace;
     string priorityStr;
     auto logger = GetLogger();
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
   auto &base = kagami::entry::GetObjectStack();
   //set your own test script path here
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
-  scriptCore.PrintEvents(nullptr);
+  scriptCore.PrintEvents(nullptr, "C:\\workspace\\test.kagami");
 #else
   if (argc < 2) {
     scriptCore.MyInfo();
