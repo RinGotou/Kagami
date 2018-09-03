@@ -13,6 +13,8 @@ namespace kagami {
     ref = false;
     constructor = false;
     placeholder = false;
+    retSign = false;
+    argSign = false;
   }
 
   Object &Object::Manage(string t, string typeId) {
@@ -73,6 +75,8 @@ namespace kagami {
     tokenTypeEnum = object.tokenTypeEnum;
     ro = object.ro;
     ref = object.ref;
+    retSign = object.retSign;
+    argSign = object.argSign;
     return *this;
   }
 
@@ -132,6 +136,17 @@ namespace kagami {
 
   Object &Object::SetPlaceholder() {
     placeholder = true;
+    return *this;
+  }
+
+  Object &Object::SetRetSign() {
+    retSign = true;
+    return *this;
+  }
+
+  Object &Object::SetArgSign(string id) {
+    argSign = true;
+    originId = id;
     return *this;
   }
 

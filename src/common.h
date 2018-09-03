@@ -55,14 +55,14 @@ namespace kagami {
   using NamedObject = pair<string, Object>;
   
 
-  const string kEngineVersion = "1.0";
-  const string kCodeName = "Blossom";
+  const string kEngineVersion = "1.1";
+  const string kCodeName = "Marionette";
 #if defined(_WIN32)
   const string kPlatformType = "Windows";
 #else
   const string kPlatformType = "Linux";
 #endif
-  const string kEngineName = "Kagami";
+  const string kEngineName = "Kagami - Alternative Scripting kit";
   const string kEngineAuthor = "Suzu Nakamura and Contributor(s)";
   const string kCopyright = "Copyright(c) 2017-2018";
 

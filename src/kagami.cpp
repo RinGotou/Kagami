@@ -7,7 +7,7 @@ using std::endl;
 using std::cin;
 
 namespace kagami {
-  void ScriptCore::PrintEvents(const char *path, char *scriptPath) {
+  void ScriptCore::PrintEvents(const char *path, const char *scriptPath) {
     using namespace trace;
     string priorityStr;
     auto logger = GetLogger();
@@ -73,10 +73,10 @@ namespace kagami {
   void HelpFile() {
     cout << "\nargument with '*': you can leave it blank."
       << endl;
-    cout << "run [script-path][*log-path] Open a script file to execute;\n"
+    cout << "run     [script-path][*log-path] Open a script file to execute;\n"
       << "\t[script-path] Directory path of Kagami script file;\n"
       << "\t[log-path] Directory path of event log file.\n"
-      << "hint:if you doesn't provide a log-path, application will write into 'project-kagami.log' by default."
+      << "\thint:if you doesn't provide a log-path, application will write into 'project-kagami.log' by default."
       << "\n" << endl;
     cout << "run-sae [script-path][*log-path] Same as 'run' but stop at application exit."
       << "\n" << endl;
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
   auto &base = kagami::entry::GetObjectStack();
   //set your own test script path here
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
-  scriptCore.PrintEvents(nullptr);
+  scriptCore.PrintEvents(nullptr, "C:\\workspace\\test.kagami");
 #else
   if (argc < 2) {
     scriptCore.MyInfo();

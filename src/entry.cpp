@@ -113,8 +113,9 @@ namespace kagami {
     }
 
     bool DisposeManager() {
-      if (!GetObjectStack().empty()) { GetObjectStack().pop_back(); }
-      return GetObjectStack().empty();
+      auto &base = GetObjectStack();
+      if (!base.empty()) { base.pop_back(); }
+      return base.empty();
     }
 
     map<string, GenericTokenEnum> &GetGTBase() {

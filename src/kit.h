@@ -73,6 +73,7 @@ namespace kagami {
     static bool IsInteger(string target);
     static bool IsDouble(string target);
     static bool IsBlank(string target);
+    static bool IsSymbol(string target);
     static TokenTypeEnum GetTokenType(string target);
     static bool FindInStringGroup(string target, string source);
     static vector<string> BuildStringVector(string source);

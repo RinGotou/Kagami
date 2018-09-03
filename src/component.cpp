@@ -345,10 +345,19 @@ namespace kagami {
     return result;
   }
 
+  Message Nop(ObjectMap &p) {
+    Object &objSize = p["__size"];
+    size_t size = *static_pointer_cast<size_t>(objSize.Get());
+    Object &lastObj = p["nop" + to_string(size)];
+    Message msg;
+    msg.SetObject(lastObj, "__result");
+    return msg;
+  }
+
   void AddGenEntries() {
     using namespace entry;
 
-    AddGenericEntry(GT_NOP, Entry(nullptr, "", GT_NOP));
+    AddGenericEntry(GT_NOP, Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
     AddGenericEntry(GT_END, Entry(End, "", GT_END));
     AddGenericEntry(GT_ELSE, Entry(Else, "", GT_ELSE));
     AddGenericEntry(GT_IF, Entry(If, "state", GT_IF));
