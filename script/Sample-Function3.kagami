@@ -1,9 +1,11 @@
 def PrintWithTime(msg)
 	print('[' + time() + ']' + msg)
+	print('PrintWithTime end.')
 end
 
 def Greet(name)
 	print('Hello,' + name + '!')
+	print('Greet end.')
 end
 
 def CalcTest()
@@ -20,27 +22,46 @@ def CalcTest()
 	else
 		print('1-(2-3)=' + result1)
 	end	
+	print('CalcTest end.')
+end
+
+def LogicTest()
+	result0 = true && false
+	result1 = true && true
+	result2 = true || false
+	result3 = false|| true
+	print(result0)
+	print(result1)
+	print(result2)
+	print(result3)
+	print('LogicTest end.')
 end
 
 def Menu()
-	print('Menu:\n1.Greet Test\n2.Time Test\n3.Calculator Test\n4.Quit')
 	choice = convert(input('> '))
 	return(choice)
 end
 
 def main()
-	choice = Menu()
-	if(choice == 1)
-		Greet(input('What\'s your name? > '))
-	elif(choice == 2)
-		PrintWithTime('This is message with time head.')
-	elif(choice == 3)
-		CalcTest()
-	elif(choice == 4)
-		quit()
-	else
-		print('Wrong item.')
+	flag = 0
+	print('Menu:\n1.Greet Test\n2.Time Test\n3.Calculator Test\n4.Logic Test\n0.Quit')
+	while(flag != 1)
+		choice = Menu()
+		if(choice == 1)
+			Greet(input('What\'s your name? > '))
+		elif(choice == 2)
+			PrintWithTime('This is message with time head.')
+		elif(choice == 3)
+			CalcTest()
+		elif(choice == 4)
+			LogicTest()
+		elif(choice == 0)
+			flag = 1
+		else
+			print('Wrong item.')
+		end
 	end
+
 	input('Press enter to exit...')
 end
 

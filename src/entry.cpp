@@ -142,6 +142,11 @@ namespace kagami {
         T(kStrMul,GT_MUL),
         T(kStrDiv,GT_DIV),
         T(kStrIs,GT_IS),
+        T(kStrAnd,GT_AND),
+        T(kStrOr,GT_OR),
+        T(kStrNot,GT_NOT),
+        T(kStrBitAnd,GT_BIT_AND),
+        T(kStrBitOr,GT_BIT_OR),
         T(kStrLessOrEqual,GT_LESS_OR_EQUAL),
         T(kStrMoreOrEqual,GT_MORE_OR_EQUAL),
         T(kStrNotEqual,GT_NOT_EQUAL),
@@ -160,9 +165,30 @@ namespace kagami {
     }
 
     bool IsOperatorToken(GenericTokenEnum token) {
-      return(token == GT_ADD || token == GT_SUB || token == GT_MUL || token == GT_DIV
-        || token == GT_IS || token == GT_LESS_OR_EQUAL || token == GT_MORE_OR_EQUAL
-        || token == GT_NOT_EQUAL || token == GT_MORE || token == GT_LESS);
+      bool result;
+      switch (token) {
+      case GT_ADD:
+      case GT_SUB:
+      case GT_MUL:
+      case GT_DIV:
+      case GT_IS:
+      case GT_LESS_OR_EQUAL:
+      case GT_MORE_OR_EQUAL:
+      case GT_NOT_EQUAL:
+      case GT_MORE:
+      case GT_LESS:
+      case GT_AND:
+      case GT_OR:
+      case GT_NOT:
+      case GT_BIT_AND:
+      case GT_BIT_OR:
+        result = true;
+        break;
+      default:
+        result = false;
+        break;
+      }
+      return result;
     }
 
     string GetGenTokenValue(GenericTokenEnum token) {
@@ -177,20 +203,35 @@ namespace kagami {
       return result;
     }
 
+    map<string, OperatorCode> &GetOPBase() {
+      using T = pair<string, OperatorCode>;
+      static map<string, OperatorCode> base = {
+        T("+",ADD),
+        T("-",SUB),
+        T("*",MUL),
+        T("/",DIV),
+        T("=",EQUAL),
+        T("==",IS),
+        T("<=",LESS_OR_EQUAL),
+        T(">=",MORE_OR_EQUAL),
+        T("!=",NOT_EQUAL),
+        T(">",MORE),
+        T("<",LESS),
+        T("++",SELFINC),
+        T("--",SELFDEC),
+        T("&&",AND),
+        T("||",OR),
+        T("!",NOT),
+        T("&",BIT_AND),
+        T("|",BIT_OR)
+      };
+      return base;
+    }
+
     OperatorCode GetOperatorCode(string src) {
-      if (src == "+")  return ADD;
-      if (src == "-")  return SUB;
-      if (src == "*")  return MUL;
-      if (src == "/")  return DIV;
-      if (src == "=")  return EQUAL;
-      if (src == "==") return IS;
-      if (src == "<=") return LESS_OR_EQUAL;
-      if (src == ">=") return MORE_OR_EQUAL;
-      if (src == "!=") return NOT_EQUAL;
-      if (src == ">")  return MORE;
-      if (src == "<")  return LESS;
-      if (src == "++") return SELFINC;
-      if (src == "--") return SELFDEC;
+      auto &base = GetOPBase();
+      auto it = base.find(src);
+      if (it != base.end()) return base[src];
       return NUL;
     }
 

@@ -55,10 +55,22 @@ namespace kagami {
     //Spilt
     forwardChar = 0;
     bool delaySuspend = false;
+    bool forwardEscChar = false;
     for (size_t count = 0; count < data.size(); ++count) {
       currentChar = data[count];
       if (delaySuspend) {
         stringProcessing = false;
+        delaySuspend = false;
+      }
+      if (forwardEscChar) {
+        origin.emplace_back(current);
+        current.clear();
+      }
+      if (stringProcessing && forwardChar == '\\') {
+        forwardEscChar = true;
+      }
+      else {
+        forwardEscChar = false;
       }
       if (currentChar == '\'' && forwardChar != '\\') {
         if (!stringProcessing

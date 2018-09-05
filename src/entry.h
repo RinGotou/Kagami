@@ -84,9 +84,9 @@ namespace kagami {
 
   namespace entry {
     enum OperatorCode {
-      ADD, SUB, MUL, DIV, EQUAL, IS, NOT,
+      ADD, SUB, MUL, DIV, EQUAL, IS,
       MORE, LESS, NOT_EQUAL, MORE_OR_EQUAL, LESS_OR_EQUAL,
-      SELFINC, SELFDEC,
+      SELFINC, SELFDEC, AND, OR, NOT, BIT_AND, BIT_OR, 
       NUL
     };
 
