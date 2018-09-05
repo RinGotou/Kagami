@@ -135,12 +135,12 @@ namespace kagami {
     TOKEN_SELFOP, TOKEN_OTHERS
   };
 
-  const string kTypeIdNull      = "null";
+  const string kTypeIdNull      = "Null";
   const string kTypeIdInt       = "int";
-  const string kTypeIdRawString = "string";
-  const string kTypeIdArrayBase = "deque";
-  const string kTypeIdCubeBase  = "cube";
-  const string kTypeIdRef       = "ref";
+  const string kTypeIdRawString = "RawString";
+  const string kTypeIdArrayBase = "Array";
+  const string kTypeIdCubeBase  = "Cube";
+  const string kTypeIdRef       = "Ref";
 
   const size_t kModeNormal        = 0;
   const size_t kModeNextCondition = 1;

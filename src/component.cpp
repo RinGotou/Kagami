@@ -258,7 +258,34 @@ namespace kagami {
     return Message(kStrRedirect, kCodeSuccess, result);
   }
 
+  Message GetRawStringType(ObjectMap &p) {
+    Object &obj = p["object"];
+    string result;
+    if (obj.GetTypeId() == kTypeIdRawString) {
+      string str = *static_pointer_cast<string>(obj.Get());
+      Kit::IsString(str) ? str = Kit::GetRawString(str) : str = str;
+      switch (Kit::GetTokenType(str)) {
+      case TokenTypeEnum::T_BOOLEAN:result = "'boolean'"; break;
+      case TokenTypeEnum::T_GENERIC:result = "'generic'"; break;
+      case TokenTypeEnum::T_INTEGER:result = "'integer'"; break;
+      case TokenTypeEnum::T_DOUBLE:result = "'double'"; break;
+      case TokenTypeEnum::T_SYMBOL:result = "'symbol'"; break;
+      case TokenTypeEnum::T_BLANK:result = "'blank'"; break;
+      case TokenTypeEnum::T_STRING:result = "'string'"; break;
+      case TokenTypeEnum::T_NUL:result = "'null'"; break;
+      default:result = "'null'"; break;
+      }
+    }
+    else {
+      result = "'null'";
+    }
+    return Message(kStrRedirect, kCodeSuccess, result);
+  }
 
+  Message GetTypeId(ObjectMap &p) {
+    Object &obj = p["object"];
+    return Message(kStrRedirect, kCodeSuccess, obj.GetTypeId());
+  }
 
   Message Set(ObjectMap &p) {
     Message msg;
@@ -384,7 +411,6 @@ namespace kagami {
 
   void AddGenEntries() {
     using namespace entry;
-
     AddGenericEntry(GT_NOP, Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
     AddGenericEntry(GT_END, Entry(End, "", GT_END));
     AddGenericEntry(GT_ELSE, Entry(Else, "", GT_ELSE));
@@ -417,12 +443,13 @@ namespace kagami {
     using namespace entry;
     AddGenEntries();
     InitPlanners();
-
     AddEntry(Entry(WriteLog, kCodeNormalParm, "msg", "log"));
     AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
     AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
     AddEntry(Entry(Print, kCodeNormalParm, "object", "print"));
     AddEntry(Entry(TimeReport, kCodeNormalParm, "", "time"));
     AddEntry(Entry(Quit, kCodeNormalParm, "", "quit"));
+    AddEntry(Entry(GetTypeId, kCodeNormalParm, "object", "typeid"));
+    AddEntry(Entry(GetRawStringType, kCodeNormalParm, "object", "type"));
   }
 }
