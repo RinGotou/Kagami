@@ -128,4 +128,24 @@ namespace kagami {
     result.pop_back();
     return result;
   }
+
+  string Kit::GetRawString(string target) {
+    string str = target.substr(1, target.size() - 2);
+    string output;
+    bool escape = false;
+    for (size_t i = 0; i < str.size(); i++) {
+      if (str[i] == '\\') {
+        escape = true;
+        continue;
+      }
+      if (escape) {
+        output.append(1, ConvertChar(str[i]));
+        escape = false;
+      }
+      else {
+        output.append(1, str[i]);
+      }
+    }
+    return output;
+  }
 }
