@@ -54,6 +54,12 @@ namespace kagami {
           break;
         }
         break;
+      case OperatorCode::BIT_AND:
+      case OperatorCode::BIT_OR:
+
+        break;
+      default:
+        break;
       }
     }
     else if (groupType = G_STR) {
@@ -68,6 +74,26 @@ namespace kagami {
       case OperatorCode::IS:
       case OperatorCode::NOT_EQUAL:
         kit.Logic(dataA, dataB, OP) ? temp = kStrTrue : temp = kStrFalse;
+        break;
+      case OperatorCode::AND:
+        if ((dataA == kStrTrue || dataA == kStrFalse)
+          && (dataB == kStrTrue || dataB == kStrFalse)) {
+          if (dataA == kStrTrue && dataB == kStrTrue) temp = kStrTrue;
+          else temp = kStrFalse;
+        }
+        else {
+          temp = kStrFalse;
+        }
+        break;
+      case OperatorCode::OR:
+        if((dataA == kStrTrue || dataA == kStrFalse)
+          && (dataB == kStrTrue || dataB == kStrFalse)) {
+          if (dataA == kStrTrue || dataB == kStrTrue) temp = kStrTrue;
+          else temp = kStrFalse;
+        }
+        else {
+          temp = kStrFalse;
+        }
         break;
       default:
         break;
@@ -86,6 +112,8 @@ namespace kagami {
   Message More(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">")); }
   Message LessOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<=")); }
   Message MoreOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">=")); }
+  Message And(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "&&")); }
+  Message Or(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "||")); }
 
   Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
   Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
@@ -379,6 +407,8 @@ namespace kagami {
     AddGenericEntry(GT_LSELF_DEC, Entry(LeftSelfDecreament, "object", GT_LSELF_DEC));
     AddGenericEntry(GT_RSELF_INC, Entry(RightSelfIncreament, "object", GT_RSELF_INC));
     AddGenericEntry(GT_RSELF_DEC, Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
+    AddGenericEntry(GT_AND, Entry(And, "first|second", GT_AND, kCodeNormalParm, 1));
+    AddGenericEntry(GT_OR, Entry(Or, "first|second", GT_OR, kCodeNormalParm, 1));
     AddGenericEntry(GT_DEF, Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
     AddGenericEntry(GT_RETURN, Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
   }
