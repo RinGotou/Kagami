@@ -125,6 +125,7 @@ namespace kagami {
     GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_IS, 
     GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
     GT_MORE, GT_LESS, GT_RETURN,
+    GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
     GT_NUL
   };
 
@@ -134,12 +135,12 @@ namespace kagami {
     TOKEN_SELFOP, TOKEN_OTHERS
   };
 
-  const string kTypeIdNull      = "null";
+  const string kTypeIdNull      = "Null";
   const string kTypeIdInt       = "int";
-  const string kTypeIdRawString = "string";
-  const string kTypeIdArrayBase = "deque";
-  const string kTypeIdCubeBase  = "cube";
-  const string kTypeIdRef       = "ref";
+  const string kTypeIdRawString = "RawString";
+  const string kTypeIdArrayBase = "Array";
+  const string kTypeIdCubeBase  = "Cube";
+  const string kTypeIdRef       = "Ref";
 
   const size_t kModeNormal        = 0;
   const size_t kModeNextCondition = 1;
@@ -171,6 +172,11 @@ namespace kagami {
     kStrMul = "*",
     kStrDiv = "/",
     kStrIs = "==",
+    kStrAnd = "&&",
+    kStrOr = "||",
+    kStrNot = "!",
+    kStrBitAnd = "&",
+    kStrBitOr = "|",
     kStrLessOrEqual = "<=",
     kStrMoreOrEqual = ">=",
     kStrNotEqual = "!=",

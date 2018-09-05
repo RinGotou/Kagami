@@ -54,6 +54,12 @@ namespace kagami {
           break;
         }
         break;
+      case OperatorCode::BIT_AND:
+      case OperatorCode::BIT_OR:
+
+        break;
+      default:
+        break;
       }
     }
     else if (groupType = G_STR) {
@@ -68,6 +74,26 @@ namespace kagami {
       case OperatorCode::IS:
       case OperatorCode::NOT_EQUAL:
         kit.Logic(dataA, dataB, OP) ? temp = kStrTrue : temp = kStrFalse;
+        break;
+      case OperatorCode::AND:
+        if ((dataA == kStrTrue || dataA == kStrFalse)
+          && (dataB == kStrTrue || dataB == kStrFalse)) {
+          if (dataA == kStrTrue && dataB == kStrTrue) temp = kStrTrue;
+          else temp = kStrFalse;
+        }
+        else {
+          temp = kStrFalse;
+        }
+        break;
+      case OperatorCode::OR:
+        if((dataA == kStrTrue || dataA == kStrFalse)
+          && (dataB == kStrTrue || dataB == kStrFalse)) {
+          if (dataA == kStrTrue || dataB == kStrTrue) temp = kStrTrue;
+          else temp = kStrFalse;
+        }
+        else {
+          temp = kStrFalse;
+        }
         break;
       default:
         break;
@@ -86,6 +112,8 @@ namespace kagami {
   Message More(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">")); }
   Message LessOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<=")); }
   Message MoreOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">=")); }
+  Message And(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "&&")); }
+  Message Or(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "||")); }
 
   Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
   Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
@@ -230,7 +258,34 @@ namespace kagami {
     return Message(kStrRedirect, kCodeSuccess, result);
   }
 
+  Message GetRawStringType(ObjectMap &p) {
+    Object &obj = p["object"];
+    string result;
+    if (obj.GetTypeId() == kTypeIdRawString) {
+      string str = *static_pointer_cast<string>(obj.Get());
+      Kit::IsString(str) ? str = Kit::GetRawString(str) : str = str;
+      switch (Kit::GetTokenType(str)) {
+      case TokenTypeEnum::T_BOOLEAN:result = "'boolean'"; break;
+      case TokenTypeEnum::T_GENERIC:result = "'generic'"; break;
+      case TokenTypeEnum::T_INTEGER:result = "'integer'"; break;
+      case TokenTypeEnum::T_DOUBLE:result = "'double'"; break;
+      case TokenTypeEnum::T_SYMBOL:result = "'symbol'"; break;
+      case TokenTypeEnum::T_BLANK:result = "'blank'"; break;
+      case TokenTypeEnum::T_STRING:result = "'string'"; break;
+      case TokenTypeEnum::T_NUL:result = "'null'"; break;
+      default:result = "'null'"; break;
+      }
+    }
+    else {
+      result = "'null'";
+    }
+    return Message(kStrRedirect, kCodeSuccess, result);
+  }
 
+  Message GetTypeId(ObjectMap &p) {
+    Object &obj = p["object"];
+    return Message(kStrRedirect, kCodeSuccess, obj.GetTypeId());
+  }
 
   Message Set(ObjectMap &p) {
     Message msg;
@@ -356,7 +411,6 @@ namespace kagami {
 
   void AddGenEntries() {
     using namespace entry;
-
     AddGenericEntry(GT_NOP, Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
     AddGenericEntry(GT_END, Entry(End, "", GT_END));
     AddGenericEntry(GT_ELSE, Entry(Else, "", GT_ELSE));
@@ -379,6 +433,8 @@ namespace kagami {
     AddGenericEntry(GT_LSELF_DEC, Entry(LeftSelfDecreament, "object", GT_LSELF_DEC));
     AddGenericEntry(GT_RSELF_INC, Entry(RightSelfIncreament, "object", GT_RSELF_INC));
     AddGenericEntry(GT_RSELF_DEC, Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
+    AddGenericEntry(GT_AND, Entry(And, "first|second", GT_AND, kCodeNormalParm, 1));
+    AddGenericEntry(GT_OR, Entry(Or, "first|second", GT_OR, kCodeNormalParm, 1));
     AddGenericEntry(GT_DEF, Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
     AddGenericEntry(GT_RETURN, Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
   }
@@ -387,12 +443,13 @@ namespace kagami {
     using namespace entry;
     AddGenEntries();
     InitPlanners();
-
     AddEntry(Entry(WriteLog, kCodeNormalParm, "msg", "log"));
     AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
     AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
     AddEntry(Entry(Print, kCodeNormalParm, "object", "print"));
     AddEntry(Entry(TimeReport, kCodeNormalParm, "", "time"));
     AddEntry(Entry(Quit, kCodeNormalParm, "", "quit"));
+    AddEntry(Entry(GetTypeId, kCodeNormalParm, "object", "typeid"));
+    AddEntry(Entry(GetRawStringType, kCodeNormalParm, "object", "type"));
   }
 }

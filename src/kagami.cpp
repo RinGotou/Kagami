@@ -1,5 +1,5 @@
 #include "kagami.h"
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 #include <iostream>
 
 using std::cout;
@@ -73,24 +73,24 @@ namespace kagami {
   void HelpFile() {
     cout << "\nargument with '*': you can leave it blank."
       << endl;
-    cout << "run     [script-path][*log-path] Open a script file to execute;\n"
+    cout << "run   [script-path][*log-path] Open a script file to execute;\n"
       << "\t[script-path] Directory path of Kagami script file;\n"
       << "\t[log-path] Directory path of event log file.\n"
       << "\thint:if user doesn't provide a log-path, application will write into 'project-kagami.log' by default."
       << "\n" << endl;
-    cout << "run-sae [script-path][*log-path] Same as 'run' but stop at application exit."
+    cout << "runs  [script-path][*log-path] Same as 'run' but pause at application exit."
       << "\n" << endl;
-    cout << "run-pd  [script-path] Same as 'run' but event info will print to standard output directly."
+    cout << "runp  [script-path] Same as 'run' but event info will print to standard output directly."
       << "\n" << endl;
-    cout << "help    Show this message."
+    cout << "help  Show this message."
       << "\n" << endl;
   }
 
   int GetOption(char *src) {
     int res = -1;
     if (strcmp(src, "run") == 0) res = 1;
-    else if (strcmp(src, "run-sae") == 0) res = 2;
-    else if (strcmp(src, "run-pd") == 0) res = 3;
+    else if (strcmp(src, "runs") == 0) res = 2;
+    else if (strcmp(src, "runp") == 0) res = 3;
     else if (strcmp(src, "help") == 0) res = 4;
     return res;
   }
@@ -98,7 +98,7 @@ namespace kagami {
 #ifndef _NO_CUI_
   void AtExitHandler() {
     cout << "Press enter to close..." << endl;
-    std::cin.get();
+    cin.get();
   }
 #endif
 
@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
     case -1:
     default:
       scriptCore.MyInfo();
-      cout << "unknown option.exit." << endl;
+      cout << "Unknown option.exit." << endl;
       break;
     }
   }
