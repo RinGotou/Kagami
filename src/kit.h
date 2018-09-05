@@ -64,10 +64,7 @@ namespace kagami {
       return result;
     }
 
-    static string GetRawString(string target) {
-      return target.substr(1, target.size() - 2);
-    }
-
+    static string GetRawString(string target);
     static bool IsString(string target);
     static bool IsGenericToken(string target);
     static bool IsInteger(string target);

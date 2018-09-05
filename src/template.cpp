@@ -126,20 +126,7 @@ namespace kagami {
     if (object.GetTypeId() == kTypeIdRawString) {
       auto data = *static_pointer_cast<string>(object.Get());
       if (Kit::IsString(data)) data = Kit::GetRawString(data);
-      for (size_t count = 0; count < data.size(); ++count) {
-        if (data.at(count) == '\\') {
-          needConvert = true;
-          continue;
-        }
-        if (needConvert) {
-          msg.append(1, Kit::ConvertChar(data.at(count)));
-          needConvert = false;
-        }
-        else {
-          msg.append(1, data.at(count));
-        }
-      }
-      std::cout << msg;
+      std::cout << data;
       if (!doNotWrap) std::cout << std::endl;
     }
     return result;
