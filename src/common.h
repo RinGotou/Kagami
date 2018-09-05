@@ -125,6 +125,7 @@ namespace kagami {
     GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_IS, 
     GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
     GT_MORE, GT_LESS, GT_RETURN,
+    GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
     GT_NUL
   };
 
@@ -171,6 +172,11 @@ namespace kagami {
     kStrMul = "*",
     kStrDiv = "/",
     kStrIs = "==",
+    kStrAnd = "&&",
+    kStrOr = "||",
+    kStrNot = "!",
+    kStrBitAnd = "&",
+    kStrBitOr = "|",
     kStrLessOrEqual = "<=",
     kStrMoreOrEqual = ">=",
     kStrNotEqual = "!=",
