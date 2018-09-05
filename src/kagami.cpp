@@ -76,7 +76,7 @@ namespace kagami {
     cout << "run     [script-path][*log-path] Open a script file to execute;\n"
       << "\t[script-path] Directory path of Kagami script file;\n"
       << "\t[log-path] Directory path of event log file.\n"
-      << "\thint:if you doesn't provide a log-path, application will write into 'project-kagami.log' by default."
+      << "\thint:if user doesn't provide a log-path, application will write into 'project-kagami.log' by default."
       << "\n" << endl;
     cout << "run-sae [script-path][*log-path] Same as 'run' but stop at application exit."
       << "\n" << endl;
