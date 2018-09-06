@@ -105,6 +105,12 @@ namespace kagami {
 int main(int argc, char **argv) {
   kagami::ScriptCore scriptCore;
 
+  //solve utf-8 encoding
+  //Although codecvt_utf8 is not available in C++17..
+  //But we're now in C++11,isn't it?
+  std::locale::global(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
+  std::wcout.imbue(std::locale(""));
+
   //switch main code between test case and normal case.
   //this macro can be found in the head of this file.
 #ifdef _ENABLE_DEBUGGING_

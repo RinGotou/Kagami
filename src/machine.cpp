@@ -6,6 +6,26 @@
 #include "machine.h"
 
 namespace kagami {
+  //from MSDN
+  std::wstring s2ws(const std::string& s) {
+    auto slength = static_cast<int>(s.length()) + 1;
+    auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    auto *buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
+  }
+
+  std::string ws2s(const std::wstring& s) {
+    int len;
+    int slength = (int)s.length() + 1;
+    len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
+    std::string r(len, '\0');
+    WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
+    return r;
+  }
+
   map<string, Machine> &GetFunctionBase() {
     static map<string, Machine> base;
     return base;
@@ -83,15 +103,17 @@ namespace kagami {
   }
 
   Machine::Machine(const char *target) {
-    std::ifstream stream;
-    string temp;
+    std::wifstream stream;
+    wstring buf;
     health = true;
     size_t subscript = 0;
 
     stream.open(target, std::ios::in);
     if (stream.good()) {
       while (!stream.eof()) {
-        std::getline(stream, temp);
+        std::getline(stream, buf);
+        string temp = ws2s(buf);
+        if (temp.back() == '\0') temp.pop_back();
         if (!IsBlankStr(temp) && temp.front() != '#') {
           storage.emplace_back(Processor().Build(temp).SetIndex(subscript));
         }
@@ -227,7 +249,7 @@ namespace kagami {
   }
 
   bool Machine::IsBlankStr(string target) {
-    if (target == kStrEmpty || target.size() == 0) return true;
+    if (target.empty() || target.size() == 0) return true;
     for (const auto unit : target) {
       if (unit != '\n' && unit != ' ' && unit != '\t' && unit != '\r') {
         return false;

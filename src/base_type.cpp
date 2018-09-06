@@ -1,7 +1,9 @@
-#include "template.h"
+#include "base_type.h"
 #include <iostream>
 
 namespace kagami {
+  //components
+
   //Common
   shared_ptr<void> NoCopy(shared_ptr<void> target) {
     return target;
@@ -83,7 +85,7 @@ namespace kagami {
 
   Message ArrayPrint(ObjectMap &p) {
     Message result;
-    Object object = p.at("object");
+    Object object = p[kStrObject];
     ObjectMap map;
     if (object.GetTypeId() == kTypeIdArrayBase) {
       auto &base = *static_pointer_cast<vector<Object>>(object.Get());
@@ -134,24 +136,23 @@ namespace kagami {
 
   Message RawStringPrint(ObjectMap &p) {
     Message result;
-    auto &object = p.at("object");
+    auto &object = p[kStrObject];
     bool doNotWrap = (p.find("not_wrap") != p.end());
     string msg;
     auto needConvert = false;
 
-    if (object.GetTypeId() == kTypeIdRawString) {
-      auto data = *static_pointer_cast<string>(object.Get());
-      if (Kit::IsString(data)) data = Kit::GetRawString(data);
-      std::cout << data;
-      if (!doNotWrap) std::cout << std::endl;
-    }
+    auto data = *static_pointer_cast<string>(object.Get());
+    if (Kit::IsString(data)) data = Kit::GetRawString(data);
+    std::cout << data;
+    if (!doNotWrap) std::cout << std::endl;
+    
     return result;
   }
 
   //String
   Message StringConstructor(ObjectMap &p) {
     Object &obj = p["raw_string"];
-    if (obj.GetTypeId() != kTypeIdRawString) {
+    if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdString) {
       return Message(kStrFatalError, kCodeIllegalParm, "String constructor can't accept this object.");
     }
     Object base;
@@ -192,7 +193,7 @@ namespace kagami {
   }
 
   Message StringPrint(ObjectMap &p) {
-    string &str = GetObjectStuff<string>(p["object"]);
+    string &str = GetObjectStuff<string>(p[kStrObject]);
     std::cout << str << std::endl;
     return Message();
   }
@@ -369,6 +370,22 @@ namespace kagami {
     return Message(kStrRedirect, kCodeSuccess, state);
   }
 
+  //wstring
+  Message WideStringContructor(ObjectMap &p) {
+    Object obj = p["raw_string"];
+    if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdString) {
+      return Message(kStrFatalError, kCodeIllegalParm, "String constructor can't accept this object.");
+    }
+    Object base;
+    string origin = GetObjectStuff<string>(obj);
+    string output;
+    if (Kit::IsString(origin)) output = origin.substr(1, origin.size() - 2);
+    else output = origin;
+    wstring wstr = s2ws(output);
+    std::wcout << wstr << std::endl;
+    return Message();
+  }
+
   void InitPlanners() {
     using type::AddTemplate;
     using entry::AddEntry;
@@ -406,6 +423,8 @@ namespace kagami {
     AddTemplate(kTypeIdRegex, ObjectPlanner(NoCopy, kTypeIdRegex));
     AddEntry(Entry(RegexConstructor, kCodeNormalParm, "regex", "regex"));
     AddEntry(Entry(RegexMatch, kCodeNormalParm, "str", "match", kTypeIdRegex, kFlagMethod));
+
+    AddEntry(Entry(WideStringContructor, kCodeNormalParm, "raw_string", "wstring"));
 
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
   }
