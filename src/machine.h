@@ -71,6 +71,7 @@ namespace kagami {
   void Activiate();
   void InitPlanners();
   Message FunctionTunnel(ObjectMap &p);
+  Message Calling(Activity activity, string args, vector<Object> objects);
 }
 
 
