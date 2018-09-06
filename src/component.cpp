@@ -106,8 +106,6 @@ namespace kagami {
   Message Sub(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "-")); }
   Message Multiply(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "*")); }
   Message Divide(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "/")); }
-  Message LogicEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "==")); }
-  Message LogicNotEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "!=")); }
   Message Less(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<")); }
   Message More(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">")); }
   Message LessOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<=")); }
@@ -120,6 +118,40 @@ namespace kagami {
   Message If(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty); }
   Message Elif(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty); }
   Message While(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty); }
+
+  //pending modify
+  Message LogicEqual(ObjectMap &p) {
+    Object objFirst = p["first"], objSecond = p["second"];
+    Message msg;
+    if (objFirst.GetTypeId() != kTypeIdRawString 
+      || objSecond.GetTypeId() != kTypeIdRawString) {
+      auto ent = entry::Order("__compare", objFirst.GetTypeId(), 1);
+      if (ent.Good()) {
+        msg = ent.Start(p);
+      }
+    }
+    else {
+      msg.combo(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "=="));
+    }
+    return msg;
+  }
+  Message LogicNotEqual(ObjectMap &p) {
+    Object objFirst = p["first"], objSecond = p["second"];
+    Message msg;
+    if (objFirst.GetTypeId() != kTypeIdRawString
+      || objSecond.GetTypeId() != kTypeIdRawString) {
+      auto ent = entry::Order("__compare", objFirst.GetTypeId(), 1);
+      if (ent.Good()) {
+        msg = ent.Start(p);
+      }
+      if (msg.GetDetail() == kStrTrue) msg.SetDetail(kStrFalse);
+      else msg.SetDetail(kStrTrue);
+    }
+    else {
+      msg.combo(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "!="));
+    }
+    return msg;
+  }
 
   Message Define(ObjectMap &p) {
     vector<string> defHead;
@@ -327,7 +359,7 @@ namespace kagami {
 
   Message Print(ObjectMap &p) {
     Message result;
-    auto &object = p["object"];
+    auto &object = p[kStrObject];
     auto errorMsg = []() {
       std::cout << "You can't print this object." << std::endl;
     };
@@ -446,7 +478,7 @@ namespace kagami {
     AddEntry(Entry(WriteLog, kCodeNormalParm, "msg", "log"));
     AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
     AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
-    AddEntry(Entry(Print, kCodeNormalParm, "object", "print"));
+    AddEntry(Entry(Print, kCodeNormalParm, kStrObject, "print"));
     AddEntry(Entry(TimeReport, kCodeNormalParm, "", "time"));
     AddEntry(Entry(Quit, kCodeNormalParm, "", "quit"));
     AddEntry(Entry(GetTypeId, kCodeNormalParm, "object", "typeid"));

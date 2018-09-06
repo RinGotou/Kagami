@@ -8,6 +8,8 @@
 #include <regex>
 #include <cstddef>
 #include <stack>
+#include <locale>
+#include <codecvt>
 
 #ifndef _NO_CUI_
 #include <iostream>
@@ -15,8 +17,9 @@
 
 #if defined(_WIN32)
 #include "windows.h"
+#define WIN32_LEAN_AND_MEAN
 #else
-
+#include <dlfcn.h>
 #endif
 
 namespace kagami {
@@ -40,6 +43,7 @@ namespace kagami {
   using std::stoi;
   using std::stof;
   using std::stod;
+  using std::wstring;
 
   struct ActivityTemplate;
   class Message;
@@ -140,6 +144,7 @@ namespace kagami {
   const string kTypeIdNull      = "Null";
   //const string kTypeIdInt       = "int";
   const string kTypeIdString    = "String";
+  const string kTypeIdWideString = "WString";
   const string kTypeIdRawString = "RawString";
   const string kTypeIdArrayBase = "Array";
   const string kTypeIdInStream  = "instream";
