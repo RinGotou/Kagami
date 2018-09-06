@@ -144,6 +144,7 @@ namespace kagami {
   const string kTypeIdArrayBase = "Array";
   const string kTypeIdInStream  = "instream";
   const string kTypeIdOutStream = "outstream";
+  const string kTypeIdRegex     = "regex";
   //const string kTypeIdCubeBase  = "Cube";
   const string kTypeIdRef       = "Ref";
 
