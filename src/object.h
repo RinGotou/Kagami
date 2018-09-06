@@ -3,6 +3,7 @@
 #include "list.h" 
 
 namespace kagami {
+  using Destructor = void(*)(shared_ptr<void>);
   /*Object Class
   A shared void pointer is packaged in this.Almost all variables and
   constants are managed by shared pointers.This class will be packaged
@@ -16,6 +17,7 @@ namespace kagami {
     string originId;
     TokenTypeEnum tokenTypeEnum;
     bool ro, permanent, ref, constructor, placeholder, retSign, argSign;
+    bool hasDestructor;
     Object *parent;
 
     Object *GetTargetObject() { return static_pointer_cast<TargetObject>(ptr)->ptr; }
@@ -40,6 +42,7 @@ namespace kagami {
     Object &SetPlaceholder();
     Object &SetRetSign();
     Object &SetArgSign(string id);
+    //Object &SetDestructor()
 
     string GetOriginId() const { return originId; }
     void SetParentObject(Object &object) { parent = &object; }

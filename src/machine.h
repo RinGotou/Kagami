@@ -11,6 +11,11 @@
 #endif
 
 namespace kagami {
+  template <class T>
+  T &GetObjectStuff(Object &obj) {
+    return *static_pointer_cast<T>(obj.Get());
+  }
+
   using MachCtlBlk = struct {
     size_t current;
     stack<size_t> cycleNestStack, cycleTailStack, modeStack;
@@ -66,6 +71,7 @@ namespace kagami {
   void Activiate();
   void InitPlanners();
   Message FunctionTunnel(ObjectMap &p);
+  Message Calling(Activity activity, string args, vector<Object> objects);
 }
 
 

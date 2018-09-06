@@ -134,7 +134,7 @@ namespace kagami {
     string output;
     bool escape = false;
     for (size_t i = 0; i < str.size(); i++) {
-      if (str[i] == '\\') {
+      if (str[i] == '\\' && !escape) {
         escape = true;
         continue;
       }

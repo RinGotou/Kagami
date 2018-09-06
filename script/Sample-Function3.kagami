@@ -37,6 +37,84 @@ def LogicTest()
 	print('LogicTest end.')
 end
 
+def TypeTest()def PrintWithTime(msg)
+	print('[' + time() + ']' + msg)
+	print('PrintWithTime end.')
+end
+
+def Greet(name)
+	print('Hello,' + name + '!')
+	print('Greet end.')
+end
+
+def CalcTest()
+	result0 = 1 - 2 - 3
+	result1 = 1 - (2 - 3)
+	print(1+2*5)
+	if (result0 != -4)
+		print('Calc is broken.')
+	else
+		print('1-2-3=' + result0)
+	end
+	if (result1 != 2)
+		print('Calc is broken.')
+	else
+		print('1-(2-3)=' + result1)
+	end	
+	print('CalcTest end.')
+end
+
+def LogicTest()
+	result0 = true && false
+	result1 = true && true
+	result2 = true || false
+	result3 = false|| true
+	print(result0)
+	print(result1)
+	print(result2)
+	print(result3)
+	print('LogicTest end.')
+end
+
+def TypeTest()
+	str0 = '123'
+	str1 = '\'string\''
+	str2 = '1.23'
+	str3 = 'true'
+	ar = array(10,0)
+	print('TypeId of str0:' + typeid(str0))
+	print('TypeId of ar:' + typeid(ar))
+	print('Type of string:')
+	print(type(str0))
+	print(type(str1))
+	print(type(str2))
+	print(type(str3))
+	print('TypeTest end.')
+end
+
+def ArrayTest()
+	ar = array(5,'hello')
+	print('Array size:' + ar.size())
+	print(ar)
+	i = 0
+	while(i < 5)
+		ar[i] = ar[i] + ' Loop x' + i
+		i++
+	end
+	print(ar)
+	print('ArrayTest end.')
+end
+
+def StringTest()
+	origin = input('Input a string (size>10) : ')
+	str = string(origin)
+	print('String size:' + str.size())
+	print('String stuff:')
+	print(str)
+	print(str.substr(1,6))
+	print('StringTest end.')
+end
+
 def Menu()
 	choice = convert(input('> '))
 	return(choice)
@@ -44,7 +122,8 @@ end
 
 def main()
 	flag = 0
-	print('Menu:\n1.Greet Test\n2.Time Test\n3.Calculator Test\n4.Logic Test\n0.Quit')
+	print('Menu:\n1.Greet Test\n2.Time Test\n3.Calculator Test')
+	print('4.Logic Test\n5.Type Test\n6.Array Test\n7.String Test\n0.Quit')
 	while(flag != 1)
 		choice = Menu()
 		if(choice == 1)
@@ -55,6 +134,86 @@ def main()
 			CalcTest()
 		elif(choice == 4)
 			LogicTest()
+		elif(choice == 5)
+			TypeTest()
+		elif(choice == 6)
+			ArrayTest()
+		elif(choice == 7)
+			StringTest()
+		elif(choice == 0)
+			flag = 1
+		else
+			print('Wrong item.')
+		end
+	end
+
+	input('Press enter to exit...')
+end
+
+main()
+	str0 = '123'
+	str1 = '\'string\''
+	str2 = '1.23'
+	str3 = 'true'
+	ar = array(10,0)
+	print('TypeId of str0:' + typeid(str0))
+	print('TypeId of ar:' + typeid(ar))
+	print('Type of string:')
+	print(type(str0))
+	print(type(str1))
+	print(type(str2))
+	print(type(str3))
+	print('TypeTest end.')
+end
+
+def ArrayTest()
+	ar = array(5,'hello')
+	print('Array size:' + ar.size())
+	print(ar)
+	i = 0
+	while(i < 5)
+		ar[i] = ar[i] + ' Loop x' + i
+		i++
+	end
+	print(ar)
+	print('ArrayTest end.')
+end
+
+def StringTest()
+	origin = input('Input a string (size>10) : ')
+	str = string(origin)
+	print('String size:' + str.size())
+	print('String stuff:')
+	print(str)
+	print(str.substr(1,6))
+	print('StringTest end.')
+end
+
+def Menu()
+	choice = convert(input('> '))
+	return(choice)
+end
+
+def main()
+	flag = 0
+	print('Menu:\n1.Greet Test\n2.Time Test\n3.Calculator Test')
+	print('4.Logic Test\n5.Type Test\n6.Array Test\n7.String Test\n0.Quit')
+	while(flag != 1)
+		choice = Menu()
+		if(choice == 1)
+			Greet(input('What\'s your name? > '))
+		elif(choice == 2)
+			PrintWithTime('This is message with time head.')
+		elif(choice == 3)
+			CalcTest()
+		elif(choice == 4)
+			LogicTest()
+		elif(choice == 5)
+			TypeTest()
+		elif(choice == 6)
+			ArrayTest()
+		elif(choice == 7)
+			StringTest()
 		elif(choice == 0)
 			flag = 1
 		else
