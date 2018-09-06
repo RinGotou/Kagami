@@ -6,6 +6,7 @@
 #include "machine.h"
 
 namespace kagami {
+#if defined(_WIN32) && defined(_MSC_VER)
   //from MSDN
   std::wstring s2ws(const std::string& s) {
     auto slength = static_cast<int>(s.length()) + 1;
@@ -25,7 +26,27 @@ namespace kagami {
     WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
     return r;
   }
+#else
+  std::wstring s2ws(const std::string& s) {
+    if (s.empty()) return wstring();
+    size_t length = s.size();
+    wchar_t *wc = (wchar_t*)malloc(sizeof(wchar_t)* (length + 2));
+    mbstowcs(wc, s.c_str(), s.length() + 1);
+    std::wstring str(wc);
+    free(wc);
+    return str;
+  }
 
+  std::string ws2s(const std::wstring& s) {
+    if (s.empty()) return string();
+    size_t length = s.size();
+    char *c = (char*)malloc(sizeof(char)* length * 2);
+    wcstombs(c, s.c_str(), s.length() + 1);
+    std::string result(c);
+    free(c);
+    return result;
+  }
+#endif
   map<string, Machine> &GetFunctionBase() {
     static map<string, Machine> base;
     return base;
@@ -113,7 +134,7 @@ namespace kagami {
       while (!stream.eof()) {
         std::getline(stream, buf);
         string temp = ws2s(buf);
-        if (temp.back() == '\0') temp.pop_back();
+        if (!temp.empty() && temp.back() == '\0') temp.pop_back();
         if (!IsBlankStr(temp) && temp.front() != '#') {
           storage.emplace_back(Processor().Build(temp).SetIndex(subscript));
         }

@@ -152,22 +152,41 @@ namespace kagami {
   //String
   Message StringConstructor(ObjectMap &p) {
     Object &obj = p["raw_string"];
-    if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdString) {
+    Object base;
+    if (obj.GetTypeId() != kTypeIdRawString 
+      && obj.GetTypeId() != kTypeIdString
+      && obj.GetTypeId() != kTypeIdWideString) {
       return Message(kStrFatalError, kCodeIllegalParm, "String constructor can't accept this object.");
     }
-    Object base;
-    string origin = GetObjectStuff<string>(obj);
-    string output;
-    if (Kit::IsString(origin)) {
-      output = Kit::GetRawString(origin);
+    if (obj.GetTypeId() == kTypeIdWideString) {
+      wstring wstr = GetObjectStuff<wstring>(obj);
+      string output = ws2s(wstr);
+      base.Set(make_shared<string>(output), kTypeIdString)
+        .SetConstructorFlag()
+        .SetMethods(kStringMethods)
+        .SetRo(false);
+    }
+    else if (obj.GetTypeId() == kTypeIdString) {
+      base.Set(obj.Get(), kTypeIdString)
+        .SetConstructorFlag()
+        .SetMethods(kStringMethods)
+        .SetRo(false);
     }
     else {
-      output = origin;
+      string origin = GetObjectStuff<string>(obj);
+      string output;
+      if (Kit::IsString(origin)) {
+        output = Kit::GetRawString(origin);
+      }
+      else {
+        output = origin;
+      }
+      base.Set(make_shared<string>(output), kTypeIdString)
+        .SetConstructorFlag()
+        .SetMethods(kStringMethods)
+        .SetRo(false);
     }
-    base.Set(make_shared<string>(output), kTypeIdString)
-      .SetConstructorFlag()
-      .SetMethods(kStringMethods)
-      .SetRo(false);
+
     Message msg;
     msg.SetObject(base, "__result");
     return msg;
@@ -216,6 +235,13 @@ namespace kagami {
     }
     return msg;
   }
+
+  //Message StringToWide(ObjectMap &p) {
+  //  Object &obj = p[kStrObject];
+  //  string origin = GetObjectStuff<string>(obj);
+  //  wstring wstr = s2ws(origin);
+
+  //}
 
   //InStream
   Message InStreamConsturctor(ObjectMap &p) {
@@ -382,8 +408,12 @@ namespace kagami {
     if (Kit::IsString(origin)) output = origin.substr(1, origin.size() - 2);
     else output = origin;
     wstring wstr = s2ws(output);
-    std::wcout << wstr << std::endl;
-    return Message();
+    base.Set(make_shared<wstring>(wstr), kTypeIdWideString)
+      .SetMethods(kWideStringMethods)
+      .SetRo(false);
+    Message msg;
+    msg.SetObject(base, "__result");
+    return msg;
   }
 
   void InitPlanners() {

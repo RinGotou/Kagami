@@ -10,6 +10,7 @@
 #include <stack>
 #include <locale>
 #include <codecvt>
+#include <cstdlib>
 
 #ifndef _NO_CUI_
 #include <iostream>
@@ -18,6 +19,7 @@
 #if defined(_WIN32)
 #include "windows.h"
 #define WIN32_LEAN_AND_MEAN
+#pragma warning(disable:4996)
 #else
 #include <dlfcn.h>
 #endif
