@@ -2,6 +2,9 @@
 #include "machine.h"
 
 namespace kagami {
+  const string kArrayBaseMethods = "size|__at|__print";
+  const string kStringMethods = "size|__at|__print|substr|to_wide";
+  using ArrayBase = vector<Object>;
   template <class T>
   shared_ptr<void> SimpleSharedPtrCopy(shared_ptr<void> target) {
     T temp(*static_pointer_cast<T>(target));
