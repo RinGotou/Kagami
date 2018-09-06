@@ -5,11 +5,7 @@ namespace kagami {
   //Array
   shared_ptr<void> ArrayCopy(shared_ptr<void> target) {
     const auto ptr = static_pointer_cast<vector<Object>>(target);
-    vector<Object> base;
-
-    for (auto &unit : *ptr) {
-      base.push_back(unit);
-    }
+    vector<Object> base = *ptr;
     return make_shared<vector<Object>>(std::move(base));
   }
 
@@ -20,31 +16,33 @@ namespace kagami {
 
   Message ArrayConstructor(ObjectMap &p) {
     Message result;
-    auto size = p["size"];
-    Object initValue = Object();
+    auto size = stoi(*static_pointer_cast<string>(p["size"].Get()));
+    Object obj = Object();
     auto it = p.find("init_value");
-    if (it != p.end()) initValue = it->second;
-
-    const auto sizeValue = stoi(*static_pointer_cast<string>(size.Get()));
+    if (it != p.end()) {
+      obj.Copy(it->second);
+      obj.SetRo(false);
+    }
     vector<Object> base;
 
-    if (sizeValue <= 0) {
+    if (size <= 0) {
       result.combo(kStrFatalError, kCodeIllegalParm, "Illegal array size.");
       return result;
     }
 
-    const auto typeId = initValue.GetTypeId();
-    const auto methods = initValue.GetMethods();
-    const auto TokenTypeEnum = initValue.GetTokenType();
+    const auto typeId = obj.GetTypeId();
+    const auto methods = obj.GetMethods();
+    const auto TokenTypeEnum = obj.GetTokenType();
     shared_ptr<void> initPtr;
-    base.reserve(sizeValue);
+    base.reserve(size);
 
-    for (auto count = 0; count < sizeValue; count++) {
-      initPtr = type::GetObjectCopy(initValue);
+    for (auto count = 0; count < size; count++) {
+      initPtr = type::GetObjectCopy(obj);
       base.emplace_back((Object()
         .Set(initPtr, typeId)
         .SetMethods(methods)
-        .SetTokenType(TokenTypeEnum).SetRo(false)));
+        .SetTokenType(TokenTypeEnum)
+        .SetRo(false)));
     }
 
     result.SetObject(Object()
@@ -60,9 +58,9 @@ namespace kagami {
     Message result;
     Object temp;
     size_t size;
-    int count0;
     auto object = p.at(kStrObject), subscript1 = p["subscript_1"];
     const auto typeId = object.GetTypeId();
+    int idx = stoi(*static_pointer_cast<string>(subscript1.Get()));
 
     const auto makeStrToken = [](char target)->string {
       return string().append("'").append(1, target).append("'");
@@ -73,20 +71,19 @@ namespace kagami {
       if (Kit::IsString(data)) {
         data = Kit::GetRawString(data);
       }
-      count0 = stoi(*static_pointer_cast<string>(subscript1.Get()));
       size = data.size();
-      if (count0 <= int(size - 1)) {
-        result.combo(kStrRedirect, kCodeSuccess, makeStrToken(data.at(count0)));
+      if (idx <= int(size - 1)) {
+        result.combo(kStrRedirect, kCodeSuccess, makeStrToken(data.at(idx)));
       }
       else {
         result.combo(kStrFatalError, kCodeOverflow, "Subscript is out of range");
       }
     }
     else if (typeId == kTypeIdArrayBase) {
-      count0 = stoi(*static_pointer_cast<string>(subscript1.Get()));
+      auto &base = *static_pointer_cast<vector<Object>>(object.Get());
       size = static_pointer_cast<vector<Object>>(object.Get())->size();
-      if (count0 <= int(size - 1)) {
-        auto &target = static_pointer_cast<vector<Object>>(object.Get())->at(count0);
+      if (idx <= int(size - 1)) {
+        auto &target = base[idx];
         temp.Ref(target);
         result.SetObject(temp, "__element");
       }
@@ -139,10 +136,10 @@ namespace kagami {
     ObjectMap map;
     if (object.GetTypeId() == kTypeIdArrayBase) {
       auto &base = *static_pointer_cast<vector<Object>>(object.Get());
-      auto provider = entry::Order("print", kTypeIdNull, -1);
+      auto ent = entry::Order("print", kTypeIdNull, -1);
       for (auto &unit : base) {
         map.insert(pair<string, Object>("object", unit));
-        result = provider.Start(map);
+        result = ent.Start(map);
         map.clear();
       }
     }
