@@ -321,6 +321,7 @@ namespace kagami {
     auto flag = ent.GetFlag();
     if (flag == kFlagMethod) {
       objMap.insert(NamedObject(kStrObject, blk->item.back()));
+      parms.push_back(Object().SetArgSign(blk->item.back().GetOriginId()));
       blk->item.pop_back();
     }
 
@@ -641,7 +642,7 @@ namespace kagami {
     auto getObject = [&](Object &obj) -> Object{
       if (obj.IsRetSign()) {
         Object res = retBase.front();
-        retBase.pop_back();
+        retBase.pop_front();
         return res;
       }
       if (obj.IsArgSign()) {
@@ -686,6 +687,10 @@ namespace kagami {
         }
       }
 
+      if (ent.GetFlag() == kFlagMethod) {
+        objMap.insert(NamedObject(kStrObject, getObject(parms.back())));
+      }
+
       msg = ent.Start(objMap);
       const auto code = msg.GetCode();
       const auto value = msg.GetValue();
@@ -698,11 +703,24 @@ namespace kagami {
         retBase.emplace_back(object);
       }
       else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeHeadPlaceholder) {
-        retBase.emplace_back(Object()
-          .Manage(detail)
+        Object obj;
+        obj.Manage(detail)
           .SetRetSign()
           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-          .SetTokenType(kagami::Kit::GetTokenType(detail)));
+          .SetTokenType(kagami::Kit::GetTokenType(detail));
+        if (entry::IsOperatorToken(ent.GetTokenEnum()) 
+          && it + 1 != instBase.end()) {
+          auto token = (it + 1)->first.GetTokenEnum();
+          if (entry::IsOperatorToken(token)) {
+            retBase.emplace_front(obj);
+          }
+          else {
+            retBase.emplace_back(obj);
+          }
+        }
+        else {
+          retBase.emplace_back(obj);
+        }
       }
     }
     return msg;
