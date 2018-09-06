@@ -217,7 +217,6 @@ namespace kagami {
   }
 
   //InStream
-
   Message InStreamConsturctor(ObjectMap &p) {
     Object &objPath = p["path"];
     //TODO:support for string type
@@ -277,6 +276,73 @@ namespace kagami {
     return Message();
   }
 
+  //OutStream
+  Message OutStreamConstructor(ObjectMap &p) {
+    Object &objPath = p["path"];
+    Object &objMode = p["mode"];
+    string path = Kit::GetRawString(GetObjectStuff<string>(objPath));
+    string mode = Kit::GetRawString(GetObjectStuff<string>(objMode));
+    Message msg;
+    shared_ptr<ofstream> ofs;
+    bool append = false;
+    bool truncate = false;
+    if (mode == "append") append = true;
+    else if (mode == "truncate") truncate = true;
+    if (!append && truncate) {
+      ofs = make_shared<ofstream>(ofstream(path.c_str(), std::ios::out | std::ios::trunc));
+    }
+    else {
+      ofs = make_shared<ofstream>(ofstream(path.c_str(), std::ios::out | std::ios::app));
+    }
+    Object obj;
+    obj.Set(ofs, kTypeIdOutStream)
+      .SetMethods(kOutStreamMethods)
+      .SetRo(false);
+    msg.SetObject(obj, "__result");
+    return msg;
+  }
+
+  Message OutStreamWrite(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ofstream &ofs = GetObjectStuff<ofstream>(obj);
+    Object &objStr = p["str"];
+    Message msg;
+    if (!ofs.good()) {
+      return Message(kStrRedirect, kCodeSuccess, kStrFalse);
+    }
+    if (objStr.GetTypeId() == kTypeIdRawString) {
+      string output;
+      string &origin = GetObjectStuff<string>(objStr);
+      if (Kit::IsString(origin)) {
+        output = Kit::GetRawString(origin);
+      }
+      ofs << output;
+    }
+    else if (objStr.GetTypeId() == kTypeIdString) {
+      string &origin = GetObjectStuff<string>(objStr);
+      ofs << origin;
+    }
+    else {
+      msg.combo(kStrRedirect, kCodeSuccess, kStrFalse);
+    }
+    return msg;
+  }
+
+  Message OutStreamGood(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ofstream &ofs = GetObjectStuff<ofstream>(obj);
+    string state;
+    ofs.good() ? state = kStrTrue : state = kStrFalse;
+    Message msg(kStrRedirect, kCodeSuccess, state);
+    return msg;
+  }
+
+  Message OutStreamClose(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ofstream &ofs = GetObjectStuff<ofstream>(obj);
+    ofs.close();
+    return Message();
+  }
 
   void InitPlanners() {
     using type::AddTemplate;
@@ -305,6 +371,12 @@ namespace kagami {
     AddEntry(Entry(InStreamGood, kCodeNormalParm, "", "good", kTypeIdInStream, kFlagMethod));
     AddEntry(Entry(InStreamEOF, kCodeNormalParm, "", "eof", kTypeIdInStream, kFlagMethod));
     AddEntry(Entry(InStreamClose, kCodeNormalParm, "", "close", kTypeIdInStream, kFlagMethod));
+
+    AddTemplate(kTypeIdOutStream, ObjectPlanner(NoCopy, kOutStreamMethods));
+    AddEntry(Entry(OutStreamConstructor, kCodeNormalParm, "path|mode", "outstream"));
+    AddEntry(Entry(OutStreamWrite, kCodeNormalParm, "str", "write", kTypeIdOutStream, kFlagMethod));
+    AddEntry(Entry(OutStreamGood, kCodeNormalParm, "", "good", kTypeIdOutStream, kFlagMethod));
+    AddEntry(Entry(OutStreamClose, kCodeNormalParm, "", "close", kTypeIdOutStream, kFlagMethod));
 
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
   }
