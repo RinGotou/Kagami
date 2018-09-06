@@ -43,6 +43,15 @@ namespace kagami {
     return true;
   }
 
+  Message Calling(Activity activity, string parmStr, vector<Object> objects) {
+    vector<string> parms = Kit::BuildStringVector(parmStr);
+    ObjectMap objMap;
+    for (size_t i = 0; i < parms.size(); i++) {
+      objMap.insert(NamedObject(parms[i], objects[i]));
+    }
+    return activity(objMap);
+  }
+
   void Machine::MakeFunction(size_t start,size_t end, MachCtlBlk *blk) {
     if (start > end) return;
     auto &defHead = blk->defHead;
@@ -208,7 +217,7 @@ namespace kagami {
       case kModeCycleJump:
         blk->currentMode = blk->modeStack.top();
         blk->modeStack.pop();
-        blk->cycleNestStack.pop();
+        if (!blk->cycleNestStack.empty()) blk->cycleNestStack.pop();
         if (!blk->cycleTailStack.empty()) blk->cycleTailStack.pop();
         entry::DisposeManager();
         break;
