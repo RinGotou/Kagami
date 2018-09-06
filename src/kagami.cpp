@@ -108,6 +108,7 @@ int main(int argc, char **argv) {
   //solve utf-8 encoding
   //Although codecvt_utf8 is not available in C++17..
   //But we're now in C++11,isn't it?
+  std::ios::sync_with_stdio(false);
   std::locale::global(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
   std::wcout.imbue(std::locale(""));
 
