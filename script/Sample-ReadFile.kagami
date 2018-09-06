@@ -1,0 +1,9 @@
+def ReadFile()
+	stream = instream('c:\\workspace\\SomeWords.txt')
+	while(stream.eof() != true)
+		print(stream.get())
+	end
+	stream.close()
+end
+
+ReadFile()

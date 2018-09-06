@@ -2,6 +2,11 @@
 #include <iostream>
 
 namespace kagami {
+  //Common
+  shared_ptr<void> NoCopy(shared_ptr<void> target) {
+    return target;
+  }
+
   //Null
   shared_ptr<void> NullCopy(shared_ptr<void> target) {
     return make_shared<int>(0);
@@ -211,6 +216,68 @@ namespace kagami {
     return msg;
   }
 
+  //InStream
+
+  Message InStreamConsturctor(ObjectMap &p) {
+    Object &objPath = p["path"];
+    //TODO:support for string type
+    string path = Kit::GetRawString(GetObjectStuff<string>(objPath));
+    shared_ptr<ifstream> ifs = make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
+    Message msg;
+    Object obj;
+    obj.Set(ifs, kTypeIdInStream)
+      .SetMethods(kInStreamMethods)
+      .SetRo(false);
+    msg.SetObject(obj, "__result");
+    return msg;
+  }
+
+  Message InStreamGet(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ifstream &ifs = GetObjectStuff<ifstream>(obj);
+    Message msg;
+    if (ifs.eof()) {
+      msg.combo(kStrRedirect, kCodeSuccess, "");
+    }
+    if (ifs.good()) {
+      string str;
+      std::getline(ifs, str);
+      Object obj;
+      obj.Set(make_shared<string>(str), kTypeIdString).SetMethods(kStringMethods).SetRo(false);
+      msg.SetObject(obj, "__result");
+    }
+    else {
+      msg.combo(kStrFatalError, kCodeBadStream, "InStream is not working.");
+    }
+    return msg;
+  }
+
+  Message InStreamGood(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ifstream &ifs = GetObjectStuff<ifstream>(obj);
+    string state;
+    ifs.good() ? state = kStrTrue : state = kStrFalse;
+    Message msg(kStrRedirect, kCodeSuccess, state);
+    return msg;
+  }
+
+  Message InStreamEOF(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ifstream &ifs = GetObjectStuff<ifstream>(obj);
+    string state;
+    ifs.eof() ? state = kStrTrue : state = kStrFalse;
+    Message msg(kStrRedirect, kCodeSuccess, state);
+    return msg;
+  }
+
+  Message InStreamClose(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ifstream &ifs = GetObjectStuff<ifstream>(obj);
+    ifs.close();
+    return Message();
+  }
+
+
   void InitPlanners() {
     using type::AddTemplate;
     using entry::AddEntry;
@@ -231,6 +298,13 @@ namespace kagami {
     AddEntry(Entry(StringPrint, kCodeNormalParm, "", "__print", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringSubStr, kCodeNormalParm, "start|size", "substr", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringGetSize, kCodeNormalParm, "", "size", kTypeIdString, kFlagMethod));
+
+    AddTemplate(kTypeIdInStream, ObjectPlanner(NoCopy, kInStreamMethods));
+    AddEntry(Entry(InStreamConsturctor, kCodeNormalParm, "path", "instream"));
+    AddEntry(Entry(InStreamGet, kCodeNormalParm, "", "get", kTypeIdInStream, kFlagMethod));
+    AddEntry(Entry(InStreamGood, kCodeNormalParm, "", "good", kTypeIdInStream, kFlagMethod));
+    AddEntry(Entry(InStreamEOF, kCodeNormalParm, "", "eof", kTypeIdInStream, kFlagMethod));
+    AddEntry(Entry(InStreamClose, kCodeNormalParm, "", "close", kTypeIdInStream, kFlagMethod));
 
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
   }
