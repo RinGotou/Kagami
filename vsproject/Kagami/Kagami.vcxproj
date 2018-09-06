@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\basic_string.h" />
     <ClInclude Include="..\..\src\common.h" />
     <ClInclude Include="..\..\src\entry.h" />
     <ClInclude Include="..\..\src\kagami.h" />
