@@ -344,6 +344,31 @@ namespace kagami {
     return Message();
   }
 
+  //regex
+  Message RegexConstructor(ObjectMap &p) {
+    Object &obj = p["regex"];
+    string regStr = GetObjectStuff<string>(obj);
+    Kit::IsString(regStr) ? regStr = Kit::GetRawString(regStr): regStr = regStr;
+    shared_ptr<regex> reg = make_shared<regex>(regex(regStr));
+    Object ret;
+    ret.Set(reg, kTypeIdRegex)
+      .SetMethods(kRegexMethods)
+      .SetRo(false);
+    Message msg;
+    msg.SetObject(ret, "__result");
+    return msg;
+  }
+
+  Message RegexMatch(ObjectMap &p) {
+    Object &obj = p["str"];
+    string str = GetObjectStuff<string>(obj);
+    Kit::IsString(str) ? str = Kit::GetRawString(str) : str = str;
+    auto &pat = GetObjectStuff<regex>(p[kStrObject]);
+    string state;
+    regex_match(str, pat) ? state = kStrTrue : state = kStrFalse;
+    return Message(kStrRedirect, kCodeSuccess, state);
+  }
+
   void InitPlanners() {
     using type::AddTemplate;
     using entry::AddEntry;
@@ -377,6 +402,10 @@ namespace kagami {
     AddEntry(Entry(OutStreamWrite, kCodeNormalParm, "str", "write", kTypeIdOutStream, kFlagMethod));
     AddEntry(Entry(OutStreamGood, kCodeNormalParm, "", "good", kTypeIdOutStream, kFlagMethod));
     AddEntry(Entry(OutStreamClose, kCodeNormalParm, "", "close", kTypeIdOutStream, kFlagMethod));
+
+    AddTemplate(kTypeIdRegex, ObjectPlanner(NoCopy, kTypeIdRegex));
+    AddEntry(Entry(RegexConstructor, kCodeNormalParm, "regex", "regex"));
+    AddEntry(Entry(RegexMatch, kCodeNormalParm, "str", "match", kTypeIdRegex, kFlagMethod));
 
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
   }

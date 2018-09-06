@@ -6,6 +6,7 @@ namespace kagami {
   const string kStringMethods = "size|__at|__print|substr|to_wide";
   const string kInStreamMethods = "get|good|getlines|close|eof";
   const string kOutStreamMethods = "write|good|close";
+  const string kRegexMethods = "match";
 
   using ArrayBase = vector<Object>;
   template <class T>
