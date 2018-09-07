@@ -434,8 +434,8 @@ namespace kagami {
 
   Message Nop(ObjectMap &p) {
     Object &objSize = p["__size"];
-    size_t size = *static_pointer_cast<size_t>(objSize.Get());
-    Object &lastObj = p["nop" + to_string(size)];
+    int size = stoi(GetObjectStuff<string>(objSize));
+    Object &lastObj = p["nop" + to_string(size - 1)];
     Message msg;
     msg.SetObject(lastObj, "__result");
     return msg;

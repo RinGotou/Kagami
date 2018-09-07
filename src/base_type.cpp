@@ -91,12 +91,18 @@ namespace kagami {
       auto &base = *static_pointer_cast<vector<Object>>(object.Get());
       auto ent = entry::Order("print", kTypeIdNull, -1);
       for (auto &unit : base) {
-        map.insert(pair<string, Object>("object", unit));
+        map.insert(pair<string, Object>(kStrObject, unit));
         result = ent.Start(map);
         map.clear();
       }
     }
     return result;
+  }
+
+  Message ArrayMaker(ObjectMap &p) {
+    Object &objSize = p["__size"];
+    size_t size = GetObjectStuff<size_t>(objSize);
+    return Message();
   }
   
   //RawString

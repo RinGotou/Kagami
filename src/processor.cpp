@@ -12,6 +12,8 @@ namespace kagami {
     if (src == ")")   return TOKEN_RIGHT_BRACKET;
     if (src == "++")  return TOKEN_SELFOP;
     if (src == "--")  return TOKEN_SELFOP;
+    if (src == "{")   return TOKEN_LEFT_CURBRACKET;
+    if (src == "}")   return TOKEN_RIGHT_CURBRACKET;
     return TOKEN_OTHERS;
   }
 
@@ -283,11 +285,13 @@ namespace kagami {
     bool reversed = entry::IsOperatorToken(ent.GetTokenEnum()) && blk->needReverse;
 
     idx = size;
-    while (idx > 0 && !blk->item.empty() && !blk->item.back().IsPlaceholder()) {
+    bool doNotUseIdx = (mode == kCodeAutoSize);
+    while (!blk->item.empty() && !blk->item.back().IsPlaceholder()) {
+      if (!doNotUseIdx && idx == 0) break;
       if (reversed) parms.push_back(blk->item.back());
       else parms.push_front(blk->item.back());
       blk->item.pop_back();
-      if (mode !=kCodeAutoSize) idx--;
+      if (!doNotUseIdx) idx--;
     }
     if (!blk->item.empty() && blk->item.back().IsPlaceholder()) blk->item.pop_back();
 
@@ -367,18 +371,11 @@ namespace kagami {
     }
   }
 
-  bool Processor::Colon(ProcCtlBlk *blk) {
-    if (blk->symbol.front().GetTokenEnum() == GenericTokenEnum::GT_FOR) {
-      errorString = "Illegal colon location.";
-      return false;
-    }
-    return true;
-  }
-
   void Processor::LeftBracket(Message &msg, ProcCtlBlk *blk) {
     if (blk->defineLine) return;
     if (blk->forwardToken.second != TokenTypeEnum::T_GENERIC) {
-      blk->symbol.emplace_back(kStrNop);
+      auto ent = entry::Order(kStrNop);
+      blk->symbol.emplace_back(ent);
     }
     blk->symbol.emplace_back(blk->currentToken.first);
     blk->item.push_back(Object().SetPlaceholder());
@@ -462,6 +459,14 @@ namespace kagami {
       result = false;
     }
     return result;
+  }
+
+  bool Processor::LeftCurBracket(Message &msg, ProcCtlBlk *blk) {
+    return true;
+  }
+
+  bool Processor::RightCurBracket(Message &msg, ProcCtlBlk *blk) {
+    return true;
   }
 
   bool Processor::FunctionAndObject(Message &msg, ProcCtlBlk *blk) {
@@ -794,10 +799,11 @@ namespace kagami {
         case TOKEN_LEFT_SQRBRACKET: state = LeftSqrBracket(result, blk); break;
         case TOKEN_DOT:             blk->dotOperator = true; break;
         case TOKEN_LEFT_BRACKET:    LeftBracket(result, blk); break;
-        case TOKEN_COLON:           state = Colon(blk); break;
         case TOKEN_RIGHT_SQRBRACKET:state = RightBracket(result, blk); break;
         case TOKEN_RIGHT_BRACKET:   state = RightBracket(result, blk); break;
         case TOKEN_SELFOP:          state = SelfOperator(result, blk); break;
+        case TOKEN_LEFT_CURBRACKET:break;
+        case TOKEN_RIGHT_CURBRACKET:break;
         case TOKEN_OTHERS:          OtherSymbol(blk); break;
         default:break;
         }
