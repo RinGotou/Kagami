@@ -16,6 +16,9 @@
 #include <iostream>
 #endif
 
+//Enable all debugging feature and output info
+#define _ENABLE_DEBUGGING_
+
 #if defined(_WIN32)
 #include "windows.h"
 #define WIN32_LEAN_AND_MEAN
@@ -132,6 +135,7 @@ namespace kagami {
     GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
     GT_MORE, GT_LESS, GT_RETURN,
     GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
+    GT_ARRAY,
     GT_NUL
   };
 
@@ -200,7 +204,8 @@ namespace kagami {
     kStrPlaceHolder = "__ph",
     kStrUserFunc = "__func",
     kStrRetValue = "__ret",
-    kStrStopSign = "__stop";
+    kStrStopSign = "__stop",
+    kStrArray = "__array";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",

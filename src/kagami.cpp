@@ -1,5 +1,4 @@
 #include "kagami.h"
-#define _ENABLE_DEBUGGING_
 #include <iostream>
 
 using std::cout;

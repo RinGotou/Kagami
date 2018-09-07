@@ -98,12 +98,6 @@ namespace kagami {
     }
     return result;
   }
-
-  Message ArrayMaker(ObjectMap &p) {
-    Object &objSize = p["__size"];
-    size_t size = GetObjectStuff<size_t>(objSize);
-    return Message();
-  }
   
   //RawString
   Message RawStringGetElement(ObjectMap &p) {

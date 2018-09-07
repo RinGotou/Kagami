@@ -462,11 +462,19 @@ namespace kagami {
   }
 
   bool Processor::LeftCurBracket(Message &msg, ProcCtlBlk *blk) {
-    return true;
-  }
-
-  bool Processor::RightCurBracket(Message &msg, ProcCtlBlk *blk) {
-    return true;
+    bool result;
+    if (blk->forwardToken.second == TokenTypeEnum::T_SYMBOL) {
+      auto ent = entry::Order(kStrArray);
+      blk->symbol.emplace_back(ent);
+      blk->symbol.emplace_back(blk->currentToken.first);
+      blk->item.push_back(Object().SetPlaceholder());
+      result = true;
+    }
+    else {
+      result = false;
+      errorString = "Illegal curly bracket location.";
+    }
+    return result;
   }
 
   bool Processor::FunctionAndObject(Message &msg, ProcCtlBlk *blk) {
@@ -802,8 +810,8 @@ namespace kagami {
         case TOKEN_RIGHT_SQRBRACKET:state = RightBracket(result, blk); break;
         case TOKEN_RIGHT_BRACKET:   state = RightBracket(result, blk); break;
         case TOKEN_SELFOP:          state = SelfOperator(result, blk); break;
-        case TOKEN_LEFT_CURBRACKET:break;
-        case TOKEN_RIGHT_CURBRACKET:break;
+        case TOKEN_LEFT_CURBRACKET: state = LeftCurBracket(result, blk); break;
+        case TOKEN_RIGHT_CURBRACKET:state = RightBracket(result, blk); break;
         case TOKEN_OTHERS:          OtherSymbol(blk); break;
         default:break;
         }
