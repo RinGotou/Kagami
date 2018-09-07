@@ -27,6 +27,7 @@ namespace kagami {
     return r;
   }
 #else
+  //from https://www.yasuhisay.info/entry/20090722/1248245439
   std::wstring s2ws(const std::string& s) {
     if (s.empty()) return wstring();
     size_t length = s.size();
