@@ -202,7 +202,7 @@ namespace kagami {
     int idx = stoi(GetObjectStuff<string>(p["index"]));
     int size = int(str.size());
     Message msg;
-    if (idx < size || idx < 0) {
+    if (idx < size && idx >= 0) {
       msg.combo(kStrRedirect, kCodeSuccess, to_string(str[idx]));
     }
     else {
@@ -236,12 +236,18 @@ namespace kagami {
     return msg;
   }
 
-  //Message StringToWide(ObjectMap &p) {
-  //  Object &obj = p[kStrObject];
-  //  string origin = GetObjectStuff<string>(obj);
-  //  wstring wstr = s2ws(origin);
-
-  //}
+  Message StringToWide(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    string origin = GetObjectStuff<string>(obj);
+    shared_ptr<wstring> wstr = make_shared<wstring>(s2ws(origin));
+    Object base;
+    base.Set(wstr, kTypeIdWideString)
+      .SetMethods(kWideStringMethods)
+      .SetRo(false);
+    Message msg;
+    msg.SetObject(base, "__result");
+    return msg;
+  }
 
   //InStream
   Message InStreamConsturctor(ObjectMap &p) {
@@ -416,6 +422,73 @@ namespace kagami {
     return msg;
   }
 
+  Message WideStringGetSize(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    return Message(kStrRedirect, kCodeSuccess, to_string(wstr.size()));
+  }
+
+  Message WideStringGetElement(ObjectMap &p) {
+    Object &obj = p[kStrObject], objIdx = p["index"];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    int size = int(wstr.size());
+    int idx = stoi(GetObjectStuff<string>(objIdx));
+    Message msg;
+    if (idx < size && idx >= 0) {
+      wstring output;
+      output.append(1, wstr[idx]);
+      Object ret;
+      ret.Set(make_shared<wstring>(output), kTypeIdWideString)
+        .SetMethods(kWideStringMethods)
+        .SetRo(false);
+      msg.SetObject(ret, "__result");
+    }
+    else {
+      msg.combo(kStrFatalError, kCodeIllegalParm, "Index out of range.");
+    }
+    return msg;
+  }
+
+  Message WideStringPrint(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    std::wcout << wstr << std::endl;
+    return Message();
+  }
+
+  Message WideStringSubStr(ObjectMap &p) {
+    Object &obj = p[kStrObject], objStart = p["start"], objSize = p["size"];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    int start = stoi(GetObjectStuff<string>(objStart)),
+      size = stoi(GetObjectStuff<string>(objSize));
+    Message msg;
+    if (start < 0 || size > wstr.size() - start) {
+      msg.combo(kStrFatalError, kCodeIllegalParm, "Illegal index or size.");
+    }
+    else {
+      Object ret;
+      wstring output = wstr.substr(start, size);
+      ret.Set(make_shared<wstring>(output), kTypeIdWideString)
+        .SetMethods(kWideStringMethods)
+        .SetRo(false);
+      msg.SetObject(ret, "__result");
+    }
+    return msg;
+  }
+
+  Message WideStringToByte(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    shared_ptr<string> str = make_shared<string>(string(ws2s(wstr)));
+    Object ret;
+    ret.Set(str, kTypeIdString)
+      .SetMethods(kStringMethods)
+      .SetRo(false);
+    Message msg;
+    msg.SetObject(ret, "__result");
+    return msg;
+  }
+
   void InitPlanners() {
     using type::AddTemplate;
     using entry::AddEntry;
@@ -436,6 +509,7 @@ namespace kagami {
     AddEntry(Entry(StringPrint, kCodeNormalParm, "", "__print", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringSubStr, kCodeNormalParm, "start|size", "substr", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringGetSize, kCodeNormalParm, "", "size", kTypeIdString, kFlagMethod));
+    AddEntry(Entry(StringToWide, kCodeNormalParm, "", "to_wide", kTypeIdString, kFlagMethod));
 
     AddTemplate(kTypeIdInStream, ObjectPlanner(NoCopy, kInStreamMethods));
     AddEntry(Entry(InStreamConsturctor, kCodeNormalParm, "path", "instream"));
@@ -454,7 +528,13 @@ namespace kagami {
     AddEntry(Entry(RegexConstructor, kCodeNormalParm, "regex", "regex"));
     AddEntry(Entry(RegexMatch, kCodeNormalParm, "str", "match", kTypeIdRegex, kFlagMethod));
 
+    AddTemplate(kTypeIdString, ObjectPlanner(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
     AddEntry(Entry(WideStringContructor, kCodeNormalParm, "raw_string", "wstring"));
+    AddEntry(Entry(WideStringGetSize, kCodeNormalParm, "", "size", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(WideStringGetElement, kCodeNormalParm, "index", "__at", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(WideStringPrint, kCodeNormalParm, "", "__print", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(WideStringSubStr, kCodeNormalParm, "start|size", "substr", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(WideStringToByte, kCodeNormalParm, "", "to_byte", kTypeIdWideString, kFlagMethod));
 
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
   }
