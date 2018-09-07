@@ -34,11 +34,12 @@ namespace kagami {
     bool TakeAction(Message &msg, ProcCtlBlk *blk);
     static Object *GetObj(string name, ProcCtlBlk *blk);
     void EqualMark(ProcCtlBlk *blk);
-    bool Colon(ProcCtlBlk *blk);
     void LeftBracket(Message &msg, ProcCtlBlk *blk);
     bool RightBracket(Message &msg, ProcCtlBlk *blk);
     bool LeftSqrBracket(Message &msg, ProcCtlBlk *blk);
     bool SelfOperator(Message &msg, ProcCtlBlk *blk);
+    bool LeftCurBracket(Message &msg, ProcCtlBlk *blk);
+    bool RightCurBracket(Message &msg, ProcCtlBlk *blk);
     bool FunctionAndObject(Message &msg, ProcCtlBlk *blk);
     void OtherToken(ProcCtlBlk *blk);
     void OtherSymbol(ProcCtlBlk *blk);
