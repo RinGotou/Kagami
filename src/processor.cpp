@@ -647,7 +647,6 @@ namespace kagami {
       }
       if (obj.IsArgSign()) {
         return Object().Ref(*entry::FindObject(obj.GetOriginId()));
-        //return Object().Ref(*manager.Find(obj.GetOriginId()));
       }
       return obj;
     };

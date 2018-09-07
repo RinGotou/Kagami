@@ -3,13 +3,6 @@
 #include <fstream>
 #include "trace.h"
 
-#if defined(_WIN32)
-#include "windows.h"
-#define WIN32_LEAN_AND_MEAN
-#else
-#include <dlfcn.h>
-#endif
-
 namespace kagami {
   template <class T>
   T &GetObjectStuff(Object &obj) {
@@ -72,6 +65,8 @@ namespace kagami {
   void InitPlanners();
   Message FunctionTunnel(ObjectMap &p);
   Message Calling(Activity activity, string args, vector<Object> objects);
+  std::wstring s2ws(const std::string &s);
+  std::string ws2s(const std::wstring &s);
 }
 
 

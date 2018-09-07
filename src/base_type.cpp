@@ -1,7 +1,9 @@
-#include "template.h"
+#include "base_type.h"
 #include <iostream>
 
 namespace kagami {
+  //components
+
   //Common
   shared_ptr<void> NoCopy(shared_ptr<void> target) {
     return target;
@@ -83,7 +85,7 @@ namespace kagami {
 
   Message ArrayPrint(ObjectMap &p) {
     Message result;
-    Object object = p.at("object");
+    Object object = p[kStrObject];
     ObjectMap map;
     if (object.GetTypeId() == kTypeIdArrayBase) {
       auto &base = *static_pointer_cast<vector<Object>>(object.Get());
@@ -134,39 +136,57 @@ namespace kagami {
 
   Message RawStringPrint(ObjectMap &p) {
     Message result;
-    auto &object = p.at("object");
+    auto &object = p[kStrObject];
     bool doNotWrap = (p.find("not_wrap") != p.end());
     string msg;
     auto needConvert = false;
 
-    if (object.GetTypeId() == kTypeIdRawString) {
-      auto data = *static_pointer_cast<string>(object.Get());
-      if (Kit::IsString(data)) data = Kit::GetRawString(data);
-      std::cout << data;
-      if (!doNotWrap) std::cout << std::endl;
-    }
+    auto data = *static_pointer_cast<string>(object.Get());
+    if (Kit::IsString(data)) data = Kit::GetRawString(data);
+    std::cout << data;
+    if (!doNotWrap) std::cout << std::endl;
+    
     return result;
   }
 
   //String
   Message StringConstructor(ObjectMap &p) {
     Object &obj = p["raw_string"];
-    if (obj.GetTypeId() != kTypeIdRawString) {
+    Object base;
+    if (obj.GetTypeId() != kTypeIdRawString 
+      && obj.GetTypeId() != kTypeIdString
+      && obj.GetTypeId() != kTypeIdWideString) {
       return Message(kStrFatalError, kCodeIllegalParm, "String constructor can't accept this object.");
     }
-    Object base;
-    string origin = GetObjectStuff<string>(obj);
-    string output;
-    if (Kit::IsString(origin)) {
-      output = Kit::GetRawString(origin);
+    if (obj.GetTypeId() == kTypeIdWideString) {
+      wstring wstr = GetObjectStuff<wstring>(obj);
+      string output = ws2s(wstr);
+      base.Set(make_shared<string>(output), kTypeIdString)
+        .SetConstructorFlag()
+        .SetMethods(kStringMethods)
+        .SetRo(false);
+    }
+    else if (obj.GetTypeId() == kTypeIdString) {
+      base.Set(obj.Get(), kTypeIdString)
+        .SetConstructorFlag()
+        .SetMethods(kStringMethods)
+        .SetRo(false);
     }
     else {
-      output = origin;
+      string origin = GetObjectStuff<string>(obj);
+      string output;
+      if (Kit::IsString(origin)) {
+        output = Kit::GetRawString(origin);
+      }
+      else {
+        output = origin;
+      }
+      base.Set(make_shared<string>(output), kTypeIdString)
+        .SetConstructorFlag()
+        .SetMethods(kStringMethods)
+        .SetRo(false);
     }
-    base.Set(make_shared<string>(output), kTypeIdString)
-      .SetConstructorFlag()
-      .SetMethods(kStringMethods)
-      .SetRo(false);
+
     Message msg;
     msg.SetObject(base, "__result");
     return msg;
@@ -182,7 +202,7 @@ namespace kagami {
     int idx = stoi(GetObjectStuff<string>(p["index"]));
     int size = int(str.size());
     Message msg;
-    if (idx < size || idx < 0) {
+    if (idx < size && idx >= 0) {
       msg.combo(kStrRedirect, kCodeSuccess, to_string(str[idx]));
     }
     else {
@@ -192,7 +212,7 @@ namespace kagami {
   }
 
   Message StringPrint(ObjectMap &p) {
-    string &str = GetObjectStuff<string>(p["object"]);
+    string &str = GetObjectStuff<string>(p[kStrObject]);
     std::cout << str << std::endl;
     return Message();
   }
@@ -216,8 +236,20 @@ namespace kagami {
     return msg;
   }
 
-  //InStream
+  Message StringToWide(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    string origin = GetObjectStuff<string>(obj);
+    shared_ptr<wstring> wstr = make_shared<wstring>(s2ws(origin));
+    Object base;
+    base.Set(wstr, kTypeIdWideString)
+      .SetMethods(kWideStringMethods)
+      .SetRo(false);
+    Message msg;
+    msg.SetObject(base, "__result");
+    return msg;
+  }
 
+  //InStream
   Message InStreamConsturctor(ObjectMap &p) {
     Object &objPath = p["path"];
     //TODO:support for string type
@@ -277,6 +309,185 @@ namespace kagami {
     return Message();
   }
 
+  //OutStream
+  Message OutStreamConstructor(ObjectMap &p) {
+    Object &objPath = p["path"];
+    Object &objMode = p["mode"];
+    string path = Kit::GetRawString(GetObjectStuff<string>(objPath));
+    string mode = Kit::GetRawString(GetObjectStuff<string>(objMode));
+    Message msg;
+    shared_ptr<ofstream> ofs;
+    bool append = false;
+    bool truncate = false;
+    if (mode == "append") append = true;
+    else if (mode == "truncate") truncate = true;
+    if (!append && truncate) {
+      ofs = make_shared<ofstream>(ofstream(path.c_str(), std::ios::out | std::ios::trunc));
+    }
+    else {
+      ofs = make_shared<ofstream>(ofstream(path.c_str(), std::ios::out | std::ios::app));
+    }
+    Object obj;
+    obj.Set(ofs, kTypeIdOutStream)
+      .SetMethods(kOutStreamMethods)
+      .SetRo(false);
+    msg.SetObject(obj, "__result");
+    return msg;
+  }
+
+  Message OutStreamWrite(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ofstream &ofs = GetObjectStuff<ofstream>(obj);
+    Object &objStr = p["str"];
+    Message msg;
+    if (!ofs.good()) {
+      return Message(kStrRedirect, kCodeSuccess, kStrFalse);
+    }
+    if (objStr.GetTypeId() == kTypeIdRawString) {
+      string output;
+      string &origin = GetObjectStuff<string>(objStr);
+      if (Kit::IsString(origin)) {
+        output = Kit::GetRawString(origin);
+      }
+      ofs << output;
+    }
+    else if (objStr.GetTypeId() == kTypeIdString) {
+      string &origin = GetObjectStuff<string>(objStr);
+      ofs << origin;
+    }
+    else {
+      msg.combo(kStrRedirect, kCodeSuccess, kStrFalse);
+    }
+    return msg;
+  }
+
+  Message OutStreamGood(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ofstream &ofs = GetObjectStuff<ofstream>(obj);
+    string state;
+    ofs.good() ? state = kStrTrue : state = kStrFalse;
+    Message msg(kStrRedirect, kCodeSuccess, state);
+    return msg;
+  }
+
+  Message OutStreamClose(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    ofstream &ofs = GetObjectStuff<ofstream>(obj);
+    ofs.close();
+    return Message();
+  }
+
+  //regex
+  Message RegexConstructor(ObjectMap &p) {
+    Object &obj = p["regex"];
+    string regStr = GetObjectStuff<string>(obj);
+    Kit::IsString(regStr) ? regStr = Kit::GetRawString(regStr): regStr = regStr;
+    shared_ptr<regex> reg = make_shared<regex>(regex(regStr));
+    Object ret;
+    ret.Set(reg, kTypeIdRegex)
+      .SetMethods(kRegexMethods)
+      .SetRo(false);
+    Message msg;
+    msg.SetObject(ret, "__result");
+    return msg;
+  }
+
+  Message RegexMatch(ObjectMap &p) {
+    Object &obj = p["str"];
+    string str = GetObjectStuff<string>(obj);
+    Kit::IsString(str) ? str = Kit::GetRawString(str) : str = str;
+    auto &pat = GetObjectStuff<regex>(p[kStrObject]);
+    string state;
+    regex_match(str, pat) ? state = kStrTrue : state = kStrFalse;
+    return Message(kStrRedirect, kCodeSuccess, state);
+  }
+
+  //wstring
+  Message WideStringContructor(ObjectMap &p) {
+    Object obj = p["raw_string"];
+    if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdString) {
+      return Message(kStrFatalError, kCodeIllegalParm, "String constructor can't accept this object.");
+    }
+    Object base;
+    string origin = GetObjectStuff<string>(obj);
+    string output;
+    if (Kit::IsString(origin)) output = origin.substr(1, origin.size() - 2);
+    else output = origin;
+    wstring wstr = s2ws(output);
+    base.Set(make_shared<wstring>(wstr), kTypeIdWideString)
+      .SetMethods(kWideStringMethods)
+      .SetRo(false);
+    Message msg;
+    msg.SetObject(base, "__result");
+    return msg;
+  }
+
+  Message WideStringGetSize(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    return Message(kStrRedirect, kCodeSuccess, to_string(wstr.size()));
+  }
+
+  Message WideStringGetElement(ObjectMap &p) {
+    Object &obj = p[kStrObject], objIdx = p["index"];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    int size = int(wstr.size());
+    int idx = stoi(GetObjectStuff<string>(objIdx));
+    Message msg;
+    if (idx < size && idx >= 0) {
+      wstring output;
+      output.append(1, wstr[idx]);
+      Object ret;
+      ret.Set(make_shared<wstring>(output), kTypeIdWideString)
+        .SetMethods(kWideStringMethods)
+        .SetRo(false);
+      msg.SetObject(ret, "__result");
+    }
+    else {
+      msg.combo(kStrFatalError, kCodeIllegalParm, "Index out of range.");
+    }
+    return msg;
+  }
+
+  Message WideStringPrint(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    std::wcout << wstr << std::endl;
+    return Message();
+  }
+
+  Message WideStringSubStr(ObjectMap &p) {
+    Object &obj = p[kStrObject], objStart = p["start"], objSize = p["size"];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    int start = stoi(GetObjectStuff<string>(objStart)),
+      size = stoi(GetObjectStuff<string>(objSize));
+    Message msg;
+    if (start < 0 || size > wstr.size() - start) {
+      msg.combo(kStrFatalError, kCodeIllegalParm, "Illegal index or size.");
+    }
+    else {
+      Object ret;
+      wstring output = wstr.substr(start, size);
+      ret.Set(make_shared<wstring>(output), kTypeIdWideString)
+        .SetMethods(kWideStringMethods)
+        .SetRo(false);
+      msg.SetObject(ret, "__result");
+    }
+    return msg;
+  }
+
+  Message WideStringToByte(ObjectMap &p) {
+    Object &obj = p[kStrObject];
+    wstring &wstr = GetObjectStuff<wstring>(obj);
+    shared_ptr<string> str = make_shared<string>(string(ws2s(wstr)));
+    Object ret;
+    ret.Set(str, kTypeIdString)
+      .SetMethods(kStringMethods)
+      .SetRo(false);
+    Message msg;
+    msg.SetObject(ret, "__result");
+    return msg;
+  }
 
   void InitPlanners() {
     using type::AddTemplate;
@@ -298,6 +509,7 @@ namespace kagami {
     AddEntry(Entry(StringPrint, kCodeNormalParm, "", "__print", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringSubStr, kCodeNormalParm, "start|size", "substr", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringGetSize, kCodeNormalParm, "", "size", kTypeIdString, kFlagMethod));
+    AddEntry(Entry(StringToWide, kCodeNormalParm, "", "to_wide", kTypeIdString, kFlagMethod));
 
     AddTemplate(kTypeIdInStream, ObjectPlanner(NoCopy, kInStreamMethods));
     AddEntry(Entry(InStreamConsturctor, kCodeNormalParm, "path", "instream"));
@@ -305,6 +517,24 @@ namespace kagami {
     AddEntry(Entry(InStreamGood, kCodeNormalParm, "", "good", kTypeIdInStream, kFlagMethod));
     AddEntry(Entry(InStreamEOF, kCodeNormalParm, "", "eof", kTypeIdInStream, kFlagMethod));
     AddEntry(Entry(InStreamClose, kCodeNormalParm, "", "close", kTypeIdInStream, kFlagMethod));
+
+    AddTemplate(kTypeIdOutStream, ObjectPlanner(NoCopy, kOutStreamMethods));
+    AddEntry(Entry(OutStreamConstructor, kCodeNormalParm, "path|mode", "outstream"));
+    AddEntry(Entry(OutStreamWrite, kCodeNormalParm, "str", "write", kTypeIdOutStream, kFlagMethod));
+    AddEntry(Entry(OutStreamGood, kCodeNormalParm, "", "good", kTypeIdOutStream, kFlagMethod));
+    AddEntry(Entry(OutStreamClose, kCodeNormalParm, "", "close", kTypeIdOutStream, kFlagMethod));
+
+    AddTemplate(kTypeIdRegex, ObjectPlanner(NoCopy, kTypeIdRegex));
+    AddEntry(Entry(RegexConstructor, kCodeNormalParm, "regex", "regex"));
+    AddEntry(Entry(RegexMatch, kCodeNormalParm, "str", "match", kTypeIdRegex, kFlagMethod));
+
+    AddTemplate(kTypeIdString, ObjectPlanner(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
+    AddEntry(Entry(WideStringContructor, kCodeNormalParm, "raw_string", "wstring"));
+    AddEntry(Entry(WideStringGetSize, kCodeNormalParm, "", "size", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(WideStringGetElement, kCodeNormalParm, "index", "__at", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(WideStringPrint, kCodeNormalParm, "", "__print", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(WideStringSubStr, kCodeNormalParm, "start|size", "substr", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(WideStringToByte, kCodeNormalParm, "", "to_byte", kTypeIdWideString, kFlagMethod));
 
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
   }
