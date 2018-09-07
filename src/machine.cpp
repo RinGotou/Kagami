@@ -6,6 +6,48 @@
 #include "machine.h"
 
 namespace kagami {
+#if defined(_WIN32) && defined(_MSC_VER)
+  //from MSDN
+  std::wstring s2ws(const std::string& s) {
+    auto slength = static_cast<int>(s.length()) + 1;
+    auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    auto *buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
+  }
+
+  std::string ws2s(const std::wstring& s) {
+    int len;
+    int slength = (int)s.length() + 1;
+    len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
+    std::string r(len, '\0');
+    WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
+    return r;
+  }
+#else
+  //from https://www.yasuhisay.info/entry/20090722/1248245439
+  std::wstring s2ws(const std::string& s) {
+    if (s.empty()) return wstring();
+    size_t length = s.size();
+    wchar_t *wc = (wchar_t*)malloc(sizeof(wchar_t)* (length + 2));
+    mbstowcs(wc, s.c_str(), s.length() + 1);
+    std::wstring str(wc);
+    free(wc);
+    return str;
+  }
+
+  std::string ws2s(const std::wstring& s) {
+    if (s.empty()) return string();
+    size_t length = s.size();
+    char *c = (char*)malloc(sizeof(char)* length * 2);
+    wcstombs(c, s.c_str(), s.length() + 1);
+    std::string result(c);
+    free(c);
+    return result;
+  }
+#endif
   map<string, Machine> &GetFunctionBase() {
     static map<string, Machine> base;
     return base;
@@ -83,15 +125,17 @@ namespace kagami {
   }
 
   Machine::Machine(const char *target) {
-    std::ifstream stream;
-    string temp;
+    std::wifstream stream;
+    wstring buf;
     health = true;
     size_t subscript = 0;
 
     stream.open(target, std::ios::in);
     if (stream.good()) {
       while (!stream.eof()) {
-        std::getline(stream, temp);
+        std::getline(stream, buf);
+        string temp = ws2s(buf);
+        if (!temp.empty() && temp.back() == '\0') temp.pop_back();
         if (!IsBlankStr(temp) && temp.front() != '#') {
           storage.emplace_back(Processor().Build(temp).SetIndex(subscript));
         }
@@ -227,7 +271,7 @@ namespace kagami {
   }
 
   bool Machine::IsBlankStr(string target) {
-    if (target == kStrEmpty || target.size() == 0) return true;
+    if (target.empty() || target.size() == 0) return true;
     for (const auto unit : target) {
       if (unit != '\n' && unit != ' ' && unit != '\t' && unit != '\r') {
         return false;
