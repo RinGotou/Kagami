@@ -39,7 +39,6 @@ namespace kagami {
     bool LeftSqrBracket(Message &msg, ProcCtlBlk *blk);
     bool SelfOperator(Message &msg, ProcCtlBlk *blk);
     bool LeftCurBracket(Message &msg, ProcCtlBlk *blk);
-    bool RightCurBracket(Message &msg, ProcCtlBlk *blk);
     bool FunctionAndObject(Message &msg, ProcCtlBlk *blk);
     void OtherToken(ProcCtlBlk *blk);
     void OtherSymbol(ProcCtlBlk *blk);

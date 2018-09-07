@@ -441,9 +441,30 @@ namespace kagami {
     return msg;
   }
 
+  Message ArrayMaker(ObjectMap &p) {
+    Object &objSize = p["__size"];
+    int size = stoi(GetObjectStuff<string>(objSize));
+    vector<Object> base;
+    Message msg;
+    base.reserve(size);
+    if (!p.empty()) {
+      for (int i = 0; i < size; i++) {
+        base.emplace_back(p["item" + to_string(i)]);
+      }
+    }
+    msg.SetObject(Object()
+      .SetConstructorFlag()
+      .Set(make_shared<vector<Object>>(base), kTypeIdArrayBase)
+      .SetMethods(type::GetPlanner(kTypeIdArrayBase)->GetMethods())
+      .SetRo(false)
+      , "__result");
+    return msg;
+  }
+
   void AddGenEntries() {
     using namespace entry;
     AddGenericEntry(GT_NOP, Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
+    AddGenericEntry(GT_ARRAY, Entry(ArrayMaker, "item", GT_ARRAY, kCodeAutoSize));
     AddGenericEntry(GT_END, Entry(End, "", GT_END));
     AddGenericEntry(GT_ELSE, Entry(Else, "", GT_ELSE));
     AddGenericEntry(GT_IF, Entry(If, "state", GT_IF));

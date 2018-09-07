@@ -152,7 +152,8 @@ namespace kagami {
         T(kStrNotEqual,GT_NOT_EQUAL),
         T(kStrMore,GT_MORE),
         T(kStrLess,GT_LESS),
-        T(kStrReturn,GT_RETURN)
+        T(kStrReturn,GT_RETURN),
+        T(kStrArray,GT_ARRAY)
       };
       return base;
     }
