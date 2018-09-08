@@ -18,7 +18,7 @@ namespace kagami {
     Token currentToken;
     Token nextToken;
     Token forwardToken;
-    string lastBracketValue;
+    stack<string> lastBracketStack;
     string operatorTargetType;
     size_t mode, nextInsertSubscript, lambdaObjectCount;
   };
