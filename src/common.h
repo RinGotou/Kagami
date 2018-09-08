@@ -55,6 +55,7 @@ namespace kagami {
   class ObjectPlanner;
   class Object;
 
+  using StateCde = pair<const char *, int>;
   using ObjectMap = map<string, Object>;
   using ObjectPair = pair<string, Object>;
   using Parameter = pair<string, Object>;
@@ -89,6 +90,10 @@ namespace kagami {
     kStrObject = "__object",
     kMethodPrint = "__print";
 
+
+  const map<const char *, int> kStateCode = {
+
+  };
   const int kCodeSDLInfo = 17,
     kCodeAutoSize = 16,
     kCodeDefineSign = 15,

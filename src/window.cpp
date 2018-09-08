@@ -1,6 +1,7 @@
 #include "window.h"
 
 namespace kagami {
+#if defined(_ENABLE_DEBUGGING_)
   /*There is testbench for SDL2.You can just ignore them or disable them.*/
   Message InitSDL(ObjectMap &p) {
     Message msg;
@@ -31,4 +32,5 @@ namespace kagami {
   void LoadSDLStuff() {
     entry::AddEntry(Entry(InitSDL, kCodeNormalParm, "", "InitSDL"));
   }
+#endif
 }

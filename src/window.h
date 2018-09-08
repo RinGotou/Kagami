@@ -1,8 +1,11 @@
 #pragma once
 #include "machine.h"
+#if defined(_ENABLE_DEBUGGING_)
 #include <SDL.h>
+#endif
 
 namespace kagami {
+#if defined(_ENABLE_DEBUGGING_)
   class Window {
   private:
     SDL_Window *window;
@@ -19,4 +22,5 @@ namespace kagami {
       return screenSurface;
     }
   };
+#endif
 }

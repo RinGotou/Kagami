@@ -157,7 +157,7 @@ namespace kagami {
     vector<string> defHead;
     Object &id = p["id"];
     size_t count = 0;
-    defHead.emplace_back(*static_pointer_cast<string>(id.Get()));
+    defHead.emplace_back(GetObjectStuff<string>(id));
 
     for (auto &unit : p) {
       if (unit.first == "arg" + to_string(count)) {
@@ -175,9 +175,11 @@ namespace kagami {
     Object &valueObj = p["value"];
     string typeId = valueObj.GetTypeId();
     Object obj;
-    obj.Set(valueObj.Get(), typeId)
-      .SetMethods(type::GetPlanner(typeId)->GetMethods());
-    entry::GetCurrentManager().Add(kStrRetValue, obj);
+    if (typeId != kTypeIdNull) {
+      obj.Set(valueObj.Get(), typeId)
+        .SetMethods(valueObj.GetMethods());
+      entry::GetCurrentManager().Add(kStrRetValue, obj);
+    }
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
   }
 
@@ -205,7 +207,7 @@ namespace kagami {
     string result;
 
     if(object.GetTypeId() == kTypeIdRawString) {
-      const auto origin = *static_pointer_cast<string>(object.Get());
+      const auto origin = GetObjectStuff<string>(object);
       if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
         ++data;
@@ -228,7 +230,7 @@ namespace kagami {
     string result;
 
     if (object.GetTypeId() == kTypeIdRawString) {
-      const auto origin = *static_pointer_cast<string>(object.Get());
+      const auto origin = GetObjectStuff<string>(object);
       if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
         --data;
@@ -251,7 +253,7 @@ namespace kagami {
     string result;
 
     if (object.GetTypeId() == kTypeIdRawString) {
-      auto origin = *static_pointer_cast<string>(object.Get());
+      auto origin = GetObjectStuff<string>(object);
       result = origin;
       if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
@@ -273,7 +275,7 @@ namespace kagami {
     string result;
 
     if (object.GetTypeId() == kTypeIdRawString) {
-      auto origin = *static_pointer_cast<string>(object.Get());
+      auto origin = GetObjectStuff<string>(object);
       result = origin;
       if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
@@ -294,7 +296,7 @@ namespace kagami {
     Object &obj = p["object"];
     string result;
     if (obj.GetTypeId() == kTypeIdRawString) {
-      string str = *static_pointer_cast<string>(obj.Get());
+      string str = GetObjectStuff<string>(obj);
       Kit::IsString(str) ? str = Kit::GetRawString(str) : str = str;
       switch (Kit::GetTokenType(str)) {
       case TokenTypeEnum::T_BOOLEAN:result = "'boolean'"; break;
@@ -342,9 +344,8 @@ namespace kagami {
     auto id = *static_pointer_cast<string>(object.Get());
     auto ptr = entry::FindObject(id);
     auto copy = type::GetObjectCopy(source);
-
-
     Object base;
+
     base.Set(copy, source.GetTypeId())
       .SetMethods(source.GetMethods())
       .SetTokenType(source.GetTokenType())
@@ -461,6 +462,43 @@ namespace kagami {
     return msg;
   }
 
+  Message Dir(ObjectMap &p) {
+    Object &obj = p["object"];
+    auto vec = Kit::BuildStringVector(obj.GetMethods());
+    Message msg;
+    vector<Object> output;
+    for (auto &unit : vec) {
+      output.emplace_back(Object()
+        .Set(make_shared<string>(unit),kTypeIdString)
+        .SetMethods(type::GetPlanner(kTypeIdString)->GetMethods())
+        .SetRo(true)
+      );
+      msg.SetObject(Object()
+        .SetConstructorFlag()
+        .Set(make_shared<vector<Object>>(output), kTypeIdArrayBase)
+        .SetMethods(type::GetPlanner(kTypeIdArrayBase)->GetMethods())
+        .SetRo(true), "__result");
+    }
+    return msg;
+  }
+
+  Message Exist(ObjectMap &p){
+    Object &obj = p["object"];
+    auto vec = Kit::BuildStringVector(obj.GetMethods());
+    string target = Kit::GetRawString(GetObjectStuff<string>(p["id"]));
+    bool result = false;
+    Message msg;
+    for (auto &unit : vec) {
+      if (unit == target) {
+        result = true;
+      }
+    }
+    result ? 
+      msg = Message(kStrRedirect, kCodeSuccess, kStrTrue): 
+      msg = Message(kStrRedirect, kCodeSuccess, kStrFalse);
+    return msg;
+  }
+
   void AddGenEntries() {
     using namespace entry;
     AddGenericEntry(GT_NOP, Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
@@ -505,5 +543,7 @@ namespace kagami {
     AddEntry(Entry(Quit, kCodeNormalParm, "", "quit"));
     AddEntry(Entry(GetTypeId, kCodeNormalParm, "object", "typeid"));
     AddEntry(Entry(GetRawStringType, kCodeNormalParm, "object", "type"));
+    AddEntry(Entry(Dir, kCodeNormalParm, "object", "dir"));
+    AddEntry(Entry(Exist, kCodeNormalParm, "object|id", "exist"));
   }
 }

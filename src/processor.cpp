@@ -643,9 +643,8 @@ namespace kagami {
         break;
       }
       auto firstEnum = blk->symbol.back().GetTokenEnum();
-      if (entry::IsOperatorToken(firstEnum)) {
-        if (entry::IsOperatorToken(
-          blk->symbol[blk->symbol.size() - 2].GetTokenEnum())) {
+      if (blk->symbol.size() > 1 && entry::IsOperatorToken(firstEnum)) {
+        if (entry::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].GetTokenEnum())) {
           if (checked) {
             checked = false;
           }
@@ -821,6 +820,7 @@ namespace kagami {
         switch (value) {
         case TOKEN_EQUAL: EqualMark(blk); break;
         case TOKEN_COMMA: break;
+        case TOKEN_COLON: break;
         case TOKEN_LEFT_SQRBRACKET: state = LeftSqrBracket(result, blk); break;
         case TOKEN_DOT:             blk->dotOperator = true; break;
         case TOKEN_LEFT_BRACKET:    LeftBracket(result, blk); break;

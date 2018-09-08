@@ -47,6 +47,9 @@ namespace kagami {
     Message RunWithCache();
   public:
     Processor() : health(false), index(0), cached(false) {}
+    Processor(vector<Token> origin) : health(false), index(0), cached(false) {
+      this->origin = origin;
+    }
     Processor &SetIndex(size_t idx) {
       this->index = idx;
       return *this;
