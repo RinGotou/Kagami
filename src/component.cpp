@@ -496,6 +496,7 @@ namespace kagami {
     using namespace entry;
     AddGenEntries();
     InitPlanners();
+    LoadSDLStuff();
     AddEntry(Entry(WriteLog, kCodeNormalParm, "msg", "log"));
     AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
     AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));

@@ -372,6 +372,7 @@ namespace kagami {
   }
 
   void Processor::LeftBracket(Message &msg, ProcCtlBlk *blk) {
+    blk->lastBracketValue = blk->currentToken.first;
     if (blk->defineLine) return;
     if (blk->forwardToken.second != TokenTypeEnum::T_GENERIC) {
       auto ent = entry::Order(kStrNop);
@@ -386,6 +387,14 @@ namespace kagami {
     deque<Entry> tempSymbol;
     deque<Object> tempObject;
     bool checked = false;
+
+    if (kBracketPairs.at(blk->currentToken.first) != blk->lastBracketValue) {
+      errorString = "Illegal bracket pair - '"
+        + blk->lastBracketValue + "'"
+        + " and '" + blk->currentToken.first + "'";
+      return false;
+    }
+    blk->lastBracketValue = "";
 
     while (!blk->symbol.empty() 
       && blk->symbol.back().GetId() != "(" 
@@ -420,6 +429,7 @@ namespace kagami {
 
   bool Processor::LeftSqrBracket(Message &msg, ProcCtlBlk *blk) {
     bool result = true;
+    blk->lastBracketValue = blk->currentToken.first;
     bool methodExisted = Kit::FindInStringGroup("__at", blk->item.back().GetMethods());
     if (methodExisted) {
       Entry ent = entry::Order("__at", blk->item.back().GetTypeId());
@@ -463,6 +473,7 @@ namespace kagami {
 
   bool Processor::LeftCurBracket(Message &msg, ProcCtlBlk *blk) {
     bool result;
+    blk->lastBracketValue = blk->currentToken.first;
     if (blk->forwardToken.second == TokenTypeEnum::T_SYMBOL) {
       auto ent = entry::Order(kStrArray);
       blk->symbol.emplace_back(ent);
@@ -787,6 +798,7 @@ namespace kagami {
     blk->needReverse = false;
     blk->subscriptProcessing = false;
     blk->defineLine = false;
+    blk->lastBracketValue = "";
 
     for (size_t i = 0; i < size; ++i) {
       if (!health) break;
