@@ -80,7 +80,9 @@ namespace kagami {
 
     Object *CreateObject(string sign, Object &object) {
       ObjectManager &base = GetObjectStack().back();
-
+      if (base.Find(sign) != nullptr) {
+        return nullptr;
+      }
       base.Add(sign, object);
       const auto result = base.Find(sign);
       return result;

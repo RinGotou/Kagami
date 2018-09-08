@@ -3,7 +3,10 @@
 #include "list.h" 
 
 namespace kagami {
+  class ObjectManager;
   using Destructor = void(*)(shared_ptr<void>);
+  using ObjectStack = kagami::list<ObjectManager>;
+
   /*Object Class
   A shared void pointer is packaged in this.Almost all variables and
   constants are managed by shared pointers.This class will be packaged
@@ -32,6 +35,7 @@ namespace kagami {
     shared_ptr<void> Get();
     string GetTypeId();
     Object &SetMethods(string methods);
+    Object &AppendMethod(string method);
     Object &SetTokenType(TokenTypeEnum tokenTypeEnum);
     Object &SetRo(bool ro);
     Object &SetPermanent(bool permanent);

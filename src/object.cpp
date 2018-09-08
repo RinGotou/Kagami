@@ -96,6 +96,12 @@ namespace kagami {
     return *this;
   }
 
+  Object &Object::AppendMethod(string method) {
+    if (ref) return GetTargetObject()->AppendMethod(method);
+    this->methods.append("|" + method);
+    return *this;
+  }
+
   Object &Object::SetTokenType(TokenTypeEnum tokenTypeEnum) {
     if (ref) return GetTargetObject()->SetTokenType(tokenTypeEnum);
     this->tokenTypeEnum = tokenTypeEnum;
