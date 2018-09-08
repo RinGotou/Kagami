@@ -89,7 +89,8 @@ namespace kagami {
     kStrObject = "__object",
     kMethodPrint = "__print";
 
-  const int kCodeAutoSize = 16,
+  const int kCodeSDLInfo = 17,
+    kCodeAutoSize = 16,
     kCodeDefineSign = 15,
     kCodeAutoFill = 14,
     kCodeNormalParm = 13,
@@ -111,12 +112,19 @@ namespace kagami {
     kCodeIllegalCall = -4,
     kCodeIllegalSymbol = -5,
     kCodeBadStream = -6,
-    kCodeBadExpression = -7;
+    kCodeBadExpression = -7,
+    kCodeSDLError = -8;
 
   const int kFlagCoreEntry = 0,
     kFlagNormalEntry = 1,
     kFlagOperatorEntry = 2,
     kFlagMethod = 3;
+
+  const map<string, string> kBracketPairs = {
+    pair<string,string>(")","("),
+    pair<string,string>("]","["),
+    pair<string,string>("}", "{")
+  };
 
   enum TokenTypeEnum {
     T_GENERIC, T_STRING, T_INTEGER, T_DOUBLE,
