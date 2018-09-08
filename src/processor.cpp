@@ -315,8 +315,13 @@ namespace kagami {
         .SetTokenType(T_INTEGER)));
     }
     else {
+      if (mode != kCodeAutoFill && parms.size() != args.size()) {
+        msg.combo(kStrFatalError, kCodeIllegalParm, "Required parameter count is "
+          + to_string(args.size()) + ", but only " + to_string(parms.size()) + " is provided.");
+        return false;
+      }
       while (idx < size) {
-        if (idx >= parms.size() && ent.GetArgumentMode() == kCodeAutoFill) break;
+        if (idx >= parms.size() && mode == kCodeAutoFill) break;
         objMap.insert(NamedObject(args[idx], parms[idx]));
         ++idx;
       }
