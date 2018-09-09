@@ -63,6 +63,9 @@ namespace kagami {
 
   void Activiate();
   void InitPlanners();
+#if defined(_ENABLE_DEBUGGING_)
+  void LoadSDLStuff();
+#endif
   Message FunctionTunnel(ObjectMap &p);
   Message Calling(Activity activity, string args, vector<Object> objects);
   std::wstring s2ws(const std::string &s);

@@ -137,7 +137,7 @@ namespace kagami {
         string temp = ws2s(buf);
         if (!temp.empty() && temp.back() == '\0') temp.pop_back();
         if (!IsBlankStr(temp) && temp.front() != '#') {
-          storage.emplace_back(Processor().Build(temp).SetIndex(subscript));
+          storage.emplace_back(Processor().Make(temp).SetIndex(subscript));
         }
         subscript++;
       }
@@ -362,7 +362,6 @@ namespace kagami {
     }
     msg = Run(false);
     if (msg.GetCode() >= kCodeSuccess) {
-      msg = Message();
       Object *ret = base.Find(kStrRetValue);
       if (ret != nullptr) {
         Object obj;

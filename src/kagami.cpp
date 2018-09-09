@@ -1,5 +1,4 @@
 #include "kagami.h"
-#define _ENABLE_DEBUGGING_
 #include <iostream>
 
 using std::cout;
@@ -56,8 +55,8 @@ namespace kagami {
   }
 
   void ScriptCore::ExecScriptFile(string target) {
-    Machine machine(target.c_str());
     Activiate();
+    Machine machine(target.c_str());
     machine.Run();
   }
 

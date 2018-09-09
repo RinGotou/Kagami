@@ -16,6 +16,9 @@
 #include <iostream>
 #endif
 
+//Enable all debugging feature and output info
+//#define _ENABLE_DEBUGGING_
+
 #if defined(_WIN32)
 #include "windows.h"
 #define WIN32_LEAN_AND_MEAN
@@ -60,7 +63,6 @@ namespace kagami {
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
   
-
   const string kEngineVersion = "1.1";
   const string kCodeName = "Marionette";
 #if defined(_WIN32)
@@ -86,7 +88,8 @@ namespace kagami {
     kStrObject = "__object",
     kMethodPrint = "__print";
 
-  const int kCodeAutoSize = 16,
+  const int kCodeSDLInfo = 17,
+    kCodeAutoSize = 16,
     kCodeDefineSign = 15,
     kCodeAutoFill = 14,
     kCodeNormalParm = 13,
@@ -108,12 +111,19 @@ namespace kagami {
     kCodeIllegalCall = -4,
     kCodeIllegalSymbol = -5,
     kCodeBadStream = -6,
-    kCodeBadExpression = -7;
+    kCodeBadExpression = -7,
+    kCodeSDLError = -8;
 
   const int kFlagCoreEntry = 0,
     kFlagNormalEntry = 1,
     kFlagOperatorEntry = 2,
     kFlagMethod = 3;
+
+  const map<string, string> kBracketPairs = {
+    pair<string,string>(")","("),
+    pair<string,string>("]","["),
+    pair<string,string>("}", "{")
+  };
 
   enum TokenTypeEnum {
     T_GENERIC, T_STRING, T_INTEGER, T_DOUBLE,
@@ -132,13 +142,15 @@ namespace kagami {
     GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
     GT_MORE, GT_LESS, GT_RETURN,
     GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
+    GT_ARRAY, GT_DOT,
     GT_NUL
   };
 
   enum BasicTokenEnum {
     TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT,
     TOKEN_COLON, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_SQRBRACKET, TOKEN_RIGHT_BRACKET,
-    TOKEN_SELFOP, TOKEN_OTHERS
+    TOKEN_SELFOP, TOKEN_LEFT_CURBRACKET, TOKEN_RIGHT_CURBRACKET, 
+    TOKEN_OTHERS
   };
 
   const string kRawStringMethods = "size|__at|__print";
@@ -199,7 +211,9 @@ namespace kagami {
     kStrPlaceHolder = "__ph",
     kStrUserFunc = "__func",
     kStrRetValue = "__ret",
-    kStrStopSign = "__stop";
+    kStrStopSign = "__stop",
+    kStrArray = "__array",
+    kStrDot = "__dot";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",

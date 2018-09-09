@@ -12,10 +12,12 @@ namespace kagami {
     if (src == ")")   return TOKEN_RIGHT_BRACKET;
     if (src == "++")  return TOKEN_SELFOP;
     if (src == "--")  return TOKEN_SELFOP;
+    if (src == "{")   return TOKEN_LEFT_CURBRACKET;
+    if (src == "}")   return TOKEN_RIGHT_CURBRACKET;
     return TOKEN_OTHERS;
   }
 
-  Processor &Processor::Build(string target) {
+  void Processor::Build(string target) {
     Kit kit;
     string current, data, forward, next;
     auto exemptBlankChar = true;
@@ -46,7 +48,7 @@ namespace kagami {
     }
     if (tail > head) data = target.substr(head, tail - head);
     else data = target.substr(head, target.size() - head);
-    if (data.front() == '#') return *this;
+    if (data.front() == '#') return;
 
     while (kagami::Kit::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
       data.pop_back();
@@ -235,8 +237,6 @@ namespace kagami {
     }
 
     kit.CleanupVector(origin).CleanupVector(output);
-
-    return *this;
   }
 
   void Processor::Reversing(ProcCtlBlk *blk) {
@@ -273,112 +273,65 @@ namespace kagami {
 
   bool Processor::TakeAction(Message &msg, ProcCtlBlk *blk) {
     deque<Object> parms;
-    ObjectMap objMap;
     size_t idx = 0;
     Entry &ent = blk->symbol.back();
 
     const size_t size = ent.GetParmSize();
     auto args = ent.GetArguments();
     auto mode = ent.GetArgumentMode();
+    auto token = ent.GetTokenEnum();
     bool reversed = entry::IsOperatorToken(ent.GetTokenEnum()) && blk->needReverse;
 
     idx = size;
-    while (idx > 0 && !blk->item.empty() && !blk->item.back().IsPlaceholder()) {
+    bool doNotUseIdx = (ent.GetEntrySign() || mode == kCodeAutoSize);
+    while (!blk->item.empty() && !blk->item.back().IsPlaceholder()) {
+      if (!doNotUseIdx && idx == 0) break;
       if (reversed) parms.push_back(blk->item.back());
       else parms.push_front(blk->item.back());
       blk->item.pop_back();
-      if (mode !=kCodeAutoSize) idx--;
+      if (!doNotUseIdx) idx--;
     }
-    if (!blk->item.empty() && blk->item.back().IsPlaceholder()) blk->item.pop_back();
+    if (!blk->item.empty() 
+      && blk->item.back().IsPlaceholder()
+      && !entry::IsOperatorToken(token)) 
+      blk->item.pop_back();
 
-    idx = 0;
-    if (mode == kCodeAutoSize) {
-      const size_t parmSize = size - 1;
-      while (idx < parmSize) {
-        objMap.insert(NamedObject(args[idx], parms[idx]));
-        ++idx;
-      }
-      string argGroupHead = args.back();
-      size_t count = 0;
-      while (idx < parms.size()) {
-        objMap.insert(NamedObject(argGroupHead + to_string(count), parms[idx]));
-        idx++;
-        count++;
-      }
-      objMap.insert(NamedObject("__size", Object()
-        .Manage(to_string(parms.size()))
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(T_INTEGER)));
-    }
-    else {
-      while (idx < size) {
-        if (idx >= parms.size() && ent.GetArgumentMode() == kCodeAutoFill) break;
-        objMap.insert(NamedObject(args[idx], parms[idx]));
-        ++idx;
-      }
-    }
 
     auto flag = ent.GetFlag();
-    if (flag == kFlagMethod) {
-      objMap.insert(NamedObject(kStrObject, blk->item.back()));
+    if (flag == kFlagMethod || ent.NeedSpecificType()) {
       parms.push_back(Object().SetArgSign(blk->item.back().GetOriginId()));
       blk->item.pop_back();
     }
 
-    msg = ent.Start(objMap);
-    const auto code = msg.GetCode();
-    const auto value = msg.GetValue();
-    const auto detail = msg.GetDetail();
-
-    if (code == kCodeObject) {
-      auto object = msg.GetObj();
-      blk->item.emplace_back(object.SetRetSign());
-    }
-    else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeHeadPlaceholder) {
-      blk->item.emplace_back(Object()
-        .Manage(detail)
-        .SetRetSign()
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(kagami::Kit::GetTokenType(detail)));
-    }
-
-    health = (value != kStrFatalError && code >= kCodeSuccess);
     instBase.push_back(Inst(ent, parms));
     blk->symbol.pop_back();
+    blk->item.emplace_back(Object().SetRetSign());
     return health;
-  }
-
-  Object *Processor::GetObj(string name, ProcCtlBlk *blk) {
-    Object *result = nullptr;
-    const auto ptr = entry::FindObject(name);
-    if (ptr != nullptr) result = ptr;
-    return result;
   }
 
   void Processor::EqualMark(ProcCtlBlk *blk) {
     if (!blk->item.empty()) {
-      bool ref = blk->item.back().IsRef();
-      if (!ref) {
-        blk->symbol.push_back(entry::Order(kStrBind));
-      }
-      else {
-        blk->symbol.push_back(entry::Order(kStrSet));
-      }
+      blk->symbol.push_back(entry::Order(kStrBind));
     }
   }
-
-  bool Processor::Colon(ProcCtlBlk *blk) {
-    if (blk->symbol.front().GetTokenEnum() == GenericTokenEnum::GT_FOR) {
-      errorString = "Illegal colon location.";
-      return false;
-    }
-    return true;
+  
+  void Processor::Dot(ProcCtlBlk *blk) {
+    auto ent = entry::Order(kStrDot);
+    deque<Object> parms = {
+      blk->item.back(),
+      Object()
+      .Manage(blk->nextToken.first)
+      .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+    };
+    instBase.emplace_back(Inst(ent, parms));
   }
 
   void Processor::LeftBracket(Message &msg, ProcCtlBlk *blk) {
+    blk->lastBracketStack.push(blk->currentToken.first);
     if (blk->defineLine) return;
     if (blk->forwardToken.second != TokenTypeEnum::T_GENERIC) {
-      blk->symbol.emplace_back(kStrNop);
+      auto ent = entry::Order(kStrNop);
+      blk->symbol.emplace_back(ent);
     }
     blk->symbol.emplace_back(blk->currentToken.first);
     blk->item.push_back(Object().SetPlaceholder());
@@ -390,10 +343,19 @@ namespace kagami {
     deque<Object> tempObject;
     bool checked = false;
 
-    while (!blk->symbol.empty() 
-      && blk->symbol.back().GetId() != "(" 
-      && blk->symbol.back().GetTokenEnum() != GT_BIND
-      && blk->symbol.back().GetTokenEnum() != GT_SET) {
+    if (!blk->lastBracketStack.empty() &&
+      kBracketPairs.at(blk->currentToken.first) != blk->lastBracketStack.top()) {
+      errorString = "Illegal bracket pair - '"
+        + blk->lastBracketStack.top() + "'"
+        + " and '" + blk->currentToken.first + "'";
+      return false;
+    }
+    if (!blk->lastBracketStack.empty())blk->lastBracketStack.pop();
+
+    string topId = blk->symbol.back().GetId();
+    while (!blk->symbol.empty()
+      && topId != "{" && topId != "[" && topId != "("
+      && blk->symbol.back().GetTokenEnum() != GT_BIND) {
 
       auto firstEnum = blk->symbol.back().GetTokenEnum();
       if (entry::IsOperatorToken(firstEnum)) {
@@ -412,6 +374,7 @@ namespace kagami {
 
       result = TakeAction(msg, blk);
       if (!result) break;
+      topId = blk->symbol.back().GetId();
     }
     if (result) {
       if (blk->needReverse) blk->needReverse = false;
@@ -423,19 +386,19 @@ namespace kagami {
 
   bool Processor::LeftSqrBracket(Message &msg, ProcCtlBlk *blk) {
     bool result = true;
-    bool methodExisted = Kit::FindInStringGroup("__at", blk->item.back().GetMethods());
-    if (methodExisted) {
-      Entry ent = entry::Order("__at", blk->item.back().GetTypeId());
-      if (ent.Good()) {
-        blk->symbol.push_back(ent);
-        blk->symbol.emplace_back("(");
-        blk->item.push_back(Object().SetPlaceholder());
-      }
-      else {
-        msg.combo(kStrFatalError, kCodeIllegalCall, "Function is not found - __at");
-        result = false;
-      }
-    }
+    auto ent = entry::Order(kStrDot);
+    deque<Object> parms = {
+      blk->item.back(),
+      Object()
+        .Manage("__at")
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+    };
+    instBase.emplace_back(Inst(ent, parms));
+    ent.SetEntrySign("__at", true);
+    blk->symbol.emplace_back(ent);
+    blk->item.emplace_back(Object().SetPlaceholder());
+    blk->lastBracketStack.push(blk->currentToken.first);
+    blk->symbol.emplace_back(blk->currentToken.first);
     return result;
   }
 
@@ -464,89 +427,69 @@ namespace kagami {
     return result;
   }
 
+  bool Processor::LeftCurBracket(Message &msg, ProcCtlBlk *blk) {
+    bool result;
+    blk->lastBracketStack.push(blk->currentToken.first);
+    if (blk->forwardToken.second == TokenTypeEnum::T_SYMBOL) {
+      auto ent = entry::Order(kStrArray);
+      blk->symbol.emplace_back(ent);
+      blk->symbol.emplace_back(blk->currentToken.first);
+      blk->item.push_back(Object().SetPlaceholder());
+      result = true;
+    }
+    else {
+      result = false;
+      errorString = "Illegal curly bracket location.";
+    }
+    return result;
+  }
+
   bool Processor::FunctionAndObject(Message &msg, ProcCtlBlk *blk) {
     bool function = false;
     bool result = true;
 
-    if (blk->dotOperator) {
-      string methods = blk->item.back().GetMethods();
-      bool isExisted = Kit::FindInStringGroup(blk->currentToken.first, methods);
-      if (isExisted) {
-        auto ent = entry::Order(blk->currentToken.first, blk->item.back().GetTypeId());
-        if (ent.Good()) {
-          blk->symbol.push_back(ent);
-          function = true;
-        }
-        /*TODO:find member*/
-        else {
-          result = false;
-          msg.combo(kStrFatalError, kCodeIllegalCall, "Method or member is not found.");
-        }
-      }
-      blk->dotOperator = false;
+    if (blk->defineLine) {
+      blk->item.push_back(Object()
+        .Manage(blk->currentToken.first)
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+        .SetTokenType(blk->currentToken.second));
     }
     else {
-      if (blk->defineLine) {
-        blk->item.push_back(Object()
-          .Manage(blk->currentToken.first)
-          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-          .SetTokenType(blk->currentToken.second));
+      if (blk->nextToken.first == "=") {
+        Object obj;
+        obj.Manage(blk->currentToken.first)
+          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods());
+        blk->item.push_back(obj);
       }
-      else {
-        if (blk->nextToken.first == "(") {
-          auto ent = entry::Order(blk->currentToken.first);
-          if (ent.Good()) {
-            blk->symbol.push_back(ent);
-          }
-          else {
-            result = false;
-            msg.combo(kStrFatalError,
-              kCodeIllegalCall,
-              "Function is not found - " + blk->currentToken.first);
-          }
+      else if (blk->nextToken.first == "(") {
+        auto ent = entry::Order(blk->currentToken.first);
+        bool needSpecType = (blk->forwardToken.first == ".");
+        if (needSpecType) {
+          ent.SetEntrySign(blk->currentToken.first, true);
         }
         else {
-          if (blk->nextToken.first == "=") {
-            Object *object = entry::FindObject(blk->currentToken.first);
-            if (object != nullptr) {
-              Object obj;
-              obj.SetArgSign(blk->currentToken.first);
-              obj.Ref(*object);
-              blk->item.push_back(obj);
-            }
-            else {
-              blk->item.push_back(Object()
-                .Manage(blk->currentToken.first)
-                .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-                .SetTokenType(blk->currentToken.second));
-            }
+          if (!ent.Good()) {
+            ent.SetEntrySign(blk->currentToken.first, false);
           }
-          else if (blk->currentToken.first == kStrEnd || blk->currentToken.first == kStrElse) {
-            auto ent = entry::Order(blk->currentToken.first);
-            blk->symbol.push_back(ent);
-          }
-          else if (blk->currentToken.first == kStrDef) {
-            auto ent = entry::Order(blk->currentToken.first);
-            blk->defineLine = true;
-            blk->symbol.emplace_back(ent);
-            blk->symbol.emplace_back("(");
-            blk->item.push_back(Object().SetPlaceholder());
-          }
-          else {
-            Object *object = entry::FindObject(blk->currentToken.first);
-            if (object != nullptr) {
-              Object obj;
-              obj.SetArgSign(blk->currentToken.first);
-              obj.Ref(*object);
-              blk->item.push_back(obj);
-            }
-            else {
-              result = false;
-              msg.combo(kStrFatalError,
-                kCodeIllegalCall,
-                "Object is not found - " + blk->currentToken.first);
-            }
-          }
+        }
+        blk->symbol.push_back(ent);
+      }
+      else {
+        if (blk->currentToken.first == kStrEnd || blk->currentToken.first == kStrElse) {
+          auto ent = entry::Order(blk->currentToken.first);
+          blk->symbol.push_back(ent);
+        }
+        else if (blk->currentToken.first == kStrDef) {
+          auto ent = entry::Order(blk->currentToken.first);
+          blk->defineLine = true;
+          blk->symbol.emplace_back(ent);
+          blk->symbol.emplace_back("(");
+          blk->item.push_back(Object().SetPlaceholder());
+        }
+        else {
+          Object obj;
+          obj.SetArgSign(blk->currentToken.first);
+          blk->item.push_back(obj);
         }
       }
     }
@@ -591,8 +534,8 @@ namespace kagami {
     else if (currentPriority < blk->symbol.back().GetPriority()) {
       auto j = blk->symbol.size() - 1;
       auto k = blk->item.size();
-      while (blk->symbol[j].GetId() != "(" && blk->symbol[j].GetId() != "[" &&
-        currentPriority < blk->symbol[j].GetPriority()) {
+      while (kBracketPairs.find(blk->symbol[j].GetId()) == kBracketPairs.end()
+        && currentPriority < blk->symbol[j].GetPriority()) {
         k == blk->item.size() ? k -= 2 : k -= 1;
         --j;
       }
@@ -613,9 +556,8 @@ namespace kagami {
         break;
       }
       auto firstEnum = blk->symbol.back().GetTokenEnum();
-      if (entry::IsOperatorToken(firstEnum)) {
-        if (entry::IsOperatorToken(
-          blk->symbol[blk->symbol.size() - 2].GetTokenEnum())) {
+      if (blk->symbol.size() > 1 && entry::IsOperatorToken(firstEnum)) {
+        if (entry::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].GetTokenEnum())) {
           if (checked) {
             checked = false;
           }
@@ -633,7 +575,7 @@ namespace kagami {
     }
   }
 
-  Message Processor::RunWithCache() {
+  Message Processor::Run() {
     deque<Object> retBase;
     vector<Inst>::iterator it = instBase.begin();
     Message msg;
@@ -656,6 +598,18 @@ namespace kagami {
       auto &ent = it->first;
       auto &parms = it->second;
       size_t entParmSize = ent.GetParmSize();
+      if (ent.GetEntrySign()) {
+        string id = ent.GetId();
+        string typeId;
+        ent.NeedSpecificType() ?
+          typeId = getObject(parms.back()).GetTypeId() :
+          typeId = kTypeIdNull;
+        ent = entry::Order(id, typeId);
+        if (!ent.Good()) {
+          msg.combo(kStrFatalError, kCodeIllegalCall, "Function not found - " + id);
+          break;
+        }
+      }
 
       auto args = ent.GetArguments();
       auto mode = ent.GetArgumentMode();
@@ -679,7 +633,7 @@ namespace kagami {
           .SetTokenType(T_INTEGER)));
       }
       else {
-        while (idx < entParmSize) {
+        while (idx < args.size()) {
           if (idx >= parms.size() && ent.GetArgumentMode() == kCodeAutoFill) break;
           objMap.insert(NamedObject(args[idx], getObject(parms[idx])));
           ++idx;
@@ -701,7 +655,9 @@ namespace kagami {
         auto object = msg.GetObj();
         retBase.emplace_back(object);
       }
-      else if (value == kStrRedirect && code == kCodeSuccess || code == kCodeHeadPlaceholder) {
+      else if ((value == kStrRedirect && code == kCodeSuccess 
+        || code == kCodeHeadPlaceholder)
+        && ent.GetTokenEnum() != GT_DOT) {
         Object obj;
         obj.Manage(detail)
           .SetRetSign()
@@ -760,12 +716,16 @@ namespace kagami {
     default:break;
     }
 
-    if (cached) {
-      return RunWithCache();
-    }
+    return Run();
+  }
+
+  void Processor::Assemble() {
+    using namespace entry;
+    auto state = true;
+    const auto size = origin.size();
+    Message result;
 
     ProcCtlBlk *blk = new ProcCtlBlk();
-    blk->mode = mode;
     blk->lambdaObjectCount = 0;
     blk->nextInsertSubscript = 0;
     blk->operatorTargetType = kTypeIdNull;
@@ -784,20 +744,21 @@ namespace kagami {
         blk->nextToken = origin[i + 1] :
         blk->nextToken = Token(kStrNull, TokenTypeEnum::T_NUL);
 
-      result.combo(kStrEmpty, kCodeSuccess, kStrEmpty);
       auto tokenTypeEnum = blk->currentToken.second;
       if (tokenTypeEnum == TokenTypeEnum::T_SYMBOL) {
         BasicTokenEnum value = GetBasicToken(blk->currentToken.first);
         switch (value) {
         case TOKEN_EQUAL: EqualMark(blk); break;
         case TOKEN_COMMA: break;
+        case TOKEN_COLON: break;
         case TOKEN_LEFT_SQRBRACKET: state = LeftSqrBracket(result, blk); break;
-        case TOKEN_DOT:             blk->dotOperator = true; break;
+        case TOKEN_DOT:             Dot(blk); break;
         case TOKEN_LEFT_BRACKET:    LeftBracket(result, blk); break;
-        case TOKEN_COLON:           state = Colon(blk); break;
         case TOKEN_RIGHT_SQRBRACKET:state = RightBracket(result, blk); break;
         case TOKEN_RIGHT_BRACKET:   state = RightBracket(result, blk); break;
         case TOKEN_SELFOP:          state = SelfOperator(result, blk); break;
+        case TOKEN_LEFT_CURBRACKET: state = LeftCurBracket(result, blk); break;
+        case TOKEN_RIGHT_CURBRACKET:state = RightBracket(result, blk); break;
         case TOKEN_OTHERS:          OtherSymbol(blk); break;
         default:break;
         }
@@ -825,10 +786,5 @@ namespace kagami {
     blk->forwardToken = Token();
     blk->currentToken = Token();
     delete blk;
-    if (cached == false) {
-      cached = true;
-    }
-
-    return result;
   }
 }
