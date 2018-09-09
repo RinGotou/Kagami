@@ -17,7 +17,7 @@ namespace kagami {
     return TOKEN_OTHERS;
   }
 
-  void Processor::Build(string target) {
+  Message Processor::Build(string target) {
     Kit kit;
     string current, data, forward, next;
     auto exemptBlankChar = true;
@@ -27,11 +27,12 @@ namespace kagami {
     auto forwardChar = ' ';
     vector<string> origin, output;
     size_t head = 0, tail = 0, nest = 0;
+    Message msg;
     auto toString = [](char t) ->string {return string().append(1, t); };
-    health = true;
 
     //PreProcessing
     this->origin.clear();
+    this->health = true;
     for (size_t count = 0; count < target.size(); ++count) {
       currentChar = target[count];
       auto type = kagami::Kit::GetTokenType(toString(currentChar));
@@ -48,7 +49,7 @@ namespace kagami {
     }
     if (tail > head) data = target.substr(head, tail - head);
     else data = target.substr(head, target.size() - head);
-    if (data.front() == '#') return;
+    if (data.front() == '#') return msg;
 
     while (kagami::Kit::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
       data.pop_back();
@@ -217,11 +218,11 @@ namespace kagami {
       forward = origin[count];
     }
 
-    if (stringProcessing) {
+    if (stringProcessing && errorString.empty()) {
       errorString = "Quotation mark is missing.";
       health = false;
     }
-    if (nest > 0) {
+    if (nest > 0 && errorString.empty()) {
       errorString = "Bracket/Square Bracket is missing";
       health = false;
     }
@@ -235,8 +236,12 @@ namespace kagami {
         this->origin.push_back(token);
       }
     }
+    else {
+      msg.combo(kStrFatalError, kCodeBadExpression, errorString);
+    }
 
     kit.CleanupVector(origin).CleanupVector(output);
+    return msg;
   }
 
   void Processor::Reversing(ProcCtlBlk *blk) {
@@ -271,7 +276,7 @@ namespace kagami {
     delete tempObject;
   }
 
-  bool Processor::TakeAction(Message &msg, ProcCtlBlk *blk) {
+  bool Processor::TakeAction(ProcCtlBlk *blk) {
     deque<Object> parms;
     size_t idx = 0;
     Entry &ent = blk->symbol.back();
@@ -326,7 +331,7 @@ namespace kagami {
     instBase.emplace_back(Inst(ent, parms));
   }
 
-  void Processor::LeftBracket(Message &msg, ProcCtlBlk *blk) {
+  void Processor::LeftBracket(ProcCtlBlk *blk) {
     blk->lastBracketStack.push(blk->currentToken.first);
     if (blk->defineLine) return;
     if (blk->forwardToken.second != TokenTypeEnum::T_GENERIC) {
@@ -337,7 +342,7 @@ namespace kagami {
     blk->item.push_back(Object().SetPlaceholder());
   }
 
-  bool Processor::RightBracket(Message &msg, ProcCtlBlk *blk) {
+  bool Processor::RightBracket(ProcCtlBlk *blk) {
     bool result = true;
     deque<Entry> tempSymbol;
     deque<Object> tempObject;
@@ -372,19 +377,19 @@ namespace kagami {
         }
       }
 
-      result = TakeAction(msg, blk);
+      result = TakeAction(blk);
       if (!result) break;
       topId = blk->symbol.back().GetId();
     }
     if (result) {
       if (blk->needReverse) blk->needReverse = false;
       if (blk->symbol.back().GetId() == "(" || blk->symbol.back().GetId() == "[") blk->symbol.pop_back();
-      result = TakeAction(msg, blk);
+      result = TakeAction(blk);
     }
     return result;
   }
 
-  bool Processor::LeftSqrBracket(Message &msg, ProcCtlBlk *blk) {
+  bool Processor::LeftSqrBracket(ProcCtlBlk *blk) {
     bool result = true;
     auto ent = entry::Order(kStrDot);
     deque<Object> parms = {
@@ -402,7 +407,7 @@ namespace kagami {
     return result;
   }
 
-  bool Processor::SelfOperator(Message &msg, ProcCtlBlk *blk) {
+  bool Processor::SelfOperator(ProcCtlBlk *blk) {
     bool result = true;
     if (blk->forwardToken.second == T_GENERIC) {
       if (blk->currentToken.first == "++") {
@@ -421,13 +426,13 @@ namespace kagami {
       }
     }
     else {
-      msg.combo(kStrFatalError, kCodeIllegalCall, "Unknown self operation");
+      errorString = "Unknown self operation";
       result = false;
     }
     return result;
   }
 
-  bool Processor::LeftCurBracket(Message &msg, ProcCtlBlk *blk) {
+  bool Processor::LeftCurBracket(ProcCtlBlk *blk) {
     bool result;
     blk->lastBracketStack.push(blk->currentToken.first);
     if (blk->forwardToken.second == TokenTypeEnum::T_SYMBOL) {
@@ -444,7 +449,7 @@ namespace kagami {
     return result;
   }
 
-  bool Processor::FunctionAndObject(Message &msg, ProcCtlBlk *blk) {
+  bool Processor::FunctionAndObject(ProcCtlBlk *blk) {
     bool function = false;
     bool result = true;
 
@@ -548,11 +553,12 @@ namespace kagami {
     }
   }
 
-  void Processor::FinalProcessing(Message &msg, ProcCtlBlk *blk) {
+  void Processor::FinalProcessing(ProcCtlBlk *blk) {
     bool checked = false;
     while (!blk->symbol.empty()) {
       if (blk->symbol.back().GetId() == "(") {
-        msg.combo(kStrFatalError, kCodeIllegalSymbol, "Right bracket is missing.");
+        errorString = "Right bracket is missing";
+        health = false;
         break;
       }
       auto firstEnum = blk->symbol.back().GetTokenEnum();
@@ -571,7 +577,7 @@ namespace kagami {
       if (!entry::IsOperatorToken(blk->symbol.back().GetTokenEnum())) {
         blk->needReverse = false;
       }
-      if (!TakeAction(msg, blk)) break;
+      if (!TakeAction(blk)) break;
     }
   }
 
@@ -719,7 +725,7 @@ namespace kagami {
     return Run();
   }
 
-  void Processor::Assemble() {
+  Message Processor::Assemble() {
     using namespace entry;
     auto state = true;
     const auto size = origin.size();
@@ -751,20 +757,20 @@ namespace kagami {
         case TOKEN_EQUAL: EqualMark(blk); break;
         case TOKEN_COMMA: break;
         case TOKEN_COLON: break;
-        case TOKEN_LEFT_SQRBRACKET: state = LeftSqrBracket(result, blk); break;
+        case TOKEN_LEFT_SQRBRACKET: state = LeftSqrBracket(blk); break;
         case TOKEN_DOT:             Dot(blk); break;
-        case TOKEN_LEFT_BRACKET:    LeftBracket(result, blk); break;
-        case TOKEN_RIGHT_SQRBRACKET:state = RightBracket(result, blk); break;
-        case TOKEN_RIGHT_BRACKET:   state = RightBracket(result, blk); break;
-        case TOKEN_SELFOP:          state = SelfOperator(result, blk); break;
-        case TOKEN_LEFT_CURBRACKET: state = LeftCurBracket(result, blk); break;
-        case TOKEN_RIGHT_CURBRACKET:state = RightBracket(result, blk); break;
+        case TOKEN_LEFT_BRACKET:    LeftBracket(blk); break;
+        case TOKEN_RIGHT_SQRBRACKET:state = RightBracket(blk); break;
+        case TOKEN_RIGHT_BRACKET:   state = RightBracket(blk); break;
+        case TOKEN_SELFOP:          state = SelfOperator(blk); break;
+        case TOKEN_LEFT_CURBRACKET: state = LeftCurBracket(blk); break;
+        case TOKEN_RIGHT_CURBRACKET:state = RightBracket(blk); break;
         case TOKEN_OTHERS:          OtherSymbol(blk); break;
         default:break;
         }
       }
       else if (tokenTypeEnum == TokenTypeEnum::T_GENERIC) {
-        state = FunctionAndObject(result, blk);
+        state = FunctionAndObject(blk);
       }
       else if (tokenTypeEnum == TokenTypeEnum::T_NUL) {
         result.combo(kStrFatalError, kCodeIllegalParm, "Illegal token.");
@@ -775,9 +781,9 @@ namespace kagami {
     }
 
     if (state) {
-      FinalProcessing(result, blk);
+      FinalProcessing(blk);
     }
-    if (!health && result.GetDetail() == kStrEmpty) {
+    if (!state || !health) {
       result.combo(kStrFatalError, kCodeBadExpression, errorString);
     }
 
@@ -786,5 +792,6 @@ namespace kagami {
     blk->forwardToken = Token();
     blk->currentToken = Token();
     delete blk;
+    return result;
   }
 }

@@ -31,21 +31,21 @@ namespace kagami {
     string errorString;
 
     void Reversing(ProcCtlBlk *blk);
-    bool TakeAction(Message &msg, ProcCtlBlk *blk);
+    bool TakeAction(ProcCtlBlk *blk);
     void EqualMark(ProcCtlBlk *blk);
     void Dot(ProcCtlBlk *blk);
-    void LeftBracket(Message &msg, ProcCtlBlk *blk);
-    bool RightBracket(Message &msg, ProcCtlBlk *blk);
-    bool LeftSqrBracket(Message &msg, ProcCtlBlk *blk);
-    bool SelfOperator(Message &msg, ProcCtlBlk *blk);
-    bool LeftCurBracket(Message &msg, ProcCtlBlk *blk);
-    bool FunctionAndObject(Message &msg, ProcCtlBlk *blk);
+    void LeftBracket(ProcCtlBlk *blk);
+    bool RightBracket(ProcCtlBlk *blk);
+    bool LeftSqrBracket(ProcCtlBlk *blk);
+    bool SelfOperator(ProcCtlBlk *blk);
+    bool LeftCurBracket(ProcCtlBlk *blk);
+    bool FunctionAndObject(ProcCtlBlk *blk);
     void OtherToken(ProcCtlBlk *blk);
     void OtherSymbol(ProcCtlBlk *blk);
-    void FinalProcessing(Message &msg, ProcCtlBlk *blk);
+    void FinalProcessing(ProcCtlBlk *blk);
     Message Run();
-    void Build(string target);
-    void Assemble();
+    Message Build(string target);
+    Message Assemble();
   public:
     Processor() : health(false), index(0) {}
     Processor(vector<Token> origin) : health(false), index(0) {
@@ -58,10 +58,13 @@ namespace kagami {
     
     Message Activiate(size_t mode = kModeNormal);
 
-    Processor &Make(string target) {
-      Build(target);
-      Assemble();
-      return *this;
+    Message Make(string target) {
+      Message msg;
+      msg = Build(target);
+      if (msg.GetCode() >= kCodeSuccess){
+        msg = Assemble();
+      }
+      return msg;
     }
 
     size_t GetIndex() const { return index; }
