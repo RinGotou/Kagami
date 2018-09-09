@@ -155,7 +155,8 @@ namespace kagami {
         T(kStrMore,GT_MORE),
         T(kStrLess,GT_LESS),
         T(kStrReturn,GT_RETURN),
-        T(kStrArray,GT_ARRAY)
+        T(kStrArray,GT_ARRAY),
+        T(kStrDot,GT_DOT)
       };
       return base;
     }
@@ -263,10 +264,12 @@ namespace kagami {
 
       vector<Entry> &base = GetEntryBase();
       Entry result;
+      bool ignoreType = (type == kTypeIdNull);
       //TODO:rewrite here
       for (auto &unit : base) {
-        if (id == unit.GetId() && type == unit.GetSpecificType()
-          && (size == -1 || size == int(unit.GetParmSize()))) {
+        bool typeChecking = (ignoreType || type == unit.GetSpecificType());
+        bool sizeChecking = (size == -1 || size == int(unit.GetParmSize()));
+        if (id == unit.GetId() && typeChecking && sizeChecking) {
           result = unit;
           break;
         }

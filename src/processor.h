@@ -29,12 +29,11 @@ namespace kagami {
     vector<Inst> instBase;
     size_t index;
     string errorString;
-    bool cached;
 
     void Reversing(ProcCtlBlk *blk);
     bool TakeAction(Message &msg, ProcCtlBlk *blk);
-    static Object *GetObj(string name, ProcCtlBlk *blk);
     void EqualMark(ProcCtlBlk *blk);
+    void Dot(ProcCtlBlk *blk);
     void LeftBracket(Message &msg, ProcCtlBlk *blk);
     bool RightBracket(Message &msg, ProcCtlBlk *blk);
     bool LeftSqrBracket(Message &msg, ProcCtlBlk *blk);
@@ -44,19 +43,26 @@ namespace kagami {
     void OtherToken(ProcCtlBlk *blk);
     void OtherSymbol(ProcCtlBlk *blk);
     void FinalProcessing(Message &msg, ProcCtlBlk *blk);
-    Message RunWithCache();
+    Message Run();
+    void Build(string target);
+    void Assemble();
   public:
-    Processor() : health(false), index(0), cached(false) {}
-    Processor(vector<Token> origin) : health(false), index(0), cached(false) {
+    Processor() : health(false), index(0) {}
+    Processor(vector<Token> origin) : health(false), index(0) {
       this->origin = origin;
     }
     Processor &SetIndex(size_t idx) {
       this->index = idx;
       return *this;
     }
-
+    
     Message Activiate(size_t mode = kModeNormal);
-    Processor &Build(string target);
+
+    Processor &Make(string target) {
+      Build(target);
+      Assemble();
+      return *this;
+    }
 
     size_t GetIndex() const { return index; }
     Token GetFirstToken() const { return origin.front(); }
