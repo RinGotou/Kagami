@@ -1,5 +1,8 @@
 # Kagami
 
+## *Something
+I'm preparing postgraduate entrance exam now,so I will reduce time for developing Kagami for some months.
+
 ## What's this?
 It's a simple and tiny script language.The name of this project is from Japanese kanji "鏡（かがみ）".
 
