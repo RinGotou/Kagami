@@ -1,0 +1,29 @@
+def Sort()
+	print('Bubble sorting for 100000 number...')
+	startTime = time()
+	ar = array(100000,0)
+	i = 99999
+	while(i >= 0)
+		ar[i] = i
+		i--
+	end
+	
+	i = 0
+	j = 0
+	while(i < 100000)
+		while(j < (100000 - i - 1))
+			if (ar[j] < ar[j])
+				k = i
+				i = j
+				j = k
+			end
+			j++
+		end
+		i++
+	end
+	endTime = time()
+	print('Start=' + startTime)
+	print('End=' + endTime)
+end
+
+Sort()
