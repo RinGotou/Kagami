@@ -1,4 +1,5 @@
 #pragma once
+#include "analyzer.h"
 #include "processor.h"
 
 namespace kagami {
