@@ -1,6 +1,0 @@
-[submodule "src/libSDL2pp"]
-	path = src/libSDL2pp
-	url = https://github.com/libSDL2pp/libSDL2pp
-[submodule "libSDL2pp"]
-	path = libSDL2pp
-	url = https://github.com/libSDL2pp/libSDL2pp
