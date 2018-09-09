@@ -115,7 +115,9 @@ namespace kagami {
 
   Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
   Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
-  Message If(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty); }
+  Message If(ObjectMap &p) { 
+    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty); 
+  }
   Message Elif(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty); }
   Message While(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty); }
 
@@ -157,7 +159,7 @@ namespace kagami {
     vector<string> defHead;
     Object &id = p["id"];
     size_t count = 0;
-    defHead.emplace_back(*static_pointer_cast<string>(id.Get()));
+    defHead.emplace_back(GetObjectStuff<string>(id));
 
     for (auto &unit : p) {
       if (unit.first == "arg" + to_string(count)) {
@@ -175,9 +177,11 @@ namespace kagami {
     Object &valueObj = p["value"];
     string typeId = valueObj.GetTypeId();
     Object obj;
-    obj.Set(valueObj.Get(), typeId)
-      .SetMethods(type::GetPlanner(typeId)->GetMethods());
-    entry::GetCurrentManager().Add(kStrRetValue, obj);
+    if (typeId != kTypeIdNull) {
+      obj.Set(valueObj.Get(), typeId)
+        .SetMethods(valueObj.GetMethods());
+      entry::GetCurrentManager().Add(kStrRetValue, obj);
+    }
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
   }
 
@@ -205,7 +209,7 @@ namespace kagami {
     string result;
 
     if(object.GetTypeId() == kTypeIdRawString) {
-      const auto origin = *static_pointer_cast<string>(object.Get());
+      const auto origin = GetObjectStuff<string>(object);
       if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
         ++data;
@@ -228,7 +232,7 @@ namespace kagami {
     string result;
 
     if (object.GetTypeId() == kTypeIdRawString) {
-      const auto origin = *static_pointer_cast<string>(object.Get());
+      const auto origin = GetObjectStuff<string>(object);
       if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
         --data;
@@ -251,7 +255,7 @@ namespace kagami {
     string result;
 
     if (object.GetTypeId() == kTypeIdRawString) {
-      auto origin = *static_pointer_cast<string>(object.Get());
+      auto origin = GetObjectStuff<string>(object);
       result = origin;
       if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
@@ -273,7 +277,7 @@ namespace kagami {
     string result;
 
     if (object.GetTypeId() == kTypeIdRawString) {
-      auto origin = *static_pointer_cast<string>(object.Get());
+      auto origin = GetObjectStuff<string>(object);
       result = origin;
       if (object.GetTokenType() == T_INTEGER) {
         auto data = stoi(origin);
@@ -294,7 +298,7 @@ namespace kagami {
     Object &obj = p["object"];
     string result;
     if (obj.GetTypeId() == kTypeIdRawString) {
-      string str = *static_pointer_cast<string>(obj.Get());
+      string str = GetObjectStuff<string>(obj);
       Kit::IsString(str) ? str = Kit::GetRawString(str) : str = str;
       switch (Kit::GetTokenType(str)) {
       case TokenTypeEnum::T_BOOLEAN:result = "'boolean'"; break;
@@ -319,41 +323,50 @@ namespace kagami {
     return Message(kStrRedirect, kCodeSuccess, obj.GetTypeId());
   }
 
-  Message Set(ObjectMap &p) {
+  Message BindAndSet(ObjectMap &p) {
+    Object &obj = p["object"], source = p["source"];
+    Object *targetObj = nullptr;
+    bool existed;
     Message msg;
-    Object object = p["object"], source = p["source"];
-    auto copy = type::GetObjectCopy(source);
-
-    if (object.IsRo()) {
-      msg.combo(kStrFatalError, kCodeIllegalCall, "Object is read-only.");
+    string objId;
+    if (obj.IsRef()) {
+      existed = true;
+      targetObj = &obj;
     }
     else {
-      object.Set(copy, source.GetTypeId())
+      if (obj.GetTypeId() != kTypeIdRawString) {
+        msg.combo(kStrFatalError, kCodeIllegalParm, "Illegal bind operation.");
+        return msg;
+      }
+      objId = GetObjectStuff<string>(obj);
+      targetObj = entry::FindObject(objId);
+      if (targetObj == nullptr) existed = false;
+      else existed = true;
+    }
+    
+    if (existed) {
+      if (targetObj->IsRo()) {
+        msg.combo(kStrFatalError, kCodeIllegalCall, "Object is read-only.");
+      }
+      else {
+        auto copy = type::GetObjectCopy(source);
+        targetObj->Set(copy, source.GetTypeId())
+          .SetMethods(source.GetMethods())
+          .SetTokenType(source.GetTokenType());
+      }
+    }
+    else {
+      auto copy = type::GetObjectCopy(source);
+      Object base;
+      base.Set(copy, source.GetTypeId())
         .SetMethods(source.GetMethods())
-        .SetTokenType(source.GetTokenType());
+        .SetTokenType(source.GetTokenType())
+        .SetRo(false);
+      auto result = entry::CreateObject(objId, base);
+      if (result == nullptr) {
+        msg.combo(kStrFatalError, kCodeIllegalCall, "Object creation failed.");
+      }
     }
-    
-    return msg;
-  }
-
-  Message Bind(ObjectMap &p) {
-    Message msg;
-    Object object = p["object"], source = p["source"];
-    auto id = *static_pointer_cast<string>(object.Get());
-    auto ptr = entry::FindObject(id);
-    auto copy = type::GetObjectCopy(source);
-
-
-    Object base;
-    base.Set(copy, source.GetTypeId())
-      .SetMethods(source.GetMethods())
-      .SetTokenType(source.GetTokenType())
-      .SetRo(false);
-    auto result = entry::CreateObject(id, base);
-    if (result == nullptr) {
-      msg.combo(kStrFatalError, kCodeIllegalCall, "Object creation failed.");
-    }
-    
     return msg;
   }
 
@@ -399,7 +412,8 @@ namespace kagami {
     if (it != p.end()) {
       ObjectMap objMap;
       objMap.insert(ObjectPair("not_wrap", Object()));
-      objMap.insert(ObjectPair("object", it->second));
+      objMap.insert(ObjectPair(kStrObject, it->second));
+      //objMap.insert(ObjectPair("object", it->second));
       Print(objMap);
     }
     string buf;
@@ -434,23 +448,86 @@ namespace kagami {
 
   Message Nop(ObjectMap &p) {
     Object &objSize = p["__size"];
-    size_t size = *static_pointer_cast<size_t>(objSize.Get());
-    Object &lastObj = p["nop" + to_string(size)];
+    int size = stoi(GetObjectStuff<string>(objSize));
+    Object &lastObj = p["nop" + to_string(size - 1)];
     Message msg;
     msg.SetObject(lastObj, "__result");
+    return msg;
+  }
+
+  Message ArrayMaker(ObjectMap &p) {
+    Object &objSize = p["__size"];
+    int size = stoi(GetObjectStuff<string>(objSize));
+    vector<Object> base;
+    Message msg;
+    base.reserve(size);
+    if (!p.empty()) {
+      for (int i = 0; i < size; i++) {
+        base.emplace_back(p["item" + to_string(i)]);
+      }
+    }
+    msg.SetObject(Object()
+      .SetConstructorFlag()
+      .Set(make_shared<vector<Object>>(base), kTypeIdArrayBase)
+      .SetMethods(type::GetPlanner(kTypeIdArrayBase)->GetMethods())
+      .SetRo(false)
+      , "__result");
+    return msg;
+  }
+
+  Message Dir(ObjectMap &p) {
+    Object &obj = p["object"];
+    auto vec = Kit::BuildStringVector(obj.GetMethods());
+    Message msg;
+    vector<Object> output;
+    for (auto &unit : vec) {
+      output.emplace_back(Object()
+        .Set(make_shared<string>(unit),kTypeIdString)
+        .SetMethods(type::GetPlanner(kTypeIdString)->GetMethods())
+        .SetRo(true)
+      );
+      msg.SetObject(Object()
+        .SetConstructorFlag()
+        .Set(make_shared<vector<Object>>(output), kTypeIdArrayBase)
+        .SetMethods(type::GetPlanner(kTypeIdArrayBase)->GetMethods())
+        .SetRo(true), "__result");
+    }
+    return msg;
+  }
+
+
+  Message Exist(ObjectMap &p){
+    Object &obj = p["object"];
+    string target = Kit::GetRawString(GetObjectStuff<string>(p["id"]));
+    bool result = Kit::FindInStringGroup(target, obj.GetMethods());
+    Message msg;
+    result ? 
+      msg = Message(kStrRedirect, kCodeSuccess, kStrTrue): 
+      msg = Message(kStrRedirect, kCodeSuccess, kStrFalse);
+    return msg;
+  }
+
+  Message Dot(ObjectMap &p) {
+    Object &obj = p["object"];
+    string target = GetObjectStuff<string>(p["id"]);
+    bool result = Kit::FindInStringGroup(target, obj.GetMethods());
+    Message msg;
+    result ?
+      msg = Message(kStrRedirect, kCodeSuccess, kStrTrue) :
+      msg = Message(kStrFatalError,kCodeIllegalCall,"Method not found - " + target);
     return msg;
   }
 
   void AddGenEntries() {
     using namespace entry;
     AddGenericEntry(GT_NOP, Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
+    AddGenericEntry(GT_ARRAY, Entry(ArrayMaker, "item", GT_ARRAY, kCodeAutoSize));
     AddGenericEntry(GT_END, Entry(End, "", GT_END));
     AddGenericEntry(GT_ELSE, Entry(Else, "", GT_ELSE));
     AddGenericEntry(GT_IF, Entry(If, "state", GT_IF));
     AddGenericEntry(GT_WHILE, Entry(While, "state", GT_WHILE));
     AddGenericEntry(GT_ELIF, Entry(Elif, "state", GT_ELIF));
-    AddGenericEntry(GT_SET, Entry(Set, "object|source", GT_SET, kCodeNormalParm, 0));
-    AddGenericEntry(GT_BIND, Entry(Bind, "object|source", GT_BIND, kCodeNormalParm, 0));
+    AddGenericEntry(GT_BIND, Entry(BindAndSet, "object|source", GT_BIND, kCodeNormalParm, 0));
     AddGenericEntry(GT_ADD, Entry(Plus, "first|second", GT_ADD, kCodeNormalParm, 2));
     AddGenericEntry(GT_SUB, Entry(Sub, "first|second", GT_SUB, kCodeNormalParm, 2));
     AddGenericEntry(GT_MUL, Entry(Multiply, "first|second", GT_MUL, kCodeNormalParm, 3));
@@ -469,12 +546,16 @@ namespace kagami {
     AddGenericEntry(GT_OR, Entry(Or, "first|second", GT_OR, kCodeNormalParm, 1));
     AddGenericEntry(GT_DEF, Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
     AddGenericEntry(GT_RETURN, Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
+    AddGenericEntry(GT_DOT, Entry(Dot, "object|id", GT_DOT));
   }
 
   void Activiate() {
     using namespace entry;
     AddGenEntries();
     InitPlanners();
+#if defined(_ENABLE_DEBUGGING_)
+    LoadSDLStuff();
+#endif
     AddEntry(Entry(WriteLog, kCodeNormalParm, "msg", "log"));
     AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
     AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
@@ -483,5 +564,7 @@ namespace kagami {
     AddEntry(Entry(Quit, kCodeNormalParm, "", "quit"));
     AddEntry(Entry(GetTypeId, kCodeNormalParm, "object", "typeid"));
     AddEntry(Entry(GetRawStringType, kCodeNormalParm, "object", "type"));
+    AddEntry(Entry(Dir, kCodeNormalParm, "object", "dir"));
+    AddEntry(Entry(Exist, kCodeNormalParm, "object|id", "exist"));
   }
 }

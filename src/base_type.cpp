@@ -91,7 +91,7 @@ namespace kagami {
       auto &base = *static_pointer_cast<vector<Object>>(object.Get());
       auto ent = entry::Order("print", kTypeIdNull, -1);
       for (auto &unit : base) {
-        map.insert(pair<string, Object>("object", unit));
+        map.insert(pair<string, Object>(kStrObject, unit));
         result = ent.Start(map);
         map.clear();
       }
@@ -528,7 +528,7 @@ namespace kagami {
     AddEntry(Entry(RegexConstructor, kCodeNormalParm, "regex", "regex"));
     AddEntry(Entry(RegexMatch, kCodeNormalParm, "str", "match", kTypeIdRegex, kFlagMethod));
 
-    AddTemplate(kTypeIdString, ObjectPlanner(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
+    AddTemplate(kTypeIdWideString, ObjectPlanner(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
     AddEntry(Entry(WideStringContructor, kCodeNormalParm, "raw_string", "wstring"));
     AddEntry(Entry(WideStringGetSize, kCodeNormalParm, "", "size", kTypeIdWideString, kFlagMethod));
     AddEntry(Entry(WideStringGetElement, kCodeNormalParm, "index", "__at", kTypeIdWideString, kFlagMethod));
