@@ -17,7 +17,7 @@
 #endif
 
 //Enable all debugging feature and output info
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #include "windows.h"
@@ -55,7 +55,6 @@ namespace kagami {
   class ObjectPlanner;
   class Object;
 
-  using StateCde = pair<const char *, int>;
   using ObjectMap = map<string, Object>;
   using ObjectPair = pair<string, Object>;
   using Parameter = pair<string, Object>;
@@ -64,7 +63,6 @@ namespace kagami {
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
   
-
   const string kEngineVersion = "1.1";
   const string kCodeName = "Marionette";
 #if defined(_WIN32)
@@ -90,10 +88,6 @@ namespace kagami {
     kStrObject = "__object",
     kMethodPrint = "__print";
 
-
-  const map<const char *, int> kStateCode = {
-
-  };
   const int kCodeSDLInfo = 17,
     kCodeAutoSize = 16,
     kCodeDefineSign = 15,
@@ -148,7 +142,7 @@ namespace kagami {
     GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
     GT_MORE, GT_LESS, GT_RETURN,
     GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
-    GT_ARRAY,
+    GT_ARRAY, GT_DOT,
     GT_NUL
   };
 
@@ -218,7 +212,8 @@ namespace kagami {
     kStrUserFunc = "__func",
     kStrRetValue = "__ret",
     kStrStopSign = "__stop",
-    kStrArray = "__array";
+    kStrArray = "__array",
+    kStrDot = "__dot";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",

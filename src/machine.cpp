@@ -137,7 +137,7 @@ namespace kagami {
         string temp = ws2s(buf);
         if (!temp.empty() && temp.back() == '\0') temp.pop_back();
         if (!IsBlankStr(temp) && temp.front() != '#') {
-          storage.emplace_back(Processor().Build(temp).SetIndex(subscript));
+          storage.emplace_back(Processor().Make(temp).SetIndex(subscript));
         }
         subscript++;
       }
