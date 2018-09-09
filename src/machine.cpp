@@ -129,6 +129,7 @@ namespace kagami {
     wstring buf;
     health = true;
     size_t subscript = 0;
+    auto &logger = trace::GetLogger();
 
     stream.open(target, std::ios::in);
     if (stream.good()) {
@@ -137,7 +138,17 @@ namespace kagami {
         string temp = ws2s(buf);
         if (!temp.empty() && temp.back() == '\0') temp.pop_back();
         if (!IsBlankStr(temp) && temp.front() != '#') {
-          storage.emplace_back(Processor().Make(temp).SetIndex(subscript));
+          Processor proc;
+          auto msg = proc.Make(temp);
+          if (msg.GetValue() == kStrFatalError) {
+            trace::Log(msg.SetIndex(subscript));
+            break;
+          }
+          if (msg.GetValue() == kStrWarning) {
+            trace::Log(msg.SetIndex(subscript));
+          }
+          proc.SetIndex(subscript);
+          storage.emplace_back(proc);
         }
         subscript++;
       }
