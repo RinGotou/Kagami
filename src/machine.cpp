@@ -373,6 +373,7 @@ namespace kagami {
     }
     msg = Run(false);
     if (msg.GetCode() >= kCodeSuccess) {
+      msg = Message();
       Object *ret = base.Find(kStrRetValue);
       if (ret != nullptr) {
         Object obj;
