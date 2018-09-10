@@ -6,19 +6,6 @@
 namespace kagami {
   using Inst = pair<Entry, deque<Object>>;
 
-  using ProcCtlBlk = struct {
-    deque<Object> item;
-    deque<Entry> symbol;
-    bool insertBetweenObject, dotOperator, needReverse,
-      defineLine, subscriptProcessing;
-    Token currentToken;
-    Token nextToken;
-    Token forwardToken;
-    stack<string> lastBracketStack;
-    string operatorTargetType;
-    size_t mode, nextInsertSubscript, lambdaObjectCount;
-  };
-
   class Processor {
     bool health;
     vector<Inst> instBase;
