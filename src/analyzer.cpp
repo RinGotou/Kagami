@@ -480,7 +480,10 @@ namespace kagami {
         blk->symbol.push_back(ent);
       }
       else {
-        if (blk->currentToken.first == kStrEnd || blk->currentToken.first == kStrElse) {
+        if (blk->currentToken.first == kStrEnd 
+          || blk->currentToken.first == kStrElse
+          || blk->currentToken.first == kStrContinue
+          || blk->currentToken.first == kStrBreak) {
           auto ent = entry::Order(blk->currentToken.first);
           blk->symbol.push_back(ent);
         }
