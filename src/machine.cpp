@@ -275,11 +275,24 @@ namespace kagami {
         entry::GetCurrentManager().clear();
         break;
       case kModeCycleJump:
-        blk->currentMode = blk->modeStack.top();
-        blk->modeStack.pop();
-        if (!blk->cycleNestStack.empty()) blk->cycleNestStack.pop();
-        if (!blk->cycleTailStack.empty()) blk->cycleTailStack.pop();
-        entry::DisposeManager();
+        if (blk->sContinue) {
+          if (blk->cycleTailStack.empty() || blk->cycleTailStack.top() != blk->current - 1) {
+            blk->cycleTailStack.push(blk->current - 1);
+          }
+          blk->current = blk->cycleNestStack.top();
+          blk->currentMode = kModeCycle;
+          blk->modeStack.top() = blk->currentMode;
+          blk->sContinue = false;
+          entry::GetCurrentManager().clear();
+        }
+        else {
+          if (blk->sBreak) blk->sBreak = false;
+          blk->currentMode = blk->modeStack.top();
+          blk->modeStack.pop();
+          if (!blk->cycleNestStack.empty()) blk->cycleNestStack.pop();
+          if (!blk->cycleTailStack.empty()) blk->cycleTailStack.pop();
+          entry::DisposeManager();
+        }
         break;
       default:break;
       }
@@ -287,11 +300,31 @@ namespace kagami {
   }
 
   void Machine::Continue(MachCtlBlk *blk) {
-
+    while (!blk->modeStack.empty() && blk->currentMode != kModeCycle) {
+      if (blk->currentMode == kModeCondition) {
+        blk->conditionStack.pop();
+        blk->nestHeadCount++;
+      }
+      blk->currentMode = blk->modeStack.top();
+      blk->modeStack.pop();
+    }
+    blk->currentMode = kModeCycleJump;
+    blk->sContinue = true;
   }
 
   void Machine::Break(MachCtlBlk *blk) {
-
+    while (!blk->modeStack.empty() && blk->currentMode != kModeCycle) {
+      if (blk->currentMode == kModeCondition) {
+        blk->conditionStack.pop();
+        blk->nestHeadCount++;
+      }
+      blk->currentMode = blk->modeStack.top();
+      blk->modeStack.pop();
+    }
+    if (blk->currentMode == kModeCycle) {
+      blk->currentMode = kModeCycleJump;
+      blk->sBreak = true;
+    }
   }
 
   bool Machine::IsBlankStr(string target) {
@@ -501,10 +534,10 @@ namespace kagami {
 
       switch (code) {
       case kCodeContinue:
-
+        Continue(blk);
         break;
       case kCodeBreak:
-
+        Break(blk);
         break;
       case kCodeDefineSign:
         DefineSign(result.GetDetail(), blk);
