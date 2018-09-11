@@ -53,7 +53,7 @@ namespace kagami {
     return base;
   }
 
-  inline void AddFunction(string id, vector<Processor> proc, vector<string> parms) {
+  inline void AddFunction(string id, vector<Meta> proc, vector<string> parms) {
     auto &base = GetFunctionBase();
     base[id] = Machine(proc).SetParameters(parms);
     entry::AddEntry(Entry(FunctionTunnel, id, parms));
@@ -99,7 +99,7 @@ namespace kagami {
     auto &defHead = blk->defHead;
     string id = defHead[0];
     vector<string> parms;
-    vector<Processor> proc;
+    vector<Meta> proc;
 
     for (size_t i = 1; i < defHead.size(); ++i) {
       parms.push_back(defHead[i]);
@@ -124,13 +124,15 @@ namespace kagami {
     delete blk;
   }
 
-  Machine::Machine(const char *target) {
+  Machine::Machine(const char *target, bool isMain) {
     std::wifstream stream;
     wstring buf;
     health = true;
     size_t subscript = 0;
     auto &logger = trace::GetLogger();
     Analyzer analyzer;
+
+    this->isMain = isMain;
 
     stream.open(target, std::ios::in);
     if (stream.good()) {
@@ -147,7 +149,7 @@ namespace kagami {
           if (msg.GetValue() == kStrWarning) {
             trace::Log(msg.SetIndex(subscript));
           }
-          storage.emplace_back(Processor(
+          storage.emplace_back(Meta(
             analyzer.GetOutput(),
             analyzer.GetIdx(),
             analyzer.GetMainToken()));
@@ -284,6 +286,14 @@ namespace kagami {
     }
   }
 
+  void Machine::Continue(MachCtlBlk *blk) {
+
+  }
+
+  void Machine::Break(MachCtlBlk *blk) {
+
+  }
+
   bool Machine::IsBlankStr(string target) {
     if (target.empty() || target.size() == 0) return true;
     for (const auto unit : target) {
@@ -294,26 +304,185 @@ namespace kagami {
     return true;
   }
 
+  Message Machine::MetaProcessing(Meta &meta) {
+    Kit kit;
+    deque<Object> retBase;
+    vector<Inst> &instBase = meta.GetContains();
+    vector<Inst>::iterator it = instBase.begin();
+    Message msg;
+    auto &manager = entry::GetCurrentManager();
+    ObjectMap objMap;
+
+    auto getObject = [&](Object &obj) -> Object {
+      if (obj.IsRetSign()) {
+        Object res = retBase.front();
+        retBase.pop_front();
+        return res;
+      }
+      if (obj.IsArgSign()) {
+        return Object().Ref(*entry::FindObject(obj.GetOriginId()));
+      }
+      return obj;
+    };
+
+    for (; it != instBase.end(); it++) {
+      kit.CleanupMap(objMap);
+      //objMap.clear();
+      auto &ent = it->first;
+      auto &parms = it->second;
+      size_t entParmSize = ent.GetParmSize();
+      if (ent.GetEntrySign()) {
+        string id = ent.GetId();
+        string typeId;
+        ent.NeedSpecificType() ?
+          typeId = getObject(parms.back()).GetTypeId() :
+          typeId = kTypeIdNull;
+        ent = entry::Order(id, typeId);
+        if (!ent.Good()) {
+          msg.combo(kStrFatalError, kCodeIllegalCall, "Function not found - " + id);
+          break;
+        }
+      }
+
+      auto args = ent.GetArguments();
+      auto mode = ent.GetArgumentMode();
+      size_t idx = 0;
+      if (mode == kCodeAutoSize) {
+        const size_t parmSize = entParmSize - 1;
+        while (idx < parmSize) {
+          objMap.insert(NamedObject(args[idx], getObject(parms[idx])));
+          ++idx;
+        }
+        string argGroupHead = args.back();
+        size_t count = 0;
+        while (idx < parms.size()) {
+          objMap.insert(NamedObject(argGroupHead + to_string(count), getObject(parms[idx])));
+          idx++;
+          count++;
+        }
+        objMap.insert(NamedObject("__size", Object()
+          .Manage(to_string(parms.size()))
+          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetTokenType(T_INTEGER)));
+      }
+      else {
+        while (idx < args.size()) {
+          if (idx >= parms.size() && ent.GetArgumentMode() == kCodeAutoFill) break;
+          objMap.insert(NamedObject(args[idx], getObject(parms[idx])));
+          ++idx;
+        }
+      }
+
+      if (ent.GetFlag() == kFlagMethod) {
+        objMap.insert(NamedObject(kStrObject, getObject(parms.back())));
+      }
+
+      msg = ent.Start(objMap);
+      const auto code = msg.GetCode();
+      const auto value = msg.GetValue();
+      const auto detail = msg.GetDetail();
+
+      if (value == kStrFatalError) break;
+
+      if (code == kCodeObject) {
+        auto object = msg.GetObj();
+        retBase.emplace_back(object);
+      }
+      else if ((value == kStrRedirect && code == kCodeSuccess
+        || code == kCodeHeadPlaceholder)
+        && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
+        Object obj;
+        obj.Manage(detail)
+          .SetRetSign()
+          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetTokenType(kagami::Kit::GetTokenType(detail));
+        if (entry::IsOperatorToken(ent.GetTokenEnum())
+          && it + 1 != instBase.end()) {
+          auto token = (it + 1)->first.GetTokenEnum();
+          if (entry::IsOperatorToken(token)) {
+            retBase.emplace_front(obj);
+          }
+          else {
+            retBase.emplace_back(obj);
+          }
+        }
+        else {
+          retBase.emplace_back(obj);
+        }
+      }
+    }
+    return msg;
+  }
+
   Message Machine::Run(bool createManager) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
-
+    Meta *meta = nullptr;
+    GenericTokenEnum token;
+    bool judged = false;
     blk->currentMode = kModeNormal;
     blk->nestHeadCount = 0;
     blk->current = 0;
     blk->currentMode = kModeNormal;
     blk->defStart = 0;
+    blk->sContinue = false;
+    blk->sBreak = false;
     health = true;
 
     if (storage.empty()) return result;
 
     if (createManager) entry::CreateManager();
+    if (isMain) {
+      entry::CreateObject("__name__", Object()
+        .Manage("'__main__'")
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods()));
+    }
+    else {
+      //TODO:module name
+      entry::CreateObject("__name__", Object()
+        .Manage("''")
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods()));
+    }
 
     //Main state machine
     while (blk->current < storage.size()) {
       if (!health) break;
+      meta = &storage[blk->current];
 
-      result = storage[blk->current].Activiate(blk->currentMode);
+      token = entry::GetGenericToken(meta->GetMainToken().first);
+      switch (blk->currentMode) {
+      case kModeDef:
+        if (token == GT_WHILE || token == GT_IF) {
+          result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+          judged = true;
+        }
+        else if (token != GT_END) {
+          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          judged = true;
+        }
+        break;
+      case kModeNextCondition:
+        if (token == GT_IF || token == GT_WHILE) {
+          result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+          judged = true;
+        }
+        else if (token != GT_ELSE && token != GT_END && token != GT_ELIF) {
+          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          judged = true;
+        }
+        break;
+      case kModeCycleJump:
+        if (token != GT_END && token != GT_IF && token != GT_WHILE) {
+          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          judged = true;
+        }
+        break;
+      default:
+        break;
+      }
+      
+      if (!judged) result = MetaProcessing(*meta);
+
       const auto value = result.GetValue();
       const auto code  = result.GetCode();
 
@@ -331,6 +500,12 @@ namespace kagami {
       }
 
       switch (code) {
+      case kCodeContinue:
+
+        break;
+      case kCodeBreak:
+
+        break;
       case kCodeDefineSign:
         DefineSign(result.GetDetail(), blk);
         break;
@@ -361,6 +536,7 @@ namespace kagami {
       default:break;
       }
       ++blk->current;
+      if (judged) judged = false;
     }
 
     if (createManager) entry::DisposeManager();

@@ -2,12 +2,6 @@
 #include "object.h"
 
 namespace kagami {
-  /*Message Class
-  It's the basic message tunnel of this script processor.
-  According to my design,processor will check value or detail or
-  both of them to find out warnings or errors.Some functions use
-  value,detail and castpath to deliver Object class.
-  */
   class Message {
     string value;
     string detail;
