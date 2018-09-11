@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\analyzer.h" />
     <ClInclude Include="..\..\src\base_type.h" />
     <ClInclude Include="..\..\src\common.h" />
     <ClInclude Include="..\..\src\entry.h" />
@@ -28,11 +29,11 @@
     <ClInclude Include="..\..\src\message.h" />
     <ClInclude Include="..\..\src\object.h" />
     <ClInclude Include="..\..\src\machine.h" />
-    <ClInclude Include="..\..\src\processor.h" />
     <ClInclude Include="..\..\src\trace.h" />
     <ClInclude Include="..\..\src\window.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\analyzer.cpp" />
     <ClCompile Include="..\..\src\base_type.cpp" />
     <ClCompile Include="..\..\src\component.cpp" />
     <ClCompile Include="..\..\src\entry.cpp" />
@@ -41,7 +42,6 @@
     <ClCompile Include="..\..\src\message.cpp" />
     <ClCompile Include="..\..\src\object.cpp" />
     <ClCompile Include="..\..\src\machine.cpp" />
-    <ClCompile Include="..\..\src\processor.cpp" />
     <ClCompile Include="..\..\src\trace.cpp" />
     <ClCompile Include="..\..\src\window.cpp" />
   </ItemGroup>
@@ -122,6 +122,7 @@
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>C:\Apps\SDL2\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2test.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <StackReserveSize>3145728</StackReserveSize>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -137,6 +138,7 @@
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>C:\Apps\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2test.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <StackReserveSize>3145728</StackReserveSize>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
