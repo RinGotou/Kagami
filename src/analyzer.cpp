@@ -321,7 +321,7 @@ namespace kagami {
   }
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
-    auto ent = entry::Order(kStrDot);
+    auto ent = entry::Order(kStrTypeAssert);
     deque<Object> parms = {
       blk->item.back(),
       Object()
@@ -391,7 +391,7 @@ namespace kagami {
 
   bool Analyzer::LeftSqrBracket(AnalyzerWorkBlock *blk) {
     bool result = true;
-    auto ent = entry::Order(kStrDot);
+    auto ent = entry::Order(kStrTypeAssert);
     deque<Object> parms = {
       blk->item.back(),
       Object()

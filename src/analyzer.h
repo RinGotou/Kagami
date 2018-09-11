@@ -5,6 +5,7 @@
 
 namespace kagami {
   using Inst = pair<Entry, deque<Object>>;
+
   using AnalyzerWorkBlock = struct {
     deque<Object> item;
     deque<Entry> symbol;
