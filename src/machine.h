@@ -9,20 +9,40 @@ namespace kagami {
     return *static_pointer_cast<T>(obj.Get());
   }
 
+  class Meta {
+    bool health;
+    vector<Inst> instBase;
+    size_t index;
+    Token mainToken;
+  public:
+    Meta() : health(false), index(0) {}
+    Meta(vector<Inst> instBase, size_t index = 0, Token mainToken = Token()) : 
+      health(true), index(index) {
+      this->instBase = instBase;
+      this->mainToken = mainToken;
+    }
+
+    vector<Inst> &GetContains() { return instBase; }
+    size_t GetIndex() const { return index; }
+    bool IsHealth() const { return health; }
+    Token GetMainToken() const { return mainToken; }
+  };
+
   using MachCtlBlk = struct {
     size_t current;
     stack<size_t> cycleNestStack, cycleTailStack, modeStack;
     stack<bool> conditionStack;
     size_t currentMode;
     int nestHeadCount;
+    bool sContinue, sBreak;
     vector<string> defHead;
     size_t defStart;
   };
 
   class Machine {
-    vector<Processor> storage;
+    vector<Meta> storage;
     vector<string> parameters;
-    bool health;
+    bool health, isMain;
 
     void DefineSign(string head, MachCtlBlk *blk);
     void ConditionRoot(bool value, MachCtlBlk *blk);
@@ -30,17 +50,19 @@ namespace kagami {
     void ConditionLeaf(MachCtlBlk *blk);
     void HeadSign(bool value, MachCtlBlk *blk);
     void TailSign(MachCtlBlk *blk);
-
+    void Continue(MachCtlBlk *blk);
+    void Break(MachCtlBlk *blk);
     void MakeFunction(size_t start, size_t end, MachCtlBlk *blk);
     static bool IsBlankStr(string target);
+    Message MetaProcessing(Meta &meta);
   public:
-    Machine() : health(false) {}
-    Machine(Machine &machine) {
+    Machine() : health(false), isMain(false) {}
+    Machine(Machine &machine) : health(machine.health), isMain(machine.isMain) {
       this->storage = machine.storage;
       this->parameters = machine.parameters;
     }
     Machine(Machine &&machine) : Machine(machine) {}
-    Machine(vector<Processor> storage) : health(true) {
+    Machine(vector<Meta> storage) : health(true) {
       this->storage = storage;
     }
     void operator=(Machine &machine){
@@ -53,8 +75,9 @@ namespace kagami {
     }
 
     Machine &SetParameters(vector<string> parms);
-    explicit Machine(const char *target);
+    explicit Machine(const char *target, bool isMain = true);
     Message Run(bool createManager = true);
+    //Message Run2(bool createManager = true);
     Message RunAsFunction(ObjectMap &p);
     void Reset(MachCtlBlk *blk);
 

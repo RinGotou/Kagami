@@ -88,7 +88,9 @@ namespace kagami {
     kStrObject = "__object",
     kMethodPrint = "__print";
 
-  const int kCodeSDLInfo = 17,
+  const int kCodeBreak = 19,
+    kCodeContinue = 18,
+    kCodeSDLInfo = 17,
     kCodeAutoSize = 16,
     kCodeDefineSign = 15,
     kCodeAutoFill = 14,
@@ -142,7 +144,8 @@ namespace kagami {
     GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
     GT_MORE, GT_LESS, GT_RETURN,
     GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
-    GT_ARRAY, GT_DOT,
+    GT_ARRAY, GT_TYPE_ASSERT,
+    GT_CONTINUE, GT_BREAK, 
     GT_NUL
   };
 
@@ -186,6 +189,8 @@ namespace kagami {
     kStrElse = "else",
     kStrElif = "elif",
     kStrWhile = "while",
+    kStrContinue = "continue",
+    kStrBreak = "break",
     kStrCodeSub = "__code_sub",
     kStrLeftSelfInc = "lSelfInc",
     kStrLeftSelfDec = "lSelfDec",
@@ -213,11 +218,11 @@ namespace kagami {
     kStrRetValue = "__ret",
     kStrStopSign = "__stop",
     kStrArray = "__array",
-    kStrDot = "__dot";
+    kStrTypeAssert = "__type_assert";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",
-    kStrDotGroup = "...";
+    kStrTypeAssertGroup = "...";
 
   const string kOpAdd = "__add",
     kOpSub = "__sub",
