@@ -115,11 +115,11 @@ namespace kagami {
 
   Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
   Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
-  Message If(ObjectMap &p) { 
-    return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty); 
-  }
+  Message If(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty); }
   Message Elif(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty); }
   Message While(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty); }
+  Message Continue(ObjectMap &p) { return Message(kStrEmpty, kCodeContinue, kStrEmpty); }
+  Message Break(ObjectMap &p) { return Message(kStrEmpty, kCodeBreak, kStrEmpty); }
 
   //pending modify
   Message LogicEqual(ObjectMap &p) {
@@ -507,7 +507,7 @@ namespace kagami {
     return msg;
   }
 
-  Message Dot(ObjectMap &p) {
+  Message TypeAssert(ObjectMap &p) {
     Object &obj = p["object"];
     string target = GetObjectStuff<string>(p["id"]);
     bool result = Kit::FindInStringGroup(target, obj.GetMethods());
@@ -546,7 +546,9 @@ namespace kagami {
     AddGenericEntry(GT_OR, Entry(Or, "first|second", GT_OR, kCodeNormalParm, 1));
     AddGenericEntry(GT_DEF, Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
     AddGenericEntry(GT_RETURN, Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
-    AddGenericEntry(GT_DOT, Entry(Dot, "object|id", GT_DOT));
+    AddGenericEntry(GT_TYPE_ASSERT, Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
+    AddGenericEntry(GT_CONTINUE, Entry(Continue, "", GT_CONTINUE));
+    AddGenericEntry(GT_BREAK, Entry(Break, "", GT_BREAK));
   }
 
   void Activiate() {

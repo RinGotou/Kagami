@@ -156,7 +156,9 @@ namespace kagami {
         T(kStrLess,GT_LESS),
         T(kStrReturn,GT_RETURN),
         T(kStrArray,GT_ARRAY),
-        T(kStrDot,GT_DOT)
+        T(kStrTypeAssert,GT_TYPE_ASSERT),
+        T(kStrContinue,GT_CONTINUE),
+        T(kStrBreak,GT_BREAK)
       };
       return base;
     }
