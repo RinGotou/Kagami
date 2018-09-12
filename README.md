@@ -7,12 +7,17 @@ I'm preparing postgraduate entrance exam now,so I will reduce time for developin
 It's a simple and tiny script language.The name of this project is from Japanese kanji "鏡（かがみ）".
 
 ## Feature
-[x] Dynamic and weak typing language
-[x] Auto GC based on referenced count
-[x] Analyzer and state machine is fully based on C++11 and STL
-[] Class support
-[] C Function support
-[] SDL2 support
+[√] Dynamic and weak typing language
+
+[√] Auto GC based on referenced count
+
+[√] Analyzer and state machine is fully based on C++11 and STL
+
+[×] Class support
+
+[×] C Function support
+
+[×] SDL2 support
 
 ## How to use these codes?
 Strongly recommend to compile them in Visual Studio 2010 or later version.You can also compile by using g++/clang++ with -std=c++11 option.
