@@ -19,7 +19,7 @@ namespace kagami {
 
   Message Analyzer::BuildTokens(string target) {
     Kit kit;
-    string current, data, forward, next;
+    string current, forward, next;
     auto exemptBlankChar = true;
     auto stringProcessing = false;
     auto appendingOnce = false;
@@ -28,39 +28,17 @@ namespace kagami {
     vector<string> origin, output;
     size_t head = 0, tail = 0, nest = 0;
     Message msg;
-    auto toString = [](char t) ->string {return string().append(1, t); };
-
+    
     //PreProcessing
     this->origin.clear();
     this->health = true;
-    for (size_t count = 0; count < target.size(); ++count) {
-      currentChar = target[count];
-      auto type = kagami::Kit::GetTokenType(toString(currentChar));
-      if (type != TokenTypeEnum::T_BLANK && exemptBlankChar) {
-        head = count;
-        exemptBlankChar = false;
-      }
-      if (currentChar == '\'' && forwardChar != '\\') stringProcessing = !stringProcessing;
-      if (!stringProcessing && currentChar == '#') {
-        tail = count;
-        break;
-      }
-      forwardChar = target[count];
-    }
-    if (tail > head) data = target.substr(head, tail - head);
-    else data = target.substr(head, target.size() - head);
-    if (data.front() == '#') return msg;
-
-    while (kagami::Kit::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
-      data.pop_back();
-    }
 
     //Spilt
     forwardChar = 0;
     bool delaySuspend = false;
     bool forwardEscChar = false;
-    for (size_t count = 0; count < data.size(); ++count) {
-      currentChar = data[count];
+    for (size_t idx = 0; idx < target.size(); idx += 1) {
+      currentChar = target[idx];
       if (delaySuspend) {
         stringProcessing = false;
         delaySuspend = false;
@@ -85,7 +63,7 @@ namespace kagami {
       current.append(1, currentChar);
       auto tokenEnum = Kit::GetTokenType(current);
       if (Kit::GetTokenType(current) != TokenTypeEnum::T_NUL) {
-        forwardChar = data[count];
+        forwardChar = target[idx];
         continue;
       }
       else {
@@ -105,7 +83,7 @@ namespace kagami {
           }
         }
       }
-      forwardChar = data[count];
+      forwardChar = target[idx];
     }
 
     switch (kagami::Kit::GetTokenType(current)) {

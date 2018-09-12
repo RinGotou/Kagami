@@ -39,6 +39,9 @@ namespace kagami {
     size_t defStart;
   };
 
+  /* Origin index and string data */
+  using StringUnit = pair<size_t, string>;
+
   class Machine {
     vector<Meta> storage;
     vector<string> parameters;
