@@ -11,7 +11,7 @@ It's a simple and tiny script language.The name of this project is from Japanese
 
 [√] Auto GC based on referenced count
 
-[√] Analyzer and state machine is fully based on C++11 and STL
+[√] Analyzer and state machine are fully based on C++11 and STL
 
 [×] Class support
 
