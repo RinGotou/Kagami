@@ -48,6 +48,85 @@ namespace kagami {
     return result;
   }
 #endif
+
+  string IndentationAndCommentProc(string target) {
+    if (target == "") return "";
+    string data;
+    char currentChar, forwardChar;
+    size_t head = 0, tail = 0;
+    bool exemptBlankChar = true;
+    bool stringProcessing = false;
+    auto toString = [](char t) ->string {return string().append(1, t); };
+
+    for (size_t count = 0; count < target.size(); ++count) {
+      currentChar = target[count];
+      auto type = kagami::Kit::GetTokenType(toString(currentChar));
+      if (type != TokenTypeEnum::T_BLANK && exemptBlankChar) {
+        head = count;
+        exemptBlankChar = false;
+      }
+      if (currentChar == '\'' && forwardChar != '\\') stringProcessing = !stringProcessing;
+      if (!stringProcessing && currentChar == '#') {
+        tail = count;
+        break;
+      }
+      forwardChar = target[count];
+    }
+    if (tail > head) data = target.substr(head, tail - head);
+    else data = target.substr(head, target.size() - head);
+    if (data.front() == '#') return "";
+
+    while (!data.empty() &&
+      Kit::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
+      data.pop_back();
+    }
+    return data;
+  }
+
+  vector<StringUnit> MultilineProcessing(vector<string> &src) {
+    vector<StringUnit> output;
+    string buf;
+    size_t idx = 0, lineIdx = 0;
+
+    auto isInString = [](string src) {
+      bool inString = false;
+      bool escape = false;
+      for (size_t strIdx = 0; strIdx < src.size(); ++strIdx) {
+        if (inString && escape) {
+          escape = false;
+          continue;
+        }
+        if (src[strIdx] == '\'') inString = !inString;
+        if (inString && !escape && src[strIdx] == '\\') {
+          escape = true;
+          continue;
+        }
+      }
+      return inString;
+    };
+
+    while (idx < src.size()) {
+      buf = IndentationAndCommentProc(src[idx]);
+      if (buf == "") {
+        idx += 1;
+        continue;
+      }
+      lineIdx = idx;
+      while (buf.back() == '_') {
+        bool inString = isInString(buf);
+        if (!inString) {
+          idx += 1;
+          buf.pop_back();
+          buf = buf + IndentationAndCommentProc(src[idx]);
+        }
+      }
+      output.push_back(StringUnit(lineIdx, buf));
+      idx += 1;
+    }
+
+    return output;
+  }
+
   map<string, Machine> &GetFunctionBase() {
     static map<string, Machine> base;
     return base;
@@ -130,7 +209,7 @@ namespace kagami {
     health = true;
     size_t subscript = 0;
     auto &logger = trace::GetLogger();
-    Analyzer analyzer;
+    vector<string> scriptBuf;
 
     this->isMain = isMain;
 
@@ -139,26 +218,30 @@ namespace kagami {
       while (!stream.eof()) {
         std::getline(stream, buf);
         string temp = ws2s(buf);
-        if (!temp.empty() && temp.back() == '\0') temp.pop_back();
-        if (!IsBlankStr(temp) && temp.front() != '#') {
-          auto msg = analyzer.Make(temp, subscript);
-          if (msg.GetValue() == kStrFatalError) {
-            trace::Log(msg.SetIndex(subscript));
-            break;
-          }
-          if (msg.GetValue() == kStrWarning) {
-            trace::Log(msg.SetIndex(subscript));
-          }
-          storage.emplace_back(Meta(
-            analyzer.GetOutput(),
-            analyzer.GetIdx(),
-            analyzer.GetMainToken()));
-          analyzer.Clear();
-        }
-        subscript++;
+        if (temp.back() == '\0') temp.pop_back();
+        scriptBuf.emplace_back(temp);
       }
     }
     stream.close();
+
+    vector<StringUnit> stringUnit = MultilineProcessing(scriptBuf);
+    Analyzer analyzer;
+    for (auto it = stringUnit.begin(); it != stringUnit.end(); ++it) {
+      if (it->second == "") continue;
+      auto msg = analyzer.Make(it->second, it->first);
+      if (msg.GetValue() == kStrFatalError) {
+        trace::Log(msg.SetIndex(subscript));
+        break;
+      }
+      if (msg.GetValue() == kStrWarning) {
+        trace::Log(msg.SetIndex(subscript));
+      }
+      storage.emplace_back(Meta(
+        analyzer.GetOutput(),
+        analyzer.GetIdx(),
+        analyzer.GetMainToken()));
+      analyzer.Clear();
+    }
   }
 
   void Machine::DefineSign(string head, MachCtlBlk *blk) {
