@@ -10,15 +10,15 @@ It's a simple and tiny script language.The name of this project is from Japanese
 
 ```
 def ReadFile()
-	stream = instream('SomeWords.txt')
-	while(stream.eof() != true)
-		print(stream.get())
-	end
-	stream.close()
+    stream = instream('SomeWords.txt')
+    while(stream.eof() != true)
+        print(stream.get())
+    end
+    stream.close()
 end
 
-if(__name == '__main__')
-	ReadFile()
+if(__name__ == '__main__')
+    ReadFile()
 end
 ```
 
