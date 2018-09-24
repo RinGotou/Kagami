@@ -62,6 +62,8 @@ namespace kagami {
   using CastFunc = pair<string, CopyCreator>;
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
+
+  using TypeId = string;
   
   const string kEngineVersion = "1.1";
   const string kCodeName = "Marionette";
@@ -70,7 +72,7 @@ namespace kagami {
 #else
   const string kPlatformType = "Linux";
 #endif
-  const string kEngineName = "Kagami - Alternative Scripting Kit";
+  const string kEngineName = "Kagami - Experimental Scripting Kit";
   const string kEngineAuthor = "Suzu Nakamura and Contributor(s)";
   const string kCopyright = "Copyright(c) 2017-2018";
 
@@ -88,7 +90,9 @@ namespace kagami {
     kStrObject = "__object",
     kMethodPrint = "__print";
 
-  const int kCodeBreak = 19,
+  const int 
+    kCodeCase = 20,
+    kCodeBreak = 19,
     kCodeContinue = 18,
     kCodeSDLInfo = 17,
     kCodeAutoSize = 16,
@@ -146,6 +150,7 @@ namespace kagami {
     GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
     GT_ARRAY, GT_TYPE_ASSERT,
     GT_CONTINUE, GT_BREAK, 
+    GT_CASE, GT_WHEN, 
     GT_NUL
   };
 
@@ -159,15 +164,13 @@ namespace kagami {
   const string kRawStringMethods = "size|__at|__print";
 
   const string kTypeIdNull      = "Null";
-  //const string kTypeIdInt       = "int";
   const string kTypeIdString    = "String";
   const string kTypeIdWideString = "WString";
   const string kTypeIdRawString = "RawString";
   const string kTypeIdArrayBase = "Array";
-  const string kTypeIdInStream  = "instream";
-  const string kTypeIdOutStream = "outstream";
-  const string kTypeIdRegex     = "regex";
-  //const string kTypeIdCubeBase  = "Cube";
+  const string kTypeIdInStream  = "Instream";
+  const string kTypeIdOutStream = "Outstream";
+  const string kTypeIdRegex     = "Regex";
   const string kTypeIdRef       = "Ref";
 
   const size_t kModeNormal        = 0;
@@ -176,6 +179,8 @@ namespace kagami {
   const size_t kModeCycleJump     = 3;
   const size_t kModeCondition     = 4;
   const size_t kModeDef           = 5;
+  const size_t kModeCase          = 6;
+  const size_t kModeCaseJump      = 7;
 
   /*Generic Token*/
   const string kStrIf = "if",
@@ -191,6 +196,8 @@ namespace kagami {
     kStrWhile = "while",
     kStrContinue = "continue",
     kStrBreak = "break",
+    kStrCase = "case",
+    kStrWhen = "when",
     kStrCodeSub = "__code_sub",
     kStrLeftSelfInc = "lSelfInc",
     kStrLeftSelfDec = "lSelfDec",
