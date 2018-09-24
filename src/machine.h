@@ -47,6 +47,8 @@ namespace kagami {
     vector<string> parameters;
     bool health, isMain;
 
+    void CaseHead(Message &msg, MachCtlBlk *blk);
+    void WhenHead(bool value, MachCtlBlk *blk);
     void DefineSign(string head, MachCtlBlk *blk);
     void ConditionRoot(bool value, MachCtlBlk *blk);
     void ConditionBranch(bool value, MachCtlBlk *blk);

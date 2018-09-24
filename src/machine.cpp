@@ -244,6 +244,19 @@ namespace kagami {
     }
   }
 
+  void Machine::CaseHead(Message &msg, MachCtlBlk *blk) {
+    blk->modeStack.push(blk->currentMode);
+    blk->currentMode = kModeCaseJump;
+    blk->conditionStack.push(false);
+  }
+
+  void Machine::WhenHead(bool value, MachCtlBlk *blk) {
+    if (value == true) {
+      blk->currentMode == kModeCase;
+      
+    }
+  }
+
   void Machine::DefineSign(string head, MachCtlBlk *blk) {
     blk->defHead = Kit::BuildStringVector(head);
     if (blk->currentMode != kModeDef && blk->currentMode == kModeNormal) {
@@ -590,6 +603,12 @@ namespace kagami {
       case kModeCycleJump:
         if (token != GT_END && token != GT_IF && token != GT_WHILE) {
           result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          judged = true;
+        }
+        break;
+      case kModeCaseJump:
+        if (token == GT_IF || token == GT_WHILE || token == GT_CASE) {
+          result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
           judged = true;
         }
         break;
