@@ -208,7 +208,6 @@ namespace kagami {
     wstring buf;
     health = true;
     size_t subscript = 0;
-    auto &logger = trace::GetLogger();
     vector<string> scriptBuf;
 
     this->isMain = isMain;
@@ -241,6 +240,24 @@ namespace kagami {
         analyzer.GetIdx(),
         analyzer.GetMainToken()));
       analyzer.Clear();
+    }
+  }
+
+  void Machine::CaseHead(Message &msg, MachCtlBlk *blk) {
+    blk->modeStack.push(blk->currentMode);
+    blk->currentMode = kModeCaseJump;
+    blk->conditionStack.push(false);
+  }
+
+  void Machine::WhenHead(bool value, MachCtlBlk *blk) {
+    if (!blk->conditionStack.empty()) {
+      if (blk->currentMode == kModeCase && blk->conditionStack.top() == true) {
+        blk->currentMode = kModeCaseJump;
+      }
+      else if (value == true && blk->conditionStack.top() == false) {
+        blk->currentMode = kModeCase;
+        blk->conditionStack.top() = true;
+      }
     }
   }
 
@@ -426,8 +443,8 @@ namespace kagami {
     vector<Inst> &instBase = meta.GetContains();
     vector<Inst>::iterator it = instBase.begin();
     Message msg;
-    auto &manager = entry::GetCurrentManager();
     ObjectMap objMap;
+    bool errorReturn = false, errorArg = false;
 
     auto getObject = [&](Object &obj) -> Object {
       if (obj.IsRetSign()) {
@@ -504,8 +521,7 @@ namespace kagami {
         auto object = msg.GetObj();
         retBase.emplace_back(object);
       }
-      else if ((value == kStrRedirect && code == kCodeSuccess
-        || code == kCodeHeadPlaceholder)
+      else if ((value == kStrRedirect && (code == kCodeSuccess || code == kCodeHeadPlaceholder))
         && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
         Object obj;
         obj.Manage(detail)
@@ -590,6 +606,12 @@ namespace kagami {
       case kModeCycleJump:
         if (token != GT_END && token != GT_IF && token != GT_WHILE) {
           result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          judged = true;
+        }
+        break;
+      case kModeCaseJump:
+        if (token == GT_IF || token == GT_WHILE || token == GT_CASE) {
+          result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
           judged = true;
         }
         break;
