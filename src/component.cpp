@@ -14,6 +14,7 @@ namespace kagami {
     if (dataTypeA == T_DOUBLE || dataTypeB == T_DOUBLE) groupType = G_DOUBLE;
     if (dataTypeA == T_INTEGER && dataTypeB == T_INTEGER) groupType = G_INT;
     if (kit.IsString(dataA) || kit.IsString(dataB)) groupType = G_STR;
+    if ((dataA == kStrTrue || dataA == kStrFalse) && (dataB == kStrTrue || dataB == kStrFalse)) groupType = G_STR;
     return groupType;
   }
 
@@ -624,7 +625,7 @@ namespace kagami {
     GenericRegister();
     BasicUtilityRegister();
     InitPlanners();
-#if defined(_ENABLE_DEBUGGING_)&& not defined(_DISABLE_SDL_)
+#if not defined(_DISABLE_SDL_)
     LoadSDLStuff();
 #endif
   }
