@@ -307,12 +307,28 @@ namespace kagami {
   void Machine::ConditionLeaf(MachCtlBlk *blk) {
     if (!blk->conditionStack.empty()) {
       if (blk->conditionStack.top() == true) {
-        blk->currentMode = kModeNextCondition;
+        switch (blk->currentMode) {
+        case kModeCondition:
+        case kModeNextCondition:
+          blk->currentMode = kModeNextCondition;
+          break;
+        case kModeCase:
+        case kModeCaseJump:
+          blk->currentMode = kModeCaseJump;
+          break;
+        }
       }
       else {
         entry::CreateManager();
         blk->conditionStack.top() = true;
-        blk->currentMode = kModeCondition;
+        switch (blk->currentMode) {
+        case kModeNextCondition:
+          blk->currentMode = kModeCondition;
+          break;
+        case kModeCaseJump:
+          blk->currentMode = kModeCase;
+          break;
+        }
       }
     }
     else {
