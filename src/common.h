@@ -204,6 +204,7 @@ namespace kagami {
     kStrBreak = "break",
     kStrCase = "case",
     kStrWhen = "when",
+    kStrFinally = "finally",
     kStrCodeSub = "__code_sub",
     kStrLeftSelfInc = "lSelfInc",
     kStrLeftSelfDec = "lSelfDec",

@@ -537,6 +537,4 @@ namespace kagami {
 
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
   }
-
-
 }
