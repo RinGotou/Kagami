@@ -14,6 +14,7 @@ namespace kagami {
     if (dataTypeA == T_DOUBLE || dataTypeB == T_DOUBLE) groupType = G_DOUBLE;
     if (dataTypeA == T_INTEGER && dataTypeB == T_INTEGER) groupType = G_INT;
     if (kit.IsString(dataA) || kit.IsString(dataB)) groupType = G_STR;
+    if ((dataA == kStrTrue || dataA == kStrFalse) && (dataB == kStrTrue || dataB == kStrFalse)) groupType = G_STR;
     return groupType;
   }
 
@@ -52,17 +53,20 @@ namespace kagami {
         case G_DOUBLE:
           kit.Logic(stod(dataA), stod(dataB), OP) ? temp = kStrTrue : temp = kStrFalse;
           break;
+        default:
+          break;
         }
         break;
       case OperatorCode::BIT_AND:
       case OperatorCode::BIT_OR:
 
         break;
+
       default:
         break;
       }
     }
-    else if (groupType = G_STR) {
+    else if (groupType == G_STR) {
       switch (OPCode) {
       case OperatorCode::ADD:
         if (dataA.front() != '\'') dataA = "'" + dataA;
@@ -179,7 +183,8 @@ namespace kagami {
     Object obj;
     if (typeId != kTypeIdNull) {
       obj.Set(valueObj.Get(), typeId)
-        .SetMethods(valueObj.GetMethods());
+        .SetMethods(valueObj.GetMethods())
+        .SetTokenType(valueObj.GetTokenType());
       entry::GetCurrentManager().Add(kStrRetValue, obj);
     }
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
@@ -518,7 +523,55 @@ namespace kagami {
     return msg;
   }
 
-  void AddGenEntries() {
+  Message Case(ObjectMap &p) {
+    Object &obj = p["object"];
+    auto typeId = obj.GetTypeId();
+    if (typeId != kTypeIdRawString && typeId != kTypeIdString) {
+      //TODO:Re-design
+      return Message(kStrFatalError, kCodeIllegalParm, "Case-When is not supported yet.(01)");
+    }
+    auto copy = type::GetObjectCopy(obj);
+    Object base;
+    base.Set(copy, obj.GetTypeId())
+      .SetMethods(obj.GetMethods())
+      .SetRo(false);
+    entry::CreateObject("__case", base);
+    return Message(kStrRedirect, kCodeCase, kStrTrue);
+  }
+
+  Message When(ObjectMap &p) {
+    //TODO:Re-Design
+    Object &objSize = p["__size"];
+    int size = stoi(GetObjectStuff<string>(objSize));
+    Object *caseHead = entry::FindObject("__case");
+    string caseContent = GetObjectStuff<string>(*caseHead);
+    string typeId;
+    bool result = false, state = true;
+    for (int i = 0; i < size; ++i) {
+      Object &obj = p["case" + to_string(i)];
+      typeId = obj.GetTypeId();
+      if (typeId != kTypeIdRawString && typeId != kTypeIdString) {
+        state = false;
+        break;
+      }
+      string content = GetObjectStuff<string>(obj);
+      if (content == caseContent) {
+        result = true;
+        break;
+      }
+    }
+
+    Message msg;
+    if (!state) {
+      msg.combo(kStrFatalError, kCodeIllegalParm, "Case-When is not supported yet.(02)");
+    }
+    result ? 
+      msg = Message(kStrTrue, kCodeWhen, kStrEmpty) : 
+      msg = Message(kStrFalse, kCodeWhen, kStrEmpty);
+    return msg;
+  }
+
+  void GenericRegister() {
     using namespace entry;
     AddGenericEntry(GT_NOP, Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
     AddGenericEntry(GT_ARRAY, Entry(ArrayMaker, "item", GT_ARRAY, kCodeAutoSize));
@@ -549,15 +602,12 @@ namespace kagami {
     AddGenericEntry(GT_TYPE_ASSERT, Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
     AddGenericEntry(GT_CONTINUE, Entry(Continue, "", GT_CONTINUE));
     AddGenericEntry(GT_BREAK, Entry(Break, "", GT_BREAK));
+    AddGenericEntry(GT_CASE, Entry(Case, "object", GT_CASE));
+    AddGenericEntry(GT_WHEN, Entry(When, "case", GT_WHEN, kCodeAutoSize));
   }
 
-  void Activiate() {
+  void BasicUtilityRegister() {
     using namespace entry;
-    AddGenEntries();
-    InitPlanners();
-#if defined(_ENABLE_DEBUGGING_)
-    LoadSDLStuff();
-#endif
     AddEntry(Entry(WriteLog, kCodeNormalParm, "msg", "log"));
     AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
     AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
@@ -568,5 +618,15 @@ namespace kagami {
     AddEntry(Entry(GetRawStringType, kCodeNormalParm, "object", "type"));
     AddEntry(Entry(Dir, kCodeNormalParm, "object", "dir"));
     AddEntry(Entry(Exist, kCodeNormalParm, "object|id", "exist"));
+  }
+
+  void Activiate() {
+    using namespace entry;
+    GenericRegister();
+    BasicUtilityRegister();
+    InitPlanners();
+#if not defined(_DISABLE_SDL_)
+    LoadSDLStuff();
+#endif
   }
 }

@@ -6,6 +6,24 @@ I'm preparing postgraduate entrance exam now,so I will reduce time for developin
 ## What's this?
 It's a simple and tiny script language.The name of this project is from Japanese kanji "鏡（かがみ）".
 
+## What does it looks like?
+
+```
+def ReadFile()
+    stream = instream('SomeWords.txt')
+    while(stream.eof() != true)
+        print(stream.get())
+    end
+    stream.close()
+end
+
+if(__name__ == '__main__')
+    ReadFile()
+end
+```
+
+There's no any documents for this language and interpreter for now(because of development process and etc.).I pick some of my favorite syntax from Python and Visual Basic .NET, and try to make Kagami easier to read and use. 
+
 ## Feature
 [√] Dynamic and weak typing language
 
