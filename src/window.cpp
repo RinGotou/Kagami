@@ -1,7 +1,7 @@
 #include "window.h"
 
 namespace kagami {
-#if defined(_ENABLE_DEBUGGING_)
+#if defined(_ENABLE_DEBUGGING_) || not defined(_DISABLE_SDL_)
   /*There is testbench for SDL2.You can just ignore them or disable them.*/
   Message InitSDL(ObjectMap &p) {
     Message msg;

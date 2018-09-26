@@ -52,17 +52,20 @@ namespace kagami {
         case G_DOUBLE:
           kit.Logic(stod(dataA), stod(dataB), OP) ? temp = kStrTrue : temp = kStrFalse;
           break;
+        default:
+          break;
         }
         break;
       case OperatorCode::BIT_AND:
       case OperatorCode::BIT_OR:
 
         break;
+
       default:
         break;
       }
     }
-    else if (groupType = G_STR) {
+    else if (groupType == G_STR) {
       switch (OPCode) {
       case OperatorCode::ADD:
         if (dataA.front() != '\'') dataA = "'" + dataA;
@@ -179,7 +182,8 @@ namespace kagami {
     Object obj;
     if (typeId != kTypeIdNull) {
       obj.Set(valueObj.Get(), typeId)
-        .SetMethods(valueObj.GetMethods());
+        .SetMethods(valueObj.GetMethods())
+        .SetTokenType(valueObj.GetTokenType());
       entry::GetCurrentManager().Add(kStrRetValue, obj);
     }
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
@@ -620,7 +624,7 @@ namespace kagami {
     GenericRegister();
     BasicUtilityRegister();
     InitPlanners();
-#if defined(_ENABLE_DEBUGGING_)
+#if defined(_ENABLE_DEBUGGING_)&& not defined(_DISABLE_SDL_)
     LoadSDLStuff();
 #endif
   }

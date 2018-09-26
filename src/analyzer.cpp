@@ -20,13 +20,12 @@ namespace kagami {
   Message Analyzer::BuildTokens(string target) {
     Kit kit;
     string current, forward, next;
-    auto exemptBlankChar = true;
     auto stringProcessing = false;
     auto appendingOnce = false;
     char currentChar;
     auto forwardChar = ' ';
     vector<string> origin, output;
-    size_t head = 0, tail = 0, nest = 0;
+    size_t nest = 0;
     Message msg;
     
     //PreProcessing
@@ -61,7 +60,6 @@ namespace kagami {
         stringProcessing ? delaySuspend = true : stringProcessing = true;
       }
       current.append(1, currentChar);
-      auto tokenEnum = Kit::GetTokenType(current);
       if (Kit::GetTokenType(current) != TokenTypeEnum::T_NUL) {
         forwardChar = target[idx];
         continue;

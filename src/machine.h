@@ -62,7 +62,7 @@ namespace kagami {
     Message MetaProcessing(Meta &meta);
   public:
     Machine() : health(false), isMain(false) {}
-    Machine(Machine &machine) : health(machine.health), isMain(machine.isMain) {
+    Machine(const Machine &machine) : health(machine.health), isMain(machine.isMain) {
       this->storage = machine.storage;
       this->parameters = machine.parameters;
     }
@@ -91,7 +91,7 @@ namespace kagami {
 
   void Activiate();
   void InitPlanners();
-#if defined(_ENABLE_DEBUGGING_)
+#if defined(_ENABLE_DEBUGGING_) || not defined(_DISABLE_SDL_)
   void LoadSDLStuff();
 #endif
   Message FunctionTunnel(ObjectMap &p);

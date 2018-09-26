@@ -12,13 +12,14 @@ namespace kagami {
   class Entry {
     string id;
     GenericTokenEnum tokenEnum;
-    int parmMode, priority, flag;
-    vector<string> args;
     Activity activity;
+    vector<string> args;
+    int parmMode, priority;
     string type;
+    int flag;
     bool placeholder, userFunc, entrySign, method;
   public:
-    Entry() : id(kStrNull), priority(0), activity(nullptr), flag(kFlagNormalEntry) {
+    Entry() : id(kStrNull), activity(nullptr), priority(0), flag(kFlagNormalEntry) {
       parmMode = kCodeIllegalParm;
       type = kTypeIdNull;
       placeholder = false;
@@ -29,7 +30,7 @@ namespace kagami {
     }
 
     Entry(Activity activity, int parmMode, string args,string id = kStrEmpty, string type = kTypeIdNull, int flag = kFlagNormalEntry, int priority = 4) :
-      id(id),parmMode(parmMode), priority(priority), args(Kit::BuildStringVector(args)),
+      id(id), args(Kit::BuildStringVector(args)), parmMode(parmMode), priority(priority),
       type(type), flag(flag) {
       this->activity = activity;
       placeholder = false;
@@ -40,7 +41,7 @@ namespace kagami {
     }
 
     Entry(Activity activity, string args, GenericTokenEnum tokenEnum, int parmMode = kCodeNormalParm, int priority = 4) :
-      id(), parmMode(parmMode), priority(priority), args(Kit::BuildStringVector(args)) {
+      id(), args(Kit::BuildStringVector(args)), parmMode(parmMode), priority(priority) {
       this->activity = activity;
       this->tokenEnum = tokenEnum;
       userFunc = false;
@@ -49,7 +50,7 @@ namespace kagami {
       method = false;
     }
 
-    Entry(string id) :id(id), priority(0), activity(nullptr) {
+    Entry(string id) :id(id), activity(nullptr), priority(0) {
       parmMode = kCodeNormalParm;
       type = kTypeIdNull;
       userFunc = false;
@@ -95,9 +96,9 @@ namespace kagami {
     int GetPriority() const { return this->priority; }
     int GetFlag() const { return flag; }
     bool Good() const { 
-      return ((activity != nullptr)
-        && parmMode != kCodeIllegalParm 
-        || (userFunc && id!=kStrEmpty));
+      bool conditionA = ((activity != nullptr) && (parmMode != kCodeIllegalParm)),
+        conditionB = (userFunc && id != kStrEmpty);
+      return (conditionA || conditionB);
     }
   };
 

@@ -6,4 +6,6 @@ def ReadFile()
 	stream.close()
 end
 
-ReadFile()
+if(__name__ == '__main__')
+	ReadFile()
+end
