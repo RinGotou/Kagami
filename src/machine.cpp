@@ -397,6 +397,12 @@ namespace kagami {
       default:break;
       }
     }
+    else if (blk->currentMode == kModeCase || blk->currentMode == kModeCaseJump) {
+      blk->conditionStack.pop();
+      blk->currentMode = blk->modeStack.top();
+      blk->modeStack.pop();
+      entry::DisposeManager();
+    }
   }
 
   void Machine::Continue(MachCtlBlk *blk) {
@@ -444,15 +450,27 @@ namespace kagami {
     vector<Inst>::iterator it = instBase.begin();
     Message msg;
     ObjectMap objMap;
+    string errorString;
     bool errorReturn = false, errorArg = false;
 
     auto getObject = [&](Object &obj) -> Object {
       if (obj.IsRetSign()) {
+        if (retBase.empty()) {
+          errorString = "Return Base error.";
+          errorReturn = true;
+          return Object();
+        }
         Object res = retBase.front();
         retBase.pop_front();
         return res;
       }
       if (obj.IsArgSign()) {
+        auto *targetObj = entry::FindObject(obj.GetOriginId());
+        if (targetObj == nullptr) {
+          errorString = "Object is not found - " + obj.GetOriginId();
+          errorArg = true;
+          return Object();
+        }
         return Object().Ref(*entry::FindObject(obj.GetOriginId()));
       }
       return obj;
@@ -510,6 +528,7 @@ namespace kagami {
         objMap.insert(NamedObject(kStrObject, getObject(parms.back())));
       }
 
+      if (errorReturn || errorArg) break;
       msg = ent.Start(objMap);
       const auto code = msg.GetCode();
       const auto value = msg.GetValue();
@@ -543,6 +562,11 @@ namespace kagami {
         }
       }
     }
+
+    if (errorReturn || errorArg) {
+      msg.combo(kStrFatalError, kCodeIllegalSymbol, errorString);
+    }
+
     return msg;
   }
 
@@ -614,6 +638,10 @@ namespace kagami {
           result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
           judged = true;
         }
+        else if (token != GT_WHEN && token != GT_END) {
+          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          judged = true;
+        }
         break;
       default:
         break;
@@ -657,6 +685,12 @@ namespace kagami {
       case kCodeConditionLeaf:
         if (blk->nestHeadCount > 0) break;
         ConditionLeaf(blk);
+        break;
+      case kCodeCase:
+        CaseHead(result, blk);
+        break;
+      case kCodeWhen:
+        WhenHead(GetBooleanValue(value), blk);
         break;
       case kCodeHeadSign:
         HeadSign(GetBooleanValue(value), blk);

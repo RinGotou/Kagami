@@ -526,7 +526,7 @@ namespace kagami {
   Message Case(ObjectMap &p) {
     Object &obj = p["object"];
     auto typeId = obj.GetTypeId();
-    if (typeId != kTypeIdRawString || typeId != kTypeIdString) {
+    if (typeId != kTypeIdRawString && typeId != kTypeIdString) {
       //TODO:Re-design
       return Message(kStrFatalError, kCodeIllegalParm, "Case-When is not supported yet.(01)");
     }
@@ -550,7 +550,7 @@ namespace kagami {
     for (int i = 0; i < size; ++i) {
       Object &obj = p["case" + to_string(i)];
       typeId = obj.GetTypeId();
-      if (typeId != kTypeIdRawString || typeId != kTypeIdString) {
+      if (typeId != kTypeIdRawString && typeId != kTypeIdString) {
         state = false;
         break;
       }
@@ -566,8 +566,8 @@ namespace kagami {
       msg.combo(kStrFatalError, kCodeIllegalParm, "Case-When is not supported yet.(02)");
     }
     result ? 
-      msg = Message(kStrRedirect, kCodeSuccess, kStrTrue) : 
-      msg = Message(kStrRedirect, kCodeSuccess, kStrFalse);
+      msg = Message(kStrTrue, kCodeWhen, kStrEmpty) : 
+      msg = Message(kStrFalse, kCodeWhen, kStrEmpty);
     return msg;
   }
 
@@ -603,7 +603,7 @@ namespace kagami {
     AddGenericEntry(GT_CONTINUE, Entry(Continue, "", GT_CONTINUE));
     AddGenericEntry(GT_BREAK, Entry(Break, "", GT_BREAK));
     AddGenericEntry(GT_CASE, Entry(Case, "object", GT_CASE));
-    AddGenericEntry(GT_WHEN, Entry(When, "case", GT_WHEN));
+    AddGenericEntry(GT_WHEN, Entry(When, "case", GT_WHEN, kCodeAutoSize));
   }
 
   void BasicUtilityRegister() {
