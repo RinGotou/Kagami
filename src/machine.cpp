@@ -48,6 +48,85 @@ namespace kagami {
     return result;
   }
 #endif
+
+  string IndentationAndCommentProc(string target) {
+    if (target == "") return "";
+    string data;
+    char currentChar, forwardChar;
+    size_t head = 0, tail = 0;
+    bool exemptBlankChar = true;
+    bool stringProcessing = false;
+    auto toString = [](char t) ->string {return string().append(1, t); };
+
+    for (size_t count = 0; count < target.size(); ++count) {
+      currentChar = target[count];
+      auto type = kagami::Kit::GetTokenType(toString(currentChar));
+      if (type != TokenTypeEnum::T_BLANK && exemptBlankChar) {
+        head = count;
+        exemptBlankChar = false;
+      }
+      if (currentChar == '\'' && forwardChar != '\\') stringProcessing = !stringProcessing;
+      if (!stringProcessing && currentChar == '#') {
+        tail = count;
+        break;
+      }
+      forwardChar = target[count];
+    }
+    if (tail > head) data = target.substr(head, tail - head);
+    else data = target.substr(head, target.size() - head);
+    if (data.front() == '#') return "";
+
+    while (!data.empty() &&
+      Kit::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
+      data.pop_back();
+    }
+    return data;
+  }
+
+  vector<StringUnit> MultilineProcessing(vector<string> &src) {
+    vector<StringUnit> output;
+    string buf;
+    size_t idx = 0, lineIdx = 0;
+
+    auto isInString = [](string src) {
+      bool inString = false;
+      bool escape = false;
+      for (size_t strIdx = 0; strIdx < src.size(); ++strIdx) {
+        if (inString && escape) {
+          escape = false;
+          continue;
+        }
+        if (src[strIdx] == '\'') inString = !inString;
+        if (inString && !escape && src[strIdx] == '\\') {
+          escape = true;
+          continue;
+        }
+      }
+      return inString;
+    };
+
+    while (idx < src.size()) {
+      buf = IndentationAndCommentProc(src[idx]);
+      if (buf == "") {
+        idx += 1;
+        continue;
+      }
+      lineIdx = idx;
+      while (buf.back() == '_') {
+        bool inString = isInString(buf);
+        if (!inString) {
+          idx += 1;
+          buf.pop_back();
+          buf = buf + IndentationAndCommentProc(src[idx]);
+        }
+      }
+      output.push_back(StringUnit(lineIdx, buf));
+      idx += 1;
+    }
+
+    return output;
+  }
+
   map<string, Machine> &GetFunctionBase() {
     static map<string, Machine> base;
     return base;
@@ -129,8 +208,7 @@ namespace kagami {
     wstring buf;
     health = true;
     size_t subscript = 0;
-    auto &logger = trace::GetLogger();
-    Analyzer analyzer;
+    vector<string> scriptBuf;
 
     this->isMain = isMain;
 
@@ -139,26 +217,48 @@ namespace kagami {
       while (!stream.eof()) {
         std::getline(stream, buf);
         string temp = ws2s(buf);
-        if (!temp.empty() && temp.back() == '\0') temp.pop_back();
-        if (!IsBlankStr(temp) && temp.front() != '#') {
-          auto msg = analyzer.Make(temp, subscript);
-          if (msg.GetValue() == kStrFatalError) {
-            trace::Log(msg.SetIndex(subscript));
-            break;
-          }
-          if (msg.GetValue() == kStrWarning) {
-            trace::Log(msg.SetIndex(subscript));
-          }
-          storage.emplace_back(Meta(
-            analyzer.GetOutput(),
-            analyzer.GetIdx(),
-            analyzer.GetMainToken()));
-          analyzer.Clear();
-        }
-        subscript++;
+        if (temp.back() == '\0') temp.pop_back();
+        scriptBuf.emplace_back(temp);
       }
     }
     stream.close();
+
+    vector<StringUnit> stringUnit = MultilineProcessing(scriptBuf);
+    Analyzer analyzer;
+    for (auto it = stringUnit.begin(); it != stringUnit.end(); ++it) {
+      if (it->second == "") continue;
+      auto msg = analyzer.Make(it->second, it->first);
+      if (msg.GetValue() == kStrFatalError) {
+        trace::Log(msg.SetIndex(subscript));
+        break;
+      }
+      if (msg.GetValue() == kStrWarning) {
+        trace::Log(msg.SetIndex(subscript));
+      }
+      storage.emplace_back(Meta(
+        analyzer.GetOutput(),
+        analyzer.GetIdx(),
+        analyzer.GetMainToken()));
+      analyzer.Clear();
+    }
+  }
+
+  void Machine::CaseHead(Message &msg, MachCtlBlk *blk) {
+    blk->modeStack.push(blk->currentMode);
+    blk->currentMode = kModeCaseJump;
+    blk->conditionStack.push(false);
+  }
+
+  void Machine::WhenHead(bool value, MachCtlBlk *blk) {
+    if (!blk->conditionStack.empty()) {
+      if (blk->currentMode == kModeCase && blk->conditionStack.top() == true) {
+        blk->currentMode = kModeCaseJump;
+      }
+      else if (value == true && blk->conditionStack.top() == false) {
+        blk->currentMode = kModeCase;
+        blk->conditionStack.top() = true;
+      }
+    }
   }
 
   void Machine::DefineSign(string head, MachCtlBlk *blk) {
@@ -297,6 +397,12 @@ namespace kagami {
       default:break;
       }
     }
+    else if (blk->currentMode == kModeCase || blk->currentMode == kModeCaseJump) {
+      blk->conditionStack.pop();
+      blk->currentMode = blk->modeStack.top();
+      blk->modeStack.pop();
+      entry::DisposeManager();
+    }
   }
 
   void Machine::Continue(MachCtlBlk *blk) {
@@ -343,16 +449,28 @@ namespace kagami {
     vector<Inst> &instBase = meta.GetContains();
     vector<Inst>::iterator it = instBase.begin();
     Message msg;
-    auto &manager = entry::GetCurrentManager();
     ObjectMap objMap;
+    string errorString;
+    bool errorReturn = false, errorArg = false;
 
     auto getObject = [&](Object &obj) -> Object {
       if (obj.IsRetSign()) {
+        if (retBase.empty()) {
+          errorString = "Return Base error.";
+          errorReturn = true;
+          return Object();
+        }
         Object res = retBase.front();
         retBase.pop_front();
         return res;
       }
       if (obj.IsArgSign()) {
+        auto *targetObj = entry::FindObject(obj.GetOriginId());
+        if (targetObj == nullptr) {
+          errorString = "Object is not found - " + obj.GetOriginId();
+          errorArg = true;
+          return Object();
+        }
         return Object().Ref(*entry::FindObject(obj.GetOriginId()));
       }
       return obj;
@@ -410,6 +528,7 @@ namespace kagami {
         objMap.insert(NamedObject(kStrObject, getObject(parms.back())));
       }
 
+      if (errorReturn || errorArg) break;
       msg = ent.Start(objMap);
       const auto code = msg.GetCode();
       const auto value = msg.GetValue();
@@ -421,8 +540,7 @@ namespace kagami {
         auto object = msg.GetObj();
         retBase.emplace_back(object);
       }
-      else if ((value == kStrRedirect && code == kCodeSuccess
-        || code == kCodeHeadPlaceholder)
+      else if ((value == kStrRedirect && (code == kCodeSuccess || code == kCodeHeadPlaceholder))
         && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
         Object obj;
         obj.Manage(detail)
@@ -444,6 +562,11 @@ namespace kagami {
         }
       }
     }
+
+    if (errorReturn || errorArg) {
+      msg.combo(kStrFatalError, kCodeIllegalSymbol, errorString);
+    }
+
     return msg;
   }
 
@@ -510,6 +633,16 @@ namespace kagami {
           judged = true;
         }
         break;
+      case kModeCaseJump:
+        if (token == GT_IF || token == GT_WHILE || token == GT_CASE) {
+          result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+          judged = true;
+        }
+        else if (token != GT_WHEN && token != GT_END) {
+          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          judged = true;
+        }
+        break;
       default:
         break;
       }
@@ -552,6 +685,12 @@ namespace kagami {
       case kCodeConditionLeaf:
         if (blk->nestHeadCount > 0) break;
         ConditionLeaf(blk);
+        break;
+      case kCodeCase:
+        CaseHead(result, blk);
+        break;
+      case kCodeWhen:
+        WhenHead(GetBooleanValue(value), blk);
         break;
       case kCodeHeadSign:
         HeadSign(GetBooleanValue(value), blk);
