@@ -14,6 +14,10 @@ if(NOCUI)
 	add_definitions(-D_NO_CUI_)
 endif()
 
+if(DISABLE_SDL)
+	add_definitions(-D_DISABLE_SDL_)
+endif()
+
 if(ENABLE_DEBUGGING)
 	add_definitions(-D_ENABLE_DEBUGGING_)
 endif()
