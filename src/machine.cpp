@@ -397,6 +397,12 @@ namespace kagami {
       default:break;
       }
     }
+    else if (blk->currentMode == kModeCase || blk->currentMode == kModeCaseJump) {
+      blk->conditionStack.pop();
+      blk->currentMode = blk->modeStack.top();
+      blk->modeStack.pop();
+      entry::DisposeManager();
+    }
   }
 
   void Machine::Continue(MachCtlBlk *blk) {
@@ -632,6 +638,10 @@ namespace kagami {
           result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
           judged = true;
         }
+        else if (token != GT_WHEN && token != GT_END) {
+          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          judged = true;
+        }
         break;
       default:
         break;
@@ -675,6 +685,12 @@ namespace kagami {
       case kCodeConditionLeaf:
         if (blk->nestHeadCount > 0) break;
         ConditionLeaf(blk);
+        break;
+      case kCodeCase:
+        CaseHead(result, blk);
+        break;
+      case kCodeWhen:
+        WhenHead(GetBooleanValue(value), blk);
         break;
       case kCodeHeadSign:
         HeadSign(GetBooleanValue(value), blk);

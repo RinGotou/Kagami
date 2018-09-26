@@ -20,7 +20,7 @@
 #define _DISABLE_SDL_
 
 //Enable all debugging feature and output info
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #include "windows.h"
@@ -96,6 +96,7 @@ namespace kagami {
     kMethodPrint = "__print";
 
   const int 
+    kCodeWhen = 21,
     kCodeCase = 20,
     kCodeBreak = 19,
     kCodeContinue = 18,
