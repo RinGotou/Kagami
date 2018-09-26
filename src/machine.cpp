@@ -444,15 +444,27 @@ namespace kagami {
     vector<Inst>::iterator it = instBase.begin();
     Message msg;
     ObjectMap objMap;
+    string errorString;
     bool errorReturn = false, errorArg = false;
 
     auto getObject = [&](Object &obj) -> Object {
       if (obj.IsRetSign()) {
+        if (retBase.empty()) {
+          errorString = "Return Base error.";
+          errorReturn = true;
+          return Object();
+        }
         Object res = retBase.front();
         retBase.pop_front();
         return res;
       }
       if (obj.IsArgSign()) {
+        auto *targetObj = entry::FindObject(obj.GetOriginId());
+        if (targetObj == nullptr) {
+          errorString = "Object is not found - " + obj.GetOriginId();
+          errorArg = true;
+          return Object();
+        }
         return Object().Ref(*entry::FindObject(obj.GetOriginId()));
       }
       return obj;
@@ -510,6 +522,7 @@ namespace kagami {
         objMap.insert(NamedObject(kStrObject, getObject(parms.back())));
       }
 
+      if (errorReturn || errorArg) break;
       msg = ent.Start(objMap);
       const auto code = msg.GetCode();
       const auto value = msg.GetValue();
@@ -543,6 +556,11 @@ namespace kagami {
         }
       }
     }
+
+    if (errorReturn || errorArg) {
+      msg.combo(kStrFatalError, kCodeIllegalSymbol, errorString);
+    }
+
     return msg;
   }
 
