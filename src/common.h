@@ -20,7 +20,7 @@
 #define _DISABLE_SDL_
 
 //Enable all debugging feature and output info
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #include "windows.h"

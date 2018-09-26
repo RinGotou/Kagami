@@ -1,11 +1,11 @@
 #pragma once
 #include "machine.h"
-#if defined(_ENABLE_DEBUGGING_) || not defined(_DISABLE_SDL_)
+#if not defined(_DISABLE_SDL_)
 #include <SDL.h>
 #endif
 
 namespace kagami {
-#if defined(_ENABLE_DEBUGGING_) || not defined(_DISABLE_SDL_)
+#if not defined(_DISABLE_SDL_)
   class Window {
   private:
     SDL_Window *window;
