@@ -208,7 +208,6 @@ namespace kagami {
     wstring buf;
     health = true;
     size_t subscript = 0;
-    auto &logger = trace::GetLogger();
     vector<string> scriptBuf;
 
     this->isMain = isMain;
@@ -251,9 +250,14 @@ namespace kagami {
   }
 
   void Machine::WhenHead(bool value, MachCtlBlk *blk) {
-    if (value == true) {
-      blk->currentMode == kModeCase;
-      
+    if (!blk->conditionStack.empty()) {
+      if (blk->currentMode == kModeCase && blk->conditionStack.top() == true) {
+        blk->currentMode = kModeCaseJump;
+      }
+      else if (value == true && blk->conditionStack.top() == false) {
+        blk->currentMode = kModeCase;
+        blk->conditionStack.top() = true;
+      }
     }
   }
 
@@ -439,8 +443,8 @@ namespace kagami {
     vector<Inst> &instBase = meta.GetContains();
     vector<Inst>::iterator it = instBase.begin();
     Message msg;
-    auto &manager = entry::GetCurrentManager();
     ObjectMap objMap;
+    bool errorReturn = false, errorArg = false;
 
     auto getObject = [&](Object &obj) -> Object {
       if (obj.IsRetSign()) {
@@ -517,8 +521,7 @@ namespace kagami {
         auto object = msg.GetObj();
         retBase.emplace_back(object);
       }
-      else if ((value == kStrRedirect && code == kCodeSuccess
-        || code == kCodeHeadPlaceholder)
+      else if ((value == kStrRedirect && (code == kCodeSuccess || code == kCodeHeadPlaceholder))
         && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
         Object obj;
         obj.Manage(detail)

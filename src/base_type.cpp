@@ -139,7 +139,6 @@ namespace kagami {
     auto &object = p[kStrObject];
     bool doNotWrap = (p.find("not_wrap") != p.end());
     string msg;
-    auto needConvert = false;
 
     auto data = *static_pointer_cast<string>(object.Get());
     if (Kit::IsString(data)) data = Kit::GetRawString(data);
@@ -222,7 +221,7 @@ namespace kagami {
     int start = stoi(GetObjectStuff<string>(p["start"])),
       size = stoi(GetObjectStuff<string>(p["size"]));
     Message msg;
-    if (start < 0 || size > str.size() - start) {
+    if (start < 0 || size > int(str.size()) - start) {
       msg.combo(kStrFatalError, kCodeIllegalParm, "Illegal index or size.");
     }
     else {
@@ -462,7 +461,7 @@ namespace kagami {
     int start = stoi(GetObjectStuff<string>(objStart)),
       size = stoi(GetObjectStuff<string>(objSize));
     Message msg;
-    if (start < 0 || size > wstr.size() - start) {
+    if (start < 0 || size > int(wstr.size()) - start) {
       msg.combo(kStrFatalError, kCodeIllegalParm, "Illegal index or size.");
     }
     else {
