@@ -2,6 +2,7 @@
 namespace kagami {
   bool Kit::IsString(string target) {
     if (target.empty()) return false;
+    if (target.size() == 1) return false;
     return(target.front() == '\'' && target.back() == '\'');
   }
 
