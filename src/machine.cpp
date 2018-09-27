@@ -612,6 +612,7 @@ namespace kagami {
           MakeFunction(defStart, idx - 1, defHead);
           Kit().CleanupVector(defHead);
           defStart = 0;
+          flag = false;
         }
       }
     }
