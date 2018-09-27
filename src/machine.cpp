@@ -173,9 +173,8 @@ namespace kagami {
     return activity(objMap);
   }
 
-  void Machine::MakeFunction(size_t start,size_t end, MachCtlBlk *blk) {
+  void Machine::MakeFunction(size_t start,size_t end, vector<string> &defHead) {
     if (start > end) return;
-    auto &defHead = blk->defHead;
     string id = defHead[0];
     vector<string> parms;
     vector<Meta> proc;
@@ -217,7 +216,7 @@ namespace kagami {
       while (!stream.eof()) {
         std::getline(stream, buf);
         string temp = ws2s(buf);
-        if (temp.back() == '\0') temp.pop_back();
+        if (!temp.empty() && temp.back() == '\0') temp.pop_back();
         scriptBuf.emplace_back(temp);
       }
     }
@@ -225,11 +224,13 @@ namespace kagami {
 
     vector<StringUnit> stringUnit = MultilineProcessing(scriptBuf);
     Analyzer analyzer;
+    Message msg;
     for (auto it = stringUnit.begin(); it != stringUnit.end(); ++it) {
       if (it->second == "") continue;
-      auto msg = analyzer.Make(it->second, it->first);
+      msg = analyzer.Make(it->second, it->first);
       if (msg.GetValue() == kStrFatalError) {
         trace::Log(msg.SetIndex(subscript));
+        health = false;
         break;
       }
       if (msg.GetValue() == kStrWarning) {
@@ -240,6 +241,12 @@ namespace kagami {
         analyzer.GetIdx(),
         analyzer.GetMainToken()));
       analyzer.Clear();
+    }
+
+    msg = PreProcessing();
+    if (msg.GetValue() == kStrFatalError) {
+      health = false;
+      trace::Log(msg);
     }
   }
 
@@ -258,18 +265,6 @@ namespace kagami {
         blk->currentMode = kModeCase;
         blk->conditionStack.top() = true;
       }
-    }
-  }
-
-  void Machine::DefineSign(string head, MachCtlBlk *blk) {
-    blk->defHead = Kit::BuildStringVector(head);
-    if (blk->currentMode != kModeDef && blk->currentMode == kModeNormal) {
-      blk->currentMode = kModeDef;
-      blk->modeStack.push(kModeNormal);
-      blk->defStart = blk->current + 1;
-    }
-    else if (blk->currentMode != kModeNormal) {
-      //?
     }
   }
 
@@ -369,13 +364,7 @@ namespace kagami {
   }
 
   void Machine::TailSign(MachCtlBlk *blk) {
-    if (blk->currentMode == kModeDef) {
-      MakeFunction(blk->defStart, blk->current - 1, blk);
-      blk->currentMode = blk->modeStack.top();
-      blk->modeStack.pop();
-      Kit().CleanupVector(blk->defHead);
-    }
-    else if (blk->currentMode == kModeCondition || blk->currentMode == kModeNextCondition) {
+    if (blk->currentMode == kModeCondition || blk->currentMode == kModeNextCondition) {
       blk->conditionStack.pop();
       blk->currentMode = blk->modeStack.top();
       blk->modeStack.pop();
@@ -586,6 +575,79 @@ namespace kagami {
     return msg;
   }
 
+  Message Machine::PreProcessing() {
+    Meta *meta = nullptr;
+    GenericTokenEnum token;
+    Message result;
+    bool flag = false;
+    map<size_t, size_t> skippedIndex;
+    using IndexPair = pair<size_t, size_t>;
+    size_t nestHeadCount = 0;
+    size_t defStart;
+    vector<string> defHead;
+
+    for (size_t idx = 0; idx < storage.size(); ++idx) {
+      if (!health) break;
+      meta = &storage[idx];
+      token = entry::GetGenericToken(meta->GetMainToken().first);
+      if (token == GT_WHILE || token == GT_IF) {
+        nestHeadCount++;
+      }
+      else if (token == GT_DEF) {
+        if (flag == true) {
+          result.combo(kStrFatalError, kCodeBadExpression, "Define function in function is not supported.").SetIndex(idx);
+          break;
+        }
+        result = MetaProcessing(*meta);
+        defHead = Kit().BuildStringVector(result.GetDetail());
+        defStart = idx + 1;
+        flag = true;
+      }
+      else if (token == GT_END) {
+        if (nestHeadCount > 0) {
+          nestHeadCount--;
+        }
+        else {
+          skippedIndex.insert(IndexPair(defStart - 1, idx));
+          MakeFunction(defStart, idx - 1, defHead);
+          Kit().CleanupVector(defHead);
+          defStart = 0;
+        }
+      }
+    }
+
+    vector<Meta> *otherMeta = new vector<Meta>();
+    bool filter = false;
+    for (size_t idx = 0; idx < storage.size(); ++idx) {
+      auto it = skippedIndex.find(idx);
+      if (it != skippedIndex.end()) {
+        idx = it->second;
+        continue;
+      }
+      otherMeta->emplace_back(storage[idx]);
+    }
+
+    storage.swap(*otherMeta);
+    delete otherMeta;
+
+    return result;
+  }
+
+  void Machine::InitGlobalObject(bool createManager) {
+    if (createManager) entry::CreateManager();
+    if (isMain) {
+      entry::CreateObject("__name__", Object()
+        .Manage("'__main__'")
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods()));
+    }
+    else {
+      //TODO:module name
+      entry::CreateObject("__name__", Object()
+        .Manage("''")
+        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods()));
+    }
+  }
+
   Message Machine::Run(bool createManager) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
@@ -603,18 +665,8 @@ namespace kagami {
 
     if (storage.empty()) return result;
 
-    if (createManager) entry::CreateManager();
-    if (isMain) {
-      entry::CreateObject("__name__", Object()
-        .Manage("'__main__'")
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods()));
-    }
-    else {
-      //TODO:module name
-      entry::CreateObject("__name__", Object()
-        .Manage("''")
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods()));
-    }
+    InitGlobalObject(createManager);
+    if (result.GetCode() < kCodeSuccess) return result;
 
     //Main state machine
     while (blk->current < storage.size()) {
@@ -623,18 +675,8 @@ namespace kagami {
 
       token = entry::GetGenericToken(meta->GetMainToken().first);
       switch (blk->currentMode) {
-      case kModeDef:
-        if (token == GT_WHILE || token == GT_IF) {
-          result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
-          judged = true;
-        }
-        else if (token != GT_END) {
-          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
-          judged = true;
-        }
-        break;
       case kModeNextCondition:
-        if (token == GT_IF || token == GT_WHILE) {
+        if (entry::HasTailTokenRequest(token)) {
           result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
           judged = true;
         }
@@ -650,7 +692,7 @@ namespace kagami {
         }
         break;
       case kModeCaseJump:
-        if (token == GT_IF || token == GT_WHILE || token == GT_CASE) {
+        if (entry::HasTailTokenRequest(token)) {
           result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
           judged = true;
         }
@@ -687,9 +729,6 @@ namespace kagami {
         break;
       case kCodeBreak:
         Break(blk);
-        break;
-      case kCodeDefineSign:
-        DefineSign(result.GetDetail(), blk);
         break;
       case kCodeConditionRoot:
         ConditionRoot(GetBooleanValue(value), blk); 
