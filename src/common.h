@@ -23,8 +23,8 @@
 #define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
-#include "windows.h"
 #define WIN32_LEAN_AND_MEAN
+#include "windows.h"
 #if defined(_MSC_VER)
 #pragma warning(disable:4996)
 #endif
