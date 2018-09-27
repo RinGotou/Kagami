@@ -130,6 +130,7 @@ namespace kagami {
     OperatorCode GetOperatorCode(string src);
     Entry Order(string id, string type = kTypeIdNull, int size = -1);
     bool IsOperatorToken(GenericTokenEnum token);
+    bool HasTailTokenRequest(GenericTokenEnum token);
   }
 
   namespace type {

@@ -20,7 +20,7 @@
 #define _DISABLE_SDL_
 
 //Enable all debugging feature and output info
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #include "windows.h"
@@ -68,9 +68,9 @@ namespace kagami {
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
 
-  using TypeId = string;
+  using ObjTypeId = string;
   
-  const string kEngineVersion = "1.1";
+  const string kEngineVersion = "1.2";
   const string kCodeName = "Marionette";
 #if defined(_WIN32)
   const string kPlatformType = "Windows";

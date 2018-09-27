@@ -211,6 +211,10 @@ namespace kagami {
       return result;
     }
 
+    bool HasTailTokenRequest(GenericTokenEnum token) {
+      return (token == GT_IF || token == GT_WHILE || token == GT_CASE);
+    }
+
     map<string, OperatorCode> &GetOPBase() {
       using T = pair<string, OperatorCode>;
       static map<string, OperatorCode> base = {

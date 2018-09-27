@@ -49,7 +49,6 @@ namespace kagami {
 
     void CaseHead(Message &msg, MachCtlBlk *blk);
     void WhenHead(bool value, MachCtlBlk *blk);
-    void DefineSign(string head, MachCtlBlk *blk);
     void ConditionRoot(bool value, MachCtlBlk *blk);
     void ConditionBranch(bool value, MachCtlBlk *blk);
     void ConditionLeaf(MachCtlBlk *blk);
@@ -57,9 +56,11 @@ namespace kagami {
     void TailSign(MachCtlBlk *blk);
     void Continue(MachCtlBlk *blk);
     void Break(MachCtlBlk *blk);
-    void MakeFunction(size_t start, size_t end, MachCtlBlk *blk);
+    void MakeFunction(size_t start, size_t end, vector<string> &defHead);
     static bool IsBlankStr(string target);
     Message MetaProcessing(Meta &meta);
+    Message PreProcessing();
+    void InitGlobalObject(bool createManager);
   public:
     Machine() : health(false), isMain(false) {}
     Machine(const Machine &machine) : health(machine.health), isMain(machine.isMain) {
