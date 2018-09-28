@@ -67,7 +67,6 @@ namespace kagami {
   using CastFunc = pair<string, CopyCreator>;
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
-
   using ObjTypeId = string;
   
   const string kEngineVersion = "1.2";
@@ -178,6 +177,7 @@ namespace kagami {
   const string kTypeIdOutStream = "Outstream";
   const string kTypeIdRegex     = "Regex";
   const string kTypeIdRef       = "Ref";
+  const string kTypeIdLib       = "Library";
 
   const size_t kModeNormal        = 0;
   const size_t kModeNextCondition = 1;
