@@ -625,6 +625,7 @@ namespace kagami {
     GenericRegister();
     BasicUtilityRegister();
     InitPlanners();
+    InitLibraryHandler();
 #if not defined(_DISABLE_SDL_)
     LoadSDLStuff();
 #endif

@@ -9,6 +9,12 @@ namespace kagami {
     return *static_pointer_cast<T>(obj.Get());
   }
 
+  template <class T>
+  shared_ptr<void> SimpleSharedPtrCopy(shared_ptr<void> target) {
+    T temp(*static_pointer_cast<T>(target));
+    return make_shared<T>(temp);
+  }
+
   class Meta {
     bool health;
     vector<Inst> instBase;
@@ -92,6 +98,7 @@ namespace kagami {
 
   void Activiate();
   void InitPlanners();
+  void InitLibraryHandler();
 #if defined(_ENABLE_DEBUGGING_) || not defined(_DISABLE_SDL_)
   void LoadSDLStuff();
 #endif

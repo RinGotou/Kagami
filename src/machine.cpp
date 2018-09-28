@@ -511,13 +511,17 @@ namespace kagami {
         }
         string argGroupHead = args.back();
         size_t count = 0;
-        while (idx < parms.size()) {
+        size_t vaArgSize;
+        ent.GetFlag() == kFlagMethod ?
+          vaArgSize = parms.size() - 1 :
+          vaArgSize = parms.size();
+        while (idx < vaArgSize) {
           objMap.insert(NamedObject(argGroupHead + to_string(count), getObject(parms[idx])));
           idx++;
           count++;
         }
         objMap.insert(NamedObject("__size", Object()
-          .Manage(to_string(parms.size()))
+          .Manage(to_string(count))
           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
           .SetTokenType(T_INTEGER)));
       }
