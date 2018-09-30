@@ -119,8 +119,8 @@ namespace kagami {
           }
         }
         //bracket checking
-        if (current == "(" || current == "[") nest++;
-        if (current == ")" || current == "]") nest--;
+        if (current == "(" || current == "[" || current == "{") nest++;
+        if (current == ")" || current == "]" || current == "}") nest--;
         if (current == "[") {
           if (kagami::Kit::GetTokenType(forward) != TokenTypeEnum::T_GENERIC
             && forward != "]"
@@ -167,14 +167,6 @@ namespace kagami {
         else {
           if ((current == "+" || current == "-") && !output.empty()) {
             if (output.back() == current) {
-              output.back().append(current);
-            }
-            else {
-              output.emplace_back(current);
-            }
-          }
-          else if (current == "=") {
-            if (output.back() == "<" || output.back() == ">" || output.back() == "=" || output.back() == "!") {
               output.back().append(current);
             }
             else {
