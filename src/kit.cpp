@@ -54,7 +54,7 @@ namespace kagami {
     else if (src == kStrTrue || src == kStrFalse)   type = TokenTypeEnum::T_BOOLEAN;
     else if (IsGenericToken(src))                   type = TokenTypeEnum::T_GENERIC;
     else if (IsInteger(src))                        type = TokenTypeEnum::T_INTEGER;
-    else if (IsDouble(src))                         type = TokenTypeEnum::T_DOUBLE;
+    else if (IsDouble(src))                         type = TokenTypeEnum::T_FLOAT;
     else if (std::regex_match(src, kPatternSymbol)) type = TokenTypeEnum::T_SYMBOL;
     else if (IsBlank(src))                          type = TokenTypeEnum::T_BLANK;
     else if (IsString(src))                         type = TokenTypeEnum::T_STRING;

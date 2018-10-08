@@ -21,10 +21,13 @@ namespace kagami {
 
   class Analyzer {
     bool health;
-    vector<Token> origin;
+    vector<Token> tokens;
     size_t index;
     vector<Inst> instBase;
     string errorString;
+
+    vector<string> Scanning(string target);
+    Message Tokenizer(vector<string> target);
 
     void Reversing(AnalyzerWorkBlock *blk);
     bool InstructionFilling(AnalyzerWorkBlock *blk);
@@ -39,28 +42,27 @@ namespace kagami {
     void OtherToken(AnalyzerWorkBlock *blk);
     void OtherSymbol(AnalyzerWorkBlock *blk);
     void FinalProcessing(AnalyzerWorkBlock *blk);
-    Message BuildTokens(string target);
-    Message Analyze();
+    Message Parser();
   public:
     Analyzer() :health(false), index(0) {  }
     Analyzer(size_t index) :health(false), index(index) {  }
 
-    Message Make(string target,size_t index = 0) {
-      Message msg = BuildTokens(target);
-      this->index = index;
-      if (msg.GetCode() >= kCodeSuccess) {
-        msg = Analyze();
-      }
-      return msg;
-    }
-
     Token GetMainToken() const { 
-      return origin.front(); 
+      return tokens.front(); 
     }
 
-    size_t GetIdx() const { return index; }
-    vector<Inst> GetOutput() const { return instBase; }
-    bool Good() const { return health; }
+    size_t GetIdx() const { 
+      return index; 
+    }
+    vector<Inst> GetOutput() const { 
+      return instBase; 
+    }
+
+    bool Good() const { 
+      return health; 
+    }
+
     void Clear();
+    Message Make(string target, size_t index = 0);
   };
 }
