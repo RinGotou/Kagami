@@ -11,7 +11,7 @@ namespace kagami {
     Kit kit;
 
     GroupTypeEnum groupType = GroupTypeEnum::G_NUL;
-    if (dataTypeA == T_DOUBLE || dataTypeB == T_DOUBLE) groupType = G_DOUBLE;
+    if (dataTypeA == T_FLOAT || dataTypeB == T_FLOAT) groupType = G_DOUBLE;
     if (dataTypeA == T_INTEGER && dataTypeB == T_INTEGER) groupType = G_INT;
     if (kit.IsString(dataA) || kit.IsString(dataB)) groupType = G_STR;
     if ((dataA == kStrTrue || dataA == kStrFalse) && (dataB == kStrTrue || dataB == kStrFalse)) groupType = G_STR;
@@ -221,7 +221,7 @@ namespace kagami {
         result = to_string(data);
         object.Set(make_shared<string>(result), kTypeIdRawString);
       }
-      else if (object.GetTokenType() == T_DOUBLE) {
+      else if (object.GetTokenType() == T_FLOAT) {
         auto data = stod(origin);
         data += 1.0f;
         result = to_string(data);
@@ -244,7 +244,7 @@ namespace kagami {
         result = to_string(data);
         object.Set(make_shared<string>(result), kTypeIdRawString);
       }
-      else if (object.GetTokenType() == T_DOUBLE) {
+      else if (object.GetTokenType() == T_FLOAT) {
         auto data = stod(origin);
         data -= 1.0f;
         result = to_string(data);
@@ -267,7 +267,7 @@ namespace kagami {
         ++data;
         object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
       }
-      else if (object.GetTokenType() == T_DOUBLE) {
+      else if (object.GetTokenType() == T_FLOAT) {
         auto data = stod(origin);
         data += 1.0f;
         object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
@@ -289,7 +289,7 @@ namespace kagami {
         --data;
         object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
       }
-      else if (object.GetTokenType() == T_DOUBLE) {
+      else if (object.GetTokenType() == T_FLOAT) {
         auto data = stod(origin);
         data -= 1.0f;
         object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
@@ -309,7 +309,7 @@ namespace kagami {
       case TokenTypeEnum::T_BOOLEAN:result = "'boolean'"; break;
       case TokenTypeEnum::T_GENERIC:result = "'generic'"; break;
       case TokenTypeEnum::T_INTEGER:result = "'integer'"; break;
-      case TokenTypeEnum::T_DOUBLE:result = "'double'"; break;
+      case TokenTypeEnum::T_FLOAT:result = "'double'"; break;
       case TokenTypeEnum::T_SYMBOL:result = "'symbol'"; break;
       case TokenTypeEnum::T_BLANK:result = "'blank'"; break;
       case TokenTypeEnum::T_STRING:result = "'string'"; break;

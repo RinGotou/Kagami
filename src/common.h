@@ -11,16 +11,17 @@
 #include <locale>
 #include <codecvt>
 #include <cstdlib>
+#include <cctype>
 
 #ifndef _NO_CUI_
 #include <iostream>
 #endif
 
+//if you build this porject by cmake,please turn off all switch marco below.
 //Disbale SDL2 componets for non-GUI environment
 #define _DISABLE_SDL_
-
 //Enable all debugging feature and output info
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -137,7 +138,7 @@ namespace kagami {
   };
 
   enum TokenTypeEnum {
-    T_GENERIC, T_STRING, T_INTEGER, T_DOUBLE,
+    T_GENERIC, T_STRING, T_INTEGER, T_FLOAT,
     T_BOOLEAN, T_SYMBOL, T_BLANK, T_CHAR, T_NUL
   };
 
