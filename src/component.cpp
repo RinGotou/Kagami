@@ -18,6 +18,11 @@ namespace kagami {
     return groupType;
   }
 
+  bool IsStringObject(Object &obj) {
+    auto id = obj.GetTypeId();
+    return (id == kTypeIdRawString || id == kTypeIdString);
+  }
+
   string BinaryOperations(Object &A, Object &B, string OP) {
     Kit kit;
     string temp;
@@ -129,8 +134,8 @@ namespace kagami {
   Message LogicEqual(ObjectMap &p) {
     Object objFirst = p["first"], objSecond = p["second"];
     Message msg;
-    if (objFirst.GetTypeId() != kTypeIdRawString 
-      || objSecond.GetTypeId() != kTypeIdRawString) {
+
+    if (!IsStringObject(objFirst) && !IsStringObject(objSecond)) {
       auto ent = entry::Order("__compare", objFirst.GetTypeId(), 1);
       if (ent.Good()) {
         msg = ent.Start(p);
@@ -144,8 +149,8 @@ namespace kagami {
   Message LogicNotEqual(ObjectMap &p) {
     Object objFirst = p["first"], objSecond = p["second"];
     Message msg;
-    if (objFirst.GetTypeId() != kTypeIdRawString
-      || objSecond.GetTypeId() != kTypeIdRawString) {
+
+    if (!IsStringObject(objFirst) && !IsStringObject(objSecond)) {
       auto ent = entry::Order("__compare", objFirst.GetTypeId(), 1);
       if (ent.Good()) {
         msg = ent.Start(p);
