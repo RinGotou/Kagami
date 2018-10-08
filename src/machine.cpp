@@ -451,8 +451,8 @@ namespace kagami {
   Message Machine::MetaProcessing(Meta &meta) {
     Kit kit;
     deque<Object> retBase;
-    vector<Inst> &instBase = meta.GetContains();
-    vector<Inst>::iterator it = instBase.begin();
+    vector<Action> &actionBase = meta.GetContains();
+    vector<Action>::iterator it = actionBase.begin();
     Message msg;
     ObjectMap objMap;
     string errorString;
@@ -481,7 +481,7 @@ namespace kagami {
       return obj;
     };
 
-    for (; it != instBase.end(); it++) {
+    for (; it != actionBase.end(); it++) {
       kit.CleanupMap(objMap);
       //objMap.clear();
       auto &ent = it->first;
@@ -557,7 +557,7 @@ namespace kagami {
           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
           .SetTokenType(kagami::Kit::GetTokenType(detail));
         if (entry::IsOperatorToken(ent.GetTokenEnum())
-          && it + 1 != instBase.end()) {
+          && it + 1 != actionBase.end()) {
           auto token = (it + 1)->first.GetTokenEnum();
           if (entry::IsOperatorToken(token)) {
             retBase.emplace_front(obj);

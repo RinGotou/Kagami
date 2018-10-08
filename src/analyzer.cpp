@@ -251,7 +251,7 @@ namespace kagami {
       blk->item.pop_back();
     }
 
-    instBase.push_back(Inst(ent, parms));
+    actionBase.push_back(Action(ent, parms));
     blk->symbol.pop_back();
     blk->item.emplace_back(Object().SetRetSign());
     return health;
@@ -271,11 +271,10 @@ namespace kagami {
       .Manage(blk->nextToken.first)
       .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
     };
-    instBase.emplace_back(Inst(ent, parms));
+    actionBase.emplace_back(Action(ent, parms));
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
-    blk->lastBracketStack.push(blk->currentToken.first);
     if (blk->defineLine) return;
     if (blk->forwardToken.second != TokenTypeEnum::T_GENERIC) {
       auto ent = entry::Order(kStrNop);
@@ -288,15 +287,6 @@ namespace kagami {
   bool Analyzer::RightBracket(AnalyzerWorkBlock *blk) {
     bool result = true;
     bool checked = false;
-
-    if (!blk->lastBracketStack.empty() &&
-      kBracketPairs.at(blk->currentToken.first) != blk->lastBracketStack.top()) {
-      errorString = "Illegal bracket pair - '"
-        + blk->lastBracketStack.top() + "'"
-        + " and '" + blk->currentToken.first + "'";
-      return false;
-    }
-    if (!blk->lastBracketStack.empty())blk->lastBracketStack.pop();
 
     string topId = blk->symbol.back().GetId();
     while (!blk->symbol.empty()
@@ -339,11 +329,10 @@ namespace kagami {
         .Manage("__at")
         .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
     };
-    instBase.emplace_back(Inst(ent, parms));
+    actionBase.emplace_back(Action(ent, parms));
     ent.SetEntrySign("__at", true);
     blk->symbol.emplace_back(ent);
     blk->item.emplace_back(Object().SetPlaceholder());
-    blk->lastBracketStack.push(blk->currentToken.first);
     blk->symbol.emplace_back(blk->currentToken.first);
     return result;
   }
@@ -375,7 +364,6 @@ namespace kagami {
 
   bool Analyzer::LeftCurBracket(AnalyzerWorkBlock *blk) {
     bool result;
-    blk->lastBracketStack.push(blk->currentToken.first);
     if (blk->forwardToken.second == TokenTypeEnum::T_SYMBOL) {
       auto ent = entry::Order(kStrArray);
       blk->symbol.emplace_back(ent);
@@ -534,13 +522,9 @@ namespace kagami {
     Message result;
 
     AnalyzerWorkBlock *blk = new AnalyzerWorkBlock();
-    blk->lambdaObjectCount = 0;
     blk->nextInsertSubscript = 0;
-    blk->operatorTargetType = kTypeIdNull;
     blk->insertBetweenObject = false;
-    blk->dotOperator = false;
     blk->needReverse = false;
-    blk->subscriptProcessing = false;
     blk->defineLine = false;
 
     for (size_t i = 0; i < size; ++i) {
@@ -598,7 +582,7 @@ namespace kagami {
   }
 
   void Analyzer::Clear() {
-    Kit().CleanupVector(tokens).CleanupVector(instBase);
+    Kit().CleanupVector(tokens).CleanupVector(actionBase);
     health = false;
     errorString.clear();
     index = 0;
