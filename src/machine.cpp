@@ -450,91 +450,117 @@ namespace kagami {
 
   Message Machine::MetaProcessing(Meta &meta) {
     Kit kit;
-    deque<Object> retBase;
-    vector<Action> &actionBase = meta.GetContains();
-    vector<Action>::iterator it = actionBase.begin();
+    int mode, flag;
+    string errorString, id, typeId, vaArgHead;
     Message msg;
     ObjectMap objMap;
-    string errorString;
+    deque<Object> retBase;
+    vector<string> args;
+    size_t sub = 0;
+    size_t count = 0;
+    size_t vaArgSize = 0;
+    vector<Instruction> &actionBase = meta.GetContains();
     bool errorReturn = false, errorArg = false;
 
-    auto getObject = [&](Object &obj) -> Object {
-      if (obj.IsRetSign()) {
-        if (retBase.empty()) {
-          errorString = "Return Base error.";
-          errorReturn = true;
-          return Object();
+    auto makeObject = [&](Parameter &parm) -> Object {
+      Object obj;
+      ObjectPointer ptr;
+      switch (parm.type) {
+      case PT_NORMAL:
+        obj.Manage(parm.data)
+          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetTokenType(parm.tokenType);
+        break;
+      case PT_OBJ:
+        ptr = entry::FindObject(parm.data);
+        if (ptr != nullptr) {
+          obj.Ref(*ptr);
         }
-        Object res = retBase.front();
-        retBase.pop_front();
-        return res;
-      }
-      if (obj.IsArgSign()) {
-        auto *targetObj = entry::FindObject(obj.GetOriginId());
-        if (targetObj == nullptr) {
+        else {
           errorString = "Object is not found - " + obj.GetOriginId();
           errorArg = true;
-          return Object();
         }
-        return Object().Ref(*entry::FindObject(obj.GetOriginId()));
+        break;
+      case PT_RET:
+        if (!retBase.empty()) {
+          obj = retBase.front();
+          retBase.pop_front();
+        }
+        else {
+          errorString = "Return base error.";
+          errorReturn = true;
+        }
+        break;
+      default:
+        break;
       }
+
       return obj;
     };
 
-    for (; it != actionBase.end(); it++) {
-      kit.CleanupMap(objMap);
-      //objMap.clear();
-      auto &ent = it->first;
-      auto &parms = it->second;
-      size_t entParmSize = ent.GetParmSize();
+    for (size_t idx = 0; idx < actionBase.size(); idx += 1) {
+      kit.CleanupMap(objMap).CleanupVector(args);
+      id.clear();
+      vaArgHead.clear();
+      typeId.clear();
+      sub = 0;
+      count = 0;
+
+      auto &ent = actionBase[idx].first;
+      auto &parms = actionBase[idx].second;
+      auto entParmSize = ent.GetParmSize();
+
       if (ent.GetEntrySign()) {
-        string id = ent.GetId();
-        string typeId;
+        id = ent.GetId();
         ent.NeedSpecificType() ?
-          typeId = getObject(parms.back()).GetTypeId() :
+          typeId = makeObject(parms.back()).GetTypeId() :
           typeId = kTypeIdNull;
+
         ent = entry::Order(id, typeId);
+
         if (!ent.Good()) {
           msg.combo(kStrFatalError, kCodeIllegalCall, "Function not found - " + id);
           break;
         }
       }
 
-      auto args = ent.GetArguments();
-      auto mode = ent.GetArgumentMode();
-      size_t idx = 0;
+      args = ent.GetArguments();
+      mode = ent.GetArgumentMode();
+      flag = ent.GetFlag();
+
       if (mode == kCodeAutoSize) {
-        const size_t parmSize = entParmSize - 1;
-        while (idx < parmSize) {
-          objMap.insert(NamedObject(args[idx], getObject(parms[idx])));
-          ++idx;
+        while (sub < entParmSize - 1) {
+          objMap.insert(NamedObject(args[sub], makeObject(parms[sub])));
+          sub += 1;
         }
-        string argGroupHead = args.back();
-        size_t count = 0;
-        size_t vaArgSize;
-        ent.GetFlag() == kFlagMethod ?
+
+        vaArgHead = args.back();
+        flag == kFlagMethod ?
           vaArgSize = parms.size() - 1 :
           vaArgSize = parms.size();
-        while (idx < vaArgSize) {
-          objMap.insert(NamedObject(argGroupHead + to_string(count), getObject(parms[idx])));
-          idx++;
-          count++;
+
+        while (sub < vaArgSize) {
+          objMap.insert(NamedObject(vaArgHead + to_string(count), makeObject(parms[sub])));
+          count += 1;
+          sub += 1;
         }
-        objMap.insert(NamedObject("__size", Object()
-          .Manage(to_string(count))
+
+        objMap.insert(NamedObject("__size",
+          Object().Manage(to_string(count))
           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
           .SetTokenType(T_INTEGER)));
       }
       else {
-        while (idx < args.size()) {
-          if (idx >= parms.size() && ent.GetArgumentMode() == kCodeAutoFill) break;
-          objMap.insert(NamedObject(args[idx], getObject(parms[idx])));
-          ++idx;
+        while (sub < args.size()) {
+          if (sub >= parms.size() && mode == kCodeAutoFill) break;
+          //error
+          objMap.insert(NamedObject(args[sub], makeObject(parms[sub])));
+          sub += 1;
         }
       }
 
-      if (ent.GetFlag() == kFlagMethod) {
-        objMap.insert(NamedObject(kStrObject, getObject(parms.back())));
+      if (flag == kFlagMethod) {
+        objMap.insert(NamedObject(kStrObject, makeObject(parms.back())));
       }
 
       if (errorReturn || errorArg) break;
@@ -553,12 +579,11 @@ namespace kagami {
         && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
         Object obj;
         obj.Manage(detail)
-          .SetRetSign()
           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
           .SetTokenType(kagami::Kit::GetTokenType(detail));
         if (entry::IsOperatorToken(ent.GetTokenEnum())
-          && it + 1 != actionBase.end()) {
-          auto token = (it + 1)->first.GetTokenEnum();
+          && sub + 1 < actionBase.size()) {
+          auto token = actionBase[sub + 1].first.GetTokenEnum();
           if (entry::IsOperatorToken(token)) {
             retBase.emplace_front(obj);
           }
@@ -780,7 +805,7 @@ namespace kagami {
     Message msg;
     auto &base = entry::CreateManager();
     for (auto &unit : p) {
-      base.Add(unit.first, unit.second.SetArgSign(unit.first));
+      base.Add(unit.first, unit.second);
     }
     msg = Run(false);
     if (msg.GetCode() >= kCodeSuccess) {

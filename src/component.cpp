@@ -227,7 +227,7 @@ namespace kagami {
         keep ?
           res = origin :
           res = to_string(data);
-        obj.Set(make_shared<string>(res), kTypeIdRawString);
+        obj.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
         
       }
       else if (obj.GetTokenType() == T_FLOAT) {
@@ -238,7 +238,7 @@ namespace kagami {
         keep ?
           res = origin :
           res = to_string(data);
-        obj.Set(make_shared<string>(res), kTypeIdRawString);
+        obj.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
       }
     }
 

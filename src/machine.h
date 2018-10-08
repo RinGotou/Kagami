@@ -19,18 +19,18 @@ namespace kagami {
 
   class Meta {
     bool health;
-    vector<Action> actionBase;
+    vector<Instruction> actionBase;
     size_t index;
     Token mainToken;
   public:
     Meta() : health(false), index(0) {}
-    Meta(vector<Action> actionBase, size_t index = 0, Token mainToken = Token()) : 
+    Meta(vector<Instruction> actionBase, size_t index = 0, Token mainToken = Token()) : 
       health(true), index(index) {
       this->actionBase = actionBase;
       this->mainToken = mainToken;
     }
 
-    vector<Action> &GetContains() { return actionBase; }
+    vector<Instruction> &GetContains() { return actionBase; }
     size_t GetIndex() const { return index; }
     bool IsHealth() const { return health; }
     Token GetMainToken() const { return mainToken; }

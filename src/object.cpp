@@ -140,22 +140,6 @@ namespace kagami {
     return result;
   }
 
-  Object &Object::SetPlaceholder() {
-    placeholder = true;
-    return *this;
-  }
-
-  Object &Object::SetRetSign() {
-    retSign = true;
-    return *this;
-  }
-
-  Object &Object::SetArgSign(string id) {
-    argSign = true;
-    originId = id;
-    return *this;
-  }
-
   bool ObjectManager::Add(string sign, Object &source) {
     if (!CheckObject(sign)) return false;
     base.push_back(NamedObject(sign, Object().Copy(source)));

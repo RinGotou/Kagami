@@ -12,17 +12,29 @@ namespace kagami {
   public:
     string data;
     ParameterType type;
+    TokenTypeEnum tokenType;
 
-    Parameter(string data, ParameterType type) {
+    Parameter() :
+      data(),
+      type(PT_PHOLDER),
+      tokenType(T_NUL) {}
+
+    Parameter(string data, 
+      ParameterType type, 
+      TokenTypeEnum tokenType) {
       this->data = data;
       this->type = type;
+      this->tokenType = tokenType;
+    }
+
+    bool IsPlaceholder() const {
+      return type == PT_PHOLDER;
     }
   };
 
-  using Action = pair<Entry, deque<Object>>;
-
+  using Instruction = pair<Entry, deque<Parameter>>;
   using AnalyzerWorkBlock = struct {
-    deque<Object> item;
+    deque<Parameter> parm;
     deque<Entry> symbol;
     bool insertBetweenObject, needReverse, defineLine;
     Token currentToken;
@@ -35,7 +47,7 @@ namespace kagami {
     bool health;
     vector<Token> tokens;
     size_t index;
-    vector<Action> actionBase;
+    vector<Instruction> actionBase;
     string errorString;
 
     vector<string> Scanning(string target);
@@ -66,7 +78,7 @@ namespace kagami {
     size_t GetIdx() const { 
       return index; 
     }
-    vector<Action> GetOutput() const { 
+    vector<Instruction> GetOutput() const { 
       return actionBase; 
     }
 

@@ -189,38 +189,39 @@ namespace kagami {
 
   void Analyzer::Reversing(AnalyzerWorkBlock *blk) {
     deque<Entry> *tempSymbol = new deque<Entry>();
-    deque<Object> *tempObject = new deque<Object>();
+    deque<Parameter> *tempParm = new deque<Parameter>();
 
     while (!blk->symbol.empty()
       && blk->symbol.back().GetPriority()
       == blk->symbol[blk->symbol.size() - 2].GetPriority()) {
       tempSymbol->push_back(blk->symbol.back());
-      tempObject->push_back(blk->item.back());
+
+      tempParm->push_back(blk->parm.back());
       blk->symbol.pop_back();
-      blk->item.pop_back();
+      blk->parm.pop_back();
     }
     tempSymbol->push_back(blk->symbol.back());
     blk->symbol.pop_back();
 
     for (int count = 2; count > 0; count -= 1) {
-      tempObject->push_back(blk->item.back());
-      blk->item.pop_back();
+      tempParm->push_back(blk->parm.back());
+      blk->parm.pop_back();
     }
 
     while (!tempSymbol->empty()) {
       blk->symbol.push_back(tempSymbol->front());
       tempSymbol->pop_front();
     }
-    while (!tempObject->empty()) {
-      blk->item.push_back(tempObject->front());
-      tempObject->pop_front();
+    while (!tempParm->empty()) {
+      blk->parm.push_back(tempParm->front());
+      tempParm->pop_front();
     }
     delete tempSymbol;
-    delete tempObject;
+    delete tempParm;
   }
 
   bool Analyzer::InstructionFilling(AnalyzerWorkBlock *blk) {
-    deque<Object> parms;
+    deque<Parameter> tempParms;
     size_t idx = 0;
     Entry &ent = blk->symbol.back();
 
@@ -232,46 +233,47 @@ namespace kagami {
 
     idx = size;
     bool doNotUseIdx = (ent.GetEntrySign() || mode == kCodeAutoSize);
-    while (!blk->item.empty() && !blk->item.back().IsPlaceholder()) {
+
+    while (!blk->parm.empty() && !blk->parm.back().IsPlaceholder()) {
       if (!doNotUseIdx && idx == 0) break;
-      if (reversed) parms.push_back(blk->item.back());
-      else parms.push_front(blk->item.back());
-      blk->item.pop_back();
+      if (reversed) tempParms.emplace_back(blk->parm.back());
+      else tempParms.emplace_front(blk->parm.back());
+      blk->parm.pop_back();
       if (!doNotUseIdx) idx--;
     }
-    if (!blk->item.empty()
-      && blk->item.back().IsPlaceholder()
-      && !entry::IsOperatorToken(token))
-      blk->item.pop_back();
 
-
+    if (!blk->parm.empty()
+      && blk->parm.back().IsPlaceholder()
+      && !entry::IsOperatorToken(token)) {
+      blk->parm.pop_back();
+    }
+      
     auto flag = ent.GetFlag();
+
     if (flag == kFlagMethod || ent.NeedSpecificType()) {
-      parms.push_back(Object().SetArgSign(blk->item.back().GetOriginId()));
-      blk->item.pop_back();
+      tempParms.emplace_back(Parameter(blk->parm.back().data, PT_OBJ, T_GENERIC));
+      blk->parm.pop_back();
     }
 
-    actionBase.push_back(Action(ent, parms));
+    actionBase.emplace_back(Instruction(ent, tempParms));
     blk->symbol.pop_back();
-    blk->item.emplace_back(Object().SetRetSign());
+    blk->parm.emplace_back(Parameter("", PT_RET, T_NUL));
     return health;
   }
 
   void Analyzer::EqualMark(AnalyzerWorkBlock *blk) {
-    if (!blk->item.empty()) {
+    if (!blk->parm.empty()) {
       blk->symbol.push_back(entry::Order(kStrBind));
     }
   }
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
     auto ent = entry::Order(kStrTypeAssert);
-    deque<Object> parms = {
-      blk->item.back(),
-      Object()
-      .Manage(blk->nextToken.first)
-      .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+    deque<Parameter> tempParms = {
+      blk->parm.back(),
+      Parameter(blk->nextToken.first,PT_NORMAL,blk->nextToken.second)
     };
-    actionBase.emplace_back(Action(ent, parms));
+    actionBase.emplace_back(Instruction(ent, tempParms));
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
@@ -281,7 +283,7 @@ namespace kagami {
       blk->symbol.emplace_back(ent);
     }
     blk->symbol.emplace_back(blk->currentToken.first);
-    blk->item.push_back(Object().SetPlaceholder());
+    blk->parm.emplace_back(Parameter());
   }
 
   bool Analyzer::RightBracket(AnalyzerWorkBlock *blk) {
@@ -323,17 +325,17 @@ namespace kagami {
   bool Analyzer::LeftSqrBracket(AnalyzerWorkBlock *blk) {
     bool result = true;
     auto ent = entry::Order(kStrTypeAssert);
-    deque<Object> parms = {
-      blk->item.back(),
-      Object()
-        .Manage("__at")
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+    deque<Parameter> tempParms = {
+      blk->parm.back(),
+      Parameter("__at",PT_NORMAL,T_GENERIC)
     };
-    actionBase.emplace_back(Action(ent, parms));
+    actionBase.emplace_back(Instruction(ent, tempParms));
+
     ent.SetEntrySign("__at", true);
     blk->symbol.emplace_back(ent);
-    blk->item.emplace_back(Object().SetPlaceholder());
     blk->symbol.emplace_back(blk->currentToken.first);
+    blk->parm.emplace_back(Parameter());
+
     return result;
   }
 
@@ -368,7 +370,7 @@ namespace kagami {
       auto ent = entry::Order(kStrArray);
       blk->symbol.emplace_back(ent);
       blk->symbol.emplace_back(blk->currentToken.first);
-      blk->item.push_back(Object().SetPlaceholder());
+      blk->parm.emplace_back(Parameter());
       result = true;
     }
     else {
@@ -383,17 +385,11 @@ namespace kagami {
     bool result = true;
 
     if (blk->defineLine) {
-      blk->item.push_back(Object()
-        .Manage(blk->currentToken.first)
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(blk->currentToken.second));
+      blk->parm.emplace_back(Parameter(blk->currentToken.first, PT_NORMAL, T_GENERIC));
     }
     else {
       if (blk->nextToken.first == "=") {
-        Object obj;
-        obj.Manage(blk->currentToken.first)
-          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods());
-        blk->item.push_back(obj);
+        blk->parm.emplace_back(Parameter(blk->currentToken.first, PT_NORMAL, T_GENERIC));
       }
       else if (blk->nextToken.first == "(") {
         auto ent = entry::Order(blk->currentToken.first);
@@ -421,12 +417,10 @@ namespace kagami {
           blk->defineLine = true;
           blk->symbol.emplace_back(ent);
           blk->symbol.emplace_back("(");
-          blk->item.push_back(Object().SetPlaceholder());
+          blk->parm.emplace_back(Parameter());
         }
         else {
-          Object obj;
-          obj.SetArgSign(blk->currentToken.first);
-          blk->item.push_back(obj);
+          blk->parm.emplace_back(Parameter(blk->currentToken.first, PT_OBJ, T_GENERIC));
         }
       }
     }
@@ -451,16 +445,13 @@ namespace kagami {
 
   void Analyzer::OtherToken(AnalyzerWorkBlock *blk) {
     if (blk->insertBetweenObject) {
-      blk->item.insert(blk->item.begin() + blk->nextInsertSubscript,
-        Object().Manage(blk->currentToken.first)
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(blk->currentToken.second));
+      blk->parm.emplace(blk->parm.begin() + blk->nextInsertSubscript,
+        Parameter(blk->currentToken.first, PT_NORMAL, blk->currentToken.second));
       blk->insertBetweenObject = false;
     }
     else {
-      blk->item.push_back(Object().Manage(blk->currentToken.first)
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(blk->currentToken.second));
+      blk->parm.emplace_back(
+        Parameter(blk->currentToken.first, PT_NORMAL, blk->currentToken.second));
     }
   }
 
@@ -472,10 +463,10 @@ namespace kagami {
     }
     else if (currentPriority < blk->symbol.back().GetPriority()) {
       auto j = blk->symbol.size() - 1;
-      auto k = blk->item.size();
+      auto k = blk->parm.size();
       while (kBracketPairs.find(blk->symbol[j].GetId()) == kBracketPairs.end()
         && currentPriority < blk->symbol[j].GetPriority()) {
-        k == blk->item.size() ? k -= 2 : k -= 1;
+        k == blk->parm.size() ? k -= 2 : k -= 1;
         --j;
       }
       blk->symbol.insert(blk->symbol.begin() + j + 1, ent);
@@ -573,7 +564,7 @@ namespace kagami {
       result.combo(kStrFatalError, kCodeBadExpression, errorString);
     }
 
-    Kit().CleanupDeque(blk->item).CleanupDeque(blk->symbol);
+    Kit().CleanupDeque(blk->parm).CleanupDeque(blk->symbol);
     blk->nextToken = Token();
     blk->forwardToken = Token();
     blk->currentToken = Token();
