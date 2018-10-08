@@ -43,10 +43,6 @@ namespace kagami {
     TokenTypeEnum GetTokenType();
     bool IsRo();
     bool ConstructorFlag();
-    Object &SetPlaceholder();
-    Object &SetRetSign();
-    Object &SetArgSign(string id);
-    //Object &SetDestructor()
 
     string GetOriginId() const { return originId; }
     void SetParentObject(Object &object) { parent = &object; }
@@ -55,12 +51,8 @@ namespace kagami {
     Object &SetConstructorFlag() { constructor = true; return *this; }
     Object &Copy(Object &&object) { return this->Copy(object); }
     bool IsRef() const { return ref; }
-    bool IsRetSign() const { return retSign; }
-    bool IsArgSign() const { return argSign; }
-    bool IsPlaceholder() const { return placeholder; }
     bool operator==(Object &object) const { return Compare(object); }
     bool operator!=(Object &object) const { return !Compare(object); }
-
   };
 
   /* Object Template Class
