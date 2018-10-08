@@ -23,6 +23,7 @@ namespace kagami {
 
   Message ArrayConstructor(ObjectMap &p) {
     Message result;
+    ArrayBase base;
     auto size = stoi(GetObjectStuff<string>(p["size"]));
     Object obj = Object();
     auto it = p.find("init_value");
@@ -30,8 +31,7 @@ namespace kagami {
       obj.Copy(it->second);
       obj.SetRo(false);
     }
-    ArrayBase base;
-
+    
     if (size <= 0) {
       result.combo(kStrFatalError, kCodeIllegalParm, "Illegal array size.");
       return result;
@@ -63,10 +63,11 @@ namespace kagami {
 
   Message ArrayGetElement(ObjectMap &p) {
     Object &obj = p[kStrObject];
-    int idx = stoi(GetObjectStuff<string>(p["index"]));
-    auto &base = GetObjectStuff<ArrayBase>(obj);
-    int size = int(base.size());
+    ArrayBase &base = GetObjectStuff<ArrayBase>(obj);
+    int size = int(base.size()), 
+        idx = stoi(GetObjectStuff<string>(p["index"]));
     Message msg;
+
     if (idx < size) {
       Object temp;
       temp.Ref(base[idx]);
@@ -80,7 +81,8 @@ namespace kagami {
 
   Message ArrayGetSize(ObjectMap &p) {
     auto &obj = p[kStrObject];
-    return Message(kStrRedirect, kCodeSuccess, to_string(static_pointer_cast<ArrayBase>(obj.Get())->size()));
+    return Message(kStrRedirect, kCodeSuccess, 
+      to_string(static_pointer_cast<ArrayBase>(obj.Get())->size()));
   }
 
   Message ArrayPrint(ObjectMap &p) {
@@ -106,13 +108,13 @@ namespace kagami {
     size_t size;
     auto obj = p.at(kStrObject), objIdx = p["index"];
     const auto typeId = obj.GetTypeId();
-    int idx = stoi(*static_pointer_cast<string>(objIdx.Get()));
+    int idx = stoi(GetObjectStuff<string>(objIdx));
 
     const auto makeStrToken = [](char target)->string {
       return string().append("'").append(1, target).append("'");
     };
 
-    auto data = *static_pointer_cast<string>(obj.Get());
+    auto data = GetObjectStuff<string>(obj);
     if (Kit::IsString(data)) {
       data = Kit::GetRawString(data);
     }
@@ -128,9 +130,11 @@ namespace kagami {
   }
 
   Message RawStringGetSize(ObjectMap &p) {
-    auto &object = p.at(kStrObject);
-    auto str = *static_pointer_cast<string>(object.Get());
-    if (Kit::IsString(str)) str = Kit::GetRawString(str);
+    auto &obj = p.at(kStrObject);
+    auto str = GetObjectStuff<string>(obj);
+    Kit::IsString(str) ?
+      str = Kit::GetRawString(str) :
+      str = str;
     return Message(kStrRedirect, kCodeSuccess, to_string(str.size()));
   }
 
@@ -140,8 +144,11 @@ namespace kagami {
     bool doNotWrap = (p.find("not_wrap") != p.end());
     string msg;
 
-    auto data = *static_pointer_cast<string>(object.Get());
-    if (Kit::IsString(data)) data = Kit::GetRawString(data);
+    auto data = GetObjectStuff<string>(object);
+    Kit::IsString(data) ? 
+      data = Kit::GetRawString(data) : 
+      data = data;
+
     std::cout << data;
     if (!doNotWrap) std::cout << std::endl;
     

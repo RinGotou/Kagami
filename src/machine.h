@@ -100,7 +100,9 @@ namespace kagami {
 
   void Activiate();
   void InitPlanners();
+#if defined(_WIN32)
   void InitLibraryHandler();
+#endif
 #if defined(_ENABLE_DEBUGGING_) || not defined(_DISABLE_SDL_)
   void LoadSDLStuff();
 #endif
