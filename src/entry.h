@@ -19,7 +19,11 @@ namespace kagami {
     int flag;
     bool placeholder, userFunc, entrySign, method;
   public:
-    Entry() : id(kStrNull), activity(nullptr), priority(0), flag(kFlagNormalEntry) {
+    Entry() : id(kStrNull), 
+      activity(nullptr), 
+      priority(0), 
+      flag(kFlagNormalEntry) {
+
       parmMode = kCodeIllegalParm;
       type = kTypeIdNull;
       placeholder = false;
@@ -29,9 +33,20 @@ namespace kagami {
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
-    Entry(Activity activity, int parmMode, string args,string id = kStrEmpty, string type = kTypeIdNull, int flag = kFlagNormalEntry, int priority = 4) :
-      id(id), args(Kit::BuildStringVector(args)), parmMode(parmMode), priority(priority),
-      type(type), flag(flag) {
+    Entry(Activity activity, 
+      int parmMode, 
+      string args,
+      string id = kStrEmpty, 
+      string type = kTypeIdNull, 
+      int flag = kFlagNormalEntry, 
+      int priority = 4) :
+      id(id), 
+      args(Kit::BuildStringVector(args)), 
+      parmMode(parmMode), 
+      priority(priority),
+      type(type), 
+      flag(flag) {
+
       this->activity = activity;
       placeholder = false;
       userFunc = false;
@@ -40,8 +55,16 @@ namespace kagami {
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
-    Entry(Activity activity, string args, GenericTokenEnum tokenEnum, int parmMode = kCodeNormalParm, int priority = 4) :
-      id(), args(Kit::BuildStringVector(args)), parmMode(parmMode), priority(priority) {
+    Entry(Activity activity, 
+      string args, 
+      GenericTokenEnum tokenEnum, 
+      int parmMode = kCodeNormalParm, 
+      int priority = 4) :
+      id(), 
+      args(Kit::BuildStringVector(args)), 
+      parmMode(parmMode), 
+      priority(priority) {
+
       this->activity = activity;
       this->tokenEnum = tokenEnum;
       userFunc = false;
@@ -50,7 +73,11 @@ namespace kagami {
       method = false;
     }
 
-    Entry(string id) :id(id), activity(nullptr), priority(0) {
+    Entry(string id) :
+      id(id), 
+      activity(nullptr), 
+      priority(0) {
+
       parmMode = kCodeNormalParm;
       type = kTypeIdNull;
       userFunc = false;
@@ -60,7 +87,11 @@ namespace kagami {
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
-    Entry(Activity activity, string id,vector<string> args) : priority(4) {
+    Entry(Activity activity, 
+      string id,
+      vector<string> args) : 
+      priority(4) {
+
       type = kTypeIdNull;
       placeholder = false;
       parmMode = kCodeNormalParm;
@@ -96,8 +127,10 @@ namespace kagami {
     int GetPriority() const { return this->priority; }
     int GetFlag() const { return flag; }
     bool Good() const { 
-      bool conditionA = ((activity != nullptr) && (parmMode != kCodeIllegalParm)),
-        conditionB = (userFunc && id != kStrEmpty);
+      bool conditionA = 
+        ((activity != nullptr) && (parmMode != kCodeIllegalParm)),
+        conditionB = 
+        (userFunc && id != kStrEmpty);
       return (conditionA || conditionB);
     }
   };

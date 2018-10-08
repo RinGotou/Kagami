@@ -4,26 +4,38 @@
 #include "entry.h"
 
 namespace kagami {
-  using Inst = pair<Entry, deque<Object>>;
+  enum ParameterType {
+    PT_NORMAL, PT_OBJ, PT_RET, PT_PHOLDER
+  };
+
+  class Parameter {
+  public:
+    string data;
+    ParameterType type;
+
+    Parameter(string data, ParameterType type) {
+      this->data = data;
+      this->type = type;
+    }
+  };
+
+  using Action = pair<Entry, deque<Object>>;
 
   using AnalyzerWorkBlock = struct {
     deque<Object> item;
     deque<Entry> symbol;
-    bool insertBetweenObject, dotOperator, needReverse,
-      defineLine, subscriptProcessing;
+    bool insertBetweenObject, needReverse, defineLine;
     Token currentToken;
     Token nextToken;
     Token forwardToken;
-    stack<string> lastBracketStack;
-    string operatorTargetType;
-    size_t mode, nextInsertSubscript, lambdaObjectCount;
+    size_t mode, nextInsertSubscript;
   };
 
   class Analyzer {
     bool health;
     vector<Token> tokens;
     size_t index;
-    vector<Inst> instBase;
+    vector<Action> actionBase;
     string errorString;
 
     vector<string> Scanning(string target);
@@ -54,8 +66,8 @@ namespace kagami {
     size_t GetIdx() const { 
       return index; 
     }
-    vector<Inst> GetOutput() const { 
-      return instBase; 
+    vector<Action> GetOutput() const { 
+      return actionBase; 
     }
 
     bool Good() const { 
