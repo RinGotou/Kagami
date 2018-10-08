@@ -12,6 +12,7 @@
 #include <codecvt>
 #include <cstdlib>
 #include <cctype>
+#include <typeinfo>
 
 #ifndef _NO_CUI_
 #include <iostream>
@@ -21,7 +22,7 @@
 //Disbale SDL2 componets for non-GUI environment
 #define _DISABLE_SDL_
 //Enable all debugging feature and output info
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -61,6 +62,7 @@ namespace kagami {
   class ObjectPlanner;
   class Object;
 
+  using ObjectPointer = Object *;
   using ObjectMap = map<string, Object>;
   using ObjectPair = pair<string, Object>;
   using Parameter = pair<string, Object>;

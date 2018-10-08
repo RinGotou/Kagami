@@ -2,8 +2,10 @@
 
 #include <fstream>
 #include "trace.h"
-
+  
 namespace kagami {
+  enum GroupTypeEnum { G_INT, G_FLOAT, G_STR, G_NUL };
+
   template <class T>
   T &GetObjectStuff(Object &obj) {
     return *static_pointer_cast<T>(obj.Get());
@@ -106,6 +108,9 @@ namespace kagami {
   Message Calling(Activity activity, string args, vector<Object> objects);
   std::wstring s2ws(const std::string &s);
   std::string ws2s(const std::wstring &s);
+  Message CheckEntryAndStart(string id, string typeId, ObjectMap &parm);
 }
+
+
 
 

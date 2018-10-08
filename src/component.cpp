@@ -4,23 +4,38 @@
 #endif
 
 namespace kagami {
-  enum GroupTypeEnum { G_INT, G_DOUBLE, G_STR, G_NUL } ;
-
   GroupTypeEnum GetGroupType(TokenTypeEnum dataTypeA, TokenTypeEnum dataTypeB,
     string dataA, string dataB) {
     Kit kit;
 
     GroupTypeEnum groupType = GroupTypeEnum::G_NUL;
-    if (dataTypeA == T_FLOAT || dataTypeB == T_FLOAT) groupType = G_DOUBLE;
+    if (dataTypeA == T_FLOAT || dataTypeB == T_FLOAT) groupType = G_FLOAT;
     if (dataTypeA == T_INTEGER && dataTypeB == T_INTEGER) groupType = G_INT;
     if (kit.IsString(dataA) || kit.IsString(dataB)) groupType = G_STR;
     if ((dataA == kStrTrue || dataA == kStrFalse) && (dataB == kStrTrue || dataB == kStrFalse)) groupType = G_STR;
     return groupType;
   }
 
-  bool IsStringObject(Object &obj) {
+  inline bool IsStringObject(Object &obj) {
     auto id = obj.GetTypeId();
     return (id == kTypeIdRawString || id == kTypeIdString);
+  }
+
+  inline bool CheckObjectType(Object &obj, string typeId) {
+    return (obj.GetTypeId() == typeId);
+  }
+
+  inline bool IsRawStringObject(Object &obj) {
+    return CheckObjectType(obj, kTypeIdRawString);
+  }
+
+  inline Message CheckEntryAndStart(string id, string typeId, ObjectMap &parm) {
+    Message msg;
+    auto ent = entry::Order(id, typeId);
+    ent.Good() ?
+      msg = ent.Start(parm) :
+      msg.SetCode(kCodeIllegalCall);
+    return msg;
   }
 
   string BinaryOperations(Object &A, Object &B, string OP) {
@@ -33,16 +48,21 @@ namespace kagami {
     auto dataTypeA = A.GetTokenType(), dataTypeB = B.GetTokenType();
     auto groupType = GetGroupType(dataTypeA, dataTypeB, dataA, dataB);
 
-    if (groupType == G_INT || groupType == G_DOUBLE) {
+    if (groupType == G_INT || groupType == G_FLOAT) {
       switch (OPCode) {
       case OperatorCode::ADD:
       case OperatorCode::SUB:
       case OperatorCode::MUL:
       case OperatorCode::DIV:
         switch (groupType) {
-        case G_INT:temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), OP)); break;
-        case G_DOUBLE:temp = to_string(kit.Calc(stod(dataA), stod(dataB), OP)); break;
-        default:break;
+        case G_INT:
+          temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), OP));
+          break;
+        case G_FLOAT:
+          temp = to_string(kit.Calc(stod(dataA), stod(dataB), OP)); 
+          break;
+        default:
+          break;
         }
         break;
       case OperatorCode::IS:
@@ -53,10 +73,14 @@ namespace kagami {
       case OperatorCode::LESS:
         switch (groupType) {
         case G_INT:
-          kit.Logic(stoi(dataA), stoi(dataB), OP) ? temp = kStrTrue : temp = kStrFalse;
+          kit.Logic(stoi(dataA), stoi(dataB), OP) ? 
+            temp = kStrTrue : 
+            temp = kStrFalse;
           break;
-        case G_DOUBLE:
-          kit.Logic(stod(dataA), stod(dataB), OP) ? temp = kStrTrue : temp = kStrFalse;
+        case G_FLOAT:
+          kit.Logic(stod(dataA), stod(dataB), OP) ? 
+            temp = kStrTrue : 
+            temp = kStrFalse;
           break;
         default:
           break;
@@ -111,57 +135,31 @@ namespace kagami {
     return temp;
   }
 
-  Message Plus(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "+")); }
-  Message Sub(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "-")); }
-  Message Multiply(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "*")); }
-  Message Divide(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "/")); }
-  Message Less(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<")); }
-  Message More(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">")); }
-  Message LessOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "<=")); }
-  Message MoreOrEqual(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], ">=")); }
-  Message And(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "&&")); }
-  Message Or(ObjectMap &p) { return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "||")); }
+  inline Message MakeOperatorMsg(ObjectMap &p, string op) {
+    return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], op));
+  }
 
-  Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
-  Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
-  Message If(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionRoot, kStrEmpty); }
-  Message Elif(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeConditionBranch, kStrEmpty); }
-  Message While(ObjectMap &p) { return Message(*static_pointer_cast<string>(p["state"].Get()), kCodeHeadSign, kStrEmpty); }
-  Message Continue(ObjectMap &p) { return Message(kStrEmpty, kCodeContinue, kStrEmpty); }
-  Message Break(ObjectMap &p) { return Message(kStrEmpty, kCodeBreak, kStrEmpty); }
-
-  //pending modify
-  Message LogicEqual(ObjectMap &p) {
-    Object objFirst = p["first"], objSecond = p["second"];
+  Message LogicEqualOperation(ObjectMap &p, bool reverse) {
+    Object &objFirst = p["first"], &objSecond = p["second"];
     Message msg;
 
     if (!IsStringObject(objFirst) && !IsStringObject(objSecond)) {
-      auto ent = entry::Order("__compare", objFirst.GetTypeId(), 1);
-      if (ent.Good()) {
-        msg = ent.Start(p);
-      }
+      msg = CheckEntryAndStart("__compare", objFirst.GetTypeId(), p);
+
+      msg.GetDetail() == kStrTrue && reverse ?
+        msg.SetDetail(kStrFalse) :
+        msg.SetDetail(kStrTrue);
     }
     else {
-      msg.combo(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "=="));
+      reverse ?
+        msg = MakeOperatorMsg(p, "!=") :
+        msg = MakeOperatorMsg(p, "==");
     }
     return msg;
   }
-  Message LogicNotEqual(ObjectMap &p) {
-    Object objFirst = p["first"], objSecond = p["second"];
-    Message msg;
 
-    if (!IsStringObject(objFirst) && !IsStringObject(objSecond)) {
-      auto ent = entry::Order("__compare", objFirst.GetTypeId(), 1);
-      if (ent.Good()) {
-        msg = ent.Start(p);
-      }
-      if (msg.GetDetail() == kStrTrue) msg.SetDetail(kStrFalse);
-      else msg.SetDetail(kStrTrue);
-    }
-    else {
-      msg.combo(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], "!="));
-    }
-    return msg;
+  inline Message MakeConditionMsg(ObjectMap &p, int code) {
+    return Message(GetObjectStuff<string>(p["state"]), code, kStrEmpty);
   }
 
   Message Define(ObjectMap &p) {
@@ -169,6 +167,7 @@ namespace kagami {
     Object &id = p["id"];
     size_t count = 0;
     defHead.emplace_back(GetObjectStuff<string>(id));
+
 
     for (auto &unit : p) {
       if (unit.first == "arg" + to_string(count)) {
@@ -197,16 +196,16 @@ namespace kagami {
 
   Message WriteLog(ObjectMap &p) {
     Message result;
-    auto data = p["msg"];
+    Object &objMsg = p["msg"];
     ofstream ofs("kagami-script.log", std::ios::out | std::ios::app);
 
-    if (data.GetTypeId() == kTypeIdRawString) {
-      const auto ptr = static_pointer_cast<string>(data.Get());
-      if (Kit::IsString(*ptr)) {
-        ofs << ptr->substr(1, ptr->size() - 2) << "\n";
+    if (IsStringObject(objMsg)) {
+      string str = GetObjectStuff<string>(objMsg);
+      if (Kit::IsString(str)) {
+        ofs << str.substr(1, str.size() - 2) << "\n";
       }
       else {
-        ofs << *ptr << "\n";
+        ofs << str << "\n";
       }
     }
 
@@ -214,111 +213,71 @@ namespace kagami {
     return result;
   }
 
-  Message LeftSelfIncreament(ObjectMap &p) {
-    auto object = p["object"];
-    string result;
+  string IncAndDecOperation(Object &obj, bool negative, bool keep) {
+    string res;
 
-    if(object.GetTypeId() == kTypeIdRawString) {
-      const auto origin = GetObjectStuff<string>(object);
-      if (object.GetTokenType() == T_INTEGER) {
-        auto data = stoi(origin);
-        ++data;
-        result = to_string(data);
-        object.Set(make_shared<string>(result), kTypeIdRawString);
+    if (CheckObjectType(obj, kTypeIdRawString)) {
+      const auto origin = GetObjectStuff<string>(obj);
+
+      if (obj.GetTokenType() == T_INTEGER) {
+        int data = stoi(origin);
+        negative ?
+          data -= 1 :
+          data += 1;
+        keep ?
+          res = origin :
+          res = to_string(data);
+        obj.Set(make_shared<string>(res), kTypeIdRawString);
+        
       }
-      else if (object.GetTokenType() == T_FLOAT) {
-        auto data = stod(origin);
-        data += 1.0f;
-        result = to_string(data);
-        object.Set(make_shared<string>(result), kTypeIdRawString);
-      }
-    }
-
-    return Message(kStrRedirect, kCodeSuccess, result);
-  }
-
-  Message LeftSelfDecreament(ObjectMap &p) {
-    auto object = p["object"];
-    string result;
-
-    if (object.GetTypeId() == kTypeIdRawString) {
-      const auto origin = GetObjectStuff<string>(object);
-      if (object.GetTokenType() == T_INTEGER) {
-        auto data = stoi(origin);
-        --data;
-        result = to_string(data);
-        object.Set(make_shared<string>(result), kTypeIdRawString);
-      }
-      else if (object.GetTokenType() == T_FLOAT) {
-        auto data = stod(origin);
-        data -= 1.0f;
-        result = to_string(data);
-        object.Set(make_shared<string>(result), kTypeIdRawString);
+      else if (obj.GetTokenType() == T_FLOAT) {
+        double data = stod(origin);
+        negative ?
+          data -= 1.0f :
+          data += 1.0f;
+        keep ?
+          res = origin :
+          res = to_string(data);
+        obj.Set(make_shared<string>(res), kTypeIdRawString);
       }
     }
 
+    return res;
+  }
+
+  inline void CheckSelfOperatorMsg(Message &msg, string res) {
+    res.empty() ?
+      msg = Message(kStrRedirect, kCodeSuccess, res) :
+      msg = Message(kStrFatalError, kCodeIllegalParm, "Illegal self-operator.");
+  }
+
+  Message SelfOperator(ObjectMap &p, bool negative, bool keep) {
+    Message msg;
+    Object &obj = p["object"];
+    string result = IncAndDecOperation(obj, negative, keep);
     return Message(kStrRedirect, kCodeSuccess, result);
   }
 
-  Message RightSelfIncreament(ObjectMap &p) {
-    auto object = p["object"];
-    string result;
-
-    if (object.GetTypeId() == kTypeIdRawString) {
-      auto origin = GetObjectStuff<string>(object);
-      result = origin;
-      if (object.GetTokenType() == T_INTEGER) {
-        auto data = stoi(origin);
-        ++data;
-        object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
-      }
-      else if (object.GetTokenType() == T_FLOAT) {
-        auto data = stod(origin);
-        data += 1.0f;
-        object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
-      }
-    }
-
-    return Message(kStrRedirect, kCodeSuccess, result);
-  }
-
-  Message RightSelfDecreament(ObjectMap &p) {
-    auto object = p["object"];
-    string result;
-
-    if (object.GetTypeId() == kTypeIdRawString) {
-      auto origin = GetObjectStuff<string>(object);
-      result = origin;
-      if (object.GetTokenType() == T_INTEGER) {
-        auto data = stoi(origin);
-        --data;
-        object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
-      }
-      else if (object.GetTokenType() == T_FLOAT) {
-        auto data = stod(origin);
-        data -= 1.0f;
-        object.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
-      }
-    }
-
-    return Message(kStrRedirect, kCodeSuccess, result);
-  }
 
   Message GetRawStringType(ObjectMap &p) {
     Object &obj = p["object"];
     string result;
-    if (obj.GetTypeId() == kTypeIdRawString) {
+    if (CheckObjectType(obj, kTypeIdRawString)) {
       string str = GetObjectStuff<string>(obj);
-      Kit::IsString(str) ? str = Kit::GetRawString(str) : str = str;
+
+      Kit::IsString(str) ? 
+        str = Kit::GetRawString(str) : 
+        str = str;
+
       switch (Kit::GetTokenType(str)) {
-      case TokenTypeEnum::T_BOOLEAN:result = "'boolean'"; break;
-      case TokenTypeEnum::T_GENERIC:result = "'generic'"; break;
-      case TokenTypeEnum::T_INTEGER:result = "'integer'"; break;
-      case TokenTypeEnum::T_FLOAT:result = "'double'"; break;
-      case TokenTypeEnum::T_SYMBOL:result = "'symbol'"; break;
-      case TokenTypeEnum::T_BLANK:result = "'blank'"; break;
-      case TokenTypeEnum::T_STRING:result = "'string'"; break;
-      case TokenTypeEnum::T_NUL:result = "'null'"; break;
+      case T_BOOLEAN:result = "'boolean'"; break;
+      case T_GENERIC:result = "'generic'"; break;
+      case T_INTEGER:result = "'integer'"; break;
+      case T_FLOAT:result = "'double'"; break;
+      case T_SYMBOL:result = "'symbol'"; break;
+      case T_BLANK:result = "'blank'"; break;
+      case T_STRING:result = "'string'"; break;
+      case T_NUL:result = "'null'"; break;
       default:result = "'null'"; break;
       }
     }
@@ -335,10 +294,11 @@ namespace kagami {
 
   Message BindAndSet(ObjectMap &p) {
     Object &obj = p["object"], source = p["source"];
-    Object *targetObj = nullptr;
+    ObjectPointer targetObj = nullptr;
     bool existed;
     Message msg;
     string objId;
+
     if (obj.IsRef()) {
       existed = true;
       targetObj = &obj;
@@ -350,8 +310,7 @@ namespace kagami {
       }
       objId = GetObjectStuff<string>(obj);
       targetObj = entry::FindObject(objId);
-      if (targetObj == nullptr) existed = false;
-      else existed = true;
+      existed = !(targetObj == nullptr);
     }
     
     if (existed) {
@@ -381,26 +340,21 @@ namespace kagami {
   }
 
   Message Print(ObjectMap &p) {
-    Message result;
-    auto &object = p[kStrObject];
+    Message msg;
+    Object &obj = p[kStrObject];
+
     auto errorMsg = []() {
       std::cout << "You can't print this object." << std::endl;
     };
 
-    if (Kit::FindInStringGroup("__print", object.GetMethods())) {
-      auto provider = entry::Order("__print", object.GetTypeId(), -1);
-      if (provider.Good()) {
-        result = provider.Start(p);
-      }
-      else {
-        errorMsg();
-      }
+    if (!Kit::FindInStringGroup("__print", obj.GetMethods())) {
+      errorMsg();
     } 
     else {
-      errorMsg();
+      Message tempMsg = CheckEntryAndStart("__print", obj.GetTypeId(), p);
+      if (tempMsg.GetCode() == kCodeIllegalCall) errorMsg();
     }
-
-    return result;
+    return msg;
   }
 
   Message TimeReport(ObjectMap &p) {
@@ -423,7 +377,6 @@ namespace kagami {
       ObjectMap objMap;
       objMap.insert(ObjectPair("not_wrap", Object()));
       objMap.insert(ObjectPair(kStrObject, it->second));
-      //objMap.insert(ObjectPair("object", it->second));
       Print(objMap);
     }
     string buf;
@@ -432,22 +385,35 @@ namespace kagami {
   }
 
   Message Convert(ObjectMap &p) {
-    auto &str = p["object"];
-    if (str.GetTypeId() != kTypeIdRawString) {
-      return Message(kStrFatalError, kCodeBadExpression, "Cannot convert to basic type(01)");
-    }
-    Object obj;
-    string origin = *static_pointer_cast<string>(str.Get());
-    if (Kit::IsString(origin)) origin = Kit::GetRawString(origin);
-    auto type = Kit::GetTokenType(origin);
-    if (type == T_NUL || type == T_GENERIC) {
-      return Message(kStrFatalError, kCodeBadExpression, "Cannot convert to basic type(02)");
-    }
-    obj.Manage(origin)
-      .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-      .SetTokenType(type);
+    Object &objStr = p["object"];
     Message msg;
-    msg.SetObject(obj, "__result");
+
+    if (objStr.GetTypeId() != kTypeIdRawString) {
+      msg = Message(kStrFatalError, kCodeBadExpression, "Cannot convert to basic type(01)");
+    }
+    else {
+      Object objTarget;
+      string origin = GetObjectStuff<string>(objStr);
+
+      Kit::IsString(origin) ?
+        origin = Kit::GetRawString(origin) :
+        origin = origin;
+
+      auto type = Kit::GetTokenType(origin);
+
+      if (type == T_NUL || type == T_GENERIC) {
+        msg = Message(kStrFatalError, kCodeBadExpression, "Cannot convert to basic type(02)");
+      }
+      else {
+        objTarget.Manage(origin)
+          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetTokenType(type);
+        msg.SetObject(objTarget, "__result");
+      }
+
+    }
+
+
     return msg;
   }
 
@@ -467,10 +433,10 @@ namespace kagami {
 
   Message ArrayMaker(ObjectMap &p) {
     Object &objSize = p["__size"];
-    int size = stoi(GetObjectStuff<string>(objSize));
     vector<Object> base;
     Message msg;
-    base.reserve(size);
+    int size = stoi(GetObjectStuff<string>(objSize));
+
     if (!p.empty()) {
       for (int i = 0; i < size; i++) {
         base.emplace_back(p["item" + to_string(i)]);
@@ -530,8 +496,7 @@ namespace kagami {
 
   Message Case(ObjectMap &p) {
     Object &obj = p["object"];
-    auto typeId = obj.GetTypeId();
-    if (typeId != kTypeIdRawString && typeId != kTypeIdString) {
+    if (IsStringObject(obj)) {
       //TODO:Re-design
       return Message(kStrFatalError, kCodeIllegalParm, "Case-When is not supported yet.(01)");
     }
@@ -547,11 +512,12 @@ namespace kagami {
   Message When(ObjectMap &p) {
     //TODO:Re-Design
     Object &objSize = p["__size"];
+    ObjectPointer caseHead = entry::FindObject("__case");
     int size = stoi(GetObjectStuff<string>(objSize));
-    Object *caseHead = entry::FindObject("__case");
     string caseContent = GetObjectStuff<string>(*caseHead);
     string typeId;
     bool result = false, state = true;
+
     for (int i = 0; i < size; ++i) {
       Object &obj = p["case" + to_string(i)];
       typeId = obj.GetTypeId();
@@ -559,11 +525,14 @@ namespace kagami {
         state = false;
         break;
       }
+
       string content = GetObjectStuff<string>(obj);
+
       if (content == caseContent) {
         result = true;
         break;
       }
+
     }
 
     Message msg;
@@ -575,6 +544,33 @@ namespace kagami {
       msg = Message(kStrFalse, kCodeWhen, kStrEmpty);
     return msg;
   }
+
+  Message Plus(ObjectMap &p) { return MakeOperatorMsg(p, "+"); }
+  Message Sub(ObjectMap &p) { return MakeOperatorMsg(p, "-"); }
+  Message Multiply(ObjectMap &p) { return MakeOperatorMsg(p, "*"); }
+  Message Divide(ObjectMap &p) { return MakeOperatorMsg(p, "/"); }
+  Message Less(ObjectMap &p) { return MakeOperatorMsg(p, "<"); }
+  Message More(ObjectMap &p) { return MakeOperatorMsg(p, ">"); }
+  Message LessOrEqual(ObjectMap &p) { return MakeOperatorMsg(p, "<="); }
+  Message MoreOrEqual(ObjectMap &p) { return MakeOperatorMsg(p, ">="); }
+  Message And(ObjectMap &p) { return MakeOperatorMsg(p, "&&"); }
+  Message Or(ObjectMap &p) { return MakeOperatorMsg(p, "||"); }
+
+  Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
+  Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
+  Message If(ObjectMap &p) { return MakeConditionMsg(p, kCodeConditionRoot); }
+  Message Elif(ObjectMap &p) { return MakeConditionMsg(p, kCodeConditionBranch); }
+  Message While(ObjectMap &p) { return MakeConditionMsg(p, kCodeHeadSign); }
+  Message Continue(ObjectMap &p) { return Message(kStrEmpty, kCodeContinue, kStrEmpty); }
+  Message Break(ObjectMap &p) { return Message(kStrEmpty, kCodeBreak, kStrEmpty); }
+
+  Message LogicEqual(ObjectMap &p) { return LogicEqualOperation(p, false); }
+  Message LogicNotEqual(ObjectMap &p) { return LogicEqualOperation(p, true); }
+
+  Message LeftSelfIncreament(ObjectMap &p) { return SelfOperator(p, false, false); }
+  Message LeftSelfDecreament(ObjectMap &p) { return SelfOperator(p, true, false); }
+  Message RightSelfIncreament(ObjectMap &p) { return SelfOperator(p, false, true); }
+  Message RightSelfDecreament(ObjectMap &p) { return SelfOperator(p, true, true); }
 
   void GenericRegister() {
     using namespace entry;
@@ -608,7 +604,7 @@ namespace kagami {
     AddGenericEntry(GT_CONTINUE, Entry(Continue, "", GT_CONTINUE));
     AddGenericEntry(GT_BREAK, Entry(Break, "", GT_BREAK));
     AddGenericEntry(GT_CASE, Entry(Case, "object", GT_CASE));
-    AddGenericEntry(GT_WHEN, Entry(When, "case", GT_WHEN, kCodeAutoSize));
+    AddGenericEntry(GT_WHEN, Entry(When, "value", GT_WHEN, kCodeAutoSize));
   }
 
   void BasicUtilityRegister() {
@@ -630,7 +626,9 @@ namespace kagami {
     GenericRegister();
     BasicUtilityRegister();
     InitPlanners();
+#if defined(_WIN32)
     InitLibraryHandler();
+#endif
 #if not defined(_DISABLE_SDL_)
     LoadSDLStuff();
 #endif
