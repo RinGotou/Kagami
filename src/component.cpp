@@ -532,7 +532,6 @@ namespace kagami {
         result = true;
         break;
       }
-
     }
 
     Message msg;
