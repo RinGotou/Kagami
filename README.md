@@ -1,8 +1,5 @@
 # Kagami
 
-## *Something
-I'm back!No postgraduate anymore.
-
 ## What's this?
 It's a simple and tiny script language.The name of this project is from Japanese kanji "鏡（かがみ）".
 
@@ -33,7 +30,7 @@ There's no any documents for this language and interpreter for now(because of de
 
 [×] Class support
 
-[×] C Function support
+[√] C Function support(partial and experimental)
 
 [×] SDL2 support
 
