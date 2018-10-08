@@ -255,8 +255,5 @@ namespace kagami {
     kOpRSelfInc = "__rsinc",
     kOpLSelfDec = "__lsdec",
     kOpRSelfDec = "__rsdec";
-
-
-  const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
 }
 

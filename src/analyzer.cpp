@@ -93,7 +93,7 @@ namespace kagami {
       }
       else {
         escapeFlag ?
-          currentChar = kit.ConvertChar(currentChar) :
+          currentChar = kit.GetEscapeChar(currentChar) :
           currentChar = currentChar;
         current.append(1, currentChar);
       }
@@ -201,12 +201,12 @@ namespace kagami {
     }
     tempSymbol->push_back(blk->symbol.back());
     blk->symbol.pop_back();
-    int i = 2;
-    while (i > 0) {
+
+    for (int count = 2; count > 0; count -= 1) {
       tempObject->push_back(blk->item.back());
       blk->item.pop_back();
-      --i;
     }
+
     while (!tempSymbol->empty()) {
       blk->symbol.push_back(tempSymbol->front());
       tempSymbol->pop_front();
@@ -287,8 +287,6 @@ namespace kagami {
 
   bool Analyzer::RightBracket(AnalyzerWorkBlock *blk) {
     bool result = true;
-    deque<Entry> tempSymbol;
-    deque<Object> tempObject;
     bool checked = false;
 
     if (!blk->lastBracketStack.empty() &&
