@@ -2,7 +2,7 @@
 
 #include <fstream>
 #include "trace.h"
-  
+ 
 namespace kagami {
   enum GroupTypeEnum { G_INT, G_FLOAT, G_STR, G_NUL };
 
@@ -15,6 +15,15 @@ namespace kagami {
   shared_ptr<void> SimpleSharedPtrCopy(shared_ptr<void> target) {
     T temp(*static_pointer_cast<T>(target));
     return make_shared<T>(temp);
+  }
+
+  template <class T>
+  Object MakeObject(T t) {
+    string str = to_string(t);
+    return Object().Manage(str)
+      .SetMethods(type::GetMethods(kTypeIdRawString))
+      .SetTokenType(Kit::GetTokenType(str))
+      .SetRo(false);
   }
 
   class Meta {

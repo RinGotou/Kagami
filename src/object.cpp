@@ -61,13 +61,23 @@ namespace kagami {
       ref == object.ref);
   }
 
-  Object &Object::Copy(Object &object) {
-    ptr = object.ptr;
-    typeId = object.typeId;
-    methods = object.methods;
-    tokenTypeEnum = object.tokenTypeEnum;
-    ro = object.ro;
-    ref = object.ref;
+  Object &Object::Copy(Object &object, bool force) {
+    auto mod = [&]() {
+      ptr = object.ptr;
+      typeId = object.typeId;
+      methods = object.methods;
+      tokenTypeEnum = object.tokenTypeEnum;
+      ro = object.ro;
+      ref = object.ref;
+      constructor = object.constructor;
+    };
+    if (force) {
+      mod();
+    }
+    else {
+      if (ref) GetTargetObject()->Copy(object);
+      else mod();
+    }
     return *this;
   }
 

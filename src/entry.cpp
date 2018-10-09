@@ -317,6 +317,16 @@ namespace kagami {
       return result;
     }
 
+    string GetMethods(string name) {
+      string result;
+      const auto it = GetPlannerBase().find(name);
+
+      if (it != GetPlannerBase().end()) {
+        result = it->second.GetMethods();
+      }
+      return result;
+    }
+
     void AddTemplate(string name, ObjectPlanner temp) {
       GetPlannerBase().insert(pair<string, ObjectPlanner>(name, temp));
     }

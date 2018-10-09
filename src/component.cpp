@@ -227,7 +227,7 @@ namespace kagami {
         keep ?
           res = origin :
           res = to_string(data);
-        obj.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
+        obj.Copy(MakeObject(data));
         
       }
       else if (obj.GetTokenType() == T_FLOAT) {
@@ -238,7 +238,7 @@ namespace kagami {
         keep ?
           res = origin :
           res = to_string(data);
-        obj.Set(make_shared<string>(to_string(data)), kTypeIdRawString);
+        obj.Copy(MakeObject(data));
       }
     }
 
@@ -406,7 +406,7 @@ namespace kagami {
       }
       else {
         objTarget.Manage(origin)
-          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetMethods(type::GetMethods(kTypeIdRawString))
           .SetTokenType(type);
         msg.SetObject(objTarget, "__result");
       }
@@ -445,7 +445,7 @@ namespace kagami {
     msg.SetObject(Object()
       .SetConstructorFlag()
       .Set(make_shared<vector<Object>>(base), kTypeIdArrayBase)
-      .SetMethods(type::GetPlanner(kTypeIdArrayBase)->GetMethods())
+      .SetMethods(type::GetMethods(kTypeIdArrayBase))
       .SetRo(false)
       , "__result");
     return msg;
@@ -459,13 +459,13 @@ namespace kagami {
     for (auto &unit : vec) {
       output.emplace_back(Object()
         .Set(make_shared<string>(unit),kTypeIdString)
-        .SetMethods(type::GetPlanner(kTypeIdString)->GetMethods())
+        .SetMethods(type::GetMethods(kTypeIdString))
         .SetRo(true)
       );
       msg.SetObject(Object()
         .SetConstructorFlag()
         .Set(make_shared<vector<Object>>(output), kTypeIdArrayBase)
-        .SetMethods(type::GetPlanner(kTypeIdArrayBase)->GetMethods())
+        .SetMethods(type::GetMethods(kTypeIdArrayBase))
         .SetRo(true), "__result");
     }
     return msg;
@@ -520,8 +520,7 @@ namespace kagami {
 
     for (int i = 0; i < size; ++i) {
       Object &obj = p["value" + to_string(i)];
-      typeId = obj.GetTypeId();
-      if (typeId != kTypeIdRawString && typeId != kTypeIdString) {
+      if (!IsStringObject(obj)) {
         state = false;
         break;
       }
