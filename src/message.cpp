@@ -1,10 +1,9 @@
 #include "message.h"
 
 namespace kagami {
-  void Message::SetObject(Object &object, string id) {
+  void Message::SetObject(Object &object) {
     this->object = make_shared<Object>(object);
     this->code = kCodeObject;
-    this->detail = id;
   }
 
   Object Message::GetObj() const {

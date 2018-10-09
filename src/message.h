@@ -15,7 +15,7 @@ namespace kagami {
       value(value), detail(detail), code(code), idx(0) {}
 
     Object GetObj() const;
-    void SetObject(Object &object, string id);
+    void SetObject(Object &object);
     Message &combo(string value, int code, string detail);
     Message &SetValue(const string &value);
     Message &SetCode(const int &code);
@@ -26,6 +26,5 @@ namespace kagami {
     int GetCode() const { return this->code; }
     string GetDetail() const { return this->detail; }
     size_t GetIndex() const { return idx; }
-
   };
 }
