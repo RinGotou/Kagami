@@ -582,8 +582,8 @@ namespace kagami {
           .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
           .SetTokenType(kagami::Kit::GetTokenType(detail));
         if (entry::IsOperatorToken(ent.GetTokenEnum())
-          && sub + 1 < actionBase.size()) {
-          auto token = actionBase[sub + 1].first.GetTokenEnum();
+          && idx + 1 < actionBase.size()) {
+          auto token = actionBase[idx + 1].first.GetTokenEnum();
           if (entry::IsOperatorToken(token)) {
             retBase.emplace_front(obj);
           }
