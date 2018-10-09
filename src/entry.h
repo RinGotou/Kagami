@@ -147,23 +147,27 @@ namespace kagami {
 
     using EntryMapUnit = map<string, Entry>::value_type;
 
-    list<ObjectManager> &GetObjectStack();
-    ObjectManager &GetCurrentManager();
-    string GetTypeId(string sign);
-    void AddEntry(Entry temp);
-    void AddGenericEntry(GenericTokenEnum token, Entry temp);
+    ContainerPool &GetContainerPool();
+    ObjectContainer &GetCurrentContainer();
+    ObjectContainer &CreateContainer();
+    Object *FindObjectInCurrentContainer(string sign);
     Object *FindObject(string name);
-    ObjectManager &CreateManager();
-    bool DisposeManager();
-    Entry Order(string id, string type, int size);
-    Object *FindObjectInCurrentManager(string sign);
     Object *CreateObject(string sign, Object &object);
-    GenericTokenEnum GetGenericToken(string src);
+
+    string GetTypeId(string sign);
     string GetGenTokenValue(GenericTokenEnum token);
-    OperatorCode GetOperatorCode(string src);
-    Entry Order(string id, string type = kTypeIdNull, int size = -1);
+    void AddEntry(Entry temp);
+    void AddGenericEntry(Entry temp);
+    
+    bool DisposeManager();
     bool IsOperatorToken(GenericTokenEnum token);
     bool HasTailTokenRequest(GenericTokenEnum token);
+
+    Entry Order(string id, string type = kTypeIdNull, int size = -1);
+    GenericTokenEnum GetGenericToken(string src);
+    OperatorCode GetOperatorCode(string src);
+    
+
   }
 
   namespace type {

@@ -251,7 +251,7 @@ namespace kagami {
   }
 
   void Machine::CaseHead(Message &msg, MachCtlBlk *blk) {
-    entry::CreateManager();
+    entry::CreateContainer();
     blk->modeStack.push(blk->currentMode);
     blk->currentMode = kModeCaseJump;
     blk->conditionStack.push(false);
@@ -271,7 +271,7 @@ namespace kagami {
 
   void Machine::ConditionRoot(bool value, MachCtlBlk *blk) {
     blk->modeStack.push(blk->currentMode);
-    entry::CreateManager();
+    entry::CreateContainer();
     if (value == true) {
       blk->currentMode = kModeCondition;
       blk->conditionStack.push(true);
@@ -286,7 +286,7 @@ namespace kagami {
     if (!blk->conditionStack.empty()) {
       if (blk->conditionStack.top() == false && blk->currentMode == kModeNextCondition
         && value == true) {
-        entry::CreateManager();
+        entry::CreateContainer();
         blk->currentMode = kModeCondition;
         blk->conditionStack.top() = true;
       }
@@ -315,7 +315,7 @@ namespace kagami {
         }
       }
       else {
-        entry::CreateManager();
+        entry::CreateContainer();
         blk->conditionStack.top() = true;
         switch (blk->currentMode) {
         case kModeNextCondition:
@@ -336,12 +336,12 @@ namespace kagami {
   void Machine::HeadSign(bool value, MachCtlBlk *blk) {
     if (blk->cycleNestStack.empty()) {
       blk->modeStack.push(blk->currentMode);
-      entry::CreateManager();
+      entry::CreateContainer();
     }
     else {
       if (blk->cycleNestStack.top() != blk->current - 1) {
         blk->modeStack.push(blk->currentMode);
-        entry::CreateManager();
+        entry::CreateContainer();
       }
     }
     if (value == true) {
@@ -378,7 +378,7 @@ namespace kagami {
           blk->cycleTailStack.push(blk->current - 1);
         }
         blk->current = blk->cycleNestStack.top();
-        entry::GetCurrentManager().clear();
+        entry::GetCurrentContainer().clear();
         break;
       case kModeCycleJump:
         if (blk->sContinue) {
@@ -389,7 +389,7 @@ namespace kagami {
           blk->currentMode = kModeCycle;
           blk->modeStack.top() = blk->currentMode;
           blk->sContinue = false;
-          entry::GetCurrentManager().clear();
+          entry::GetCurrentContainer().clear();
         }
         else {
           if (blk->sBreak) blk->sBreak = false;
@@ -478,7 +478,7 @@ namespace kagami {
           obj.Ref(*ptr);
         }
         else {
-          errorString = "Object is not found - " + obj.GetOriginId();
+          errorString = "Object is not found - " + parm.data;
           errorArg = true;
         }
         break;
@@ -664,8 +664,8 @@ namespace kagami {
     return result;
   }
 
-  void Machine::InitGlobalObject(bool createManager) {
-    if (createManager) entry::CreateManager();
+  void Machine::InitGlobalObject(bool createContainer) {
+    if (createContainer) entry::CreateContainer();
     if (isMain) {
       entry::CreateObject("__name__", Object()
         .Manage("'__main__'")
@@ -679,7 +679,7 @@ namespace kagami {
     }
   }
 
-  Message Machine::Run(bool createManager) {
+  Message Machine::Run(bool createContainer) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
     Meta *meta = nullptr;
@@ -696,7 +696,7 @@ namespace kagami {
 
     if (storage.empty()) return result;
 
-    InitGlobalObject(createManager);
+    InitGlobalObject(createContainer);
     if (result.GetCode() < kCodeSuccess) return result;
 
     //Main state machine
@@ -797,14 +797,14 @@ namespace kagami {
       if (judged) judged = false;
     }
 
-    if (createManager) entry::DisposeManager();
+    if (createContainer) entry::DisposeManager();
     delete blk;
     return result;
   }
 
   Message Machine::RunAsFunction(ObjectMap &p) {
     Message msg;
-    auto &base = entry::CreateManager();
+    auto &base = entry::CreateContainer();
     for (auto &unit : p) {
       base.Add(unit.first, unit.second);
     }
@@ -818,11 +818,11 @@ namespace kagami {
         msg.SetObject(obj, "__result");
       }
     }
-    Object *funcSign = entry::GetCurrentManager().Find(kStrUserFunc);
+    Object *funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
     string funcId = *static_pointer_cast<string>(p[kStrUserFunc].Get());
     while (funcSign == nullptr) {
       entry::DisposeManager();
-      funcSign = entry::GetCurrentManager().Find(kStrUserFunc);
+      funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
       if (funcSign != nullptr) {
         string value = *static_pointer_cast<string>(p[kStrUserFunc].Get());
         if (value == funcId) break;

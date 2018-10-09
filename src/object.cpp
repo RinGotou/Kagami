@@ -9,12 +9,8 @@ namespace kagami {
     typeId = kTypeIdNull;
     tokenTypeEnum = TokenTypeEnum::T_NUL;
     ro = false;
-    permanent = false;
     ref = false;
     constructor = false;
-    placeholder = false;
-    retSign = false;
-    argSign = false;
   }
 
   Object &Object::Manage(string t, string typeId) {
@@ -52,7 +48,6 @@ namespace kagami {
     methods.clear();
     tokenTypeEnum = TokenTypeEnum::T_NUL;
     ro = false;
-    permanent = false;
     ref = false;
   }
 
@@ -62,9 +57,7 @@ namespace kagami {
       methods == object.methods &&
       tokenTypeEnum == object.tokenTypeEnum &&
       ro == object.ro &&
-      permanent == object.permanent &&
       constructor == object.constructor &&
-      placeholder == object.placeholder &&
       ref == object.ref);
   }
 
@@ -75,8 +68,6 @@ namespace kagami {
     tokenTypeEnum = object.tokenTypeEnum;
     ro = object.ro;
     ref = object.ref;
-    retSign = object.retSign;
-    argSign = object.argSign;
     return *this;
   }
 
@@ -114,11 +105,6 @@ namespace kagami {
     return *this;
   }
 
-  Object &Object::SetPermanent(bool permanent) {
-    this->permanent = permanent;
-    return *this;
-  }
-
   string Object::GetMethods() {
     if (ref) return GetTargetObject()->GetMethods();
     return methods;
@@ -140,12 +126,13 @@ namespace kagami {
     return result;
   }
 
-  bool ObjectManager::Add(string sign, Object &source) {
+  bool ObjectContainer::Add(string sign, Object &source) {
     if (!CheckObject(sign)) return false;
     base.push_back(NamedObject(sign, Object().Copy(source)));
     return true;
   }
-  Object *ObjectManager::Find(string sign) {
+
+  Object *ObjectContainer::Find(string sign) {
     Object *object = nullptr;
     if (base.empty()) return object;
     for (size_t i = 0; i < base.size(); ++i) {
@@ -156,7 +143,8 @@ namespace kagami {
     }
     return object;
   }
-  void ObjectManager::Dispose(string sign) {
+
+  void ObjectContainer::Dispose(string sign) {
     size_t pos = 0;
     bool found = false;
     for (size_t i = 0; i < base.size(); ++i) {
@@ -168,14 +156,8 @@ namespace kagami {
     }
     if (found) base.erase(pos);
   }
-  void ObjectManager::clear() {
-    list<NamedObject> temp;
-    for (size_t i = 0; i < base.size(); ++i) {
-      if (base[i].second.IsPermanent()) {
-        temp.push_back(base[i]);
-      }
-    }
+
+  void ObjectContainer::clear() {
     base.clear();
-    base.copy(temp);
   }
 }
