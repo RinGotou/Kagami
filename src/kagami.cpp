@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
   //switch main code between test case and normal case.
   //this macro can be found in the head of this file.
 #ifdef _ENABLE_DEBUGGING_
-  auto &base = kagami::entry::GetObjectStack();
+  auto &base = kagami::entry::GetContainerPool();
   //set your own test script path here
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
   scriptCore.PrintEvents(nullptr, "C:\\workspace\\test.kagami");

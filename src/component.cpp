@@ -189,7 +189,7 @@ namespace kagami {
       obj.Set(valueObj.Get(), typeId)
         .SetMethods(valueObj.GetMethods())
         .SetTokenType(valueObj.GetTokenType());
-      entry::GetCurrentManager().Add(kStrRetValue, obj);
+      entry::GetCurrentContainer().Add(kStrRetValue, obj);
     }
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
   }
@@ -573,37 +573,37 @@ namespace kagami {
 
   void GenericRegister() {
     using namespace entry;
-    AddGenericEntry(GT_NOP, Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
-    AddGenericEntry(GT_ARRAY, Entry(ArrayMaker, "item", GT_ARRAY, kCodeAutoSize));
-    AddGenericEntry(GT_END, Entry(End, "", GT_END));
-    AddGenericEntry(GT_ELSE, Entry(Else, "", GT_ELSE));
-    AddGenericEntry(GT_IF, Entry(If, "state", GT_IF));
-    AddGenericEntry(GT_WHILE, Entry(While, "state", GT_WHILE));
-    AddGenericEntry(GT_ELIF, Entry(Elif, "state", GT_ELIF));
-    AddGenericEntry(GT_BIND, Entry(BindAndSet, "object|source", GT_BIND, kCodeNormalParm, 0));
-    AddGenericEntry(GT_ADD, Entry(Plus, "first|second", GT_ADD, kCodeNormalParm, 2));
-    AddGenericEntry(GT_SUB, Entry(Sub, "first|second", GT_SUB, kCodeNormalParm, 2));
-    AddGenericEntry(GT_MUL, Entry(Multiply, "first|second", GT_MUL, kCodeNormalParm, 3));
-    AddGenericEntry(GT_DIV, Entry(Divide, "first|second", GT_DIV, kCodeNormalParm, 3));
-    AddGenericEntry(GT_IS, Entry(LogicEqual, "first|second", GT_IS, kCodeNormalParm, 1));
-    AddGenericEntry(GT_LESS_OR_EQUAL, Entry(LessOrEqual, "first|second", GT_LESS_OR_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(GT_MORE_OR_EQUAL, Entry(MoreOrEqual, "first|second", GT_MORE_OR_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(GT_NOT_EQUAL, Entry(LogicNotEqual, "first|second", GT_NOT_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(GT_MORE, Entry(More, "first|second", GT_MORE, kCodeNormalParm, 1));
-    AddGenericEntry(GT_LESS, Entry(Less, "first|second", GT_LESS, kCodeNormalParm, 1));
-    AddGenericEntry(GT_LSELF_INC, Entry(LeftSelfIncreament, "object", GT_LSELF_INC));
-    AddGenericEntry(GT_LSELF_DEC, Entry(LeftSelfDecreament, "object", GT_LSELF_DEC));
-    AddGenericEntry(GT_RSELF_INC, Entry(RightSelfIncreament, "object", GT_RSELF_INC));
-    AddGenericEntry(GT_RSELF_DEC, Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
-    AddGenericEntry(GT_AND, Entry(And, "first|second", GT_AND, kCodeNormalParm, 1));
-    AddGenericEntry(GT_OR, Entry(Or, "first|second", GT_OR, kCodeNormalParm, 1));
-    AddGenericEntry(GT_DEF, Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
-    AddGenericEntry(GT_RETURN, Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
-    AddGenericEntry(GT_TYPE_ASSERT, Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
-    AddGenericEntry(GT_CONTINUE, Entry(Continue, "", GT_CONTINUE));
-    AddGenericEntry(GT_BREAK, Entry(Break, "", GT_BREAK));
-    AddGenericEntry(GT_CASE, Entry(Case, "object", GT_CASE));
-    AddGenericEntry(GT_WHEN, Entry(When, "value", GT_WHEN, kCodeAutoSize));
+    AddGenericEntry(Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
+    AddGenericEntry(Entry(ArrayMaker, "item", GT_ARRAY, kCodeAutoSize));
+    AddGenericEntry(Entry(End, "", GT_END));
+    AddGenericEntry(Entry(Else, "", GT_ELSE));
+    AddGenericEntry(Entry(If, "state", GT_IF));
+    AddGenericEntry(Entry(While, "state", GT_WHILE));
+    AddGenericEntry(Entry(Elif, "state", GT_ELIF));
+    AddGenericEntry(Entry(BindAndSet, "object|source", GT_BIND, kCodeNormalParm, 0));
+    AddGenericEntry(Entry(Plus, "first|second", GT_ADD, kCodeNormalParm, 2));
+    AddGenericEntry(Entry(Sub, "first|second", GT_SUB, kCodeNormalParm, 2));
+    AddGenericEntry(Entry(Multiply, "first|second", GT_MUL, kCodeNormalParm, 3));
+    AddGenericEntry(Entry(Divide, "first|second", GT_DIV, kCodeNormalParm, 3));
+    AddGenericEntry(Entry(LogicEqual, "first|second", GT_IS, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LessOrEqual, "first|second", GT_LESS_OR_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(MoreOrEqual, "first|second", GT_MORE_OR_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LogicNotEqual, "first|second", GT_NOT_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(More, "first|second", GT_MORE, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(Less, "first|second", GT_LESS, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LeftSelfIncreament, "object", GT_LSELF_INC));
+    AddGenericEntry(Entry(LeftSelfDecreament, "object", GT_LSELF_DEC));
+    AddGenericEntry(Entry(RightSelfIncreament, "object", GT_RSELF_INC));
+    AddGenericEntry(Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
+    AddGenericEntry(Entry(And, "first|second", GT_AND, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(Or, "first|second", GT_OR, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
+    AddGenericEntry(Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
+    AddGenericEntry(Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
+    AddGenericEntry(Entry(Continue, "", GT_CONTINUE));
+    AddGenericEntry(Entry(Break, "", GT_BREAK));
+    AddGenericEntry(Entry(Case, "object", GT_CASE));
+    AddGenericEntry(Entry(When, "value", GT_WHEN, kCodeAutoSize));
   }
 
   void BasicUtilityRegister() {

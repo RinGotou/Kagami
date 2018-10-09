@@ -3,24 +3,22 @@
 #include "list.h" 
 
 namespace kagami {
-  class ObjectManager;
+  class ObjectContainer;
   using Destructor = void(*)(shared_ptr<void>);
-  using ObjectStack = kagami::list<ObjectManager>;
+  using ContainerPool = kagami::list<ObjectContainer>;
 
   /*Object Class
   A shared void pointer is packaged in this.Almost all variables and
   constants are managed by shared pointers.This class will be packaged
-  in ObjectManager class.
+  in ObjectContainer class.
   */
   class Object {
     using TargetObject = struct { Object *ptr; };
     std::shared_ptr<void> ptr;
     string typeId;
     string methods;
-    string originId;
     TokenTypeEnum tokenTypeEnum;
-    bool ro, permanent, ref, constructor, placeholder, retSign, argSign;
-    bool hasDestructor;
+    bool ro, ref, constructor;
     Object *parent;
 
     Object *GetTargetObject() { return static_pointer_cast<TargetObject>(ptr)->ptr; }
@@ -38,16 +36,13 @@ namespace kagami {
     Object &AppendMethod(string method);
     Object &SetTokenType(TokenTypeEnum tokenTypeEnum);
     Object &SetRo(bool ro);
-    Object &SetPermanent(bool permanent);
     string GetMethods();
     TokenTypeEnum GetTokenType();
     bool IsRo();
     bool ConstructorFlag();
 
-    string GetOriginId() const { return originId; }
     void SetParentObject(Object &object) { parent = &object; }
     Object *GetParentObject() { return parent; }
-    bool IsPermanent() const { return permanent; }
     Object &SetConstructorFlag() { constructor = true; return *this; }
     Object &Copy(Object &&object) { return this->Copy(object); }
     bool IsRef() const { return ref; }
@@ -79,14 +74,14 @@ namespace kagami {
     string GetMethods() const { return methods; }
   };
 
-  /*ObjectManager Class
+  /*ObjectContainer Class
   MemoryManger will be filled with Object and manage life cycle of variables
   and constants.
   */
-  class ObjectManager {
+  class ObjectContainer {
   public:
-    ObjectManager() {}
-    ObjectManager(ObjectManager &&mgr) {}
+    ObjectContainer() {}
+    ObjectContainer(ObjectContainer &&mgr) {}
 
     bool Add(string sign, Object &source);
     Object *Find(string sign);
@@ -94,8 +89,8 @@ namespace kagami {
     void clear();
 
     bool Empty() const { return base.empty(); }
-    ObjectManager(ObjectManager &mgr) { base = mgr.base; }
-    ObjectManager &operator=(ObjectManager &mgr) { base = mgr.base; return *this; }
+    ObjectContainer(ObjectContainer &mgr) { base = mgr.base; }
+    ObjectContainer &operator=(ObjectContainer &mgr) { base = mgr.base; return *this; }
   private:
     list<NamedObject> base;
 
