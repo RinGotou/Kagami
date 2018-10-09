@@ -144,11 +144,12 @@ namespace kagami {
   }
 
   Message LogicEqualOperation(ObjectMap &p, bool reverse) {
-    Object &objFirst = p["first"], &objSecond = p["second"];
     Message msg;
 
-    if (!IsStringObject(objFirst) && !IsStringObject(objSecond)) {
-      msg = CheckEntryAndStart("__compare", objFirst.GetTypeId(), p);
+    if (!p.CheckTypeId("first", IsStringObject) &&
+      !p.CheckTypeId("second", IsStringObject)) {
+
+      msg = CheckEntryAndStart("__compare", p["first"].GetTypeId(), p);
 
       msg.GetDetail() == kStrTrue && reverse ?
         msg.SetDetail(kStrFalse) :
@@ -159,19 +160,18 @@ namespace kagami {
         msg = MakeOperatorMsg(p, "!=") :
         msg = MakeOperatorMsg(p, "==");
     }
+
     return msg;
   }
 
   inline Message MakeConditionMsg(ObjectMap &p, int code) {
-    return Message(GetObjectStuff<string>(p["state"]), code, kStrEmpty);
+    return Message(p.Get<string>("state"), code, kStrEmpty);
   }
 
   Message Define(ObjectMap &p) {
     vector<string> defHead;
-    Object &id = p["id"];
     size_t count = 0;
-    defHead.emplace_back(GetObjectStuff<string>(id));
-
+    defHead.emplace_back(p.Get<string>("id"));
 
     for (auto &unit : p) {
       if (unit.first == "arg" + to_string(count)) {
@@ -200,11 +200,10 @@ namespace kagami {
 
   Message WriteLog(ObjectMap &p) {
     Message result;
-    Object &objMsg = p["msg"];
     ofstream ofs("kagami-script.log", std::ios::out | std::ios::app);
 
-    if (IsStringObject(objMsg)) {
-      string str = GetObjectStuff<string>(objMsg);
+    if (p.CheckTypeId("msg",IsStringObject)) {
+      string str = p.Get<string>("msg");
       if (Kit::IsString(str)) {
         ofs << str.substr(1, str.size() - 2) << "\n";
       }
@@ -264,10 +263,9 @@ namespace kagami {
 
 
   Message GetRawStringType(ObjectMap &p) {
-    Object &obj = p["object"];
     string result;
-    if (CheckObjectType(obj, kTypeIdRawString)) {
-      string str = GetObjectStuff<string>(obj);
+    if (p.CheckTypeId("object",kTypeIdRawString)) {
+      string str = p.Get<string>("object");
 
       Kit::IsString(str) ? 
         str = Kit::GetRawString(str) : 
@@ -376,28 +374,29 @@ namespace kagami {
   }
 
   Message Input(ObjectMap &p) {
-    auto it = p.find("msg");
-    if (it != p.end()) {
+    if (p.Search("msg")) {
       ObjectMap objMap;
-      objMap.insert(ObjectPair("not_wrap", Object()));
-      objMap.insert(ObjectPair(kStrObject, it->second));
+      Object emptyObj;
+
+      objMap.Input("not_wrap", emptyObj);
+      objMap.Input(kStrObject, p["msg"]);
       Print(objMap);
     }
+
     string buf;
     std::getline(std::cin, buf);
     return Message(kStrRedirect, kCodeSuccess, "'" + buf + "'");
   }
 
   Message Convert(ObjectMap &p) {
-    Object &objStr = p["object"];
     Message msg;
 
-    if (objStr.GetTypeId() != kTypeIdRawString) {
+    if (!p.CheckTypeId("object",kTypeIdRawString)) {
       msg = Message(kStrFatalError, kCodeBadExpression, "Cannot convert to basic type(01)");
     }
     else {
       Object objTarget;
-      string origin = GetObjectStuff<string>(objStr);
+      string origin = p.Get<string>("object");
 
       Kit::IsString(origin) ?
         origin = Kit::GetRawString(origin) :
@@ -417,7 +416,6 @@ namespace kagami {
 
     }
 
-
     return msg;
   }
 
@@ -427,8 +425,7 @@ namespace kagami {
   }
 
   Message Nop(ObjectMap &p) {
-    Object &objSize = p["__size"];
-    int size = stoi(GetObjectStuff<string>(objSize));
+    int size = stoi(p.Get<string>("__size"));
     Object &lastObj = p["nop" + to_string(size - 1)];
     Message msg;
     msg.SetObject(lastObj);
@@ -436,10 +433,9 @@ namespace kagami {
   }
 
   Message ArrayMaker(ObjectMap &p) {
-    Object &objSize = p["__size"];
     vector<Object> base;
     Message msg;
-    int size = stoi(GetObjectStuff<string>(objSize));
+    int size = stoi(p.Get<string>("__size"));
 
     if (!p.empty()) {
       for (int i = 0; i < size; i++) {
@@ -477,7 +473,7 @@ namespace kagami {
 
   Message Exist(ObjectMap &p){
     Object &obj = p["object"];
-    string target = Kit::GetRawString(GetObjectStuff<string>(p["id"]));
+    string target = Kit::GetRawString(p.Get<string>("id"));
     bool result = Kit::FindInStringGroup(target, obj.GetMethods());
     Message msg;
     result ? 
@@ -488,7 +484,7 @@ namespace kagami {
 
   Message TypeAssert(ObjectMap &p) {
     Object &obj = p["object"];
-    string target = GetObjectStuff<string>(p["id"]);
+    string target = p.Get<string>("id");
     bool result = Kit::FindInStringGroup(target, obj.GetMethods());
     Message msg;
     result ?
@@ -514,21 +510,22 @@ namespace kagami {
 
   Message When(ObjectMap &p) {
     //TODO:Re-Design
-    Object &objSize = p["__size"];
+    int size = stoi(p.Get<string>("__size"));
     ObjectPointer caseHead = entry::FindObject("__case");
-    int size = stoi(GetObjectStuff<string>(objSize));
     string caseContent = GetObjectStuff<string>(*caseHead);
-    string typeId;
+    string typeId, id;
     bool result = false, state = true;
 
     for (int i = 0; i < size; ++i) {
-      Object &obj = p["value" + to_string(i)];
-      if (!IsStringObject(obj)) {
+      id = "value" + to_string(i);
+
+      if (!p.Search(id)) break;
+      if (!p.CheckTypeId(id,kTypeIdRawString)) {
         state = false;
         break;
       }
 
-      string content = GetObjectStuff<string>(obj);
+      string content = p.Get<string>(id);
 
       if (content == caseContent) {
         result = true;

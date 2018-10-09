@@ -3,8 +3,17 @@
 #include "list.h" 
 
 namespace kagami {
+  class Object;
+  class ObjectPlanner;
   class ObjectContainer;
-  using Destructor = void(*)(shared_ptr<void>);
+  class ObjectMap;
+
+  using ObjectPointer = Object * ;
+  using ObjectPair = pair<string, Object>;
+  using Activity = Message(*)(ObjectMap &);
+  using NamedObject = pair<string, Object>;
+  using ObjTypeId = string;
+
   using ContainerPool = kagami::list<ObjectContainer>;
 
   /*Object Class
@@ -100,6 +109,37 @@ namespace kagami {
         if (object.first == sign) return false;
       }
       return true;
+    }
+  };
+
+  class ObjectMap : public map<string, Object> {
+  protected:
+    using ComparingFunction = bool(*)(Object &);
+  public:
+    bool Search(string id) {
+      auto it = this->find(id);
+      return it != this->end();
+    }
+
+    template <class T>
+    T &Get(string id) {
+      return *static_pointer_cast<T>(this->at(id).Get());
+    }
+
+    Object &operator()(string id) {
+      return this->at(id);
+    }
+
+    bool CheckTypeId(string id, string typeId) {
+      return this->at(id).GetTypeId() == typeId;
+    }
+
+    bool CheckTypeId(string id, ComparingFunction func) {
+      return func(this->at(id));
+    }
+
+    void Input(string id, Object &obj) {
+      this->insert(pair<string, Object>(id, obj));
     }
   };
 }
