@@ -251,6 +251,7 @@ namespace kagami {
   }
 
   void Machine::CaseHead(Message &msg, MachCtlBlk *blk) {
+    entry::CreateManager();
     blk->modeStack.push(blk->currentMode);
     blk->currentMode = kModeCaseJump;
     blk->conditionStack.push(false);
@@ -619,7 +620,7 @@ namespace kagami {
       if (!health) break;
       meta = &storage[idx];
       token = entry::GetGenericToken(meta->GetMainToken().first);
-      if (token == GT_WHILE || token == GT_IF) {
+      if (token == GT_WHILE || token == GT_IF || token == GT_CASE) {
         nestHeadCount++;
       }
       else if (token == GT_DEF) {

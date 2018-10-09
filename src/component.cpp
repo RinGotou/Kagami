@@ -496,7 +496,7 @@ namespace kagami {
 
   Message Case(ObjectMap &p) {
     Object &obj = p["object"];
-    if (IsStringObject(obj)) {
+    if (!IsStringObject(obj)) {
       //TODO:Re-design
       return Message(kStrFatalError, kCodeIllegalParm, "Case-When is not supported yet.(01)");
     }
@@ -519,7 +519,7 @@ namespace kagami {
     bool result = false, state = true;
 
     for (int i = 0; i < size; ++i) {
-      Object &obj = p["case" + to_string(i)];
+      Object &obj = p["value" + to_string(i)];
       typeId = obj.GetTypeId();
       if (typeId != kTypeIdRawString && typeId != kTypeIdString) {
         state = false;
