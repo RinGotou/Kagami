@@ -56,8 +56,7 @@ namespace kagami {
       .SetConstructorFlag()
       .Set(make_shared<ArrayBase>(base), kTypeIdArrayBase)
       .SetMethods(kArrayBaseMethods)
-      .SetRo(false)
-      , "__result");
+      .SetRo(false));
     return result;
   }
 
@@ -71,7 +70,7 @@ namespace kagami {
     if (idx < size) {
       Object temp;
       temp.Ref(base[idx]);
-      msg.SetObject(temp, "__element");
+      msg.SetObject(temp);
     }
     else {
       msg.combo(kStrFatalError, kCodeOverflow, "Subscript is out of range");
@@ -194,7 +193,7 @@ namespace kagami {
     }
 
     Message msg;
-    msg.SetObject(base, "__result");
+    msg.SetObject(base);
     return msg;
   }
 
@@ -237,7 +236,7 @@ namespace kagami {
       obj.Set(make_shared<string>(output), kTypeIdString)
         .SetMethods(kStringMethods)
         .SetRo(true);
-      msg.SetObject(obj, "__result");
+      msg.SetObject(obj);
     }
     return msg;
   }
@@ -251,7 +250,7 @@ namespace kagami {
       .SetMethods(kWideStringMethods)
       .SetRo(false);
     Message msg;
-    msg.SetObject(base, "__result");
+    msg.SetObject(base);
     return msg;
   }
 
@@ -266,7 +265,7 @@ namespace kagami {
     obj.Set(ifs, kTypeIdInStream)
       .SetMethods(kInStreamMethods)
       .SetRo(false);
-    msg.SetObject(obj, "__result");
+    msg.SetObject(obj);
     return msg;
   }
 
@@ -282,7 +281,7 @@ namespace kagami {
       std::getline(ifs, str);
       Object obj;
       obj.Set(make_shared<string>(str), kTypeIdString).SetMethods(kStringMethods).SetRo(false);
-      msg.SetObject(obj, "__result");
+      msg.SetObject(obj);
     }
     else {
       msg.combo(kStrFatalError, kCodeBadStream, "InStream is not working.");
@@ -337,7 +336,7 @@ namespace kagami {
     obj.Set(ofs, kTypeIdOutStream)
       .SetMethods(kOutStreamMethods)
       .SetRo(false);
-    msg.SetObject(obj, "__result");
+    msg.SetObject(obj);
     return msg;
   }
 
@@ -394,7 +393,7 @@ namespace kagami {
       .SetMethods(kRegexMethods)
       .SetRo(false);
     Message msg;
-    msg.SetObject(ret, "__result");
+    msg.SetObject(ret);
     return msg;
   }
 
@@ -424,7 +423,7 @@ namespace kagami {
       .SetMethods(kWideStringMethods)
       .SetRo(false);
     Message msg;
-    msg.SetObject(base, "__result");
+    msg.SetObject(base);
     return msg;
   }
 
@@ -447,7 +446,7 @@ namespace kagami {
       ret.Set(make_shared<wstring>(output), kTypeIdWideString)
         .SetMethods(kWideStringMethods)
         .SetRo(false);
-      msg.SetObject(ret, "__result");
+      msg.SetObject(ret);
     }
     else {
       msg.combo(kStrFatalError, kCodeIllegalParm, "Index out of range.");
@@ -477,7 +476,7 @@ namespace kagami {
       ret.Set(make_shared<wstring>(output), kTypeIdWideString)
         .SetMethods(kWideStringMethods)
         .SetRo(false);
-      msg.SetObject(ret, "__result");
+      msg.SetObject(ret);
     }
     return msg;
   }
@@ -491,7 +490,7 @@ namespace kagami {
       .SetMethods(kStringMethods)
       .SetRo(false);
     Message msg;
-    msg.SetObject(ret, "__result");
+    msg.SetObject(ret);
     return msg;
   }
 

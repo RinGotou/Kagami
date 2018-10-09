@@ -21,7 +21,7 @@ namespace kagami {
       obj.Set(make_shared<LibraryHandler>(handler), kTypeIdLib)
         .SetMethods(kLibraryMethods)
         .SetRo(false);
-      msg.SetObject(obj, "__result");
+      msg.SetObject(obj);
     }
     else {
       msg.combo(kStrFatalError, kCodeIllegalCall, "Can't load library.");

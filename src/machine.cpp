@@ -815,7 +815,7 @@ namespace kagami {
       if (ret != nullptr) {
         Object obj;
         obj.Copy(*ret);
-        msg.SetObject(obj, "__result");
+        msg.SetObject(obj);
       }
     }
     Object *funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);

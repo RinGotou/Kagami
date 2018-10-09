@@ -25,6 +25,10 @@ namespace kagami {
     return (obj.GetTypeId() == typeId);
   }
 
+  inline bool CheckTokenType(Object &obj, TokenTypeEnum tokenType) {
+    return (obj.GetTokenType() == tokenType);
+  }
+
   inline bool IsRawStringObject(Object &obj) {
     return CheckObjectType(obj, kTypeIdRawString);
   }
@@ -43,8 +47,8 @@ namespace kagami {
     string temp;
     using entry::OperatorCode;
     auto OPCode = entry::GetOperatorCode(OP);
-    auto dataA = *static_pointer_cast<string>(A.Get()),
-      dataB = *static_pointer_cast<string>(B.Get());
+    auto dataA = GetObjectStuff<string>(A),
+      dataB = GetObjectStuff<string>(B);
     auto dataTypeA = A.GetTokenType(), dataTypeB = B.GetTokenType();
     auto groupType = GetGroupType(dataTypeA, dataTypeB, dataA, dataB);
 
@@ -171,7 +175,7 @@ namespace kagami {
 
     for (auto &unit : p) {
       if (unit.first == "arg" + to_string(count)) {
-        string str = *static_pointer_cast<string>(unit.second.Get());
+        string str = GetObjectStuff<string>(unit.second);
         defHead.emplace_back(str);
         count++;
       }
@@ -219,7 +223,7 @@ namespace kagami {
     if (CheckObjectType(obj, kTypeIdRawString)) {
       const auto origin = GetObjectStuff<string>(obj);
 
-      if (obj.GetTokenType() == T_INTEGER) {
+      if (CheckTokenType(obj, T_INTEGER)) {
         int data = stoi(origin);
         negative ?
           data -= 1 :
@@ -228,9 +232,9 @@ namespace kagami {
           res = origin :
           res = to_string(data);
         obj.Copy(MakeObject(data));
-        
+
       }
-      else if (obj.GetTokenType() == T_FLOAT) {
+      else if (CheckTokenType(obj, T_FLOAT)) {
         double data = stod(origin);
         negative ?
           data -= 1.0f :
@@ -273,7 +277,7 @@ namespace kagami {
       case T_BOOLEAN:result = "'boolean'"; break;
       case T_GENERIC:result = "'generic'"; break;
       case T_INTEGER:result = "'integer'"; break;
-      case T_FLOAT:result = "'double'"; break;
+      case T_FLOAT:result = "'float'"; break;
       case T_SYMBOL:result = "'symbol'"; break;
       case T_BLANK:result = "'blank'"; break;
       case T_STRING:result = "'string'"; break;
@@ -408,7 +412,7 @@ namespace kagami {
         objTarget.Manage(origin)
           .SetMethods(type::GetMethods(kTypeIdRawString))
           .SetTokenType(type);
-        msg.SetObject(objTarget, "__result");
+        msg.SetObject(objTarget);
       }
 
     }
@@ -427,7 +431,7 @@ namespace kagami {
     int size = stoi(GetObjectStuff<string>(objSize));
     Object &lastObj = p["nop" + to_string(size - 1)];
     Message msg;
-    msg.SetObject(lastObj, "__result");
+    msg.SetObject(lastObj);
     return msg;
   }
 
@@ -446,8 +450,7 @@ namespace kagami {
       .SetConstructorFlag()
       .Set(make_shared<vector<Object>>(base), kTypeIdArrayBase)
       .SetMethods(type::GetMethods(kTypeIdArrayBase))
-      .SetRo(false)
-      , "__result");
+      .SetRo(false));
     return msg;
   }
 
@@ -466,7 +469,7 @@ namespace kagami {
         .SetConstructorFlag()
         .Set(make_shared<vector<Object>>(output), kTypeIdArrayBase)
         .SetMethods(type::GetMethods(kTypeIdArrayBase))
-        .SetRo(true), "__result");
+        .SetRo(true));
     }
     return msg;
   }
