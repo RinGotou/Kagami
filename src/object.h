@@ -29,7 +29,7 @@ namespace kagami {
     Object &Ref(Object &object);
     void Clear();
     bool Compare(Object &object) const;
-    Object &Copy(Object &object);
+    Object &Copy(Object &object, bool force = false);
     shared_ptr<void> Get();
     string GetTypeId();
     Object &SetMethods(string methods);

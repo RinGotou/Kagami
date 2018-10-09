@@ -469,7 +469,7 @@ namespace kagami {
       switch (parm.type) {
       case PT_NORMAL:
         obj.Manage(parm.data)
-          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetMethods(type::GetMethods(kTypeIdRawString))
           .SetTokenType(parm.tokenType);
         break;
       case PT_OBJ:
@@ -548,7 +548,7 @@ namespace kagami {
 
         objMap.insert(NamedObject("__size",
           Object().Manage(to_string(count))
-          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetMethods(type::GetMethods(kTypeIdRawString))
           .SetTokenType(T_INTEGER)));
       }
       else {
@@ -580,7 +580,7 @@ namespace kagami {
         && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
         Object obj;
         obj.Manage(detail)
-          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+          .SetMethods(type::GetMethods(kTypeIdRawString))
           .SetTokenType(kagami::Kit::GetTokenType(detail));
         if (entry::IsOperatorToken(ent.GetTokenEnum())
           && idx + 1 < actionBase.size()) {
@@ -669,13 +669,13 @@ namespace kagami {
     if (isMain) {
       entry::CreateObject("__name__", Object()
         .Manage("'__main__'")
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods()));
+        .SetMethods(type::GetMethods(kTypeIdRawString)));
     }
     else {
       //TODO:module name
       entry::CreateObject("__name__", Object()
         .Manage("''")
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods()));
+        .SetMethods(type::GetMethods(kTypeIdRawString)));
     }
   }
 
