@@ -226,7 +226,8 @@ namespace kagami {
     kStrRetValue = "__ret",
     kStrStopSign = "__stop",
     kStrArray = "__array",
-    kStrTypeAssert = "__type_assert";
+    kStrTypeAssert = "__type_assert",
+    kStrTailRecursion = "__tail_recursion";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",

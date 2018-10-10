@@ -51,9 +51,10 @@ namespace kagami {
     stack<bool> conditionStack;
     size_t currentMode;
     int nestHeadCount;
-    bool sContinue, sBreak;
+    bool sContinue, sBreak, lastIndex, tailRecursion;
     vector<string> defHead;
     size_t defStart;
+    ObjectMap recursionMap;
   };
 
   /* Origin index and string data */
@@ -62,8 +63,10 @@ namespace kagami {
   class Machine {
     vector<Meta> storage;
     vector<string> parameters;
-    bool health, isMain;
+    bool health, isMain, isFunc;
 
+    void ResetBlock(MachCtlBlk *blk);
+    void ResetContainer(string funcId);
     void CaseHead(Message &msg, MachCtlBlk *blk);
     void WhenHead(bool value, MachCtlBlk *blk);
     void ConditionRoot(bool value, MachCtlBlk *blk);
@@ -75,17 +78,23 @@ namespace kagami {
     void Break(MachCtlBlk *blk);
     void MakeFunction(size_t start, size_t end, vector<string> &defHead);
     static bool IsBlankStr(string target);
-    Message MetaProcessing(Meta &meta);
+    Message MetaProcessing(Meta &meta, string name, MachCtlBlk *blk);
     Message PreProcessing();
     void InitGlobalObject(bool createContainer,string name);
   public:
-    Machine() : health(false), isMain(false) {}
-    Machine(const Machine &machine) : health(machine.health), isMain(machine.isMain) {
+    Machine() : health(false), isMain(false), isFunc(false) {}
+    Machine(const Machine &machine) :
+      health(machine.health),
+      isMain(machine.isMain),
+      isFunc(machine.isFunc) {
       this->storage = machine.storage;
       this->parameters = machine.parameters;
     }
     Machine(Machine &&machine) : Machine(machine) {}
-    Machine(vector<Meta> storage) : health(true) {
+    Machine(vector<Meta> storage) :
+      health(true),
+      isMain(false),
+      isFunc(false) {
       this->storage = storage;
     }
     void operator=(Machine &machine){
@@ -96,7 +105,10 @@ namespace kagami {
       this->storage = machine.storage;
       this->parameters = machine.parameters;
     }
-
+    Machine &SetFunc() { 
+      this->isFunc = true; 
+      return *this;
+    }
     Machine &SetParameters(vector<string> parms);
     explicit Machine(const char *target, bool isMain = true);
     Message Run(bool createContainer = true, string name = kStrEmpty);
