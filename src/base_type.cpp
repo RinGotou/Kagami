@@ -86,17 +86,18 @@ namespace kagami {
 
   Message ArrayPrint(ObjectMap &p) {
     Message result;
-    Object object = p[kStrObject];
     ObjectMap objMap;
 
     if (p.CheckTypeId(kStrObject, kTypeIdArrayBase)) {
       auto &base = p.Get<ArrayBase>(kStrObject);
       auto ent = entry::Order("print", kTypeIdNull, -1);
+
       for (auto &unit : base) {
         objMap.Input(kStrObject, unit);
         result = ent.Start(objMap);
         objMap.clear();
       }
+
     }
     return result;
   }
@@ -261,8 +262,6 @@ namespace kagami {
 
   //InStream
   Message InStreamConsturctor(ObjectMap &p) {
-    Object &objPath = p["path"];
-    //TODO:support for string type
     string path = Kit::GetRawString(p.Get<string>("path"));
     shared_ptr<ifstream> ifs = 
       make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
@@ -354,14 +353,13 @@ namespace kagami {
 
   Message OutStreamWrite(ObjectMap &p) {
     ofstream &ofs = p.Get<ofstream>(kStrObject);
-    Object &objStr = p["str"];
     Message msg;
 
     if (!ofs.good()) {
       return Message(kStrRedirect, kCodeSuccess, kStrFalse);
     }
 
-    if (objStr.GetTypeId() == kTypeIdRawString) {
+    if (p.CheckTypeId("str",kTypeIdRawString)) {
       string output;
       string &origin = p.Get<string>("str");
 
@@ -370,7 +368,7 @@ namespace kagami {
       }
       ofs << output;
     }
-    else if (objStr.GetTypeId() == kTypeIdString) {
+    else if (p.CheckTypeId("str",kTypeIdString)) {
       string origin = p.Get<string>("str");
       ofs << origin;
     }
