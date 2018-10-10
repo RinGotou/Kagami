@@ -77,7 +77,7 @@ namespace kagami {
     static bool IsBlankStr(string target);
     Message MetaProcessing(Meta &meta);
     Message PreProcessing();
-    void InitGlobalObject(bool createContainer);
+    void InitGlobalObject(bool createContainer,string name);
   public:
     Machine() : health(false), isMain(false) {}
     Machine(const Machine &machine) : health(machine.health), isMain(machine.isMain) {
@@ -99,7 +99,7 @@ namespace kagami {
 
     Machine &SetParameters(vector<string> parms);
     explicit Machine(const char *target, bool isMain = true);
-    Message Run(bool createContainer = true);
+    Message Run(bool createContainer = true, string name = kStrEmpty);
     //Message Run2(bool createContainer = true);
     Message RunAsFunction(ObjectMap &p);
     void Reset(MachCtlBlk *blk);
