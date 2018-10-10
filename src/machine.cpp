@@ -134,7 +134,7 @@ namespace kagami {
 
   inline void AddFunction(string id, vector<Meta> proc, vector<string> parms) {
     auto &base = GetFunctionBase();
-    base[id] = Machine(proc).SetParameters(parms);
+    base[id] = Machine(proc).SetParameters(parms).SetFunc();
     entry::AddEntry(Entry(FunctionTunnel, id, parms));
   }
 
@@ -449,7 +449,7 @@ namespace kagami {
     return true;
   }
 
-  Message Machine::MetaProcessing(Meta &meta) {
+  Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
     Kit kit;
     int mode, flag;
     string errorString, id, typeId, vaArgHead;
@@ -462,6 +462,7 @@ namespace kagami {
     size_t vaArgSize = 0;
     vector<Instruction> &actionBase = meta.GetContains();
     bool errorReturn = false, errorArg = false;
+    bool tailRecursion = false, preprocessing = (blk == nullptr);
 
     auto makeObject = [&](Parameter &parm) -> Object {
       Object obj;
@@ -510,6 +511,19 @@ namespace kagami {
       auto &ent = actionBase[idx].first;
       auto &parms = actionBase[idx].second;
       auto entParmSize = ent.GetParmSize();
+
+
+      (ent.GetId() == name && idx == actionBase.size() - 2
+        && actionBase.back().first.GetTokenEnum() == GT_RETURN) ?
+        tailRecursion = true :
+        tailRecursion = false;
+
+      if (!preprocessing && !tailRecursion) {
+        (ent.GetId() == name && idx == actionBase.size() - 1
+          && blk->lastIndex) ?
+          tailRecursion = true :
+          tailRecursion = false;
+      }
 
       if (ent.GetEntrySign()) {
         id = ent.GetId();
@@ -564,6 +578,11 @@ namespace kagami {
         objMap.insert(NamedObject(kStrObject, makeObject(parms.back())));
       }
 
+      if (tailRecursion) {
+        blk->recursionMap = objMap;
+        break;
+      }
+
       if (errorReturn || errorArg) break;
       msg = ent.Start(objMap);
       const auto code = msg.GetCode();
@@ -602,6 +621,8 @@ namespace kagami {
       msg.combo(kStrFatalError, kCodeIllegalSymbol, errorString);
     }
 
+    if(!preprocessing) blk->tailRecursion = tailRecursion;
+
     return msg;
   }
 
@@ -628,7 +649,7 @@ namespace kagami {
           result.combo(kStrFatalError, kCodeBadExpression, "Define function in function is not supported.").SetIndex(idx);
           break;
         }
-        result = MetaProcessing(*meta);
+        result = MetaProcessing(*meta, "", nullptr);
         defHead = Kit().BuildStringVector(result.GetDetail());
         defStart = idx + 1;
         flag = true;
@@ -686,12 +707,7 @@ namespace kagami {
     }
   }
 
-  Message Machine::Run(bool createContainer, string name) {
-    Message result;
-    MachCtlBlk *blk = new MachCtlBlk();
-    Meta *meta = nullptr;
-    GenericTokenEnum token;
-    bool judged = false;
+  void Machine::ResetBlock(MachCtlBlk *blk) {
     blk->currentMode = kModeNormal;
     blk->nestHeadCount = 0;
     blk->current = 0;
@@ -699,6 +715,30 @@ namespace kagami {
     blk->defStart = 0;
     blk->sContinue = false;
     blk->sBreak = false;
+    blk->lastIndex = false;
+  }
+
+  void Machine::ResetContainer(string funcId) {
+    Object *funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
+
+    while (funcSign == nullptr) {
+      entry::DisposeManager();
+      funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
+      if (funcSign != nullptr) {
+        string value = GetObjectStuff<string>(*funcSign);
+        if (value == funcId) break;
+      }
+    }
+  }
+
+  Message Machine::Run(bool createContainer, string name) {
+    Message result;
+    MachCtlBlk *blk = new MachCtlBlk();
+    Meta *meta = nullptr;
+    GenericTokenEnum token;
+    bool judged = false;
+
+    ResetBlock(blk);
     health = true;
 
     if (storage.empty()) return result;
@@ -709,6 +749,7 @@ namespace kagami {
     //Main state machine
     while (blk->current < storage.size()) {
       if (!health) break;
+      blk->lastIndex = (blk->current == storage.size() - 1);
       meta = &storage[blk->current];
 
       token = entry::GetGenericToken(meta->GetMainToken().first);
@@ -743,10 +784,25 @@ namespace kagami {
         break;
       }
       
-      if (!judged) result = MetaProcessing(*meta);
+      if (!judged) result = MetaProcessing(*meta, name, blk);
 
       const auto value = result.GetValue();
       const auto code  = result.GetCode();
+      const auto detail = result.GetDetail();
+
+      if (blk->tailRecursion) {
+        Object obj = *entry::FindObject(kStrUserFunc);
+        auto &base = entry::GetCurrentContainer();
+        base.clear();
+        base.Add(kStrUserFunc, obj);
+        for (auto &unit : blk->recursionMap) {
+          base.Add(unit.first, unit.second);
+        }
+        blk->recursionMap.clear();
+        ResetBlock(blk);
+        ResetContainer(name);
+        continue;
+      }
 
       if (value == kStrFatalError) {
         trace::Log(result.SetIndex(storage[blk->current].GetIndex()));
@@ -833,14 +889,7 @@ namespace kagami {
 
     Object *funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
 
-    while (funcSign == nullptr) {
-      entry::DisposeManager();
-      funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
-      if (funcSign != nullptr) {
-        string value = GetObjectStuff<string>(*funcSign);
-        if (value == funcId) break;
-      }
-    }
+    ResetContainer(funcId);
 
     entry::DisposeManager();
     return msg;

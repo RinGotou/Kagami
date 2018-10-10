@@ -17,7 +17,7 @@ namespace kagami {
     if (userFunc) {
       objMap[kStrUserFunc] = Object()
         .Manage(id)
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+        .SetMethods(type::GetMethods(kTypeIdRawString))
         .SetTokenType(T_GENERIC);
     }
     if (Good()) {

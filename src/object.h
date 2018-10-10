@@ -89,6 +89,16 @@ namespace kagami {
   and constants.
   */
   class ObjectContainer {
+  private:
+    list<NamedObject> base;
+
+    bool CheckObject(string sign) {
+      for (size_t i = 0; i < base.size(); ++i) {
+        NamedObject &object = base.at(i);
+        if (object.first == sign) return false;
+      }
+      return true;
+    }
   public:
     ObjectContainer() {}
     ObjectContainer(ObjectContainer &&mgr) {}
@@ -101,16 +111,6 @@ namespace kagami {
     bool Empty() const { return base.empty(); }
     ObjectContainer(ObjectContainer &mgr) { base = mgr.base; }
     ObjectContainer &operator=(ObjectContainer &mgr) { base = mgr.base; return *this; }
-  private:
-    list<NamedObject> base;
-
-    bool CheckObject(string sign) {
-      for (size_t i = 0; i < base.size(); ++i) {
-        NamedObject &object = base.at(i);
-        if (object.first == sign) return false;
-      }
-      return true;
-    }
   };
 
   class ObjectMap : public map<string, Object> {
