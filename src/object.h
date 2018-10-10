@@ -102,6 +102,9 @@ namespace kagami {
   public:
     ObjectContainer() {}
     ObjectContainer(ObjectContainer &&mgr) {}
+    ObjectContainer(ObjectContainer &container) {
+      this->base.copy(container.base);
+    }
 
     bool Add(string sign, Object &source);
     Object *Find(string sign);
@@ -109,8 +112,8 @@ namespace kagami {
     void clear();
 
     bool Empty() const { return base.empty(); }
-    ObjectContainer(ObjectContainer &mgr) { base = mgr.base; }
-    ObjectContainer &operator=(ObjectContainer &mgr) { base = mgr.base; return *this; }
+    //ObjectContainer(ObjectContainer &mgr) { base = mgr.base; }
+    ObjectContainer &operator=(ObjectContainer &mgr) { base.copy(mgr.base); return *this; }
   };
 
   class ObjectMap : public map<string, Object> {
