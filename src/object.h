@@ -35,6 +35,7 @@ namespace kagami {
     Object();
     Object &Manage(string t, string typeId = kTypeIdRawString);
     Object &Set(shared_ptr<void> ptr, string typeId);
+    Object &Set(shared_ptr<void> ptr, string typeId, string methods, bool ro);
     Object &Ref(Object &object);
     void Clear();
     bool Compare(Object &object) const;

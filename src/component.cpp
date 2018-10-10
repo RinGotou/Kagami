@@ -188,12 +188,13 @@ namespace kagami {
   Message ReturnSign(ObjectMap &p) {
     Object &valueObj = p["value"];
     string typeId = valueObj.GetTypeId();
+    auto &container = entry::GetCurrentContainer();
+
     Object obj;
     if (typeId != kTypeIdNull) {
-      obj.Set(valueObj.Get(), typeId)
-        .SetMethods(valueObj.GetMethods())
+      obj.Set(valueObj.Get(), typeId, valueObj.GetMethods(), false)
         .SetTokenType(valueObj.GetTokenType());
-      entry::GetCurrentContainer().Add(kStrRetValue, obj);
+      container.Add(kStrRetValue, obj);
     }
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
   }
@@ -321,18 +322,14 @@ namespace kagami {
       }
       else {
         auto copy = type::GetObjectCopy(source);
-        targetObj->Set(copy, source.GetTypeId())
-          .SetMethods(source.GetMethods())
+        targetObj->Set(copy, source.GetTypeId(), source.GetMethods(), false)
           .SetTokenType(source.GetTokenType());
       }
     }
     else {
-      auto copy = type::GetObjectCopy(source);
       Object base;
-      base.Set(copy, source.GetTypeId())
-        .SetMethods(source.GetMethods())
-        .SetTokenType(source.GetTokenType())
-        .SetRo(false);
+      auto copy = type::GetObjectCopy(source);
+      base.Set(copy, source.GetTypeId(), source.GetMethods(), false);
       auto result = entry::CreateObject(objId, base);
       if (result == nullptr) {
         msg.combo(kStrFatalError, kCodeIllegalCall, "Object creation failed.");
@@ -403,17 +400,14 @@ namespace kagami {
         origin = origin;
 
       auto type = Kit::GetTokenType(origin);
-
-      if (type == T_NUL || type == T_GENERIC) {
-        msg = Message(kStrFatalError, kCodeBadExpression, "Cannot convert to basic type(02)");
-      }
-      else {
-        objTarget.Manage(origin)
-          .SetMethods(type::GetMethods(kTypeIdRawString))
-          .SetTokenType(type);
-        msg.SetObject(objTarget);
-      }
-
+      string str;
+      (type == T_NUL || type == T_GENERIC) ?
+        str = kStrNull :
+        str = origin;
+      objTarget.Manage(str)
+        .SetMethods(type::GetMethods(kTypeIdRawString))
+        .SetTokenType(type);
+      msg.SetObject(objTarget);
     }
 
     return msg;
@@ -442,11 +436,14 @@ namespace kagami {
         base.emplace_back(p["item" + to_string(i)]);
       }
     }
+
     msg.SetObject(Object()
-      .SetConstructorFlag()
-      .Set(make_shared<vector<Object>>(base), kTypeIdArrayBase)
-      .SetMethods(type::GetMethods(kTypeIdArrayBase))
-      .SetRo(false));
+      .Set(make_shared<vector<Object>>(base),
+        kTypeIdArrayBase,
+        type::GetMethods(kTypeIdArrayBase),
+        false)
+      .SetConstructorFlag());
+
     return msg;
   }
 
@@ -457,16 +454,19 @@ namespace kagami {
     vector<Object> output;
     for (auto &unit : vec) {
       output.emplace_back(Object()
-        .Set(make_shared<string>(unit),kTypeIdString)
-        .SetMethods(type::GetMethods(kTypeIdString))
-        .SetRo(true)
-      );
-      msg.SetObject(Object()
-        .SetConstructorFlag()
-        .Set(make_shared<vector<Object>>(output), kTypeIdArrayBase)
-        .SetMethods(type::GetMethods(kTypeIdArrayBase))
-        .SetRo(true));
+        .Set(make_shared<string>(unit), 
+          kTypeIdString, 
+          type::GetMethods(kTypeIdString), 
+          true));
     }
+
+    msg.SetObject(Object()
+      .Set(make_shared<vector<Object>>(output),
+        kTypeIdArrayBase,
+        type::GetMethods(kTypeIdArrayBase),
+        true)
+      .SetConstructorFlag());
+
     return msg;
   }
 
@@ -495,15 +495,15 @@ namespace kagami {
 
   Message Case(ObjectMap &p) {
     Object &obj = p["object"];
+    auto copy = type::GetObjectCopy(obj);
+    Object base;
+
     if (!IsStringObject(obj)) {
       //TODO:Re-design
       return Message(kStrFatalError, kCodeIllegalParm, "Case-When is not supported yet.(01)");
     }
-    auto copy = type::GetObjectCopy(obj);
-    Object base;
-    base.Set(copy, obj.GetTypeId())
-      .SetMethods(obj.GetMethods())
-      .SetRo(false);
+
+    base.Set(copy, obj.GetTypeId(), obj.GetMethods(), false);
     entry::CreateObject("__case", base);
     return Message(kStrRedirect, kCodeCase, kStrTrue);
   }

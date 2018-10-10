@@ -27,6 +27,15 @@ namespace kagami {
     return *this;
   }
 
+  Object &Object::Set(shared_ptr<void> ptr, string typeId, string methods, bool ro) {
+    if (ref) return GetTargetObject()->Set(ptr, typeId, methods, ro);
+    this->ptr = ptr;
+    this->typeId = typeId;
+    this->methods = methods;
+    this->ro = ro;
+    return *this;
+  }
+
   Object &Object::Ref(Object &object) {
     this->typeId = kTypeIdRef;
     this->ref = true;

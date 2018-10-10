@@ -664,7 +664,7 @@ namespace kagami {
     return result;
   }
 
-  void Machine::InitGlobalObject(bool createContainer) {
+  void Machine::InitGlobalObject(bool createContainer, string name) {
     if (createContainer) entry::CreateContainer();
     if (isMain) {
       entry::CreateObject("__name__", Object()
@@ -673,13 +673,20 @@ namespace kagami {
     }
     else {
       //TODO:module name
-      entry::CreateObject("__name__", Object()
-        .Manage("''")
-        .SetMethods(type::GetMethods(kTypeIdRawString)));
+      if (name != kStrEmpty) {
+        entry::CreateObject("__name__", Object()
+          .Manage("'" + name + "'")
+          .SetMethods(type::GetMethods(kTypeIdRawString)));
+      }
+      else {
+        entry::CreateObject("__name__", Object()
+          .Manage("''")
+          .SetMethods(type::GetMethods(kTypeIdRawString)));
+      }
     }
   }
 
-  Message Machine::Run(bool createContainer) {
+  Message Machine::Run(bool createContainer, string name) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
     Meta *meta = nullptr;
@@ -696,7 +703,7 @@ namespace kagami {
 
     if (storage.empty()) return result;
 
-    InitGlobalObject(createContainer);
+    InitGlobalObject(createContainer, name);
     if (result.GetCode() < kCodeSuccess) return result;
 
     //Main state machine
@@ -805,29 +812,36 @@ namespace kagami {
   Message Machine::RunAsFunction(ObjectMap &p) {
     Message msg;
     auto &base = entry::CreateContainer();
+    string funcId = p.Get<string>(kStrUserFunc);
+
     for (auto &unit : p) {
       base.Add(unit.first, unit.second);
     }
-    msg = Run(false);
+
+    msg = Run(false, funcId);
+
     if (msg.GetCode() >= kCodeSuccess) {
       msg = Message();
-      Object *ret = base.Find(kStrRetValue);
+      auto &currentBase = entry::GetCurrentContainer();
+      Object *ret = currentBase.Find(kStrRetValue);
       if (ret != nullptr) {
         Object obj;
         obj.Copy(*ret);
         msg.SetObject(obj);
       }
     }
+
     Object *funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
-    string funcId = *static_pointer_cast<string>(p[kStrUserFunc].Get());
+
     while (funcSign == nullptr) {
       entry::DisposeManager();
       funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
       if (funcSign != nullptr) {
-        string value = *static_pointer_cast<string>(p[kStrUserFunc].Get());
+        string value = GetObjectStuff<string>(*funcSign);
         if (value == funcId) break;
       }
     }
+
     entry::DisposeManager();
     return msg;
   }
