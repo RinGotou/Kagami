@@ -331,7 +331,8 @@ namespace kagami {
     else {
       Object base;
       auto copy = type::GetObjectCopy(source);
-      base.Set(copy, source.GetTypeId(), source.GetMethods(), false);
+      base.Set(copy, source.GetTypeId(), source.GetMethods(), false)
+        .SetTokenType(source.GetTokenType());
       auto result = entry::CreateObject(objId, base);
       if (result == nullptr) {
         msg.combo(kStrFatalError, kCodeIllegalCall, "Object creation failed.");

@@ -92,7 +92,10 @@ namespace kagami {
       this->parameters = machine.parameters;
     }
 
-    Machine(Machine &&machine) : Machine(machine) {}
+    Machine(Machine &&machine) :
+      Machine(machine) {
+      this->isMain = false;
+    }
 
     Machine(vector<Meta> storage) :
       health(true),
@@ -104,6 +107,7 @@ namespace kagami {
     void operator=(Machine &machine){
       this->storage = machine.storage;
       this->parameters = machine.parameters;
+      this->isMain = false;
     }
 
     void operator=(Machine &&machine) {

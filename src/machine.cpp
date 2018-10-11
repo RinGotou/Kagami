@@ -687,22 +687,22 @@ namespace kagami {
 
   void Machine::InitGlobalObject(bool createContainer, string name) {
     if (createContainer) entry::CreateContainer();
-    if (isMain) {
-      entry::CreateObject("__name__", Object()
-        .Manage("'__main__'")
+
+    auto create = [&](string id, string value)->void {
+      entry::CreateObject(id, Object()
+        .Manage("'" + value + "'")
         .SetMethods(type::GetMethods(kTypeIdRawString)));
+    };
+
+    if (isMain) {
+      create("__name__", "__main__");
     }
     else {
-      //TODO:module name
       if (name != kStrEmpty) {
-        entry::CreateObject("__name__", Object()
-          .Manage("'" + name + "'")
-          .SetMethods(type::GetMethods(kTypeIdRawString)));
+        create("__name__", name);
       }
       else {
-        entry::CreateObject("__name__", Object()
-          .Manage("''")
-          .SetMethods(type::GetMethods(kTypeIdRawString)));
+        create("__name__", "");
       }
     }
   }
