@@ -520,7 +520,7 @@ namespace kagami {
 
       if (!preprocessing && !tailRecursion) {
         (ent.GetId() == name && idx == actionBase.size() - 1
-          && blk->lastIndex) ?
+          && blk->lastIndex && name != "") ?
           tailRecursion = true :
           tailRecursion = false;
       }
@@ -621,7 +621,7 @@ namespace kagami {
       msg.combo(kStrFatalError, kCodeIllegalSymbol, errorString);
     }
 
-    if(!preprocessing) blk->tailRecursion = tailRecursion;
+    if(!preprocessing && tailRecursion) blk->tailRecursion = tailRecursion;
 
     return msg;
   }
@@ -716,6 +716,7 @@ namespace kagami {
     blk->sContinue = false;
     blk->sBreak = false;
     blk->lastIndex = false;
+    blk->tailRecursion = false;
   }
 
   void Machine::ResetContainer(string funcId) {

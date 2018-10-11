@@ -23,11 +23,13 @@ namespace kagami {
       this->hIns = hIns; 
       blk = new ref_blk();
     }
+
     LibraryHandler(LibraryHandler &handler) {
       this->hIns = handler.hIns;
       this->blk = handler.blk;
       blk->count += 1;
     }
+
     ~LibraryHandler() { 
       blk->count -= 1;
       if (blk->count == 0) {
@@ -35,6 +37,7 @@ namespace kagami {
         FreeLibrary(hIns);
       }
     }
+
     HINSTANCE Get() { return hIns; }
   };
 #else

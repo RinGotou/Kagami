@@ -78,6 +78,7 @@ namespace kagami {
     size_t GetIdx() const { 
       return index; 
     }
+
     vector<Instruction> GetOutput() const { 
       return actionBase; 
     }

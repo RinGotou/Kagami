@@ -105,15 +105,16 @@ namespace kagami {
       type = kTypeIdNull;
     }
 
-    bool Compare(Entry &target) const;
-    Message Start(ObjectMap &map) const;
-
     void SetEntrySign(string id,bool method = false) {
       this->id = id;
       this->method = method;
       entrySign = true;
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
+
+    bool Compare(Entry &target) const;
+    Message Start(ObjectMap &map) const;
+
     bool operator==(Entry &target) const { return Compare(target); }
     Entry &SetSpecificTypeSign() { this->method = true; return *this; }
     bool NeedSpecificType() const { return method; }
