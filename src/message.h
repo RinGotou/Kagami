@@ -13,9 +13,11 @@ namespace kagami {
       value(kStrEmpty), detail(kStrEmpty), code(kCodeSuccess), idx(0) {}
     Message(string value, int code, string detail) :
       value(value), detail(detail), code(code), idx(0) {}
+    Message(string detail) :value(kStrRedirect), code(kCodeSuccess), detail(detail), idx(0) {}
 
     Object GetObj() const;
     void SetObject(Object &object);
+    void SetRawString(string str);
     Message &combo(string value, int code, string detail);
     Message &SetValue(const string &value);
     Message &SetCode(const int &code);
