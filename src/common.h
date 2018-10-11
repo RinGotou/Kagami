@@ -18,11 +18,11 @@
 #include <iostream>
 #endif
 
-//if you build this porject by cmake,please turn off all switch marco below.
+//if you build this project by cmake,please turn off all switch marco below.
 //Disbale SDL2 componets for non-GUI environment
 #define _DISABLE_SDL_
 //Enable all debugging feature and output info
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -64,7 +64,7 @@ namespace kagami {
   using CastFunc = pair<string, CopyCreator>;
   
   const string kEngineVersion = "1.2";
-  const string kCodeName = "Marionette";
+  const string kCodeName = "Moonlit";
 #if defined(_WIN32)
   const string kPlatformType = "Windows";
 #else
@@ -226,8 +226,7 @@ namespace kagami {
     kStrRetValue = "__ret",
     kStrStopSign = "__stop",
     kStrArray = "__array",
-    kStrTypeAssert = "__type_assert",
-    kStrTailRecursion = "__tail_recursion";
+    kStrTypeAssert = "__type_assert";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",
