@@ -6,6 +6,12 @@ namespace kagami {
     this->code = kCodeObject;
   }
 
+  void Message::SetRawString(string str) {
+    this->value = kStrRedirect;
+    this->code = kCodeSuccess;
+    this->detail = str;
+  }
+
   Object Message::GetObj() const {
     return *static_pointer_cast<Object>(this->object);
   }

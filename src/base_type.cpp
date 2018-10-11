@@ -80,8 +80,7 @@ namespace kagami {
 
   Message ArrayGetSize(ObjectMap &p) {
     auto &obj = p[kStrObject];
-    return Message(kStrRedirect, kCodeSuccess, 
-      to_string(static_pointer_cast<ArrayBase>(obj.Get())->size()));
+    return Message(to_string(static_pointer_cast<ArrayBase>(obj.Get())->size()));
   }
 
   Message ArrayPrint(ObjectMap &p) {
@@ -120,7 +119,7 @@ namespace kagami {
     }
     size = data.size();
     if (idx <= int(size - 1)) {
-      result.combo(kStrRedirect, kCodeSuccess, makeStrToken(data.at(idx)));
+      result = Message(makeStrToken(data.at(idx)));
     }
     else {
       result.combo(kStrFatalError, kCodeOverflow, "Subscript is out of range");
@@ -136,7 +135,7 @@ namespace kagami {
       str = Kit::GetRawString(str) :
       str = str;
 
-    return Message(kStrRedirect, kCodeSuccess, to_string(str.size()));
+    return Message(to_string(str.size()));
   }
 
   Message RawStringPrint(ObjectMap &p) {
@@ -202,7 +201,7 @@ namespace kagami {
 
   Message StringGetSize(ObjectMap &p) {
     string &str = p.Get<string>(kStrObject);
-    return Message(kStrRedirect, kCodeSuccess, to_string(str.size()));
+    return Message(to_string(str.size()));
   }
 
   Message StringGetElement(ObjectMap &p) {
@@ -211,7 +210,7 @@ namespace kagami {
     int size = int(str.size());
     Message msg;
     if (idx < size && idx >= 0) {
-      msg.combo(kStrRedirect, kCodeSuccess, to_string(str[idx]));
+      msg = Message(to_string(str[idx]));
     }
     else {
       msg.combo(kStrFatalError, kCodeIllegalParm, "Illegal index.");
@@ -281,7 +280,7 @@ namespace kagami {
     Message msg;
 
     if (ifs.eof()) {
-      msg.combo(kStrRedirect, kCodeSuccess, "");
+      msg = Message("");
     }
 
     if (ifs.good()) {
@@ -303,7 +302,7 @@ namespace kagami {
     string state;
 
     ifs.good() ? state = kStrTrue : state = kStrFalse;
-    Message msg(kStrRedirect, kCodeSuccess, state);
+    Message msg(state);
 
     return msg;
   }
@@ -313,7 +312,7 @@ namespace kagami {
     string state;
 
     ifs.eof() ? state = kStrTrue : state = kStrFalse;
-    Message msg(kStrRedirect, kCodeSuccess, state);
+    Message msg(state);
 
     return msg;
   }
@@ -356,7 +355,7 @@ namespace kagami {
     Message msg;
 
     if (!ofs.good()) {
-      return Message(kStrRedirect, kCodeSuccess, kStrFalse);
+      return Message(kStrFalse);
     }
 
     if (p.CheckTypeId("str",kTypeIdRawString)) {
@@ -373,7 +372,7 @@ namespace kagami {
       ofs << origin;
     }
     else {
-      msg.combo(kStrRedirect, kCodeSuccess, kStrFalse);
+      msg = Message(kStrFalse);
     }
     return msg;
   }
@@ -383,7 +382,7 @@ namespace kagami {
     string state;
 
     ofs.good() ? state = kStrTrue : state = kStrFalse;
-    Message msg(kStrRedirect, kCodeSuccess, state);
+    Message msg(state);
 
     return msg;
   }
@@ -426,7 +425,7 @@ namespace kagami {
 
     regex_match(str, pat) ? state = kStrTrue : state = kStrFalse;
 
-    return Message(kStrRedirect, kCodeSuccess, state);
+    return Message(state);
   }
 
   //wstring
@@ -459,7 +458,7 @@ namespace kagami {
   Message WideStringGetSize(ObjectMap &p) {
     wstring &wstr = p.Get<wstring>(kStrObject);
 
-    return Message(kStrRedirect, kCodeSuccess, to_string(wstr.size()));
+    return Message(to_string(wstr.size()));
   }
 
   Message WideStringGetElement(ObjectMap &p) {

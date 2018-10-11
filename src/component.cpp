@@ -140,7 +140,7 @@ namespace kagami {
   }
 
   inline Message MakeOperatorMsg(ObjectMap &p, string op) {
-    return Message(kStrRedirect, kCodeSuccess, BinaryOperations(p["first"], p["second"], op));
+    return Message(BinaryOperations(p["first"], p["second"], op));
   }
 
   Message LogicEqualOperation(ObjectMap &p, bool reverse) {
@@ -253,15 +253,14 @@ namespace kagami {
 
   inline void CheckSelfOperatorMsg(Message &msg, string res) {
     res.empty() ?
-      msg = Message(kStrRedirect, kCodeSuccess, res) :
+      msg = Message(res) :
       msg = Message(kStrFatalError, kCodeIllegalParm, "Illegal self-operator.");
   }
 
   Message SelfOperator(ObjectMap &p, bool negative, bool keep) {
-    Message msg;
     Object &obj = p["object"];
     string result = IncAndDecOperation(obj, negative, keep);
-    return Message(kStrRedirect, kCodeSuccess, result);
+    return Message(result);
   }
 
 
@@ -289,12 +288,12 @@ namespace kagami {
     else {
       result = "'null'";
     }
-    return Message(kStrRedirect, kCodeSuccess, result);
+    return Message(result);
   }
 
   Message GetTypeId(ObjectMap &p) {
     Object &obj = p["object"];
-    return Message(kStrRedirect, kCodeSuccess, obj.GetTypeId());
+    return Message(obj.GetTypeId());
   }
 
   Message BindAndSet(ObjectMap &p) {
@@ -366,10 +365,10 @@ namespace kagami {
     ctime_s(nowTime, sizeof(nowTime), &now);
     string str(nowTime);
     str.pop_back(); //erase '\n'
-    return Message(kStrRedirect, kCodeSuccess, "'" + str + "'");
+    return Message("'" + str + "'");
 #else
     string TimeData(ctime(&now));
-    return Message(kStrRedirect, kCodeSuccess, "'" + TimeData + "'");
+    return Message("'" + TimeData + "'");
 #endif
   }
 
@@ -385,7 +384,7 @@ namespace kagami {
 
     string buf;
     std::getline(std::cin, buf);
-    return Message(kStrRedirect, kCodeSuccess, "'" + buf + "'");
+    return Message("'" + buf + "'");
   }
 
   Message Convert(ObjectMap &p) {
@@ -479,9 +478,9 @@ namespace kagami {
     string target = Kit::GetRawString(p.Get<string>("id"));
     bool result = Kit::FindInStringGroup(target, obj.GetMethods());
     Message msg;
-    result ? 
-      msg = Message(kStrRedirect, kCodeSuccess, kStrTrue): 
-      msg = Message(kStrRedirect, kCodeSuccess, kStrFalse);
+    result ?
+      msg = Message(kStrTrue) :
+      msg = Message(kStrFalse);
     return msg;
   }
 
@@ -491,7 +490,7 @@ namespace kagami {
     bool result = Kit::FindInStringGroup(target, obj.GetMethods());
     Message msg;
     result ?
-      msg = Message(kStrRedirect, kCodeSuccess, kStrTrue) :
+      msg = Message(kStrTrue) :
       msg = Message(kStrFatalError,kCodeIllegalCall,"Method not found - " + target);
     return msg;
   }
@@ -508,7 +507,7 @@ namespace kagami {
 
     base.Set(copy, obj.GetTypeId(), obj.GetMethods(), false);
     entry::CreateObject("__case", base);
-    return Message(kStrRedirect, kCodeCase, kStrTrue);
+    return Message(kStrTrue).SetCode(kCodeCase);
   }
 
   Message When(ObjectMap &p) {
