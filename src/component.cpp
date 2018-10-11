@@ -191,11 +191,13 @@ namespace kagami {
     auto &container = entry::GetCurrentContainer();
 
     Object obj;
+
     if (typeId != kTypeIdNull) {
       obj.Set(valueObj.Get(), typeId, valueObj.GetMethods(), false)
         .SetTokenType(valueObj.GetTokenType());
       container.Add(kStrRetValue, obj);
     }
+
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
   }
 
