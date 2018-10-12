@@ -5,7 +5,7 @@ namespace kagami {
   //components
 
   //Common
-  shared_ptr<void> NoCopy(shared_ptr<void> target) {
+  shared_ptr<void> FakeCopy(shared_ptr<void> target) {
     return target;
   }
 
@@ -80,7 +80,7 @@ namespace kagami {
 
   Message ArrayGetSize(ObjectMap &p) {
     auto &obj = p[kStrObject];
-    return Message(to_string(static_pointer_cast<ArrayBase>(obj.Get())->size()));
+    return Message(to_string(GetObjectStuff<ArrayBase>(obj).size()));
   }
 
   Message ArrayPrint(ObjectMap &p) {
@@ -257,16 +257,6 @@ namespace kagami {
     return msg;
   }
 
-  Message InStreamGood(ObjectMap &p) {
-    ifstream &ifs = p.Get<ifstream>(kStrObject);
-    string state;
-
-    ifs.good() ? state = kStrTrue : state = kStrFalse;
-    Message msg(state);
-
-    return msg;
-  }
-
   Message InStreamEOF(ObjectMap &p) {
     ifstream &ifs = p.Get<ifstream>(kStrObject);
     string state;
@@ -275,14 +265,6 @@ namespace kagami {
     Message msg(state);
 
     return msg;
-  }
-
-  Message InStreamClose(ObjectMap &p) {
-    ifstream &ifs = p.Get<ifstream>(kStrObject);
-
-    ifs.close();
-
-    return Message();
   }
 
   //OutStream
@@ -337,23 +319,6 @@ namespace kagami {
     return msg;
   }
 
-  Message OutStreamGood(ObjectMap &p) {
-    ofstream &ofs = p.Get<ofstream>(kStrObject);
-    string state;
-
-    ofs.good() ? state = kStrTrue : state = kStrFalse;
-    Message msg(state);
-
-    return msg;
-  }
-
-  Message OutStreamClose(ObjectMap &p) {
-    ofstream &ofs = p.Get<ofstream>(kStrObject);
-
-    ofs.close();
-
-    return Message();
-  }
 
   //regex
   Message RegexConstructor(ObjectMap &p) {
@@ -458,20 +423,20 @@ namespace kagami {
     AddEntry(Entry(GetStringFamilySize<string>, kCodeNormalParm, "", "size", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringToWide, kCodeNormalParm, "", "to_wide", kTypeIdString, kFlagMethod));
 
-    AddTemplate(kTypeIdInStream, ObjectPlanner(NoCopy, kInStreamMethods));
+    AddTemplate(kTypeIdInStream, ObjectPlanner(FakeCopy, kInStreamMethods));
     AddEntry(Entry(InStreamConsturctor, kCodeNormalParm, "path", "instream"));
     AddEntry(Entry(InStreamGet, kCodeNormalParm, "", "get", kTypeIdInStream, kFlagMethod));
-    AddEntry(Entry(InStreamGood, kCodeNormalParm, "", "good", kTypeIdInStream, kFlagMethod));
+    AddEntry(Entry(StreamFamilyState<ifstream>, kCodeNormalParm, "", "good", kTypeIdInStream, kFlagMethod));
     AddEntry(Entry(InStreamEOF, kCodeNormalParm, "", "eof", kTypeIdInStream, kFlagMethod));
-    AddEntry(Entry(InStreamClose, kCodeNormalParm, "", "close", kTypeIdInStream, kFlagMethod));
+    AddEntry(Entry(StreamFamilyClose<ifstream>, kCodeNormalParm, "", "close", kTypeIdInStream, kFlagMethod));
 
-    AddTemplate(kTypeIdOutStream, ObjectPlanner(NoCopy, kOutStreamMethods));
+    AddTemplate(kTypeIdOutStream, ObjectPlanner(FakeCopy, kOutStreamMethods));
     AddEntry(Entry(OutStreamConstructor, kCodeNormalParm, "path|mode", "outstream"));
     AddEntry(Entry(OutStreamWrite, kCodeNormalParm, "str", "write", kTypeIdOutStream, kFlagMethod));
-    AddEntry(Entry(OutStreamGood, kCodeNormalParm, "", "good", kTypeIdOutStream, kFlagMethod));
-    AddEntry(Entry(OutStreamClose, kCodeNormalParm, "", "close", kTypeIdOutStream, kFlagMethod));
+    AddEntry(Entry(StreamFamilyState<ofstream>, kCodeNormalParm, "", "good", kTypeIdOutStream, kFlagMethod));
+    AddEntry(Entry(StreamFamilyClose<ofstream>, kCodeNormalParm, "", "close", kTypeIdOutStream, kFlagMethod));
 
-    AddTemplate(kTypeIdRegex, ObjectPlanner(NoCopy, kTypeIdRegex));
+    AddTemplate(kTypeIdRegex, ObjectPlanner(FakeCopy, kTypeIdRegex));
     AddEntry(Entry(RegexConstructor, kCodeNormalParm, "regex", "regex"));
     AddEntry(Entry(RegexMatch, kCodeNormalParm, "str", "match", kTypeIdRegex, kFlagMethod));
 
