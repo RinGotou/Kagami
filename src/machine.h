@@ -4,8 +4,6 @@
 #include "trace.h"
 
 namespace kagami {
-  enum GroupTypeEnum { G_INT, G_FLOAT, G_STR, G_NUL };
-
   template <class T>
   T &GetObjectStuff(Object &obj) {
     return *static_pointer_cast<T>(obj.Get());
@@ -24,26 +22,6 @@ namespace kagami {
       .SetMethods(type::GetMethods(kTypeIdRawString))
       .SetTokenType(Kit::GetTokenType(str))
       .SetRo(false);
-  }
-
-  template <class T>
-  using ConvertFunc = T(*)(const string &);
-
-  template<class T>
-  string IncAndDec(Object &obj, bool negative, bool keep, T t, ConvertFunc<T> func) {
-    string res;
-    auto origin = GetObjectStuff<string>(obj);
-
-    T data = func(origin);
-    negative ?
-      data -= t :
-      data += t;
-    keep ?
-      res = origin :
-      res = to_string(data);
-    obj.Copy(MakeObject(data));
-
-    return res;
   }
 
   class Meta {

@@ -13,11 +13,9 @@
 #include <cstdlib>
 #include <cctype>
 #include <typeinfo>
-#include <type_traits>
-
-#ifndef _NO_CUI_
 #include <iostream>
-#endif
+#include <ctime>
+#include <type_traits>
 
 //if you build this project by cmake,please turn off all switch marco below.
 //Disbale SDL2 componets for non-GUI environment

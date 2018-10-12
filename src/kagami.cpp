@@ -1,5 +1,4 @@
 #include "kagami.h"
-#include <iostream>
 
 namespace kagami {
   void ScriptCore::PrintEvents(const char *path, const char *scriptPath) {

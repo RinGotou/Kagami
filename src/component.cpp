@@ -1,17 +1,16 @@
-#include "machine.h"
-#ifndef _NO_CUI_
-#include <iostream>
-#endif
+#include "component.h"
 
 namespace kagami {
-  GroupTypeEnum GetGroupType(TokenTypeEnum dataTypeA, TokenTypeEnum dataTypeB,
-    string dataA, string dataB) {
-    Kit kit;
+  GroupTypeEnum GetGroupType(Object &A, Object &B) {
+    auto dataA = GetObjectStuff<string>(A),
+      dataB = GetObjectStuff<string>(B);
+    auto dataTypeA = A.GetTokenType();
+    auto dataTypeB = B.GetTokenType();
 
     GroupTypeEnum groupType = GroupTypeEnum::G_NUL;
     if (dataTypeA == T_FLOAT || dataTypeB == T_FLOAT) groupType = G_FLOAT;
     if (dataTypeA == T_INTEGER && dataTypeB == T_INTEGER) groupType = G_INT;
-    if (kit.IsString(dataA) || kit.IsString(dataB)) groupType = G_STR;
+    if (Kit::IsString(dataA) || Kit::IsString(dataB)) groupType = G_STR;
     if ((dataA == kStrTrue || dataA == kStrFalse) && (dataB == kStrTrue || dataB == kStrFalse)) groupType = G_STR;
     return groupType;
   }
@@ -49,8 +48,7 @@ namespace kagami {
     auto OPCode = entry::GetOperatorCode(OP);
     auto dataA = GetObjectStuff<string>(A),
       dataB = GetObjectStuff<string>(B);
-    auto dataTypeA = A.GetTokenType(), dataTypeB = B.GetTokenType();
-    auto groupType = GetGroupType(dataTypeA, dataTypeB, dataA, dataB);
+    auto groupType = GetGroupType(A, B);
 
     if (groupType == G_INT || groupType == G_FLOAT) {
       switch (OPCode) {
@@ -214,17 +212,25 @@ namespace kagami {
 
 
   string IncAndDecOperation(Object &obj, bool negative, bool keep) {
-    string res;
+    string res, origin;
 
     auto toInt = [](const string &str)->int {return stoi(str); };
     auto toDouble = [](const string &str)->double {return stod(str); };
 
     if (CheckObjectType(obj, kTypeIdRawString)) {
+      origin = GetObjectStuff<string>(obj);
       if (CheckTokenType(obj, T_INTEGER)) {
-        res = IncAndDec<int>(obj, negative, keep, 1, toInt);
+        int data = stoi(origin);
+        negative ?
+          data -= 1 :
+          data += 1;
+        keep ?
+          res = origin :
+          res = to_string(data);
+        obj.Copy(MakeObject(data));
       }
-      else if (CheckTokenType(obj, T_FLOAT)) {
-        res = IncAndDec<double>(obj, negative, keep, 1.0f, toDouble);
+      else {
+        res = origin;
       }
     }
 
@@ -239,6 +245,7 @@ namespace kagami {
 
   Message SelfOperator(ObjectMap &p, bool negative, bool keep) {
     Object &obj = p["object"];
+    //TODO:error
     string result = IncAndDecOperation(obj, negative, keep);
     return Message(result);
   }

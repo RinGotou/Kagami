@@ -1,5 +1,5 @@
 #include "base_type.h"
-#include <iostream>
+
 
 namespace kagami {
   //components
