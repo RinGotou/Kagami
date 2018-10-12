@@ -199,12 +199,6 @@ namespace kagami {
     return msg;
   }
 
-  Message StringPrint(ObjectMap &p) {
-    string &str = p.Get<string>(kStrObject);
-    std::cout << str << std::endl;
-    return Message();
-  }
-
   Message StringToWide(ObjectMap &p) {
     Object base;
     Message msg;
@@ -380,12 +374,6 @@ namespace kagami {
     return msg;
   }
 
-  Message WideStringPrint(ObjectMap &p) {
-    wstring &wstr = p.Get<wstring>(kStrObject);
-    std::wcout << wstr << std::endl;
-    return Message();
-  }
-
   Message WideStringToByte(ObjectMap &p) {
     wstring &wstr = p.Get<wstring>(kStrObject);
     shared_ptr<string> str = make_shared<string>(string(ws2s(wstr)));
@@ -418,7 +406,7 @@ namespace kagami {
     AddTemplate(kTypeIdString, ObjectPlanner(SimpleSharedPtrCopy<string>, kStringMethods));
     AddEntry(Entry(StringConstructor, kCodeNormalParm, "raw_string", "string"));
     AddEntry(Entry(StringFamilyGetElement<string>, kCodeNormalParm, "index", "__at", kTypeIdString, kFlagMethod));
-    AddEntry(Entry(StringPrint, kCodeNormalParm, "", "__print", kTypeIdString, kFlagMethod));
+    AddEntry(Entry(StringFamilyPrint<string, std::ostream>, kCodeNormalParm, "", "__print", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringFamilySubStr<string>, kCodeNormalParm, "start|size", "substr", kTypeIdString, kFlagMethod));
     AddEntry(Entry(GetStringFamilySize<string>, kCodeNormalParm, "", "size", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringToWide, kCodeNormalParm, "", "to_wide", kTypeIdString, kFlagMethod));
@@ -444,7 +432,7 @@ namespace kagami {
     AddEntry(Entry(WideStringContructor, kCodeNormalParm, "raw_string", "wstring"));
     AddEntry(Entry(GetStringFamilySize<wstring>, kCodeNormalParm, "", "size", kTypeIdWideString, kFlagMethod));
     AddEntry(Entry(StringFamilyGetElement<wstring>, kCodeNormalParm, "index", "__at", kTypeIdWideString, kFlagMethod));
-    AddEntry(Entry(WideStringPrint, kCodeNormalParm, "", "__print", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(StringFamilyPrint<wstring, std::wostream>, kCodeNormalParm, "", "__print", kTypeIdWideString, kFlagMethod));
     AddEntry(Entry(StringFamilySubStr<wstring>, kCodeNormalParm, "start|size", "substr", kTypeIdWideString, kFlagMethod));
     AddEntry(Entry(WideStringToByte, kCodeNormalParm, "", "to_byte", kTypeIdWideString, kFlagMethod));
 

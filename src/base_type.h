@@ -66,6 +66,45 @@ namespace kagami {
     return msg;
   }
 
+  template <class StringType, class StreamType>
+  class StreamBase {
+    StreamType *stream;
+  public:
+    StreamType &operator<<(StringType &str) { return *stream; }
+    StreamBase(){}
+  };
+
+  template <>
+  class StreamBase<string, std::ostream> {
+    std::ostream *stream;
+  public:
+    std::ostream &operator<<(string &str) {
+      *stream << str;
+      return *stream;
+    }
+
+    StreamBase() { stream = &std::cout; }
+  };
+
+  template<>
+  class StreamBase<wstring, std::wostream> {
+    std::wostream *stream;
+  public:
+    std::wostream &operator<<(wstring &str) {
+      *stream << str;
+      return *stream;
+    }
+    StreamBase() { stream = &std::wcout; }
+  };
+
+  template <class StringType, class StreamType>
+  Message StringFamilyPrint(ObjectMap &p) {
+    string &str = p.Get<StringType>(kStrObject);
+    StreamBase<StringType, StreamType> stream;
+    stream << str << std::endl;
+    return Message();
+  }
+
   template <class StreamType>
   Message StreamFamilyClose(ObjectMap &p) {
     StreamType &stream = p.Get<StreamType>(kStrObject);
