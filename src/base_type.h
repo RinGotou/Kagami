@@ -99,7 +99,7 @@ namespace kagami {
 
   template <class StringType, class StreamType>
   Message StringFamilyPrint(ObjectMap &p) {
-    string &str = p.Get<StringType>(kStrObject);
+    StringType &str = p.Get<StringType>(kStrObject);
     StreamBase<StringType, StreamType> stream;
     stream << str << std::endl;
     return Message();
@@ -118,5 +118,46 @@ namespace kagami {
     string temp;
     Kit::MakeBoolean(stream.good(), temp);
     return Message(temp);
+  }
+
+  template <class DestType, class SrcType>
+  class StringConvertor {
+  public:
+    DestType operator()(const SrcType &src) { return DestType(); }
+  };
+
+  template<>
+  class StringConvertor<wstring, string> {
+  public:
+    wstring operator()(const string &src) { return s2ws(src); }
+  };
+
+  template<>
+  class StringConvertor<string, wstring> {
+  public:
+    string operator()(const wstring &src) { return ws2s(src); }
+  };
+
+  template<class DestType,class SrcType>
+  Message StringFamilyConverting(ObjectMap &p) {
+    StringConvertor<DestType, SrcType> convertor;
+    SrcType &str = p.Get<SrcType>(kStrObject);
+    shared_ptr<DestType> dest = make_shared<DestType>(convertor(str));
+    bool isWide = std::is_same<DestType, string>::value;
+    string typeId, methods;
+    Message msg;
+    Object ret;
+
+    if (isWide) {
+      typeId = kTypeIdWideString;
+      methods = kWideStringMethods;
+    }
+    else {
+      typeId = kTypeIdString;
+      methods = kStringMethods;
+    }
+
+    ret.Set(dest, typeId, methods, false);
+    return msg;
   }
 }
