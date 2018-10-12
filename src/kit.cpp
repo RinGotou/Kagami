@@ -11,17 +11,17 @@ namespace kagami {
     if (target.empty()) return false;
     const auto head = target.front();
 
-    if (isalpha(head) == 0 && head != '_') return false;
+    if (!IsAlpha(head) && head != '_') return false;
 
     bool result = true;
     for (auto &unit : target) {
-      if (isdigit(unit) == 0 &&
-          isalpha(unit) == 0 &&
-          unit != '_') {
+      if (!IsDigit(unit) &&
+        !IsAlpha(unit) &&
+        unit != '_') {
         result = false;
         break;
       }
-          
+
     }
     return result;
   }
@@ -31,19 +31,19 @@ namespace kagami {
     const auto head = target.front();
 
     if ((head == '-' || head == '+') &&
-        target.size() == 1) {
+      target.size() == 1) {
       return false;
     }
 
-    if (isdigit(head) == 0 &&
-        head != '-' &&
-        head != '+') {
+    if (!IsDigit(head) &&
+      head != '-' &&
+      head != '+') {
       return false;
-    }   
+    }
 
     bool result = true;
     for (size_t i = 1; i < target.size(); ++i) {
-      if (isdigit(target[i]) == 0) {
+      if (!IsDigit(target[i])) {
         result = false;
         break;
       }
@@ -58,11 +58,11 @@ namespace kagami {
 
     if ((head == '-' || head == '+') && target.size() == 1) return false;
 
-    if (isdigit(head) == 0 &&
-        head != '-' &&
-        head != '+') {
+    if (!IsDigit(head) &&
+      head != '-' &&
+      head != '+') {
       return false;
-    }    
+    }
 
     bool result = true;
     for (size_t i = 1; i < target.size(); ++i) {
@@ -74,13 +74,13 @@ namespace kagami {
         break;
       }
 
-      if (isdigit(target[i]) == 0 &&
+      if (!IsDigit(target[i]) &&
         target[i] != '.') {
         result = false;
         break;
-      } 
+      }
 
-      if (i == target.size() - 1 && isdigit(target[i]) == 0) {
+      if (i == target.size() - 1 && !IsDigit(target[i])) {
         result = false;
         break;
       }
@@ -92,13 +92,14 @@ namespace kagami {
     if (target.empty()) return false;
     bool result = true;
     for (auto &unit : target) {
-      if (isspace(unit) == 0) {
+      if (unit != ' ' && unit != '\t' && unit != '\r' && unit != '\n') {
         result = false;
         break;
       }
     }
     return result;
   }
+
 
   bool Kit::IsSymbol(string target) {
     static const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");

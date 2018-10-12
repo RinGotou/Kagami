@@ -80,5 +80,8 @@ namespace kagami {
     static bool IsWideString(string target);
     static string CombineStringVector(vector<string> target);
     static void MakeBoolean(bool origin, string &target);
+
+    static bool IsDigit(char c) { return (c >= '0' && c <= '9'); }
+    static bool IsAlpha(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
   };
 }

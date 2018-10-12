@@ -199,20 +199,6 @@ namespace kagami {
     return msg;
   }
 
-  Message StringToWide(ObjectMap &p) {
-    Object base;
-    Message msg;
-    string origin = p.Get<string>(kStrObject);
-    shared_ptr<wstring> wstr = make_shared<wstring>(s2ws(origin));
-
-    base.Set(wstr, kTypeIdWideString)
-      .SetMethods(kWideStringMethods)
-      .SetRo(false);
-
-    msg.SetObject(base);
-    return msg;
-  }
-
   //InStream
   Message InStreamConsturctor(ObjectMap &p) {
     string path = Kit::GetRawString(p.Get<string>("path"));
@@ -374,21 +360,6 @@ namespace kagami {
     return msg;
   }
 
-  Message WideStringToByte(ObjectMap &p) {
-    wstring &wstr = p.Get<wstring>(kStrObject);
-    shared_ptr<string> str = make_shared<string>(string(ws2s(wstr)));
-    Object ret;
-
-    ret.Set(str, kTypeIdString)
-      .SetMethods(kStringMethods)
-      .SetRo(false);
-
-    Message msg;
-    msg.SetObject(ret);
-
-    return msg;
-  }
-
   void InitPlanners() {
     using type::AddTemplate;
     using entry::AddEntry;
@@ -409,7 +380,7 @@ namespace kagami {
     AddEntry(Entry(StringFamilyPrint<string, std::ostream>, kCodeNormalParm, "", "__print", kTypeIdString, kFlagMethod));
     AddEntry(Entry(StringFamilySubStr<string>, kCodeNormalParm, "start|size", "substr", kTypeIdString, kFlagMethod));
     AddEntry(Entry(GetStringFamilySize<string>, kCodeNormalParm, "", "size", kTypeIdString, kFlagMethod));
-    AddEntry(Entry(StringToWide, kCodeNormalParm, "", "to_wide", kTypeIdString, kFlagMethod));
+    AddEntry(Entry(StringFamilyConverting<wstring, string>, kCodeNormalParm, "", "to_wide", kTypeIdString, kFlagMethod));
 
     AddTemplate(kTypeIdInStream, ObjectPlanner(FakeCopy, kInStreamMethods));
     AddEntry(Entry(InStreamConsturctor, kCodeNormalParm, "path", "instream"));
@@ -434,7 +405,7 @@ namespace kagami {
     AddEntry(Entry(StringFamilyGetElement<wstring>, kCodeNormalParm, "index", "__at", kTypeIdWideString, kFlagMethod));
     AddEntry(Entry(StringFamilyPrint<wstring, std::wostream>, kCodeNormalParm, "", "__print", kTypeIdWideString, kFlagMethod));
     AddEntry(Entry(StringFamilySubStr<wstring>, kCodeNormalParm, "start|size", "substr", kTypeIdWideString, kFlagMethod));
-    AddEntry(Entry(WideStringToByte, kCodeNormalParm, "", "to_byte", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(StringFamilyConverting<string, wstring>, kCodeNormalParm, "", "to_byte", kTypeIdWideString, kFlagMethod));
 
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
   }
