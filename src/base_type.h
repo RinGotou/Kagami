@@ -158,6 +158,7 @@ namespace kagami {
     }
 
     ret.Set(dest, typeId, methods, false);
+    msg.SetObject(ret);
     return msg;
   }
 }

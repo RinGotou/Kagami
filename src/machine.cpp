@@ -1,8 +1,3 @@
-//#include <iostream>
-#include <ctime>
-#ifndef _NO_CUI_
-#include <iostream>
-#endif
 #include "machine.h"
 
 namespace kagami {

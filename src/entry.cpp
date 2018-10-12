@@ -1,5 +1,4 @@
 #include "entry.h"
-#include <iostream>
 
 namespace kagami {
   bool Entry::Compare(Entry &target) const {
