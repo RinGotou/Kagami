@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cctype>
 #include <typeinfo>
+#include <type_traits>
 
 #ifndef _NO_CUI_
 #include <iostream>

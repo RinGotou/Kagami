@@ -211,4 +211,10 @@ namespace kagami {
     }
     return output;
   }
+
+  void Kit::MakeBoolean(bool origin, string &target) {
+    origin ?
+      target = kStrTrue :
+      target = kStrFalse;
+  }
 }

@@ -77,14 +77,10 @@ namespace kagami {
       case OperatorCode::LESS:
         switch (groupType) {
         case G_INT:
-          kit.Logic(stoi(dataA), stoi(dataB), OP) ? 
-            temp = kStrTrue : 
-            temp = kStrFalse;
+          Kit::MakeBoolean(kit.Logic(stoi(dataA), stoi(dataB), OP), temp);
           break;
         case G_FLOAT:
-          kit.Logic(stod(dataA), stod(dataB), OP) ? 
-            temp = kStrTrue : 
-            temp = kStrFalse;
+          Kit::MakeBoolean(kit.Logic(stod(dataA), stod(dataB), OP), temp);
           break;
         default:
           break;
@@ -110,23 +106,19 @@ namespace kagami {
         break;
       case OperatorCode::IS:
       case OperatorCode::NOT_EQUAL:
-        kit.Logic(dataA, dataB, OP) ? temp = kStrTrue : temp = kStrFalse;
+        Kit::MakeBoolean(kit.Logic(dataA, dataB, OP), temp);
         break;
       case OperatorCode::AND:
-        if ((dataA == kStrTrue || dataA == kStrFalse)
-          && (dataB == kStrTrue || dataB == kStrFalse)) {
-          if (dataA == kStrTrue && dataB == kStrTrue) temp = kStrTrue;
-          else temp = kStrFalse;
+        if (Kit::IsBoolean(dataA) && Kit::IsBoolean(dataB)) {
+          Kit::MakeBoolean((dataA == kStrTrue && dataB == kStrTrue), temp);
         }
         else {
           temp = kStrFalse;
         }
         break;
       case OperatorCode::OR:
-        if((dataA == kStrTrue || dataA == kStrFalse)
-          && (dataB == kStrTrue || dataB == kStrFalse)) {
-          if (dataA == kStrTrue || dataB == kStrTrue) temp = kStrTrue;
-          else temp = kStrFalse;
+        if(Kit::IsBoolean(dataA) && Kit::IsBoolean(dataB)) {
+          Kit::MakeBoolean((dataA == kStrTrue || dataB == kStrTrue), temp);
         }
         else {
           temp = kStrFalse;
@@ -219,32 +211,20 @@ namespace kagami {
     return result;
   }
 
+
+
   string IncAndDecOperation(Object &obj, bool negative, bool keep) {
     string res;
 
+    auto toInt = [](const string &str)->int {return stoi(str); };
+    auto toDouble = [](const string &str)->double {return stod(str); };
+
     if (CheckObjectType(obj, kTypeIdRawString)) {
-      const auto origin = GetObjectStuff<string>(obj);
-
       if (CheckTokenType(obj, T_INTEGER)) {
-        int data = stoi(origin);
-        negative ?
-          data -= 1 :
-          data += 1;
-        keep ?
-          res = origin :
-          res = to_string(data);
-        obj.Copy(MakeObject(data));
-
+        res = IncAndDec<int>(obj, negative, keep, 1, toInt);
       }
       else if (CheckTokenType(obj, T_FLOAT)) {
-        double data = stod(origin);
-        negative ?
-          data -= 1.0f :
-          data += 1.0f;
-        keep ?
-          res = origin :
-          res = to_string(data);
-        obj.Copy(MakeObject(data));
+        res = IncAndDec<double>(obj, negative, keep, 1.0f, toDouble);
       }
     }
 
