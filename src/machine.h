@@ -51,7 +51,7 @@ namespace kagami {
     stack<bool> conditionStack;
     size_t currentMode;
     int nestHeadCount;
-    bool sContinue, sBreak, lastIndex, tailRecursion;
+    bool sContinue, sBreak, lastIndex, tailRecursion, tailCall;
     vector<string> defHead;
     size_t defStart;
     ObjectMap recursionMap;
@@ -130,7 +130,6 @@ namespace kagami {
     Machine &SetParameters(vector<string> parms);
     explicit Machine(const char *target, bool isMain = true);
     Message Run(bool createContainer = true, string name = kStrEmpty);
-    //Message Run2(bool createContainer = true);
     Message RunAsFunction(ObjectMap &p);
     void Reset(MachCtlBlk *blk);
   };

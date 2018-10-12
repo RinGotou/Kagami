@@ -1,10 +1,6 @@
 #include "kagami.h"
 #include <iostream>
 
-using std::cout;
-using std::endl;
-using std::cin;
-
 namespace kagami {
   void ScriptCore::PrintEvents(const char *path, const char *scriptPath) {
     using namespace trace;
@@ -19,38 +15,12 @@ namespace kagami {
         cout << "Cannot create event log.exit." << endl;
         return;
       }
-      if (!logger.empty()) ofs << "[Script:" << scriptPath << "]" << endl;
-      for (log_t unit : GetLogger()) {
-        //time
-        ofs << "[" << unit.first << "]";
-        //line
-        ofs << "(Line:" << to_string(unit.second.GetIndex() + 1) << ")";
-        //message string
-        const auto value = unit.second.GetValue();
-        if (value == kStrFatalError) priorityStr = "Fatal:";
-        else if (value == kStrWarning) priorityStr = "Warning:";
-        if (unit.second.GetDetail() != kStrEmpty) {
-          ofs << priorityStr << unit.second.GetDetail() << endl;
-        }
-      }
+      LogOutput<ofstream>(ofs, path, scriptPath);
       ofs.close();
     }
     /*Print log to screen*/
     else {
-      if (!logger.empty()) cout << "Tracking at :" << scriptPath << endl;
-      for (log_t unit : GetLogger()) {
-        //time
-        cout << "[" << unit.first << "]";
-        //line
-        cout << "(Line:" << to_string(unit.second.GetIndex() + 1) << ")";
-        //message string
-        const auto value = unit.second.GetValue();
-        if (value == kStrFatalError) priorityStr = "Fatal:";
-        else if (value == kStrWarning) priorityStr = "Warning:";
-        if (unit.second.GetDetail() != kStrEmpty) {
-          cout << priorityStr << unit.second.GetDetail() << endl;
-        }
-      }
+      LogOutput<std::ostream>(cout, path, scriptPath);
     }
   }
 
@@ -114,7 +84,6 @@ int main(int argc, char **argv) {
   //switch main code between test case and normal case.
   //this macro can be found in the head of this file.
 #ifdef _ENABLE_DEBUGGING_
-  auto &base = kagami::entry::GetContainerPool();
   //set your own test script path here
   scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
   scriptCore.PrintEvents(nullptr, "C:\\workspace\\test.kagami");
