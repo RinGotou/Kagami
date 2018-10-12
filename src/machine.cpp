@@ -717,6 +717,7 @@ namespace kagami {
     blk->sBreak = false;
     blk->lastIndex = false;
     blk->tailRecursion = false;
+    blk->tailCall = false;
   }
 
   void Machine::ResetContainer(string funcId) {
