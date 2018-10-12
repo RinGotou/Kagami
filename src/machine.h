@@ -169,7 +169,3 @@ namespace kagami {
   Message CheckEntryAndStart(string id, string typeId, ObjectMap &parm);
   bool IsStringObject(Object &obj);
 }
-
-
-
-

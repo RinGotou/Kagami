@@ -65,4 +65,19 @@ namespace kagami {
 
     return msg;
   }
+
+  template <class StreamType>
+  Message StreamFamilyClose(ObjectMap &p) {
+    StreamType &stream = p.Get<StreamType>(kStrObject);
+    stream.close();
+    return Message();
+  }
+
+  template <class StreamType>
+  Message StreamFamilyState(ObjectMap &p) {
+    StreamType &stream = p.Get<StreamType>(kStrObject);
+    string temp;
+    Kit::MakeBoolean(stream.good(), temp);
+    return Message(temp);
+  }
 }
