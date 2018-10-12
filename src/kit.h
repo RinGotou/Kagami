@@ -79,5 +79,6 @@ namespace kagami {
     static wchar_t GetEscapeCharW(wchar_t target);
     static bool IsWideString(string target);
     static string CombineStringVector(vector<string> target);
+    static void MakeBoolean(bool origin, string &target);
   };
 }

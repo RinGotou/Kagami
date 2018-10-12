@@ -26,6 +26,26 @@ namespace kagami {
       .SetRo(false);
   }
 
+  template <class T>
+  using ConvertFunc = T(*)(const string &);
+
+  template<class T>
+  string IncAndDec(Object &obj, bool negative, bool keep, T t, ConvertFunc<T> func) {
+    string res;
+    auto origin = GetObjectStuff<string>(obj);
+
+    T data = func(origin);
+    negative ?
+      data -= t :
+      data += t;
+    keep ?
+      res = origin :
+      res = to_string(data);
+    obj.Copy(MakeObject(data));
+
+    return res;
+  }
+
   class Meta {
     bool health;
     vector<Instruction> actionBase;
