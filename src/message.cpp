@@ -22,7 +22,7 @@ namespace kagami {
   }
 
   Message &Message::SetCode(const int &code) {
-    value_ = code;
+    code_ = code;
     return *this;
   }
 

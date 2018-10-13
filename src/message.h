@@ -8,6 +8,14 @@ namespace kagami {
     int code_;
     shared_ptr<void> object_;
     size_t idx_;
+
+    void Copy(const Message &msg) {
+      value_ = msg.value_;
+      detail_ = msg.detail_;
+      code_ = msg.code_;
+      object_ = msg.object_;
+      idx_ = msg.idx_;
+    }
   public:
     Message() :
       value_(kStrEmpty), 
@@ -28,6 +36,24 @@ namespace kagami {
       code_(kCodeSuccess), 
       detail_(detail), 
       idx_(0) {}
+
+    Message(const Message &msg) {
+      Copy(msg);
+    }
+
+    Message(const Message &&msg) {
+      Copy(msg);
+    }
+
+    Message &operator=(Message &msg) {
+      Copy(msg);
+      return *this;
+    }
+
+    Message &operator=(Message &&msg) {
+      Copy(msg);
+      return *this;
+    }
 
     Object GetObj() const;
     void SetObject(Object &object);
@@ -52,5 +78,7 @@ namespace kagami {
     size_t GetIndex() const { 
       return idx_; 
     }
+
+    
   };
 }
