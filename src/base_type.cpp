@@ -33,7 +33,7 @@ namespace kagami {
     }
     
     if (size <= 0) {
-      result.combo(kStrFatalError, kCodeIllegalParm, "Illegal array size.");
+      result = Message(kStrFatalError, kCodeIllegalParm, "Illegal array size.");
       return result;
     }
 
@@ -73,7 +73,7 @@ namespace kagami {
       msg.SetObject(temp);
     }
     else {
-      msg.combo(kStrFatalError, kCodeOverflow, "Subscript is out of range");
+      msg = Message(kStrFatalError, kCodeOverflow, "Subscript is out of range");
     }
     return msg;
   }
@@ -122,7 +122,7 @@ namespace kagami {
       result = Message(makeStrToken(data.at(idx)));
     }
     else {
-      result.combo(kStrFatalError, kCodeOverflow, "Subscript is out of range");
+      result = Message(kStrFatalError, kCodeOverflow, "Subscript is out of range");
     }
     
     return result;
@@ -231,7 +231,7 @@ namespace kagami {
       msg.SetObject(obj);
     }
     else {
-      msg.combo(kStrFatalError, kCodeBadStream, "InStream is not working.");
+      msg = Message(kStrFatalError, kCodeBadStream, "InStream is not working.");
     }
 
     return msg;

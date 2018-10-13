@@ -32,6 +32,18 @@ namespace kagami {
     return CheckObjectType(obj, kTypeIdRawString);
   }
 
+  inline Message IllegalCallMsg(string str) {
+    return Message(kStrFatalError, kCodeIllegalCall, str);
+  }
+
+  inline Message IllegalParmMsg(string str) {
+    return Message(kStrFatalError, kCodeIllegalParm, str);
+  }
+
+  inline Message IllegalSymbolMsg(string str) {
+    return Message(kStrFatalError, kCodeIllegalSymbol, str);
+  }
+
   inline Message CheckEntryAndStart(string id, string typeId, ObjectMap &parm) {
     Message msg;
     auto ent = entry::Order(id, typeId);
@@ -214,9 +226,6 @@ namespace kagami {
   string IncAndDecOperation(Object &obj, bool negative, bool keep) {
     string res, origin;
 
-    auto toInt = [](const string &str)->int {return stoi(str); };
-    auto toDouble = [](const string &str)->double {return stod(str); };
-
     if (CheckObjectType(obj, kTypeIdRawString)) {
       origin = GetObjectStuff<string>(obj);
       if (CheckTokenType(obj, T_INTEGER)) {
@@ -240,7 +249,7 @@ namespace kagami {
   inline void CheckSelfOperatorMsg(Message &msg, string res) {
     res.empty() ?
       msg = Message(res) :
-      msg = Message(kStrFatalError, kCodeIllegalParm, "Illegal self-operator.");
+      msg = IllegalParmMsg("Illegal self-operator.");
   }
 
   Message SelfOperator(ObjectMap &p, bool negative, bool keep) {
@@ -296,7 +305,7 @@ namespace kagami {
     }
     else {
       if (obj.GetTypeId() != kTypeIdRawString) {
-        msg.combo(kStrFatalError, kCodeIllegalParm, "Illegal bind operation.");
+        msg = IllegalParmMsg("Illegal bind operation.");
         return msg;
       }
       objId = GetObjectStuff<string>(obj);
@@ -306,7 +315,7 @@ namespace kagami {
     
     if (existed) {
       if (targetObj->IsRo()) {
-        msg.combo(kStrFatalError, kCodeIllegalCall, "Object is read-only.");
+        msg = IllegalCallMsg("Object is read-only.");
       }
       else {
         auto copy = type::GetObjectCopy(source);
@@ -321,7 +330,7 @@ namespace kagami {
         .SetTokenType(source.GetTokenType());
       auto result = entry::CreateObject(objId, base);
       if (result == nullptr) {
-        msg.combo(kStrFatalError, kCodeIllegalCall, "Object creation failed.");
+        msg = IllegalCallMsg("Object creation failed.");
       }
     }
     return msg;
@@ -393,9 +402,7 @@ namespace kagami {
       (type == T_NUL || type == T_GENERIC) ?
         str = kStrNull :
         str = origin;
-      objTarget.Manage(str)
-        .SetMethods(type::GetMethods(kTypeIdRawString))
-        .SetTokenType(type);
+      objTarget.Manage(str, type);
       msg.SetObject(objTarget);
     }
 
@@ -478,7 +485,7 @@ namespace kagami {
     Message msg;
     result ?
       msg = Message(kStrTrue) :
-      msg = Message(kStrFatalError,kCodeIllegalCall,"Method not found - " + target);
+      msg = IllegalCallMsg("Method not found - " + target);
     return msg;
   }
 
@@ -489,7 +496,7 @@ namespace kagami {
 
     if (!IsStringObject(obj)) {
       //TODO:Re-design
-      return Message(kStrFatalError, kCodeIllegalParm, "Case-When is not supported yet.(01)");
+      return IllegalParmMsg("Case-When is not supported yet.(01)");
     }
 
     base.Set(copy, obj.GetTypeId(), obj.GetMethods(), false);
@@ -524,7 +531,7 @@ namespace kagami {
 
     Message msg;
     if (!state) {
-      msg.combo(kStrFatalError, kCodeIllegalParm, "Case-When is not supported yet.(02)");
+      msg = IllegalParmMsg("Case-When is not supported yet.(02)");
     }
     result ? 
       msg = Message(kStrTrue, kCodeWhen, kStrEmpty) : 

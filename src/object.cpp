@@ -13,10 +13,12 @@ namespace kagami {
     constructor = false;
   }
 
-  Object &Object::Manage(string t, string typeId) {
-    if (ref) return GetTargetObject()->Manage(t, typeId);
+  Object &Object::Manage(string t, TokenTypeEnum tokenType) {
+    if (ref) return GetTargetObject()->Manage(t, tokenType);
     this->ptr = std::make_shared<string>(t);
-    this->typeId = typeId;
+    this->typeId = kTypeIdRawString;
+    this->methods = kRawStringMethods;
+    this->tokenTypeEnum = tokenType;
     return *this;
   }
 
@@ -80,6 +82,7 @@ namespace kagami {
       ref = object.ref;
       constructor = object.constructor;
     };
+
     if (force) {
       mod();
     }

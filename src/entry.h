@@ -13,64 +13,64 @@ namespace kagami {
     string id;
     GenericTokenEnum tokenEnum;
     Activity activity;
-    vector<string> args;
-    int parmMode, priority;
+    vector<string> parms;
+    int argumentMode, priority;
     string type;
     int flag;
-    bool placeholder, userFunc, entrySign, method;
+    bool isPlaceholder, isUserFunc, needRecheck, isMethod;
   public:
     Entry() : id(kStrNull), 
       activity(nullptr), 
       priority(0), 
       flag(kFlagNormalEntry) {
 
-      parmMode = kCodeIllegalParm;
+      argumentMode = kCodeIllegalParm;
       type = kTypeIdNull;
-      placeholder = false;
-      userFunc = false;
-      entrySign = false;
-      method = false;
+      isPlaceholder = false;
+      isUserFunc = false;
+      needRecheck = false;
+      isMethod = false;
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
     Entry(Activity activity, 
-      int parmMode, 
-      string args,
+      int argumentMode, 
+      string parms,
       string id = kStrEmpty, 
       string type = kTypeIdNull, 
       int flag = kFlagNormalEntry, 
       int priority = 4) :
       id(id), 
-      args(Kit::BuildStringVector(args)), 
-      parmMode(parmMode), 
+      parms(Kit::BuildStringVector(parms)), 
+      argumentMode(argumentMode), 
       priority(priority),
       type(type), 
       flag(flag) {
 
       this->activity = activity;
-      placeholder = false;
-      userFunc = false;
-      entrySign = false;
-      method = false;
+      isPlaceholder = false;
+      isUserFunc = false;
+      needRecheck = false;
+      isMethod = false;
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
     Entry(Activity activity, 
-      string args, 
+      string parms, 
       GenericTokenEnum tokenEnum, 
-      int parmMode = kCodeNormalParm, 
+      int argumentMode = kCodeNormalParm, 
       int priority = 4) :
       id(), 
-      args(Kit::BuildStringVector(args)), 
-      parmMode(parmMode), 
+      parms(Kit::BuildStringVector(parms)), 
+      argumentMode(argumentMode), 
       priority(priority) {
 
       this->activity = activity;
       this->tokenEnum = tokenEnum;
-      userFunc = false;
-      entrySign = false;
-      placeholder = false;
-      method = false;
+      isUserFunc = false;
+      needRecheck = false;
+      isPlaceholder = false;
+      isMethod = false;
     }
 
     Entry(string id) :
@@ -78,60 +78,98 @@ namespace kagami {
       activity(nullptr), 
       priority(0) {
 
-      parmMode = kCodeNormalParm;
+      argumentMode = kCodeNormalParm;
       type = kTypeIdNull;
-      userFunc = false;
-      entrySign = false;
-      placeholder = true;
-      method = false;
+      isUserFunc = false;
+      needRecheck = false;
+      isPlaceholder = true;
+      isMethod = false;
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
     Entry(Activity activity, 
       string id,
-      vector<string> args) : 
+      vector<string> parms) : 
       priority(4) {
 
       type = kTypeIdNull;
-      placeholder = false;
-      parmMode = kCodeNormalParm;
+      isPlaceholder = false;
+      argumentMode = kCodeNormalParm;
       flag = kFlagNormalEntry;
-      userFunc = true;
+      isUserFunc = true;
       this->activity = activity;
       this->id = id;
-      entrySign = false;
-      this->args = args;
-      method = false;
+      needRecheck = false;
+      this->parms = parms;
+      isMethod = false;
       type = kTypeIdNull;
     }
 
-    void SetEntrySign(string id,bool method = false) {
+    void SetRecheckInfo(string id,bool isMethod = false) {
       this->id = id;
-      this->method = method;
-      entrySign = true;
+      this->isMethod = isMethod;
+      needRecheck = true;
       tokenEnum = GenericTokenEnum::GT_NUL;
     }
 
     bool Compare(Entry &target) const;
     Message Start(ObjectMap &map) const;
 
-    bool operator==(Entry &target) const { return Compare(target); }
-    Entry &SetSpecificTypeSign() { this->method = true; return *this; }
-    bool NeedSpecificType() const { return method; }
-    string GetSpecificType() const { return type; }
-    GenericTokenEnum GetTokenEnum() const { return tokenEnum; }
-    bool GetEntrySign() const { return entrySign; }
-    string GetId() const { return this->id; }
-    int GetArgumentMode() const { return this->parmMode; }
-    vector<string> GetArguments() const { return args; }
-    size_t GetParmSize() const { return this->args.size(); }
-    int GetPriority() const { return this->priority; }
-    int GetFlag() const { return flag; }
+    bool operator==(Entry &target) const { 
+      return Compare(target); 
+    }
+
+    Entry &SetSpecificTypeSign() { 
+      this->isMethod = true; 
+      return *this; 
+    }
+
+    bool IsMethod() const { 
+      return isMethod; 
+    }
+
+    string GetSpecificType() const { 
+      return type; 
+    }
+
+    GenericTokenEnum GetTokenEnum() const { 
+      return tokenEnum; 
+    }
+
+    bool NeedRecheck() const { 
+      return needRecheck; 
+    }
+
+    string GetId() const { 
+      return this->id; 
+    }
+
+    int GetArgumentMode() const { 
+      return this->argumentMode; 
+    }
+
+    vector<string> GetArguments() const { 
+      return parms; 
+    }
+
+    size_t GetParmSize() const { 
+      return this->parms.size(); 
+    }
+
+    int GetPriority() const { 
+      return this->priority; 
+    }
+
+    int GetFlag() const {
+      return flag; 
+    }
+
     bool Good() const { 
-      bool conditionA = 
-        ((activity != nullptr) && (parmMode != kCodeIllegalParm)),
-        conditionB = 
-        (userFunc && id != kStrEmpty);
+      bool conditionA =
+        ((activity != nullptr) && (argumentMode != kCodeIllegalParm));
+      bool conditionB =
+        (isUserFunc && id != kStrEmpty);
+
       return (conditionA || conditionB);
     }
   };

@@ -16,12 +16,12 @@ namespace kagami {
     return *static_pointer_cast<Object>(this->object);
   }
 
-  Message &Message::combo(string value, int code, string detail) {
-    this->value = value;
-    this->code = code;
-    this->detail = detail;
-    return *this;
-  }
+  //Message &Message::combo(string value, int code, string detail) {
+  //  this->value = value;
+  //  this->code = code;
+  //  this->detail = detail;
+  //  return *this;
+  //}
 
   Message &Message::SetValue(const string &value) {
     this->value = value;

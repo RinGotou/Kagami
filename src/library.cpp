@@ -24,7 +24,7 @@ namespace kagami {
       msg.SetObject(obj);
     }
     else {
-      msg.combo(kStrFatalError, kCodeIllegalCall, "Can't load library.");
+      msg = Message(kStrFatalError, kCodeIllegalCall, "Can't load library.");
     }
     return msg;
   }
@@ -48,7 +48,7 @@ namespace kagami {
 
       if (!p.CheckTypeId(sub, IsStringObject)) {
         state = false;
-        msg.combo(kStrFatalError, kCodeIllegalCall, "Can't deliver object to library function except plain-type object.");
+        msg = Message(kStrFatalError, kCodeIllegalCall, "Can't deliver object to library function except plain-type object.");
         break;
       }
 

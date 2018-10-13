@@ -10,23 +10,47 @@ namespace kagami {
     size_t idx;
   public:
     Message() :
-      value(kStrEmpty), detail(kStrEmpty), code(kCodeSuccess), idx(0) {}
-    Message(string value, int code, string detail) :
-      value(value), detail(detail), code(code), idx(0) {}
-    Message(string detail) :value(kStrRedirect), code(kCodeSuccess), detail(detail), idx(0) {}
+      value(kStrEmpty), 
+      detail(kStrEmpty), 
+      code(kCodeSuccess), 
+      idx(0) {}
+
+    Message(string value, 
+      int code, 
+      string detail) :
+      value(value), 
+      detail(detail), 
+      code(code), 
+      idx(0) {}
+
+    Message(string detail) :
+      value(kStrRedirect), 
+      code(kCodeSuccess), 
+      detail(detail), 
+      idx(0) {}
 
     Object GetObj() const;
     void SetObject(Object &object);
     void SetRawString(string str);
-    Message &combo(string value, int code, string detail);
     Message &SetValue(const string &value);
     Message &SetCode(const int &code);
     Message &SetDetail(const string &detail);
     Message &SetIndex(const size_t index);
 
-    string GetValue() const { return this->value; }
-    int GetCode() const { return this->code; }
-    string GetDetail() const { return this->detail; }
-    size_t GetIndex() const { return idx; }
+    string GetValue() const { 
+      return this->value; 
+    }
+
+    int GetCode() const { 
+      return this->code; 
+    }
+
+    string GetDetail() const { 
+      return this->detail; 
+    }
+
+    size_t GetIndex() const { 
+      return idx; 
+    }
   };
 }
