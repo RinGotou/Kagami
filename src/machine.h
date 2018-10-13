@@ -22,22 +22,40 @@ namespace kagami {
   }
 
   class Meta {
-    bool health;
-    vector<Instruction> actionBase;
-    size_t index;
-    Token mainToken;
+    bool health_;
+    vector<Instruction> action_base_;
+    size_t index_;
+    Token main_token_;
   public:
-    Meta() : health(false), index(0) {}
-    Meta(vector<Instruction> actionBase, size_t index = 0, Token mainToken = Token()) : 
-      health(true), index(index) {
-      this->actionBase = actionBase;
-      this->mainToken = mainToken;
+    Meta() : 
+      health_(false), 
+      index_(0) {}
+
+    Meta(vector<Instruction> actionBase, 
+      size_t index = 0, 
+      Token mainToken = Token()) : 
+      health_(true), 
+      index_(index) {
+
+      this->action_base_ = actionBase;
+      this->main_token_ = mainToken;
     }
 
-    vector<Instruction> &GetContains() { return actionBase; }
-    size_t GetIndex() const { return index; }
-    bool IsHealth() const { return health; }
-    Token GetMainToken() const { return mainToken; }
+    vector<Instruction> &GetContains() { 
+      return action_base_; 
+    }
+
+    size_t GetIndex() const { 
+      return index_; 
+    }
+
+    bool IsHealth() const { 
+      return health_; 
+    }
+
+    Token GetMainToken() const { 
+      return main_token_; 
+    }
   };
 
   /* Origin index and string data */
@@ -46,20 +64,19 @@ namespace kagami {
   class Machine {
     using MachCtlBlk = struct {
       size_t current;
-      stack<size_t> cycleNestStack, cycleTailStack, modeStack;
-      stack<bool> conditionStack;
-      size_t currentMode;
-      int nestHeadCount;
-      bool sContinue, sBreak, lastIndex, tailRecursion, tailCall;
-      vector<string> defHead;
-      size_t defStart;
-      ObjectMap recursionMap;
+      stack<size_t> cycle_nest, cycle_tail, mode_stack;
+      stack<bool> condition_stack;
+      size_t mode;
+      int nest_head_count;
+      bool s_continue, s_break, last_index, tail_recursion, tail_call;
+      vector<string> def_head;
+      size_t def_start;
+      ObjectMap recursion_map;
     };
 
-    
-    vector<Meta> storage;
-    vector<string> parameters;
-    bool health, isMain, isFunc;
+    vector<Meta> storage_;
+    vector<string> parameters_;
+    bool health_, is_main_, is_func_;
 
     void ResetBlock(MachCtlBlk *blk);
     void ResetContainer(string funcId);
@@ -76,58 +93,65 @@ namespace kagami {
     static bool IsBlankStr(string target);
     Message MetaProcessing(Meta &meta, string name, MachCtlBlk *blk);
     Message PreProcessing();
-    void InitGlobalObject(bool createContainer,string name);
+    void InitGlobalObject(bool create_container,string name);
   public:
-    Machine() : health(false), isMain(false), isFunc(false) {}
+    Machine() : 
+      health_(false), 
+      is_main_(false), 
+      is_func_(false) {}
 
     Machine(const Machine &machine) :
-      health(machine.health),
-      isMain(machine.isMain),
-      isFunc(machine.isFunc) {
-      this->storage = machine.storage;
-      this->parameters = machine.parameters;
+      health_(machine.health_),
+      is_main_(machine.is_main_),
+      is_func_(machine.is_func_) {
+      storage_ = machine.storage_;
+      parameters_ = machine.parameters_;
     }
 
     Machine(Machine &&machine) :
       Machine(machine) {
-      this->isMain = false;
+      is_main_ = false;
     }
 
     Machine(vector<Meta> storage) :
-      health(true),
-      isMain(false),
-      isFunc(false) {
-      this->storage = storage;
+      health_(true),
+      is_main_(false),
+      is_func_(false) {
+      storage_ = storage;
     }
 
     void operator=(Machine &machine){
-      this->storage = machine.storage;
-      this->parameters = machine.parameters;
-      this->isMain = false;
+      storage_ = machine.storage_;
+      parameters_ = machine.parameters_;
+      is_main_ = false;
     }
 
     void operator=(Machine &&machine) {
-      this->storage = machine.storage;
-      this->parameters = machine.parameters;
+      storage_ = machine.storage_;
+      parameters_ = machine.parameters_;
     }
 
     Machine &SetFunc() { 
-      this->isFunc = true; 
+      is_func_ = true; 
       return *this;
     }
 
     Machine &SetMain() {
-      this->isMain = true;
+      is_main_ = true;
       return *this;
     }
 
     bool GetHealth() const { 
-      return health; 
+      return health_; 
     }
 
-    Machine &SetParameters(vector<string> parms);
-    explicit Machine(const char *target, bool isMain = true);
-    Message Run(bool createContainer = true, string name = kStrEmpty);
+    Machine &SetParameters(vector<string> parms) {
+      parameters_ = parms;
+      return *this;
+    }
+
+    explicit Machine(const char *target, bool is_main = true);
+    Message Run(bool create_container = true, string name = kStrEmpty);
     Message RunAsFunction(ObjectMap &p);
     void Reset(MachCtlBlk *blk);
   };

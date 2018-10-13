@@ -47,25 +47,25 @@ namespace kagami {
   string IndentationAndCommentProc(string target) {
     if (target == "") return "";
     string data;
-    char currentChar, forwardChar;
+    char current, last;
     size_t head = 0, tail = 0;
-    bool exemptBlankChar = true;
-    bool stringProcessing = false;
+    bool exempt_blank_char = true;
+    bool string_processing = false;
     auto toString = [](char t) ->string {return string().append(1, t); };
 
     for (size_t count = 0; count < target.size(); ++count) {
-      currentChar = target[count];
-      auto type = kagami::Kit::GetTokenType(toString(currentChar));
-      if (type != TokenTypeEnum::T_BLANK && exemptBlankChar) {
+      current = target[count];
+      auto type = kagami::Kit::GetTokenType(toString(current));
+      if (type != TokenTypeEnum::T_BLANK && exempt_blank_char) {
         head = count;
-        exemptBlankChar = false;
+        exempt_blank_char = false;
       }
-      if (currentChar == '\'' && forwardChar != '\\') stringProcessing = !stringProcessing;
-      if (!stringProcessing && currentChar == '#') {
+      if (current == '\'' && last != '\\') string_processing = !string_processing;
+      if (!string_processing && current == '#') {
         tail = count;
         break;
       }
-      forwardChar = target[count];
+      last = target[count];
     }
     if (tail > head) data = target.substr(head, tail - head);
     else data = target.substr(head, target.size() - head);
@@ -81,7 +81,7 @@ namespace kagami {
   vector<StringUnit> MultilineProcessing(vector<string> &src) {
     vector<StringUnit> output;
     string buf;
-    size_t idx = 0, lineIdx = 0;
+    size_t idx = 0, line_idx = 0;
 
     auto isInString = [](string src) {
       bool inString = false;
@@ -106,7 +106,7 @@ namespace kagami {
         idx += 1;
         continue;
       }
-      lineIdx = idx;
+      line_idx = idx;
       while (buf.back() == '_') {
         bool inString = isInString(buf);
         if (!inString) {
@@ -115,7 +115,7 @@ namespace kagami {
           buf = buf + IndentationAndCommentProc(src[idx]);
         }
       }
-      output.push_back(StringUnit(lineIdx, buf));
+      output.push_back(StringUnit(line_idx, buf));
       idx += 1;
     }
 
@@ -143,8 +143,8 @@ namespace kagami {
 
   Message FunctionTunnel(ObjectMap &p) {
     Message msg;
-    Object &funcId = p[kStrUserFunc];
-    string id = *static_pointer_cast<string>(funcId.Get());
+    Object &func_id = p[kStrUserFunc];
+    string id = *static_pointer_cast<string>(func_id.Get());
     Machine *mach = GetFunction(id);
     if (mach != nullptr) {
       msg = mach->RunAsFunction(p);
@@ -161,50 +161,45 @@ namespace kagami {
 
   Message Calling(Activity activity, string parmStr, vector<Object> objects) {
     vector<string> parms = Kit::BuildStringVector(parmStr);
-    ObjectMap objMap;
+    ObjectMap obj_map;
     for (size_t i = 0; i < parms.size(); i++) {
-      objMap.insert(NamedObject(parms[i], objects[i]));
+      obj_map.insert(NamedObject(parms[i], objects[i]));
     }
-    return activity(objMap);
+    return activity(obj_map);
   }
 
-  void Machine::MakeFunction(size_t start,size_t end, vector<string> &defHead) {
+  void Machine::MakeFunction(size_t start,size_t end, vector<string> &def_head) {
     if (start > end) return;
-    string id = defHead[0];
+    string id = def_head[0];
     vector<string> parms;
     vector<Meta> proc;
 
-    for (size_t i = 1; i < defHead.size(); ++i) {
-      parms.push_back(defHead[i]);
+    for (size_t i = 1; i < def_head.size(); ++i) {
+      parms.push_back(def_head[i]);
     }
     for (size_t j = start; j <= end; ++j) {
-      proc.push_back(storage[j]);
+      proc.push_back(storage_[j]);
     }
     AddFunction(id, proc, parms);
   }
 
-  Machine &Machine::SetParameters(vector<string> parms) {
-    this->parameters = parms;
-    return *this;
-  }
-
   void Machine::Reset(MachCtlBlk *blk) {
-    Kit().CleanupVector(storage);
-    while (!blk->cycleNestStack.empty()) blk->cycleNestStack.pop();
-    while (!blk->cycleTailStack.empty()) blk->cycleTailStack.pop();
-    while (!blk->modeStack.empty()) blk->modeStack.pop();
-    while (!blk->conditionStack.empty()) blk->conditionStack.pop();
+    Kit().CleanupVector(storage_);
+    while (!blk->cycle_nest.empty()) blk->cycle_nest.pop();
+    while (!blk->cycle_tail.empty()) blk->cycle_tail.pop();
+    while (!blk->mode_stack.empty()) blk->mode_stack.pop();
+    while (!blk->condition_stack.empty()) blk->condition_stack.pop();
     delete blk;
   }
 
-  Machine::Machine(const char *target, bool isMain) {
+  Machine::Machine(const char *target, bool is_main) {
     std::wifstream stream;
     wstring buf;
-    health = true;
+    health_ = true;
     size_t subscript = 0;
-    vector<string> scriptBuf;
+    vector<string> script_buf;
 
-    this->isMain = isMain;
+    is_main_ = is_main;
 
     stream.open(target, std::ios::in);
     if (stream.good()) {
@@ -212,225 +207,225 @@ namespace kagami {
         std::getline(stream, buf);
         string temp = ws2s(buf);
         if (!temp.empty() && temp.back() == '\0') temp.pop_back();
-        scriptBuf.emplace_back(temp);
+        script_buf.emplace_back(temp);
       }
     }
     stream.close();
 
-    vector<StringUnit> stringUnit = MultilineProcessing(scriptBuf);
+    vector<StringUnit> string_units = MultilineProcessing(script_buf);
     Analyzer analyzer;
     Message msg;
-    for (auto it = stringUnit.begin(); it != stringUnit.end(); ++it) {
+    for (auto it = string_units.begin(); it != string_units.end(); ++it) {
       if (it->second == "") continue;
       msg = analyzer.Make(it->second, it->first);
       if (msg.GetValue() == kStrFatalError) {
         trace::Log(msg.SetIndex(subscript));
-        health = false;
+        health_ = false;
         break;
       }
       if (msg.GetValue() == kStrWarning) {
         trace::Log(msg.SetIndex(subscript));
       }
-      storage.emplace_back(Meta(
+      storage_.emplace_back(Meta(
         analyzer.GetOutput(),
-        analyzer.GetIdx(),
+        analyzer.get_index(),
         analyzer.GetMainToken()));
       analyzer.Clear();
     }
 
     msg = PreProcessing();
     if (msg.GetValue() == kStrFatalError) {
-      health = false;
+      health_ = false;
       trace::Log(msg);
     }
   }
 
   void Machine::CaseHead(Message &msg, MachCtlBlk *blk) {
     entry::CreateContainer();
-    blk->modeStack.push(blk->currentMode);
-    blk->currentMode = kModeCaseJump;
-    blk->conditionStack.push(false);
+    blk->mode_stack.push(blk->mode);
+    blk->mode = kModeCaseJump;
+    blk->condition_stack.push(false);
   }
 
   void Machine::WhenHead(bool value, MachCtlBlk *blk) {
-    if (!blk->conditionStack.empty()) {
-      if (blk->currentMode == kModeCase && blk->conditionStack.top() == true) {
-        blk->currentMode = kModeCaseJump;
+    if (!blk->condition_stack.empty()) {
+      if (blk->mode == kModeCase && blk->condition_stack.top() == true) {
+        blk->mode = kModeCaseJump;
       }
-      else if (value == true && blk->conditionStack.top() == false) {
-        blk->currentMode = kModeCase;
-        blk->conditionStack.top() = true;
+      else if (value == true && blk->condition_stack.top() == false) {
+        blk->mode = kModeCase;
+        blk->condition_stack.top() = true;
       }
     }
   }
 
   void Machine::ConditionRoot(bool value, MachCtlBlk *blk) {
-    blk->modeStack.push(blk->currentMode);
+    blk->mode_stack.push(blk->mode);
     entry::CreateContainer();
     if (value == true) {
-      blk->currentMode = kModeCondition;
-      blk->conditionStack.push(true);
+      blk->mode = kModeCondition;
+      blk->condition_stack.push(true);
     }
     else {
-      blk->currentMode = kModeNextCondition;
-      blk->conditionStack.push(false);
+      blk->mode = kModeNextCondition;
+      blk->condition_stack.push(false);
     }
   }
 
   void Machine::ConditionBranch(bool value, MachCtlBlk *blk) {
-    if (!blk->conditionStack.empty()) {
-      if (blk->conditionStack.top() == false && blk->currentMode == kModeNextCondition
+    if (!blk->condition_stack.empty()) {
+      if (blk->condition_stack.top() == false && blk->mode == kModeNextCondition
         && value == true) {
         entry::CreateContainer();
-        blk->currentMode = kModeCondition;
-        blk->conditionStack.top() = true;
+        blk->mode = kModeCondition;
+        blk->condition_stack.top() = true;
       }
-      else if (blk->conditionStack.top() == true && blk->currentMode == kModeCondition) {
-        blk->currentMode = kModeNextCondition;
+      else if (blk->condition_stack.top() == true && blk->mode == kModeCondition) {
+        blk->mode = kModeNextCondition;
       }
     }
     else {
       //msg = Message
-      health = false;
+      health_ = false;
     }
   }
 
   void Machine::ConditionLeaf(MachCtlBlk *blk) {
-    if (!blk->conditionStack.empty()) {
-      if (blk->conditionStack.top() == true) {
-        switch (blk->currentMode) {
+    if (!blk->condition_stack.empty()) {
+      if (blk->condition_stack.top() == true) {
+        switch (blk->mode) {
         case kModeCondition:
         case kModeNextCondition:
-          blk->currentMode = kModeNextCondition;
+          blk->mode = kModeNextCondition;
           break;
         case kModeCase:
         case kModeCaseJump:
-          blk->currentMode = kModeCaseJump;
+          blk->mode = kModeCaseJump;
           break;
         }
       }
       else {
         entry::CreateContainer();
-        blk->conditionStack.top() = true;
-        switch (blk->currentMode) {
+        blk->condition_stack.top() = true;
+        switch (blk->mode) {
         case kModeNextCondition:
-          blk->currentMode = kModeCondition;
+          blk->mode = kModeCondition;
           break;
         case kModeCaseJump:
-          blk->currentMode = kModeCase;
+          blk->mode = kModeCase;
           break;
         }
       }
     }
     else {
       //msg = Message
-      health = false;
+      health_ = false;
     }
   }
 
   void Machine::HeadSign(bool value, MachCtlBlk *blk) {
-    if (blk->cycleNestStack.empty()) {
-      blk->modeStack.push(blk->currentMode);
+    if (blk->cycle_nest.empty()) {
+      blk->mode_stack.push(blk->mode);
       entry::CreateContainer();
     }
     else {
-      if (blk->cycleNestStack.top() != blk->current - 1) {
-        blk->modeStack.push(blk->currentMode);
+      if (blk->cycle_nest.top() != blk->current - 1) {
+        blk->mode_stack.push(blk->mode);
         entry::CreateContainer();
       }
     }
     if (value == true) {
-      blk->currentMode = kModeCycle;
-      if (blk->cycleNestStack.empty()) {
-        blk->cycleNestStack.push(blk->current - 1);
+      blk->mode = kModeCycle;
+      if (blk->cycle_nest.empty()) {
+        blk->cycle_nest.push(blk->current - 1);
       }
-      else if (blk->cycleNestStack.top() != blk->current - 1) {
-        blk->cycleNestStack.push(blk->current - 1);
+      else if (blk->cycle_nest.top() != blk->current - 1) {
+        blk->cycle_nest.push(blk->current - 1);
       }
     }
     else if (value == false) {
-      blk->currentMode = kModeCycleJump;
-      if (!blk->cycleTailStack.empty()) {
-        blk->current = blk->cycleTailStack.top();
+      blk->mode = kModeCycleJump;
+      if (!blk->cycle_tail.empty()) {
+        blk->current = blk->cycle_tail.top();
       }
     }
     else {
-      health = false;
+      health_ = false;
     }
   }
 
   void Machine::TailSign(MachCtlBlk *blk) {
-    if (blk->currentMode == kModeCondition || blk->currentMode == kModeNextCondition) {
-      blk->conditionStack.pop();
-      blk->currentMode = blk->modeStack.top();
-      blk->modeStack.pop();
+    if (blk->mode == kModeCondition || blk->mode == kModeNextCondition) {
+      blk->condition_stack.pop();
+      blk->mode = blk->mode_stack.top();
+      blk->mode_stack.pop();
       entry::DisposeManager();
     }
-    else if (blk->currentMode == kModeCycle || blk->currentMode == kModeCycleJump) {
-      switch (blk->currentMode) {
+    else if (blk->mode == kModeCycle || blk->mode == kModeCycleJump) {
+      switch (blk->mode) {
       case kModeCycle:
-        if (blk->cycleTailStack.empty() || blk->cycleTailStack.top() != blk->current - 1) {
-          blk->cycleTailStack.push(blk->current - 1);
+        if (blk->cycle_tail.empty() || blk->cycle_tail.top() != blk->current - 1) {
+          blk->cycle_tail.push(blk->current - 1);
         }
-        blk->current = blk->cycleNestStack.top();
+        blk->current = blk->cycle_nest.top();
         entry::GetCurrentContainer().clear();
         break;
       case kModeCycleJump:
-        if (blk->sContinue) {
-          if (blk->cycleTailStack.empty() || blk->cycleTailStack.top() != blk->current - 1) {
-            blk->cycleTailStack.push(blk->current - 1);
+        if (blk->s_continue) {
+          if (blk->cycle_tail.empty() || blk->cycle_tail.top() != blk->current - 1) {
+            blk->cycle_tail.push(blk->current - 1);
           }
-          blk->current = blk->cycleNestStack.top();
-          blk->currentMode = kModeCycle;
-          blk->modeStack.top() = blk->currentMode;
-          blk->sContinue = false;
+          blk->current = blk->cycle_nest.top();
+          blk->mode = kModeCycle;
+          blk->mode_stack.top() = blk->mode;
+          blk->s_continue = false;
           entry::GetCurrentContainer().clear();
         }
         else {
-          if (blk->sBreak) blk->sBreak = false;
-          blk->currentMode = blk->modeStack.top();
-          blk->modeStack.pop();
-          if (!blk->cycleNestStack.empty()) blk->cycleNestStack.pop();
-          if (!blk->cycleTailStack.empty()) blk->cycleTailStack.pop();
+          if (blk->s_break) blk->s_break = false;
+          blk->mode = blk->mode_stack.top();
+          blk->mode_stack.pop();
+          if (!blk->cycle_nest.empty()) blk->cycle_nest.pop();
+          if (!blk->cycle_tail.empty()) blk->cycle_tail.pop();
           entry::DisposeManager();
         }
         break;
       default:break;
       }
     }
-    else if (blk->currentMode == kModeCase || blk->currentMode == kModeCaseJump) {
-      blk->conditionStack.pop();
-      blk->currentMode = blk->modeStack.top();
-      blk->modeStack.pop();
+    else if (blk->mode == kModeCase || blk->mode == kModeCaseJump) {
+      blk->condition_stack.pop();
+      blk->mode = blk->mode_stack.top();
+      blk->mode_stack.pop();
       entry::DisposeManager();
     }
   }
 
   void Machine::Continue(MachCtlBlk *blk) {
-    while (!blk->modeStack.empty() && blk->currentMode != kModeCycle) {
-      if (blk->currentMode == kModeCondition) {
-        blk->conditionStack.pop();
-        blk->nestHeadCount++;
+    while (!blk->mode_stack.empty() && blk->mode != kModeCycle) {
+      if (blk->mode == kModeCondition) {
+        blk->condition_stack.pop();
+        blk->nest_head_count++;
       }
-      blk->currentMode = blk->modeStack.top();
-      blk->modeStack.pop();
+      blk->mode = blk->mode_stack.top();
+      blk->mode_stack.pop();
     }
-    blk->currentMode = kModeCycleJump;
-    blk->sContinue = true;
+    blk->mode = kModeCycleJump;
+    blk->s_continue = true;
   }
 
   void Machine::Break(MachCtlBlk *blk) {
-    while (!blk->modeStack.empty() && blk->currentMode != kModeCycle) {
-      if (blk->currentMode == kModeCondition) {
-        blk->conditionStack.pop();
-        blk->nestHeadCount++;
+    while (!blk->mode_stack.empty() && blk->mode != kModeCycle) {
+      if (blk->mode == kModeCondition) {
+        blk->condition_stack.pop();
+        blk->nest_head_count++;
       }
-      blk->currentMode = blk->modeStack.top();
-      blk->modeStack.pop();
+      blk->mode = blk->mode_stack.top();
+      blk->mode_stack.pop();
     }
-    if (blk->currentMode == kModeCycle) {
-      blk->currentMode = kModeCycleJump;
-      blk->sBreak = true;
+    if (blk->mode == kModeCycle) {
+      blk->mode = kModeCycleJump;
+      blk->s_break = true;
     }
   }
 
@@ -447,17 +442,17 @@ namespace kagami {
   Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
     Kit kit;
     int mode, flag;
-    string errorString, id, type_id, vaArgHead;
+    string error_string, id, type_id, va_arg_head;
     Message msg;
-    ObjectMap objMap;
-    deque<Object> retBase;
+    ObjectMap obj_map;
+    deque<Object> returning_base;
     vector<string> args;
     size_t sub = 0;
     size_t count = 0;
-    size_t vaArgSize = 0;
-    vector<Instruction> &actionBase = meta.GetContains();
-    bool errorReturn = false, errorArg = false;
-    bool tailRecursion = false, preprocessing = (blk == nullptr);
+    size_t va_arg_size = 0;
+    vector<Instruction> &action_base = meta.GetContains();
+    bool error_returning = false, error_obj_checking = false;
+    bool tail_recursion = false, preprocessing = (blk == nullptr);
 
     auto makeObject = [&](Argument &parm) -> Object {
       Object obj;
@@ -472,18 +467,18 @@ namespace kagami {
           obj.Ref(*ptr);
         }
         else {
-          errorString = "Object is not found - " + parm.data;
-          errorArg = true;
+          error_string = "Object is not found - " + parm.data;
+          error_obj_checking = true;
         }
         break;
       case PT_RET:
-        if (!retBase.empty()) {
-          obj = retBase.front();
-          retBase.pop_front();
+        if (!returning_base.empty()) {
+          obj = returning_base.front();
+          returning_base.pop_front();
         }
         else {
-          errorString = "Return base error.";
-          errorReturn = true;
+          error_string = "Return base error.";
+          error_returning = true;
         }
         break;
       default:
@@ -493,29 +488,29 @@ namespace kagami {
       return obj;
     };
 
-    for (size_t idx = 0; idx < actionBase.size(); idx += 1) {
-      kit.CleanupMap(objMap).CleanupVector(args);
+    for (size_t idx = 0; idx < action_base.size(); idx += 1) {
+      kit.CleanupMap(obj_map).CleanupVector(args);
       id.clear();
-      vaArgHead.clear();
+      va_arg_head.clear();
       type_id.clear();
       sub = 0;
       count = 0;
 
-      auto &ent = actionBase[idx].first;
-      auto &parms = actionBase[idx].second;
+      auto &ent = action_base[idx].first;
+      auto &parms = action_base[idx].second;
       auto entParmSize = ent.GetParmSize();
 
 
-      (ent.GetId() == name && idx == actionBase.size() - 2
-        && actionBase.back().first.GetTokenEnum() == GT_RETURN) ?
-        tailRecursion = true :
-        tailRecursion = false;
+      (ent.GetId() == name && idx == action_base.size() - 2
+        && action_base.back().first.GetTokenEnum() == GT_RETURN) ?
+        tail_recursion = true :
+        tail_recursion = false;
 
-      if (!preprocessing && !tailRecursion) {
-        (ent.GetId() == name && idx == actionBase.size() - 1
-          && blk->lastIndex && name != "") ?
-          tailRecursion = true :
-          tailRecursion = false;
+      if (!preprocessing && !tail_recursion) {
+        (ent.GetId() == name && idx == action_base.size() - 1
+          && blk->last_index && name != "") ?
+          tail_recursion = true :
+          tail_recursion = false;
       }
 
       if (ent.NeedRecheck()) {
@@ -538,44 +533,44 @@ namespace kagami {
 
       if (mode == kCodeAutoSize) {
         while (sub < entParmSize - 1) {
-          objMap.insert(NamedObject(args[sub], makeObject(parms[sub])));
+          obj_map.insert(NamedObject(args[sub], makeObject(parms[sub])));
           sub += 1;
         }
 
-        vaArgHead = args.back();
+        va_arg_head = args.back();
         flag == kFlagMethod ?
-          vaArgSize = parms.size() - 1 :
-          vaArgSize = parms.size();
+          va_arg_size = parms.size() - 1 :
+          va_arg_size = parms.size();
 
-        while (sub < vaArgSize) {
-          objMap.insert(NamedObject(vaArgHead + to_string(count), makeObject(parms[sub])));
+        while (sub < va_arg_size) {
+          obj_map.insert(NamedObject(va_arg_head + to_string(count), makeObject(parms[sub])));
           count += 1;
           sub += 1;
         }
 
-        objMap.insert(NamedObject("__size",
+        obj_map.insert(NamedObject("__size",
           Object().Manage(to_string(count), T_INTEGER)));
       }
       else {
         while (sub < args.size()) {
           if (sub >= parms.size() && mode == kCodeAutoFill) break;
           //error
-          objMap.insert(NamedObject(args[sub], makeObject(parms[sub])));
+          obj_map.insert(NamedObject(args[sub], makeObject(parms[sub])));
           sub += 1;
         }
       }
 
       if (flag == kFlagMethod) {
-        objMap.insert(NamedObject(kStrObject, makeObject(parms.back())));
+        obj_map.insert(NamedObject(kStrObject, makeObject(parms.back())));
       }
 
-      if (tailRecursion) {
-        blk->recursionMap = objMap;
+      if (tail_recursion) {
+        blk->recursion_map = obj_map;
         break;
       }
 
-      if (errorReturn || errorArg) break;
-      msg = ent.Start(objMap);
+      if (error_returning || error_obj_checking) break;
+      msg = ent.Start(obj_map);
       const auto code = msg.GetCode();
       const auto value = msg.GetValue();
       const auto detail = msg.GetDetail();
@@ -584,7 +579,7 @@ namespace kagami {
 
       if (code == kCodeObject) {
         auto object = msg.GetObj();
-        retBase.emplace_back(object);
+        returning_base.emplace_back(object);
       }
       else if ((value == kStrRedirect && (code == kCodeSuccess || code == kCodeHeadPlaceholder))
         && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
@@ -592,26 +587,26 @@ namespace kagami {
         obj.Manage(detail, Kit::GetTokenType(detail));
 
         if (entry::IsOperatorToken(ent.GetTokenEnum())
-          && idx + 1 < actionBase.size()) {
-          auto token = actionBase[idx + 1].first.GetTokenEnum();
+          && idx + 1 < action_base.size()) {
+          auto token = action_base[idx + 1].first.GetTokenEnum();
           if (entry::IsOperatorToken(token)) {
-            retBase.emplace_front(obj);
+            returning_base.emplace_front(obj);
           }
           else {
-            retBase.emplace_back(obj);
+            returning_base.emplace_back(obj);
           }
         }
         else {
-          retBase.emplace_back(obj);
+          returning_base.emplace_back(obj);
         }
       }
     }
 
-    if (errorReturn || errorArg) {
-      msg = Message(kStrFatalError, kCodeIllegalSymbol, errorString);
+    if (error_returning || error_obj_checking) {
+      msg = Message(kStrFatalError, kCodeIllegalSymbol, error_string);
     }
 
-    if(!preprocessing && tailRecursion) blk->tailRecursion = tailRecursion;
+    if(!preprocessing && tail_recursion) blk->tail_recursion = tail_recursion;
 
     return msg;
   }
@@ -621,18 +616,18 @@ namespace kagami {
     GenericTokenEnum token;
     Message result;
     bool flag = false;
-    map<size_t, size_t> skippedIndex;
+    map<size_t, size_t> skipped_idx;
     using IndexPair = pair<size_t, size_t>;
-    size_t nestHeadCount = 0;
-    size_t defStart;
-    vector<string> defHead;
+    size_t nest_head_count = 0;
+    size_t def_start;
+    vector<string> def_head;
 
-    for (size_t idx = 0; idx < storage.size(); ++idx) {
-      if (!health) break;
-      meta = &storage[idx];
+    for (size_t idx = 0; idx < storage_.size(); ++idx) {
+      if (!health_) break;
+      meta = &storage_[idx];
       token = entry::GetGenericToken(meta->GetMainToken().first);
       if (token == GT_WHILE || token == GT_IF || token == GT_CASE) {
-        nestHeadCount++;
+        nest_head_count++;
       }
       else if (token == GT_DEF) {
         if (flag == true) {
@@ -640,19 +635,19 @@ namespace kagami {
           break;
         }
         result = MetaProcessing(*meta, "", nullptr);
-        defHead = Kit().BuildStringVector(result.GetDetail());
-        defStart = idx + 1;
+        def_head = Kit().BuildStringVector(result.GetDetail());
+        def_start = idx + 1;
         flag = true;
       }
       else if (token == GT_END) {
-        if (nestHeadCount > 0) {
-          nestHeadCount--;
+        if (nest_head_count > 0) {
+          nest_head_count--;
         }
         else {
-          skippedIndex.insert(IndexPair(defStart - 1, idx));
-          MakeFunction(defStart, idx - 1, defHead);
-          Kit().CleanupVector(defHead);
-          defStart = 0;
+          skipped_idx.insert(IndexPair(def_start - 1, idx));
+          MakeFunction(def_start, idx - 1, def_head);
+          Kit().CleanupVector(def_head);
+          def_start = 0;
           flag = false;
         }
       }
@@ -660,30 +655,30 @@ namespace kagami {
 
     vector<Meta> *otherMeta = new vector<Meta>();
     bool filter = false;
-    for (size_t idx = 0; idx < storage.size(); ++idx) {
-      auto it = skippedIndex.find(idx);
-      if (it != skippedIndex.end()) {
+    for (size_t idx = 0; idx < storage_.size(); ++idx) {
+      auto it = skipped_idx.find(idx);
+      if (it != skipped_idx.end()) {
         idx = it->second;
         continue;
       }
-      otherMeta->emplace_back(storage[idx]);
+      otherMeta->emplace_back(storage_[idx]);
     }
 
-    storage.swap(*otherMeta);
+    storage_.swap(*otherMeta);
     delete otherMeta;
 
     return result;
   }
 
-  void Machine::InitGlobalObject(bool createContainer, string name) {
-    if (createContainer) entry::CreateContainer();
+  void Machine::InitGlobalObject(bool create_container, string name) {
+    if (create_container) entry::CreateContainer();
 
     auto create = [&](string id, string value)->void {
       entry::CreateObject(id, Object()
         .Manage("'" + value + "'",T_STRING));
     };
 
-    if (isMain) {
+    if (is_main_) {
       create("__name__", "__main__");
     }
     else {
@@ -697,32 +692,32 @@ namespace kagami {
   }
 
   void Machine::ResetBlock(MachCtlBlk *blk) {
-    blk->currentMode = kModeNormal;
-    blk->nestHeadCount = 0;
+    blk->mode = kModeNormal;
+    blk->nest_head_count = 0;
     blk->current = 0;
-    blk->currentMode = kModeNormal;
-    blk->defStart = 0;
-    blk->sContinue = false;
-    blk->sBreak = false;
-    blk->lastIndex = false;
-    blk->tailRecursion = false;
-    blk->tailCall = false;
+    blk->mode = kModeNormal;
+    blk->def_start = 0;
+    blk->s_continue = false;
+    blk->s_break = false;
+    blk->last_index = false;
+    blk->tail_recursion = false;
+    blk->tail_call = false;
   }
 
-  void Machine::ResetContainer(string funcId) {
-    Object *funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
+  void Machine::ResetContainer(string func_id) {
+    Object *func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
 
-    while (funcSign == nullptr) {
+    while (func_sign == nullptr) {
       entry::DisposeManager();
-      funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
-      if (funcSign != nullptr) {
-        string value = GetObjectStuff<string>(*funcSign);
-        if (value == funcId) break;
+      func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
+      if (func_sign != nullptr) {
+        string value = GetObjectStuff<string>(*func_sign);
+        if (value == func_id) break;
       }
     }
   }
 
-  Message Machine::Run(bool createContainer, string name) {
+  Message Machine::Run(bool create_container, string name) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
     Meta *meta = nullptr;
@@ -730,21 +725,21 @@ namespace kagami {
     bool judged = false;
 
     ResetBlock(blk);
-    health = true;
+    health_ = true;
 
-    if (storage.empty()) return result;
+    if (storage_.empty()) return result;
 
-    InitGlobalObject(createContainer, name);
+    InitGlobalObject(create_container, name);
     if (result.GetCode() < kCodeSuccess) return result;
 
     //Main state machine
-    while (blk->current < storage.size()) {
-      if (!health) break;
-      blk->lastIndex = (blk->current == storage.size() - 1);
-      meta = &storage[blk->current];
+    while (blk->current < storage_.size()) {
+      if (!health_) break;
+      blk->last_index = (blk->current == storage_.size() - 1);
+      meta = &storage_[blk->current];
 
       token = entry::GetGenericToken(meta->GetMainToken().first);
-      switch (blk->currentMode) {
+      switch (blk->mode) {
       case kModeNextCondition:
         if (entry::HasTailTokenRequest(token)) {
           result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
@@ -781,27 +776,27 @@ namespace kagami {
       const auto code  = result.GetCode();
       const auto detail = result.GetDetail();
 
-      if (blk->tailRecursion) {
+      if (blk->tail_recursion) {
         Object obj = *entry::FindObject(kStrUserFunc);
         auto &base = entry::GetCurrentContainer();
         base.clear();
         base.Add(kStrUserFunc, obj);
-        for (auto &unit : blk->recursionMap) {
+        for (auto &unit : blk->recursion_map) {
           base.Add(unit.first, unit.second);
         }
-        blk->recursionMap.clear();
+        blk->recursion_map.clear();
         ResetBlock(blk);
         ResetContainer(name);
         continue;
       }
 
       if (value == kStrFatalError) {
-        trace::Log(result.SetIndex(storage[blk->current].GetIndex()));
+        trace::Log(result.SetIndex(storage_[blk->current].GetIndex()));
         break;
       }
 
       if (value == kStrWarning) {
-        trace::Log(result.SetIndex(storage[blk->current].GetIndex()));
+        trace::Log(result.SetIndex(storage_[blk->current].GetIndex()));
       }
 
       if (value == kStrStopSign) {
@@ -819,11 +814,11 @@ namespace kagami {
         ConditionRoot(GetBooleanValue(value), blk); 
         break;
       case kCodeConditionBranch:
-        if (blk->nestHeadCount > 0) break;
+        if (blk->nest_head_count > 0) break;
         ConditionBranch(GetBooleanValue(value), blk);
         break;
       case kCodeConditionLeaf:
-        if (blk->nestHeadCount > 0) break;
+        if (blk->nest_head_count > 0) break;
         ConditionLeaf(blk);
         break;
       case kCodeCase:
@@ -836,11 +831,11 @@ namespace kagami {
         HeadSign(GetBooleanValue(value), blk);
         break;
       case kCodeHeadPlaceholder:
-        blk->nestHeadCount++;
+        blk->nest_head_count++;
         break;
       case kCodeTailSign:
-        if (blk->nestHeadCount > 0) {
-          blk->nestHeadCount--;
+        if (blk->nest_head_count > 0) {
+          blk->nest_head_count--;
           break;
         }
         TailSign(blk);
@@ -851,7 +846,7 @@ namespace kagami {
       if (judged) judged = false;
     }
 
-    if (createContainer) entry::DisposeManager();
+    if (create_container) entry::DisposeManager();
     delete blk;
     return result;
   }
@@ -859,13 +854,13 @@ namespace kagami {
   Message Machine::RunAsFunction(ObjectMap &p) {
     Message msg;
     auto &base = entry::CreateContainer();
-    string funcId = p.Get<string>(kStrUserFunc);
+    string func_id = p.Get<string>(kStrUserFunc);
 
     for (auto &unit : p) {
       base.Add(unit.first, unit.second);
     }
 
-    msg = Run(false, funcId);
+    msg = Run(false, func_id);
 
     if (msg.GetCode() >= kCodeSuccess) {
       msg = Message();
@@ -878,9 +873,9 @@ namespace kagami {
       }
     }
 
-    Object *funcSign = entry::GetCurrentContainer().Find(kStrUserFunc);
+    Object *func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
 
-    ResetContainer(funcId);
+    ResetContainer(func_id);
 
     entry::DisposeManager();
     return msg;
