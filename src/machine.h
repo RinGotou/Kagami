@@ -144,6 +144,6 @@ namespace kagami {
   Message Calling(Activity activity, string args, vector<Object> objects);
   std::wstring s2ws(const std::string &s);
   std::string ws2s(const std::wstring &s);
-  Message CheckEntryAndStart(string id, string typeId, ObjectMap &parm);
+  Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm);
   bool IsStringObject(Object &obj);
 }

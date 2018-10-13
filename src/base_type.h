@@ -14,7 +14,7 @@ namespace kagami {
   template <class StringType>
   Message StringFamilySubStr(ObjectMap &p) {
     StringType &str = p.Get<StringType>(kStrObject);
-    string typeId = p[kStrObject].GetTypeId();
+    string type_id = p[kStrObject].GetTypeId();
     string methods = p[kStrObject].GetMethods();
     int start = stoi(p.Get<string>("start"));
     int size = stoi(p.Get<string>("size"));
@@ -27,7 +27,7 @@ namespace kagami {
       Object ret;
       StringType output = str.substr(start, size);
 
-      ret.Set(make_shared<StringType>(output), typeId)
+      ret.Set(make_shared<StringType>(output), type_id)
         .SetMethods(methods)
         .SetRo(false);
       msg.SetObject(ret);
@@ -39,7 +39,7 @@ namespace kagami {
   template <class StringType>
   Message StringFamilyGetElement(ObjectMap &p) {
     StringType &str = p.Get<StringType>(kStrObject);
-    string typeId = p[kStrObject].GetTypeId();
+    string type_id = p[kStrObject].GetTypeId();
     string methods = p[kStrObject].GetMethods();
     int size = int(str.size());
     int idx = stoi(p.Get<string>("index"));
@@ -50,7 +50,7 @@ namespace kagami {
       Object ret;
 
       output->append(1, str[idx]);
-      ret.Set(output, typeId, methods, false);
+      ret.Set(output, type_id, methods, false);
       msg.SetObject(ret);
     }
     else {
@@ -138,20 +138,20 @@ namespace kagami {
     SrcType &str = p.Get<SrcType>(kStrObject);
     shared_ptr<DestType> dest = make_shared<DestType>(convertor(str));
     bool isWide = std::is_same<DestType, string>::value;
-    string typeId, methods;
+    string type_id, methods;
     Message msg;
     Object ret;
 
     if (isWide) {
-      typeId = kTypeIdWideString;
+      type_id = kTypeIdWideString;
       methods = kWideStringMethods;
     }
     else {
-      typeId = kTypeIdString;
+      type_id = kTypeIdString;
       methods = kStringMethods;
     }
 
-    ret.Set(dest, typeId, methods, false);
+    ret.Set(dest, type_id, methods, false);
     msg.SetObject(ret);
     return msg;
   }

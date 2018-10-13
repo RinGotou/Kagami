@@ -19,90 +19,88 @@ namespace kagami {
 
   vector<string> Analyzer::Scanning(string target) {
     Kit kit;
-    string current, temp;
-    bool stringProcessing = false;
-    bool delaySuspending = false;
-    bool delaySwitching = false;
-    bool escapeFlag = false;
-    bool floatTokenProcessing = false;
-    bool skipCurrentChar = false;
-    char currentChar = 0, nextChar = 0, lastChar = 0;
+    string current_string, temp;
+    bool string_processing = false;
+    bool delay_suspending = false;
+    bool delay_switching = false;
+    bool escape_flag = false;
+    char current = 0, next = 0, last = 0;
     vector<string> output;
 
     for (size_t idx = 0; idx < target.size(); idx += 1) {
-      currentChar = target[idx];
+      current = target[idx];
 
       (idx < target.size() - 1) ?
-        nextChar = target[idx + 1] :
-        nextChar = 0;
+        next = target[idx + 1] :
+        next = 0;
 
-      if (delaySuspending) {
-        stringProcessing = false;
-        delaySuspending = false;
+      if (delay_suspending) {
+        string_processing = false;
+        delay_suspending = false;
       }
 
-      (stringProcessing && lastChar == '\\') ?
-        escapeFlag = true :
-        escapeFlag = false;
+      (string_processing && last == '\\') ?
+        escape_flag = true :
+        escape_flag = false;
 
-      if (currentChar == '\'' && !escapeFlag) {
-        if (!stringProcessing && kit.GetTokenType(current) == T_BLANK) {
-          current.clear();
+      if (current == '\'' && !escape_flag) {
+        if (!string_processing && kit.GetTokenType(current_string) == T_BLANK) {
+          current_string.clear();
         }
 
-        stringProcessing ?
-          delaySuspending = true :
-          stringProcessing = true, delaySwitching = true;
+        string_processing ?
+          delay_suspending = true :
+          string_processing = true, delay_switching = true;
       }
 
-      if (!stringProcessing || delaySwitching) {
-        temp = current;
-        temp.append(1, currentChar);
+      if (!string_processing || delay_switching) {
+        temp = current_string;
+        temp.append(1, current);
 
         if (kit.GetTokenType(temp) == T_NUL) {
-          auto type = kit.GetTokenType(current);
+          auto type = kit.GetTokenType(current_string);
           switch (type) {
           case T_BLANK:
-            current.clear();
-            current.append(1, currentChar);
+            current_string.clear();
+            current_string.append(1, current);
             break;
           case T_INTEGER:
-            if (currentChar == '.' && isdigit(nextChar) != 0) {
-              current.append(1, currentChar);
+            if (current == '.' && isdigit(next) != 0) {
+              current_string.append(1, current);
             }
             else {
-              output.emplace_back(current);
-              current.clear();
-              current.append(1, currentChar);
+              output.emplace_back(current_string);
+              current_string.clear();
+              current_string.append(1, current);
             }
             break;
           default:
-            output.emplace_back(current);
-            current.clear();
-            current.append(1, currentChar);
+            output.emplace_back(current_string);
+            current_string.clear();
+            current_string.append(1, current);
             break;
           }
         }
         else {
-          current = temp;
+          current_string = temp;
         }
 
-        delaySwitching ?
-          delaySwitching = false :
-          delaySwitching = delaySwitching;
+        delay_switching ?
+          delay_switching = false :
+          delay_switching = delay_switching;
       }
       else {
-        escapeFlag ?
-          currentChar = kit.GetEscapeChar(currentChar) :
-          currentChar = currentChar;
-        current.append(1, currentChar);
+        escape_flag ?
+          current = kit.GetEscapeChar(current) :
+          current = current;
+        current_string.append(1, current);
       }
 
-      lastChar = target[idx];
+      last = target[idx];
     }
 
-    if (kit.GetTokenType(current) != T_BLANK) {
-      output.emplace_back(current);
+    if (kit.GetTokenType(current_string) != T_BLANK) {
+      output.emplace_back(current_string);
     }
 
     return output;
@@ -110,16 +108,16 @@ namespace kagami {
 
   Message Analyzer::Tokenizer(vector<string> target) {
     Kit kit;
-    bool negativeFlag = false;
+    bool negative_flag = false;
     vector<string> output;
-    stack<string> bracketStack;
+    stack<string> bracket_stack;
     Token current = Token("", T_NUL),
       next = Token("", T_NUL),
       last = Token("", T_NUL);
     Message msg;
     
-    tokens.clear();
-    health = true;
+    tokens_.clear();
+    health_ = true;
 
     for (size_t idx = 0; idx < target.size(); idx += 1) {
       current = Token(target[idx], kit.GetTokenType(target[idx]));
@@ -134,21 +132,21 @@ namespace kagami {
 
       if (current.first == "+" || current.first == "-") {
         if (last.second == T_SYMBOL && (next.second == T_INTEGER || next.second == T_FLOAT)) {
-          negativeFlag = true;
+          negative_flag = true;
         }
       }
 
       if (current.first == "(" || current.first == "[" || current.first == "{") {
-        bracketStack.push(current.first);
+        bracket_stack.push(current.first);
       }
 
       if (current.first == ")" || current.first == "]" || current.first == "}") {
-        if (!bracketStack.empty() && bracketStack.top() != kBracketPairs.at(current.first)) {
+        if (!bracket_stack.empty() && bracket_stack.top() != kBracketPairs.at(current.first)) {
           msg = Message(kStrFatalError, kCodeBadExpression, "Left bracket is missing.");
           break;
         }
         else {
-          bracketStack.pop();
+          bracket_stack.pop();
         }
       }
 
@@ -165,20 +163,20 @@ namespace kagami {
         }
       }
 
-      if ((current.first == "+" || current.first == "-") && !tokens.empty()) {
-        if (tokens.back().first == current.first) {
-          tokens.back().first.append(current.first);
+      if ((current.first == "+" || current.first == "-") && !tokens_.empty()) {
+        if (tokens_.back().first == current.first) {
+          tokens_.back().first.append(current.first);
         }
         else {
-          tokens.emplace_back(current);
+          tokens_.emplace_back(current);
         }
       }
-      else if (negativeFlag && (last.first == "+" || last.first == "-")) {
+      else if (negative_flag && (last.first == "+" || last.first == "-")) {
         Token res = Token(last.first + current.first, current.second);
-        tokens.back() = res;
+        tokens_.back() = res;
       }
       else {
-        tokens.emplace_back(current);
+        tokens_.emplace_back(current);
       }
 
       last = current;
@@ -188,36 +186,36 @@ namespace kagami {
   }
 
   void Analyzer::Reversing(AnalyzerWorkBlock *blk) {
-    deque<Entry> *tempSymbol = new deque<Entry>();
-    deque<Argument> *tempParm = new deque<Argument>();
+    deque<Entry> *temp_symbol = new deque<Entry>();
+    deque<Argument> *temp_arg = new deque<Argument>();
 
     while (!blk->symbol.empty()
       && blk->symbol.back().GetPriority()
       == blk->symbol[blk->symbol.size() - 2].GetPriority()) {
-      tempSymbol->push_back(blk->symbol.back());
+      temp_symbol->push_back(blk->symbol.back());
 
-      tempParm->push_back(blk->args.back());
+      temp_arg->push_back(blk->args.back());
       blk->symbol.pop_back();
       blk->args.pop_back();
     }
-    tempSymbol->push_back(blk->symbol.back());
+    temp_symbol->push_back(blk->symbol.back());
     blk->symbol.pop_back();
 
     for (int count = 2; count > 0; count -= 1) {
-      tempParm->push_back(blk->args.back());
+      temp_arg->push_back(blk->args.back());
       blk->args.pop_back();
     }
 
-    while (!tempSymbol->empty()) {
-      blk->symbol.push_back(tempSymbol->front());
-      tempSymbol->pop_front();
+    while (!temp_symbol->empty()) {
+      blk->symbol.push_back(temp_symbol->front());
+      temp_symbol->pop_front();
     }
-    while (!tempParm->empty()) {
-      blk->args.push_back(tempParm->front());
-      tempParm->pop_front();
+    while (!temp_arg->empty()) {
+      blk->args.push_back(temp_arg->front());
+      temp_arg->pop_front();
     }
-    delete tempSymbol;
-    delete tempParm;
+    delete temp_symbol;
+    delete temp_arg;
   }
 
   bool Analyzer::InstructionFilling(AnalyzerWorkBlock *blk) {
@@ -229,7 +227,7 @@ namespace kagami {
     auto args = ent.GetArguments();
     auto mode = ent.GetArgumentMode();
     auto token = ent.GetTokenEnum();
-    bool reversed = entry::IsOperatorToken(ent.GetTokenEnum()) && blk->needReverse;
+    bool reversed = entry::IsOperatorToken(ent.GetTokenEnum()) && blk->need_reversing;
 
     idx = size;
     bool doNotUseIdx = (ent.NeedRecheck() || mode == kCodeAutoSize);
@@ -255,10 +253,10 @@ namespace kagami {
       blk->args.pop_back();
     }
 
-    actionBase.emplace_back(Instruction(ent, arguments));
+    action_base_.emplace_back(Instruction(ent, arguments));
     blk->symbol.pop_back();
     blk->args.emplace_back(Argument("", PT_RET, T_NUL));
-    return health;
+    return health_;
   }
 
   void Analyzer::EqualMark(AnalyzerWorkBlock *blk) {
@@ -271,18 +269,18 @@ namespace kagami {
     auto ent = entry::Order(kStrTypeAssert);
     deque<Argument> arguments = {
       blk->args.back(),
-      Argument(blk->nextToken.first,PT_NORMAL,blk->nextToken.second)
+      Argument(blk->next.first,PT_NORMAL,blk->next.second)
     };
-    actionBase.emplace_back(Instruction(ent, arguments));
+    action_base_.emplace_back(Instruction(ent, arguments));
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
-    if (blk->defineLine) return;
-    if (blk->forwardToken.second != TokenTypeEnum::T_GENERIC) {
+    if (blk->define_line) return;
+    if (blk->last.second != TokenTypeEnum::T_GENERIC) {
       auto ent = entry::Order(kStrNop);
       blk->symbol.emplace_back(ent);
     }
-    blk->symbol.emplace_back(blk->currentToken.first);
+    blk->symbol.emplace_back(blk->current.first);
     blk->args.emplace_back(Argument());
   }
 
@@ -290,9 +288,9 @@ namespace kagami {
     bool result = true;
     bool checked = false;
 
-    string topId = blk->symbol.back().GetId();
+    string top_id = blk->symbol.back().GetId();
     while (!blk->symbol.empty()
-      && topId != "{" && topId != "[" && topId != "("
+      && top_id != "{" && top_id != "[" && top_id != "("
       && blk->symbol.back().GetTokenEnum() != GT_BIND) {
 
       auto firstEnum = blk->symbol.back().GetTokenEnum();
@@ -304,7 +302,7 @@ namespace kagami {
           }
           else {
             checked = true;
-            blk->needReverse = true;
+            blk->need_reversing = true;
             Reversing(blk);
           }
         }
@@ -312,10 +310,10 @@ namespace kagami {
 
       result = InstructionFilling(blk);
       if (!result) break;
-      topId = blk->symbol.back().GetId();
+      top_id = blk->symbol.back().GetId();
     }
     if (result) {
-      if (blk->needReverse) blk->needReverse = false;
+      if (blk->need_reversing) blk->need_reversing = false;
       if (blk->symbol.back().GetId() == "(" || blk->symbol.back().GetId() == "[") blk->symbol.pop_back();
       result = InstructionFilling(blk);
     }
@@ -329,11 +327,11 @@ namespace kagami {
       blk->args.back(),
       Argument("__at",PT_NORMAL,T_GENERIC)
     };
-    actionBase.emplace_back(Instruction(ent, arguments));
+    action_base_.emplace_back(Instruction(ent, arguments));
 
     ent.SetRecheckInfo("__at", true);
     blk->symbol.emplace_back(ent);
-    blk->symbol.emplace_back(blk->currentToken.first);
+    blk->symbol.emplace_back(blk->current.first);
     blk->args.emplace_back(Argument());
 
     return result;
@@ -341,24 +339,24 @@ namespace kagami {
 
   bool Analyzer::SelfOperator(AnalyzerWorkBlock *blk) {
     bool result = true;
-    if (blk->forwardToken.second == T_GENERIC) {
-      if (blk->currentToken.first == "++") {
+    if (blk->last.second == T_GENERIC) {
+      if (blk->current.first == "++") {
         blk->symbol.push_back(entry::Order(kStrRightSelfInc));
       }
-      else if (blk->currentToken.first == "--") {
+      else if (blk->current.first == "--") {
         blk->symbol.push_back(entry::Order(kStrRightSelfDec));
       }
     }
-    else if (blk->forwardToken.second != T_GENERIC && blk->nextToken.second == T_GENERIC) {
-      if (blk->currentToken.first == "++") {
+    else if (blk->last.second != T_GENERIC && blk->next.second == T_GENERIC) {
+      if (blk->current.first == "++") {
         blk->symbol.push_back(entry::Order(kStrLeftSelfInc));
       }
-      else if (blk->currentToken.first == "--") {
+      else if (blk->current.first == "--") {
         blk->symbol.push_back(entry::Order(kStrLeftSelfDec));
       }
     }
     else {
-      errorString = "Unknown self operation";
+      error_string_ = "Unknown self operation";
       result = false;
     }
     return result;
@@ -366,16 +364,16 @@ namespace kagami {
 
   bool Analyzer::LeftCurBracket(AnalyzerWorkBlock *blk) {
     bool result;
-    if (blk->forwardToken.second == TokenTypeEnum::T_SYMBOL) {
+    if (blk->last.second == TokenTypeEnum::T_SYMBOL) {
       auto ent = entry::Order(kStrArray);
       blk->symbol.emplace_back(ent);
-      blk->symbol.emplace_back(blk->currentToken.first);
+      blk->symbol.emplace_back(blk->current.first);
       blk->args.emplace_back(Argument());
       result = true;
     }
     else {
       result = false;
-      errorString = "Illegal curly bracket location.";
+      error_string_ = "Illegal curly bracket location.";
     }
     return result;
   }
@@ -384,79 +382,79 @@ namespace kagami {
     bool function = false;
     bool result = true;
 
-    if (blk->defineLine) {
-      blk->args.emplace_back(Argument(blk->currentToken.first, PT_NORMAL, T_GENERIC));
+    if (blk->define_line) {
+      blk->args.emplace_back(Argument(blk->current.first, PT_NORMAL, T_GENERIC));
     }
     else {
-      if (blk->nextToken.first == "=") {
-        blk->args.emplace_back(Argument(blk->currentToken.first, PT_NORMAL, T_GENERIC));
+      if (blk->next.first == "=") {
+        blk->args.emplace_back(Argument(blk->current.first, PT_NORMAL, T_GENERIC));
       }
-      else if (blk->nextToken.first == "(") {
-        auto ent = entry::Order(blk->currentToken.first);
-        bool needDomain = (blk->forwardToken.first == ".");
+      else if (blk->next.first == "(") {
+        auto ent = entry::Order(blk->current.first);
+        bool needDomain = (blk->last.first == ".");
         if (needDomain) {
-          ent.SetRecheckInfo(blk->currentToken.first, true);
+          ent.SetRecheckInfo(blk->current.first, true);
         }
         else {
           if (!ent.Good()) {
-            ent.SetRecheckInfo(blk->currentToken.first, false);
+            ent.SetRecheckInfo(blk->current.first, false);
           }
         }
         blk->symbol.push_back(ent);
       }
       else {
-        if (blk->currentToken.first == kStrEnd 
-          || blk->currentToken.first == kStrElse
-          || blk->currentToken.first == kStrContinue
-          || blk->currentToken.first == kStrBreak) {
-          auto ent = entry::Order(blk->currentToken.first);
+        if (blk->current.first == kStrEnd 
+          || blk->current.first == kStrElse
+          || blk->current.first == kStrContinue
+          || blk->current.first == kStrBreak) {
+          auto ent = entry::Order(blk->current.first);
           blk->symbol.push_back(ent);
         }
-        else if (blk->currentToken.first == kStrDef) {
-          auto ent = entry::Order(blk->currentToken.first);
-          blk->defineLine = true;
+        else if (blk->current.first == kStrDef) {
+          auto ent = entry::Order(blk->current.first);
+          blk->define_line = true;
           blk->symbol.emplace_back(ent);
           blk->symbol.emplace_back("(");
           blk->args.emplace_back(Argument());
         }
         else {
-          blk->args.emplace_back(Argument(blk->currentToken.first, PT_OBJ, T_GENERIC));
+          blk->args.emplace_back(Argument(blk->current.first, PT_OBJ, T_GENERIC));
         }
       }
     }
 
-    if (function && blk->nextToken.first != "("
-      && blk->currentToken.first != kStrElse 
-      && blk->currentToken.first != kStrEnd
-      && blk->currentToken.first != kStrFinally) {
-      this->health = false;
+    if (function && blk->next.first != "("
+      && blk->current.first != kStrElse 
+      && blk->current.first != kStrEnd
+      && blk->current.first != kStrFinally) {
+      health_ = false;
       result = false;
-      errorString = "Left bracket after function is missing";
+      error_string_ = "Left bracket after function is missing";
     }
 
-    if (blk->defineLine && blk->forwardToken.first == kStrDef && blk->nextToken.first != "(") {
-      this->health = false;
+    if (blk->define_line && blk->last.first == kStrDef && blk->next.first != "(") {
+      health_ = false;
       result = false;
-      errorString = "Wrong definition pattern";
+      error_string_ = "Wrong definition pattern";
     }
 
     return result;
   }
 
   void Analyzer::OtherToken(AnalyzerWorkBlock *blk) {
-    if (blk->insertBetweenObject) {
-      blk->args.emplace(blk->args.begin() + blk->nextInsertSubscript,
-        Argument(blk->currentToken.first, PT_NORMAL, blk->currentToken.second));
-      blk->insertBetweenObject = false;
+    if (blk->insert_between_object) {
+      blk->args.emplace(blk->args.begin() + blk->next_insert_index,
+        Argument(blk->current.first, PT_NORMAL, blk->current.second));
+      blk->insert_between_object = false;
     }
     else {
       blk->args.emplace_back(
-        Argument(blk->currentToken.first, PT_NORMAL, blk->currentToken.second));
+        Argument(blk->current.first, PT_NORMAL, blk->current.second));
     }
   }
 
   void Analyzer::OtherSymbol(AnalyzerWorkBlock *blk) {
-    Entry ent = entry::Order(blk->currentToken.first);
+    Entry ent = entry::Order(blk->current.first);
     int currentPriority = ent.GetPriority();
     if (blk->symbol.empty()) {
       blk->symbol.push_back(ent);
@@ -470,8 +468,8 @@ namespace kagami {
         --j;
       }
       blk->symbol.insert(blk->symbol.begin() + j + 1, ent);
-      blk->nextInsertSubscript = k;
-      blk->insertBetweenObject = true;
+      blk->next_insert_index = k;
+      blk->insert_between_object = true;
     }
     else {
       blk->symbol.push_back(ent);
@@ -482,8 +480,8 @@ namespace kagami {
     bool checked = false;
     while (!blk->symbol.empty()) {
       if (blk->symbol.back().GetId() == "(") {
-        errorString = "Right bracket is missing";
-        health = false;
+        error_string_ = "Right bracket is missing";
+        health_ = false;
         break;
       }
       auto firstEnum = blk->symbol.back().GetTokenEnum();
@@ -494,13 +492,13 @@ namespace kagami {
           }
           else {
             checked = true;
-            blk->needReverse = true;
+            blk->need_reversing = true;
             Reversing(blk);
           }
         }
       }
       if (!entry::IsOperatorToken(blk->symbol.back().GetTokenEnum())) {
-        blk->needReverse = false;
+        blk->need_reversing = false;
       }
       if (!InstructionFilling(blk)) break;
     }
@@ -509,27 +507,27 @@ namespace kagami {
   Message Analyzer::Parser() {
     using namespace entry;
     auto state = true;
-    const auto size = tokens.size();
+    const auto size = tokens_.size();
     Message result;
 
     AnalyzerWorkBlock *blk = new AnalyzerWorkBlock();
-    blk->nextInsertSubscript = 0;
-    blk->insertBetweenObject = false;
-    blk->needReverse = false;
-    blk->defineLine = false;
+    blk->next_insert_index = 0;
+    blk->insert_between_object = false;
+    blk->need_reversing = false;
+    blk->define_line = false;
 
     for (size_t i = 0; i < size; ++i) {
-      if (!health) break;
+      if (!health_) break;
       if (!state)  break;
 
-      blk->currentToken = tokens[i];
+      blk->current = tokens_[i];
       i < size - 1 ?
-        blk->nextToken = tokens[i + 1] :
-        blk->nextToken = Token(kStrNull, TokenTypeEnum::T_NUL);
+        blk->next = tokens_[i + 1] :
+        blk->next = Token(kStrNull, TokenTypeEnum::T_NUL);
 
-      auto tokenTypeEnum = blk->currentToken.second;
-      if (tokenTypeEnum == TokenTypeEnum::T_SYMBOL) {
-        BasicTokenEnum value = GetBasicToken(blk->currentToken.first);
+      auto token_type = blk->current.second;
+      if (token_type == TokenTypeEnum::T_SYMBOL) {
+        BasicTokenEnum value = GetBasicToken(blk->current.first);
         switch (value) {
         case TOKEN_EQUAL: EqualMark(blk); break;
         case TOKEN_COMMA: break;
@@ -546,43 +544,43 @@ namespace kagami {
         default:break;
         }
       }
-      else if (tokenTypeEnum == TokenTypeEnum::T_GENERIC) {
+      else if (token_type == TokenTypeEnum::T_GENERIC) {
         state = FunctionAndObject(blk);
       }
-      else if (tokenTypeEnum == TokenTypeEnum::T_NUL) {
+      else if (token_type == TokenTypeEnum::T_NUL) {
         result = Message(kStrFatalError, kCodeIllegalParm, "Illegal token.");
         state = false;
       }
       else OtherToken(blk);
-      blk->forwardToken = blk->currentToken;
+      blk->last = blk->current;
     }
 
     if (state) {
       FinalProcessing(blk);
     }
-    if (!state || !health) {
-      result = Message(kStrFatalError, kCodeBadExpression, errorString);
+    if (!state || !health_) {
+      result = Message(kStrFatalError, kCodeBadExpression, error_string_);
     }
 
     Kit().CleanupDeque(blk->args).CleanupDeque(blk->symbol);
-    blk->nextToken = Token();
-    blk->forwardToken = Token();
-    blk->currentToken = Token();
+    blk->next = Token();
+    blk->last = Token();
+    blk->current = Token();
     delete blk;
     return result;
   }
 
   void Analyzer::Clear() {
-    Kit().CleanupVector(tokens).CleanupVector(actionBase);
-    health = false;
-    errorString.clear();
-    index = 0;
+    Kit().CleanupVector(tokens_).CleanupVector(action_base_);
+    health_ = false;
+    error_string_.clear();
+    index_ = 0;
   }
 
   Message Analyzer::Make(string target, size_t index) {
-    vector<string> spiltedString = Scanning(target);
-    Message msg = Tokenizer(spiltedString);
-    this->index = index;
+    vector<string> spilted_string = Scanning(target);
+    Message msg = Tokenizer(spilted_string);
+    this->index_ = index;
     if (msg.GetCode() >= kCodeSuccess) {
       msg = Parser();
     }

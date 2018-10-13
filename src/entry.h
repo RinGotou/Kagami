@@ -10,27 +10,27 @@ namespace kagami {
   */
 
   class Entry {
-    string id;
-    GenericTokenEnum tokenEnum;
-    Activity activity;
-    vector<string> parms;
-    int argumentMode, priority;
-    string type;
-    int flag;
-    bool isPlaceholder, isUserFunc, needRecheck, isMethod;
+    string id_;
+    GenericTokenEnum gen_token_;
+    Activity activity_;
+    vector<string> parms_;
+    int argument_mode_, priority_;
+    string type_;
+    int flag_;
+    bool is_placeholder_, is_user_func_, need_recheck_, is_method_;
   public:
-    Entry() : id(kStrNull), 
-      activity(nullptr), 
-      priority(0), 
-      flag(kFlagNormalEntry) {
+    Entry() : id_(kStrNull), 
+      activity_(nullptr), 
+      priority_(0), 
+      flag_(kFlagNormalEntry) {
 
-      argumentMode = kCodeIllegalParm;
-      type = kTypeIdNull;
-      isPlaceholder = false;
-      isUserFunc = false;
-      needRecheck = false;
-      isMethod = false;
-      tokenEnum = GenericTokenEnum::GT_NUL;
+      argument_mode_ = kCodeIllegalParm;
+      type_ = kTypeIdNull;
+      is_placeholder_ = false;
+      is_user_func_ = false;
+      need_recheck_ = false;
+      is_method_ = false;
+      gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
     Entry(Activity activity, 
@@ -40,19 +40,19 @@ namespace kagami {
       string type = kTypeIdNull, 
       int flag = kFlagNormalEntry, 
       int priority = 4) :
-      id(id), 
-      parms(Kit::BuildStringVector(parms)), 
-      argumentMode(argumentMode), 
-      priority(priority),
-      type(type), 
-      flag(flag) {
+      id_(id), 
+      parms_(Kit::BuildStringVector(parms)), 
+      argument_mode_(argumentMode), 
+      priority_(priority),
+      type_(type), 
+      flag_(flag) {
 
-      this->activity = activity;
-      isPlaceholder = false;
-      isUserFunc = false;
-      needRecheck = false;
-      isMethod = false;
-      tokenEnum = GenericTokenEnum::GT_NUL;
+      activity_ = activity;
+      is_placeholder_ = false;
+      is_user_func_ = false;
+      need_recheck_ = false;
+      is_method_ = false;
+      gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
     Entry(Activity activity, 
@@ -60,56 +60,56 @@ namespace kagami {
       GenericTokenEnum tokenEnum, 
       int argumentMode = kCodeNormalParm, 
       int priority = 4) :
-      id(), 
-      parms(Kit::BuildStringVector(parms)), 
-      argumentMode(argumentMode), 
-      priority(priority) {
+      id_(), 
+      parms_(Kit::BuildStringVector(parms)), 
+      argument_mode_(argumentMode), 
+      priority_(priority) {
 
-      this->activity = activity;
-      this->tokenEnum = tokenEnum;
-      isUserFunc = false;
-      needRecheck = false;
-      isPlaceholder = false;
-      isMethod = false;
+      activity_ = activity;
+      gen_token_ = tokenEnum;
+      is_user_func_ = false;
+      need_recheck_ = false;
+      is_placeholder_ = false;
+      is_method_ = false;
     }
 
     Entry(string id) :
-      id(id), 
-      activity(nullptr), 
-      priority(0) {
+      id_(id), 
+      activity_(nullptr), 
+      priority_(0) {
 
-      argumentMode = kCodeNormalParm;
-      type = kTypeIdNull;
-      isUserFunc = false;
-      needRecheck = false;
-      isPlaceholder = true;
-      isMethod = false;
-      tokenEnum = GenericTokenEnum::GT_NUL;
+      argument_mode_ = kCodeNormalParm;
+      type_ = kTypeIdNull;
+      is_user_func_ = false;
+      need_recheck_ = false;
+      is_placeholder_ = true;
+      is_method_ = false;
+      gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
     Entry(Activity activity, 
       string id,
       vector<string> parms) : 
-      priority(4) {
+      priority_(4) {
 
-      type = kTypeIdNull;
-      isPlaceholder = false;
-      argumentMode = kCodeNormalParm;
-      flag = kFlagNormalEntry;
-      isUserFunc = true;
-      this->activity = activity;
-      this->id = id;
-      needRecheck = false;
-      this->parms = parms;
-      isMethod = false;
-      type = kTypeIdNull;
+      type_ = kTypeIdNull;
+      is_placeholder_ = false;
+      argument_mode_ = kCodeNormalParm;
+      flag_ = kFlagNormalEntry;
+      is_user_func_ = true;
+      activity_ = activity;
+      id_ = id;
+      need_recheck_ = false;
+      parms_ = parms;
+      is_method_ = false;
+      type_ = kTypeIdNull;
     }
 
     void SetRecheckInfo(string id,bool isMethod = false) {
-      this->id = id;
-      this->isMethod = isMethod;
-      needRecheck = true;
-      tokenEnum = GenericTokenEnum::GT_NUL;
+      id_ = id;
+      is_method_ = isMethod;
+      need_recheck_ = true;
+      gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
     bool Compare(Entry &target) const;
@@ -119,56 +119,56 @@ namespace kagami {
       return Compare(target); 
     }
 
-    Entry &SetSpecificTypeSign() { 
-      this->isMethod = true; 
+    Entry &set_is_method() { 
+      is_method_ = true; 
       return *this; 
     }
 
     bool IsMethod() const { 
-      return isMethod; 
+      return is_method_; 
     }
 
-    string GetSpecificType() const { 
-      return type; 
+    string GetTypeDomain() const { 
+      return type_; 
     }
 
     GenericTokenEnum GetTokenEnum() const { 
-      return tokenEnum; 
+      return gen_token_; 
     }
 
     bool NeedRecheck() const { 
-      return needRecheck; 
+      return need_recheck_; 
     }
 
     string GetId() const { 
-      return this->id; 
+      return id_; 
     }
 
     int GetArgumentMode() const { 
-      return this->argumentMode; 
+      return argument_mode_; 
     }
 
     vector<string> GetArguments() const { 
-      return parms; 
+      return parms_; 
     }
 
     size_t GetParmSize() const { 
-      return this->parms.size(); 
+      return parms_.size(); 
     }
 
     int GetPriority() const { 
-      return this->priority; 
+      return priority_; 
     }
 
     int GetFlag() const {
-      return flag; 
+      return flag_; 
     }
 
     bool Good() const { 
       bool conditionA =
-        ((activity != nullptr) && (argumentMode != kCodeIllegalParm));
+        ((activity_ != nullptr) && (argument_mode_ != kCodeIllegalParm));
       bool conditionB =
-        (isUserFunc && id != kStrEmpty);
+        (is_user_func_ && id_ != kStrEmpty);
 
       return (conditionA || conditionB);
     }
