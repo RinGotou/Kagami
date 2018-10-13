@@ -24,7 +24,7 @@ namespace kagami {
   class Object {
     using TargetObject = struct { Object *ptr; };
     std::shared_ptr<void> ptr;
-    string typeId;
+    string type_id;
     string methods;
     TokenTypeEnum tokenTypeEnum;
     bool ro, ref, constructor;
@@ -36,8 +36,8 @@ namespace kagami {
   public:
     Object();
     Object &Manage(string t, TokenTypeEnum tokenType);
-    Object &Set(shared_ptr<void> ptr, string typeId);
-    Object &Set(shared_ptr<void> ptr, string typeId, string methods, bool ro);
+    Object &Set(shared_ptr<void> ptr, string type_id);
+    Object &Set(shared_ptr<void> ptr, string type_id, string methods, bool ro);
     Object &Ref(Object &object);
     void Clear();
     bool Compare(Object &object) const;
@@ -171,8 +171,8 @@ namespace kagami {
       return this->at(id);
     }
 
-    bool CheckTypeId(string id, string typeId) {
-      return this->at(id).GetTypeId() == typeId;
+    bool CheckTypeId(string id, string type_id) {
+      return this->at(id).GetTypeId() == type_id;
     }
 
     bool CheckTypeId(string id, ComparingFunction func) {

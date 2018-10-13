@@ -20,8 +20,8 @@ namespace kagami {
     return (id == kTypeIdRawString || id == kTypeIdString);
   }
 
-  inline bool CheckObjectType(Object &obj, string typeId) {
-    return (obj.GetTypeId() == typeId);
+  inline bool CheckObjectType(Object &obj, string type_id) {
+    return (obj.GetTypeId() == type_id);
   }
 
   inline bool CheckTokenType(Object &obj, TokenTypeEnum tokenType) {
@@ -44,9 +44,9 @@ namespace kagami {
     return Message(kStrFatalError, kCodeIllegalSymbol, str);
   }
 
-  inline Message CheckEntryAndStart(string id, string typeId, ObjectMap &parm) {
+  inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm) {
     Message msg;
-    auto ent = entry::Order(id, typeId);
+    auto ent = entry::Order(id, type_id);
     ent.Good() ?
       msg = ent.Start(parm) :
       msg.SetCode(kCodeIllegalCall);
@@ -189,13 +189,13 @@ namespace kagami {
 
   Message ReturnSign(ObjectMap &p) {
     Object &valueObj = p["value"];
-    string typeId = valueObj.GetTypeId();
+    string type_id = valueObj.GetTypeId();
     auto &container = entry::GetCurrentContainer();
 
     Object obj;
 
-    if (typeId != kTypeIdNull) {
-      obj.Set(valueObj.Get(), typeId, valueObj.GetMethods(), false)
+    if (type_id != kTypeIdNull) {
+      obj.Set(valueObj.Get(), type_id, valueObj.GetMethods(), false)
         .SetTokenType(valueObj.GetTokenType());
       container.Add(kStrRetValue, obj);
     }
@@ -509,7 +509,7 @@ namespace kagami {
     int size = stoi(p.Get<string>("__size"));
     ObjectPointer caseHead = entry::FindObject("__case");
     string caseContent = GetObjectStuff<string>(*caseHead);
-    string typeId, id;
+    string type_id, id;
     bool result = false, state = true;
 
     for (int i = 0; i < size; ++i) {

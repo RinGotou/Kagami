@@ -2,22 +2,22 @@
 
 namespace kagami {
   bool Entry::Compare(Entry &target) const {
-    return (target.id == this->id &&
-      target.activity == this->activity &&
-      target.argumentMode == this->argumentMode &&
-      target.priority == this->priority &&
-      this->type == target.type &&
-      target.parms == this->parms);
+    return (target.id_ == id_ &&
+      target.activity_ == activity_ &&
+      target.argument_mode_ == argument_mode_ &&
+      target.priority_ == priority_ &&
+      target.type_ == type_ &&
+      target.parms_ == parms_);
   }
 
   Message Entry::Start(ObjectMap &objMap) const {
-    if (isPlaceholder) return Message();
+    if (is_placeholder_) return Message();
     Message result;
-    if (isUserFunc) {
-      objMap[kStrUserFunc] = Object().Manage(id, T_GENERIC);
+    if (is_user_func_) {
+      objMap[kStrUserFunc] = Object().Manage(id_, T_GENERIC);
     }
     if (Good()) {
-      result = activity(objMap);
+      result = activity_(objMap);
     }
     else {
       result = Message(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
@@ -268,10 +268,10 @@ namespace kagami {
 
       vector<Entry> &base = GetEntryBase();
       Entry result;
-      bool ignoreType = (type == kTypeIdNull);
+      bool ignore_type = (type == kTypeIdNull);
       //TODO:rewrite here
       for (auto &unit : base) {
-        bool typeChecking = (ignoreType || type == unit.GetSpecificType());
+        bool typeChecking = (ignore_type || type == unit.GetTypeDomain());
         bool sizeChecking = (size == -1 || size == int(unit.GetParmSize()));
         if (id == unit.GetId() && typeChecking && sizeChecking) {
           result = unit;

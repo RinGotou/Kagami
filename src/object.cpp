@@ -6,7 +6,7 @@ namespace kagami {
     //so this will hold a specific value intead of nullptr
     ptr = nullptr;
     parent = nullptr;
-    typeId = kTypeIdNull;
+    type_id = kTypeIdNull;
     tokenTypeEnum = TokenTypeEnum::T_NUL;
     ro = false;
     ref = false;
@@ -16,30 +16,30 @@ namespace kagami {
   Object &Object::Manage(string t, TokenTypeEnum tokenType) {
     if (ref) return GetTargetObject()->Manage(t, tokenType);
     this->ptr = std::make_shared<string>(t);
-    this->typeId = kTypeIdRawString;
+    this->type_id = kTypeIdRawString;
     this->methods = kRawStringMethods;
     this->tokenTypeEnum = tokenType;
     return *this;
   }
 
-  Object &Object::Set(shared_ptr<void> ptr, string typeId) {
-    if (ref) return GetTargetObject()->Set(ptr, typeId);
+  Object &Object::Set(shared_ptr<void> ptr, string type_id) {
+    if (ref) return GetTargetObject()->Set(ptr, type_id);
     this->ptr = ptr;
-    this->typeId = typeId;
+    this->type_id = type_id;
     return *this;
   }
 
-  Object &Object::Set(shared_ptr<void> ptr, string typeId, string methods, bool ro) {
-    if (ref) return GetTargetObject()->Set(ptr, typeId, methods, ro);
+  Object &Object::Set(shared_ptr<void> ptr, string type_id, string methods, bool ro) {
+    if (ref) return GetTargetObject()->Set(ptr, type_id, methods, ro);
     this->ptr = ptr;
-    this->typeId = typeId;
+    this->type_id = type_id;
     this->methods = methods;
     this->ro = ro;
     return *this;
   }
 
   Object &Object::Ref(Object &object) {
-    this->typeId = kTypeIdRef;
+    this->type_id = kTypeIdRef;
     this->ref = true;
 
     TargetObject target;
@@ -55,7 +55,7 @@ namespace kagami {
 
   void Object::Clear() {
     ptr = make_shared<int>(0);
-    typeId = kTypeIdNull;
+    type_id = kTypeIdNull;
     methods.clear();
     tokenTypeEnum = TokenTypeEnum::T_NUL;
     ro = false;
@@ -64,7 +64,7 @@ namespace kagami {
 
   bool Object::Compare(Object &object) const {
     return (ptr == object.ptr &&
-      typeId == object.typeId &&
+      type_id == object.type_id &&
       methods == object.methods &&
       tokenTypeEnum == object.tokenTypeEnum &&
       ro == object.ro &&
@@ -75,7 +75,7 @@ namespace kagami {
   Object &Object::Copy(Object &object, bool force) {
     auto mod = [&]() {
       ptr = object.ptr;
-      typeId = object.typeId;
+      type_id = object.type_id;
       methods = object.methods;
       tokenTypeEnum = object.tokenTypeEnum;
       ro = object.ro;
@@ -100,7 +100,7 @@ namespace kagami {
 
   string Object::GetTypeId() {
     if (ref) return GetTargetObject()->GetTypeId();
-    return typeId;
+    return type_id;
   }
 
   Object &Object::SetMethods(string methods) {

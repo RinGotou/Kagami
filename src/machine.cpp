@@ -447,7 +447,7 @@ namespace kagami {
   Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
     Kit kit;
     int mode, flag;
-    string errorString, id, typeId, vaArgHead;
+    string errorString, id, type_id, vaArgHead;
     Message msg;
     ObjectMap objMap;
     deque<Object> retBase;
@@ -497,7 +497,7 @@ namespace kagami {
       kit.CleanupMap(objMap).CleanupVector(args);
       id.clear();
       vaArgHead.clear();
-      typeId.clear();
+      type_id.clear();
       sub = 0;
       count = 0;
 
@@ -521,10 +521,10 @@ namespace kagami {
       if (ent.NeedRecheck()) {
         id = ent.GetId();
         ent.IsMethod() ?
-          typeId = makeObject(parms.back()).GetTypeId() :
-          typeId = kTypeIdNull;
+          type_id = makeObject(parms.back()).GetTypeId() :
+          type_id = kTypeIdNull;
 
-        ent = entry::Order(id, typeId);
+        ent = entry::Order(id, type_id);
 
         if (!ent.Good()) {
           msg = Message(kStrFatalError, kCodeIllegalCall, "Function not found - " + id);

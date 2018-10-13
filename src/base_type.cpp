@@ -37,7 +37,7 @@ namespace kagami {
       return result;
     }
 
-    const auto typeId = obj.GetTypeId();
+    const auto type_id = obj.GetTypeId();
     const auto methods = obj.GetMethods();
     const auto tokenTypeEnum = obj.GetTokenType();
     shared_ptr<void> initPtr;
@@ -46,7 +46,7 @@ namespace kagami {
     for (auto count = 0; count < size; count++) {
       initPtr = type::GetObjectCopy(obj);
       base.emplace_back((Object()
-        .Set(initPtr, typeId)
+        .Set(initPtr, type_id)
         .SetMethods(methods)
         .SetTokenType(tokenTypeEnum)
         .SetRo(false)));
@@ -158,11 +158,11 @@ namespace kagami {
   //String
   Message StringConstructor(ObjectMap &p) {
     Object &obj = p["raw_string"];
-    string typeId = obj.GetTypeId();
+    string type_id = obj.GetTypeId();
     Object base;
-    if (typeId != kTypeIdRawString 
-      && typeId != kTypeIdString
-      && typeId != kTypeIdWideString) {
+    if (type_id != kTypeIdRawString 
+      && type_id != kTypeIdString
+      && type_id != kTypeIdWideString) {
       return Message(kStrFatalError, kCodeIllegalParm, "String constructor can't accept this object.");
     }
     if (obj.GetTypeId() == kTypeIdWideString) {
