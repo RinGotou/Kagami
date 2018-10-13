@@ -16,29 +16,29 @@ namespace kagami {
 #if defined(_WIN32)
   class LibraryHandler {
   private:
-    HINSTANCE hIns;
-    ref_blk *blk;
+    HINSTANCE h_ins_;
+    ref_blk *blk_;
   public:
-    LibraryHandler(HINSTANCE hIns) { 
-      this->hIns = hIns; 
-      blk = new ref_blk();
+    LibraryHandler(HINSTANCE h_ins_) { 
+      this->h_ins_ = h_ins_; 
+      blk_ = new ref_blk();
     }
 
     LibraryHandler(LibraryHandler &handler) {
-      this->hIns = handler.hIns;
-      this->blk = handler.blk;
-      blk->count += 1;
+      this->h_ins_ = handler.h_ins_;
+      this->blk_ = handler.blk_;
+      blk_->count += 1;
     }
 
     ~LibraryHandler() { 
-      blk->count -= 1;
-      if (blk->count == 0) {
-        delete blk;
-        FreeLibrary(hIns);
+      blk_->count -= 1;
+      if (blk_->count == 0) {
+        delete blk_;
+        FreeLibrary(h_ins_);
       }
     }
 
-    HINSTANCE Get() { return hIns; }
+    HINSTANCE Get() { return h_ins_; }
   };
 #else
 
