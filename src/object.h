@@ -30,10 +30,12 @@ namespace kagami {
     bool ro, ref, constructor;
     Object *parent;
 
-    Object *GetTargetObject() { return static_pointer_cast<TargetObject>(ptr)->ptr; }
+    Object *GetTargetObject() { 
+      return static_pointer_cast<TargetObject>(ptr)->ptr; 
+    }
   public:
     Object();
-    Object &Manage(string t, string typeId = kTypeIdRawString);
+    Object &Manage(string t, TokenTypeEnum tokenType);
     Object &Set(shared_ptr<void> ptr, string typeId);
     Object &Set(shared_ptr<void> ptr, string typeId, string methods, bool ro);
     Object &Ref(Object &object);
@@ -51,13 +53,33 @@ namespace kagami {
     bool IsRo();
     bool ConstructorFlag();
 
-    void SetParentObject(Object &object) { parent = &object; }
-    Object *GetParentObject() { return parent; }
-    Object &SetConstructorFlag() { constructor = true; return *this; }
-    Object &Copy(Object &&object) { return this->Copy(object); }
-    bool IsRef() const { return ref; }
-    bool operator==(Object &object) const { return Compare(object); }
-    bool operator!=(Object &object) const { return !Compare(object); }
+    void SetParentObject(Object &object) { 
+      parent = &object; 
+    }
+
+    Object *GetParentObject() { 
+      return parent; 
+    }
+
+    Object &SetConstructorFlag() { 
+      constructor = true; 
+      return *this; 
+    }
+
+    Object &Copy(Object &&object) { 
+      return this->Copy(object); 
+    }
+
+    bool IsRef() const { 
+      return ref; 
+    }
+
+    bool operator==(Object &object) const { 
+      return Compare(object); 
+    }
+    bool operator!=(Object &object) const { 
+      return !Compare(object); 
+    }
   };
 
   /* Object Template Class
@@ -68,8 +90,15 @@ namespace kagami {
     CopyCreator copyCreator;
     string methods;
   public:
-    ObjectPlanner() : methods(kStrEmpty) { copyCreator = nullptr; }
-    ObjectPlanner(CopyCreator copyCreator, string methods) : methods(methods){
+    ObjectPlanner() : 
+      methods(kStrEmpty) { 
+
+      copyCreator = nullptr; 
+    }
+    ObjectPlanner(CopyCreator copyCreator, 
+      string methods) : 
+      methods(methods){
+
       this->copyCreator = copyCreator;
     }
 
@@ -81,7 +110,9 @@ namespace kagami {
       return result;
     }
 
-    string GetMethods() const { return methods; }
+    string GetMethods() const { 
+      return methods; 
+    }
   };
 
   /*ObjectContainer Class
@@ -100,20 +131,26 @@ namespace kagami {
       return true;
     }
   public:
-    ObjectContainer() {}
-    ObjectContainer(ObjectContainer &&mgr) {}
-    ObjectContainer(ObjectContainer &container) {
-      this->base.copy(container.base);
-    }
-
     bool Add(string sign, Object &source);
     Object *Find(string sign);
     void Dispose(string sign);
     void clear();
 
-    bool Empty() const { return base.empty(); }
-    //ObjectContainer(ObjectContainer &mgr) { base = mgr.base; }
-    ObjectContainer &operator=(ObjectContainer &mgr) { base.copy(mgr.base); return *this; }
+    ObjectContainer() {}
+
+    ObjectContainer(ObjectContainer &&mgr) {}
+
+    ObjectContainer(ObjectContainer &container) {
+      this->base.copy(container.base);
+    }
+
+    bool Empty() const { 
+      return base.empty(); 
+    }
+
+    ObjectContainer &operator=(ObjectContainer &mgr) { 
+      base.copy(mgr.base); return *this; 
+    }
   };
 
   class ObjectMap : public map<string, Object> {

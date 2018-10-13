@@ -17,7 +17,7 @@
 #include <ctime>
 #include <type_traits>
 
-//if you build this project by cmake,please turn off all switch marco below.
+//if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
 #define _DISABLE_SDL_
 //Enable all debugging feature and output info
@@ -171,6 +171,13 @@ namespace kagami {
   const string kTypeIdRegex     = "Regex";
   const string kTypeIdRef       = "Ref";
   const string kTypeIdLib       = "Library";
+
+  const string kArrayBaseMethods = "size|__at|__print";
+  const string kStringMethods = "size|__at|__print|substr|to_wide";
+  const string kWideStringMethods = "size|__at|__print|substr|to_byte";
+  const string kInStreamMethods = "get|good|getlines|close|eof";
+  const string kOutStreamMethods = "write|good|close";
+  const string kRegexMethods = "match";
 
   const size_t kModeNormal        = 0;
   const size_t kModeNextCondition = 1;

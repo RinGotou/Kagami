@@ -6,7 +6,7 @@ namespace kagami {
   Message InitSDL(ObjectMap &p) {
     Message msg;
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-      msg.combo(kStrRedirect, kCodeSDLInfo, kStrFalse);
+      msg = Message(kStrRedirect, kCodeSDLInfo, kStrFalse);
     }
     else {
       auto window = SDL_CreateWindow("Kagami Test Workbench", 

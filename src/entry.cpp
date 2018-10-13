@@ -4,26 +4,23 @@ namespace kagami {
   bool Entry::Compare(Entry &target) const {
     return (target.id == this->id &&
       target.activity == this->activity &&
-      target.parmMode == this->parmMode &&
+      target.argumentMode == this->argumentMode &&
       target.priority == this->priority &&
       this->type == target.type &&
-      target.args == this->args);
+      target.parms == this->parms);
   }
 
   Message Entry::Start(ObjectMap &objMap) const {
-    if (placeholder) return Message();
+    if (isPlaceholder) return Message();
     Message result;
-    if (userFunc) {
-      objMap[kStrUserFunc] = Object()
-        .Manage(id)
-        .SetMethods(type::GetMethods(kTypeIdRawString))
-        .SetTokenType(T_GENERIC);
+    if (isUserFunc) {
+      objMap[kStrUserFunc] = Object().Manage(id, T_GENERIC);
     }
     if (Good()) {
       result = activity(objMap);
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
+      result = Message(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
     }
     return result;
   }

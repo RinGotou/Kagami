@@ -4,23 +4,23 @@
 #include "entry.h"
 
 namespace kagami {
-  enum ParameterType {
+  enum ArgumentType {
     PT_NORMAL, PT_OBJ, PT_RET, PT_PHOLDER
   };
 
-  class Parameter {
+  class Argument {
   public:
     string data;
-    ParameterType type;
+    ArgumentType type;
     TokenTypeEnum tokenType;
 
-    Parameter() :
+    Argument() :
       data(),
       type(PT_PHOLDER),
       tokenType(T_NUL) {}
 
-    Parameter(string data, 
-      ParameterType type, 
+    Argument(string data, 
+      ArgumentType type, 
       TokenTypeEnum tokenType) {
       this->data = data;
       this->type = type;
@@ -32,9 +32,10 @@ namespace kagami {
     }
   };
 
-  using Instruction = pair<Entry, deque<Parameter>>;
+  using Instruction = pair<Entry, deque<Argument>>;
+
   using AnalyzerWorkBlock = struct {
-    deque<Parameter> parm;
+    deque<Argument> args;
     deque<Entry> symbol;
     bool insertBetweenObject, needReverse, defineLine;
     Token currentToken;

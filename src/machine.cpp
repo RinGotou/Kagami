@@ -290,7 +290,7 @@ namespace kagami {
       }
     }
     else {
-      //msg.combo
+      //msg = Message
       health = false;
     }
   }
@@ -323,7 +323,7 @@ namespace kagami {
       }
     }
     else {
-      //msg.combo
+      //msg = Message
       health = false;
     }
   }
@@ -459,14 +459,12 @@ namespace kagami {
     bool errorReturn = false, errorArg = false;
     bool tailRecursion = false, preprocessing = (blk == nullptr);
 
-    auto makeObject = [&](Parameter &parm) -> Object {
+    auto makeObject = [&](Argument &parm) -> Object {
       Object obj;
       ObjectPointer ptr;
       switch (parm.type) {
       case PT_NORMAL:
-        obj.Manage(parm.data)
-          .SetMethods(type::GetMethods(kTypeIdRawString))
-          .SetTokenType(parm.tokenType);
+        obj.Manage(parm.data, parm.tokenType);
         break;
       case PT_OBJ:
         ptr = entry::FindObject(parm.data);
@@ -520,16 +518,16 @@ namespace kagami {
           tailRecursion = false;
       }
 
-      if (ent.GetEntrySign()) {
+      if (ent.NeedRecheck()) {
         id = ent.GetId();
-        ent.NeedSpecificType() ?
+        ent.IsMethod() ?
           typeId = makeObject(parms.back()).GetTypeId() :
           typeId = kTypeIdNull;
 
         ent = entry::Order(id, typeId);
 
         if (!ent.Good()) {
-          msg.combo(kStrFatalError, kCodeIllegalCall, "Function not found - " + id);
+          msg = Message(kStrFatalError, kCodeIllegalCall, "Function not found - " + id);
           break;
         }
       }
@@ -556,9 +554,7 @@ namespace kagami {
         }
 
         objMap.insert(NamedObject("__size",
-          Object().Manage(to_string(count))
-          .SetMethods(type::GetMethods(kTypeIdRawString))
-          .SetTokenType(T_INTEGER)));
+          Object().Manage(to_string(count), T_INTEGER)));
       }
       else {
         while (sub < args.size()) {
@@ -593,9 +589,8 @@ namespace kagami {
       else if ((value == kStrRedirect && (code == kCodeSuccess || code == kCodeHeadPlaceholder))
         && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
         Object obj;
-        obj.Manage(detail)
-          .SetMethods(type::GetMethods(kTypeIdRawString))
-          .SetTokenType(kagami::Kit::GetTokenType(detail));
+        obj.Manage(detail, Kit::GetTokenType(detail));
+
         if (entry::IsOperatorToken(ent.GetTokenEnum())
           && idx + 1 < actionBase.size()) {
           auto token = actionBase[idx + 1].first.GetTokenEnum();
@@ -613,7 +608,7 @@ namespace kagami {
     }
 
     if (errorReturn || errorArg) {
-      msg.combo(kStrFatalError, kCodeIllegalSymbol, errorString);
+      msg = Message(kStrFatalError, kCodeIllegalSymbol, errorString);
     }
 
     if(!preprocessing && tailRecursion) blk->tailRecursion = tailRecursion;
@@ -641,7 +636,7 @@ namespace kagami {
       }
       else if (token == GT_DEF) {
         if (flag == true) {
-          result.combo(kStrFatalError, kCodeBadExpression, "Define function in function is not supported.").SetIndex(idx);
+          result = Message(kStrFatalError, kCodeBadExpression, "Define function in function is not supported.").SetIndex(idx);
           break;
         }
         result = MetaProcessing(*meta, "", nullptr);
@@ -685,8 +680,7 @@ namespace kagami {
 
     auto create = [&](string id, string value)->void {
       entry::CreateObject(id, Object()
-        .Manage("'" + value + "'")
-        .SetMethods(type::GetMethods(kTypeIdRawString)));
+        .Manage("'" + value + "'",T_STRING));
     };
 
     if (isMain) {
@@ -753,27 +747,27 @@ namespace kagami {
       switch (blk->currentMode) {
       case kModeNextCondition:
         if (entry::HasTailTokenRequest(token)) {
-          result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+          result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
           judged = true;
         }
         else if (token != GT_ELSE && token != GT_END && token != GT_ELIF) {
-          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
           judged = true;
         }
         break;
       case kModeCycleJump:
         if (token != GT_END && token != GT_IF && token != GT_WHILE) {
-          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
           judged = true;
         }
         break;
       case kModeCaseJump:
         if (entry::HasTailTokenRequest(token)) {
-          result.combo(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+          result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
           judged = true;
         }
         else if (token != GT_WHEN && token != GT_END) {
-          result.combo(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+          result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
           judged = true;
         }
         break;

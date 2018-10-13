@@ -18,10 +18,7 @@ namespace kagami {
   template <class T>
   Object MakeObject(T t) {
     string str = to_string(t);
-    return Object().Manage(str)
-      .SetMethods(type::GetMethods(kTypeIdRawString))
-      .SetTokenType(Kit::GetTokenType(str))
-      .SetRo(false);
+    return Object().Manage(str, Kit::GetTokenType(str)).SetRo(false);
   }
 
   class Meta {
@@ -43,22 +40,23 @@ namespace kagami {
     Token GetMainToken() const { return mainToken; }
   };
 
-  using MachCtlBlk = struct {
-    size_t current;
-    stack<size_t> cycleNestStack, cycleTailStack, modeStack;
-    stack<bool> conditionStack;
-    size_t currentMode;
-    int nestHeadCount;
-    bool sContinue, sBreak, lastIndex, tailRecursion, tailCall;
-    vector<string> defHead;
-    size_t defStart;
-    ObjectMap recursionMap;
-  };
-
   /* Origin index and string data */
   using StringUnit = pair<size_t, string>;
 
   class Machine {
+    using MachCtlBlk = struct {
+      size_t current;
+      stack<size_t> cycleNestStack, cycleTailStack, modeStack;
+      stack<bool> conditionStack;
+      size_t currentMode;
+      int nestHeadCount;
+      bool sContinue, sBreak, lastIndex, tailRecursion, tailCall;
+      vector<string> defHead;
+      size_t defStart;
+      ObjectMap recursionMap;
+    };
+
+    
     vector<Meta> storage;
     vector<string> parameters;
     bool health, isMain, isFunc;
@@ -123,7 +121,9 @@ namespace kagami {
       return *this;
     }
 
-    bool GetHealth() const { return health; }
+    bool GetHealth() const { 
+      return health; 
+    }
 
     Machine &SetParameters(vector<string> parms);
     explicit Machine(const char *target, bool isMain = true);
