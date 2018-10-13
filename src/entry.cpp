@@ -10,14 +10,14 @@ namespace kagami {
       target.parms_ == parms_);
   }
 
-  Message Entry::Start(ObjectMap &objMap) const {
+  Message Entry::Start(ObjectMap &obj_map) const {
     if (is_placeholder_) return Message();
     Message result;
     if (is_user_func_) {
-      objMap[kStrUserFunc] = Object().Manage(id_, T_GENERIC);
+      obj_map[kStrUserFunc] = Object().Manage(id_, T_GENERIC);
     }
     if (Good()) {
-      result = activity_(objMap);
+      result = activity_(obj_map);
     }
     else {
       result = Message(kStrFatalError, kCodeIllegalCall, "Illegal entry.");

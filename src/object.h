@@ -23,15 +23,14 @@ namespace kagami {
   */
   class Object {
     using TargetObject = struct { Object *ptr; };
-    std::shared_ptr<void> ptr;
-    string type_id;
-    string methods;
-    TokenTypeEnum tokenTypeEnum;
-    bool ro, ref, constructor;
-    Object *parent;
+    std::shared_ptr<void> ptr_;
+    string type_id_;
+    string methods_;
+    TokenTypeEnum token_type_;
+    bool ro_, ref_, constructor_;
 
     Object *GetTargetObject() { 
-      return static_pointer_cast<TargetObject>(ptr)->ptr; 
+      return static_pointer_cast<TargetObject>(ptr_)->ptr; 
     }
   public:
     Object();
@@ -46,23 +45,15 @@ namespace kagami {
     string GetTypeId();
     Object &SetMethods(string methods);
     Object &AppendMethod(string method);
-    Object &SetTokenType(TokenTypeEnum tokenTypeEnum);
+    Object &SetTokenType(TokenTypeEnum token_type);
     Object &SetRo(bool ro);
     string GetMethods();
     TokenTypeEnum GetTokenType();
     bool IsRo();
     bool ConstructorFlag();
 
-    void SetParentObject(Object &object) { 
-      parent = &object; 
-    }
-
-    Object *GetParentObject() { 
-      return parent; 
-    }
-
     Object &SetConstructorFlag() { 
-      constructor = true; 
+      constructor_ = true; 
       return *this; 
     }
 
@@ -71,7 +62,7 @@ namespace kagami {
     }
 
     bool IsRef() const { 
-      return ref; 
+      return ref_; 
     }
 
     bool operator==(Object &object) const { 
@@ -87,31 +78,31 @@ namespace kagami {
   */
   class ObjectPlanner {
   private:
-    CopyCreator copyCreator;
-    string methods;
+    CopyCreator creator_;
+    string methods_;
   public:
     ObjectPlanner() : 
-      methods(kStrEmpty) { 
+      methods_(kStrEmpty) { 
 
-      copyCreator = nullptr; 
+      creator_ = nullptr; 
     }
-    ObjectPlanner(CopyCreator copyCreator, 
+    ObjectPlanner(CopyCreator creator, 
       string methods) : 
-      methods(methods){
+      methods_(methods){
 
-      this->copyCreator = copyCreator;
+      creator_ = creator;
     }
 
     shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
       shared_ptr<void> result = nullptr;
       if (target != nullptr) {
-        result = copyCreator(target);
+        result = creator_(target);
       }
       return result;
     }
 
     string GetMethods() const { 
-      return methods; 
+      return methods_; 
     }
   };
 

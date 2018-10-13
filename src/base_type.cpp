@@ -85,16 +85,16 @@ namespace kagami {
 
   Message ArrayPrint(ObjectMap &p) {
     Message result;
-    ObjectMap objMap;
+    ObjectMap obj_map;
 
     if (p.CheckTypeId(kStrObject, kTypeIdArrayBase)) {
       auto &base = p.Get<ArrayBase>(kStrObject);
       auto ent = entry::Order("print", kTypeIdNull, -1);
 
       for (auto &unit : base) {
-        objMap.Input(kStrObject, unit);
-        result = ent.Start(objMap);
-        objMap.clear();
+        obj_map.Input(kStrObject, unit);
+        result = ent.Start(obj_map);
+        obj_map.clear();
       }
 
     }
@@ -302,13 +302,13 @@ namespace kagami {
 
   //regex
   Message RegexConstructor(ObjectMap &p) {
-    string regStr = p.Get<string>("regex");
+    string pattern_string = p.Get<string>("regex");
 
-    Kit::IsString(regStr) ? 
-      regStr = Kit::GetRawString(regStr): 
-      regStr = regStr;
+    Kit::IsString(pattern_string) ? 
+      pattern_string = Kit::GetRawString(pattern_string): 
+      pattern_string = pattern_string;
 
-    shared_ptr<regex> reg = make_shared<regex>(regex(regStr));
+    shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
     Object ret;
 
     ret.Set(reg, kTypeIdRegex)

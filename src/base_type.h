@@ -62,33 +62,33 @@ namespace kagami {
 
   template <class StringType, class StreamType>
   class StreamBase {
-    StreamType *stream;
+    StreamType *stream_;
   public:
-    StreamType &operator<<(StringType &str) { return *stream; }
+    StreamType &operator<<(StringType &str) { return *stream_; }
     StreamBase(){}
   };
 
   template <>
   class StreamBase<string, std::ostream> {
-    std::ostream *stream;
+    std::ostream *stream_;
   public:
     std::ostream &operator<<(string &str) {
-      *stream << str;
-      return *stream;
+      *stream_ << str;
+      return *stream_;
     }
 
-    StreamBase() { stream = &std::cout; }
+    StreamBase() { stream_ = &std::cout; }
   };
 
   template<>
   class StreamBase<wstring, std::wostream> {
-    std::wostream *stream;
+    std::wostream *stream_;
   public:
     std::wostream &operator<<(wstring &str) {
-      *stream << str;
-      return *stream;
+      *stream_ << str;
+      return *stream_;
     }
-    StreamBase() { stream = &std::wcout; }
+    StreamBase() { stream_ = &std::wcout; }
   };
 
   template <class StringType, class StreamType>
@@ -137,12 +137,12 @@ namespace kagami {
     StringConvertor<DestType, SrcType> convertor;
     SrcType &str = p.Get<SrcType>(kStrObject);
     shared_ptr<DestType> dest = make_shared<DestType>(convertor(str));
-    bool isWide = std::is_same<DestType, string>::value;
+    bool is_wide = std::is_same<DestType, string>::value;
     string type_id, methods;
     Message msg;
     Object ret;
 
-    if (isWide) {
+    if (is_wide) {
       type_id = kTypeIdWideString;
       methods = kWideStringMethods;
     }
