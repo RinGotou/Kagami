@@ -2,17 +2,17 @@
 
 namespace kagami {
   GroupTypeEnum GetGroupType(Object &A, Object &B) {
-    auto dataA = GetObjectStuff<string>(A),
-      dataB = GetObjectStuff<string>(B);
-    auto dataTypeA = A.GetTokenType();
-    auto dataTypeB = B.GetTokenType();
+    auto data_A = GetObjectStuff<string>(A),
+      data_B = GetObjectStuff<string>(B);
+    auto data_type_A = A.GetTokenType();
+    auto data_type_B = B.GetTokenType();
 
-    GroupTypeEnum groupType = GroupTypeEnum::G_NUL;
-    if (dataTypeA == T_FLOAT || dataTypeB == T_FLOAT) groupType = G_FLOAT;
-    if (dataTypeA == T_INTEGER && dataTypeB == T_INTEGER) groupType = G_INT;
-    if (Kit::IsString(dataA) || Kit::IsString(dataB)) groupType = G_STR;
-    if ((dataA == kStrTrue || dataA == kStrFalse) && (dataB == kStrTrue || dataB == kStrFalse)) groupType = G_STR;
-    return groupType;
+    GroupTypeEnum group_type = GroupTypeEnum::G_NUL;
+    if (data_type_A == T_FLOAT || data_type_B == T_FLOAT) group_type = G_FLOAT;
+    if (data_type_A == T_INTEGER && data_type_B == T_INTEGER) group_type = G_INT;
+    if (Kit::IsString(data_A) || Kit::IsString(data_B)) group_type = G_STR;
+    if ((data_A == kStrTrue || data_A == kStrFalse) && (data_B == kStrTrue || data_B == kStrFalse)) group_type = G_STR;
+    return group_type;
   }
 
   inline bool IsStringObject(Object &obj) {
@@ -57,23 +57,23 @@ namespace kagami {
     Kit kit;
     string temp;
     using entry::OperatorCode;
-    auto OPCode = entry::GetOperatorCode(OP);
-    auto dataA = GetObjectStuff<string>(A),
-      dataB = GetObjectStuff<string>(B);
-    auto groupType = GetGroupType(A, B);
+    auto op_code = entry::GetOperatorCode(OP);
+    auto data_A = GetObjectStuff<string>(A),
+      data_B = GetObjectStuff<string>(B);
+    auto group_type = GetGroupType(A, B);
 
-    if (groupType == G_INT || groupType == G_FLOAT) {
-      switch (OPCode) {
+    if (group_type == G_INT || group_type == G_FLOAT) {
+      switch (op_code) {
       case OperatorCode::ADD:
       case OperatorCode::SUB:
       case OperatorCode::MUL:
       case OperatorCode::DIV:
-        switch (groupType) {
+        switch (group_type) {
         case G_INT:
-          temp = to_string(kit.Calc(stoi(dataA), stoi(dataB), OP));
+          temp = to_string(kit.Calc(stoi(data_A), stoi(data_B), OP));
           break;
         case G_FLOAT:
-          temp = to_string(kit.Calc(stod(dataA), stod(dataB), OP)); 
+          temp = to_string(kit.Calc(stod(data_A), stod(data_B), OP)); 
           break;
         default:
           break;
@@ -85,12 +85,12 @@ namespace kagami {
       case OperatorCode::NOT_EQUAL:
       case OperatorCode::MORE:
       case OperatorCode::LESS:
-        switch (groupType) {
+        switch (group_type) {
         case G_INT:
-          Kit::MakeBoolean(kit.Logic(stoi(dataA), stoi(dataB), OP), temp);
+          Kit::MakeBoolean(kit.Logic(stoi(data_A), stoi(data_B), OP), temp);
           break;
         case G_FLOAT:
-          Kit::MakeBoolean(kit.Logic(stod(dataA), stod(dataB), OP), temp);
+          Kit::MakeBoolean(kit.Logic(stod(data_A), stod(data_B), OP), temp);
           break;
         default:
           break;
@@ -105,30 +105,30 @@ namespace kagami {
         break;
       }
     }
-    else if (groupType == G_STR) {
-      switch (OPCode) {
+    else if (group_type == G_STR) {
+      switch (op_code) {
       case OperatorCode::ADD:
-        if (dataA.front() != '\'') dataA = "'" + dataA;
-        if (dataA.back() == '\'') dataA = dataA.substr(0, dataA.size() - 1);
-        if (dataB.front() == '\'') dataB = dataB.substr(1, dataB.size() - 1);
-        if (dataB.back() != '\'') dataB = dataB + "'";
-        temp = dataA + dataB;
+        if (data_A.front() != '\'') data_A = "'" + data_A;
+        if (data_A.back() == '\'') data_A = data_A.substr(0, data_A.size() - 1);
+        if (data_B.front() == '\'') data_B = data_B.substr(1, data_B.size() - 1);
+        if (data_B.back() != '\'') data_B = data_B + "'";
+        temp = data_A + data_B;
         break;
       case OperatorCode::IS:
       case OperatorCode::NOT_EQUAL:
-        Kit::MakeBoolean(kit.Logic(dataA, dataB, OP), temp);
+        Kit::MakeBoolean(kit.Logic(data_A, data_B, OP), temp);
         break;
       case OperatorCode::AND:
-        if (Kit::IsBoolean(dataA) && Kit::IsBoolean(dataB)) {
-          Kit::MakeBoolean((dataA == kStrTrue && dataB == kStrTrue), temp);
+        if (Kit::IsBoolean(data_A) && Kit::IsBoolean(data_B)) {
+          Kit::MakeBoolean((data_A == kStrTrue && data_B == kStrTrue), temp);
         }
         else {
           temp = kStrFalse;
         }
         break;
       case OperatorCode::OR:
-        if(Kit::IsBoolean(dataA) && Kit::IsBoolean(dataB)) {
-          Kit::MakeBoolean((dataA == kStrTrue || dataB == kStrTrue), temp);
+        if(Kit::IsBoolean(data_A) && Kit::IsBoolean(data_B)) {
+          Kit::MakeBoolean((data_A == kStrTrue || data_B == kStrTrue), temp);
         }
         else {
           temp = kStrFalse;
@@ -171,32 +171,32 @@ namespace kagami {
   }
 
   Message Define(ObjectMap &p) {
-    vector<string> defHead;
+    vector<string> def_head;
     size_t count = 0;
-    defHead.emplace_back(p.Get<string>("id"));
+    def_head.emplace_back(p.Get<string>("id"));
 
     for (auto &unit : p) {
       if (unit.first == "arg" + to_string(count)) {
         string str = GetObjectStuff<string>(unit.second);
-        defHead.emplace_back(str);
+        def_head.emplace_back(str);
         count++;
       }
     }
 
-    string defHeadStr = Kit::CombineStringVector(defHead);
-    return Message(kStrEmpty, kCodeDefineSign, defHeadStr);
+    string def_head_string = Kit::CombineStringVector(def_head);
+    return Message(kStrEmpty, kCodeDefineSign, def_head_string);
   }
 
   Message ReturnSign(ObjectMap &p) {
-    Object &valueObj = p["value"];
-    string type_id = valueObj.GetTypeId();
+    Object &value_obj= p["value"];
+    string type_id = value_obj.GetTypeId();
     auto &container = entry::GetCurrentContainer();
 
     Object obj;
 
     if (type_id != kTypeIdNull) {
-      obj.Set(valueObj.Get(), type_id, valueObj.GetMethods(), false)
-        .SetTokenType(valueObj.GetTokenType());
+      obj.Set(value_obj.Get(), type_id, value_obj.GetMethods(), false)
+        .SetTokenType(value_obj.GetTokenType());
       container.Add(kStrRetValue, obj);
     }
 
@@ -294,32 +294,32 @@ namespace kagami {
 
   Message BindAndSet(ObjectMap &p) {
     Object &obj = p["object"], source = p["source"];
-    ObjectPointer targetObj = nullptr;
+    ObjectPointer target_obj = nullptr;
     bool existed;
     Message msg;
-    string objId;
+    string obj_id;
 
     if (obj.IsRef()) {
       existed = true;
-      targetObj = &obj;
+      target_obj = &obj;
     }
     else {
       if (obj.GetTypeId() != kTypeIdRawString) {
         msg = IllegalParmMsg("Illegal bind operation.");
         return msg;
       }
-      objId = GetObjectStuff<string>(obj);
-      targetObj = entry::FindObject(objId);
-      existed = !(targetObj == nullptr);
+      obj_id = GetObjectStuff<string>(obj);
+      target_obj = entry::FindObject(obj_id);
+      existed = !(target_obj == nullptr);
     }
     
     if (existed) {
-      if (targetObj->IsRo()) {
+      if (target_obj->IsRo()) {
         msg = IllegalCallMsg("Object is read-only.");
       }
       else {
         auto copy = type::GetObjectCopy(source);
-        targetObj->Set(copy, source.GetTypeId(), source.GetMethods(), false)
+        target_obj->Set(copy, source.GetTypeId(), source.GetMethods(), false)
           .SetTokenType(source.GetTokenType());
       }
     }
@@ -328,7 +328,7 @@ namespace kagami {
       auto copy = type::GetObjectCopy(source);
       base.Set(copy, source.GetTypeId(), source.GetMethods(), false)
         .SetTokenType(source.GetTokenType());
-      auto result = entry::CreateObject(objId, base);
+      auto result = entry::CreateObject(obj_id, base);
       if (result == nullptr) {
         msg = IllegalCallMsg("Object creation failed.");
       }
@@ -370,12 +370,12 @@ namespace kagami {
 
   Message Input(ObjectMap &p) {
     if (p.Search("msg")) {
-      ObjectMap objMap;
-      Object emptyObj;
+      ObjectMap obj_map;
+      Object empty_obj;
 
-      objMap.Input("not_wrap", emptyObj);
-      objMap.Input(kStrObject, p["msg"]);
-      Print(objMap);
+      obj_map.Input("not_wrap", empty_obj);
+      obj_map.Input(kStrObject, p["msg"]);
+      Print(obj_map);
     }
 
     string buf;
@@ -416,9 +416,9 @@ namespace kagami {
 
   Message Nop(ObjectMap &p) {
     int size = stoi(p.Get<string>("__size"));
-    Object &lastObj = p["nop" + to_string(size - 1)];
+    Object &last_obj = p["nop" + to_string(size - 1)];
     Message msg;
-    msg.SetObject(lastObj);
+    msg.SetObject(last_obj);
     return msg;
   }
 
@@ -448,6 +448,7 @@ namespace kagami {
     auto vec = Kit::BuildStringVector(obj.GetMethods());
     Message msg;
     vector<Object> output;
+
     for (auto &unit : vec) {
       output.emplace_back(Object()
         .Set(make_shared<string>(unit), 
@@ -507,8 +508,8 @@ namespace kagami {
   Message When(ObjectMap &p) {
     //TODO:Re-Design
     int size = stoi(p.Get<string>("__size"));
-    ObjectPointer caseHead = entry::FindObject("__case");
-    string caseContent = GetObjectStuff<string>(*caseHead);
+    ObjectPointer case_head = entry::FindObject("__case");
+    string case_content = GetObjectStuff<string>(*case_head);
     string type_id, id;
     bool result = false, state = true;
 
@@ -523,7 +524,7 @@ namespace kagami {
 
       string content = p.Get<string>(id);
 
-      if (content == caseContent) {
+      if (content == case_content) {
         result = true;
         break;
       }

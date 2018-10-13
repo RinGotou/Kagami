@@ -3,31 +3,31 @@
 
 namespace kagami {
   class Message {
-    string value;
-    string detail;
-    int code;
-    shared_ptr<void> object;
-    size_t idx;
+    string value_;
+    string detail_;
+    int code_;
+    shared_ptr<void> object_;
+    size_t idx_;
   public:
     Message() :
-      value(kStrEmpty), 
-      detail(kStrEmpty), 
-      code(kCodeSuccess), 
-      idx(0) {}
+      value_(kStrEmpty), 
+      detail_(kStrEmpty), 
+      code_(kCodeSuccess), 
+      idx_(0) {}
 
     Message(string value, 
       int code, 
       string detail) :
-      value(value), 
-      detail(detail), 
-      code(code), 
-      idx(0) {}
+      value_(value), 
+      detail_(detail), 
+      code_(code), 
+      idx_(0) {}
 
     Message(string detail) :
-      value(kStrRedirect), 
-      code(kCodeSuccess), 
-      detail(detail), 
-      idx(0) {}
+      value_(kStrRedirect), 
+      code_(kCodeSuccess), 
+      detail_(detail), 
+      idx_(0) {}
 
     Object GetObj() const;
     void SetObject(Object &object);
@@ -38,19 +38,19 @@ namespace kagami {
     Message &SetIndex(const size_t index);
 
     string GetValue() const { 
-      return this->value; 
+      return value_; 
     }
 
     int GetCode() const { 
-      return this->code; 
+      return code_; 
     }
 
     string GetDetail() const { 
-      return this->detail; 
+      return detail_; 
     }
 
     size_t GetIndex() const { 
-      return idx; 
+      return idx_; 
     }
   };
 }

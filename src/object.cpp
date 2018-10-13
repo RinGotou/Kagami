@@ -4,147 +4,147 @@ namespace kagami {
   Object::Object() {
     //hold a null pointer will cause some mysterious ploblems,
     //so this will hold a specific value intead of nullptr
-    ptr = nullptr;
-    parent = nullptr;
-    type_id = kTypeIdNull;
-    tokenTypeEnum = TokenTypeEnum::T_NUL;
-    ro = false;
-    ref = false;
-    constructor = false;
+    ptr_ = nullptr;
+    type_id_ = kTypeIdNull;
+    token_type_ = TokenTypeEnum::T_NUL;
+    ro_ = false;
+    ref_ = false;
+    constructor_ = false;
   }
 
   Object &Object::Manage(string t, TokenTypeEnum tokenType) {
-    if (ref) return GetTargetObject()->Manage(t, tokenType);
-    this->ptr = std::make_shared<string>(t);
-    this->type_id = kTypeIdRawString;
-    this->methods = kRawStringMethods;
-    this->tokenTypeEnum = tokenType;
+    if (ref_) return GetTargetObject()->Manage(t, tokenType);
+    ptr_ = std::make_shared<string>(t);
+    type_id_ = kTypeIdRawString;
+    methods_ = kRawStringMethods;
+    token_type_ = tokenType;
     return *this;
   }
 
   Object &Object::Set(shared_ptr<void> ptr, string type_id) {
-    if (ref) return GetTargetObject()->Set(ptr, type_id);
-    this->ptr = ptr;
-    this->type_id = type_id;
+    if (ref_) return GetTargetObject()->Set(ptr, type_id);
+    ptr_ = ptr;
+    type_id_ = type_id;
     return *this;
   }
 
   Object &Object::Set(shared_ptr<void> ptr, string type_id, string methods, bool ro) {
-    if (ref) return GetTargetObject()->Set(ptr, type_id, methods, ro);
-    this->ptr = ptr;
-    this->type_id = type_id;
-    this->methods = methods;
-    this->ro = ro;
+    if (ref_) return GetTargetObject()->Set(ptr, type_id, methods, ro);
+    ptr_ = ptr;
+    type_id_ = type_id;
+    methods_ = methods;
+    ro_ = ro;
     return *this;
   }
 
   Object &Object::Ref(Object &object) {
-    this->type_id = kTypeIdRef;
-    this->ref = true;
+    type_id_ = kTypeIdRef;
+    ref_ = true;
 
     TargetObject target;
     if (!object.IsRef()) {
       target.ptr = &object;
     }
     else {
-      target.ptr = static_pointer_cast<TargetObject>(object.ptr)->ptr;
+      target.ptr = 
+        static_pointer_cast<TargetObject>(object.ptr_)->ptr;
     }
-    ptr = make_shared<TargetObject>(target);
+    ptr_ = make_shared<TargetObject>(target);
     return *this;
   }
 
   void Object::Clear() {
-    ptr = make_shared<int>(0);
-    type_id = kTypeIdNull;
-    methods.clear();
-    tokenTypeEnum = TokenTypeEnum::T_NUL;
-    ro = false;
-    ref = false;
+    ptr_ = make_shared<int>(0);
+    type_id_ = kTypeIdNull;
+    methods_.clear();
+    token_type_ = TokenTypeEnum::T_NUL;
+    ro_ = false;
+    ref_ = false;
   }
 
   bool Object::Compare(Object &object) const {
-    return (ptr == object.ptr &&
-      type_id == object.type_id &&
-      methods == object.methods &&
-      tokenTypeEnum == object.tokenTypeEnum &&
-      ro == object.ro &&
-      constructor == object.constructor &&
-      ref == object.ref);
+    return (ptr_ == object.ptr_ &&
+      type_id_ == object.type_id_ &&
+      methods_ == object.methods_ &&
+      token_type_ == object.token_type_ &&
+      ro_ == object.ro_ &&
+      constructor_ == object.constructor_ &&
+      ref_ == object.ref_);
   }
 
   Object &Object::Copy(Object &object, bool force) {
     auto mod = [&]() {
-      ptr = object.ptr;
-      type_id = object.type_id;
-      methods = object.methods;
-      tokenTypeEnum = object.tokenTypeEnum;
-      ro = object.ro;
-      ref = object.ref;
-      constructor = object.constructor;
+      ptr_ = object.ptr_;
+      type_id_ = object.type_id_;
+      methods_ = object.methods_;
+      token_type_ = object.token_type_;
+      ro_ = object.ro_;
+      ref_ = object.ref_;
+      constructor_ = object.constructor_;
     };
 
     if (force) {
       mod();
     }
     else {
-      if (ref) GetTargetObject()->Copy(object);
+      if (ref_) GetTargetObject()->Copy(object);
       else mod();
     }
     return *this;
   }
 
   shared_ptr<void> Object::Get() {
-    if (ref) return GetTargetObject()->Get();
-    return ptr;
+    if (ref_) return GetTargetObject()->Get();
+    return ptr_;
   }
 
   string Object::GetTypeId() {
-    if (ref) return GetTargetObject()->GetTypeId();
-    return type_id;
+    if (ref_) return GetTargetObject()->GetTypeId();
+    return type_id_;
   }
 
   Object &Object::SetMethods(string methods) {
-    if (ref) return GetTargetObject()->SetMethods(methods);
-    this->methods = methods;
+    if (ref_) return GetTargetObject()->SetMethods(methods);
+    methods_ = methods;
     return *this;
   }
 
   Object &Object::AppendMethod(string method) {
-    if (ref) return GetTargetObject()->AppendMethod(method);
-    this->methods.append("|" + method);
+    if (ref_) return GetTargetObject()->AppendMethod(method);
+    methods_.append("|" + method);
     return *this;
   }
 
-  Object &Object::SetTokenType(TokenTypeEnum tokenTypeEnum) {
-    if (ref) return GetTargetObject()->SetTokenType(tokenTypeEnum);
-    this->tokenTypeEnum = tokenTypeEnum;
+  Object &Object::SetTokenType(TokenTypeEnum token_type) {
+    if (ref_) return GetTargetObject()->SetTokenType(token_type);
+    token_type_ = token_type;
     return *this;
   }
 
   Object &Object::SetRo(bool ro) {
-    if (ref) return GetTargetObject()->SetRo(ro);
-    this->ro = ro;
+    if (ref_) return GetTargetObject()->SetRo(ro);
+    ro_ = ro;
     return *this;
   }
 
   string Object::GetMethods() {
-    if (ref) return GetTargetObject()->GetMethods();
-    return methods;
+    if (ref_) return GetTargetObject()->GetMethods();
+    return methods_;
   }
 
   TokenTypeEnum Object::GetTokenType() {
-    if (ref) return GetTargetObject()->GetTokenType();
-    return tokenTypeEnum;
+    if (ref_) return GetTargetObject()->GetTokenType();
+    return token_type_;
   }
 
   bool Object::IsRo() {
-    if (ref) return GetTargetObject()->IsRo();
-    return ro;
+    if (ref_) return GetTargetObject()->IsRo();
+    return ro_;
   }
 
   bool Object::ConstructorFlag() {
-    bool result = constructor;
-    constructor = false;
+    bool result = constructor_;
+    constructor_ = false;
     return result;
   }
 
