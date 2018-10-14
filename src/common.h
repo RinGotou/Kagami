@@ -73,7 +73,7 @@ namespace kagami {
 #else
   const string kPlatformType = "Linux";
 #endif
-  const string kEngineName = "Kagami - Experimental Scripting kit";
+  const string kEngineName = "Kagami - Experimental Scripting util";
   const string kEngineAuthor = "Suzu Nakamura and Contributor(s)";
   const string kCopyright = "Copyright(c) 2017-2018";
 

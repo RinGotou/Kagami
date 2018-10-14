@@ -168,7 +168,7 @@ namespace kagami {
     string Do(string A, string B) {
       Operation<string, bool, OperatorCode::NOT_EQUAL> op;
       string result_str;
-      kit::MakeBoolean(op.Do(A, B), result_str);
+      util::MakeBoolean(op.Do(A, B), result_str);
       return result_str;
     }
   };
@@ -179,7 +179,7 @@ namespace kagami {
     string Do(string A, string B) {
       Operation<string, bool, OperatorCode::IS> op;
       string result_str;
-      kit::MakeBoolean(op.Do(A, B), result_str);
+      util::MakeBoolean(op.Do(A, B), result_str);
       return result_str;
     }
   };
@@ -189,8 +189,8 @@ namespace kagami {
   public:
     string Do(string A, string B) {
       string result_str;
-      if (kit::IsBoolean(A) && kit::IsBoolean(B)) {
-        kit::MakeBoolean(A == kStrTrue && B == kStrTrue, result_str);
+      if (util::IsBoolean(A) && util::IsBoolean(B)) {
+        util::MakeBoolean(A == kStrTrue && B == kStrTrue, result_str);
       }
       else {
         result_str = kStrFalse;
@@ -204,8 +204,8 @@ namespace kagami {
   public:
     string Do(string A, string B) {
       string result_str;
-      if (kit::IsBoolean(A) && kit::IsBoolean(B)) {
-        kit::MakeBoolean(A == kStrTrue || B == kStrTrue, result_str);
+      if (util::IsBoolean(A) && util::IsBoolean(B)) {
+        util::MakeBoolean(A == kStrTrue || B == kStrTrue, result_str);
       }
       else {
         result_str = kStrFalse;

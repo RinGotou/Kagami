@@ -55,7 +55,7 @@ namespace kagami {
 
     for (size_t count = 0; count < target.size(); ++count) {
       current = target[count];
-      auto type = kagami::kit::GetTokenType(toString(current));
+      auto type = kagami::util::GetTokenType(toString(current));
       if (type != TokenTypeEnum::T_BLANK && exempt_blank_char) {
         head = count;
         exempt_blank_char = false;
@@ -72,7 +72,7 @@ namespace kagami {
     if (data.front() == '#') return "";
 
     while (!data.empty() &&
-      kit::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
+      util::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
       data.pop_back();
     }
     return data;
@@ -160,7 +160,7 @@ namespace kagami {
   }
 
   Message Calling(Activity activity, string parmStr, vector<Object> objects) {
-    vector<string> parms = kit::BuildStringVector(parmStr);
+    vector<string> parms = util::BuildStringVector(parmStr);
     ObjectMap obj_map;
     for (size_t i = 0; i < parms.size(); i++) {
       obj_map.insert(NamedObject(parms[i], objects[i]));
@@ -585,7 +585,7 @@ namespace kagami {
       else if ((value == kStrRedirect && (code == kCodeSuccess || code == kCodeHeadPlaceholder))
         && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
         Object obj;
-        obj.Manage(detail, kit::GetTokenType(detail));
+        obj.Manage(detail, util::GetTokenType(detail));
 
         if (entry::IsOperatorToken(ent.GetTokenEnum())
           && idx + 1 < action_base.size()) {
@@ -636,7 +636,7 @@ namespace kagami {
           break;
         }
         result = MetaProcessing(*meta, "", nullptr);
-        def_head = kit::BuildStringVector(result.GetDetail());
+        def_head = util::BuildStringVector(result.GetDetail());
         def_start = idx + 1;
         flag = true;
       }
