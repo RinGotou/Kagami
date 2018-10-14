@@ -184,7 +184,8 @@ namespace kagami {
   }
 
   void Machine::Reset(MachCtlBlk *blk) {
-    Kit().CleanupVector(storage_);
+    storage_.clear();
+    storage_.shrink_to_fit();
     while (!blk->cycle_nest.empty()) blk->cycle_nest.pop();
     while (!blk->cycle_tail.empty()) blk->cycle_tail.pop();
     while (!blk->mode_stack.empty()) blk->mode_stack.pop();
@@ -440,7 +441,6 @@ namespace kagami {
   }
 
   Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
-    Kit kit;
     int mode, flag;
     string error_string, id, type_id, va_arg_head;
     Message msg;
@@ -489,7 +489,8 @@ namespace kagami {
     };
 
     for (size_t idx = 0; idx < action_base.size(); idx += 1) {
-      kit.CleanupMap(obj_map).CleanupVector(args);
+      obj_map.clear();
+      args.clear();
       id.clear();
       va_arg_head.clear();
       type_id.clear();
@@ -646,7 +647,8 @@ namespace kagami {
         else {
           skipped_idx.insert(IndexPair(def_start - 1, idx));
           MakeFunction(def_start, idx - 1, def_head);
-          Kit().CleanupVector(def_head);
+          def_head.clear();
+          def_head.shrink_to_fit();
           def_start = 0;
           flag = false;
         }

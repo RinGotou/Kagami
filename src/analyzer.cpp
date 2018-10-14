@@ -562,7 +562,10 @@ namespace kagami {
       result = Message(kStrFatalError, kCodeBadExpression, error_string_);
     }
 
-    Kit().CleanupDeque(blk->args).CleanupDeque(blk->symbol);
+    blk->args.clear();
+    blk->args.shrink_to_fit();
+    blk->symbol.clear();
+    blk->symbol.shrink_to_fit();
     blk->next = Token();
     blk->last = Token();
     blk->current = Token();
@@ -571,7 +574,10 @@ namespace kagami {
   }
 
   void Analyzer::Clear() {
-    Kit().CleanupVector(tokens_).CleanupVector(action_base_);
+    tokens_.clear();
+    tokens_.shrink_to_fit();
+    action_base_.clear();
+    action_base_.shrink_to_fit();
     health_ = false;
     error_string_.clear();
     index_ = 0;
