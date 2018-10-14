@@ -18,7 +18,6 @@ namespace kagami {
   }
 
   vector<string> Analyzer::Scanning(string target) {
-    Kit kit;
     string current_string, temp;
     bool string_processing = false;
     bool delay_suspending = false;
@@ -44,7 +43,7 @@ namespace kagami {
         escape_flag = false;
 
       if (current == '\'' && !escape_flag) {
-        if (!string_processing && kit.GetTokenType(current_string) == T_BLANK) {
+        if (!string_processing && kit::GetTokenType(current_string) == T_BLANK) {
           current_string.clear();
         }
 
@@ -57,8 +56,8 @@ namespace kagami {
         temp = current_string;
         temp.append(1, current);
 
-        if (kit.GetTokenType(temp) == T_NUL) {
-          auto type = kit.GetTokenType(current_string);
+        if (kit::GetTokenType(temp) == T_NUL) {
+          auto type = kit::GetTokenType(current_string);
           switch (type) {
           case T_BLANK:
             current_string.clear();
@@ -91,7 +90,7 @@ namespace kagami {
       }
       else {
         escape_flag ?
-          current = kit.GetEscapeChar(current) :
+          current = kit::GetEscapeChar(current) :
           current = current;
         current_string.append(1, current);
       }
@@ -99,7 +98,7 @@ namespace kagami {
       last = target[idx];
     }
 
-    if (kit.GetTokenType(current_string) != T_BLANK) {
+    if (kit::GetTokenType(current_string) != T_BLANK) {
       output.emplace_back(current_string);
     }
 
@@ -107,7 +106,6 @@ namespace kagami {
   }
 
   Message Analyzer::Tokenizer(vector<string> target) {
-    Kit kit;
     bool negative_flag = false;
     vector<string> output;
     stack<string> bracket_stack;
@@ -120,9 +118,9 @@ namespace kagami {
     health_ = true;
 
     for (size_t idx = 0; idx < target.size(); idx += 1) {
-      current = Token(target[idx], kit.GetTokenType(target[idx]));
+      current = Token(target[idx], kit::GetTokenType(target[idx]));
       (idx < target.size() - 1) ?
-        next = Token(target[idx + 1], kit.GetTokenType(target[idx + 1])) :
+        next = Token(target[idx + 1], kit::GetTokenType(target[idx + 1])) :
         next = Token("", T_NUL);
 
       if (current.second == T_NUL) {

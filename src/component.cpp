@@ -10,7 +10,7 @@ namespace kagami {
     GroupTypeEnum group_type = GroupTypeEnum::G_NUL;
     if (data_type_A == T_FLOAT || data_type_B == T_FLOAT) group_type = G_FLOAT;
     if (data_type_A == T_INTEGER && data_type_B == T_INTEGER) group_type = G_INT;
-    if (Kit::IsString(data_A) || Kit::IsString(data_B)) group_type = G_STR;
+    if (kit::IsString(data_A) || kit::IsString(data_B)) group_type = G_STR;
     if ((data_A == kStrTrue || data_A == kStrFalse) && (data_B == kStrTrue || data_B == kStrFalse)) group_type = G_STR;
     return group_type;
   }
@@ -66,7 +66,7 @@ namespace kagami {
       }
     }
 
-    string def_head_string = Kit::CombineStringVector(def_head);
+    string def_head_string = kit::CombineStringVector(def_head);
     return Message(kStrEmpty, kCodeDefineSign, def_head_string);
   }
 
@@ -91,7 +91,7 @@ namespace kagami {
 
     if (p.CheckTypeId("msg",IsStringObject)) {
       string str = p.Get<string>("msg");
-      if (Kit::IsString(str)) {
+      if (kit::IsString(str)) {
         ofs << str.substr(1, str.size() - 2) << "\n";
       }
       else {
@@ -137,11 +137,11 @@ namespace kagami {
     if (p.CheckTypeId("object",kTypeIdRawString)) {
       string str = p.Get<string>("object");
 
-      Kit::IsString(str) ? 
-        str = Kit::GetRawString(str) : 
+      kit::IsString(str) ? 
+        str = kit::GetRawString(str) : 
         str = str;
 
-      switch (Kit::GetTokenType(str)) {
+      switch (kit::GetTokenType(str)) {
       case T_BOOLEAN:result = "'boolean'"; break;
       case T_GENERIC:result = "'generic'"; break;
       case T_INTEGER:result = "'integer'"; break;
@@ -216,7 +216,7 @@ namespace kagami {
       std::cout << "You can't print this object." << std::endl;
     };
 
-    if (!Kit::FindInStringGroup("__print", obj.GetMethods())) {
+    if (!kit::FindInStringGroup("__print", obj.GetMethods())) {
       errorMsg();
     } 
     else {
@@ -264,11 +264,11 @@ namespace kagami {
       Object objTarget;
       string origin = p.Get<string>("object");
 
-      Kit::IsString(origin) ?
-        origin = Kit::GetRawString(origin) :
+      kit::IsString(origin) ?
+        origin = kit::GetRawString(origin) :
         origin = origin;
 
-      auto type = Kit::GetTokenType(origin);
+      auto type = kit::GetTokenType(origin);
       string str;
       (type == T_NUL || type == T_GENERIC) ?
         str = kStrNull :
@@ -316,7 +316,7 @@ namespace kagami {
 
   Message Dir(ObjectMap &p) {
     Object &obj = p["object"];
-    auto vec = Kit::BuildStringVector(obj.GetMethods());
+    auto vec = kit::BuildStringVector(obj.GetMethods());
     Message msg;
     vector<Object> output;
 
@@ -341,8 +341,8 @@ namespace kagami {
 
   Message Exist(ObjectMap &p){
     Object &obj = p["object"];
-    string target = Kit::GetRawString(p.Get<string>("id"));
-    bool result = Kit::FindInStringGroup(target, obj.GetMethods());
+    string target = kit::GetRawString(p.Get<string>("id"));
+    bool result = kit::FindInStringGroup(target, obj.GetMethods());
     Message msg;
     result ?
       msg = Message(kStrTrue) :
@@ -353,7 +353,7 @@ namespace kagami {
   Message TypeAssert(ObjectMap &p) {
     Object &obj = p["object"];
     string target = p.Get<string>("id");
-    bool result = Kit::FindInStringGroup(target, obj.GetMethods());
+    bool result = kit::FindInStringGroup(target, obj.GetMethods());
     Message msg;
     result ?
       msg = Message(kStrTrue) :
