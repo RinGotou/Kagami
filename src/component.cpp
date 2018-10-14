@@ -53,10 +53,6 @@ namespace kagami {
     return msg;
   }
 
-  inline Message MakeConditionMsg(ObjectMap &p, int code) {
-    return Message(p.Get<string>("state"), code, kStrEmpty);
-  }
-
   Message Define(ObjectMap &p) {
     vector<string> def_head;
     size_t count = 0;
@@ -417,25 +413,24 @@ namespace kagami {
     return msg;
   }
 
-
-  Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
-  Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
-  Message If(ObjectMap &p) { return MakeConditionMsg(p, kCodeConditionRoot); }
-  Message Elif(ObjectMap &p) { return MakeConditionMsg(p, kCodeConditionBranch); }
-  Message While(ObjectMap &p) { return MakeConditionMsg(p, kCodeHeadSign); }
-  Message Continue(ObjectMap &p) { return Message(kStrEmpty, kCodeContinue, kStrEmpty); }
-  Message Break(ObjectMap &p) { return Message(kStrEmpty, kCodeBreak, kStrEmpty); }
-
   void GenericRegister() {
     using namespace entry;
     AddGenericEntry(Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
+    AddGenericEntry(Entry(Case, "object", GT_CASE));
+    AddGenericEntry(Entry(When, "value", GT_WHEN, kCodeAutoSize));
+    AddGenericEntry(Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
+    AddGenericEntry(Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
+    AddGenericEntry(Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
     AddGenericEntry(Entry(ArrayMaker, "item", GT_ARRAY, kCodeAutoSize));
-    AddGenericEntry(Entry(End, "", GT_END));
-    AddGenericEntry(Entry(Else, "", GT_ELSE));
-    AddGenericEntry(Entry(If, "state", GT_IF));
-    AddGenericEntry(Entry(While, "state", GT_WHILE));
-    AddGenericEntry(Entry(Elif, "state", GT_ELIF));
     AddGenericEntry(Entry(BindAndSet, "object|source", GT_BIND, kCodeNormalParm, 0));
+
+    AddGenericEntry(Entry(CodeMaker<kCodeTailSign>, "", GT_END));
+    AddGenericEntry(Entry(CodeMaker<kCodeConditionLeaf>, "", GT_ELSE));
+    AddGenericEntry(Entry(CodeMaker<kCodeContinue>, "", GT_CONTINUE));
+    AddGenericEntry(Entry(CodeMaker<kCodeBreak>, "", GT_BREAK));
+    AddGenericEntry(Entry(ConditionMaker<kCodeConditionRoot>, "state", GT_IF));
+    AddGenericEntry(Entry(ConditionMaker<kCodeHeadSign>, "state", GT_WHILE));
+    AddGenericEntry(Entry(ConditionMaker<kCodeConditionBranch>, "state", GT_ELIF));
     AddGenericEntry(Entry(CalcOperation<OperatorCode::ADD>, "first|second", GT_ADD, kCodeNormalParm, 2));
     AddGenericEntry(Entry(CalcOperation<OperatorCode::SUB>, "first|second", GT_SUB, kCodeNormalParm, 2));
     AddGenericEntry(Entry(CalcOperation<OperatorCode::MUL>, "first|second", GT_MUL, kCodeNormalParm, 3));
@@ -446,19 +441,12 @@ namespace kagami {
     AddGenericEntry(Entry(LogicOperation<OperatorCode::NOT_EQUAL>, "first|second", GT_NOT_EQUAL, kCodeNormalParm, 1));
     AddGenericEntry(Entry(LogicOperation<OperatorCode::MORE>, "first|second", GT_MORE, kCodeNormalParm, 1));
     AddGenericEntry(Entry(LogicOperation<OperatorCode::LESS>, "first|second", GT_LESS, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::AND>, "first|second", GT_AND, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::OR>, "first|second", GT_OR, kCodeNormalParm, 1));
     AddGenericEntry(Entry(SelfOperator<false, false>, "object", GT_LSELF_INC));
     AddGenericEntry(Entry(SelfOperator<true, false>, "object", GT_LSELF_DEC));
     AddGenericEntry(Entry(SelfOperator<false, true>, "object", GT_RSELF_INC));
     AddGenericEntry(Entry(SelfOperator<true, true>, "object", GT_RSELF_DEC));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::AND>, "first|second", GT_AND, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::OR>, "first|second", GT_OR, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
-    AddGenericEntry(Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
-    AddGenericEntry(Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
-    AddGenericEntry(Entry(Continue, "", GT_CONTINUE));
-    AddGenericEntry(Entry(Break, "", GT_BREAK));
-    AddGenericEntry(Entry(Case, "object", GT_CASE));
-    AddGenericEntry(Entry(When, "value", GT_WHEN, kCodeAutoSize));
   }
 
   void BasicUtilityRegister() {

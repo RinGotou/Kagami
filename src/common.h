@@ -91,7 +91,7 @@ namespace kagami {
     kStrObject = "__object",
     kMethodPrint = "__print";
 
-  const int 
+  constexpr int 
     kCodeWhen = 21,
     kCodeCase = 20,
     kCodeBreak = 19,
@@ -183,14 +183,14 @@ namespace kagami {
   const string kOutStreamMethods = "write|good|close";
   const string kRegexMethods = "match";
 
-  const size_t kModeNormal        = 0;
-  const size_t kModeNextCondition = 1;
-  const size_t kModeCycle         = 2;
-  const size_t kModeCycleJump     = 3;
-  const size_t kModeCondition     = 4;
-  const size_t kModeDef           = 5;
-  const size_t kModeCase          = 6;
-  const size_t kModeCaseJump      = 7;
+  constexpr size_t kModeNormal        = 0;
+  constexpr size_t kModeNextCondition = 1;
+  constexpr size_t kModeCycle         = 2;
+  constexpr size_t kModeCycleJump     = 3;
+  constexpr size_t kModeCondition     = 4;
+  constexpr size_t kModeDef           = 5;
+  constexpr size_t kModeCase          = 6;
+  constexpr size_t kModeCaseJump      = 7;
 
   /*Generic Token*/
   const string kStrIf = "if",

@@ -352,4 +352,14 @@ namespace kagami {
     }
     return Message(result_str);
   }
+
+  template<int code>
+  Message ConditionMaker(ObjectMap &p) {
+    return Message(p.Get<string>("state"), code, kStrEmpty);
+  }
+
+  template<int code>
+  Message CodeMaker(ObjectMap &p) {
+    return Message(kStrEmpty, code, kStrEmpty);
+  }
 }
