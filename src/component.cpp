@@ -77,11 +77,10 @@ namespace kagami {
 
     Object obj;
 
-    if (type_id != kTypeIdNull) {
-      obj.Set(value_obj.Get(), type_id, value_obj.GetMethods(), false)
-        .SetTokenType(value_obj.GetTokenType());
-      container.Add(kStrRetValue, obj);
-    }
+    obj.Set(value_obj.Get(), type_id, value_obj.GetMethods(), false)
+      .SetTokenType(value_obj.GetTokenType());
+    container.Add(kStrRetValue, obj);
+    
 
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
   }
@@ -244,9 +243,8 @@ namespace kagami {
   Message Input(ObjectMap &p) {
     if (p.Search("msg")) {
       ObjectMap obj_map;
-      Object empty_obj;
 
-      obj_map.Input("not_wrap", empty_obj);
+      obj_map.Input("not_wrap");
       obj_map.Input(kStrObject, p["msg"]);
       Print(obj_map);
     }
@@ -260,7 +258,7 @@ namespace kagami {
     Message msg;
 
     if (!p.CheckTypeId("object",kTypeIdRawString)) {
-      msg = Message(kStrFatalError, kCodeBadExpression, "Cannot convert to basic type(01)");
+      msg = IllegalParmMsg("Cannot convert to basic type(01)");
     }
     else {
       Object objTarget;

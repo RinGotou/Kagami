@@ -171,7 +171,11 @@ namespace kagami {
     }
 
     void Input(string id, Object &obj) {
-      this->insert(pair<string, Object>(id, obj));
+      this->insert(NamedObject(id, obj));
+    }
+
+    void Input(string id) {
+      this->insert(NamedObject(id, Object()));
     }
   };
 }
