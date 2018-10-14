@@ -25,7 +25,11 @@
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include "windows.h"
+#include <Windows.h>
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "Ws2_32.lib")
 #if defined(_MSC_VER)
 #pragma warning(disable:4996)
 #endif

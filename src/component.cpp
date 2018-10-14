@@ -53,119 +53,6 @@ namespace kagami {
     return msg;
   }
 
-  string BinaryOperations(Object &A, Object &B, string OP) {
-    Kit kit;
-    string temp;
-    using entry::OperatorCode;
-    auto op_code = entry::GetOperatorCode(OP);
-    auto data_A = GetObjectStuff<string>(A),
-      data_B = GetObjectStuff<string>(B);
-    auto group_type = GetGroupType(A, B);
-
-    if (group_type == G_INT || group_type == G_FLOAT) {
-      switch (op_code) {
-      case OperatorCode::ADD:
-      case OperatorCode::SUB:
-      case OperatorCode::MUL:
-      case OperatorCode::DIV:
-        switch (group_type) {
-        case G_INT:
-          temp = to_string(kit.Calc(stoi(data_A), stoi(data_B), OP));
-          break;
-        case G_FLOAT:
-          temp = to_string(kit.Calc(stod(data_A), stod(data_B), OP)); 
-          break;
-        default:
-          break;
-        }
-        break;
-      case OperatorCode::IS:
-      case OperatorCode::MORE_OR_EQUAL:
-      case OperatorCode::LESS_OR_EQUAL:
-      case OperatorCode::NOT_EQUAL:
-      case OperatorCode::MORE:
-      case OperatorCode::LESS:
-        switch (group_type) {
-        case G_INT:
-          Kit::MakeBoolean(kit.Logic(stoi(data_A), stoi(data_B), OP), temp);
-          break;
-        case G_FLOAT:
-          Kit::MakeBoolean(kit.Logic(stod(data_A), stod(data_B), OP), temp);
-          break;
-        default:
-          break;
-        }
-        break;
-      case OperatorCode::BIT_AND:
-      case OperatorCode::BIT_OR:
-
-        break;
-
-      default:
-        break;
-      }
-    }
-    else if (group_type == G_STR) {
-      switch (op_code) {
-      case OperatorCode::ADD:
-        if (data_A.front() != '\'') data_A = "'" + data_A;
-        if (data_A.back() == '\'') data_A = data_A.substr(0, data_A.size() - 1);
-        if (data_B.front() == '\'') data_B = data_B.substr(1, data_B.size() - 1);
-        if (data_B.back() != '\'') data_B = data_B + "'";
-        temp = data_A + data_B;
-        break;
-      case OperatorCode::IS:
-      case OperatorCode::NOT_EQUAL:
-        Kit::MakeBoolean(kit.Logic(data_A, data_B, OP), temp);
-        break;
-      case OperatorCode::AND:
-        if (Kit::IsBoolean(data_A) && Kit::IsBoolean(data_B)) {
-          Kit::MakeBoolean((data_A == kStrTrue && data_B == kStrTrue), temp);
-        }
-        else {
-          temp = kStrFalse;
-        }
-        break;
-      case OperatorCode::OR:
-        if(Kit::IsBoolean(data_A) && Kit::IsBoolean(data_B)) {
-          Kit::MakeBoolean((data_A == kStrTrue || data_B == kStrTrue), temp);
-        }
-        else {
-          temp = kStrFalse;
-        }
-        break;
-      default:
-        break;
-      }
-    }
-    return temp;
-  }
-
-  inline Message MakeOperatorMsg(ObjectMap &p, string op) {
-    return Message(BinaryOperations(p["first"], p["second"], op));
-  }
-
-  Message LogicEqualOperation(ObjectMap &p, bool reverse) {
-    Message msg;
-
-    if (!p.CheckTypeId("first", IsStringObject) &&
-      !p.CheckTypeId("second", IsStringObject)) {
-
-      msg = CheckEntryAndStart("__compare", p["first"].GetTypeId(), p);
-
-      msg.GetDetail() == kStrTrue && reverse ?
-        msg.SetDetail(kStrFalse) :
-        msg.SetDetail(kStrTrue);
-    }
-    else {
-      reverse ?
-        msg = MakeOperatorMsg(p, "!=") :
-        msg = MakeOperatorMsg(p, "==");
-    }
-
-    return msg;
-  }
-
   inline Message MakeConditionMsg(ObjectMap &p, int code) {
     return Message(p.Get<string>("state"), code, kStrEmpty);
   }
@@ -221,8 +108,6 @@ namespace kagami {
     return result;
   }
 
-
-
   string IncAndDecOperation(Object &obj, bool negative, bool keep) {
     string res, origin;
 
@@ -251,14 +136,6 @@ namespace kagami {
       msg = Message(res) :
       msg = IllegalParmMsg("Illegal self-operator.");
   }
-
-  Message SelfOperator(ObjectMap &p, bool negative, bool keep) {
-    Object &obj = p["object"];
-    //TODO:error
-    string result = IncAndDecOperation(obj, negative, keep);
-    return Message(result);
-  }
-
 
   Message GetRawStringType(ObjectMap &p) {
     string result;
@@ -540,16 +417,6 @@ namespace kagami {
     return msg;
   }
 
-  Message Plus(ObjectMap &p) { return MakeOperatorMsg(p, "+"); }
-  Message Sub(ObjectMap &p) { return MakeOperatorMsg(p, "-"); }
-  Message Multiply(ObjectMap &p) { return MakeOperatorMsg(p, "*"); }
-  Message Divide(ObjectMap &p) { return MakeOperatorMsg(p, "/"); }
-  Message Less(ObjectMap &p) { return MakeOperatorMsg(p, "<"); }
-  Message More(ObjectMap &p) { return MakeOperatorMsg(p, ">"); }
-  Message LessOrEqual(ObjectMap &p) { return MakeOperatorMsg(p, "<="); }
-  Message MoreOrEqual(ObjectMap &p) { return MakeOperatorMsg(p, ">="); }
-  Message And(ObjectMap &p) { return MakeOperatorMsg(p, "&&"); }
-  Message Or(ObjectMap &p) { return MakeOperatorMsg(p, "||"); }
 
   Message End(ObjectMap &p) { return Message(kStrEmpty, kCodeTailSign, kStrEmpty); }
   Message Else(ObjectMap &p) { return Message(kStrTrue, kCodeConditionLeaf, kStrEmpty); }
@@ -558,14 +425,6 @@ namespace kagami {
   Message While(ObjectMap &p) { return MakeConditionMsg(p, kCodeHeadSign); }
   Message Continue(ObjectMap &p) { return Message(kStrEmpty, kCodeContinue, kStrEmpty); }
   Message Break(ObjectMap &p) { return Message(kStrEmpty, kCodeBreak, kStrEmpty); }
-
-  Message LogicEqual(ObjectMap &p) { return LogicEqualOperation(p, false); }
-  Message LogicNotEqual(ObjectMap &p) { return LogicEqualOperation(p, true); }
-
-  Message LeftSelfIncreament(ObjectMap &p) { return SelfOperator(p, false, false); }
-  Message LeftSelfDecreament(ObjectMap &p) { return SelfOperator(p, true, false); }
-  Message RightSelfIncreament(ObjectMap &p) { return SelfOperator(p, false, true); }
-  Message RightSelfDecreament(ObjectMap &p) { return SelfOperator(p, true, true); }
 
   void GenericRegister() {
     using namespace entry;
@@ -577,22 +436,22 @@ namespace kagami {
     AddGenericEntry(Entry(While, "state", GT_WHILE));
     AddGenericEntry(Entry(Elif, "state", GT_ELIF));
     AddGenericEntry(Entry(BindAndSet, "object|source", GT_BIND, kCodeNormalParm, 0));
-    AddGenericEntry(Entry(Plus, "first|second", GT_ADD, kCodeNormalParm, 2));
-    AddGenericEntry(Entry(Sub, "first|second", GT_SUB, kCodeNormalParm, 2));
-    AddGenericEntry(Entry(Multiply, "first|second", GT_MUL, kCodeNormalParm, 3));
-    AddGenericEntry(Entry(Divide, "first|second", GT_DIV, kCodeNormalParm, 3));
-    AddGenericEntry(Entry(LogicEqual, "first|second", GT_IS, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LessOrEqual, "first|second", GT_LESS_OR_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(MoreOrEqual, "first|second", GT_MORE_OR_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LogicNotEqual, "first|second", GT_NOT_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(More, "first|second", GT_MORE, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(Less, "first|second", GT_LESS, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LeftSelfIncreament, "object", GT_LSELF_INC));
-    AddGenericEntry(Entry(LeftSelfDecreament, "object", GT_LSELF_DEC));
-    AddGenericEntry(Entry(RightSelfIncreament, "object", GT_RSELF_INC));
-    AddGenericEntry(Entry(RightSelfDecreament, "object", GT_RSELF_DEC));
-    AddGenericEntry(Entry(And, "first|second", GT_AND, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(Or, "first|second", GT_OR, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(CalcOperation<OperatorCode::ADD>, "first|second", GT_ADD, kCodeNormalParm, 2));
+    AddGenericEntry(Entry(CalcOperation<OperatorCode::SUB>, "first|second", GT_SUB, kCodeNormalParm, 2));
+    AddGenericEntry(Entry(CalcOperation<OperatorCode::MUL>, "first|second", GT_MUL, kCodeNormalParm, 3));
+    AddGenericEntry(Entry(CalcOperation<OperatorCode::DIV>, "first|second", GT_DIV, kCodeNormalParm, 3));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::IS>, "first|second", GT_IS, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::LESS_OR_EQUAL>, "first|second", GT_LESS_OR_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::MORE_OR_EQUAL>, "first|second", GT_MORE_OR_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::NOT_EQUAL>, "first|second", GT_NOT_EQUAL, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::MORE>, "first|second", GT_MORE, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::LESS>, "first|second", GT_LESS, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(SelfOperator<false, false>, "object", GT_LSELF_INC));
+    AddGenericEntry(Entry(SelfOperator<true, false>, "object", GT_LSELF_DEC));
+    AddGenericEntry(Entry(SelfOperator<false, true>, "object", GT_RSELF_INC));
+    AddGenericEntry(Entry(SelfOperator<true, true>, "object", GT_RSELF_DEC));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::AND>, "first|second", GT_AND, kCodeNormalParm, 1));
+    AddGenericEntry(Entry(LogicOperation<OperatorCode::OR>, "first|second", GT_OR, kCodeNormalParm, 1));
     AddGenericEntry(Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
     AddGenericEntry(Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));

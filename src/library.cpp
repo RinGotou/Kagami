@@ -14,9 +14,9 @@ namespace kagami {
     }
     
     
-    HINSTANCE hIns = LoadLibrary(path.c_str());
-    if (hIns != nullptr) {
-      LibraryHandler handler(hIns);
+    HINSTANCE h_ins = LoadLibrary(path.c_str());
+    if (h_ins != nullptr) {
+      LibraryHandler handler(h_ins);
       Object obj;
       obj.Set(make_shared<LibraryHandler>(handler), kTypeIdLib)
         .SetMethods(kLibraryMethods)
@@ -29,12 +29,13 @@ namespace kagami {
     return msg;
   }
 
+  /*so dirty...*/
   Message LibCall(ObjectMap &p) {
     LibraryHandler &handler = p.Get<LibraryHandler>(kStrObject);
     string id = Kit().GetRawString(p.Get<string>("id"));
     int size = stoi(p.Get<string>("__size"));
     bool state = true;
-    HINSTANCE hIns = handler.Get();
+    HINSTANCE h_ins = handler.Get();
 
 
     char **argArray = 
@@ -60,9 +61,9 @@ namespace kagami {
 
     if (state) {
       LibraryCallingFunc calling = 
-        LibraryCallingFunc(GetProcAddress(hIns, "Call"));
+        LibraryCallingFunc(GetProcAddress(h_ins, "Call"));
       LibraryGabageProc gabageProc = 
-        LibraryGabageProc(GetProcAddress(hIns, "GabageProc"));
+        LibraryGabageProc(GetProcAddress(h_ins, "GabageProc"));
 
       if (calling != nullptr && gabageProc != nullptr) {
         MessageBridge bridge = calling(id.c_str(), argArray, size);
