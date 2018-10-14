@@ -27,9 +27,7 @@ namespace kagami {
       Object ret;
       StringType output = str.substr(start, size);
 
-      ret.Set(make_shared<StringType>(output), type_id)
-        .SetMethods(methods)
-        .SetRo(false);
+      ret.Set(make_shared<StringType>(output), type_id, methods, false);
       msg.SetObject(ret);
     }
 
