@@ -108,7 +108,7 @@ namespace kagami {
   Message StreamFamilyState(ObjectMap &p) {
     StreamType &stream = p.Get<StreamType>(kStrObject);
     string temp;
-    kit::MakeBoolean(stream.good(), temp);
+    util::MakeBoolean(stream.good(), temp);
     return Message(temp);
   }
 

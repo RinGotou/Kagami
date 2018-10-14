@@ -1,5 +1,5 @@
 #pragma once
-#include "kit.h"
+#include "util.h"
 #include "message.h"
 
 namespace kagami {
@@ -41,7 +41,7 @@ namespace kagami {
       int flag = kFlagNormalEntry, 
       int priority = 4) :
       id_(id), 
-      parms_(kit::BuildStringVector(parms)), 
+      parms_(util::BuildStringVector(parms)), 
       argument_mode_(argumentMode), 
       priority_(priority),
       type_(type), 
@@ -61,7 +61,7 @@ namespace kagami {
       int argumentMode = kCodeNormalParm, 
       int priority = 4) :
       id_(), 
-      parms_(kit::BuildStringVector(parms)), 
+      parms_(util::BuildStringVector(parms)), 
       argument_mode_(argumentMode), 
       priority_(priority) {
 

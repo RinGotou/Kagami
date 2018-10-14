@@ -7,7 +7,7 @@ namespace kagami {
     Message msg;
 
     if (p.CheckTypeId("path", IsStringObject)) {
-      path = s2ws(kit::GetRawString(p.Get<string>("path")));
+      path = s2ws(util::GetRawString(p.Get<string>("path")));
     }
     else if (p.CheckTypeId("path", kTypeIdWideString)) {
       path = p.Get<wstring>("path");
@@ -32,7 +32,7 @@ namespace kagami {
   /*so dirty...*/
   Message LibCall(ObjectMap &p) {
     LibraryHandler &handler = p.Get<LibraryHandler>(kStrObject);
-    string id = kit::GetRawString(p.Get<string>("id"));
+    string id = util::GetRawString(p.Get<string>("id"));
     int size = stoi(p.Get<string>("__size"));
     bool state = true;
     HINSTANCE h_ins = handler.Get();

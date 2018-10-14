@@ -1,7 +1,7 @@
-#include "kit.h"
+#include "util.h"
 
 namespace kagami {
-  namespace kit {
+  namespace util {
     bool IsString(string target) {
       if (target.empty()) return false;
       if (target.size() == 1) return false;

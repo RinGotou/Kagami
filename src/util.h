@@ -2,7 +2,7 @@
 #include "common.h"
 
 namespace kagami {
-  namespace kit {
+  namespace util {
     string GetRawString(string target);
     bool IsString(string target);
     bool IsGenericToken(string target);

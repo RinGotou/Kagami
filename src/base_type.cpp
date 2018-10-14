@@ -114,8 +114,8 @@ namespace kagami {
 
     string data = p.Get<string>(kStrObject);
 
-    if (kit::IsString(data)) {
-      data = kit::GetRawString(data);
+    if (util::IsString(data)) {
+      data = util::GetRawString(data);
     }
     size = data.size();
     if (idx <= int(size - 1)) {
@@ -131,8 +131,8 @@ namespace kagami {
   Message RawStringGetSize(ObjectMap &p) {
     auto str = p.Get<string>(kStrObject);
 
-    kit::IsString(str) ?
-      str = kit::GetRawString(str) :
+    util::IsString(str) ?
+      str = util::GetRawString(str) :
       str = str;
 
     return Message(to_string(str.size()));
@@ -145,8 +145,8 @@ namespace kagami {
     
     auto data = p.Get<string>(kStrObject);
 
-    kit::IsString(data) ? 
-      data = kit::GetRawString(data) : 
+    util::IsString(data) ? 
+      data = util::GetRawString(data) : 
       data = data;
 
     std::cout << data;
@@ -182,8 +182,8 @@ namespace kagami {
     else {
       string origin = GetObjectStuff<string>(obj);
       string output;
-      if (kit::IsString(origin)) {
-        output = kit::GetRawString(origin);
+      if (util::IsString(origin)) {
+        output = util::GetRawString(origin);
       }
       else {
         output = origin;
@@ -201,7 +201,7 @@ namespace kagami {
 
   //InStream
   Message InStreamConsturctor(ObjectMap &p) {
-    string path = kit::GetRawString(p.Get<string>("path"));
+    string path = util::GetRawString(p.Get<string>("path"));
     shared_ptr<ifstream> ifs = 
       make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
     Message msg;
@@ -284,8 +284,8 @@ namespace kagami {
       string output;
       string &origin = p.Get<string>("str");
 
-      if (kit::IsString(origin)) {
-        output = kit::GetRawString(origin);
+      if (util::IsString(origin)) {
+        output = util::GetRawString(origin);
       }
       ofs << output;
     }
@@ -304,8 +304,8 @@ namespace kagami {
   Message RegexConstructor(ObjectMap &p) {
     string pattern_string = p.Get<string>("regex");
 
-    kit::IsString(pattern_string) ? 
-      pattern_string = kit::GetRawString(pattern_string): 
+    util::IsString(pattern_string) ? 
+      pattern_string = util::GetRawString(pattern_string): 
       pattern_string = pattern_string;
 
     shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
@@ -324,7 +324,7 @@ namespace kagami {
     string str = p.Get<string>("str");
     auto &pat = p.Get<regex>(kStrObject);
 
-    kit::IsString(str) ? str = kit::GetRawString(str) : str = str;
+    util::IsString(str) ? str = util::GetRawString(str) : str = str;
 
     string state;
 
@@ -345,7 +345,7 @@ namespace kagami {
     string origin = GetObjectStuff<string>(obj);
     string output;
 
-    if (kit::IsString(origin)) output = origin.substr(1, origin.size() - 2);
+    if (util::IsString(origin)) output = origin.substr(1, origin.size() - 2);
     else output = origin;
 
     wstring wstr = s2ws(output);
