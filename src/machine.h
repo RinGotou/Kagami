@@ -63,14 +63,15 @@ namespace kagami {
 
   class Machine {
     using MachCtlBlk = struct {
+      bool s_continue, s_break, last_index, tail_recursion, tail_call, runtime_error;
       size_t current;
-      stack<size_t> cycle_nest, cycle_tail, mode_stack;
-      stack<bool> condition_stack;
+      size_t def_start;
       size_t mode;
       int nest_head_count;
-      bool s_continue, s_break, last_index, tail_recursion, tail_call;
+      string error_string;
+      stack<size_t> cycle_nest, cycle_tail, mode_stack;
+      stack<bool> condition_stack;
       vector<string> def_head;
-      size_t def_start;
       ObjectMap recursion_map;
     };
 

@@ -404,20 +404,26 @@ namespace kagami {
 
   void Machine::Continue(MachCtlBlk *blk) {
     while (!blk->mode_stack.empty() && blk->mode != kModeCycle) {
-      if (blk->mode == kModeCondition) {
+      if (blk->mode == kModeCondition || blk->mode == kModeCase) {
         blk->condition_stack.pop();
         blk->nest_head_count++;
       }
       blk->mode = blk->mode_stack.top();
       blk->mode_stack.pop();
     }
-    blk->mode = kModeCycleJump;
-    blk->s_continue = true;
+    if (blk->mode == kModeCase) {
+      blk->mode = kModeCycleJump;
+      blk->s_continue = true;
+    }
+    else {
+      blk->runtime_error = true;
+      blk->error_string = "Illegal 'continue' operation.";
+    }
   }
 
   void Machine::Break(MachCtlBlk *blk) {
     while (!blk->mode_stack.empty() && blk->mode != kModeCycle) {
-      if (blk->mode == kModeCondition) {
+      if (blk->mode == kModeCondition || blk->mode == kModeCase) {
         blk->condition_stack.pop();
         blk->nest_head_count++;
       }
@@ -427,6 +433,10 @@ namespace kagami {
     if (blk->mode == kModeCycle) {
       blk->mode = kModeCycleJump;
       blk->s_break = true;
+    }
+    else {
+      blk->runtime_error = true;
+      blk->error_string = "Illegal 'break' operation.";
     }
   }
 
@@ -477,7 +487,7 @@ namespace kagami {
           returning_base.pop_front();
         }
         else {
-          error_string = "Return base error.";
+          error_string = "Returning base error.";
           error_returning = true;
         }
         break;
@@ -710,6 +720,7 @@ namespace kagami {
     blk->last_index = false;
     blk->tail_recursion = false;
     blk->tail_call = false;
+    blk->runtime_error = false;
   }
 
   void Machine::ResetContainer(string func_id) {
@@ -850,11 +861,20 @@ namespace kagami {
         break;
       default:break;
       }
+
+      if (blk->runtime_error) break;
+
       ++blk->current;
       if (judged) judged = false;
     }
 
+    if (blk->runtime_error) {
+      trace::Log(Message(kStrFatalError, kCodeBadExpression, 
+        blk->error_string).SetIndex(blk->current));
+    }
+
     if (create_container) entry::DisposeManager();
+
     delete blk;
     return result;
   }
