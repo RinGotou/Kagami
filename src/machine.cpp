@@ -168,76 +168,30 @@ namespace kagami {
     return activity(obj_map);
   }
 
-  void Machine::MakeFunction(size_t start,size_t end, vector<string> &def_head) {
-    if (start > end) return;
-    string id = def_head[0];
-    vector<string> parms;
-    vector<Meta> proc;
-
-    for (size_t i = 1; i < def_head.size(); ++i) {
-      parms.push_back(def_head[i]);
-    }
-    for (size_t j = start; j <= end; ++j) {
-      proc.push_back(storage_[j]);
-    }
-    AddFunction(id, proc, parms);
+  void Machine::ResetBlock(MachCtlBlk *blk) {
+    blk->mode = kModeNormal;
+    blk->nest_head_count = 0;
+    blk->current = 0;
+    blk->mode = kModeNormal;
+    blk->def_start = 0;
+    blk->s_continue = false;
+    blk->s_break = false;
+    blk->last_index = false;
+    blk->tail_recursion = false;
+    blk->tail_call = false;
+    blk->runtime_error = false;
   }
 
-  void Machine::Reset(MachCtlBlk *blk) {
-    storage_.clear();
-    storage_.shrink_to_fit();
-    while (!blk->cycle_nest.empty()) blk->cycle_nest.pop();
-    while (!blk->cycle_tail.empty()) blk->cycle_tail.pop();
-    while (!blk->mode_stack.empty()) blk->mode_stack.pop();
-    while (!blk->condition_stack.empty()) blk->condition_stack.pop();
-    delete blk;
-  }
+  void Machine::ResetContainer(string func_id) {
+    Object *func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
 
-  Machine::Machine(const char *target, bool is_main) {
-    std::wifstream stream;
-    wstring buf;
-    health_ = true;
-    size_t subscript = 0;
-    vector<string> script_buf;
-
-    is_main_ = is_main;
-
-    stream.open(target, std::ios::in);
-    if (stream.good()) {
-      while (!stream.eof()) {
-        std::getline(stream, buf);
-        string temp = ws2s(buf);
-        if (!temp.empty() && temp.back() == '\0') temp.pop_back();
-        script_buf.emplace_back(temp);
+    while (func_sign == nullptr) {
+      entry::DisposeManager();
+      func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
+      if (func_sign != nullptr) {
+        string value = GetObjectStuff<string>(*func_sign);
+        if (value == func_id) break;
       }
-    }
-    stream.close();
-
-    vector<StringUnit> string_units = MultilineProcessing(script_buf);
-    Analyzer analyzer;
-    Message msg;
-    for (auto it = string_units.begin(); it != string_units.end(); ++it) {
-      if (it->second == "") continue;
-      msg = analyzer.Make(it->second, it->first);
-      if (msg.GetValue() == kStrFatalError) {
-        trace::Log(msg.SetIndex(subscript));
-        health_ = false;
-        break;
-      }
-      if (msg.GetValue() == kStrWarning) {
-        trace::Log(msg.SetIndex(subscript));
-      }
-      storage_.emplace_back(Meta(
-        analyzer.GetOutput(),
-        analyzer.get_index(),
-        analyzer.GetMainToken()));
-      analyzer.Clear();
-    }
-
-    msg = PreProcessing();
-    if (msg.GetValue() == kStrFatalError) {
-      health_ = false;
-      trace::Log(msg);
     }
   }
 
@@ -438,6 +392,21 @@ namespace kagami {
       blk->runtime_error = true;
       blk->error_string = "Illegal 'break' operation.";
     }
+  }
+
+  void Machine::MakeFunction(size_t start, size_t end, vector<string> &def_head) {
+    if (start > end) return;
+    string id = def_head[0];
+    vector<string> parms;
+    vector<Meta> proc;
+
+    for (size_t i = 1; i < def_head.size(); ++i) {
+      parms.push_back(def_head[i]);
+    }
+    for (size_t j = start; j <= end; ++j) {
+      proc.push_back(storage_[j]);
+    }
+    AddFunction(id, proc, parms);
   }
 
   bool Machine::IsBlankStr(string target) {
@@ -709,31 +678,57 @@ namespace kagami {
     }
   }
 
-  void Machine::ResetBlock(MachCtlBlk *blk) {
-    blk->mode = kModeNormal;
-    blk->nest_head_count = 0;
-    blk->current = 0;
-    blk->mode = kModeNormal;
-    blk->def_start = 0;
-    blk->s_continue = false;
-    blk->s_break = false;
-    blk->last_index = false;
-    blk->tail_recursion = false;
-    blk->tail_call = false;
-    blk->runtime_error = false;
+
+
+  bool Machine::PredefinedMessage(Message &result, size_t mode, Token token) {
+    bool judged = false;
+    GenericTokenEnum gen_token = entry::GetGenericToken(token.first);
+
+    switch (mode) {
+    case kModeNextCondition:
+      if (entry::HasTailTokenRequest(gen_token)) {
+        result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+        judged = true;
+      }
+      else if (gen_token != GT_ELSE && gen_token != GT_END && gen_token != GT_ELIF) {
+        result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+        judged = true;
+      }
+      break;
+    case kModeCycleJump:
+      if (gen_token != GT_END && gen_token != GT_IF && gen_token != GT_WHILE) {
+        result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+        judged = true;
+      }
+      break;
+    case kModeCaseJump:
+      if (entry::HasTailTokenRequest(gen_token)) {
+        result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+        judged = true;
+      }
+      else if (gen_token != GT_WHEN && gen_token != GT_END && gen_token != GT_ELSE) {
+        result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+        judged = true;
+      }
+      break;
+    default:
+      break;
+    }
+
+    return judged;
   }
 
-  void Machine::ResetContainer(string func_id) {
-    Object *func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
-
-    while (func_sign == nullptr) {
-      entry::DisposeManager();
-      func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
-      if (func_sign != nullptr) {
-        string value = GetObjectStuff<string>(*func_sign);
-        if (value == func_id) break;
-      }
+  void Machine::TailRecursionActions(MachCtlBlk *blk,string &name) {
+    Object obj = *entry::FindObject(kStrUserFunc);
+    auto &base = entry::GetCurrentContainer();
+    base.clear();
+    base.Add(kStrUserFunc, obj);
+    for (auto &unit : blk->recursion_map) {
+      base.Add(unit.first, unit.second);
     }
+    blk->recursion_map.clear();
+    ResetBlock(blk);
+    ResetContainer(name);
   }
 
   Message Machine::Run(bool create_container, string name) {
@@ -754,40 +749,11 @@ namespace kagami {
     //Main state machine
     while (blk->current < storage_.size()) {
       if (!health_) break;
+
       blk->last_index = (blk->current == storage_.size() - 1);
       meta = &storage_[blk->current];
 
-      token = entry::GetGenericToken(meta->GetMainToken().first);
-      switch (blk->mode) {
-      case kModeNextCondition:
-        if (entry::HasTailTokenRequest(token)) {
-          result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
-          judged = true;
-        }
-        else if (token != GT_ELSE && token != GT_END && token != GT_ELIF) {
-          result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
-          judged = true;
-        }
-        break;
-      case kModeCycleJump:
-        if (token != GT_END && token != GT_IF && token != GT_WHILE) {
-          result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
-          judged = true;
-        }
-        break;
-      case kModeCaseJump:
-        if (entry::HasTailTokenRequest(token)) {
-          result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
-          judged = true;
-        }
-        else if (token != GT_WHEN && token != GT_END && token != GT_ELSE) {
-          result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
-          judged = true;
-        }
-        break;
-      default:
-        break;
-      }
+      judged = PredefinedMessage(result, blk->mode, meta->GetMainToken());
       
       if (!judged) result = MetaProcessing(*meta, name, blk);
 
@@ -796,16 +762,7 @@ namespace kagami {
       const auto detail = result.GetDetail();
 
       if (blk->tail_recursion) {
-        Object obj = *entry::FindObject(kStrUserFunc);
-        auto &base = entry::GetCurrentContainer();
-        base.clear();
-        base.Add(kStrUserFunc, obj);
-        for (auto &unit : blk->recursion_map) {
-          base.Add(unit.first, unit.second);
-        }
-        blk->recursion_map.clear();
-        ResetBlock(blk);
-        ResetContainer(name);
+        TailRecursionActions(blk, name);
         continue;
       }
 
@@ -907,6 +864,64 @@ namespace kagami {
 
     entry::DisposeManager();
     return msg;
+  }
+
+  Machine::Machine(const char *target, bool is_main) {
+    std::wifstream stream;
+    wstring buf;
+    health_ = true;
+    size_t subscript = 0;
+    vector<string> script_buf;
+
+    is_main_ = is_main;
+
+    stream.open(target, std::ios::in);
+    if (stream.good()) {
+      while (!stream.eof()) {
+        std::getline(stream, buf);
+        string temp = ws2s(buf);
+        if (!temp.empty() && temp.back() == '\0') temp.pop_back();
+        script_buf.emplace_back(temp);
+      }
+    }
+    stream.close();
+
+    vector<StringUnit> string_units = MultilineProcessing(script_buf);
+    Analyzer analyzer;
+    Message msg;
+    for (auto it = string_units.begin(); it != string_units.end(); ++it) {
+      if (it->second == "") continue;
+      msg = analyzer.Make(it->second, it->first);
+      if (msg.GetValue() == kStrFatalError) {
+        trace::Log(msg.SetIndex(subscript));
+        health_ = false;
+        break;
+      }
+      if (msg.GetValue() == kStrWarning) {
+        trace::Log(msg.SetIndex(subscript));
+      }
+      storage_.emplace_back(Meta(
+        analyzer.GetOutput(),
+        analyzer.get_index(),
+        analyzer.GetMainToken()));
+      analyzer.Clear();
+    }
+
+    msg = PreProcessing();
+    if (msg.GetValue() == kStrFatalError) {
+      health_ = false;
+      trace::Log(msg);
+    }
+  }
+
+  void Machine::Reset(MachCtlBlk *blk) {
+    storage_.clear();
+    storage_.shrink_to_fit();
+    while (!blk->cycle_nest.empty()) blk->cycle_nest.pop();
+    while (!blk->cycle_tail.empty()) blk->cycle_tail.pop();
+    while (!blk->mode_stack.empty()) blk->mode_stack.pop();
+    while (!blk->condition_stack.empty()) blk->condition_stack.pop();
+    delete blk;
   }
 }
 
