@@ -95,6 +95,8 @@ namespace kagami {
     Message MetaProcessing(Meta &meta, string name, MachCtlBlk *blk);
     Message PreProcessing();
     void InitGlobalObject(bool create_container,string name);
+    bool PredefinedMessage(Message &result, size_t mode, Token token);
+    void TailRecursionActions(MachCtlBlk *blk, string &name);
   public:
     Machine() : 
       health_(false), 
