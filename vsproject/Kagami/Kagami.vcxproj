@@ -22,15 +22,18 @@
     <ClInclude Include="..\..\src\analyzer.h" />
     <ClInclude Include="..\..\src\base_type.h" />
     <ClInclude Include="..\..\src\common.h" />
+    <ClInclude Include="..\..\src\component.h" />
     <ClInclude Include="..\..\src\entry.h" />
     <ClInclude Include="..\..\src\kagami.h" />
-    <ClInclude Include="..\..\src\kit.h" />
     <ClInclude Include="..\..\src\library.h" />
     <ClInclude Include="..\..\src\list.h" />
     <ClInclude Include="..\..\src\message.h" />
     <ClInclude Include="..\..\src\object.h" />
     <ClInclude Include="..\..\src\machine.h" />
+    <ClInclude Include="..\..\src\socket_linux.h" />
+    <ClInclude Include="..\..\src\socket_win.h" />
     <ClInclude Include="..\..\src\trace.h" />
+    <ClInclude Include="..\..\src\util.h" />
     <ClInclude Include="..\..\src\window.h" />
   </ItemGroup>
   <ItemGroup>
@@ -39,12 +42,14 @@
     <ClCompile Include="..\..\src\component.cpp" />
     <ClCompile Include="..\..\src\entry.cpp" />
     <ClCompile Include="..\..\src\kagami.cpp" />
-    <ClCompile Include="..\..\src\kit.cpp" />
     <ClCompile Include="..\..\src\library.cpp" />
     <ClCompile Include="..\..\src\message.cpp" />
     <ClCompile Include="..\..\src\object.cpp" />
     <ClCompile Include="..\..\src\machine.cpp" />
+    <ClCompile Include="..\..\src\socket_linux.cpp" />
+    <ClCompile Include="..\..\src\socket_win.cpp" />
     <ClCompile Include="..\..\src\trace.cpp" />
+    <ClCompile Include="..\..\src\util.cpp" />
     <ClCompile Include="..\..\src\window.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
