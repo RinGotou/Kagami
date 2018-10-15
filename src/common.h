@@ -191,6 +191,7 @@ namespace kagami {
   constexpr size_t kModeDef           = 5;
   constexpr size_t kModeCase          = 6;
   constexpr size_t kModeCaseJump      = 7;
+  constexpr size_t kModeClass         = 8;
 
   /*Generic Token*/
   const string kStrIf = "if",

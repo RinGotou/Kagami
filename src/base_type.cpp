@@ -29,7 +29,7 @@ namespace kagami {
 
     if (p.Search("init_value")) {
       obj.Copy(p["init_value"]);
-      obj.SetRo(false);
+      obj.set_ro(false);
     }
     
     if (size <= 0) {
@@ -49,14 +49,14 @@ namespace kagami {
         .Set(initPtr, type_id)
         .SetMethods(methods)
         .SetTokenType(tokenTypeEnum)
-        .SetRo(false)));
+        .set_ro(false)));
     }
 
     result.SetObject(Object()
       .SetConstructorFlag()
       .Set(make_shared<ArrayBase>(base), kTypeIdArrayBase)
       .SetMethods(kArrayBaseMethods)
-      .SetRo(false));
+      .set_ro(false));
     return result;
   }
 
@@ -171,13 +171,13 @@ namespace kagami {
       base.Set(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag()
         .SetMethods(kStringMethods)
-        .SetRo(false);
+        .set_ro(false);
     }
     else if (obj.GetTypeId() == kTypeIdString) {
       base.Set(obj.Get(), kTypeIdString)
         .SetConstructorFlag()
         .SetMethods(kStringMethods)
-        .SetRo(false);
+        .set_ro(false);
     }
     else {
       string origin = GetObjectStuff<string>(obj);
@@ -191,7 +191,7 @@ namespace kagami {
       base.Set(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag()
         .SetMethods(kStringMethods)
-        .SetRo(false);
+        .set_ro(false);
     }
 
     Message msg;
@@ -209,7 +209,7 @@ namespace kagami {
 
     obj.Set(ifs, kTypeIdInStream)
       .SetMethods(kInStreamMethods)
-      .SetRo(false);
+      .set_ro(false);
     msg.SetObject(obj);
 
     return msg;
@@ -227,7 +227,7 @@ namespace kagami {
       string str;
       std::getline(ifs, str);
       Object obj;
-      obj.Set(make_shared<string>(str), kTypeIdString).SetMethods(kStringMethods).SetRo(false);
+      obj.Set(make_shared<string>(str), kTypeIdString).SetMethods(kStringMethods).set_ro(false);
       msg.SetObject(obj);
     }
     else {
@@ -267,7 +267,7 @@ namespace kagami {
     Object obj;
     obj.Set(ofs, kTypeIdOutStream)
       .SetMethods(kOutStreamMethods)
-      .SetRo(false);
+      .set_ro(false);
     msg.SetObject(obj);
     return msg;
   }
@@ -313,7 +313,7 @@ namespace kagami {
 
     ret.Set(reg, kTypeIdRegex)
       .SetMethods(kRegexMethods)
-      .SetRo(false);
+      .set_ro(false);
 
     Message msg;
     msg.SetObject(ret);
@@ -352,7 +352,7 @@ namespace kagami {
 
     base.Set(make_shared<wstring>(wstr), kTypeIdWideString)
       .SetMethods(kWideStringMethods)
-      .SetRo(false);
+      .set_ro(false);
 
     Message msg;
     msg.SetObject(base);

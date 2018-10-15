@@ -609,6 +609,12 @@ namespace kagami {
 
     if(!preprocessing && tail_recursion) blk->tail_recursion = tail_recursion;
 
+    obj_map.clear();
+    returning_base.clear();
+    returning_base.shrink_to_fit();
+    args.clear();
+    args.shrink_to_fit();
+
     return msg;
   }
 
@@ -763,7 +769,7 @@ namespace kagami {
           result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
           judged = true;
         }
-        else if (token != GT_WHEN && token != GT_END) {
+        else if (token != GT_WHEN && token != GT_END && token != GT_ELSE) {
           result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
           judged = true;
         }

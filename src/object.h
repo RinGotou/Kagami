@@ -26,35 +26,141 @@ namespace kagami {
     std::shared_ptr<void> ptr_;
     string type_id_;
     string methods_;
+    string domain_;
     TokenTypeEnum token_type_;
     bool ro_, ref_, constructor_;
 
-    Object *GetTargetObject() { 
+    ObjectPointer GetTargetObject() { 
       return static_pointer_cast<TargetObject>(ptr_)->ptr; 
     }
   public:
-    Object();
-    Object &Manage(string t, TokenTypeEnum tokenType);
-    Object &Set(shared_ptr<void> ptr, string type_id);
-    Object &Set(shared_ptr<void> ptr, string type_id, string methods, bool ro);
     Object &Ref(Object &object);
-    void Clear();
-    bool Compare(Object &object) const;
     Object &Copy(Object &object, bool force = false);
-    shared_ptr<void> Get();
-    string GetTypeId();
-    Object &SetMethods(string methods);
-    Object &AppendMethod(string method);
-    Object &SetTokenType(TokenTypeEnum token_type);
-    Object &SetRo(bool ro);
-    string GetMethods();
-    TokenTypeEnum GetTokenType();
-    bool IsRo();
-    bool ConstructorFlag();
+
+    Object() :
+      ptr_(nullptr),
+      type_id_(kStrNull),
+      methods_(),
+      domain_(),
+      ro_(false),
+      ref_(false),
+      constructor_(false) {
+
+      token_type_ = TokenTypeEnum::T_NUL;
+    }
+
+    Object &AppendMethod(string method) {
+      if (ref_) return GetTargetObject()->AppendMethod(method);
+      methods_.append("|" + method);
+      return *this;
+    }
+
+    Object &SetTokenType(TokenTypeEnum token_type) {
+      if (ref_) return GetTargetObject()->SetTokenType(token_type);
+      token_type_ = token_type;
+      return *this;
+    }
+
+    TokenTypeEnum GetTokenType() {
+      if (ref_) return GetTargetObject()->GetTokenType();
+      return token_type_;
+    }
+
+    Object &set_ro(bool ro) {
+      if (ref_) return GetTargetObject()->set_ro(ro);
+      ro_ = ro;
+      return *this;
+    }
+
+    bool get_ro() {
+      if (ref_) return GetTargetObject()->get_ro();
+      return ro_;
+    }
+
+    string GetMethods() {
+      if (ref_) return GetTargetObject()->GetMethods();
+      return methods_;
+    }
+
+    Object &Set(shared_ptr<void> ptr, string type_id) {
+      if (ref_) return GetTargetObject()->Set(ptr, type_id);
+      ptr_ = ptr;
+      type_id_ = type_id;
+      return *this;
+    }
+
+    Object &Manage(string t, TokenTypeEnum tokenType) {
+      if (ref_) return GetTargetObject()->Manage(t, tokenType);
+      ptr_ = std::make_shared<string>(t);
+      type_id_ = kTypeIdRawString;
+      methods_ = kRawStringMethods;
+      token_type_ = tokenType;
+      return *this;
+    }
+
+
+    Object &Set(shared_ptr<void> ptr, string type_id, string methods, bool ro) {
+      if (ref_) return GetTargetObject()->Set(ptr, type_id, methods, ro);
+      ptr_ = ptr;
+      type_id_ = type_id;
+      methods_ = methods;
+      ro_ = ro;
+      return *this;
+    }
+
+    shared_ptr<void> Get() {
+      if (ref_) return GetTargetObject()->Get();
+      return ptr_;
+    }
+
+    void Clear() {
+      ptr_ = make_shared<int>(0);
+      type_id_ = kTypeIdNull;
+      methods_.clear();
+      token_type_ = TokenTypeEnum::T_NUL;
+      ro_ = false;
+      ref_ = false;
+    }
+
+    bool Compare(Object &object) const {
+      return (ptr_ == object.ptr_ &&
+        type_id_ == object.type_id_ &&
+        methods_ == object.methods_ &&
+        token_type_ == object.token_type_ &&
+        ro_ == object.ro_ &&
+        constructor_ == object.constructor_ &&
+        ref_ == object.ref_);
+    }
+
+    Object &SetMethods(string methods) {
+      if (ref_) return GetTargetObject()->SetMethods(methods);
+      methods_ = methods;
+      return *this;
+    }
+
+    string GetTypeId() {
+      if (ref_) return GetTargetObject()->GetTypeId();
+      return type_id_;
+    }
 
     Object &SetConstructorFlag() { 
       constructor_ = true; 
       return *this; 
+    }
+
+    bool GetConstructorFlag() {
+      bool result = constructor_;
+      constructor_ = false;
+      return result;
+    }
+
+    Object &SetDomain(string domain) {
+      domain_ = domain;
+      return *this;
+    }
+
+    string GetDomain() const {
+      return domain_;
     }
 
     Object &Copy(Object &&object) { 
@@ -114,18 +220,17 @@ namespace kagami {
   private:
     list<NamedObject> base;
 
-    bool CheckObject(string sign) {
+    bool CheckObject(string id) {
       for (size_t i = 0; i < base.size(); ++i) {
         NamedObject &object = base.at(i);
-        if (object.first == sign) return false;
+        if (object.first == id) return false;
       }
       return true;
     }
   public:
-    bool Add(string sign, Object &source);
-    Object *Find(string sign);
-    void Dispose(string sign);
-    void clear();
+    bool Add(string id, Object &source);
+    Object *Find(string id, string domain = kStrEmpty);
+    void Dispose(string id, string domain = kStrEmpty);
 
     ObjectContainer() {}
 
@@ -141,6 +246,10 @@ namespace kagami {
 
     ObjectContainer &operator=(ObjectContainer &mgr) { 
       base.copy(mgr.base); return *this; 
+    }
+
+    void clear() {
+      base.clear();
     }
   };
 

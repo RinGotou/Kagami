@@ -20,7 +20,7 @@ namespace kagami {
       Object obj;
       obj.Set(make_shared<LibraryHandler>(handler), kTypeIdLib)
         .SetMethods(kLibraryMethods)
-        .SetRo(false);
+        .set_ro(false);
       msg.SetObject(obj);
     }
     else {

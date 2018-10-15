@@ -34,17 +34,17 @@ namespace kagami {
 
   using Instruction = pair<Entry, deque<Argument>>;
 
-  using AnalyzerWorkBlock = struct {
-    deque<Argument> args;
-    deque<Entry> symbol;
-    bool insert_between_object, need_reversing, define_line;
-    Token current;
-    Token next;
-    Token last;
-    size_t mode, next_insert_index;
-  };
-
   class Analyzer {
+    using AnalyzerWorkBlock = struct {
+      deque<Argument> args;
+      deque<Entry> symbol;
+      bool insert_between_object, need_reversing, define_line;
+      Token current;
+      Token next;
+      Token last;
+      size_t mode, next_insert_index;
+    };
+
     bool health_;
     vector<Token> tokens_;
     size_t index_;
