@@ -18,7 +18,7 @@ namespace kagami {
   template <class T>
   Object MakeObject(T t) {
     string str = to_string(t);
-    return Object().Manage(str, util::GetTokenType(str)).SetRo(false);
+    return Object().Manage(str, util::GetTokenType(str)).set_ro(false);
   }
 
   class Meta {

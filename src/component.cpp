@@ -186,7 +186,7 @@ namespace kagami {
     }
     
     if (existed) {
-      if (target_obj->IsRo()) {
+      if (target_obj->get_ro()) {
         msg = IllegalCallMsg("Object is read-only.");
       }
       else {

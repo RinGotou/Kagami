@@ -289,7 +289,7 @@ namespace kagami {
     }
 
     shared_ptr<void> GetObjectCopy(Object &object) {
-      if (object.ConstructorFlag()) {
+      if (object.GetConstructorFlag()) {
         return object.Get();
       }
 
