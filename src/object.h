@@ -1,6 +1,6 @@
 #pragma once
-#include "common.h"
 #include "list.h" 
+#include "common.h"
 
 namespace kagami {
   class Object;
