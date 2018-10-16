@@ -56,6 +56,10 @@ namespace kagami {
       return object;
     }
 
+    ObjectContainer &GetRootContainer() {
+      return GetContainerPool().front();
+    }
+
     ObjectContainer &GetCurrentContainer() {
       return GetContainerPool().back();
     }

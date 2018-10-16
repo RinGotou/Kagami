@@ -189,6 +189,7 @@ namespace kagami {
     ContainerPool &GetContainerPool();
     ObjectContainer &GetCurrentContainer();
     ObjectContainer &CreateContainer();
+    ObjectContainer &GetRootContainer();
     Object *FindObjectInCurrentContainer(string sign);
     Object *FindObject(string name);
     Object *CreateObject(string sign, Object &object);

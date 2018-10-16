@@ -23,6 +23,7 @@ namespace kagami {
     bool delay_suspending = false;
     bool delay_switching = false;
     bool escape_flag = false;
+    bool disable_escape = false;
     char current = 0, next = 0, last = 0;
     vector<string> output;
 
@@ -38,9 +39,11 @@ namespace kagami {
         delay_suspending = false;
       }
 
-      (string_processing && last == '\\') ?
+      (string_processing && last == '\\' && !disable_escape) ?
         escape_flag = true :
         escape_flag = false;
+
+      if (disable_escape) disable_escape = false;
 
       if (current == '\'' && !escape_flag) {
         if (!string_processing && util::GetTokenType(current_string) == T_BLANK) {
@@ -92,6 +95,7 @@ namespace kagami {
         escape_flag ?
           current = util::GetEscapeChar(current) :
           current = current;
+        if (current == '\\' && last == '\\') disable_escape = true;
         current_string.append(1, current);
       }
 
