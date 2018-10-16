@@ -975,8 +975,6 @@ namespace kagami {
   }
 
   void Machine::Reset(MachCtlBlk *blk) {
-    storage_.clear();
-    storage_.shrink_to_fit();
     while (!blk->cycle_nest.empty()) blk->cycle_nest.pop();
     while (!blk->cycle_tail.empty()) blk->cycle_tail.pop();
     while (!blk->mode_stack.empty()) blk->mode_stack.pop();
