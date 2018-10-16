@@ -420,18 +420,20 @@ namespace kagami {
   }
 
   Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
-    int mode, flag;
-    string error_string, id, type_id, va_arg_head;
+    int ent_arg_mode, ent_flag, code;
+    string error_string, id, type_id, va_arg_head, value, detail;
     Message msg;
     ObjectMap obj_map;
     deque<Object> returning_base;
-    vector<string> args;
-    size_t sub = 0;
+    vector<string> ent_args;
+    size_t arg_idx = 0;
     size_t count = 0;
     size_t va_arg_size = 0;
+    size_t ent_parm_size = 0;
     vector<Instruction> &action_base = meta.GetContains();
     bool error_returning = false, error_obj_checking = false;
-    bool tail_recursion = false, preprocessing = (blk == nullptr);
+    bool tail_recursion = false, preprocessing = (blk == nullptr),
+      is_operator_token = false;
 
     auto makeObject = [&](Argument &parm) -> Object {
       Object obj;
@@ -467,19 +469,22 @@ namespace kagami {
       return obj;
     };
 
-    for (size_t idx = 0; idx < action_base.size(); idx += 1) {
+    auto reset = [&]()->void {
       obj_map.clear();
-      args.clear();
+      ent_args.clear();
       id.clear();
       va_arg_head.clear();
       type_id.clear();
-      sub = 0;
+      arg_idx = 0;
       count = 0;
+    };
+
+    for (size_t idx = 0; idx < action_base.size(); idx += 1) {
+      reset();
 
       auto &ent = action_base[idx].first;
       auto &parms = action_base[idx].second;
-      auto entParmSize = ent.GetParmSize();
-
+      is_operator_token = entry::IsOperatorToken(ent.GetTokenEnum());
 
       (ent.GetId() == name && idx == action_base.size() - 2
         && action_base.back().first.GetTokenEnum() == GT_RETURN) ?
@@ -507,40 +512,41 @@ namespace kagami {
         }
       }
 
-      args = ent.GetArguments();
-      mode = ent.GetArgumentMode();
-      flag = ent.GetFlag();
+      ent_parm_size = ent.GetParmSize();
+      ent_args = ent.GetArguments();
+      ent_arg_mode = ent.GetArgumentMode();
+      ent_flag = ent.GetFlag();
 
-      if (mode == kCodeAutoSize) {
-        while (sub < entParmSize - 1) {
-          obj_map.insert(NamedObject(args[sub], makeObject(parms[sub])));
-          sub += 1;
+      if (ent_arg_mode == kCodeAutoSize) {
+        while (arg_idx < ent_parm_size - 1) {
+          obj_map.insert(NamedObject(ent_args[arg_idx], makeObject(parms[arg_idx])));
+          arg_idx += 1;
         }
 
-        va_arg_head = args.back();
-        flag == kFlagMethod ?
+        va_arg_head = ent_args.back();
+        ent_flag == kFlagMethod ?
           va_arg_size = parms.size() - 1 :
           va_arg_size = parms.size();
 
-        while (sub < va_arg_size) {
-          obj_map.insert(NamedObject(va_arg_head + to_string(count), makeObject(parms[sub])));
+        while (arg_idx < va_arg_size) {
+          obj_map.insert(NamedObject(va_arg_head + to_string(count), makeObject(parms[arg_idx])));
           count += 1;
-          sub += 1;
+          arg_idx += 1;
         }
 
         obj_map.insert(NamedObject("__size",
           Object().Manage(to_string(count), T_INTEGER)));
       }
       else {
-        while (sub < args.size()) {
-          if (sub >= parms.size() && mode == kCodeAutoFill) break;
+        while (arg_idx < ent_args.size()) {
+          if (arg_idx >= parms.size() && ent_arg_mode == kCodeAutoFill) break;
           //error
-          obj_map.insert(NamedObject(args[sub], makeObject(parms[sub])));
-          sub += 1;
+          obj_map.insert(NamedObject(ent_args[arg_idx], makeObject(parms[arg_idx])));
+          arg_idx += 1;
         }
       }
 
-      if (flag == kFlagMethod) {
+      if (ent_flag == kFlagMethod) {
         obj_map.insert(NamedObject(kStrObject, makeObject(parms.back())));
       }
 
@@ -551,33 +557,20 @@ namespace kagami {
 
       if (error_returning || error_obj_checking) break;
       msg = ent.Start(obj_map);
-      const auto code = msg.GetCode();
-      const auto value = msg.GetValue();
-      const auto detail = msg.GetDetail();
+      msg.Get(&value, &code, &detail);
 
       if (value == kStrFatalError) break;
 
-      if (code == kCodeObject) {
+      if (code == kCodeObject && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
         auto object = msg.GetObj();
-        returning_base.emplace_back(object);
-      }
-      else if ((value == kStrRedirect && (code == kCodeSuccess || code == kCodeHeadPlaceholder))
-        && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
-        Object obj;
-        obj.Manage(detail, util::GetTokenType(detail));
 
-        if (entry::IsOperatorToken(ent.GetTokenEnum())
-          && idx + 1 < action_base.size()) {
-          auto token = action_base[idx + 1].first.GetTokenEnum();
-          if (entry::IsOperatorToken(token)) {
-            returning_base.emplace_front(obj);
-          }
-          else {
-            returning_base.emplace_back(obj);
-          }
+        if (is_operator_token && idx + 1 < action_base.size()) {
+          entry::IsOperatorToken(action_base[idx + 1].first.GetTokenEnum()) ?
+            returning_base.emplace_front(object) :
+            returning_base.emplace_back(object);
         }
         else {
-          returning_base.emplace_back(obj);
+          returning_base.emplace_back(object);
         }
       }
     }
@@ -591,8 +584,8 @@ namespace kagami {
     obj_map.clear();
     returning_base.clear();
     returning_base.shrink_to_fit();
-    args.clear();
-    args.shrink_to_fit();
+    ent_args.clear();
+    ent_args.shrink_to_fit();
 
     return msg;
   }
@@ -687,27 +680,27 @@ namespace kagami {
     switch (mode) {
     case kModeNextCondition:
       if (entry::HasTailTokenRequest(gen_token)) {
-        result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+        result = Message(kStrTrue);
         judged = true;
       }
       else if (gen_token != GT_ELSE && gen_token != GT_END && gen_token != GT_ELIF) {
-        result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+        result = Message(kStrPlaceHolder);
         judged = true;
       }
       break;
     case kModeCycleJump:
       if (gen_token != GT_END && gen_token != GT_IF && gen_token != GT_WHILE) {
-        result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+        result = Message(kStrPlaceHolder);
         judged = true;
       }
       break;
     case kModeCaseJump:
       if (entry::HasTailTokenRequest(gen_token)) {
-        result = Message(kStrRedirect, kCodeHeadPlaceholder, kStrTrue);
+        result = Message(kStrTrue);
         judged = true;
       }
       else if (gen_token != GT_WHEN && gen_token != GT_END && gen_token != GT_ELSE) {
-        result = Message(kStrRedirect, kCodeSuccess, kStrPlaceHolder);
+        result = Message(kStrPlaceHolder);
         judged = true;
       }
       break;
@@ -735,7 +728,6 @@ namespace kagami {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
     Meta *meta = nullptr;
-    GenericTokenEnum token;
     bool judged = false;
 
     ResetBlock(blk);

@@ -1,4 +1,5 @@
 #pragma once
+#include "util.h"
 #include "object.h"
 
 namespace kagami {
@@ -32,10 +33,15 @@ namespace kagami {
       idx_(0) {}
 
     Message(string detail) :
-      value_(kStrRedirect), 
-      code_(kCodeSuccess), 
-      detail_(detail), 
-      idx_(0) {}
+      value_(kStrEmpty), 
+      code_(kCodeObject), 
+      detail_(kStrEmpty), 
+      idx_(0) {
+
+      object_ = make_shared<Object>();
+      static_pointer_cast<Object>(object_)
+        ->Manage(detail, util::GetTokenType(detail));
+    }
 
     Message(const Message &msg) {
       Copy(msg);
@@ -55,14 +61,6 @@ namespace kagami {
       return *this;
     }
 
-    Object GetObj() const;
-    void SetObject(Object &object);
-    void SetRawString(string str);
-    Message &SetValue(const string &value);
-    Message &SetCode(const int &code);
-    Message &SetDetail(const string &detail);
-    Message &SetIndex(const size_t index);
-
     string GetValue() const { 
       return value_; 
     }
@@ -79,6 +77,45 @@ namespace kagami {
       return idx_; 
     }
 
-    
+    Object GetObj() const {
+      return *static_pointer_cast<Object>(object_);
+    }
+
+    void SetObject(Object &object) {
+      object_ = make_shared<Object>(object);
+      code_ = kCodeObject;
+    }
+
+    void SetRawString(string str) {
+      value_ = kStrRedirect;
+      code_ = kCodeSuccess;
+      detail_ = str;
+    }
+
+    Message &SetValue(const string &value) {
+      value_ = value;
+      return *this;
+    }
+
+    Message &SetCode(const int &code) {
+      code_ = code;
+      return *this;
+    }
+
+    Message &SetDetail(const string &detail) {
+      detail_ = detail;
+      return *this;
+    }
+
+    Message &SetIndex(const size_t index) {
+      idx_ = index;
+      return *this;
+    }
+
+    void Get(string *value, int *code, string *detail) {
+      if (value != nullptr) *value = value_;
+      if (code != nullptr) *code = code_;
+      if (detail != nullptr) *detail = detail_;
+    }
   };
 }
