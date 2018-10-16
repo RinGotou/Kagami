@@ -75,10 +75,20 @@ namespace kagami {
       ObjectMap recursion_map;
     };
 
+    using MetaWorkBlock = struct {
+      string error_string;
+      deque<Object> returning_base;
+      bool error_returning, 
+        error_obj_checking, 
+        error_assembling, 
+        tail_recursion;
+    };
+
     vector<Meta> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
 
+    //Machine Controlling Block
     void ResetBlock(MachCtlBlk *blk);
     void ResetContainer(string funcId);
     void CaseHead(Message &msg, MachCtlBlk *blk);
@@ -97,6 +107,13 @@ namespace kagami {
     void InitGlobalObject(bool create_container,string name);
     bool PredefinedMessage(Message &result, size_t mode, Token token);
     void TailRecursionActions(MachCtlBlk *blk, string &name);
+
+    //Meta Work Block
+    Object MakeObject(Argument &arg, MetaWorkBlock *meta_blk);
+    void ResetMetaWorkBlock(MetaWorkBlock *meta_blk);
+    void AssemblingForAutosized(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
+    void AssemblingForAutoFilling(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
+    void AssemblingForNormal(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
   public:
     Machine() : 
       health_(false), 

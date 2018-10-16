@@ -5,7 +5,7 @@
 
 namespace kagami {
   enum ArgumentType {
-    PT_NORMAL, PT_OBJ, PT_RET, PT_PHOLDER
+    AT_NORMAL, AT_OBJECT, AT_RET, AT_HOLDER
   };
 
   class Argument {
@@ -16,7 +16,7 @@ namespace kagami {
 
     Argument() :
       data(),
-      type(PT_PHOLDER),
+      type(AT_HOLDER),
       tokenType(T_NUL) {}
 
     Argument(string data, 
@@ -28,7 +28,7 @@ namespace kagami {
     }
 
     bool IsPlaceholder() const {
-      return type == PT_PHOLDER;
+      return type == AT_HOLDER;
     }
   };
 

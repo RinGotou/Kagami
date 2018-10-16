@@ -419,65 +419,153 @@ namespace kagami {
     return true;
   }
 
-  Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
-    int ent_arg_mode, ent_flag, code;
-    string error_string, id, type_id, va_arg_head, value, detail;
-    Message msg;
-    ObjectMap obj_map;
-    deque<Object> returning_base;
-    vector<string> ent_args;
-    size_t arg_idx = 0;
-    size_t count = 0;
-    size_t va_arg_size = 0;
-    size_t ent_parm_size = 0;
-    vector<Instruction> &action_base = meta.GetContains();
-    bool error_returning = false, error_obj_checking = false;
-    bool tail_recursion = false, preprocessing = (blk == nullptr),
-      is_operator_token = false;
+  Object Machine::MakeObject(Argument &arg, MetaWorkBlock *meta_blk) {
+    Object obj;
+    ObjectPointer ptr;
 
-    auto makeObject = [&](Argument &parm) -> Object {
-      Object obj;
-      ObjectPointer ptr;
-      switch (parm.type) {
-      case PT_NORMAL:
-        obj.Manage(parm.data, parm.tokenType);
-        break;
-      case PT_OBJ:
-        ptr = entry::FindObject(parm.data);
-        if (ptr != nullptr) {
-          obj.Ref(*ptr);
-        }
-        else {
-          error_string = "Object is not found - " + parm.data;
-          error_obj_checking = true;
-        }
-        break;
-      case PT_RET:
-        if (!returning_base.empty()) {
-          obj = returning_base.front();
-          returning_base.pop_front();
-        }
-        else {
-          error_string = "Returning base error.";
-          error_returning = true;
-        }
-        break;
-      default:
+    switch (arg.type) {
+    case AT_NORMAL:
+      obj.Manage(arg.data, arg.tokenType);
+      break;
+    case AT_OBJECT:
+      ptr = entry::FindObject(arg.data);
+      if (ptr != nullptr) {
+        obj.Ref(*ptr);
+      }
+      else {
+        meta_blk->error_obj_checking = true;
+        meta_blk->error_string = "Object is not found - " + arg.data;
+      }
+      break;
+    case AT_RET:
+      if (!meta_blk->returning_base.empty()) {
+        obj = meta_blk->returning_base.front();
+        meta_blk->returning_base.pop_front();
+      }
+      else {
+        meta_blk->error_returning = true;
+        meta_blk->error_string = "Returning base error.";
+      }
+      break;
+    default:
+      break;
+    }
+
+    return obj;
+  }
+
+  void Machine::ResetMetaWorkBlock(MetaWorkBlock *meta_blk) {
+    meta_blk->error_returning = false;
+    meta_blk->error_obj_checking = false;
+    meta_blk->tail_recursion = false;
+    meta_blk->error_assembling = false;
+  }
+
+  void Machine::AssemblingForAutosized(Instruction &inst, 
+    ObjectMap &obj_map, 
+    MetaWorkBlock *meta_blk) {
+
+    size_t idx = 0;
+    size_t va_arg_size;
+    size_t count = 0;
+    auto &ent = inst.first;
+    auto &parms = inst.second;
+    auto ent_args = ent.GetArguments();
+    auto va_arg_head = ent_args.back();
+    auto is_method = (ent.GetFlag() == kFlagMethod);
+
+    while (idx < ent_args.size() - 1) {
+      obj_map.Input(ent_args[idx], 
+        MakeObject(parms[idx], meta_blk));
+      idx += 1;
+    }
+
+    is_method ?
+      va_arg_size = parms.size() - 1 :
+      va_arg_size = parms.size();
+
+    while (idx < va_arg_size) {
+      obj_map.Input(va_arg_head + to_string(count), 
+        MakeObject(parms[idx], meta_blk));
+      count += 1;
+      idx += 1;
+    }
+
+    obj_map.Input(kStrSize, Object().Manage(to_string(count), T_INTEGER));
+
+    if(is_method) obj_map.Input(kStrObject, MakeObject(parms.back(), meta_blk));
+  }
+
+  void Machine::AssemblingForAutoFilling(Instruction &inst, 
+    ObjectMap &obj_map, 
+    MetaWorkBlock *meta_blk) {
+
+    size_t idx = 0;
+    auto &ent = inst.first;
+    auto &parms = inst.second;
+    auto ent_args = ent.GetArguments();
+    auto is_method = (ent.GetFlag() == kFlagMethod);
+
+    while (idx < ent_args.size()) {
+      if (idx >= parms.size()) break;
+      obj_map.Input(ent_args[idx], MakeObject(parms[idx], meta_blk));
+      idx += 1;
+    }
+
+    if (is_method) obj_map.Input(kStrObject, MakeObject(parms.back(), meta_blk));
+  }
+
+  void Machine::AssemblingForNormal(Instruction &inst, 
+    ObjectMap &obj_map, 
+    MetaWorkBlock *meta_blk) {
+
+    size_t idx = 0;
+    auto &ent = inst.first;
+    auto &parms = inst.second;
+    auto ent_args = ent.GetArguments();
+    auto is_method = (ent.GetFlag() == kFlagMethod);
+    bool state = true;
+
+    while (idx < ent_args.size()) {
+      if (idx >= parms.size()) {
+        state = false;
         break;
       }
+      obj_map.Input(ent_args[idx], MakeObject(parms[idx], meta_blk));
+      idx += 1;
+    }
 
-      return obj;
-    };
+
+    if (!state) {
+      meta_blk->error_assembling = true;
+      meta_blk->error_string = "Required argument count is " +
+        to_string(ent_args.size()) +
+        ", but provided argument count is " +
+        to_string(parms.size()) + ".";
+    }
+    else {
+      if (is_method) obj_map.Input(kStrObject, MakeObject(parms.back(), meta_blk));
+    }
+  }
+
+  Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
+    int code;
+    string id, type_id, va_arg_head, value, detail;
+    Message msg;
+    ObjectMap obj_map;
+    vector<Instruction> &action_base = meta.GetContains();
+    bool preprocessing = (blk == nullptr),
+      is_operator_token = false;
+    MetaWorkBlock *meta_blk = new MetaWorkBlock();
 
     auto reset = [&]()->void {
       obj_map.clear();
-      ent_args.clear();
       id.clear();
       va_arg_head.clear();
       type_id.clear();
-      arg_idx = 0;
-      count = 0;
     };
+
+    ResetMetaWorkBlock(meta_blk);
 
     for (size_t idx = 0; idx < action_base.size(); idx += 1) {
       reset();
@@ -488,20 +576,20 @@ namespace kagami {
 
       (ent.GetId() == name && idx == action_base.size() - 2
         && action_base.back().first.GetTokenEnum() == GT_RETURN) ?
-        tail_recursion = true :
-        tail_recursion = false;
+        meta_blk->tail_recursion = true :
+        meta_blk->tail_recursion = false;
 
-      if (!preprocessing && !tail_recursion) {
+      if (!preprocessing && !meta_blk->tail_recursion) {
         (ent.GetId() == name && idx == action_base.size() - 1
           && blk->last_index && name != "") ?
-          tail_recursion = true :
-          tail_recursion = false;
+          meta_blk->tail_recursion = true :
+          meta_blk->tail_recursion = false;
       }
 
       if (ent.NeedRecheck()) {
         id = ent.GetId();
         ent.IsMethod() ?
-          type_id = makeObject(parms.back()).GetTypeId() :
+          type_id = MakeObject(parms.back(), meta_blk).GetTypeId() :
           type_id = kTypeIdNull;
 
         ent = entry::Order(id, type_id);
@@ -512,50 +600,27 @@ namespace kagami {
         }
       }
 
-      ent_parm_size = ent.GetParmSize();
-      ent_args = ent.GetArguments();
-      ent_arg_mode = ent.GetArgumentMode();
-      ent_flag = ent.GetFlag();
-
-      if (ent_arg_mode == kCodeAutoSize) {
-        while (arg_idx < ent_parm_size - 1) {
-          obj_map.insert(NamedObject(ent_args[arg_idx], makeObject(parms[arg_idx])));
-          arg_idx += 1;
-        }
-
-        va_arg_head = ent_args.back();
-        ent_flag == kFlagMethod ?
-          va_arg_size = parms.size() - 1 :
-          va_arg_size = parms.size();
-
-        while (arg_idx < va_arg_size) {
-          obj_map.insert(NamedObject(va_arg_head + to_string(count), makeObject(parms[arg_idx])));
-          count += 1;
-          arg_idx += 1;
-        }
-
-        obj_map.insert(NamedObject("__size",
-          Object().Manage(to_string(count), T_INTEGER)));
-      }
-      else {
-        while (arg_idx < ent_args.size()) {
-          if (arg_idx >= parms.size() && ent_arg_mode == kCodeAutoFill) break;
-          //error
-          obj_map.insert(NamedObject(ent_args[arg_idx], makeObject(parms[arg_idx])));
-          arg_idx += 1;
-        }
+      switch (ent.GetArgumentMode()) {
+      case kCodeAutoSize:
+        AssemblingForAutosized(action_base[idx], obj_map, meta_blk);
+        break;
+      case kCodeAutoFill:
+        AssemblingForAutoFilling(action_base[idx], obj_map, meta_blk);
+        break;
+      default:
+        AssemblingForNormal(action_base[idx], obj_map, meta_blk);
+        break;
       }
 
-      if (ent_flag == kFlagMethod) {
-        obj_map.insert(NamedObject(kStrObject, makeObject(parms.back())));
-      }
-
-      if (tail_recursion) {
+      if (meta_blk->tail_recursion) {
         blk->recursion_map = obj_map;
         break;
       }
 
-      if (error_returning || error_obj_checking) break;
+      if (meta_blk->error_returning || 
+        meta_blk->error_obj_checking ||
+        meta_blk->error_assembling) break;
+
       msg = ent.Start(obj_map);
       msg.Get(&value, &code, &detail);
 
@@ -566,26 +631,29 @@ namespace kagami {
 
         if (is_operator_token && idx + 1 < action_base.size()) {
           entry::IsOperatorToken(action_base[idx + 1].first.GetTokenEnum()) ?
-            returning_base.emplace_front(object) :
-            returning_base.emplace_back(object);
+            meta_blk->returning_base.emplace_front(object) :
+            meta_blk->returning_base.emplace_back(object);
         }
         else {
-          returning_base.emplace_back(object);
+          meta_blk->returning_base.emplace_back(object);
         }
       }
     }
 
-    if (error_returning || error_obj_checking) {
-      msg = Message(kStrFatalError, kCodeIllegalSymbol, error_string);
+    if (meta_blk->error_returning || 
+      meta_blk->error_obj_checking ||
+      meta_blk->error_assembling) {
+      msg = Message(kStrFatalError, kCodeIllegalSymbol, meta_blk->error_string);
     }
 
-    if(!preprocessing && tail_recursion) blk->tail_recursion = tail_recursion;
+    if(!preprocessing && meta_blk->tail_recursion) 
+      blk->tail_recursion = meta_blk->tail_recursion;
 
     obj_map.clear();
-    returning_base.clear();
-    returning_base.shrink_to_fit();
-    ent_args.clear();
-    ent_args.shrink_to_fit();
+    meta_blk->returning_base.clear();
+    meta_blk->returning_base.shrink_to_fit();
+
+    delete meta_blk;
 
     return msg;
   }
