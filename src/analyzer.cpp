@@ -247,13 +247,13 @@ namespace kagami {
     auto flag = ent.GetFlag();
 
     if (flag == kFlagMethod || ent.IsMethod()) {
-      arguments.emplace_back(Argument(blk->args.back().data, PT_OBJ, T_GENERIC));
+      arguments.emplace_back(Argument(blk->args.back().data, AT_OBJECT, T_GENERIC));
       blk->args.pop_back();
     }
 
     action_base_.emplace_back(Instruction(ent, arguments));
     blk->symbol.pop_back();
-    blk->args.emplace_back(Argument("", PT_RET, T_NUL));
+    blk->args.emplace_back(Argument("", AT_RET, T_NUL));
     return health_;
   }
 
@@ -267,7 +267,7 @@ namespace kagami {
     auto ent = entry::Order(kStrTypeAssert);
     deque<Argument> arguments = {
       blk->args.back(),
-      Argument(blk->next.first,PT_NORMAL,blk->next.second)
+      Argument(blk->next.first,AT_NORMAL,blk->next.second)
     };
     action_base_.emplace_back(Instruction(ent, arguments));
   }
@@ -323,7 +323,7 @@ namespace kagami {
     auto ent = entry::Order(kStrTypeAssert);
     deque<Argument> arguments = {
       blk->args.back(),
-      Argument("__at",PT_NORMAL,T_GENERIC)
+      Argument("__at",AT_NORMAL,T_GENERIC)
     };
     action_base_.emplace_back(Instruction(ent, arguments));
 
@@ -381,11 +381,11 @@ namespace kagami {
     bool result = true;
 
     if (blk->define_line) {
-      blk->args.emplace_back(Argument(blk->current.first, PT_NORMAL, T_GENERIC));
+      blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, T_GENERIC));
     }
     else {
       if (blk->next.first == "=") {
-        blk->args.emplace_back(Argument(blk->current.first, PT_NORMAL, T_GENERIC));
+        blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, T_GENERIC));
       }
       else if (blk->next.first == "(") {
         auto ent = entry::Order(blk->current.first);
@@ -416,7 +416,7 @@ namespace kagami {
           blk->args.emplace_back(Argument());
         }
         else {
-          blk->args.emplace_back(Argument(blk->current.first, PT_OBJ, T_GENERIC));
+          blk->args.emplace_back(Argument(blk->current.first, AT_OBJECT, T_GENERIC));
         }
       }
     }
@@ -442,12 +442,12 @@ namespace kagami {
   void Analyzer::OtherToken(AnalyzerWorkBlock *blk) {
     if (blk->insert_between_object) {
       blk->args.emplace(blk->args.begin() + blk->next_insert_index,
-        Argument(blk->current.first, PT_NORMAL, blk->current.second));
+        Argument(blk->current.first, AT_NORMAL, blk->current.second));
       blk->insert_between_object = false;
     }
     else {
       blk->args.emplace_back(
-        Argument(blk->current.first, PT_NORMAL, blk->current.second));
+        Argument(blk->current.first, AT_NORMAL, blk->current.second));
     }
   }
 

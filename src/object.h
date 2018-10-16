@@ -279,7 +279,7 @@ namespace kagami {
       return func(this->at(id));
     }
 
-    void Input(string id, Object &obj) {
+    void Input(string id, Object obj) {
       this->insert(NamedObject(id, obj));
     }
 

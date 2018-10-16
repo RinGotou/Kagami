@@ -201,6 +201,7 @@ namespace kagami {
     kStrVar = "var",
     kStrSet = "__set",
     kStrBind = "__bind",
+    kStrSize = "__size",
     kStrFor = "for",
     kStrElse = "else",
     kStrElif = "elif",
