@@ -2,12 +2,16 @@
 #include "machine.h"
 #if not defined(_DISABLE_SDL_)
 #include <SDL.h>
+#include <SDL_image.h>
 #endif
 
 namespace kagami {
 #if not defined(_DISABLE_SDL_)
+  const string kSDLWindowMethods = "clear|copy|present";
+  const string kSDLTexturemethods = "";
   const string kTypeIdSDLWindowPos = "SDLWindowPos";
   const string kTypeIdSDLWindow = "SDLWindow";
+  const string kTypeIdSDLTexture = "SDLTexture";
 
   class Window {
   private:

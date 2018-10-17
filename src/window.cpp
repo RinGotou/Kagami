@@ -38,6 +38,12 @@ namespace kagami {
     return msg;
   }
 
+  Message WindowRenderClear(ObjectMap &p) {
+    Window &window = p.Get<Window>(kStrObject);
+    SDL_RenderClear(window.GetRenderer());
+    return Message();
+  }
+
   Message WindowPos(ObjectMap &p) {
     static map<string, SDLWindowPos> result_base = {
       SDLWindowPosArg("'undefined'", SDL_WINDOWPOS_UNDEFINED),
@@ -45,7 +51,6 @@ namespace kagami {
     };
 
     string pos = p.Get<string>("pos");
-    SDLWindowPos pos_value;
     Message msg;
 
     auto it = result_base.find(pos);
@@ -61,14 +66,34 @@ namespace kagami {
     return msg;
   }
 
-  Message NewTextureFromImage(ObjectMap &p) {
+  Message NewTextureFromBMP(ObjectMap &p) {
     string path = p.Get<string>("image_path");
+    Window &window = p.Get<Window>("window");
     Message msg;
+    SDLTexture texture_base;
+    Object ret;
+
+    auto image = SDL_LoadBMP(path.c_str());
+    if (image != nullptr) {
+      texture_base.texture =
+        SDL_CreateTextureFromSurface(window.GetRenderer(), image);
+      SDL_FreeSurface(image);
+
+      ret.Set(make_shared<SDLTexture>(texture_base), kTypeIdSDLTexture, kSDLTexturemethods, false);
+      msg.SetObject(ret);
+    }
+    else {
+      msg = Message(kStrFatalError, kCodeIllegalParm, "Bad argument - " + path);
+    }
 
     return msg;
   }
 
-  
+  Message SDLDelay(ObjectMap &p) {
+    int time = stoi(p.Get<string>("time"));
+    SDL_Delay(time);
+    return Message();
+  }
 
   /* There is testbench for SDL2.You can just ignore them or disable them. */
   Message SDLTest(ObjectMap &p) {
@@ -82,17 +107,22 @@ namespace kagami {
       msg = Message(kStrFalse);
     }
     else {
+
       auto window = SDL_CreateWindow(title.c_str(), 
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
         width, height, SDL_WINDOW_SHOWN);
       auto render = SDL_CreateRenderer(window, -1, 
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
       auto image = SDL_LoadBMP(path.c_str());
+      
       auto texture = SDL_CreateTextureFromSurface(render, image);
+      SDL_FreeSurface(image);
+
       SDL_RenderClear(render);
       SDL_RenderCopy(render, texture, nullptr, nullptr);
       SDL_RenderPresent(render);
       SDL_Delay(10000);
+      
       SDL_DestroyTexture(texture);
       SDL_DestroyRenderer(render);
       SDL_DestroyWindow(window);
