@@ -1,197 +1,83 @@
 #include "object.h"
 
 namespace kagami {
-  Object::Object() {
-    //hold a null pointer will cause some mysterious ploblems,
-    //so this will hold a specific value intead of nullptr
-    ptr = nullptr;
-    parent = nullptr;
-    typeId = kTypeIdNull;
-    tokenTypeEnum = TokenTypeEnum::T_NUL;
-    ro = false;
-    permanent = false;
-    ref = false;
-    constructor = false;
-    placeholder = false;
-    retSign = false;
-    argSign = false;
-  }
-
-  Object &Object::Manage(string t, string typeId) {
-    if (ref) return GetTargetObject()->Manage(t, typeId);
-    this->ptr = std::make_shared<string>(t);
-    this->typeId = typeId;
-    return *this;
-  }
-
-  Object &Object::Set(shared_ptr<void> ptr, string typeId) {
-    if (ref) return GetTargetObject()->Set(ptr, typeId);
-    this->ptr = ptr;
-    this->typeId = typeId;
-    return *this;
-  }
 
   Object &Object::Ref(Object &object) {
-    this->typeId = kTypeIdRef;
-    this->ref = true;
+    type_id_ = kTypeIdRef;
+    ref_ = true;
 
     TargetObject target;
     if (!object.IsRef()) {
       target.ptr = &object;
     }
     else {
-      target.ptr = static_pointer_cast<TargetObject>(object.ptr)->ptr;
+      target.ptr = 
+        static_pointer_cast<TargetObject>(object.ptr_)->ptr;
     }
-    ptr = make_shared<TargetObject>(target);
+    ptr_ = make_shared<TargetObject>(target);
     return *this;
   }
 
-  void Object::Clear() {
-    ptr = make_shared<int>(0);
-    typeId = kTypeIdNull;
-    methods.clear();
-    tokenTypeEnum = TokenTypeEnum::T_NUL;
-    ro = false;
-    permanent = false;
-    ref = false;
-  }
+  Object &Object::Copy(Object &object, bool force) {
+    auto mod = [&]() {
+      ptr_ = object.ptr_;
+      type_id_ = object.type_id_;
+      methods_ = object.methods_;
+      token_type_ = object.token_type_;
+      ro_ = object.ro_;
+      ref_ = object.ref_;
+      constructor_ = object.constructor_;
+    };
 
-  bool Object::Compare(Object &object) const {
-    return (ptr == object.ptr &&
-      typeId == object.typeId &&
-      methods == object.methods &&
-      tokenTypeEnum == object.tokenTypeEnum &&
-      ro == object.ro &&
-      permanent == object.permanent &&
-      constructor == object.constructor &&
-      placeholder == object.placeholder &&
-      ref == object.ref);
-  }
-
-  Object &Object::Copy(Object &object) {
-    ptr = object.ptr;
-    typeId = object.typeId;
-    methods = object.methods;
-    tokenTypeEnum = object.tokenTypeEnum;
-    ro = object.ro;
-    ref = object.ref;
-    retSign = object.retSign;
-    argSign = object.argSign;
+    if (force) {
+      mod();
+    }
+    else {
+      if (ref_) GetTargetObject()->Copy(object);
+      else mod();
+    }
     return *this;
   }
 
-  shared_ptr<void> Object::Get() {
-    if (ref) return GetTargetObject()->Get();
-    return ptr;
-  }
-
-  string Object::GetTypeId() {
-    if (ref) return GetTargetObject()->GetTypeId();
-    return typeId;
-  }
-
-  Object &Object::SetMethods(string methods) {
-    if (ref) return GetTargetObject()->SetMethods(methods);
-    this->methods = methods;
-    return *this;
-  }
-
-  Object &Object::AppendMethod(string method) {
-    if (ref) return GetTargetObject()->AppendMethod(method);
-    this->methods.append("|" + method);
-    return *this;
-  }
-
-  Object &Object::SetTokenType(TokenTypeEnum tokenTypeEnum) {
-    if (ref) return GetTargetObject()->SetTokenType(tokenTypeEnum);
-    this->tokenTypeEnum = tokenTypeEnum;
-    return *this;
-  }
-
-  Object &Object::SetRo(bool ro) {
-    if (ref) return GetTargetObject()->SetRo(ro);
-    this->ro = ro;
-    return *this;
-  }
-
-  Object &Object::SetPermanent(bool permanent) {
-    this->permanent = permanent;
-    return *this;
-  }
-
-  string Object::GetMethods() {
-    if (ref) return GetTargetObject()->GetMethods();
-    return methods;
-  }
-
-  TokenTypeEnum Object::GetTokenType() {
-    if (ref) return GetTargetObject()->GetTokenType();
-    return tokenTypeEnum;
-  }
-
-  bool Object::IsRo() {
-    if (ref) return GetTargetObject()->IsRo();
-    return ro;
-  }
-
-  bool Object::ConstructorFlag() {
-    bool result = constructor;
-    constructor = false;
-    return result;
-  }
-
-  Object &Object::SetPlaceholder() {
-    placeholder = true;
-    return *this;
-  }
-
-  Object &Object::SetRetSign() {
-    retSign = true;
-    return *this;
-  }
-
-  Object &Object::SetArgSign(string id) {
-    argSign = true;
-    originId = id;
-    return *this;
-  }
-
-  bool ObjectManager::Add(string sign, Object &source) {
-    if (!CheckObject(sign)) return false;
-    base.push_back(NamedObject(sign, Object().Copy(source)));
+  bool ObjectContainer::Add(string id, Object &source) {
+    if (!CheckObject(id)) return false;
+    base.push_back(NamedObject(id, Object().Copy(source)));
     return true;
   }
-  Object *ObjectManager::Find(string sign) {
+
+  Object *ObjectContainer::Find(string id, string domain) {
     Object *object = nullptr;
     if (base.empty()) return object;
+    bool has_domain = (domain != kStrEmpty);
+
     for (size_t i = 0; i < base.size(); ++i) {
-      if (base[i].first == sign) {
-        object = &(base[i].second);
-        break;
+      NamedObject &obj = base[i];
+      if (obj.first == id) {
+        if (!has_domain || (has_domain && obj.second.GetDomain() == domain)) {
+          object = &(base[i].second);
+          break;
+        }
       }
     }
     return object;
   }
-  void ObjectManager::Dispose(string sign) {
+
+  void ObjectContainer::Dispose(string id, string domain) {
     size_t pos = 0;
     bool found = false;
+    bool has_domain = (domain != kStrEmpty);
+
     for (size_t i = 0; i < base.size(); ++i) {
-      if (base[i].first == sign) {
-        found = true;
-        pos = i;
-        break;
+      NamedObject &obj = base[i];
+      if (obj.first == id) {
+        if (!has_domain || (has_domain && obj.second.GetDomain() == domain)) {
+          found = true;
+          pos = i;
+          break;
+        }
       }
     }
+
     if (found) base.erase(pos);
-  }
-  void ObjectManager::clear() {
-    list<NamedObject> temp;
-    for (size_t i = 0; i < base.size(); ++i) {
-      if (base[i].second.IsPermanent()) {
-        temp.push_back(base[i]);
-      }
-    }
-    base.clear();
-    base.copy(temp);
   }
 }

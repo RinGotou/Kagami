@@ -1,5 +1,5 @@
 #pragma once
-#include "kit.h"
+#include "util.h"
 #include "message.h"
 
 namespace kagami {
@@ -10,94 +10,166 @@ namespace kagami {
   */
 
   class Entry {
-    string id;
-    GenericTokenEnum tokenEnum;
-    Activity activity;
-    vector<string> args;
-    int parmMode, priority;
-    string type;
-    int flag;
-    bool placeholder, userFunc, entrySign, method;
+    string id_;
+    GenericTokenEnum gen_token_;
+    Activity activity_;
+    vector<string> parms_;
+    int argument_mode_, priority_;
+    string type_;
+    int flag_;
+    bool is_placeholder_, is_user_func_, need_recheck_, is_method_;
   public:
-    Entry() : id(kStrNull), activity(nullptr), priority(0), flag(kFlagNormalEntry) {
-      parmMode = kCodeIllegalParm;
-      type = kTypeIdNull;
-      placeholder = false;
-      userFunc = false;
-      entrySign = false;
-      method = false;
-      tokenEnum = GenericTokenEnum::GT_NUL;
+    Entry() : id_(kStrNull), 
+      activity_(nullptr), 
+      priority_(0), 
+      flag_(kFlagNormalEntry) {
+
+      argument_mode_ = kCodeIllegalParm;
+      type_ = kTypeIdNull;
+      is_placeholder_ = false;
+      is_user_func_ = false;
+      need_recheck_ = false;
+      is_method_ = false;
+      gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
-    Entry(Activity activity, int parmMode, string args,string id = kStrEmpty, string type = kTypeIdNull, int flag = kFlagNormalEntry, int priority = 4) :
-      id(id), args(Kit::BuildStringVector(args)), parmMode(parmMode), priority(priority),
-      type(type), flag(flag) {
-      this->activity = activity;
-      placeholder = false;
-      userFunc = false;
-      entrySign = false;
-      method = false;
-      tokenEnum = GenericTokenEnum::GT_NUL;
+    Entry(Activity activity, 
+      int argumentMode, 
+      string parms,
+      string id = kStrEmpty, 
+      string type = kTypeIdNull, 
+      int flag = kFlagNormalEntry, 
+      int priority = 4) :
+      id_(id), 
+      parms_(util::BuildStringVector(parms)), 
+      argument_mode_(argumentMode), 
+      priority_(priority),
+      type_(type), 
+      flag_(flag) {
+
+      activity_ = activity;
+      is_placeholder_ = false;
+      is_user_func_ = false;
+      need_recheck_ = false;
+      is_method_ = false;
+      gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
-    Entry(Activity activity, string args, GenericTokenEnum tokenEnum, int parmMode = kCodeNormalParm, int priority = 4) :
-      id(), args(Kit::BuildStringVector(args)), parmMode(parmMode), priority(priority) {
-      this->activity = activity;
-      this->tokenEnum = tokenEnum;
-      userFunc = false;
-      entrySign = false;
-      placeholder = false;
-      method = false;
+    Entry(Activity activity, 
+      string parms, 
+      GenericTokenEnum tokenEnum, 
+      int argumentMode = kCodeNormalParm, 
+      int priority = 4) :
+      id_(), 
+      parms_(util::BuildStringVector(parms)), 
+      argument_mode_(argumentMode), 
+      priority_(priority) {
+
+      activity_ = activity;
+      gen_token_ = tokenEnum;
+      is_user_func_ = false;
+      need_recheck_ = false;
+      is_placeholder_ = false;
+      is_method_ = false;
     }
 
-    Entry(string id) :id(id), activity(nullptr), priority(0) {
-      parmMode = kCodeNormalParm;
-      type = kTypeIdNull;
-      userFunc = false;
-      entrySign = false;
-      placeholder = true;
-      method = false;
-      tokenEnum = GenericTokenEnum::GT_NUL;
+    Entry(string id) :
+      id_(id), 
+      activity_(nullptr), 
+      priority_(0) {
+
+      argument_mode_ = kCodeNormalParm;
+      type_ = kTypeIdNull;
+      is_user_func_ = false;
+      need_recheck_ = false;
+      is_placeholder_ = true;
+      is_method_ = false;
+      gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
-    Entry(Activity activity, string id,vector<string> args) : priority(4) {
-      type = kTypeIdNull;
-      placeholder = false;
-      parmMode = kCodeNormalParm;
-      flag = kFlagNormalEntry;
-      userFunc = true;
-      this->activity = activity;
-      this->id = id;
-      entrySign = false;
-      this->args = args;
-      method = false;
-      type = kTypeIdNull;
+    Entry(Activity activity, 
+      string id,
+      vector<string> parms) : 
+      priority_(4) {
+
+      type_ = kTypeIdNull;
+      is_placeholder_ = false;
+      argument_mode_ = kCodeNormalParm;
+      flag_ = kFlagNormalEntry;
+      is_user_func_ = true;
+      activity_ = activity;
+      id_ = id;
+      need_recheck_ = false;
+      parms_ = parms;
+      is_method_ = false;
+      type_ = kTypeIdNull;
+    }
+
+    void SetRecheckInfo(string id,bool isMethod = false) {
+      id_ = id;
+      is_method_ = isMethod;
+      need_recheck_ = true;
+      gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
     bool Compare(Entry &target) const;
     Message Start(ObjectMap &map) const;
 
-    void SetEntrySign(string id,bool method = false) {
-      this->id = id;
-      this->method = method;
-      entrySign = true;
-      tokenEnum = GenericTokenEnum::GT_NUL;
+    bool operator==(Entry &target) const { 
+      return Compare(target); 
     }
-    bool operator==(Entry &target) const { return Compare(target); }
-    Entry &SetSpecificTypeSign() { this->method = true; return *this; }
-    bool NeedSpecificType() const { return method; }
-    string GetSpecificType() const { return type; }
-    GenericTokenEnum GetTokenEnum() const { return tokenEnum; }
-    bool GetEntrySign() const { return entrySign; }
-    string GetId() const { return this->id; }
-    int GetArgumentMode() const { return this->parmMode; }
-    vector<string> GetArguments() const { return args; }
-    size_t GetParmSize() const { return this->args.size(); }
-    int GetPriority() const { return this->priority; }
-    int GetFlag() const { return flag; }
+
+    Entry &set_is_method() { 
+      is_method_ = true; 
+      return *this; 
+    }
+
+    bool IsMethod() const { 
+      return is_method_; 
+    }
+
+    string GetTypeDomain() const { 
+      return type_; 
+    }
+
+    GenericTokenEnum GetTokenEnum() const { 
+      return gen_token_; 
+    }
+
+    bool NeedRecheck() const { 
+      return need_recheck_; 
+    }
+
+    string GetId() const { 
+      return id_; 
+    }
+
+    int GetArgumentMode() const { 
+      return argument_mode_; 
+    }
+
+    vector<string> GetArguments() const { 
+      return parms_; 
+    }
+
+    size_t GetParmSize() const { 
+      return parms_.size(); 
+    }
+
+    int GetPriority() const { 
+      return priority_; 
+    }
+
+    int GetFlag() const {
+      return flag_; 
+    }
+
     bool Good() const { 
-      bool conditionA = ((activity != nullptr) && (parmMode != kCodeIllegalParm)),
-        conditionB = (userFunc && id != kStrEmpty);
+      bool conditionA =
+        ((activity_ != nullptr) && (argument_mode_ != kCodeIllegalParm));
+      bool conditionB =
+        (is_user_func_ && id_ != kStrEmpty);
+
       return (conditionA || conditionB);
     }
   };
@@ -114,26 +186,33 @@ namespace kagami {
 
     using EntryMapUnit = map<string, Entry>::value_type;
 
-    list<ObjectManager> &GetObjectStack();
-    ObjectManager &GetCurrentManager();
-    string GetTypeId(string sign);
-    void AddEntry(Entry temp);
-    void AddGenericEntry(GenericTokenEnum token, Entry temp);
+    ContainerPool &GetContainerPool();
+    ObjectContainer &GetCurrentContainer();
+    ObjectContainer &CreateContainer();
+    ObjectContainer &GetRootContainer();
+    Object *FindObjectInCurrentContainer(string sign);
     Object *FindObject(string name);
-    ObjectManager &CreateManager();
-    bool DisposeManager();
-    Entry Order(string id, string type, int size);
-    Object *FindObjectInCurrentManager(string sign);
     Object *CreateObject(string sign, Object &object);
-    GenericTokenEnum GetGenericToken(string src);
+
+    string GetTypeId(string sign);
     string GetGenTokenValue(GenericTokenEnum token);
-    OperatorCode GetOperatorCode(string src);
-    Entry Order(string id, string type = kTypeIdNull, int size = -1);
+    void AddEntry(Entry temp);
+    void AddGenericEntry(Entry temp);
+    
+    bool DisposeManager();
     bool IsOperatorToken(GenericTokenEnum token);
+    bool HasTailTokenRequest(GenericTokenEnum token);
+
+    Entry Order(string id, string type = kTypeIdNull, int size = -1);
+    GenericTokenEnum GetGenericToken(string src);
+    OperatorCode GetOperatorCode(string src);
+    
+
   }
 
   namespace type {
     ObjectPlanner *GetPlanner(string name);
+    string GetMethods(string name);
     void AddTemplate(string name, ObjectPlanner temp);
     shared_ptr<void> GetObjectCopy(Object &object);
   }
