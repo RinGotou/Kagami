@@ -74,9 +74,6 @@
     <ClCompile Include="..\..\src\kagami.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\message.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\object.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
