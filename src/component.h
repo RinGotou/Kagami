@@ -362,6 +362,4 @@ namespace kagami {
   Message CodeMaker(ObjectMap &p) {
     return Message(kStrEmpty, code, kStrEmpty);
   }
-
-
 }

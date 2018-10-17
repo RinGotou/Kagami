@@ -270,10 +270,11 @@ namespace kagami {
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
     auto ent = entry::Order(kStrTypeAssert);
     deque<Argument> arguments = {
-      blk->args.back(),
+      Argument(blk->last.first,AT_OBJECT,blk->last.second),
       Argument(blk->next.first,AT_NORMAL,blk->next.second)
     };
     action_base_.emplace_back(Instruction(ent, arguments));
+    blk->domain = blk->last.first;
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
@@ -420,7 +421,22 @@ namespace kagami {
           blk->args.emplace_back(Argument());
         }
         else {
-          blk->args.emplace_back(Argument(blk->current.first, AT_OBJECT, T_GENERIC));
+          auto gen_token = entry::GetGenericToken(blk->current.first);
+          if (gen_token != GT_NUL) {
+            result = false;
+            error_string_ = "Generic token can't be a object.";
+          }
+          else {
+            blk->args.emplace_back(
+              Argument(blk->current.first, AT_OBJECT, T_GENERIC));
+            if (blk->domain != kStrEmpty) {
+              blk->args.back().domain = blk->domain;
+              blk->domain = kStrEmpty;
+            }
+            else {
+              blk->args.back().domain = kTypeIdNull;
+            }
+          } 
         }
       }
     }
@@ -517,6 +533,7 @@ namespace kagami {
     blk->insert_between_object = false;
     blk->need_reversing = false;
     blk->define_line = false;
+    blk->domain = kStrEmpty;
 
     for (size_t i = 0; i < size; ++i) {
       if (!health_) break;

@@ -13,18 +13,22 @@ namespace kagami {
     string data;
     ArgumentType type;
     TokenTypeEnum tokenType;
+    string domain;
 
     Argument() :
       data(),
       type(AT_HOLDER),
-      tokenType(T_NUL) {}
+      tokenType(T_NUL),
+      domain() {}
 
     Argument(string data, 
       ArgumentType type, 
-      TokenTypeEnum tokenType) {
+      TokenTypeEnum tokenType,
+      string domain = "") {
       this->data = data;
       this->type = type;
       this->tokenType = tokenType;
+      this->domain = domain;
     }
 
     bool IsPlaceholder() const {
@@ -43,6 +47,7 @@ namespace kagami {
       Token next;
       Token last;
       size_t mode, next_insert_index;
+      string domain;
     };
 
     bool health_;

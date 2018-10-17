@@ -19,7 +19,7 @@
 
 //if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
-#define _DISABLE_SDL_
+//#define _DISABLE_SDL_
 //Enable all debugging feature and output info
 #define _ENABLE_DEBUGGING_
 
@@ -175,6 +175,7 @@ namespace kagami {
   const string kTypeIdRegex     = "Regex";
   const string kTypeIdRef       = "Ref";
   const string kTypeIdLib       = "Library";
+  const string kTypeIdFunction    = "Function";
 
   const string kArrayBaseMethods = "size|__at|__print";
   const string kStringMethods = "size|__at|__print|substr|to_wide";
@@ -182,6 +183,7 @@ namespace kagami {
   const string kInStreamMethods = "get|good|getlines|close|eof";
   const string kOutStreamMethods = "write|good|close";
   const string kRegexMethods = "match";
+  const string kFunctionMethods = "id|call";
 
   constexpr size_t kModeNormal        = 0;
   constexpr size_t kModeNextCondition = 1;

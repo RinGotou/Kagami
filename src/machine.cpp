@@ -433,8 +433,14 @@ namespace kagami {
         obj.Ref(*ptr);
       }
       else {
-        meta_blk->error_obj_checking = true;
-        meta_blk->error_string = "Object is not found - " + arg.data;
+        auto ent = entry::Order(arg.data, arg.domain);
+        if (ent.Good()) {
+          obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods, false);
+        }
+        else {
+          meta_blk->error_obj_checking = true;
+          meta_blk->error_string = "Object is not found - " + arg.data;
+        }
       }
       break;
     case AT_RET:
@@ -508,6 +514,7 @@ namespace kagami {
 
     while (idx < ent_args.size()) {
       if (idx >= parms.size()) break;
+      if (idx >= parms.size() - 1 && is_method) break;
       obj_map.Input(ent_args[idx], MakeObject(parms[idx], meta_blk));
       idx += 1;
     }
@@ -534,7 +541,6 @@ namespace kagami {
       obj_map.Input(ent_args[idx], MakeObject(parms[idx], meta_blk));
       idx += 1;
     }
-
 
     if (!state) {
       meta_blk->error_assembling = true;

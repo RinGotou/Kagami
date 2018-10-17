@@ -360,9 +360,116 @@ namespace kagami {
     return msg;
   }
 
+  //Function
+  Message FunctionGetId(ObjectMap &p) {
+    auto &ent = p.Get<Entry>(kStrObject);
+    string id = ent.GetId();
+    return Message(id);
+  }
+
+  bool AssemblingForAutosized(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
+    auto ent_args = ent.GetArguments();
+    auto va_arg_head = ent_args.back();
+    int idx = 0;
+    int va_arg_size = 0;
+    int count = 0;
+    auto is_method = (ent.GetFlag() == kFlagMethod);
+
+    while (idx < int(ent_args.size() - 1)) {
+      target_map.Input(ent_args[idx], p["arg" + to_string(idx)]);
+      idx += 1;
+    }
+
+    is_method ?
+      va_arg_size = size - 1 :
+      va_arg_size = size;
+
+    while (idx < va_arg_size) {
+      target_map.Input(va_arg_head + to_string(count), p["arg" + to_string(idx)]);
+      count += 1;
+      idx += 1;
+    }
+
+    target_map.Input(kStrSize, Object().Manage(to_string(count), T_INTEGER));
+    if (is_method) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
+    return true;
+  }
+
+  bool AssemblingForAutoFilling(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
+    auto ent_args = ent.GetArguments();
+    int idx = 0;
+    auto is_method = (ent.GetFlag() == kFlagMethod);
+
+    while (idx < ent_args.size()) {
+      if (idx >= size) break;
+      if (idx >= size - 1 && is_method) break;
+      target_map.Input(ent_args[idx], p["arg" + to_string(idx)]);
+      idx += 1;
+    }
+
+    if (is_method) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
+    return true;
+  }
+
+  bool AssemblingForNormal(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
+    auto ent_args = ent.GetArguments();
+    int idx = 0;
+    auto is_method = (ent.GetFlag() == kFlagMethod);
+    bool state = true;
+
+    while (idx < ent_args.size()) {
+      if (idx >= size || (idx >= size - 1 && is_method)) {
+        state = false;
+        break;
+      }
+
+      target_map.Input(ent_args[idx], p["arg" + to_string(idx)]);
+      idx += 1;
+    }
+
+    if (is_method && state) 
+      target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
+
+    return state;
+  }
+
+  Message FunctionCall(ObjectMap &p) {
+    auto &ent = p.Get<Entry>(kStrObject);
+    int size = stoi(p.Get<string>(kStrSize));
+    int count = 0;
+    ObjectMap target_map;
+    bool state;
+    Message msg;
+
+    if (ent.Good()) {
+      switch (ent.GetArgumentMode()) {
+      case kCodeAutoSize:
+        state = AssemblingForAutosized(ent, p, target_map, size);
+        break;
+      case kCodeAutoFill:
+        state = AssemblingForAutoFilling(ent, p, target_map, size);
+      default:
+        state = AssemblingForNormal(ent, p, target_map, size);
+        break;
+      }
+      msg = ent.Start(target_map);
+    }
+    else {
+      msg = Message(kStrFatalError, kCodeIllegalCall, "Bad entry - " + ent.GetId() + ".");
+    }
+
+    return msg;
+  }
+
   void InitPlanners() {
     using type::AddTemplate;
     using entry::AddEntry;
+
+    AddTemplate(kTypeIdFunction, ObjectPlanner(SimpleSharedPtrCopy<Entry>, kFunctionMethods));
+    AddEntry(Entry(FunctionGetId, kCodeNormalParm, "", "id", kTypeIdFunction, kFlagMethod));
+    AddEntry(Entry(FunctionCall, kCodeAutoSize, "arg", "call", kTypeIdFunction, kFlagMethod));
+
+
     AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, kRawStringMethods));
     AddEntry(Entry(RawStringPrint, kCodeNormalParm, "", "__print", kTypeIdRawString, kFlagMethod));
     AddEntry(Entry(RawStringGetElement, kCodeNormalParm, "subscript", "__at", kTypeIdRawString, kFlagMethod));
