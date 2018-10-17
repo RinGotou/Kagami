@@ -269,8 +269,10 @@ namespace kagami {
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
     auto ent = entry::Order(kStrTypeAssert);
+    Argument domain_arg = blk->args.back();
+
     deque<Argument> arguments = {
-      Argument(blk->last.first,AT_OBJECT,blk->last.second),
+      domain_arg,
       Argument(blk->next.first,AT_NORMAL,blk->next.second)
     };
     action_base_.emplace_back(Instruction(ent, arguments));
@@ -328,7 +330,7 @@ namespace kagami {
     auto ent = entry::Order(kStrTypeAssert);
     deque<Argument> arguments = {
       blk->args.back(),
-      Argument("__at",AT_NORMAL,T_GENERIC)
+      Argument("__at", AT_NORMAL, T_GENERIC)
     };
     action_base_.emplace_back(Instruction(ent, arguments));
 
