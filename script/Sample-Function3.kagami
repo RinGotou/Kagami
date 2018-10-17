@@ -81,10 +81,16 @@ def Menu()
 	return(choice)
 end
 
+def SDLTest()
+  path = string('C:\\workspace\\test.bmp')
+  title = string('Summer Pockets')
+  SDLTestLoad(1920,1080,title,path)
+end
+
 def main()
 	flag = 0
 	print('Menu:\n1.Greet Test\n2.Time Test\n3.Calculator Test')
-	print('4.Logic Test\n5.Type Test\n6.Array Test\n7.String Test\n0.Quit')
+	print('4.Logic Test\n5.Type Test\n6.Array Test\n7.String Test\n8.SDL Test\n0.Quit')
 	while(flag != 1)
 		choice = Menu()
 		case(choice)
@@ -102,6 +108,8 @@ def main()
 			ArrayTest()
 		when(7)
 			StringTest()
+    when(8)
+      SDLTest()
 		when(0)
 			flag = 1
 		end
