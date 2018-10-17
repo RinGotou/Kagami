@@ -1,37 +1,33 @@
 #include "entry.h"
-#include <iostream>
 
 namespace kagami {
   bool Entry::Compare(Entry &target) const {
-    return (target.id == this->id &&
-      target.activity == this->activity &&
-      target.parmMode == this->parmMode &&
-      target.priority == this->priority &&
-      this->type == target.type &&
-      target.args == this->args);
+    return (target.id_ == id_ &&
+      target.activity_ == activity_ &&
+      target.argument_mode_ == argument_mode_ &&
+      target.priority_ == priority_ &&
+      target.type_ == type_ &&
+      target.parms_ == parms_);
   }
 
-  Message Entry::Start(ObjectMap &objMap) const {
-    if (placeholder) return Message();
+  Message Entry::Start(ObjectMap &obj_map) const {
+    if (is_placeholder_) return Message();
     Message result;
-    if (userFunc) {
-      objMap[kStrUserFunc] = Object()
-        .Manage(id)
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(T_GENERIC);
+    if (is_user_func_) {
+      obj_map[kStrUserFunc] = Object().Manage(id_, T_GENERIC);
     }
     if (Good()) {
-      result = activity(objMap);
+      result = activity_(obj_map);
     }
     else {
-      result.combo(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
+      result = Message(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
     }
     return result;
   }
 
   namespace entry {
-    list<ObjectManager> &GetObjectStack() {
-      static list<ObjectManager> base;
+    list<ObjectContainer> &GetContainerPool() {
+      static list<ObjectContainer> base;
       return base;
     }
 
@@ -47,8 +43,8 @@ namespace kagami {
 
     Object *FindObject(string sign) {
       Object *object = nullptr;
-      size_t count = GetObjectStack().size();
-      list<ObjectManager> &base = GetObjectStack();
+      size_t count = GetContainerPool().size();
+      list<ObjectContainer> &base = GetContainerPool();
 
       while (!base.empty() && count > 0) {
         object = base[count - 1].Find(sign);
@@ -60,13 +56,17 @@ namespace kagami {
       return object;
     }
 
-    ObjectManager &GetCurrentManager() {
-      return GetObjectStack().back();
+    ObjectContainer &GetRootContainer() {
+      return GetContainerPool().front();
     }
 
-    Object *FindObjectInCurrentManager(string sign) {
+    ObjectContainer &GetCurrentContainer() {
+      return GetContainerPool().back();
+    }
+
+    Object *FindObjectInCurrentContainer(string sign) {
       Object *object = nullptr;
-      ObjectManager &base = GetObjectStack().back();
+      ObjectContainer &base = GetContainerPool().back();
 
       while (!base.Empty()) {
         object = base.Find(sign);
@@ -79,7 +79,7 @@ namespace kagami {
     }
 
     Object *CreateObject(string sign, Object &object) {
-      ObjectManager &base = GetObjectStack().back();
+      ObjectContainer &base = GetContainerPool().back();
       if (base.Find(sign) != nullptr) {
         return nullptr;
       }
@@ -90,8 +90,8 @@ namespace kagami {
 
     string GetTypeId(const string sign) {
       auto result = kTypeIdNull;
-      auto count = GetObjectStack().size();
-      auto &base = GetObjectStack();
+      auto count = GetContainerPool().size();
+      auto &base = GetContainerPool();
 
       while (count > 0) {
         const auto object = base[count - 1].Find(sign);
@@ -105,17 +105,17 @@ namespace kagami {
     }
 
     void ResetObject() {
-      while (!GetObjectStack().empty()) GetObjectStack().pop_back();
+      while (!GetContainerPool().empty()) GetContainerPool().pop_back();
     }
 
-    ObjectManager &CreateManager() {
-      auto &base = GetObjectStack();
-      base.push_back(std::move(ObjectManager()));
-      return GetObjectStack().back();
+    ObjectContainer &CreateContainer() {
+      auto &base = GetContainerPool();
+      base.push_back(std::move(ObjectContainer()));
+      return GetContainerPool().back();
     }
 
     bool DisposeManager() {
-      auto &base = GetObjectStack();
+      auto &base = GetContainerPool();
       if (!base.empty()) { base.pop_back(); }
       return base.empty();
     }
@@ -211,6 +211,10 @@ namespace kagami {
       return result;
     }
 
+    bool HasTailTokenRequest(GenericTokenEnum token) {
+      return (token == GT_IF || token == GT_WHILE || token == GT_CASE);
+    }
+
     map<string, OperatorCode> &GetOPBase() {
       using T = pair<string, OperatorCode>;
       static map<string, OperatorCode> base = {
@@ -247,9 +251,9 @@ namespace kagami {
       GetEntryBase().emplace_back(temp);
     }
 
-    void AddGenericEntry(GenericTokenEnum token, Entry temp) {
+    void AddGenericEntry(Entry temp) {
       GetGenProviderBase().insert(pair<GenericTokenEnum, Entry>(
-        token, temp));
+        temp.GetTokenEnum(), temp));
     }
 
     Entry GetGenericProvider(GenericTokenEnum token) {
@@ -268,10 +272,10 @@ namespace kagami {
 
       vector<Entry> &base = GetEntryBase();
       Entry result;
-      bool ignoreType = (type == kTypeIdNull);
+      bool ignore_type = (type == kTypeIdNull);
       //TODO:rewrite here
       for (auto &unit : base) {
-        bool typeChecking = (ignoreType || type == unit.GetSpecificType());
+        bool typeChecking = (ignore_type || type == unit.GetTypeDomain());
         bool sizeChecking = (size == -1 || size == int(unit.GetParmSize()));
         if (id == unit.GetId() && typeChecking && sizeChecking) {
           result = unit;
@@ -289,7 +293,7 @@ namespace kagami {
     }
 
     shared_ptr<void> GetObjectCopy(Object &object) {
-      if (object.ConstructorFlag()) {
+      if (object.GetConstructorFlag()) {
         return object.Get();
       }
 
@@ -309,6 +313,16 @@ namespace kagami {
 
       if (it != GetPlannerBase().end()) {
         result = &(it->second);
+      }
+      return result;
+    }
+
+    string GetMethods(string name) {
+      string result;
+      const auto it = GetPlannerBase().find(name);
+
+      if (it != GetPlannerBase().end()) {
+        result = it->second.GetMethods();
       }
       return result;
     }

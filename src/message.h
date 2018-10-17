@@ -1,31 +1,121 @@
 #pragma once
+#include "util.h"
 #include "object.h"
 
 namespace kagami {
   class Message {
-    string value;
-    string detail;
-    int code;
-    shared_ptr<void> object;
-    size_t idx;
+    string value_;
+    string detail_;
+    int code_;
+    shared_ptr<void> object_;
+    size_t idx_;
+
+    void Copy(const Message &msg) {
+      value_ = msg.value_;
+      detail_ = msg.detail_;
+      code_ = msg.code_;
+      object_ = msg.object_;
+      idx_ = msg.idx_;
+    }
   public:
     Message() :
-      value(kStrEmpty), detail(kStrEmpty), code(kCodeSuccess), idx(0) {}
-    Message(string value, int code, string detail) :
-      value(value), detail(detail), code(code), idx(0) {}
+      value_(kStrEmpty), 
+      detail_(kStrEmpty), 
+      code_(kCodeSuccess), 
+      idx_(0) {}
 
-    Object GetObj() const;
-    void SetObject(Object &object, string id);
-    Message &combo(string value, int code, string detail);
-    Message &SetValue(const string &value);
-    Message &SetCode(const int &code);
-    Message &SetDetail(const string &detail);
-    Message &SetIndex(const size_t index);
+    Message(string value, 
+      int code, 
+      string detail) :
+      value_(value), 
+      detail_(detail), 
+      code_(code), 
+      idx_(0) {}
 
-    string GetValue() const { return this->value; }
-    int GetCode() const { return this->code; }
-    string GetDetail() const { return this->detail; }
-    size_t GetIndex() const { return idx; }
+    Message(string detail) :
+      value_(kStrEmpty), 
+      code_(kCodeObject), 
+      detail_(kStrEmpty), 
+      idx_(0) {
 
+      object_ = make_shared<Object>();
+      static_pointer_cast<Object>(object_)
+        ->Manage(detail, util::GetTokenType(detail));
+    }
+
+    Message(const Message &msg) {
+      Copy(msg);
+    }
+
+    Message(const Message &&msg) {
+      Copy(msg);
+    }
+
+    Message &operator=(Message &msg) {
+      Copy(msg);
+      return *this;
+    }
+
+    Message &operator=(Message &&msg) {
+      Copy(msg);
+      return *this;
+    }
+
+    string GetValue() const { 
+      return value_; 
+    }
+
+    int GetCode() const { 
+      return code_; 
+    }
+
+    string GetDetail() const { 
+      return detail_; 
+    }
+
+    size_t GetIndex() const { 
+      return idx_; 
+    }
+
+    Object GetObj() const {
+      return *static_pointer_cast<Object>(object_);
+    }
+
+    void SetObject(Object &object) {
+      object_ = make_shared<Object>(object);
+      code_ = kCodeObject;
+    }
+
+    void SetRawString(string str) {
+      value_ = kStrRedirect;
+      code_ = kCodeSuccess;
+      detail_ = str;
+    }
+
+    Message &SetValue(const string &value) {
+      value_ = value;
+      return *this;
+    }
+
+    Message &SetCode(const int &code) {
+      code_ = code;
+      return *this;
+    }
+
+    Message &SetDetail(const string &detail) {
+      detail_ = detail;
+      return *this;
+    }
+
+    Message &SetIndex(const size_t index) {
+      idx_ = index;
+      return *this;
+    }
+
+    void Get(string *value, int *code, string *detail) {
+      if (value != nullptr) *value = value_;
+      if (code != nullptr) *code = code_;
+      if (detail != nullptr) *detail = detail_;
+    }
   };
 }

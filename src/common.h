@@ -11,20 +11,25 @@
 #include <locale>
 #include <codecvt>
 #include <cstdlib>
-
-#ifndef _NO_CUI_
+#include <cctype>
+#include <typeinfo>
 #include <iostream>
-#endif
+#include <ctime>
+#include <type_traits>
 
+//if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
-#define _DISABLE_SDL_
-
+//#define _DISABLE_SDL_
 //Enable all debugging feature and output info
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
-#include "windows.h"
 #define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "Ws2_32.lib")
 #if defined(_MSC_VER)
 #pragma warning(disable:4996)
 #endif
@@ -57,27 +62,18 @@ namespace kagami {
 
   struct ActivityTemplate;
   class Message;
-  class ObjectPlanner;
-  class Object;
 
-  using ObjectMap = map<string, Object>;
-  using ObjectPair = pair<string, Object>;
-  using Parameter = pair<string, Object>;
   using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
   using CastFunc = pair<string, CopyCreator>;
-  using Activity = Message(*)(ObjectMap &);
-  using NamedObject = pair<string, Object>;
-
-  using TypeId = string;
   
-  const string kEngineVersion = "1.1";
-  const string kCodeName = "Marionette";
+  const string kEngineVersion = "1.2";
+  const string kCodeName = "Moonlit";
 #if defined(_WIN32)
   const string kPlatformType = "Windows";
 #else
   const string kPlatformType = "Linux";
 #endif
-  const string kEngineName = "Kagami - Experimental Scripting Kit";
+  const string kEngineName = "Kagami - Experimental Scripting util";
   const string kEngineAuthor = "Suzu Nakamura and Contributor(s)";
   const string kCopyright = "Copyright(c) 2017-2018";
 
@@ -95,7 +91,7 @@ namespace kagami {
     kStrObject = "__object",
     kMethodPrint = "__print";
 
-  const int 
+  constexpr int 
     kCodeWhen = 21,
     kCodeCase = 20,
     kCodeBreak = 19,
@@ -138,7 +134,7 @@ namespace kagami {
   };
 
   enum TokenTypeEnum {
-    T_GENERIC, T_STRING, T_INTEGER, T_DOUBLE,
+    T_GENERIC, T_STRING, T_INTEGER, T_FLOAT,
     T_BOOLEAN, T_SYMBOL, T_BLANK, T_CHAR, T_NUL
   };
 
@@ -178,15 +174,26 @@ namespace kagami {
   const string kTypeIdOutStream = "Outstream";
   const string kTypeIdRegex     = "Regex";
   const string kTypeIdRef       = "Ref";
+  const string kTypeIdLib       = "Library";
+  const string kTypeIdFunction    = "Function";
 
-  const size_t kModeNormal        = 0;
-  const size_t kModeNextCondition = 1;
-  const size_t kModeCycle         = 2;
-  const size_t kModeCycleJump     = 3;
-  const size_t kModeCondition     = 4;
-  const size_t kModeDef           = 5;
-  const size_t kModeCase          = 6;
-  const size_t kModeCaseJump      = 7;
+  const string kArrayBaseMethods = "size|__at|__print";
+  const string kStringMethods = "size|__at|__print|substr|to_wide";
+  const string kWideStringMethods = "size|__at|__print|substr|to_byte";
+  const string kInStreamMethods = "get|good|getlines|close|eof";
+  const string kOutStreamMethods = "write|good|close";
+  const string kRegexMethods = "match";
+  const string kFunctionMethods = "id|call";
+
+  constexpr size_t kModeNormal        = 0;
+  constexpr size_t kModeNextCondition = 1;
+  constexpr size_t kModeCycle         = 2;
+  constexpr size_t kModeCycleJump     = 3;
+  constexpr size_t kModeCondition     = 4;
+  constexpr size_t kModeDef           = 5;
+  constexpr size_t kModeCase          = 6;
+  constexpr size_t kModeCaseJump      = 7;
+  constexpr size_t kModeClass         = 8;
 
   /*Generic Token*/
   const string kStrIf = "if",
@@ -196,6 +203,7 @@ namespace kagami {
     kStrVar = "var",
     kStrSet = "__set",
     kStrBind = "__bind",
+    kStrSize = "__size",
     kStrFor = "for",
     kStrElse = "else",
     kStrElif = "elif",
@@ -204,6 +212,7 @@ namespace kagami {
     kStrBreak = "break",
     kStrCase = "case",
     kStrWhen = "when",
+    kStrFinally = "finally",
     kStrCodeSub = "__code_sub",
     kStrLeftSelfInc = "lSelfInc",
     kStrLeftSelfDec = "lSelfDec",
@@ -253,8 +262,5 @@ namespace kagami {
     kOpRSelfInc = "__rsinc",
     kOpLSelfDec = "__lsdec",
     kOpRSelfDec = "__rsdec";
-
-
-  const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
 }
 

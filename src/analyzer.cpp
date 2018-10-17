@@ -17,243 +17,211 @@ namespace kagami {
     return TOKEN_OTHERS;
   }
 
-  Message Analyzer::BuildTokens(string target) {
-    Kit kit;
-    string current, forward, next;
-    auto stringProcessing = false;
-    auto appendingOnce = false;
-    char currentChar;
-    auto forwardChar = ' ';
-    vector<string> origin, output;
-    size_t nest = 0;
+  vector<string> Analyzer::Scanning(string target) {
+    string current_string, temp;
+    bool string_processing = false;
+    bool delay_suspending = false;
+    bool delay_switching = false;
+    bool escape_flag = false;
+    bool disable_escape = false;
+    char current = 0, next = 0, last = 0;
+    vector<string> output;
+
+    for (size_t idx = 0; idx < target.size(); idx += 1) {
+      current = target[idx];
+
+      (idx < target.size() - 1) ?
+        next = target[idx + 1] :
+        next = 0;
+
+      if (delay_suspending) {
+        string_processing = false;
+        delay_suspending = false;
+      }
+
+      (string_processing && last == '\\' && !disable_escape) ?
+        escape_flag = true :
+        escape_flag = false;
+
+      if (disable_escape) disable_escape = false;
+
+      if (current == '\'' && !escape_flag) {
+        if (!string_processing && util::GetTokenType(current_string) == T_BLANK) {
+          current_string.clear();
+        }
+
+        string_processing ?
+          delay_suspending = true :
+          string_processing = true, delay_switching = true;
+      }
+
+      if (!string_processing || delay_switching) {
+        temp = current_string;
+        temp.append(1, current);
+
+        if (util::GetTokenType(temp) == T_NUL) {
+          auto type = util::GetTokenType(current_string);
+          switch (type) {
+          case T_BLANK:
+            current_string.clear();
+            current_string.append(1, current);
+            break;
+          case T_INTEGER:
+            if (current == '.' && isdigit(next) != 0) {
+              current_string.append(1, current);
+            }
+            else {
+              output.emplace_back(current_string);
+              current_string.clear();
+              current_string.append(1, current);
+            }
+            break;
+          default:
+            output.emplace_back(current_string);
+            current_string.clear();
+            current_string.append(1, current);
+            break;
+          }
+        }
+        else {
+          current_string = temp;
+        }
+
+        delay_switching ?
+          delay_switching = false :
+          delay_switching = delay_switching;
+      }
+      else {
+        escape_flag ?
+          current = util::GetEscapeChar(current) :
+          current = current;
+        if (current == '\\' && last == '\\') disable_escape = true;
+        current_string.append(1, current);
+      }
+
+      last = target[idx];
+    }
+
+    if (util::GetTokenType(current_string) != T_BLANK) {
+      output.emplace_back(current_string);
+    }
+
+    return output;
+  }
+
+  Message Analyzer::Tokenizer(vector<string> target) {
+    bool negative_flag = false;
+    vector<string> output;
+    stack<string> bracket_stack;
+    Token current = Token("", T_NUL),
+      next = Token("", T_NUL),
+      last = Token("", T_NUL);
     Message msg;
     
-    //PreProcessing
-    this->origin.clear();
-    this->health = true;
+    tokens_.clear();
+    health_ = true;
 
-    //Spilt
-    forwardChar = 0;
-    bool delaySuspend = false;
-    bool forwardEscChar = false;
     for (size_t idx = 0; idx < target.size(); idx += 1) {
-      currentChar = target[idx];
-      if (delaySuspend) {
-        stringProcessing = false;
-        delaySuspend = false;
+      current = Token(target[idx], util::GetTokenType(target[idx]));
+      (idx < target.size() - 1) ?
+        next = Token(target[idx + 1], util::GetTokenType(target[idx + 1])) :
+        next = Token("", T_NUL);
+
+      if (current.second == T_NUL) {
+        msg = Message(kStrFatalError, kCodeBadExpression, "Unknown token - " + current.first + ".");
+        break;
       }
-      if (forwardEscChar) {
-        origin.emplace_back(current);
-        current.clear();
-      }
-      if (stringProcessing && forwardChar == '\\') {
-        forwardEscChar = true;
-      }
-      else {
-        forwardEscChar = false;
-      }
-      if (currentChar == '\'' && forwardChar != '\\') {
-        if (!stringProcessing
-          && Kit::GetTokenType(current) == TokenTypeEnum::T_BLANK) {
-          current.clear();
+
+      if (current.first == "+" || current.first == "-") {
+        if (last.second == T_SYMBOL && (next.second == T_INTEGER || next.second == T_FLOAT)) {
+          negative_flag = true;
         }
-        stringProcessing ? delaySuspend = true : stringProcessing = true;
       }
-      current.append(1, currentChar);
-      if (Kit::GetTokenType(current) != TokenTypeEnum::T_NUL) {
-        forwardChar = target[idx];
-        continue;
+
+      if (current.first == "(" || current.first == "[" || current.first == "{") {
+        bracket_stack.push(current.first);
       }
-      else {
-        current = current.substr(0, current.size() - 1);
-        if (Kit::GetTokenType(current) == TokenTypeEnum::T_BLANK) {
-          if (stringProcessing) origin.emplace_back(current);
-          current.clear();
-          current.append(1, currentChar);
+
+      if (current.first == ")" || current.first == "]" || current.first == "}") {
+        if (!bracket_stack.empty() && bracket_stack.top() != kBracketPairs.at(current.first)) {
+          msg = Message(kStrFatalError, kCodeBadExpression, "Left bracket is missing.");
+          break;
         }
         else {
-          origin.emplace_back(current);
-          current.clear();
-          current.append(1, currentChar);
-          if (!stringProcessing
-            && Kit::GetTokenType(string().append(1, currentChar)) == T_BLANK) {
-            continue;
-          }
-        }
-      }
-      forwardChar = target[idx];
-    }
-
-    switch (kagami::Kit::GetTokenType(current)) {
-    case TokenTypeEnum::T_NUL:
-    case TokenTypeEnum::T_BLANK:
-      break;
-    default:
-      origin.emplace_back(current);
-      break;
-    }
-    current.clear();
-
-    //third cycle
-    stringProcessing = false;
-    bool PFlag = false;
-    for (size_t count = 0; count < origin.size(); ++count) {
-      if (count + 1 < origin.size()) next = origin[count + 1];
-
-      current = origin[count];
-
-      if (!stringProcessing) {
-        //Pos/Neg sign
-        if ((current == "+" || current == "-") && next != current && forward != current) {
-          if (Kit::IsSymbol(forward) && Kit::IsInteger(next)) {
-            PFlag = true;
-          }
-        }
-        //combine decimal
-        if (current == ".") {
-          if (kagami::Kit::IsInteger(forward)
-            && kagami::Kit::IsInteger(next)) {
-            output.back().append(current);
-            appendingOnce = true;
-            continue;
-          }
-        }
-        //bracket checking
-        if (current == "(" || current == "[") nest++;
-        if (current == ")" || current == "]") nest--;
-        if (current == "[") {
-          if (kagami::Kit::GetTokenType(forward) != TokenTypeEnum::T_GENERIC
-            && forward != "]"
-            && forward != ")") {
-            errorString = "Illegal subscript operation.";
-            nest = 0;
-            health = false;
-            break;
-          }
-        }
-        //comma checking
-        if (current == ",") {
-          if (kagami::Kit::GetTokenType(forward) == TokenTypeEnum::T_SYMBOL &&
-            forward != "]" && forward != ")" &&
-            forward != "++" && forward != "--" &&
-            forward != "'") {
-            errorString = "Illegal comma location.";
-            health = false;
-            break;
-          }
+          bracket_stack.pop();
         }
       }
 
-      //switching string processing mode
-      if (current == "'" && forward != "\\") {
-        if (stringProcessing) {
-          output.back().append(current);
+      if (current.first == ",") {
+        if (last.second == T_SYMBOL &&
+          last.first != "]" &&
+          last.first != ")" &&
+          last.first != "}" &&
+          last.first != "'" &&
+          last.first != "++" &&
+          last.first != "--") {
+          msg = Message(kStrFatalError, kCodeBadExpression, "Illegal comma location.");
+          break;
+        }
+      }
+
+      if ((current.first == "+" || current.first == "-") && !tokens_.empty()) {
+        if (tokens_.back().first == current.first) {
+          tokens_.back().first.append(current.first);
         }
         else {
-          output.emplace_back(kStrEmpty);
-          output.back().append(current);
+          tokens_.emplace_back(current);
         }
-        stringProcessing = !stringProcessing;
       }
-      //usual work
+      else if (negative_flag && (last.first == "+" || last.first == "-")) {
+        Token res = Token(last.first + current.first, current.second);
+        tokens_.back() = res;
+      }
       else {
-        if (stringProcessing) {
-          output.back().append(current);
-        }
-        else if (appendingOnce) {
-          output.back().append(current);
-          appendingOnce = false;
-        }
-        else {
-          if ((current == "+" || current == "-") && !output.empty()) {
-            if (output.back() == current) {
-              output.back().append(current);
-            }
-            else {
-              output.emplace_back(current);
-            }
-          }
-          else if (current == "=") {
-            if (output.back() == "<" || output.back() == ">" || output.back() == "=" || output.back() == "!") {
-              output.back().append(current);
-            }
-            else {
-              output.emplace_back(current);
-            }
-          }
-          else if ((forward == "+" || forward == "-") && PFlag) {
-            output.back().append(current);
-            PFlag = false;
-          }
-          else {
-            output.emplace_back(current);
-          }
-        }
+        tokens_.emplace_back(current);
       }
 
-      forward = origin[count];
+      last = current;
     }
 
-    if (stringProcessing && errorString.empty()) {
-      errorString = "Quotation mark is missing.";
-      health = false;
-    }
-    if (nest > 0 && errorString.empty()) {
-      errorString = "Bracket/Square Bracket is missing";
-      health = false;
-    }
-
-    if (health) {
-      origin.reserve(output.size());
-      for (auto &unit : output) {
-        Token token;
-        token.first = unit;
-        token.second = kagami::Kit::GetTokenType(unit);
-        this->origin.push_back(token);
-      }
-    }
-    else {
-      msg.combo(kStrFatalError, kCodeBadExpression, errorString);
-    }
-
-    kit.CleanupVector(origin).CleanupVector(output);
     return msg;
   }
 
   void Analyzer::Reversing(AnalyzerWorkBlock *blk) {
-    deque<Entry> *tempSymbol = new deque<Entry>();
-    deque<Object> *tempObject = new deque<Object>();
+    deque<Entry> *temp_symbol = new deque<Entry>();
+    deque<Argument> *temp_arg = new deque<Argument>();
 
     while (!blk->symbol.empty()
       && blk->symbol.back().GetPriority()
       == blk->symbol[blk->symbol.size() - 2].GetPriority()) {
-      tempSymbol->push_back(blk->symbol.back());
-      tempObject->push_back(blk->item.back());
+      temp_symbol->push_back(blk->symbol.back());
+
+      temp_arg->push_back(blk->args.back());
       blk->symbol.pop_back();
-      blk->item.pop_back();
+      blk->args.pop_back();
     }
-    tempSymbol->push_back(blk->symbol.back());
+    temp_symbol->push_back(blk->symbol.back());
     blk->symbol.pop_back();
-    int i = 2;
-    while (i > 0) {
-      tempObject->push_back(blk->item.back());
-      blk->item.pop_back();
-      --i;
+
+    for (int count = 2; count > 0; count -= 1) {
+      temp_arg->push_back(blk->args.back());
+      blk->args.pop_back();
     }
-    while (!tempSymbol->empty()) {
-      blk->symbol.push_back(tempSymbol->front());
-      tempSymbol->pop_front();
+
+    while (!temp_symbol->empty()) {
+      blk->symbol.push_back(temp_symbol->front());
+      temp_symbol->pop_front();
     }
-    while (!tempObject->empty()) {
-      blk->item.push_back(tempObject->front());
-      tempObject->pop_front();
+    while (!temp_arg->empty()) {
+      blk->args.push_back(temp_arg->front());
+      temp_arg->pop_front();
     }
-    delete tempSymbol;
-    delete tempObject;
+    delete temp_symbol;
+    delete temp_arg;
   }
 
   bool Analyzer::InstructionFilling(AnalyzerWorkBlock *blk) {
-    deque<Object> parms;
+    deque<Argument> arguments;
     size_t idx = 0;
     Entry &ent = blk->symbol.back();
 
@@ -261,81 +229,71 @@ namespace kagami {
     auto args = ent.GetArguments();
     auto mode = ent.GetArgumentMode();
     auto token = ent.GetTokenEnum();
-    bool reversed = entry::IsOperatorToken(ent.GetTokenEnum()) && blk->needReverse;
+    bool reversed = entry::IsOperatorToken(ent.GetTokenEnum()) && blk->need_reversing;
 
     idx = size;
-    bool doNotUseIdx = (ent.GetEntrySign() || mode == kCodeAutoSize);
-    while (!blk->item.empty() && !blk->item.back().IsPlaceholder()) {
+    bool doNotUseIdx = (ent.NeedRecheck() || mode == kCodeAutoSize);
+
+    while (!blk->args.empty() && !blk->args.back().IsPlaceholder()) {
       if (!doNotUseIdx && idx == 0) break;
-      if (reversed) parms.push_back(blk->item.back());
-      else parms.push_front(blk->item.back());
-      blk->item.pop_back();
+      if (reversed) arguments.emplace_back(blk->args.back());
+      else arguments.emplace_front(blk->args.back());
+      blk->args.pop_back();
       if (!doNotUseIdx) idx--;
     }
-    if (!blk->item.empty()
-      && blk->item.back().IsPlaceholder()
-      && !entry::IsOperatorToken(token))
-      blk->item.pop_back();
 
-
+    if (!blk->args.empty()
+      && blk->args.back().IsPlaceholder()
+      && !entry::IsOperatorToken(token)) {
+      blk->args.pop_back();
+    }
+      
     auto flag = ent.GetFlag();
-    if (flag == kFlagMethod || ent.NeedSpecificType()) {
-      parms.push_back(Object().SetArgSign(blk->item.back().GetOriginId()));
-      blk->item.pop_back();
+
+    if (flag == kFlagMethod || ent.IsMethod()) {
+      arguments.emplace_back(Argument(blk->args.back().data, AT_OBJECT, T_GENERIC));
+      blk->args.pop_back();
     }
 
-    instBase.push_back(Inst(ent, parms));
+    action_base_.emplace_back(Instruction(ent, arguments));
     blk->symbol.pop_back();
-    blk->item.emplace_back(Object().SetRetSign());
-    return health;
+    blk->args.emplace_back(Argument("", AT_RET, T_NUL));
+    return health_;
   }
 
   void Analyzer::EqualMark(AnalyzerWorkBlock *blk) {
-    if (!blk->item.empty()) {
+    if (!blk->args.empty()) {
       blk->symbol.push_back(entry::Order(kStrBind));
     }
   }
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
     auto ent = entry::Order(kStrTypeAssert);
-    deque<Object> parms = {
-      blk->item.back(),
-      Object()
-      .Manage(blk->nextToken.first)
-      .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+    deque<Argument> arguments = {
+      Argument(blk->last.first,AT_OBJECT,blk->last.second),
+      Argument(blk->next.first,AT_NORMAL,blk->next.second)
     };
-    instBase.emplace_back(Inst(ent, parms));
+    action_base_.emplace_back(Instruction(ent, arguments));
+    blk->domain = blk->last.first;
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
-    blk->lastBracketStack.push(blk->currentToken.first);
-    if (blk->defineLine) return;
-    if (blk->forwardToken.second != TokenTypeEnum::T_GENERIC) {
+    if (blk->define_line) return;
+    if (blk->last.second != TokenTypeEnum::T_GENERIC) {
       auto ent = entry::Order(kStrNop);
       blk->symbol.emplace_back(ent);
     }
-    blk->symbol.emplace_back(blk->currentToken.first);
-    blk->item.push_back(Object().SetPlaceholder());
+    blk->symbol.emplace_back(blk->current.first);
+    blk->args.emplace_back(Argument());
   }
 
   bool Analyzer::RightBracket(AnalyzerWorkBlock *blk) {
     bool result = true;
-    deque<Entry> tempSymbol;
-    deque<Object> tempObject;
     bool checked = false;
 
-    if (!blk->lastBracketStack.empty() &&
-      kBracketPairs.at(blk->currentToken.first) != blk->lastBracketStack.top()) {
-      errorString = "Illegal bracket pair - '"
-        + blk->lastBracketStack.top() + "'"
-        + " and '" + blk->currentToken.first + "'";
-      return false;
-    }
-    if (!blk->lastBracketStack.empty())blk->lastBracketStack.pop();
-
-    string topId = blk->symbol.back().GetId();
+    string top_id = blk->symbol.back().GetId();
     while (!blk->symbol.empty()
-      && topId != "{" && topId != "[" && topId != "("
+      && top_id != "{" && top_id != "[" && top_id != "("
       && blk->symbol.back().GetTokenEnum() != GT_BIND) {
 
       auto firstEnum = blk->symbol.back().GetTokenEnum();
@@ -347,7 +305,7 @@ namespace kagami {
           }
           else {
             checked = true;
-            blk->needReverse = true;
+            blk->need_reversing = true;
             Reversing(blk);
           }
         }
@@ -355,10 +313,10 @@ namespace kagami {
 
       result = InstructionFilling(blk);
       if (!result) break;
-      topId = blk->symbol.back().GetId();
+      top_id = blk->symbol.back().GetId();
     }
     if (result) {
-      if (blk->needReverse) blk->needReverse = false;
+      if (blk->need_reversing) blk->need_reversing = false;
       if (blk->symbol.back().GetId() == "(" || blk->symbol.back().GetId() == "[") blk->symbol.pop_back();
       result = InstructionFilling(blk);
     }
@@ -368,41 +326,40 @@ namespace kagami {
   bool Analyzer::LeftSqrBracket(AnalyzerWorkBlock *blk) {
     bool result = true;
     auto ent = entry::Order(kStrTypeAssert);
-    deque<Object> parms = {
-      blk->item.back(),
-      Object()
-        .Manage("__at")
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
+    deque<Argument> arguments = {
+      blk->args.back(),
+      Argument("__at",AT_NORMAL,T_GENERIC)
     };
-    instBase.emplace_back(Inst(ent, parms));
-    ent.SetEntrySign("__at", true);
+    action_base_.emplace_back(Instruction(ent, arguments));
+
+    ent.SetRecheckInfo("__at", true);
     blk->symbol.emplace_back(ent);
-    blk->item.emplace_back(Object().SetPlaceholder());
-    blk->lastBracketStack.push(blk->currentToken.first);
-    blk->symbol.emplace_back(blk->currentToken.first);
+    blk->symbol.emplace_back(blk->current.first);
+    blk->args.emplace_back(Argument());
+
     return result;
   }
 
   bool Analyzer::SelfOperator(AnalyzerWorkBlock *blk) {
     bool result = true;
-    if (blk->forwardToken.second == T_GENERIC) {
-      if (blk->currentToken.first == "++") {
+    if (blk->last.second == T_GENERIC) {
+      if (blk->current.first == "++") {
         blk->symbol.push_back(entry::Order(kStrRightSelfInc));
       }
-      else if (blk->currentToken.first == "--") {
+      else if (blk->current.first == "--") {
         blk->symbol.push_back(entry::Order(kStrRightSelfDec));
       }
     }
-    else if (blk->forwardToken.second != T_GENERIC && blk->nextToken.second == T_GENERIC) {
-      if (blk->currentToken.first == "++") {
+    else if (blk->last.second != T_GENERIC && blk->next.second == T_GENERIC) {
+      if (blk->current.first == "++") {
         blk->symbol.push_back(entry::Order(kStrLeftSelfInc));
       }
-      else if (blk->currentToken.first == "--") {
+      else if (blk->current.first == "--") {
         blk->symbol.push_back(entry::Order(kStrLeftSelfDec));
       }
     }
     else {
-      errorString = "Unknown self operation";
+      error_string_ = "Unknown self operation";
       result = false;
     }
     return result;
@@ -410,17 +367,16 @@ namespace kagami {
 
   bool Analyzer::LeftCurBracket(AnalyzerWorkBlock *blk) {
     bool result;
-    blk->lastBracketStack.push(blk->currentToken.first);
-    if (blk->forwardToken.second == TokenTypeEnum::T_SYMBOL) {
+    if (blk->last.second == TokenTypeEnum::T_SYMBOL) {
       auto ent = entry::Order(kStrArray);
       blk->symbol.emplace_back(ent);
-      blk->symbol.emplace_back(blk->currentToken.first);
-      blk->item.push_back(Object().SetPlaceholder());
+      blk->symbol.emplace_back(blk->current.first);
+      blk->args.emplace_back(Argument());
       result = true;
     }
     else {
       result = false;
-      errorString = "Illegal curly bracket location.";
+      error_string_ = "Illegal curly bracket location.";
     }
     return result;
   }
@@ -429,103 +385,109 @@ namespace kagami {
     bool function = false;
     bool result = true;
 
-    if (blk->defineLine) {
-      blk->item.push_back(Object()
-        .Manage(blk->currentToken.first)
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(blk->currentToken.second));
+    if (blk->define_line) {
+      blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, T_GENERIC));
     }
     else {
-      if (blk->nextToken.first == "=") {
-        Object obj;
-        obj.Manage(blk->currentToken.first)
-          .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods());
-        blk->item.push_back(obj);
+      if (blk->next.first == "=") {
+        blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, T_GENERIC));
       }
-      else if (blk->nextToken.first == "(") {
-        auto ent = entry::Order(blk->currentToken.first);
-        bool needSpecType = (blk->forwardToken.first == ".");
-        if (needSpecType) {
-          ent.SetEntrySign(blk->currentToken.first, true);
+      else if (blk->next.first == "(") {
+        auto ent = entry::Order(blk->current.first);
+        bool needDomain = (blk->last.first == ".");
+        if (needDomain) {
+          ent.SetRecheckInfo(blk->current.first, true);
         }
         else {
           if (!ent.Good()) {
-            ent.SetEntrySign(blk->currentToken.first, false);
+            ent.SetRecheckInfo(blk->current.first, false);
           }
         }
         blk->symbol.push_back(ent);
       }
       else {
-        if (blk->currentToken.first == kStrEnd 
-          || blk->currentToken.first == kStrElse
-          || blk->currentToken.first == kStrContinue
-          || blk->currentToken.first == kStrBreak) {
-          auto ent = entry::Order(blk->currentToken.first);
+        if (blk->current.first == kStrEnd 
+          || blk->current.first == kStrElse
+          || blk->current.first == kStrContinue
+          || blk->current.first == kStrBreak) {
+          auto ent = entry::Order(blk->current.first);
           blk->symbol.push_back(ent);
         }
-        else if (blk->currentToken.first == kStrDef) {
-          auto ent = entry::Order(blk->currentToken.first);
-          blk->defineLine = true;
+        else if (blk->current.first == kStrDef) {
+          auto ent = entry::Order(blk->current.first);
+          blk->define_line = true;
           blk->symbol.emplace_back(ent);
           blk->symbol.emplace_back("(");
-          blk->item.push_back(Object().SetPlaceholder());
+          blk->args.emplace_back(Argument());
         }
         else {
-          Object obj;
-          obj.SetArgSign(blk->currentToken.first);
-          blk->item.push_back(obj);
+          auto gen_token = entry::GetGenericToken(blk->current.first);
+          if (gen_token != GT_NUL) {
+            result = false;
+            error_string_ = "Generic token can't be a object.";
+          }
+          else {
+            blk->args.emplace_back(
+              Argument(blk->current.first, AT_OBJECT, T_GENERIC));
+            if (blk->domain != kStrEmpty) {
+              blk->args.back().domain = blk->domain;
+              blk->domain = kStrEmpty;
+            }
+            else {
+              blk->args.back().domain = kTypeIdNull;
+            }
+          } 
         }
       }
     }
 
-    if (function && blk->nextToken.first != "("
-      && blk->currentToken.first != kStrElse && blk->currentToken.first != kStrEnd) {
-      this->health = false;
+    if (function && blk->next.first != "("
+      && blk->current.first != kStrElse 
+      && blk->current.first != kStrEnd
+      && blk->current.first != kStrFinally) {
+      health_ = false;
       result = false;
-      errorString = "Left bracket after function is missing";
+      error_string_ = "Left bracket after function is missing";
     }
 
-    if (blk->defineLine && blk->forwardToken.first == kStrDef && blk->nextToken.first != "(") {
-      this->health = false;
+    if (blk->define_line && blk->last.first == kStrDef && blk->next.first != "(") {
+      health_ = false;
       result = false;
-      errorString = "Wrong definition pattern";
+      error_string_ = "Wrong definition pattern";
     }
 
     return result;
   }
 
   void Analyzer::OtherToken(AnalyzerWorkBlock *blk) {
-    if (blk->insertBetweenObject) {
-      blk->item.insert(blk->item.begin() + blk->nextInsertSubscript,
-        Object().Manage(blk->currentToken.first)
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(blk->currentToken.second));
-      blk->insertBetweenObject = false;
+    if (blk->insert_between_object) {
+      blk->args.emplace(blk->args.begin() + blk->next_insert_index,
+        Argument(blk->current.first, AT_NORMAL, blk->current.second));
+      blk->insert_between_object = false;
     }
     else {
-      blk->item.push_back(Object().Manage(blk->currentToken.first)
-        .SetMethods(type::GetPlanner(kTypeIdRawString)->GetMethods())
-        .SetTokenType(blk->currentToken.second));
+      blk->args.emplace_back(
+        Argument(blk->current.first, AT_NORMAL, blk->current.second));
     }
   }
 
   void Analyzer::OtherSymbol(AnalyzerWorkBlock *blk) {
-    Entry ent = entry::Order(blk->currentToken.first);
+    Entry ent = entry::Order(blk->current.first);
     int currentPriority = ent.GetPriority();
     if (blk->symbol.empty()) {
       blk->symbol.push_back(ent);
     }
     else if (currentPriority < blk->symbol.back().GetPriority()) {
       auto j = blk->symbol.size() - 1;
-      auto k = blk->item.size();
+      auto k = blk->args.size();
       while (kBracketPairs.find(blk->symbol[j].GetId()) == kBracketPairs.end()
         && currentPriority < blk->symbol[j].GetPriority()) {
-        k == blk->item.size() ? k -= 2 : k -= 1;
+        k == blk->args.size() ? k -= 2 : k -= 1;
         --j;
       }
       blk->symbol.insert(blk->symbol.begin() + j + 1, ent);
-      blk->nextInsertSubscript = k;
-      blk->insertBetweenObject = true;
+      blk->next_insert_index = k;
+      blk->insert_between_object = true;
     }
     else {
       blk->symbol.push_back(ent);
@@ -536,8 +498,8 @@ namespace kagami {
     bool checked = false;
     while (!blk->symbol.empty()) {
       if (blk->symbol.back().GetId() == "(") {
-        errorString = "Right bracket is missing";
-        health = false;
+        error_string_ = "Right bracket is missing";
+        health_ = false;
         break;
       }
       auto firstEnum = blk->symbol.back().GetTokenEnum();
@@ -548,46 +510,43 @@ namespace kagami {
           }
           else {
             checked = true;
-            blk->needReverse = true;
+            blk->need_reversing = true;
             Reversing(blk);
           }
         }
       }
       if (!entry::IsOperatorToken(blk->symbol.back().GetTokenEnum())) {
-        blk->needReverse = false;
+        blk->need_reversing = false;
       }
       if (!InstructionFilling(blk)) break;
     }
   }
 
-  Message Analyzer::Analyze() {
+  Message Analyzer::Parser() {
     using namespace entry;
     auto state = true;
-    const auto size = origin.size();
+    const auto size = tokens_.size();
     Message result;
 
     AnalyzerWorkBlock *blk = new AnalyzerWorkBlock();
-    blk->lambdaObjectCount = 0;
-    blk->nextInsertSubscript = 0;
-    blk->operatorTargetType = kTypeIdNull;
-    blk->insertBetweenObject = false;
-    blk->dotOperator = false;
-    blk->needReverse = false;
-    blk->subscriptProcessing = false;
-    blk->defineLine = false;
+    blk->next_insert_index = 0;
+    blk->insert_between_object = false;
+    blk->need_reversing = false;
+    blk->define_line = false;
+    blk->domain = kStrEmpty;
 
     for (size_t i = 0; i < size; ++i) {
-      if (!health) break;
+      if (!health_) break;
       if (!state)  break;
 
-      blk->currentToken = origin[i];
+      blk->current = tokens_[i];
       i < size - 1 ?
-        blk->nextToken = origin[i + 1] :
-        blk->nextToken = Token(kStrNull, TokenTypeEnum::T_NUL);
+        blk->next = tokens_[i + 1] :
+        blk->next = Token(kStrNull, TokenTypeEnum::T_NUL);
 
-      auto tokenTypeEnum = blk->currentToken.second;
-      if (tokenTypeEnum == TokenTypeEnum::T_SYMBOL) {
-        BasicTokenEnum value = GetBasicToken(blk->currentToken.first);
+      auto token_type = blk->current.second;
+      if (token_type == TokenTypeEnum::T_SYMBOL) {
+        BasicTokenEnum value = GetBasicToken(blk->current.first);
         switch (value) {
         case TOKEN_EQUAL: EqualMark(blk); break;
         case TOKEN_COMMA: break;
@@ -604,36 +563,52 @@ namespace kagami {
         default:break;
         }
       }
-      else if (tokenTypeEnum == TokenTypeEnum::T_GENERIC) {
+      else if (token_type == TokenTypeEnum::T_GENERIC) {
         state = FunctionAndObject(blk);
       }
-      else if (tokenTypeEnum == TokenTypeEnum::T_NUL) {
-        result.combo(kStrFatalError, kCodeIllegalParm, "Illegal token.");
+      else if (token_type == TokenTypeEnum::T_NUL) {
+        result = Message(kStrFatalError, kCodeIllegalParm, "Illegal token.");
         state = false;
       }
       else OtherToken(blk);
-      blk->forwardToken = blk->currentToken;
+      blk->last = blk->current;
     }
 
     if (state) {
       FinalProcessing(blk);
     }
-    if (!state || !health) {
-      result.combo(kStrFatalError, kCodeBadExpression, errorString);
+    if (!state || !health_) {
+      result = Message(kStrFatalError, kCodeBadExpression, error_string_);
     }
 
-    Kit().CleanupDeque(blk->item).CleanupDeque(blk->symbol);
-    blk->nextToken = Token();
-    blk->forwardToken = Token();
-    blk->currentToken = Token();
+    blk->args.clear();
+    blk->args.shrink_to_fit();
+    blk->symbol.clear();
+    blk->symbol.shrink_to_fit();
+    blk->next = Token();
+    blk->last = Token();
+    blk->current = Token();
     delete blk;
     return result;
   }
 
   void Analyzer::Clear() {
-    Kit().CleanupVector(origin).CleanupVector(instBase);
-    health = false;
-    errorString.clear();
-    index = 0;
+    tokens_.clear();
+    tokens_.shrink_to_fit();
+    action_base_.clear();
+    action_base_.shrink_to_fit();
+    health_ = false;
+    error_string_.clear();
+    index_ = 0;
+  }
+
+  Message Analyzer::Make(string target, size_t index) {
+    vector<string> spilted_string = Scanning(target);
+    Message msg = Tokenizer(spilted_string);
+    this->index_ = index;
+    if (msg.GetCode() >= kCodeSuccess) {
+      msg = Parser();
+    }
+    return msg;
   }
 }
