@@ -34,6 +34,11 @@ namespace kagami {
     bool IsPlaceholder() const {
       return type == AT_HOLDER;
     }
+
+    Argument &SetDomain(string domain) {
+      this->domain = domain;
+      return *this;
+    }
   };
 
   using Instruction = pair<Entry, deque<Argument>>;
