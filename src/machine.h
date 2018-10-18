@@ -83,10 +83,11 @@ namespace kagami {
     using MetaWorkBlock = struct {
       string error_string;
       deque<Object> returning_base;
-      bool error_returning, 
-        error_obj_checking, 
-        error_assembling, 
+      bool error_returning,
+        error_obj_checking,
+        error_assembling,
         is_assert,
+        is_assert_r,
         tail_recursion;
     };
 
@@ -115,7 +116,7 @@ namespace kagami {
     void TailRecursionActions(MachCtlBlk *blk, string &name);
 
     //Meta Work Block
-    Object MakeObject(Argument &arg, MetaWorkBlock *meta_blk);
+    Object MakeObject(Argument &arg, MetaWorkBlock *meta_blk, bool checking = false);
     void ResetMetaWorkBlock(MetaWorkBlock *meta_blk);
     void AssemblingForAutosized(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
     void AssemblingForAutoFilling(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
