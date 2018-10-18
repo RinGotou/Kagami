@@ -10,25 +10,31 @@ namespace kagami {
 
   class Argument {
   public:
+    using Domain = struct {
+      string data;
+      ArgumentType type;
+    };
+
     string data;
     ArgumentType type;
     TokenTypeEnum tokenType;
-    string domain;
+    Domain domain;
 
     Argument() :
       data(),
       type(AT_HOLDER),
       tokenType(T_NUL),
-      domain() {}
+      domain() {
+    
+      domain.type = AT_HOLDER;
+    }
 
     Argument(string data, 
       ArgumentType type, 
-      TokenTypeEnum tokenType,
-      string domain = "") {
+      TokenTypeEnum tokenType) {
       this->data = data;
       this->type = type;
       this->tokenType = tokenType;
-      this->domain = domain;
     }
 
     bool IsPlaceholder() const {
@@ -45,9 +51,10 @@ namespace kagami {
       bool insert_between_object, need_reversing, define_line;
       Token current;
       Token next;
+      Token next_2;
       Token last;
       size_t mode, next_insert_index;
-      string domain;
+      Argument domain;
     };
 
     bool health_;

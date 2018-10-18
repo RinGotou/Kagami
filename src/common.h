@@ -150,7 +150,7 @@ namespace kagami {
     GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
     GT_MORE, GT_LESS, GT_RETURN,
     GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
-    GT_ARRAY, GT_TYPE_ASSERT,
+    GT_ARRAY, GT_TYPE_ASSERT, GT_ASSERT_R,
     GT_CONTINUE, GT_BREAK, 
     GT_CASE, GT_WHEN, 
     GT_NUL
@@ -240,7 +240,8 @@ namespace kagami {
     kStrRetValue = "__ret",
     kStrStopSign = "__stop",
     kStrArray = "__array",
-    kStrTypeAssert = "__type_assert";
+    kStrTypeAssert = "__type_assert",
+    kStrTypeAssertR = "__type_assert_r";
 
   /*Prompt for terminal*/
   const string kStrNormalArrow = ">>>",
