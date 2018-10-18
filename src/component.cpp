@@ -355,9 +355,25 @@ namespace kagami {
     string target = p.Get<string>("id");
     bool result = util::FindInStringGroup(target, obj.GetMethods());
     Message msg;
-    result ?
-      msg = Message(kStrTrue) :
+
+    if (result) {
+      Object *ret = entry::FindObject(target, obj.GetTypeId());
+      if (ret != nullptr) {
+        msg.SetObject(*ret);
+      }
+      else {
+        Object obj_ent;
+        auto ent = entry::Order(target, obj.GetTypeId());
+        if (ent.Good()) {
+          obj_ent.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods, false);
+          msg.SetObject(obj_ent);
+        }
+      }
+    }
+    else {
       msg = IllegalCallMsg("Method not found - " + target);
+    }
+     
     return msg;
   }
 
@@ -419,6 +435,7 @@ namespace kagami {
     AddGenericEntry(Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
     AddGenericEntry(Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
+    AddGenericEntry(Entry(TypeAssert, "object|id", GT_ASSERT_R));
     AddGenericEntry(Entry(ArrayMaker, "item", GT_ARRAY, kCodeAutoSize));
     AddGenericEntry(Entry(BindAndSet, "object|source", GT_BIND, kCodeNormalParm, 0));
 

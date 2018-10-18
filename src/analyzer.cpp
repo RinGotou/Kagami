@@ -268,7 +268,16 @@ namespace kagami {
   }
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
-    auto ent = entry::Order(kStrTypeAssert);
+    Entry ent;
+
+    if (blk->next_2.first != "(" && blk->next_2.first != "[") {
+      ent = entry::Order(kStrTypeAssertR);
+      blk->args.emplace_back(Argument("", AT_RET, T_NUL));
+    }
+    else {
+      ent = entry::Order(kStrTypeAssert);
+    }
+    
     Argument domain_arg = blk->args.back();
 
     deque<Argument> arguments = {
@@ -276,7 +285,7 @@ namespace kagami {
       Argument(blk->next.first,AT_NORMAL,blk->next.second)
     };
     action_base_.emplace_back(Instruction(ent, arguments));
-    blk->domain = blk->last.first;
+    blk->domain = domain_arg;
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
@@ -431,12 +440,13 @@ namespace kagami {
           else {
             blk->args.emplace_back(
               Argument(blk->current.first, AT_OBJECT, T_GENERIC));
-            if (blk->domain != kStrEmpty) {
-              blk->args.back().domain = blk->domain;
-              blk->domain = kStrEmpty;
+            if (blk->domain.type != AT_HOLDER) {
+              blk->args.back().domain.data = blk->domain.data;
+              blk->args.back().domain.type = blk->domain.type;
+              blk->domain = Argument();
             }
             else {
-              blk->args.back().domain = kTypeIdNull;
+              blk->domain = Argument();
             }
           } 
         }
@@ -535,16 +545,19 @@ namespace kagami {
     blk->insert_between_object = false;
     blk->need_reversing = false;
     blk->define_line = false;
-    blk->domain = kStrEmpty;
+    blk->domain = Argument();
 
     for (size_t i = 0; i < size; ++i) {
       if (!health_) break;
       if (!state)  break;
 
       blk->current = tokens_[i];
-      i < size - 1 ?
+      i + 1 < size ?
         blk->next = tokens_[i + 1] :
         blk->next = Token(kStrNull, TokenTypeEnum::T_NUL);
+      i + 2 < size ?
+        blk->next_2 = tokens_[i + 2] :
+        blk->next_2 = Token(kStrNull, TokenTypeEnum::T_NUL);
 
       auto token_type = blk->current.second;
       if (token_type == TokenTypeEnum::T_SYMBOL) {
