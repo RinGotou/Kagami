@@ -44,6 +44,15 @@ namespace kagami {
   }
 #endif
 
+  inline Object GetFunctionObject(string id, string domain) {
+    Object obj;
+    auto ent = entry::Order(id, domain);
+    if (ent.Good()) {
+      obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods, false);
+    }
+    return obj;
+  }
+
   string IndentationAndCommentProc(string target) {
     if (target == "") return "";
     string data;
@@ -420,24 +429,53 @@ namespace kagami {
   }
 
   Object Machine::MakeObject(Argument &arg, MetaWorkBlock *meta_blk) {
-    Object obj;
+    Object obj, obj_domain;
     ObjectPointer ptr;
+    bool state = true;
 
+    switch (arg.domain.type) {
+    case AT_RET:
+      if (!meta_blk->returning_base.empty()) {
+        obj_domain = meta_blk->returning_base.front();
+      }
+      else {
+        meta_blk->error_returning = true;
+        meta_blk->error_string = "Returning base error.";
+        state = false;
+      }
+      break;
+    case AT_OBJECT:
+      ptr = entry::FindObject(arg.domain.data);
+      if (ptr != nullptr) {
+        obj_domain.Ref(*ptr);
+      }
+      else {
+        obj_domain = GetFunctionObject(arg.domain.data, kTypeIdNull);
+        if (obj_domain.Get() == nullptr) {
+          meta_blk->error_obj_checking = true;
+          meta_blk->error_string = "Object is not found - " + arg.data;
+          state = false;
+        }
+      }
+      break;
+    default:
+      break;
+    }
+
+    if (!state) return Object();
+    
     switch (arg.type) {
     case AT_NORMAL:
       obj.Manage(arg.data, arg.tokenType);
       break;
     case AT_OBJECT:
-      ptr = entry::FindObject(arg.data);
+      ptr = entry::FindObject(arg.data,obj_domain.GetTypeId());
       if (ptr != nullptr) {
         obj.Ref(*ptr);
       }
       else {
-        auto ent = entry::Order(arg.data, arg.domain);
-        if (ent.Good()) {
-          obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods, false);
-        }
-        else {
+        obj = GetFunctionObject(arg.data, obj_domain.GetTypeId());
+        if (obj.GetTypeId() == kTypeIdNull) {
           meta_blk->error_obj_checking = true;
           meta_blk->error_string = "Object is not found - " + arg.data;
         }
@@ -446,7 +484,7 @@ namespace kagami {
     case AT_RET:
       if (!meta_blk->returning_base.empty()) {
         obj = meta_blk->returning_base.front();
-        meta_blk->returning_base.pop_front();
+        if(!meta_blk->is_assert) meta_blk->returning_base.pop_front();
       }
       else {
         meta_blk->error_returning = true;
@@ -579,6 +617,8 @@ namespace kagami {
       auto &ent = action_base[idx].first;
       auto &parms = action_base[idx].second;
       is_operator_token = entry::IsOperatorToken(ent.GetTokenEnum());
+      meta_blk->is_assert = (ent.GetTokenEnum() == GT_TYPE_ASSERT ||
+        ent.GetTokenEnum() == GT_ASSERT_R);
 
       (ent.GetId() == name && idx == action_base.size() - 2
         && action_base.back().first.GetTokenEnum() == GT_RETURN) ?

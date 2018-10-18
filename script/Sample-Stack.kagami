@@ -1,0 +1,47 @@
+stack = array(5)
+index = 0
+
+def push(obj)
+  if (index < 5)
+    stack[index] = obj
+    index++
+  else
+    print('Stack is full.')
+  end
+end
+
+def pop()
+  if (index > 0)
+    index--
+    return(stack[index])
+  else
+    print('stack is empty.')
+    return(-1)
+  end
+end
+
+def GetInput()
+  choice = convert(input('(1.Push/2.Pop)> '))
+  return(choice)
+end
+
+def main()
+  obj = 0
+  while(true)
+    choice = GetInput()
+    case(choice)
+    when(1)
+      obj = input('(value)> ')
+      push(obj)
+    when(2)
+      obj = pop()
+      if(obj != -1)
+        print(obj)
+      end
+    end
+    obj = 0
+  end
+end
+
+main()
+  

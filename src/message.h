@@ -81,9 +81,10 @@ namespace kagami {
       return *static_pointer_cast<Object>(object_);
     }
 
-    void SetObject(Object &object) {
+    Message &SetObject(Object &object) {
       object_ = make_shared<Object>(object);
       code_ = kCodeObject;
+      return *this;
     }
 
     void SetRawString(string str) {
