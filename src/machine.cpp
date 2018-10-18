@@ -428,7 +428,7 @@ namespace kagami {
     return true;
   }
 
-  Object Machine::MakeObject(Argument &arg, MetaWorkBlock *meta_blk) {
+  Object Machine::MakeObject(Argument &arg, MetaWorkBlock *meta_blk, bool checking) {
     Object obj, obj_domain;
     ObjectPointer ptr;
     bool state = true;
@@ -484,7 +484,8 @@ namespace kagami {
     case AT_RET:
       if (!meta_blk->returning_base.empty()) {
         obj = meta_blk->returning_base.front();
-        if(!meta_blk->is_assert) meta_blk->returning_base.pop_front();
+        if ((!meta_blk->is_assert && !checking) || meta_blk->is_assert_r) 
+          meta_blk->returning_base.pop_front();
       }
       else {
         meta_blk->error_returning = true;
@@ -503,6 +504,8 @@ namespace kagami {
     meta_blk->error_obj_checking = false;
     meta_blk->tail_recursion = false;
     meta_blk->error_assembling = false;
+    meta_blk->is_assert = false;
+    meta_blk->is_assert_r = false;
   }
 
   void Machine::AssemblingForAutosized(Instruction &inst, 
@@ -619,6 +622,7 @@ namespace kagami {
       is_operator_token = entry::IsOperatorToken(ent.GetTokenEnum());
       meta_blk->is_assert = (ent.GetTokenEnum() == GT_TYPE_ASSERT ||
         ent.GetTokenEnum() == GT_ASSERT_R);
+      meta_blk->is_assert_r = (ent.GetTokenEnum() == GT_ASSERT_R);
 
       (ent.GetId() == name && idx == action_base.size() - 2
         && action_base.back().first.GetTokenEnum() == GT_RETURN) ?
@@ -635,7 +639,7 @@ namespace kagami {
       if (ent.NeedRecheck()) {
         id = ent.GetId();
         ent.IsMethod() ?
-          type_id = MakeObject(parms.back(), meta_blk).GetTypeId() :
+          type_id = MakeObject(parms.back(), meta_blk, true).GetTypeId() :
           type_id = kTypeIdNull;
 
         ent = entry::Order(id, type_id);
