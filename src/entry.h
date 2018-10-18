@@ -191,7 +191,7 @@ namespace kagami {
     ObjectContainer &CreateContainer();
     ObjectContainer &GetRootContainer();
     Object *FindObjectInCurrentContainer(string sign);
-    Object *FindObject(string name);
+    Object *FindObject(string id, string domain = "");
     Object *CreateObject(string sign, Object &object);
 
     string GetTypeId(string sign);

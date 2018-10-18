@@ -63,7 +63,12 @@ namespace kagami {
 
   class Machine {
     using MachCtlBlk = struct {
-      bool s_continue, s_break, last_index, tail_recursion, tail_call, runtime_error;
+      bool s_continue, 
+        s_break, 
+        last_index, 
+        tail_recursion, 
+        tail_call, 
+        runtime_error;
       size_t current;
       size_t def_start;
       size_t mode;
@@ -81,6 +86,7 @@ namespace kagami {
       bool error_returning, 
         error_obj_checking, 
         error_assembling, 
+        is_assert,
         tail_recursion;
     };
 
@@ -190,4 +196,5 @@ namespace kagami {
   std::string ws2s(const std::wstring &s);
   Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm);
   bool IsStringObject(Object &obj);
+  Object GetFunctionObject(string id, string domain);
 }

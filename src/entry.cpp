@@ -41,18 +41,19 @@ namespace kagami {
       return base;
     }
 
-    Object *FindObject(string sign) {
+    Object *FindObject(string id, string domain) {
       Object *object = nullptr;
       size_t count = GetContainerPool().size();
       list<ObjectContainer> &base = GetContainerPool();
 
       while (!base.empty() && count > 0) {
-        object = base[count - 1].Find(sign);
+        object = base[count - 1].Find(id);
         if (object != nullptr) {
           break;
         }
         count--;
       }
+
       return object;
     }
 
@@ -160,7 +161,8 @@ namespace kagami {
         T(kStrContinue,GT_CONTINUE),
         T(kStrBreak,GT_BREAK),
         T(kStrCase,GT_CASE),
-        T(kStrWhen,GT_WHEN)
+        T(kStrWhen,GT_WHEN),
+        T(kStrTypeAssertR,GT_ASSERT_R)
       };
       return base;
     }
