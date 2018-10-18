@@ -35,6 +35,8 @@ namespace kagami {
       this->data = data;
       this->type = type;
       this->tokenType = tokenType;
+      this->domain.data = "";
+      this->domain.type = AT_HOLDER;
     }
 
     bool IsPlaceholder() const {
@@ -48,7 +50,7 @@ namespace kagami {
     using AnalyzerWorkBlock = struct {
       deque<Argument> args;
       deque<Entry> symbol;
-      bool insert_between_object, need_reversing, define_line;
+      bool insert_between_object, need_reversing, define_line, assert_r;
       Token current;
       Token next;
       Token next_2;
