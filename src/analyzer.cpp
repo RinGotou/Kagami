@@ -251,7 +251,7 @@ namespace kagami {
     auto flag = ent.GetFlag();
 
     if (flag == kFlagMethod || ent.IsMethod()) {
-      arguments.emplace_back(Argument(blk->args.back().data, AT_OBJECT, T_GENERIC));
+      arguments.emplace_back(blk->args.back());
       blk->args.pop_back();
     }
 
@@ -269,21 +269,21 @@ namespace kagami {
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
     Entry ent;
+    Argument domain_arg = blk->args.back();
 
     if (blk->next_2.first != "(" && blk->next_2.first != "[") {
       ent = entry::Order(kStrTypeAssertR);
-      blk->args.emplace_back(Argument("", AT_RET, T_NUL));
+      blk->assert_r = true;
     }
     else {
       ent = entry::Order(kStrTypeAssert);
     }
     
-    Argument domain_arg = blk->args.back();
-
     deque<Argument> arguments = {
       domain_arg,
       Argument(blk->next.first,AT_NORMAL,blk->next.second)
     };
+
     action_base_.emplace_back(Instruction(ent, arguments));
     blk->domain = domain_arg;
   }
@@ -438,15 +438,21 @@ namespace kagami {
             error_string_ = "Generic token can't be a object.";
           }
           else {
-            blk->args.emplace_back(
-              Argument(blk->current.first, AT_OBJECT, T_GENERIC));
-            if (blk->domain.type != AT_HOLDER) {
-              blk->args.back().domain.data = blk->domain.data;
-              blk->args.back().domain.type = blk->domain.type;
+            if (blk->assert_r) {
               blk->domain = Argument();
+              blk->assert_r = false;
             }
             else {
-              blk->domain = Argument();
+              blk->args.emplace_back(
+                Argument(blk->current.first, AT_OBJECT, T_GENERIC));
+              if (blk->domain.type != AT_HOLDER) {
+                blk->args.back().domain.data = blk->domain.data;
+                blk->args.back().domain.type = blk->domain.type;
+                blk->domain = Argument();
+              }
+              else {
+                blk->domain = Argument();
+              }
             }
           } 
         }
@@ -545,6 +551,7 @@ namespace kagami {
     blk->insert_between_object = false;
     blk->need_reversing = false;
     blk->define_line = false;
+    blk->assert_r = false;
     blk->domain = Argument();
 
     for (size_t i = 0; i < size; ++i) {

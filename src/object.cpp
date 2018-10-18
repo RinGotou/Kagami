@@ -27,6 +27,7 @@ namespace kagami {
       ro_ = object.ro_;
       ref_ = object.ref_;
       constructor_ = object.constructor_;
+      destroy_me_ = object.destroy_me_;
     };
 
     if (force) {
