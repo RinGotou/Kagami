@@ -198,4 +198,6 @@ namespace kagami {
   Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm);
   bool IsStringObject(Object &obj);
   Object GetFunctionObject(string id, string domain);
+  shared_ptr<void> FakeCopy(shared_ptr<void> target);
+  shared_ptr<void> NullCopy(shared_ptr<void> target);
 }

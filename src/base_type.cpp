@@ -2,18 +2,6 @@
 
 
 namespace kagami {
-  //components
-
-  //Common
-  shared_ptr<void> FakeCopy(shared_ptr<void> target) {
-    return target;
-  }
-
-  //Null
-  shared_ptr<void> NullCopy(shared_ptr<void> target) {
-    return make_shared<int>(0);
-  }
-
   //Array
   shared_ptr<void> ArrayCopy(shared_ptr<void> target) {
     const auto ptr = static_pointer_cast<vector<Object>>(target);
