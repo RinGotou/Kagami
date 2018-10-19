@@ -1,6 +1,16 @@
 #include "machine.h"
 
 namespace kagami {
+  //Common
+  shared_ptr<void> FakeCopy(shared_ptr<void> target) {
+    return target;
+  }
+
+  //Null
+  shared_ptr<void> NullCopy(shared_ptr<void> target) {
+    return make_shared<int>(0);
+  }
+
 #if defined(_WIN32) && defined(_MSC_VER)
   //from MSDN
   std::wstring s2ws(const std::string& s) {

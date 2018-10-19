@@ -1,9 +1,6 @@
 #pragma once
 #include "machine.h"
-#if not defined(_DISABLE_SDL_)
-#include <SDL.h>
-#include <SDL_image.h>
-#endif
+
 
 namespace kagami {
 #if not defined(_DISABLE_SDL_)
@@ -14,28 +11,27 @@ namespace kagami {
   const string kTypeIdSDLTexture = "SDLTexture";
 
   class Window {
-  private:
-    SDL_Window *window_;
-    SDL_Renderer *render_;
   public:
-    Window(SDL_Window *window, SDL_Renderer *render) {
-      window_ = window;
-      render_ = render;
-    }
-    SDL_Window *GetWindow() {
-      return window_;
-    }
-    SDL_Renderer *GetRenderer() {
-      return render_;
+    SDL_Window *window;
+    SDL_Renderer *render;
+
+    ~Window() {
+      SDL_DestroyRenderer(render);
+      SDL_DestroyWindow(window);
     }
   };
 
-  using SDLWindowPos = unsigned int;
-  using SDLWindowPosArg = pair<string, SDLWindowPos>;
-
-  struct SDLTexture {
+  class Texture {
+  public:
     SDL_Texture *texture;
+
+    ~Texture() {
+      SDL_DestroyTexture(texture);
+    }
   };
+
+  using WindowBase = shared_ptr<Window>;
+  using TextureBase = shared_ptr<Texture>;
 
 #endif
 }

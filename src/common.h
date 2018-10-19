@@ -37,6 +37,11 @@
 #include <dlfcn.h>
 #endif
 
+#if not defined(_DISABLE_SDL_)
+#include <SDL.h>
+#include <SDL_image.h>
+#endif
+
 namespace kagami {
   using std::string;
   using std::pair;

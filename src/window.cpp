@@ -2,8 +2,7 @@
 
 namespace kagami {
 #if not defined(_DISABLE_SDL_)
-  /* base argument type */
-  
+
   /* Under Construction */
   Message SDLInit(ObjectMap &p) {
     int result = SDL_Init(SDL_INIT_EVERYTHING);
@@ -17,76 +16,51 @@ namespace kagami {
     return msg;
   }
 
-  Message NewWindow(ObjectMap &p) {
-    int width = stoi(p.Get<string>("width"));
-    int height = stoi(p.Get<string>("height"));
-    string title = p.Get<string>("title");
-    auto x = p.Get<SDLWindowPos>("x");
-    auto y = p.Get<SDLWindowPos>("y");
-    Message msg;
-    Object ret;
-
-    auto window = SDL_CreateWindow(title.c_str(), x, y, 
-      width, height, SDL_WINDOW_SHOWN);
-    auto render = SDL_CreateRenderer(window, -1, 
-      SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-
-    Window winbase(window, render);
-    ret.Set(make_shared<Window>(winbase), kTypeIdSDLWindow, "", false);
-    msg.SetObject(ret);
-
-    return msg;
-  }
-
-  Message WindowRenderClear(ObjectMap &p) {
-    Window &window = p.Get<Window>(kStrObject);
-    SDL_RenderClear(window.GetRenderer());
+  Message SDLQuit(ObjectMap &p) {
+    SDL_Quit();
     return Message();
   }
 
-  Message WindowPos(ObjectMap &p) {
-    static map<string, SDLWindowPos> result_base = {
-      SDLWindowPosArg("'undefined'", SDL_WINDOWPOS_UNDEFINED),
-      SDLWindowPosArg("'centered'", SDL_WINDOWPOS_CENTERED)
-    };
-
-    string pos = p.Get<string>("pos");
-    Message msg;
-
-    auto it = result_base.find(pos);
-    if (it != result_base.end()) {
-      Object ret;
-      ret.Set(make_shared<SDLWindowPos>(it->second), kTypeIdSDLWindowPos, "", false);
-      msg.SetObject(ret);
-    }
-    else {
-      msg = Message(kStrFatalError, kCodeIllegalParm, "Unknown Argument - " + pos + ".");
-    }
-
-    return msg;
-  }
-
-  Message NewTextureFromBMP(ObjectMap &p) {
-    string path = p.Get<string>("image_path");
-    Window &window = p.Get<Window>("window");
-    Message msg;
-    SDLTexture texture_base;
+  Message SDLCreateWindow(ObjectMap &p) {
+    int w = stoi(p.Get<string>("width"));
+    int h = stoi(p.Get<string>("height"));
+    string title = p.Get<string>("title");
     Object ret;
+    WindowBase win_base = make_shared<Window>();
+    win_base->window = SDL_CreateWindow(title.c_str(),
+      SDL_WINDOWPOS_CENTERED,
+      SDL_WINDOWPOS_CENTERED,
+      w, h, SDL_WINDOW_SHOWN);
+    win_base->render = SDL_CreateRenderer(win_base->window, -1,
+      SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    auto image = SDL_LoadBMP(path.c_str());
-    if (image != nullptr) {
-      texture_base.texture =
-        SDL_CreateTextureFromSurface(window.GetRenderer(), image);
-      SDL_FreeSurface(image);
+    ret.Set(win_base, kTypeIdSDLWindow, kSDLWindowMethods, false);
+    return Message().SetObject(ret);
+  }
+  
+  Message SDLCreateTextureFormBMP(ObjectMap &p) {
+    string image_path = p.Get<string>("path");
+    Window &win = p.Get<Window>("win");
+    Object ret;
+#if defined(_ENABLE_DEBUGGING_)
+    image_path = "C:\\workspace\\test.bmp";
+#endif
+    TextureBase texture_base = make_shared<Texture>();
+    SDL_Surface *image = SDL_LoadBMP(image_path.c_str());
+    texture_base->texture = SDL_CreateTextureFromSurface(win.render, image);
+    SDL_FreeSurface(image);
+    ret.Set(texture_base, kTypeIdSDLTexture, "", false);
+    return Message().SetObject(ret);
+  }
+ 
 
-      ret.Set(make_shared<SDLTexture>(texture_base), kTypeIdSDLTexture, kSDLTexturemethods, false);
-      msg.SetObject(ret);
-    }
-    else {
-      msg = Message(kStrFatalError, kCodeIllegalParm, "Bad argument - " + path);
-    }
-
-    return msg;
+  Message SDLTestPresent(ObjectMap &p) {
+    Texture &te = p.Get<Texture>("texture");
+    Window &win = p.Get<Window>("win");
+    SDL_RenderClear(win.render);
+    SDL_RenderCopy(win.render, te.texture, NULL, NULL);
+    SDL_RenderPresent(win.render);
+    return Message();
   }
 
   Message SDLDelay(ObjectMap &p) {
@@ -95,49 +69,21 @@ namespace kagami {
     return Message();
   }
 
-  /* There is testbench for SDL2.You can just ignore them or disable them. */
-  Message SDLTest(ObjectMap &p) {
-    Message msg;
-    int width = stoi(p.Get<string>("width"));
-    int height = stoi(p.Get<string>("height"));
-    string title = p.Get<string>("title");
-    string path = p.Get<string>("path");
-
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-      msg = Message(kStrFalse);
-    }
-    else {
-
-      auto window = SDL_CreateWindow(title.c_str(), 
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-        width, height, SDL_WINDOW_SHOWN);
-      auto render = SDL_CreateRenderer(window, -1, 
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-      auto image = SDL_LoadBMP(path.c_str());
-      
-      auto texture = SDL_CreateTextureFromSurface(render, image);
-      SDL_FreeSurface(image);
-
-      SDL_RenderClear(render);
-      SDL_RenderCopy(render, texture, nullptr, nullptr);
-      SDL_RenderPresent(render);
-      SDL_Delay(10000);
-      
-      SDL_DestroyTexture(texture);
-      SDL_DestroyRenderer(render);
-      SDL_DestroyWindow(window);
-      SDL_Quit();
-
-    }
-    return msg;
-  }
-
-  void SetupSDLType() {
-
-  }
-
   void LoadSDLStuff() {
-    entry::AddEntry(Entry(SDLTest, kCodeNormalParm, "width|height|title|path", "SDLTestLoad"));
+    using entry::AddEntry;
+    using type::AddTemplate;
+
+    /* For test only */
+    AddTemplate(kTypeIdSDLWindow, ObjectPlanner(FakeCopy, ""));
+    AddEntry(Entry(SDLCreateWindow, kCodeNormalParm, "width|height|title", "window"));
+
+    AddTemplate(kTypeIdSDLTexture, ObjectPlanner(FakeCopy, ""));
+    AddEntry(Entry(SDLCreateTextureFormBMP, kCodeNormalParm, "win|path", "LoadBMP"));
+
+    AddEntry(Entry(SDLInit, kCodeNormalParm, "", "SDLInit"));
+    AddEntry(Entry(SDLQuit, kCodeNormalParm, "", "SDLQuit"));
+    AddEntry(Entry(SDLDelay, kCodeNormalParm, "time", "SDLDelay"));
+    AddEntry(Entry(SDLTestPresent, kCodeNormalParm, "texture|win", "Present"));
   }
 #endif
 }
