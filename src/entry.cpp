@@ -14,7 +14,7 @@ namespace kagami {
     if (is_placeholder_) return Message();
     Message result;
     if (is_user_func_) {
-      obj_map[kStrUserFunc] = Object().Manage(id_, T_GENERIC);
+      obj_map[kStrUserFunc] = Object(id_, T_GENERIC);
     }
     if (Good()) {
       result = activity_(obj_map);

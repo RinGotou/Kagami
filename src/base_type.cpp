@@ -45,11 +45,10 @@ namespace kagami {
         .set_ro(false)));
     }
 
-    result.SetObject(Object()
-      .SetConstructorFlag()
-      .Set(make_shared<ArrayBase>(base), kTypeIdArrayBase)
-      .SetMethods(kArrayBaseMethods)
-      .set_ro(false));
+    result.SetObject(Object(make_shared<ArrayBase>(base), 
+      kTypeIdArrayBase,
+      kArrayBaseMethods,false)
+      .SetConstructorFlag());
     return result;
   }
 
@@ -95,6 +94,7 @@ namespace kagami {
   //RawString
   Message RawStringGetElement(ObjectMap &p) {
     OBJECT_ASSERT(p, "index", kTypeIdRawString);
+
     Message result;
     int idx = stoi(p.Get<string>("index"));
 
@@ -332,7 +332,7 @@ namespace kagami {
     auto is_method = (ent.GetFlag() == kFlagMethod);
 
     while (idx < int(ent_args.size() - 1)) {
-      target_map.Input(ent_args[idx], p["arg" + to_string(idx)]);
+      target_map.Input(ent_args[idx], p("arg", idx));
       idx += 1;
     }
 
@@ -346,7 +346,7 @@ namespace kagami {
       idx += 1;
     }
 
-    target_map.Input(kStrSize, Object().Manage(to_string(count), T_INTEGER));
+    target_map.Input(kStrVaSize, Object(to_string(count), T_INTEGER));
     if (is_method) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
     return true;
   }
@@ -391,7 +391,7 @@ namespace kagami {
 
   Message FunctionCall(ObjectMap &p) {
     auto &ent = p.Get<Entry>(kStrObject);
-    int size = stoi(p.Get<string>(kStrSize));
+    int size = stoi(p.Get<string>(kStrVaSize));
     int count = 0;
     ObjectMap target_map;
     bool state;

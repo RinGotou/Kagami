@@ -362,4 +362,14 @@ namespace kagami {
   Message CodeMaker(ObjectMap &p) {
     return Message(kStrEmpty, code, kStrEmpty);
   }
+
+  template <OperatorCode op_code,GenericTokenEnum gen_token,int level>
+  Entry LogicBinaryOperator() {
+    return Entry(LogicOperation<op_code>, "first|second", gen_token, kCodeNormalParm, level);
+  }
+
+  template <OperatorCode op_code, GenericTokenEnum gen_token, int level>
+  Entry BinaryOperator() {
+    return Entry(CalcOperation<op_code>, "first|second", gen_token, kCodeNormalParm, level);
+  }
 }
