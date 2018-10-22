@@ -1,14 +1,18 @@
 #include "machine.h"
 
 namespace kagami {
-  //Common
   shared_ptr<void> FakeCopy(shared_ptr<void> target) {
     return target;
   }
 
-  //Null
   shared_ptr<void> NullCopy(shared_ptr<void> target) {
     return make_shared<int>(0);
+  }
+
+  string RealString(const string &src) {
+    string result = src;
+    if (util::IsString(result)) result = util::GetRawString(result);
+    return result;
   }
 
 #if defined(_WIN32) && defined(_MSC_VER)
