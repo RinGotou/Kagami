@@ -50,6 +50,22 @@ namespace kagami {
       token_type_ = TokenTypeEnum::T_NUL;
     }
 
+    Object(shared_ptr<void> ptr, 
+      string type_id, 
+      string methods, 
+      bool ro) :
+      ptr_(ptr), 
+      type_id_(type_id), 
+      methods_(methods), 
+      domain_(), 
+      ro_(ro),
+      ref_(false), 
+      constructor_(false), 
+      destroy_me_(false) {
+
+      token_type_ = TokenTypeEnum::T_NUL;
+    }
+
     Object &AppendMethod(string method) {
       if (ref_) return GetTargetObject()->AppendMethod(method);
       methods_.append("|" + method);

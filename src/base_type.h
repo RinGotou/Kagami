@@ -2,9 +2,7 @@
 #include "machine.h"
 
 namespace kagami {
-
   using ArrayBase = vector<Object>;
-
   template <class StringType>
   Message GetStringFamilySize(ObjectMap &p) {
     StringType &str = p.Get<StringType>(kStrObject);
@@ -20,16 +18,14 @@ namespace kagami {
     int size = stoi(p.Get<string>("size"));
     Message msg;
 
-    if (start < 0 || size > int(str.size()) - start) {
-      msg = Message(kStrFatalError, kCodeIllegalParm, "Illegal index or size.");
-    }
-    else {
-      Object ret;
-      StringType output = str.substr(start, size);
+    CONDITION_ASSERT((start >= 0 && size <= int(str.size()) - start),
+      "Illegal index or size.");
 
-      ret.Set(make_shared<StringType>(output), type_id, methods, false);
-      msg.SetObject(ret);
-    }
+    Object ret;
+    StringType output = str.substr(start, size);
+
+    ret.Set(make_shared<StringType>(output), type_id, methods, false);
+    msg.SetObject(ret);
 
     return msg;
   }
@@ -43,17 +39,14 @@ namespace kagami {
     int idx = stoi(p.Get<string>("index"));
     Message msg;
 
-    if (idx > size && idx >= 0) {
-      shared_ptr<StringType> output = make_shared<StringType>();
-      Object ret;
+    CONDITION_ASSERT((idx > size && idx >= 0), "Index out of range.");
 
-      output->append(1, str[idx]);
-      ret.Set(output, type_id, methods, false);
-      msg.SetObject(ret);
-    }
-    else {
-      msg = Message(kStrFatalError, kCodeIllegalParm, "Index out of range.");
-    }
+    shared_ptr<StringType> output = make_shared<StringType>();
+    Object ret;
+
+    output->append(1, str[idx]);
+    ret.Set(output, type_id, methods, false);
+    msg.SetObject(ret);
 
     return msg;
   }

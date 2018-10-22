@@ -9,7 +9,15 @@ namespace kagami {
     return make_shared<vector<Object>>(std::move(base));
   }
 
+  inline bool IsStringFamily(Object &obj) {
+    return obj.GetTypeId() == kTypeIdRawString ||
+      obj.GetTypeId() == kTypeIdString ||
+      obj.GetTypeId() == kTypeIdWideString;
+  }
+
   Message ArrayConstructor(ObjectMap &p) {
+    OBJECT_ASSERT(p, "size", kTypeIdRawString);
+
     Message result;
     ArrayBase base;
     auto size = stoi(p.Get<string>("size"));
@@ -19,11 +27,8 @@ namespace kagami {
       obj.Copy(p["init_value"]);
       obj.set_ro(false);
     }
-    
-    if (size <= 0) {
-      result = Message(kStrFatalError, kCodeIllegalParm, "Illegal array size.");
-      return result;
-    }
+
+    CONDITION_ASSERT(size > 0, "Illegal array size.");
 
     const auto type_id = obj.GetTypeId();
     const auto methods = obj.GetMethods();
@@ -49,20 +54,20 @@ namespace kagami {
   }
 
   Message ArrayGetElement(ObjectMap &p) {
+    OBJECT_ASSERT(p, "index", kTypeIdRawString);
+
     ArrayBase &base = p.Get<ArrayBase>(kStrObject);
     int idx = stoi(p.Get<string>("index"));
     int size = int(base.size());
     
     Message msg;
 
-    if (idx < size) {
-      Object temp;
-      temp.Ref(base[idx]);
-      msg.SetObject(temp);
-    }
-    else {
-      msg = Message(kStrFatalError, kCodeOverflow, "Subscript is out of range");
-    }
+    CONDITION_ASSERT(idx < size, "Subscript is out of range.");
+
+    Object temp;
+    temp.Ref(base[idx]);
+    msg.SetObject(temp);
+
     return msg;
   }
 
@@ -75,54 +80,38 @@ namespace kagami {
     Message result;
     ObjectMap obj_map;
 
-    if (p.CheckTypeId(kStrObject, kTypeIdArrayBase)) {
-      auto &base = p.Get<ArrayBase>(kStrObject);
-      auto ent = entry::Order("print", kTypeIdNull, -1);
+    auto &base = p.Get<ArrayBase>(kStrObject);
+    auto ent = entry::Order("print", kTypeIdNull, -1);
 
-      for (auto &unit : base) {
-        obj_map.Input(kStrObject, unit);
-        result = ent.Start(obj_map);
-        obj_map.clear();
-      }
-
+    for (auto &unit : base) {
+      obj_map.Input(kStrObject, unit);
+      result = ent.Start(obj_map);
+      obj_map.clear();
     }
+
     return result;
   }
   
   //RawString
   Message RawStringGetElement(ObjectMap &p) {
+    OBJECT_ASSERT(p, "index", kTypeIdRawString);
     Message result;
-    Object temp;
-    size_t size;
     int idx = stoi(p.Get<string>("index"));
 
     const auto makeStrToken = [](char target)->string {
       return string().append("'").append(1, target).append("'");
     };
 
-    string data = p.Get<string>(kStrObject);
+    string data = RealString(p.Get<string>(kStrObject));
+    size_t size = data.size();
 
-    if (util::IsString(data)) {
-      data = util::GetRawString(data);
-    }
-    size = data.size();
-    if (idx <= int(size - 1)) {
-      result = Message(makeStrToken(data.at(idx)));
-    }
-    else {
-      result = Message(kStrFatalError, kCodeOverflow, "Subscript is out of range");
-    }
-    
-    return result;
+    CONDITION_ASSERT(idx < int(size - 1), "Subscript is out of range.");
+
+    return Message(makeStrToken(data.at(idx)));
   }
 
   Message RawStringGetSize(ObjectMap &p) {
-    auto str = p.Get<string>(kStrObject);
-
-    util::IsString(str) ?
-      str = util::GetRawString(str) :
-      str = str;
-
+    auto str = RealString(p.Get<string>(kStrObject));
     return Message(to_string(str.size()));
   }
 
@@ -131,12 +120,7 @@ namespace kagami {
     string msg;
     bool doNotWrap = (p.Search("not_wrap"));
     
-    auto data = p.Get<string>(kStrObject);
-
-    util::IsString(data) ? 
-      data = util::GetRawString(data) : 
-      data = data;
-
+    auto data = RealString(p.Get<string>(kStrObject));
     std::cout << data;
     if (!doNotWrap) std::cout << std::endl;
     
@@ -146,20 +130,18 @@ namespace kagami {
   //String
   Message StringConstructor(ObjectMap &p) {
     Object &obj = p["raw_string"];
-    string type_id = obj.GetTypeId();
     Object base;
-    if (type_id != kTypeIdRawString 
-      && type_id != kTypeIdString
-      && type_id != kTypeIdWideString) {
-      return Message(kStrFatalError, kCodeIllegalParm, "String constructor can't accept this object.");
-    }
+
+    CONDITION_ASSERT(IsStringFamily(obj),
+      "String constructor can't accept this object.");
+
     if (obj.GetTypeId() == kTypeIdWideString) {
       wstring wstr = GetObjectStuff<wstring>(obj);
       string output = ws2s(wstr);
-      base.Set(make_shared<string>(output), kTypeIdString)
-        .SetConstructorFlag()
-        .SetMethods(kStringMethods)
-        .set_ro(false);
+
+      base.Set(make_shared<string>(output),
+        kTypeIdString, kStringMethods, false)
+        .SetConstructorFlag();
     }
     else if (obj.GetTypeId() == kTypeIdString) {
       base.Set(obj.Get(), kTypeIdString)
@@ -168,18 +150,11 @@ namespace kagami {
         .set_ro(false);
     }
     else {
-      string origin = GetObjectStuff<string>(obj);
-      string output;
-      if (util::IsString(origin)) {
-        output = util::GetRawString(origin);
-      }
-      else {
-        output = origin;
-      }
-      base.Set(make_shared<string>(output), kTypeIdString)
-        .SetConstructorFlag()
-        .SetMethods(kStringMethods)
-        .set_ro(false);
+      string output = RealString(GetObjectStuff<string>(obj));
+
+      base.Set(make_shared<string>(output), kTypeIdString, 
+        kStringMethods, false)
+        .SetConstructorFlag();
     }
 
     Message msg;
@@ -189,15 +164,17 @@ namespace kagami {
 
   //InStream
   Message InStreamConsturctor(ObjectMap &p) {
-    string path = util::GetRawString(p.Get<string>("path"));
+    CONDITION_ASSERT(IsStringObject(p["path"]), 
+      "Illegal path.");
+
+    string path = RealString(p.Get<string>("path"));
+
     shared_ptr<ifstream> ifs = 
       make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
     Message msg;
     Object obj;
 
-    obj.Set(ifs, kTypeIdInStream)
-      .SetMethods(kInStreamMethods)
-      .set_ro(false);
+    obj.Set(ifs, kTypeIdInStream, kInStreamMethods, false);
     msg.SetObject(obj);
 
     return msg;
@@ -207,15 +184,12 @@ namespace kagami {
     ifstream &ifs = p.Get<ifstream>(kStrObject);
     Message msg;
 
-    if (ifs.eof()) {
-      msg = Message("");
-    }
+    if (ifs.eof()) return Message("");
 
     if (ifs.good()) {
       string str;
       std::getline(ifs, str);
-      Object obj;
-      obj.Set(make_shared<string>(str), kTypeIdString).SetMethods(kStringMethods).set_ro(false);
+      Object obj(make_shared<string>(str), kTypeIdString,kStringMethods,false);
       msg.SetObject(obj);
     }
     else {
@@ -237,21 +211,28 @@ namespace kagami {
 
   //OutStream
   Message OutStreamConstructor(ObjectMap &p) {
-    string path = p.Get<string>("path");
-    string mode = p.Get<string>("mode");
+    CONDITION_ASSERT(IsStringObject(p["path"]), 
+      "Illegal path.");
+    CONDITION_ASSERT(IsStringObject(p["mode"]), 
+      "Illegal mode option.");
+
+    string path = RealString(p.Get<string>("path"));
+    string mode = RealString(p.Get<string>("mode"));
 
     Message msg;
     shared_ptr<ofstream> ofs;
-    bool append = false;
-    bool truncate = false;
-    if (mode == "append") append = true;
-    else if (mode == "truncate") truncate = true;
+    bool append = (mode == "append");
+    bool truncate = (mode == "truncate");
+
     if (!append && truncate) {
-      ofs = make_shared<ofstream>(ofstream(path.c_str(), std::ios::out | std::ios::trunc));
+      ofs = make_shared<ofstream>(ofstream(path.c_str(), 
+        std::ios::out | std::ios::trunc));
     }
     else {
-      ofs = make_shared<ofstream>(ofstream(path.c_str(), std::ios::out | std::ios::app));
+      ofs = make_shared<ofstream>(ofstream(path.c_str(), 
+        std::ios::out | std::ios::app));
     }
+
     Object obj;
     obj.Set(ofs, kTypeIdOutStream)
       .SetMethods(kOutStreamMethods)
@@ -262,19 +243,12 @@ namespace kagami {
 
   Message OutStreamWrite(ObjectMap &p) {
     ofstream &ofs = p.Get<ofstream>(kStrObject);
-    Message msg;
+    Message msg = Message(kStrTrue);
 
-    if (!ofs.good()) {
-      return Message(kStrFalse);
-    }
+    ASSERT_RETURN(!ofs.good(), kStrFalse);
 
     if (p.CheckTypeId("str",kTypeIdRawString)) {
-      string output;
-      string &origin = p.Get<string>("str");
-
-      if (util::IsString(origin)) {
-        output = util::GetRawString(origin);
-      }
+      string output = RealString(p.Get<string>("str"));
       ofs << output;
     }
     else if (p.CheckTypeId("str",kTypeIdString)) {
@@ -284,24 +258,22 @@ namespace kagami {
     else {
       msg = Message(kStrFalse);
     }
+
     return msg;
   }
 
 
   //regex
   Message RegexConstructor(ObjectMap &p) {
-    string pattern_string = p.Get<string>("regex");
+    CONDITION_ASSERT(IsStringObject(p["regex"]), 
+      "Illegal pattern string.");
 
-    util::IsString(pattern_string) ? 
-      pattern_string = util::GetRawString(pattern_string): 
-      pattern_string = pattern_string;
+    string pattern_string = RealString(p.Get<string>("regex"));
 
     shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
     Object ret;
 
-    ret.Set(reg, kTypeIdRegex)
-      .SetMethods(kRegexMethods)
-      .set_ro(false);
+    ret.Set(reg, kTypeIdRegex, kRegexMethods, false);
 
     Message msg;
     msg.SetObject(ret);
@@ -309,14 +281,16 @@ namespace kagami {
   }
 
   Message RegexMatch(ObjectMap &p) {
-    string str = p.Get<string>("str");
+    CONDITION_ASSERT(IsStringObject(p["str"]), 
+      "Illegal target string.");
+
+    string str = RealString(p.Get<string>("str"));
     auto &pat = p.Get<regex>(kStrObject);
-
-    util::IsString(str) ? str = util::GetRawString(str) : str = str;
-
     string state;
-
-    regex_match(str, pat) ? state = kStrTrue : state = kStrFalse;
+   
+    regex_match(str, pat) ? 
+      state = kStrTrue : 
+      state = kStrFalse;
 
     return Message(state);
   }
@@ -324,18 +298,12 @@ namespace kagami {
   //wstring
   Message WideStringContructor(ObjectMap &p) {
     Object obj = p["raw_string"];
-
-    if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdString) {
-      return Message(kStrFatalError, kCodeIllegalParm, "String constructor can't accept this object.");
-    }
-
     Object base;
-    string origin = GetObjectStuff<string>(obj);
-    string output;
 
-    if (util::IsString(origin)) output = origin.substr(1, origin.size() - 2);
-    else output = origin;
+    CONDITION_ASSERT(IsStringObject(obj), 
+      "String constructor can't accept this object.");
 
+    string output = RealString(GetObjectStuff<string>(obj));
     wstring wstr = s2ws(output);
 
     base.Set(make_shared<wstring>(wstr), kTypeIdWideString)

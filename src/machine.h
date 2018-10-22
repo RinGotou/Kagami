@@ -3,6 +3,17 @@
 #include <fstream>
 #include "trace.h"
 
+#define OBJECT_ASSERT(MAP,ITEM,TYPE)               \
+  if (!MAP.CheckTypeId(ITEM,TYPE))                 \
+    return Message(kStrFatalError,kCodeIllegalParm,\
+    "Unexpected object type - " + TYPE + ".");
+
+#define CONDITION_ASSERT(STATE,MESS)               \
+  if(!(STATE)) return Message(kStrFatalError,kCodeIllegalParm,MESS);
+
+#define ASSERT_RETURN(STATE,VALUE)                 \
+  if(!(STATE)) return Message(VALUE);
+
 namespace kagami {
   template <class T>
   T &GetObjectStuff(Object &obj) {
@@ -200,4 +211,6 @@ namespace kagami {
   Object GetFunctionObject(string id, string domain);
   shared_ptr<void> FakeCopy(shared_ptr<void> target);
   shared_ptr<void> NullCopy(shared_ptr<void> target);
+  string RealString(const string &src);
+  bool IsStringFamily(Object &obj);
 }
