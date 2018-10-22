@@ -552,7 +552,7 @@ namespace kagami {
       idx += 1;
     }
 
-    obj_map.Input(kStrSize, Object().Manage(to_string(count), T_INTEGER));
+    obj_map.Input(kStrVaSize, Object(to_string(count), T_INTEGER));
 
     if(is_method) obj_map.Input(kStrObject, MakeObject(parms.back(), meta_blk));
   }

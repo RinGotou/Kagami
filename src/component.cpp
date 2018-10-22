@@ -55,6 +55,12 @@ namespace kagami {
     return Message(kStrFatalError, kCodeIllegalSymbol, str);
   }
 
+  inline void CopyObject(Object &dest, Object &src) {
+    dest.Set(type::GetObjectCopy(src), src.GetTypeId(),
+      src.GetMethods(), false)
+      .SetTokenType(src.GetTokenType());
+  }
+
   inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm) {
     Message msg;
     auto ent = entry::Order(id, type_id);
@@ -76,7 +82,6 @@ namespace kagami {
         count++;
       }
     }
-
     string def_head_string = util::CombineStringVector(def_head);
     return Message(kStrEmpty, kCodeDefineSign, def_head_string);
   }
@@ -135,79 +140,65 @@ namespace kagami {
   }
 
   Message GetRawStringType(ObjectMap &p) {
+    OBJECT_ASSERT(p, "object", kTypeIdRawString);
+
     string result;
-    if (p.CheckTypeId("object",kTypeIdRawString)) {
-      string str = p.Get<string>("object");
+    string str = RealString(p.Get<string>("object"));
 
-      util::IsString(str) ? 
-        str = util::GetRawString(str) : 
-        str = str;
+    switch (util::GetTokenType(str)) {
+    case T_BOOLEAN:result = "'boolean'"; break;
+    case T_GENERIC:result = "'generic'"; break;
+    case T_INTEGER:result = "'integer'"; break;
+    case T_FLOAT:result = "'float'"; break;
+    case T_SYMBOL:result = "'symbol'"; break;
+    case T_BLANK:result = "'blank'"; break;
+    case T_STRING:result = "'string'"; break;
+    case T_NUL:result = "'null'"; break;
+    default:result = "'null'"; break;
+    }
 
-      switch (util::GetTokenType(str)) {
-      case T_BOOLEAN:result = "'boolean'"; break;
-      case T_GENERIC:result = "'generic'"; break;
-      case T_INTEGER:result = "'integer'"; break;
-      case T_FLOAT:result = "'float'"; break;
-      case T_SYMBOL:result = "'symbol'"; break;
-      case T_BLANK:result = "'blank'"; break;
-      case T_STRING:result = "'string'"; break;
-      case T_NUL:result = "'null'"; break;
-      default:result = "'null'"; break;
-      }
-    }
-    else {
-      result = "'null'";
-    }
     return Message(result);
   }
 
   Message GetTypeId(ObjectMap &p) {
-    Object &obj = p["object"];
-    return Message(obj.GetTypeId());
+    return Message(p["object"].GetTypeId());
   }
 
   Message BindAndSet(ObjectMap &p) {
-    Object &obj = p["object"], source = p["source"];
-    ObjectPointer target_obj = nullptr;
-    bool existed;
+    Object &dest = p["object"], source = p["source"];
     Message msg;
-    string obj_id;
 
-    if (obj.IsRef()) {
-      existed = true;
-      target_obj = &obj;
+    if (dest.IsRef()) {
+      CONDITION_ASSERT(!dest.get_ro(), "Object is read-only.");
+      CopyObject(dest, source);
     }
     else {
-      CONDITION_ASSERT(obj.GetTypeId() == kTypeIdRawString, 
+      string id = GetObjectStuff<string>(dest);
+      CONDITION_ASSERT(util::GetTokenType(id) == T_GENERIC, 
         "Illegal bind operation.");
 
-      obj_id = GetObjectStuff<string>(obj);
-      target_obj = entry::FindObject(obj_id);
-      existed = !(target_obj == nullptr);
-    }
-    
-    if (existed) {
-      CONDITION_ASSERT(!target_obj->get_ro(), "Object is read-only.");
-      target_obj->Set(type::GetObjectCopy(source),source.GetTypeId(),
-        source.GetMethods(), false)
-        .SetTokenType(source.GetTokenType());
-    }
-    else {
-      Object base(type::GetObjectCopy(source), source.GetTypeId(),
-        source.GetMethods(), false);
-      base.SetTokenType(source.GetTokenType());
+      //TODO:Optimize for domain
+      ObjectPointer real_dest = entry::FindObject(id);
+      if (real_dest != nullptr) {
+        CopyObject(*real_dest, source);
+      }
+      else {
+        Object base(type::GetObjectCopy(source), source.GetTypeId(),
+          source.GetMethods(), false);
+        base.SetTokenType(source.GetTokenType());
 
-      auto result = entry::CreateObject(obj_id, base);
+        auto result = entry::CreateObject(id, base);
 
-      if (result == nullptr) {
-        msg = IllegalCallMsg("Object creation failed.");
+        if (result == nullptr) {
+          msg = IllegalCallMsg("Object creation failed.");
+        }
       }
     }
+
     return msg;
   }
 
   Message Print(ObjectMap &p) {
-    Message msg;
     Object &obj = p[kStrObject];
 
     auto errorMsg = []() {
@@ -221,7 +212,7 @@ namespace kagami {
       Message tempMsg = CheckEntryAndStart("__print", obj.GetTypeId(), p);
       if (tempMsg.GetCode() == kCodeIllegalCall) errorMsg();
     }
-    return msg;
+    return Message();
   }
 
   Message GetTimeDate(ObjectMap &p) {
@@ -242,6 +233,7 @@ namespace kagami {
     if (p.Search("msg")) {
       CONDITION_ASSERT(IsStringFamily(p["msg"]), 
         "Illegal message string.");
+      
       ObjectMap obj_map;
       obj_map.Input("not_wrap");
       obj_map.Input(kStrObject, p["msg"]);
@@ -258,20 +250,15 @@ namespace kagami {
 
     OBJECT_ASSERT(p, "object", kTypeIdRawString);
 
-    Object objTarget;
-    string origin = p.Get<string>("object");
-
-    util::IsString(origin) ?
-      origin = util::GetRawString(origin) :
-      origin = origin;
-
+    string origin = RealString(p.Get<string>("object"));
     auto type = util::GetTokenType(origin);
     string str;
+
     (type == T_NUL || type == T_GENERIC) ?
       str = kStrNull :
       str = origin;
-    objTarget.Manage(str, type);
-    msg.SetObject(objTarget);
+
+    msg.SetObject(Object(str, type));
     
     return msg;
   }
@@ -282,8 +269,8 @@ namespace kagami {
   }
 
   Message Nop(ObjectMap &p) {
-    int size = stoi(p.Get<string>("__size"));
-    Object &last_obj = p["nop" + to_string(size - 1)];
+    int size = p.GetVaSize();
+    Object &last_obj = p("nop", size - 1);
     Message msg;
     msg.SetObject(last_obj);
     return msg;
@@ -292,11 +279,11 @@ namespace kagami {
   Message ArrayMaker(ObjectMap &p) {
     vector<Object> base;
     Message msg;
-    int size = stoi(p.Get<string>("__size"));
+    int size = p.GetVaSize();
 
     if (!p.empty()) {
       for (int i = 0; i < size; i++) {
-        base.emplace_back(p["item" + to_string(i)]);
+        base.emplace_back(p("item", i));
       }
     }
 
@@ -381,26 +368,31 @@ namespace kagami {
 
   Message When(ObjectMap &p) {
     //TODO:Re-Design
-    int size = stoi(p.Get<string>("__size"));
+    int size = p.GetVaSize();
+
+    CONDITION_ASSERT(size > 0, "You should provide 1 object at least.");
+
     ObjectPointer case_head = entry::FindObject("__case");
     string case_content = GetObjectStuff<string>(*case_head);
     string type_id, id;
     bool result = false, state = true;
 
-    for (int i = 0; i < size; ++i) {
-      id = "value" + to_string(i);
+    size_t count = 0;
+    string content;
+    for (auto &unit : p) {
+      id = "value" + to_string(count);
+      if (unit.first == id) {
+        if (!IsStringObject(unit.second)) {
+          state = false;
+          break;
+        }
 
-      if (!p.Search(id)) break;
-      if (!p.CheckTypeId(id,kTypeIdRawString)) {
-        state = false;
-        break;
-      }
+        if (case_content == GetObjectStuff<string>(unit.second)) {
+          result = true;
+          break;
+        }
 
-      string content = p.Get<string>(id);
-
-      if (content == case_content) {
-        result = true;
-        break;
+        count += 1;
       }
     }
 
@@ -433,18 +425,18 @@ namespace kagami {
     AddGenericEntry(Entry(ConditionMaker<kCodeConditionRoot>, "state", GT_IF));
     AddGenericEntry(Entry(ConditionMaker<kCodeHeadSign>, "state", GT_WHILE));
     AddGenericEntry(Entry(ConditionMaker<kCodeConditionBranch>, "state", GT_ELIF));
-    AddGenericEntry(Entry(CalcOperation<OperatorCode::ADD>, "first|second", GT_ADD, kCodeNormalParm, 2));
-    AddGenericEntry(Entry(CalcOperation<OperatorCode::SUB>, "first|second", GT_SUB, kCodeNormalParm, 2));
-    AddGenericEntry(Entry(CalcOperation<OperatorCode::MUL>, "first|second", GT_MUL, kCodeNormalParm, 3));
-    AddGenericEntry(Entry(CalcOperation<OperatorCode::DIV>, "first|second", GT_DIV, kCodeNormalParm, 3));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::IS>, "first|second", GT_IS, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::LESS_OR_EQUAL>, "first|second", GT_LESS_OR_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::MORE_OR_EQUAL>, "first|second", GT_MORE_OR_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::NOT_EQUAL>, "first|second", GT_NOT_EQUAL, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::MORE>, "first|second", GT_MORE, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::LESS>, "first|second", GT_LESS, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::AND>, "first|second", GT_AND, kCodeNormalParm, 1));
-    AddGenericEntry(Entry(LogicOperation<OperatorCode::OR>, "first|second", GT_OR, kCodeNormalParm, 1));
+    AddGenericEntry(BinaryOperator<OperatorCode::ADD, GT_ADD, 2>());
+    AddGenericEntry(BinaryOperator<OperatorCode::SUB, GT_SUB, 2>());
+    AddGenericEntry(BinaryOperator<OperatorCode::MUL, GT_MUL, 3>());
+    AddGenericEntry(BinaryOperator<OperatorCode::DIV, GT_DIV, 3>());
+    AddGenericEntry(LogicBinaryOperator<OperatorCode::IS, GT_IS, 1>());
+    AddGenericEntry(LogicBinaryOperator<OperatorCode::LESS_OR_EQUAL, GT_LESS_OR_EQUAL, 1>());
+    AddGenericEntry(LogicBinaryOperator<OperatorCode::MORE_OR_EQUAL, GT_MORE_OR_EQUAL, 1>());
+    AddGenericEntry(LogicBinaryOperator<OperatorCode::NOT_EQUAL, GT_NOT_EQUAL, 1>());
+    AddGenericEntry(LogicBinaryOperator<OperatorCode::MORE, GT_MORE, 1>());
+    AddGenericEntry(LogicBinaryOperator<OperatorCode::LESS, GT_LESS, 1>());
+    AddGenericEntry(LogicBinaryOperator<OperatorCode::AND, GT_AND, 1>());
+    AddGenericEntry(LogicBinaryOperator<OperatorCode::OR, GT_OR, 1>());
     AddGenericEntry(Entry(SelfOperator<false, false>, "object", GT_LSELF_INC));
     AddGenericEntry(Entry(SelfOperator<true, false>, "object", GT_LSELF_DEC));
     AddGenericEntry(Entry(SelfOperator<false, true>, "object", GT_RSELF_INC));

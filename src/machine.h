@@ -14,6 +14,7 @@
 #define ASSERT_RETURN(STATE,VALUE)                 \
   if(!(STATE)) return Message(VALUE);
 
+
 namespace kagami {
   template <class T>
   T &GetObjectStuff(Object &obj) {
@@ -29,7 +30,7 @@ namespace kagami {
   template <class T>
   Object MakeObject(T t) {
     string str = to_string(t);
-    return Object().Manage(str, util::GetTokenType(str)).set_ro(false);
+    return Object(str, util::GetTokenType(str)).set_ro(false);
   }
 
   class Meta {
