@@ -42,9 +42,6 @@ namespace kagami {
     string image_path = p.Get<string>("path");
     Window &win = p.Get<Window>("win");
     Object ret;
-#if defined(_ENABLE_DEBUGGING_)
-    image_path = "C:\\workspace\\test.bmp";
-#endif
     TextureBase texture_base = make_shared<Texture>();
     SDL_Surface *image = SDL_LoadBMP(image_path.c_str());
     texture_base->texture = SDL_CreateTextureFromSurface(win.render, image);
