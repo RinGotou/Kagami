@@ -17,6 +17,9 @@
 #define ASSERT_RETURN(STATE,VALUE)                 \
   if(!(STATE)) return Message(VALUE);
 
+#define CUSTOM_ASSERT(STATE,CODE,MESS)             \
+  if(!(STATE)) return Message(kStrFatalError,CODE,MESS);
+
 
 namespace kagami {
   template <class T>

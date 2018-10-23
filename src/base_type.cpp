@@ -18,7 +18,6 @@ namespace kagami {
   Message ArrayConstructor(ObjectMap &p) {
     OBJECT_ASSERT(p, "size", kTypeIdRawString);
 
-    Message result;
     ArrayBase base;
     auto size = stoi(p.Get<string>("size"));
     Object obj = Object();
@@ -45,11 +44,10 @@ namespace kagami {
         .set_ro(false)));
     }
 
-    result.SetObject(Object(make_shared<ArrayBase>(base), 
+    return Message().SetObject(Object(make_shared<ArrayBase>(base),
       kTypeIdArrayBase,
-      kArrayBaseMethods,false)
+      kArrayBaseMethods, false)
       .SetConstructorFlag());
-    return result;
   }
 
   Message ArrayGetElement(ObjectMap &p) {
@@ -58,16 +56,10 @@ namespace kagami {
     ArrayBase &base = p.Get<ArrayBase>(kStrObject);
     int idx = stoi(p.Get<string>("index"));
     int size = int(base.size());
-    
-    Message msg;
 
     CONDITION_ASSERT(idx < size, "Subscript is out of range.");
 
-    Object temp;
-    temp.Ref(base[idx]);
-    msg.SetObject(temp);
-
-    return msg;
+    return Message().SetObject(Object().Ref(base[idx]));
   }
 
   Message ArrayGetSize(ObjectMap &p) {
@@ -95,7 +87,6 @@ namespace kagami {
   Message RawStringGetElement(ObjectMap &p) {
     OBJECT_ASSERT(p, "index", kTypeIdRawString);
 
-    Message result;
     int idx = stoi(p.Get<string>("index"));
 
     const auto makeStrToken = [](char target)->string {
@@ -116,15 +107,13 @@ namespace kagami {
   }
 
   Message RawStringPrint(ObjectMap &p) {
-    Message result;
-    string msg;
     bool doNotWrap = (p.Search("not_wrap"));
     
     auto data = RealString(p.Get<string>(kStrObject));
     std::cout << data;
     if (!doNotWrap) std::cout << std::endl;
     
-    return result;
+    return Message();
   }
 
   //String
@@ -157,9 +146,7 @@ namespace kagami {
         .SetConstructorFlag();
     }
 
-    Message msg;
-    msg.SetObject(base);
-    return msg;
+    return Message().SetObject(base);
   }
 
   //InStream
@@ -171,42 +158,29 @@ namespace kagami {
 
     shared_ptr<ifstream> ifs = 
       make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
-    Message msg;
-    Object obj;
 
-    obj.Set(ifs, kTypeIdInStream, kInStreamMethods, false);
-    msg.SetObject(obj);
-
-    return msg;
+    return Message().SetObject(Object(ifs, kTypeIdInStream, kInStreamMethods, false));
   }
 
   Message InStreamGet(ObjectMap &p) {
     ifstream &ifs = p.Get<ifstream>(kStrObject);
     Message msg;
 
+    CUSTOM_ASSERT(ifs.good(), kCodeBadStream, "InStream is not working.");
+
     if (ifs.eof()) return Message("");
 
-    if (ifs.good()) {
-      string str;
-      std::getline(ifs, str);
-      Object obj(make_shared<string>(str), kTypeIdString,kStringMethods,false);
-      msg.SetObject(obj);
-    }
-    else {
-      msg = Message(kStrFatalError, kCodeBadStream, "InStream is not working.");
-    }
+    string str;
+    std::getline(ifs, str);
 
-    return msg;
+    return Message()
+      .SetObject(Object(make_shared<string>(str), kTypeIdString, 
+        kStringMethods, false));
   }
 
   Message InStreamEOF(ObjectMap &p) {
     ifstream &ifs = p.Get<ifstream>(kStrObject);
-    string state;
-
-    ifs.eof() ? state = kStrTrue : state = kStrFalse;
-    Message msg(state);
-
-    return msg;
+    return Message(ifs.eof() ? kStrTrue : kStrFalse);
   }
 
   //OutStream
@@ -219,7 +193,6 @@ namespace kagami {
     string path = RealString(p.Get<string>("path"));
     string mode = RealString(p.Get<string>("mode"));
 
-    Message msg;
     shared_ptr<ofstream> ofs;
     bool append = (mode == "append");
     bool truncate = (mode == "truncate");
@@ -233,12 +206,8 @@ namespace kagami {
         std::ios::out | std::ios::app));
     }
 
-    Object obj;
-    obj.Set(ofs, kTypeIdOutStream)
-      .SetMethods(kOutStreamMethods)
-      .set_ro(false);
-    msg.SetObject(obj);
-    return msg;
+    return Message()
+      .SetObject(Object(ofs, kTypeIdOutStream, kOutStreamMethods, false));
   }
 
   Message OutStreamWrite(ObjectMap &p) {
@@ -269,15 +238,9 @@ namespace kagami {
       "Illegal pattern string.");
 
     string pattern_string = RealString(p.Get<string>("regex"));
-
     shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
-    Object ret;
 
-    ret.Set(reg, kTypeIdRegex, kRegexMethods, false);
-
-    Message msg;
-    msg.SetObject(ret);
-    return msg;
+    return Message().SetObject(Object(reg, kTypeIdRegex, kRegexMethods, false));
   }
 
   Message RegexMatch(ObjectMap &p) {
@@ -286,19 +249,13 @@ namespace kagami {
 
     string str = RealString(p.Get<string>("str"));
     auto &pat = p.Get<regex>(kStrObject);
-    string state;
-   
-    regex_match(str, pat) ? 
-      state = kStrTrue : 
-      state = kStrFalse;
 
-    return Message(state);
+    return Message(regex_match(str, pat) ? kStrTrue : kStrFalse);
   }
 
   //wstring
   Message WideStringContructor(ObjectMap &p) {
     Object obj = p["raw_string"];
-    Object base;
 
     CONDITION_ASSERT(IsStringObject(obj), 
       "String constructor can't accept this object.");
@@ -306,21 +263,15 @@ namespace kagami {
     string output = RealString(GetObjectStuff<string>(obj));
     wstring wstr = s2ws(output);
 
-    base.Set(make_shared<wstring>(wstr), kTypeIdWideString)
-      .SetMethods(kWideStringMethods)
-      .set_ro(false);
-
-    Message msg;
-    msg.SetObject(base);
-
-    return msg;
+    return Message()
+      .SetObject(Object(make_shared<wstring>(wstr), 
+        kTypeIdWideString, kWideStringMethods, false));
   }
 
   //Function
   Message FunctionGetId(ObjectMap &p) {
     auto &ent = p.Get<Entry>(kStrObject);
-    string id = ent.GetId();
-    return Message(id);
+    return Message(ent.GetId());
   }
 
   bool AssemblingForAutosized(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
@@ -395,26 +346,24 @@ namespace kagami {
     int count = 0;
     ObjectMap target_map;
     bool state;
-    Message msg;
 
-    if (ent.Good()) {
-      switch (ent.GetArgumentMode()) {
-      case kCodeAutoSize:
-        state = AssemblingForAutosized(ent, p, target_map, size);
-        break;
-      case kCodeAutoFill:
-        state = AssemblingForAutoFilling(ent, p, target_map, size);
-      default:
-        state = AssemblingForNormal(ent, p, target_map, size);
-        break;
-      }
-      msg = ent.Start(target_map);
-    }
-    else {
-      msg = Message(kStrFatalError, kCodeIllegalCall, "Bad entry - " + ent.GetId() + ".");
+    CALL_ASSERT(ent.Good(), "Bad entry - " + ent.GetId() + ".");
+
+
+    switch (ent.GetArgumentMode()) {
+    case kCodeAutoSize:
+      state = AssemblingForAutosized(ent, p, target_map, size);
+      break;
+    case kCodeAutoFill:
+      state = AssemblingForAutoFilling(ent, p, target_map, size);
+    default:
+      state = AssemblingForNormal(ent, p, target_map, size);
+      break;
     }
 
-    return msg;
+    //Error processing is missing
+
+    return ent.Start(target_map);
   }
 
   void InitPlanners() {
