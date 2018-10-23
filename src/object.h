@@ -66,6 +66,17 @@ namespace kagami {
       token_type_ = TokenTypeEnum::T_NUL;
     }
 
+    Object(string str, TokenTypeEnum token_type) :
+      ptr_(std::make_shared<string>(str)),
+      type_id_(kTypeIdRawString),
+      methods_(kRawStringMethods),
+      domain_(),
+      token_type_(token_type),
+      ro_(false),
+      ref_(false),
+      constructor_(false),
+      destroy_me_(false) {}
+
     Object &AppendMethod(string method) {
       if (ref_) return GetTargetObject()->AppendMethod(method);
       methods_.append("|" + method);
@@ -120,15 +131,14 @@ namespace kagami {
       return *this;
     }
 
-    Object &Manage(string t, TokenTypeEnum tokenType) {
-      if (ref_) return GetTargetObject()->Manage(t, tokenType);
-      ptr_ = std::make_shared<string>(t);
+    Object &Manage(string str, TokenTypeEnum token_type) {
+      if (ref_) return GetTargetObject()->Manage(str, token_type);
+      ptr_ = std::make_shared<string>(str);
       type_id_ = kTypeIdRawString;
       methods_ = kRawStringMethods;
-      token_type_ = tokenType;
+      token_type_ = token_type;
       return *this;
     }
-
 
     Object &Set(shared_ptr<void> ptr, string type_id, string methods, bool ro) {
       if (ref_) return GetTargetObject()->Set(ptr, type_id, methods, ro);
@@ -302,6 +312,10 @@ namespace kagami {
       return this->at(id);
     }
 
+    Object &operator()(string id, int index) {
+      return this->at(id + to_string(index));
+    }
+
     bool CheckTypeId(string id, string type_id) {
       return this->at(id).GetTypeId() == type_id;
     }
@@ -316,6 +330,15 @@ namespace kagami {
 
     void Input(string id) {
       this->insert(NamedObject(id, Object()));
+    }
+
+    int GetVaSize() {
+      int size;
+      auto it = this->find(kStrVaSize);
+      it != this->end() ?
+        size = stoi(*static_pointer_cast<string>(it->second.Get())) :
+        size = -1;
+      return size;
     }
   };
 }

@@ -38,17 +38,24 @@ namespace kagami {
       detail_(kStrEmpty), 
       idx_(0) {
 
-      object_ = make_shared<Object>();
-      static_pointer_cast<Object>(object_)
-        ->Manage(detail, util::GetTokenType(detail));
+      object_ = 
+        make_shared<Object>(detail, util::GetTokenType(detail));
     }
 
     Message(const Message &msg) {
-      Copy(msg);
+      value_ = msg.value_;
+      detail_ = msg.detail_;
+      code_ = msg.code_;
+      object_ = msg.object_;
+      idx_ = msg.idx_;
     }
 
     Message(const Message &&msg) {
-      Copy(msg);
+      value_ = msg.value_;
+      detail_ = msg.detail_;
+      code_ = msg.code_;
+      object_ = msg.object_;
+      idx_ = msg.idx_;
     }
 
     Message &operator=(Message &msg) {
@@ -85,6 +92,10 @@ namespace kagami {
       object_ = make_shared<Object>(object);
       code_ = kCodeObject;
       return *this;
+    }
+
+    Message &SetObject(Object &&object) {
+      return this->SetObject(object);
     }
 
     void SetRawString(string str) {
