@@ -11,6 +11,9 @@
 #define CONDITION_ASSERT(STATE,MESS)               \
   if(!(STATE)) return Message(kStrFatalError,kCodeIllegalParm,MESS);
 
+#define CALL_ASSERT(STATE,MESS)                    \
+  if(!(STATE)) return Message(kStrFatalError,kCodeIllegalCall,MESS);
+
 #define ASSERT_RETURN(STATE,VALUE)                 \
   if(!(STATE)) return Message(VALUE);
 
