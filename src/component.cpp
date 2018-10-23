@@ -189,9 +189,7 @@ namespace kagami {
 
         auto result = entry::CreateObject(id, base);
 
-        if (result == nullptr) {
-          msg = IllegalCallMsg("Object creation failed.");
-        }
+        CALL_ASSERT(result != nullptr, "Object creation failed.");
       }
     }
 
@@ -246,8 +244,6 @@ namespace kagami {
   }
 
   Message Convert(ObjectMap &p) {
-    Message msg;
-
     OBJECT_ASSERT(p, "object", kTypeIdRawString);
 
     string origin = RealString(p.Get<string>("object"));
@@ -257,23 +253,18 @@ namespace kagami {
     (type == T_NUL || type == T_GENERIC) ?
       str = kStrNull :
       str = origin;
-
-    msg.SetObject(Object(str, type));
     
-    return msg;
+    return Message().SetObject(Object(str, type));
   }
 
   Message Quit(ObjectMap &p) {
-    Message result(kStrEmpty, kCodeQuit, kStrEmpty);
-    return result;
+    return Message(kStrEmpty, kCodeQuit, kStrEmpty);
   }
 
   Message Nop(ObjectMap &p) {
     int size = p.GetVaSize();
     Object &last_obj = p("nop", size - 1);
-    Message msg;
-    msg.SetObject(last_obj);
-    return msg;
+    return Message().SetObject(last_obj);
   }
 
   Message ArrayMaker(ObjectMap &p) {
