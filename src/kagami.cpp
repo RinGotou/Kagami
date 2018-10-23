@@ -33,7 +33,7 @@ namespace kagami {
     //print application info
     cout << kEngineName
       << ' ' << "verison:" << kEngineVersion
-      << '(' << kCodeName << ')' << endl;
+      << " Codename " << '\'' << kCodeName << '\'' << endl;
     cout << kCopyright << ' ' << kEngineAuthor << endl;
   }
 }

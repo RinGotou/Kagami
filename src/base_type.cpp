@@ -201,8 +201,8 @@ namespace kagami {
       ofs = make_shared<ofstream>(ofstream(path.c_str(), 
         std::ios::out | std::ios::trunc));
     }
-    else {
-      ofs = make_shared<ofstream>(ofstream(path.c_str(), 
+    else if (append && !truncate) {
+      ofs = make_shared<ofstream>(ofstream(path.c_str(),
         std::ios::out | std::ios::app));
     }
 
