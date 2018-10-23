@@ -32,11 +32,10 @@ namespace kagami {
   /*so dirty...*/
   Message LibCall(ObjectMap &p) {
     LibraryHandler &handler = p.Get<LibraryHandler>(kStrObject);
-    string id = util::GetRawString(p.Get<string>("id"));
-    int size = stoi(p.Get<string>("__size"));
+    string id = RealString(p.Get<string>("id"));
+    int size = p.GetVaSize();
     bool state = true;
     HINSTANCE h_ins = handler.Get();
-
 
     char **argArray = 
       static_cast<char **>(malloc(sizeof(char *)*size));
@@ -49,7 +48,8 @@ namespace kagami {
 
       if (!p.CheckTypeId(sub, IsStringObject)) {
         state = false;
-        msg = Message(kStrFatalError, kCodeIllegalCall, "Can't deliver object to library function except plain-type object.");
+        msg = Message(kStrFatalError, kCodeIllegalCall, 
+          "Can't deliver object to library function except plain-type object.");
         break;
       }
 
@@ -67,7 +67,14 @@ namespace kagami {
 
       if (calling != nullptr && gabageProc != nullptr) {
         MessageBridge bridge = calling(id.c_str(), argArray, size);
-        msg = Message(string(bridge.value), bridge.code, string(bridge.detail));
+        if (bridge.value == kStrRedirect) {
+          msg = Message(string(bridge.detail));
+        }
+        else {
+          msg = Message(string(bridge.value), bridge.code, string(bridge.detail));
+        }
+        
+
         gabageProc(bridge);
       }
     }

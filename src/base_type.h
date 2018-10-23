@@ -16,18 +16,14 @@ namespace kagami {
     string methods = p[kStrObject].GetMethods();
     int start = stoi(p.Get<string>("start"));
     int size = stoi(p.Get<string>("size"));
-    Message msg;
 
     CONDITION_ASSERT((start >= 0 && size <= int(str.size()) - start),
       "Illegal index or size.");
 
-    Object ret;
     StringType output = str.substr(start, size);
 
-    ret.Set(make_shared<StringType>(output), type_id, methods, false);
-    msg.SetObject(ret);
-
-    return msg;
+    return Message()
+      .SetObject(Object(make_shared<StringType>(output), type_id, methods, false));
   }
 
   template <class StringType>
@@ -37,18 +33,13 @@ namespace kagami {
     string methods = p[kStrObject].GetMethods();
     int size = int(str.size());
     int idx = stoi(p.Get<string>("index"));
-    Message msg;
 
     CONDITION_ASSERT((idx > size && idx >= 0), "Index out of range.");
 
     shared_ptr<StringType> output = make_shared<StringType>();
-    Object ret;
 
     output->append(1, str[idx]);
-    ret.Set(output, type_id, methods, false);
-    msg.SetObject(ret);
-
-    return msg;
+    return Message().SetObject(Object(output, type_id, methods, false));
   }
 
   template <class StringType, class StreamType>
@@ -128,12 +119,9 @@ namespace kagami {
     StringConvertor<DestType, SrcType> convertor;
     SrcType &str = p.Get<SrcType>(kStrObject);
     shared_ptr<DestType> dest = make_shared<DestType>(convertor(str));
-    bool is_wide = std::is_same<DestType, string>::value;
     string type_id, methods;
-    Message msg;
-    Object ret;
 
-    if (is_wide) {
+    if (std::is_same<DestType, wstring>::value) {
       type_id = kTypeIdWideString;
       methods = kWideStringMethods;
     }
@@ -142,8 +130,6 @@ namespace kagami {
       methods = kStringMethods;
     }
 
-    ret.Set(dest, type_id, methods, false);
-    msg.SetObject(ret);
-    return msg;
+    return Message().SetObject(Object(dest, type_id, methods, false));
   }
 }

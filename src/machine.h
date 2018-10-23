@@ -11,8 +11,15 @@
 #define CONDITION_ASSERT(STATE,MESS)               \
   if(!(STATE)) return Message(kStrFatalError,kCodeIllegalParm,MESS);
 
+#define CALL_ASSERT(STATE,MESS)                    \
+  if(!(STATE)) return Message(kStrFatalError,kCodeIllegalCall,MESS);
+
 #define ASSERT_RETURN(STATE,VALUE)                 \
   if(!(STATE)) return Message(VALUE);
+
+#define CUSTOM_ASSERT(STATE,CODE,MESS)             \
+  if(!(STATE)) return Message(kStrFatalError,CODE,MESS);
+
 
 namespace kagami {
   template <class T>
@@ -29,7 +36,7 @@ namespace kagami {
   template <class T>
   Object MakeObject(T t) {
     string str = to_string(t);
-    return Object().Manage(str, util::GetTokenType(str)).set_ro(false);
+    return Object(str, util::GetTokenType(str)).set_ro(false);
   }
 
   class Meta {
