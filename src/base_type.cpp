@@ -3,10 +3,17 @@
 
 namespace kagami {
   //Array
-  shared_ptr<void> ArrayCopy(shared_ptr<void> target) {
-    const auto ptr = static_pointer_cast<vector<Object>>(target);
-    vector<Object> base = *ptr;
-    return make_shared<vector<Object>>(std::move(base));
+  shared_ptr<void> CreateArrayCopy(shared_ptr<void> source) {
+    auto &src_base = *static_pointer_cast<ArrayBase>(source);
+    shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
+
+    dest_base->reserve(src_base.size());
+    for (auto &unit : src_base) {
+      dest_base->emplace_back(Object(type::GetObjectCopy(unit), unit.GetTypeId(), 
+        unit.GetMethods(), false).SetTokenType(unit.GetTokenType()));
+    }
+
+    return dest_base;
   }
 
   inline bool IsStringFamily(Object &obj) {
@@ -31,17 +38,12 @@ namespace kagami {
 
     const auto type_id = obj.GetTypeId();
     const auto methods = obj.GetMethods();
-    const auto tokenTypeEnum = obj.GetTokenType();
-    shared_ptr<void> initPtr;
+    const auto token_type = obj.GetTokenType();
     base.reserve(size);
 
     for (auto count = 0; count < size; count++) {
-      initPtr = type::GetObjectCopy(obj);
-      base.emplace_back((Object()
-        .Set(initPtr, type_id)
-        .SetMethods(methods)
-        .SetTokenType(tokenTypeEnum)
-        .set_ro(false)));
+      base.emplace_back(Object(type::GetObjectCopy(obj), type_id, methods, false)
+        .SetTokenType(token_type));
     }
 
     return Message().SetObject(Object(make_shared<ArrayBase>(base),
@@ -201,8 +203,8 @@ namespace kagami {
       ofs = make_shared<ofstream>(ofstream(path.c_str(), 
         std::ios::out | std::ios::trunc));
     }
-    else {
-      ofs = make_shared<ofstream>(ofstream(path.c_str(), 
+    else if (append && !truncate) {
+      ofs = make_shared<ofstream>(ofstream(path.c_str(),
         std::ios::out | std::ios::app));
     }
 
@@ -273,6 +275,11 @@ namespace kagami {
     auto &ent = p.Get<Entry>(kStrObject);
     return Message(ent.GetId());
   }
+
+  //Message FunctionGetParameters(ObjectMap &p) {
+  //  auto &ent = p.Get<Entry>(kStrObject);
+  //  return Message(ent.GetArguments());
+  //}
 
   bool AssemblingForAutosized(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
     auto ent_args = ent.GetArguments();
@@ -380,7 +387,7 @@ namespace kagami {
     AddEntry(Entry(RawStringGetElement, kCodeNormalParm, "subscript", "__at", kTypeIdRawString, kFlagMethod));
     AddEntry(Entry(RawStringGetSize, kCodeNormalParm, "", "size", kTypeIdRawString, kFlagMethod));
 
-    AddTemplate(kTypeIdArrayBase, ObjectPlanner(ArrayCopy, kArrayBaseMethods));
+    AddTemplate(kTypeIdArrayBase, ObjectPlanner(CreateArrayCopy, kArrayBaseMethods));
     AddEntry(Entry(ArrayConstructor, kCodeAutoFill, "size|init_value", "array"));
     AddEntry(Entry(ArrayGetElement, kCodeNormalParm, "index", "__at", kTypeIdArrayBase, kFlagMethod));
     AddEntry(Entry(ArrayPrint, kCodeNormalParm, "", "__print", kTypeIdArrayBase, kFlagMethod));

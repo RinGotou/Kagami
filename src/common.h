@@ -21,7 +21,7 @@
 //Disbale SDL2 componets for non-GUI environment
 //#define _DISABLE_SDL_
 //Enable all debugging feature and output info
-#define _ENABLE_DEBUGGING_
+//#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -71,14 +71,14 @@ namespace kagami {
   using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
   using CastFunc = pair<string, CopyCreator>;
   
-  const string kEngineVersion = "1.2";
-  const string kCodeName = "Moonlit";
+  const string kEngineVersion = "1.3";
+  const string kCodeName = "Wind chime";
 #if defined(_WIN32)
   const string kPlatformType = "Windows";
 #else
   const string kPlatformType = "Linux";
 #endif
-  const string kEngineName = "Kagami - Experimental Scripting util";
+  const string kEngineName = "Kagami";
   const string kEngineAuthor = "Suzu Nakamura and Contributor(s)";
   const string kCopyright = "Copyright(c) 2017-2018";
 
