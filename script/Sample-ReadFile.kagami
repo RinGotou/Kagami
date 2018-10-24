@@ -1,11 +1,11 @@
 def ReadFile()
-	stream = instream('SomeWords.txt')
-	while(stream.eof() != true)
-		print(stream.get())
-	end
-	stream.close()
+  stream = instream('SomeWords.txt')
+  while(stream.eof() != true)
+    print(stream.get())
+  end
+  stream.close()
 end
 
 if(__name__ == '__main__')
-	ReadFile()
+  ReadFile()
 end

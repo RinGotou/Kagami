@@ -1,27 +1,27 @@
 ar0 = array(3,'')
 
 def Calc(numA,numB)
-	return(numA + numB)
+  return(numA + numB)
 end
 
 def Loop(count)
-	i = 0
-	while(i < count)
-		print('Loop Count' + i)
-		i++
-	end
+  i = 0
+  while(i < count)
+    print('Loop Count' + i)
+    i++
+  end
 end
 
 def PrintArray()
-	i = 0
-	while(i < 3)
-		print(ar0[i])
-		i++
-	end
+  i = 0
+  while(i < 3)
+    print(ar0[i])
+    i++
+  end
 end
 
 def SetArray(idx,str)
-	ar0[idx] = str
+  ar0[idx] = str
 end
 
 result = Calc(3,7)
