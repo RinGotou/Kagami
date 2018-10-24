@@ -6,7 +6,7 @@
 #define OBJECT_ASSERT(MAP,ITEM,TYPE)               \
   if (!MAP.CheckTypeId(ITEM,TYPE))                 \
     return Message(kStrFatalError,kCodeIllegalParm,\
-    "Unexpected object type - " + TYPE + ".");
+    "Expected object type - " + TYPE + ".");
 
 #define CONDITION_ASSERT(STATE,MESS)               \
   if(!(STATE)) return Message(kStrFatalError,kCodeIllegalParm,MESS);
