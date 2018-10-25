@@ -46,7 +46,7 @@ namespace kagami {
     return true;
   }
 
-  Object *ObjectContainer::Find(string id, string domain) {
+  Object *ObjectContainer::Find(string id) {
     if (base_.empty()) return nullptr;
 
     ObjectPointer ptr = nullptr;
@@ -61,7 +61,7 @@ namespace kagami {
     return ptr;
   }
 
-  void ObjectContainer::Dispose(string id, string domain) {
+  void ObjectContainer::Dispose(string id) {
     auto it = base_.find(id);
     if (it != base_.end()) base_.erase(it);
   }

@@ -247,26 +247,5 @@ namespace kagami {
     kStrArray = "__array",
     kStrTypeAssert = "__type_assert",
     kStrTypeAssertR = "__type_assert_r";
-
-  /*Prompt for terminal*/
-  const string kStrNormalArrow = ">>>",
-    kStrTypeAssertGroup = "...";
-
-  const string kOpAdd = "__add",
-    kOpSub = "__sub",
-    kOpMul = "__mul",
-    kOpDiv = "__div",
-    kOpEqual = "__eq",
-    kOpIs = "__is",
-    kOpLessOrEqual = "__loeq",
-    kOpMoreOrEqual = "__moeq",
-    kOpNotEqual = "__neq",
-    kOpNot = "__not",
-    kOpLess = "__less",
-    kOpMore = "__more",
-    kOpLSelfInc = "__lsinc",
-    kOpRSelfInc = "__rsinc",
-    kOpLSelfDec = "__lsdec",
-    kOpRSelfDec = "__rsdec";
 }
 

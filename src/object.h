@@ -254,8 +254,8 @@ namespace kagami {
     }
   public:
     bool Add(string id, Object source);
-    Object *Find(string id, string domain = kStrEmpty);
-    void Dispose(string id, string domain = kStrEmpty);
+    Object *Find(string id);
+    void Dispose(string id);
 
     ObjectContainer() {}
 
