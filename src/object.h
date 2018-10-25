@@ -277,6 +277,8 @@ namespace kagami {
     }
   };
 
+  using ContainerBox = list<ObjectContainer>;
+
   class ObjectMap : public map<string, Object> {
   protected:
     using ComparingFunction = bool(*)(Object &);

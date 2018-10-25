@@ -483,7 +483,7 @@ namespace kagami {
       obj.Manage(arg.data, arg.tokenType);
       break;
     case AT_OBJECT:
-      ptr = entry::FindObject(arg.data,obj_domain.GetTypeId());
+      ptr = entry::FindObject(arg.data);
       if (ptr != nullptr) {
         obj.Ref(*ptr);
       }
@@ -1048,6 +1048,22 @@ namespace kagami {
     while (!blk->mode_stack.empty()) blk->mode_stack.pop();
     while (!blk->condition_stack.empty()) blk->condition_stack.pop();
     delete blk;
+  }
+  
+  bool Machine::BindAndSet(string id, Object target, ContainerBox *box) {
+
+  }
+
+  ObjectContainer &Machine::CreateContainer(ContainerBox *box) {
+
+  }
+
+  ObjectContainer &Machine::DisposeContainer(ContainerBox *box) {
+
+  }
+
+  ObjectPointer Machine::FindObject(string id, ContainerBox *box) {
+
   }
 }
 

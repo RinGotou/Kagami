@@ -140,6 +140,12 @@ namespace kagami {
     void AssemblingForAutosized(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
     void AssemblingForAutoFilling(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
     void AssemblingForNormal(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
+
+    //Object Management
+    bool BindAndSet(string id, Object target, ContainerBox *box);
+    ObjectContainer &CreateContainer(ContainerBox *box);
+    ObjectContainer &DisposeContainer(ContainerBox *box);
+    ObjectPointer FindObject(string id, ContainerBox *box);
   public:
     Machine() : 
       health_(false), 
