@@ -206,8 +206,6 @@ namespace kagami {
     Entry Order(string id, string type = kTypeIdNull, int size = -1);
     GenericTokenEnum GetGenericToken(string src);
     OperatorCode GetOperatorCode(string src);
-    
-
   }
 
   namespace type {

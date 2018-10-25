@@ -87,6 +87,7 @@ namespace kagami {
   }
 
   Message ReturnSign(ObjectMap &p) {
+    //TODO:Fixing argument
     Object &value_obj = p["value"];
     string type_id = value_obj.GetTypeId();
     auto &container = entry::GetCurrentContainer();
@@ -321,25 +322,22 @@ namespace kagami {
     bool result = util::FindInStringGroup(target, obj.GetMethods());
     Message msg;
 
-    if (result) {
-      Object *ret = entry::FindObject(target, obj.GetTypeId());
-      if (ret != nullptr) {
-        msg.SetObject(*ret);
-      }
-      else {
-        Object obj_ent;
-        auto ent = entry::Order(target, obj.GetTypeId());
-        if (ent.Good()) {
-          obj_ent.Set(make_shared<Entry>(ent), kTypeIdFunction, 
-            kFunctionMethods, false);
-          msg.SetObject(obj_ent);
-        }
-      }
+    CALL_ASSERT(result, "Method not found - " + target);
+
+    Object *ret = entry::FindObject(target, obj.GetTypeId());
+    if (ret != nullptr) {
+      msg.SetObject(*ret);
     }
     else {
-      msg = IllegalCallMsg("Method not found - " + target);
+      Object obj_ent;
+      auto ent = entry::Order(target, obj.GetTypeId());
+      if (ent.Good()) {
+        obj_ent.Set(make_shared<Entry>(ent), kTypeIdFunction, 
+          kFunctionMethods, false);
+        msg.SetObject(obj_ent);
+      }
     }
-     
+   
     return msg;
   }
 
