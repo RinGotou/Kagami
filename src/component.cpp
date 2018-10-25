@@ -325,7 +325,7 @@ namespace kagami {
 
     CALL_ASSERT(result, "Method not found - " + target);
 
-    Object *ret = entry::FindObject(target, obj.GetTypeId());
+    Object *ret = entry::FindObject(target);
     if (ret != nullptr) {
       msg.SetObject(*ret);
     }
