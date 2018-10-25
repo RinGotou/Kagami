@@ -80,7 +80,7 @@ namespace kagami {
   using StringUnit = pair<size_t, string>;
 
   class Machine {
-    using MachCtlBlk = struct {
+    struct MachCtlBlk {
       bool s_continue, 
         s_break, 
         last_index, 
@@ -98,7 +98,7 @@ namespace kagami {
       ObjectMap recursion_map;
     };
 
-    using MetaWorkBlock = struct {
+    struct MetaWorkBlock {
       string error_string;
       deque<Object> returning_base;
       bool error_returning,
@@ -107,6 +107,12 @@ namespace kagami {
         is_assert,
         is_assert_r,
         tail_recursion;
+    };
+
+    //for future usage
+    struct ContainerPool {
+      Machine *parent;
+      list<ObjectContainer> pool;
     };
 
     vector<Meta> storage_;
