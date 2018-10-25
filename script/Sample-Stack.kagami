@@ -27,19 +27,24 @@ end
 
 def main()
   obj = 0
+  
   while(true)
     choice = GetInput()
+    
     case(choice)
     when(1)
       obj = input('(value)> ')
       push(obj)
+      
     when(2)
       obj = pop()
       if(obj != -1)
         print(obj)
       end
+      
     end
     obj = 0
+    
   end
 end
 

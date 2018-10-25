@@ -87,14 +87,16 @@ namespace kagami {
   }
 
   Message ReturnSign(ObjectMap &p) {
-    Object &value_obj = p["value"];
-    string type_id = value_obj.GetTypeId();
     auto &container = entry::GetCurrentContainer();
-    Object obj(value_obj.Get(), type_id, value_obj.GetMethods(), false);
+    if (p.Search("value")) {
+      auto &obj = p["value"];
+      container.Add(kStrRetValue, 
+        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
+    }
+    else {
+      container.Add(kStrRetValue, Object());
+    }
 
-    obj.SetTokenType(value_obj.GetTokenType());
-    container.Add(kStrRetValue, obj);
-    
     return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
   }
 
@@ -321,25 +323,22 @@ namespace kagami {
     bool result = util::FindInStringGroup(target, obj.GetMethods());
     Message msg;
 
-    if (result) {
-      Object *ret = entry::FindObject(target, obj.GetTypeId());
-      if (ret != nullptr) {
-        msg.SetObject(*ret);
-      }
-      else {
-        Object obj_ent;
-        auto ent = entry::Order(target, obj.GetTypeId());
-        if (ent.Good()) {
-          obj_ent.Set(make_shared<Entry>(ent), kTypeIdFunction, 
-            kFunctionMethods, false);
-          msg.SetObject(obj_ent);
-        }
-      }
+    CALL_ASSERT(result, "Method not found - " + target);
+
+    Object *ret = entry::FindObject(target);
+    if (ret != nullptr) {
+      msg.SetObject(*ret);
     }
     else {
-      msg = IllegalCallMsg("Method not found - " + target);
+      Object obj_ent;
+      auto ent = entry::Order(target, obj.GetTypeId());
+      if (ent.Good()) {
+        obj_ent.Set(make_shared<Entry>(ent), kTypeIdFunction, 
+          kFunctionMethods, false);
+        msg.SetObject(obj_ent);
+      }
     }
-     
+   
     return msg;
   }
 
@@ -397,6 +396,11 @@ namespace kagami {
     return msg;
   }
 
+  Message IsNull(ObjectMap &p) {
+    auto &obj = p["object"];
+    return Message(obj.GetTypeId() == kTypeIdNull ? kStrTrue : kStrFalse);
+  }
+
   void GenericRegister() {
     using namespace entry;
     AddGenericEntry(Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
@@ -446,6 +450,7 @@ namespace kagami {
     AddEntry(Entry(GetRawStringType, kCodeNormalParm, "object", "type"));
     AddEntry(Entry(Dir, kCodeNormalParm, "object", "dir"));
     AddEntry(Entry(Exist, kCodeNormalParm, "object|id", "exist"));
+    AddEntry(Entry(IsNull, kCodeNormalParm, "object", "isnull"));
   }
 
   void Activiate() {

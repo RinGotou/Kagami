@@ -47,7 +47,7 @@ namespace kagami {
   using Instruction = pair<Entry, deque<Argument>>;
 
   class Analyzer {
-    using AnalyzerWorkBlock = struct {
+    struct AnalyzerWorkBlock {
       deque<Argument> args;
       deque<Entry> symbol;
       bool insert_between_object, need_reversing, define_line, assert_r;

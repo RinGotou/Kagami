@@ -80,7 +80,7 @@ namespace kagami {
   using StringUnit = pair<size_t, string>;
 
   class Machine {
-    using MachCtlBlk = struct {
+    struct MachCtlBlk {
       bool s_continue, 
         s_break, 
         last_index, 
@@ -98,7 +98,7 @@ namespace kagami {
       ObjectMap recursion_map;
     };
 
-    using MetaWorkBlock = struct {
+    struct MetaWorkBlock {
       string error_string;
       deque<Object> returning_base;
       bool error_returning,
@@ -109,6 +109,7 @@ namespace kagami {
         tail_recursion;
     };
 
+    Machine *parent;
     vector<Meta> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
@@ -139,6 +140,12 @@ namespace kagami {
     void AssemblingForAutosized(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
     void AssemblingForAutoFilling(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
     void AssemblingForNormal(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
+
+    //Object Management
+    bool BindAndSet(string id, Object target, ContainerBox *box);
+    ObjectContainer &CreateContainer(ContainerBox *box);
+    ObjectContainer &DisposeContainer(ContainerBox *box);
+    ObjectPointer FindObject(string id, ContainerBox *box);
   public:
     Machine() : 
       health_(false), 

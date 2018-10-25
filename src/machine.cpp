@@ -483,7 +483,7 @@ namespace kagami {
       obj.Manage(arg.data, arg.tokenType);
       break;
     case AT_OBJECT:
-      ptr = entry::FindObject(arg.data,obj_domain.GetTypeId());
+      ptr = entry::FindObject(arg.data);
       if (ptr != nullptr) {
         obj.Ref(*ptr);
       }
@@ -702,6 +702,9 @@ namespace kagami {
           meta_blk->returning_base.emplace_back(object);
         }
       }
+      else if (ent.GetTokenEnum() != GT_TYPE_ASSERT){
+        meta_blk->returning_base.emplace_back(Object());
+      }
     }
 
     if (meta_blk->error_returning || 
@@ -742,7 +745,8 @@ namespace kagami {
       }
       else if (token == GT_DEF) {
         if (flag == true) {
-          result = Message(kStrFatalError, kCodeBadExpression, "Define function in function is not supported.").SetIndex(idx);
+          result = Message(kStrFatalError, kCodeBadExpression, 
+            "Define function in function is not supported.").SetIndex(idx);
           break;
         }
         result = MetaProcessing(*meta, "", nullptr);
@@ -1044,6 +1048,22 @@ namespace kagami {
     while (!blk->mode_stack.empty()) blk->mode_stack.pop();
     while (!blk->condition_stack.empty()) blk->condition_stack.pop();
     delete blk;
+  }
+  
+  bool Machine::BindAndSet(string id, Object target, ContainerBox *box) {
+
+  }
+
+  ObjectContainer &Machine::CreateContainer(ContainerBox *box) {
+
+  }
+
+  ObjectContainer &Machine::DisposeContainer(ContainerBox *box) {
+
+  }
+
+  ObjectPointer Machine::FindObject(string id, ContainerBox *box) {
+
   }
 }
 
