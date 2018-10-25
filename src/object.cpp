@@ -40,7 +40,7 @@ namespace kagami {
     return *this;
   }
 
-  bool ObjectContainer::Add(string id, Object &source) {
+  bool ObjectContainer::Add(string id, Object source) {
     if (CheckObject(id)) return false;
     base_.insert(NamedObject(id, source));
     return true;

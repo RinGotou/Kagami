@@ -702,6 +702,9 @@ namespace kagami {
           meta_blk->returning_base.emplace_back(object);
         }
       }
+      else if (ent.GetTokenEnum() != GT_TYPE_ASSERT){
+        meta_blk->returning_base.emplace_back(Object());
+      }
     }
 
     if (meta_blk->error_returning || 

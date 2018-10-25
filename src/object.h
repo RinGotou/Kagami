@@ -253,7 +253,7 @@ namespace kagami {
       return (base_.find(id) != base_.end());
     }
   public:
-    bool Add(string id, Object &source);
+    bool Add(string id, Object source);
     Object *Find(string id, string domain = kStrEmpty);
     void Dispose(string id, string domain = kStrEmpty);
 
