@@ -109,12 +109,7 @@ namespace kagami {
         tail_recursion;
     };
 
-    //for future usage
-    struct ContainerPool {
-      Machine *parent;
-      list<ObjectContainer> pool;
-    };
-
+    Machine *parent;
     vector<Meta> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
