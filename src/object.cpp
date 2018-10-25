@@ -40,45 +40,29 @@ namespace kagami {
     return *this;
   }
 
-  bool ObjectContainer::Add(string id, Object &source) {
-    if (!CheckObject(id)) return false;
-    base.push_back(NamedObject(id, Object().Copy(source)));
+  bool ObjectContainer::Add(string id, Object source) {
+    if (CheckObject(id)) return false;
+    base_.insert(NamedObject(id, source));
     return true;
   }
 
-  Object *ObjectContainer::Find(string id, string domain) {
-    Object *object = nullptr;
-    if (base.empty()) return object;
-    bool has_domain = (domain != kStrEmpty);
+  Object *ObjectContainer::Find(string id) {
+    if (base_.empty()) return nullptr;
 
-    for (size_t i = 0; i < base.size(); ++i) {
-      NamedObject &obj = base[i];
-      if (obj.first == id) {
-        if (!has_domain || (has_domain && obj.second.GetDomain() == domain)) {
-          object = &(base[i].second);
-          break;
-        }
+    ObjectPointer ptr = nullptr;
+
+    for (auto &unit : base_) {
+      if (unit.first == id) {
+        ptr = &(unit.second);
+        break;
       }
     }
-    return object;
+
+    return ptr;
   }
 
-  void ObjectContainer::Dispose(string id, string domain) {
-    size_t pos = 0;
-    bool found = false;
-    bool has_domain = (domain != kStrEmpty);
-
-    for (size_t i = 0; i < base.size(); ++i) {
-      NamedObject &obj = base[i];
-      if (obj.first == id) {
-        if (!has_domain || (has_domain && obj.second.GetDomain() == domain)) {
-          found = true;
-          pos = i;
-          break;
-        }
-      }
-    }
-
-    if (found) base.erase(pos);
+  void ObjectContainer::Dispose(string id) {
+    auto it = base_.find(id);
+    if (it != base_.end()) base_.erase(it);
   }
 }

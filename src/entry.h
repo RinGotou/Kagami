@@ -191,7 +191,7 @@ namespace kagami {
     ObjectContainer &CreateContainer();
     ObjectContainer &GetRootContainer();
     Object *FindObjectInCurrentContainer(string sign);
-    Object *FindObject(string id, string domain = "");
+    Object *FindObject(string id);
     Object *CreateObject(string sign, Object &object);
 
     string GetTypeId(string sign);
@@ -206,8 +206,6 @@ namespace kagami {
     Entry Order(string id, string type = kTypeIdNull, int size = -1);
     GenericTokenEnum GetGenericToken(string src);
     OperatorCode GetOperatorCode(string src);
-    
-
   }
 
   namespace type {
