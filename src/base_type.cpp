@@ -1,6 +1,5 @@
 #include "base_type.h"
 
-
 namespace kagami {
   //Array
   shared_ptr<void> CreateArrayCopy(shared_ptr<void> source) {
@@ -233,7 +232,6 @@ namespace kagami {
     return msg;
   }
 
-
   //regex
   Message RegexConstructor(ObjectMap &p) {
     CONDITION_ASSERT(IsStringObject(p["regex"]), 
@@ -276,10 +274,19 @@ namespace kagami {
     return Message(ent.GetId());
   }
 
-  //Message FunctionGetParameters(ObjectMap &p) {
-  //  auto &ent = p.Get<Entry>(kStrObject);
-  //  return Message(ent.GetArguments());
-  //}
+  Message FunctionGetParameters(ObjectMap &p) {
+    auto &ent = p.Get<Entry>(kStrObject);
+    shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
+    auto origin_vector = ent.GetArguments();
+
+    for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
+      dest_base->emplace_back(Object(make_shared<string>(*it), kTypeIdString, 
+        kStringMethods, false));
+    }
+
+    return Message()
+      .SetObject(Object(dest_base, kTypeIdArrayBase, kArrayBaseMethods, false));
+  }
 
   bool AssemblingForAutosized(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
     auto ent_args = ent.GetArguments();
@@ -353,9 +360,8 @@ namespace kagami {
     int count = 0;
     ObjectMap target_map;
     bool state;
-
+    
     CALL_ASSERT(ent.Good(), "Bad entry - " + ent.GetId() + ".");
-
 
     switch (ent.GetArgumentMode()) {
     case kCodeAutoSize:
@@ -368,7 +374,7 @@ namespace kagami {
       break;
     }
 
-    //Error processing is missing
+    CONDITION_ASSERT(state, "Argument error.");
 
     return ent.Start(target_map);
   }
@@ -380,7 +386,7 @@ namespace kagami {
     AddTemplate(kTypeIdFunction, ObjectPlanner(SimpleSharedPtrCopy<Entry>, kFunctionMethods));
     AddEntry(Entry(FunctionGetId, kCodeNormalParm, "", "id", kTypeIdFunction, kFlagMethod));
     AddEntry(Entry(FunctionCall, kCodeAutoSize, "arg", "call", kTypeIdFunction, kFlagMethod));
-
+    AddEntry(Entry(FunctionGetParameters, kCodeNormalParm, "", "parms", kTypeIdFunction, kFlagMethod));
 
     AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, kRawStringMethods));
     AddEntry(Entry(RawStringPrint, kCodeNormalParm, "", "__print", kTypeIdRawString, kFlagMethod));

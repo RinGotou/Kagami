@@ -742,7 +742,8 @@ namespace kagami {
       }
       else if (token == GT_DEF) {
         if (flag == true) {
-          result = Message(kStrFatalError, kCodeBadExpression, "Define function in function is not supported.").SetIndex(idx);
+          result = Message(kStrFatalError, kCodeBadExpression, 
+            "Define function in function is not supported.").SetIndex(idx);
           break;
         }
         result = MetaProcessing(*meta, "", nullptr);

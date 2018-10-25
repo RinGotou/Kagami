@@ -21,7 +21,7 @@
 //Disbale SDL2 componets for non-GUI environment
 //#define _DISABLE_SDL_
 //Enable all debugging feature and output info
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -188,7 +188,7 @@ namespace kagami {
   const string kInStreamMethods = "get|good|getlines|close|eof";
   const string kOutStreamMethods = "write|good|close";
   const string kRegexMethods = "match";
-  const string kFunctionMethods = "id|call";
+  const string kFunctionMethods = "id|call|parms";
 
   constexpr size_t kModeNormal        = 0;
   constexpr size_t kModeNextCondition = 1;
