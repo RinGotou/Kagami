@@ -109,7 +109,7 @@ namespace kagami {
         tail_recursion;
     };
 
-    Machine *parent;
+    Machine *parent_;
     vector<Meta> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
@@ -144,7 +144,7 @@ namespace kagami {
     //Object Management
     bool BindAndSet(string id, Object target, ContainerBox *box);
     ObjectContainer &CreateContainer(ContainerBox *box);
-    ObjectContainer &DisposeContainer(ContainerBox *box);
+    void DisposeContainer(ContainerBox *box);
     ObjectPointer FindObject(string id, ContainerBox *box);
   public:
     Machine() : 
