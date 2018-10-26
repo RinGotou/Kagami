@@ -388,7 +388,7 @@ namespace kagami {
       blk->mode = blk->mode_stack.top();
       blk->mode_stack.pop();
     }
-    if (blk->mode == kModeCase) {
+    if (blk->mode == kModeCycle) {
       blk->mode = kModeCycleJump;
       blk->s_continue = true;
     }
@@ -1052,18 +1052,36 @@ namespace kagami {
   
   bool Machine::BindAndSet(string id, Object target, ContainerBox *box) {
 
+    return true;
   }
 
   ObjectContainer &Machine::CreateContainer(ContainerBox *box) {
-
+    box->push_back(ObjectContainer());
+    return box->back();
   }
 
-  ObjectContainer &Machine::DisposeContainer(ContainerBox *box) {
-
+  void Machine::DisposeContainer(ContainerBox *box) {
+    if (!box->empty()) box->pop_back();
   }
 
   ObjectPointer Machine::FindObject(string id, ContainerBox *box) {
+    ObjectPointer ptr = nullptr;
+    size_t idx = box->size();
 
+    while (!box->empty() && idx > 0) {
+      ptr = box->at(idx - 1).Find(id);
+      if (ptr != nullptr) {
+        break;
+      }
+      idx -= 1;
+    }
+
+    if (ptr == nullptr && parent_ != nullptr) {
+      //ptr = parent_->FindObject(id,parent_)
+    }
+
+    //for next construction
+    return nullptr;
   }
 }
 
