@@ -7,6 +7,7 @@ namespace kagami {
   using OperatorCode = entry::OperatorCode;
 
   string IncAndDecOperation(Object &obj, bool negative, bool keep);
+  GroupTypeEnum GetGroupType(Object &A, Object &B);
 
   template <bool negative, bool keep>
   Message SelfOperator(ObjectMap &p) {
