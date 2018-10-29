@@ -215,7 +215,7 @@ namespace kagami {
     ofstream &ofs = p.Get<ofstream>(kStrObject);
     Message msg = Message(kStrTrue);
 
-    ASSERT_RETURN(!ofs.good(), kStrFalse);
+    ASSERT_RETURN(ofs.good(), kStrFalse);
 
     if (p.CheckTypeId("str",kTypeIdRawString)) {
       string output = RealString(p.Get<string>("str"));
