@@ -21,7 +21,7 @@
 //Disbale SDL2 componets for non-GUI environment
 #define _DISABLE_SDL_
 //Enable all debugging feature and output info
-//#define _ENABLE_DEBUGGING_
+#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
