@@ -60,6 +60,7 @@ namespace kagami {
     else if (strcmp(src, "runs") == 0) res = 2;
     else if (strcmp(src, "runp") == 0) res = 3;
     else if (strcmp(src, "help") == 0) res = 4;
+    else if (strcmp(src, "version") == 0) res = 5;
     return res;
   }
 
@@ -71,6 +72,12 @@ namespace kagami {
 #endif
 
 int main(int argc, char **argv) {
+#if not defined(_DISABLE_SDL)
+  if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+    cout << "SDL initialization error!" << endl;
+    return 0;
+  }
+#endif
   kagami::ScriptCore scriptCore;
 
   std::ios::sync_with_stdio(false);
@@ -83,9 +90,12 @@ int main(int argc, char **argv) {
   //switch main code between test case and normal case.
   //this macro can be found in the head of this file.
 #ifdef _ENABLE_DEBUGGING_
+  std::string path = "C:\\workspace\\test.kagami";
+  cout << "WARNING:you're in debugging mode!\n";
+  cout << "WARNING:Loading:" + path << endl;
   //set your own test script path here
-  scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
-  scriptCore.PrintEvents(nullptr, "C:\\workspace\\test.kagami");
+  scriptCore.ExecScriptFile(path);
+  scriptCore.PrintEvents(nullptr, path.c_str());
 #else
   if (argc < 2) {
     scriptCore.MyInfo();
@@ -119,6 +129,7 @@ int main(int argc, char **argv) {
     case 4:
       scriptCore.MyInfo();
       HelpFile();
+      break;
     case -1:
     default:
       scriptCore.MyInfo();
@@ -127,6 +138,9 @@ int main(int argc, char **argv) {
     }
   }
 #endif
-  
+
+#if not defined(_DISABLE_SDL_)
+  SDL_Quit();
+#endif
   return 0;
 }
