@@ -213,7 +213,7 @@ namespace kagami {
 #if defined(_WIN32)
   void InitLibraryHandler();
 #endif
-#if defined(_ENABLE_DEBUGGING_) || not defined(_DISABLE_SDL_)
+#if not defined(_DISABLE_SDL_)
   void LoadSDLStuff();
 #endif
   Message FunctionTunnel(ObjectMap &p);
