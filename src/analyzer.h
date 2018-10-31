@@ -17,24 +17,24 @@ namespace kagami {
 
     string data;
     ArgumentType type;
-    TokenTypeEnum tokenType;
+    TokenTypeEnum token_type;
     Domain domain;
 
     Argument() :
       data(),
       type(AT_HOLDER),
-      tokenType(T_NUL),
-      domain() {
+      token_type(T_NUL) {
     
       domain.type = AT_HOLDER;
     }
 
-    Argument(string data, 
-      ArgumentType type, 
-      TokenTypeEnum tokenType) {
-      this->data = data;
-      this->type = type;
-      this->tokenType = tokenType;
+    Argument(string data,
+      ArgumentType type,
+      TokenTypeEnum token_type) :
+      data(data),
+      type(type),
+      token_type(token_type) {
+
       this->domain.data = "";
       this->domain.type = AT_HOLDER;
     }

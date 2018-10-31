@@ -480,7 +480,7 @@ namespace kagami {
     
     switch (arg.type) {
     case AT_NORMAL:
-      obj.Manage(arg.data, arg.tokenType);
+      obj.Manage(arg.data, arg.token_type);
       break;
     case AT_OBJECT:
       ptr = entry::FindObject(arg.data);
@@ -1048,40 +1048,6 @@ namespace kagami {
     while (!blk->mode_stack.empty()) blk->mode_stack.pop();
     while (!blk->condition_stack.empty()) blk->condition_stack.pop();
     delete blk;
-  }
-  
-  bool Machine::BindAndSet(string id, Object target, ContainerBox *box) {
-
-    return true;
-  }
-
-  ObjectContainer &Machine::CreateContainer(ContainerBox *box) {
-    box->push_back(ObjectContainer());
-    return box->back();
-  }
-
-  void Machine::DisposeContainer(ContainerBox *box) {
-    if (!box->empty()) box->pop_back();
-  }
-
-  ObjectPointer Machine::FindObject(string id, ContainerBox *box) {
-    ObjectPointer ptr = nullptr;
-    size_t idx = box->size();
-
-    while (!box->empty() && idx > 0) {
-      ptr = box->at(idx - 1).Find(id);
-      if (ptr != nullptr) {
-        break;
-      }
-      idx -= 1;
-    }
-
-    if (ptr == nullptr && parent_ != nullptr) {
-      //ptr = parent_->FindObject(id,parent_)
-    }
-
-    //for next construction
-    return nullptr;
   }
 }
 
