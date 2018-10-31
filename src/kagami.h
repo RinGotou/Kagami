@@ -8,8 +8,6 @@ using std::cin;
 namespace kagami {
   class ScriptCore {
   private:
-    //map<string, Machine> module_base;
-
     template <class T>
     void LogOutput(T &stream, const char *path, const char *script_path) {
       using namespace trace;

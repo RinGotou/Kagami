@@ -35,8 +35,8 @@ namespace kagami {
     return (obj.GetTypeId() == type_id);
   }
 
-  inline bool CheckTokenType(Object &obj, TokenTypeEnum tokenType) {
-    return (obj.GetTokenType() == tokenType);
+  inline bool CheckTokenType(Object &obj, TokenTypeEnum token_type) {
+    return (obj.GetTokenType() == token_type);
   }
 
   inline bool IsRawStringObject(Object &obj) {

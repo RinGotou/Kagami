@@ -28,7 +28,6 @@ namespace kagami {
   }
 
   void ScriptCore::ExecScriptFile(string target) {
-    Activiate();
     Machine machine(target.c_str());
     machine.Run();
   }
@@ -120,6 +119,8 @@ void Do(map<string, string> &base) {
   };
 
   if (check("path")) {
+    kagami::Activiate();
+
     string path = base["path"];
     string log_path = check("log-path") ?
       base["log-path"] :
