@@ -805,6 +805,10 @@ namespace kagami {
         create("__name__", "");
       }
     }
+
+    create("__platform__", kPlatformType);
+    create("__version__", kEngineVersion);
+    create("__backend__", kBackendVerison);
   }
 
 

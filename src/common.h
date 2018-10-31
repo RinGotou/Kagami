@@ -78,7 +78,7 @@ namespace kagami {
   using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
   using CastFunc = pair<string, CopyCreator>;
   
-  const string kEngineVersion = "1.3 'wind chime'";
+  const string kEngineVersion = "1.4 'Feathering'";
   const string kBackendVerison = "August";
 #if defined(_WIN32)
   const string kPlatformType = "Windows";
