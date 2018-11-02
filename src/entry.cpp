@@ -2,12 +2,12 @@
 
 namespace kagami {
   bool Entry::Compare(Entry &target) const {
-    return (target.id_ == id_ &&
-      target.activity_ == activity_ &&
+    return (target.id_      == id_ &&
+      target.activity_      == activity_ &&
       target.argument_mode_ == argument_mode_ &&
-      target.priority_ == priority_ &&
-      target.type_ == type_ &&
-      target.parms_ == parms_);
+      target.priority_      == priority_ &&
+      target.type_          == type_ &&
+      target.parms_         == parms_);
   }
 
   Message Entry::Start(ObjectMap &obj_map) const {
@@ -57,20 +57,16 @@ namespace kagami {
       return object;
     }
 
-    ObjectContainer &GetRootContainer() {
-      return GetContainerPool().front();
-    }
-
     ObjectContainer &GetCurrentContainer() {
       return GetContainerPool().back();
     }
 
-    Object *FindObjectInCurrentContainer(string sign) {
+    Object *FindObjectInCurrentContainer(string id) {
       Object *object = nullptr;
       ObjectContainer &base = GetContainerPool().back();
 
       while (!base.Empty()) {
-        object = base.Find(sign);
+        object = base.Find(id);
         if (object != nullptr) {
           break;
         }
@@ -79,23 +75,23 @@ namespace kagami {
       return object;
     }
 
-    Object *CreateObject(string sign, Object &object) {
+    Object *CreateObject(string id, Object &object) {
       ObjectContainer &base = GetContainerPool().back();
-      if (base.Find(sign) != nullptr) {
+      if (base.Find(id) != nullptr) {
         return nullptr;
       }
-      base.Add(sign, object);
-      const auto result = base.Find(sign);
+      base.Add(id, object);
+      const auto result = base.Find(id);
       return result;
     }
 
-    string GetTypeId(const string sign) {
+    string GetTypeId(const string id) {
       auto result = kTypeIdNull;
       auto count = GetContainerPool().size();
       auto &base = GetContainerPool();
 
       while (count > 0) {
-        const auto object = base[count - 1].Find(sign);
+        const auto object = base[count - 1].Find(id);
         if (object != nullptr) {
           result = object->GetTypeId();
         }
@@ -124,45 +120,44 @@ namespace kagami {
     map<string, GenericTokenEnum> &GetGTBase() {
       using T = pair<string, GenericTokenEnum>;
       static map<string, GenericTokenEnum> base = {
-        T(kStrIf,GT_IF),
-        T(kStrNop,GT_NOP),
-        T(kStrDef,GT_DEF),
-        T(kStrRef,GT_REF),
-        T(kStrEnd,GT_END),
-        T(kStrSet,GT_SET),
-        T(kStrBind,GT_BIND),
-        T(kStrFor,GT_FOR),
-        T(kStrElse,GT_ELSE),
-        T(kStrElif,GT_ELIF),
-        T(kStrWhile,GT_WHILE),
-        T(kStrCodeSub,GT_CODE_SUB),
-        T(kStrLeftSelfInc,GT_LSELF_INC),
-        T(kStrLeftSelfDec,GT_LSELF_DEC),
+        T(kStrIf          ,GT_IF),
+        T(kStrNop         ,GT_NOP),
+        T(kStrDef         ,GT_DEF),
+        T(kStrRef         ,GT_REF),
+        T(kStrEnd         ,GT_END),
+        T(kStrSet         ,GT_SET),
+        T(kStrBind        ,GT_BIND),
+        T(kStrFor         ,GT_FOR),
+        T(kStrElse        ,GT_ELSE),
+        T(kStrElif        ,GT_ELIF),
+        T(kStrWhile       ,GT_WHILE),
+        T(kStrLeftSelfInc ,GT_LSELF_INC),
+        T(kStrLeftSelfDec ,GT_LSELF_DEC),
         T(kStrRightSelfInc,GT_RSELF_INC),
         T(kStrRightSelfDec,GT_RSELF_DEC),
-        T(kStrAdd,GT_ADD),
-        T(kStrSub,GT_SUB),
-        T(kStrMul,GT_MUL),
-        T(kStrDiv,GT_DIV),
-        T(kStrIs,GT_IS),
-        T(kStrAnd,GT_AND),
-        T(kStrOr,GT_OR),
-        T(kStrNot,GT_NOT),
-        T(kStrBitAnd,GT_BIT_AND),
-        T(kStrBitOr,GT_BIT_OR),
-        T(kStrLessOrEqual,GT_LESS_OR_EQUAL),
-        T(kStrMoreOrEqual,GT_MORE_OR_EQUAL),
-        T(kStrNotEqual,GT_NOT_EQUAL),
-        T(kStrMore,GT_MORE),
-        T(kStrLess,GT_LESS),
-        T(kStrReturn,GT_RETURN),
-        T(kStrArray,GT_ARRAY),
-        T(kStrTypeAssert,GT_TYPE_ASSERT),
-        T(kStrContinue,GT_CONTINUE),
-        T(kStrBreak,GT_BREAK),
-        T(kStrCase,GT_CASE),
-        T(kStrWhen,GT_WHEN),
-        T(kStrTypeAssertR,GT_ASSERT_R)
+        T(kStrAdd         ,GT_ADD),
+        T(kStrSub         ,GT_SUB),
+        T(kStrMul         ,GT_MUL),
+        T(kStrDiv         ,GT_DIV),
+        T(kStrIs          ,GT_IS),
+        T(kStrAnd         ,GT_AND),
+        T(kStrOr          ,GT_OR),
+        T(kStrNot         ,GT_NOT),
+        T(kStrBitAnd      ,GT_BIT_AND),
+        T(kStrBitOr       ,GT_BIT_OR),
+        T(kStrLessOrEqual ,GT_LESS_OR_EQUAL),
+        T(kStrMoreOrEqual ,GT_MORE_OR_EQUAL),
+        T(kStrNotEqual    ,GT_NOT_EQUAL),
+        T(kStrMore        ,GT_MORE),
+        T(kStrLess        ,GT_LESS),
+        T(kStrReturn      ,GT_RETURN),
+        T(kStrArray       ,GT_ARRAY),
+        T(kStrTypeAssert  ,GT_TYPE_ASSERT),
+        T(kStrContinue    ,GT_CONTINUE),
+        T(kStrBreak       ,GT_BREAK),
+        T(kStrCase        ,GT_CASE),
+        T(kStrWhen        ,GT_WHEN),
+        T(kStrTypeAssertR ,GT_ASSERT_R)
       };
       return base;
     }
@@ -220,24 +215,24 @@ namespace kagami {
     map<string, OperatorCode> &GetOPBase() {
       using T = pair<string, OperatorCode>;
       static map<string, OperatorCode> base = {
-        T("+",ADD),
-        T("-",SUB),
-        T("*",MUL),
-        T("/",DIV),
-        T("=",EQUAL),
+        T("+" ,ADD),
+        T("-" ,SUB),
+        T("*" ,MUL),
+        T("/" ,DIV),
+        T("=" ,EQUAL),
         T("==",IS),
         T("<=",LESS_OR_EQUAL),
         T(">=",MORE_OR_EQUAL),
         T("!=",NOT_EQUAL),
-        T(">",MORE),
-        T("<",LESS),
+        T(">" ,MORE),
+        T("<" ,LESS),
         T("++",SELFINC),
         T("--",SELFDEC),
         T("&&",AND),
         T("||",OR),
-        T("!",NOT),
-        T("&",BIT_AND),
-        T("|",BIT_OR)
+        T("!" ,NOT),
+        T("&" ,BIT_AND),
+        T("|" ,BIT_OR)
       };
       return base;
     }

@@ -7,20 +7,17 @@ namespace kagami {
   class ObjectPlanner;
   class ObjectContainer;
   class ObjectMap;
+  class Message;
 
   using ObjectPointer = Object * ;
   using ObjectPair = pair<string, Object>;
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
+  using CopySolver = shared_ptr<void>(*)(shared_ptr<void>);
   using ObjTypeId = string;
 
   using ContainerPool = kagami::list<ObjectContainer>;
 
-  /*Object Class
-  A shared void pointer is packaged in this.Almost all variables and
-  constants are managed by shared pointers.This class will be packaged
-  in ObjectContainer class.
-  */
   class Object {
     using TargetObject = struct { Object *ptr; };
     std::shared_ptr<void> ptr_;
@@ -208,30 +205,27 @@ namespace kagami {
     }
   };
 
-  /* Object Template Class
-  this class contains custom class info for script language.
-  */
   class ObjectPlanner {
   private:
-    CopyCreator creator_;
+    CopySolver solver_;
     string methods_;
   public:
     ObjectPlanner() : 
       methods_(kStrEmpty) { 
 
-      creator_ = nullptr; 
+      solver_ = nullptr; 
     }
-    ObjectPlanner(CopyCreator creator, 
+    ObjectPlanner(CopySolver solver, 
       string methods) : 
       methods_(methods){
 
-      creator_ = creator;
+      solver_ = solver;
     }
 
     shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
       shared_ptr<void> result = nullptr;
       if (target != nullptr) {
-        result = creator_(target);
+        result = solver_(target);
       }
       return result;
     }
@@ -241,10 +235,6 @@ namespace kagami {
     }
   };
 
-  /*ObjectContainer Class
-  MemoryManger will be filled with Object and manage life cycle of variables
-  and constants.
-  */
   class ObjectContainer {
   private:
     map<string, Object> base_;
@@ -275,6 +265,27 @@ namespace kagami {
     void clear() {
       base_.clear();
     }
+  };
+
+  class ContainerManager {
+  private:
+    list<ObjectContainer> pool_;
+  public:
+    bool Create(string id, Object object) {
+      return pool_.back().Find(id);
+    }
+
+    size_t push() {
+      pool_.push_back(ObjectContainer());
+      return pool_.size();
+    }
+
+    size_t pop() {
+      if (!pool_.empty()) pool_.pop_back();
+      return pool_.size();
+    }
+
+    Object *Find(string id, bool keep_scope);
   };
 
   class ObjectMap : public map<string, Object> {

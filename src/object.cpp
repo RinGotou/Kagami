@@ -65,4 +65,21 @@ namespace kagami {
     auto it = base_.find(id);
     if (it != base_.end()) base_.erase(it);
   }
+
+  Object *ContainerManager::Find(string id, bool keep_scope) {
+    ObjectPointer ptr = nullptr;
+
+    if (pool_.empty()) return nullptr;
+
+    if (keep_scope) {
+      return pool_.back().Find(id);
+    }
+
+    for (size_t idx = pool_.size() - 1; idx >= 0; idx -= 1) {
+      ptr = pool_[idx].Find(id);
+      if (ptr != nullptr) break;
+    }
+
+    return ptr;
+  }
 }

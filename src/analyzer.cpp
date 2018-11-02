@@ -461,8 +461,7 @@ namespace kagami {
 
     if (function && blk->next.first != "("
       && blk->current.first != kStrElse 
-      && blk->current.first != kStrEnd
-      && blk->current.first != kStrFinally) {
+      && blk->current.first != kStrEnd) {
       health_ = false;
       result = false;
       error_string_ = "Left bracket after function is missing";

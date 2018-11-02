@@ -72,76 +72,61 @@ namespace kagami {
   using std::stod;
   using std::wstring;
 
-  struct ActivityTemplate;
-  class Message;
-
-  using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
-  using CastFunc = pair<string, CopyCreator>;
-  
-  const string kEngineVersion = "1.4 'Feathering'";
+  const string kEngineVersion  = "1.4 'Feathering'";
   const string kBackendVerison = "August";
 #if defined(_WIN32)
-  const string kPlatformType = "Windows";
+  const string kPlatformType   = "Windows";
 #else
-  const string kPlatformType = "Linux";
+  const string kPlatformType   = "Linux";
 #endif
-  const string kEngineName = "Kagami";
-  const string kMaintainer = "Suzu Nakamura";
-  const string kCopyright = "Copyright(c) 2017-2018";
+  const string kEngineName     = "Kagami";
+  const string kMaintainer     = "Suzu Nakamura";
+  const string kCopyright      = "Copyright(c) 2017-2018";
 
-  const string kStrNull = "null",
-    kStrEmpty = "",
-    kStrFatalError = "__FATAL__",
-    kStrWarning = "__WARNING__",
-    kStrSuccess = "__SUCCESS__",
-    kStrEOF = "__EOF__",
-    kStrPass = "__PASS__",
-    kStrRedirect = "__*__",
-    kStrTrue = "true",
-    kStrFalse = "false",
-    kStrOperator = "__operator",
-    kStrObject = "__object",
-    kMethodPrint = "__print";
+  const string kStrNull        = "null",
+    kStrEmpty                  = "",
+    kStrFatalError             = "__FATAL__",
+    kStrWarning                = "__WARNING__",
+    kStrSuccess                = "__SUCCESS__",
+    kStrRedirect               = "__*__",
+    kStrTrue                   = "true",
+    kStrFalse                  = "false",
+    kStrObject                 = "__object",
+    kMethodPrint               = "__print";
 
-  constexpr int 
-    kCodeWhen = 21,
-    kCodeCase = 20,
-    kCodeBreak = 19,
-    kCodeContinue = 18,
-    kCodeSDLInfo = 17,
-    kCodeAutoSize = 16,
-    kCodeDefineSign = 15,
-    kCodeAutoFill = 14,
-    kCodeNormalParm = 13,
-    kCodeHeadPlaceholder = 12,
-    kCodeReturn = 11,
-    kCodeConditionLeaf = 10,
-    kCodeConditionBranch = 9,
-    kCodeConditionRoot = 8,
-    kCodeObject = 7,
-    kCodeTailSign = 5,
-    kCodeHeadSign = 4,
-    kCodeQuit = 3,
-    kCodeRedirect = 2,
-    kCodeNothing = 1,
-    kCodeSuccess = 0,
-    kCodeBrokenEntry = -1,
-    kCodeOverflow = -2,
-    kCodeIllegalParm = -3,
-    kCodeIllegalCall = -4,
-    kCodeIllegalSymbol = -5,
-    kCodeBadStream = -6,
-    kCodeBadExpression = -7,
-    kCodeSDLError = -8;
+  constexpr int
+    kCodeWhen            = 18,
+    kCodeCase            = 17,
+    kCodeBreak           = 16,
+    kCodeContinue        = 15,
+    kCodeAutoSize        = 14,
+    kCodeDefineSign      = 13,
+    kCodeAutoFill        = 12,
+    kCodeNormalParm      = 11,
+    kCodeHeadPlaceholder = 10,
+    kCodeReturn          = 9,
+    kCodeConditionLeaf   = 8,
+    kCodeConditionBranch = 7,
+    kCodeConditionRoot   = 6,
+    kCodeObject          = 5,
+    kCodeTailSign        = 4,
+    kCodeHeadSign        = 3,
+    kCodeQuit            = 2,
+    kCodeRedirect        = 1,
+    kCodeSuccess         = 0,
+    kCodeIllegalParm     = -1,
+    kCodeIllegalCall     = -2,
+    kCodeIllegalSymbol   = -3,
+    kCodeBadStream       = -4,
+    kCodeBadExpression   = -5;
 
-  const int kFlagCoreEntry = 0,
-    kFlagNormalEntry = 1,
-    kFlagOperatorEntry = 2,
-    kFlagMethod = 3;
+  const int 
+    kFlagNormalEntry = 0,
+    kFlagMethod      = 1;
 
   const map<string, string> kBracketPairs = {
-    pair<string,string>(")","("),
-    pair<string,string>("]","["),
+    pair<string,string>(")", "("),
+    pair<string,string>("]", "["),
     pair<string,string>("}", "{")
   };
 
@@ -175,27 +160,28 @@ namespace kagami {
     TOKEN_OTHERS
   };
 
-  const string kRawStringMethods = "size|__at|__print";
+  
 
-  const string kTypeIdNull      = "Null";
-  const string kTypeIdString    = "String";
+  const string kTypeIdNull       = "Null";
+  const string kTypeIdString     = "String";
   const string kTypeIdWideString = "WString";
-  const string kTypeIdRawString = "RawString";
-  const string kTypeIdArrayBase = "Array";
-  const string kTypeIdInStream  = "Instream";
-  const string kTypeIdOutStream = "Outstream";
-  const string kTypeIdRegex     = "Regex";
-  const string kTypeIdRef       = "Ref";
-  const string kTypeIdLib       = "Library";
-  const string kTypeIdFunction    = "Function";
+  const string kTypeIdRawString  = "RawString";
+  const string kTypeIdArrayBase  = "Array";
+  const string kTypeIdInStream   = "Instream";
+  const string kTypeIdOutStream  = "Outstream";
+  const string kTypeIdRegex      = "Regex";
+  const string kTypeIdRef        = "Ref";
+  const string kTypeIdLib        = "Library";
+  const string kTypeIdFunction   = "Function";
 
-  const string kArrayBaseMethods = "size|__at|__print";
-  const string kStringMethods = "size|__at|__print|substr|to_wide";
+  const string kRawStringMethods  = "size|__at|__print";
+  const string kArrayBaseMethods  = "size|__at|__print";
+  const string kStringMethods     = "size|__at|__print|substr|to_wide";
   const string kWideStringMethods = "size|__at|__print|substr|to_byte";
-  const string kInStreamMethods = "get|good|getlines|close|eof";
-  const string kOutStreamMethods = "write|good|close";
-  const string kRegexMethods = "match";
-  const string kFunctionMethods = "id|call|parms";
+  const string kInStreamMethods   = "get|good|getlines|close|eof";
+  const string kOutStreamMethods  = "write|good|close";
+  const string kRegexMethods      = "match";
+  const string kFunctionMethods   = "id|call|parms";
 
   constexpr size_t kModeNormal        = 0;
   constexpr size_t kModeNextCondition = 1;
@@ -208,51 +194,50 @@ namespace kagami {
   constexpr size_t kModeClass         = 8;
 
   /*Generic Token*/
-  const string kStrIf = "if",
-    kStrDef = "def",
-    kStrRef = "__ref",
-    kStrEnd = "end",
-    kStrVar = "var",
-    kStrSet = "__set",
-    kStrBind = "__bind",
-    kStrVaSize = "__size",
-    kStrFor = "for",
-    kStrElse = "else",
-    kStrElif = "elif",
-    kStrWhile = "while",
-    kStrContinue = "continue",
-    kStrBreak = "break",
-    kStrCase = "case",
-    kStrWhen = "when",
-    kStrFinally = "finally",
-    kStrCodeSub = "__code_sub",
-    kStrLeftSelfInc = "lSelfInc",
-    kStrLeftSelfDec = "lSelfDec",
+  const string 
+    kStrIf           = "if",
+    kStrDef          = "def",
+    kStrRef          = "__ref",
+    kStrEnd          = "end",
+    kStrVar          = "var",
+    kStrSet          = "__set",
+    kStrBind         = "__bind",
+    kStrVaSize       = "__size",
+    kStrFor          = "for",
+    kStrElse         = "else",
+    kStrElif         = "elif",
+    kStrWhile        = "while",
+    kStrContinue     = "continue",
+    kStrBreak        = "break",
+    kStrCase         = "case",
+    kStrWhen         = "when",
+    kStrLeftSelfInc  = "lSelfInc",
+    kStrLeftSelfDec  = "lSelfDec",
     kStrRightSelfInc = "rSelfInc",
     kStrRightSelfDec = "rSelfDec",
-    kStrReturn = "return",
-    kStrAdd = "+",
-    kStrSub = "-",
-    kStrMul = "*",
-    kStrDiv = "/",
-    kStrIs = "==",
-    kStrAnd = "&&",
-    kStrOr = "||",
-    kStrNot = "!",
-    kStrBitAnd = "&",
-    kStrBitOr = "|",
-    kStrLessOrEqual = "<=",
-    kStrMoreOrEqual = ">=",
-    kStrNotEqual = "!=",
-    kStrMore = ">",
-    kStrLess = "<",
-    kStrNop = "__nop",
-    kStrPlaceHolder = "__ph",
-    kStrUserFunc = "__func",
-    kStrRetValue = "__ret",
-    kStrStopSign = "__stop",
-    kStrArray = "__array",
-    kStrTypeAssert = "__type_assert",
-    kStrTypeAssertR = "__type_assert_r";
+    kStrReturn       = "return",
+    kStrAdd          = "+",
+    kStrSub          = "-",
+    kStrMul          = "*",
+    kStrDiv          = "/",
+    kStrIs           = "==",
+    kStrAnd          = "&&",
+    kStrOr           = "||",
+    kStrNot          = "!",
+    kStrBitAnd       = "&",
+    kStrBitOr        = "|",
+    kStrLessOrEqual  = "<=",
+    kStrMoreOrEqual  = ">=",
+    kStrNotEqual     = "!=",
+    kStrMore         = ">",
+    kStrLess         = "<",
+    kStrNop          = "__nop",
+    kStrPlaceHolder  = "__ph",
+    kStrUserFunc     = "__func",
+    kStrRetValue     = "__ret",
+    kStrStopSign     = "__stop",
+    kStrArray        = "__array",
+    kStrTypeAssert   = "__type_assert",
+    kStrTypeAssertR  = "__type_assert_r";
 }
 

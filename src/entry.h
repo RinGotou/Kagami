@@ -189,12 +189,11 @@ namespace kagami {
     ContainerPool &GetContainerPool();
     ObjectContainer &GetCurrentContainer();
     ObjectContainer &CreateContainer();
-    ObjectContainer &GetRootContainer();
-    Object *FindObjectInCurrentContainer(string sign);
+    Object *FindObjectInCurrentContainer(string id);
     Object *FindObject(string id);
-    Object *CreateObject(string sign, Object &object);
+    Object *CreateObject(string id, Object &object);
 
-    string GetTypeId(string sign);
+    string GetTypeId(string id);
     string GetGenTokenValue(GenericTokenEnum token);
     void AddEntry(Entry temp);
     void AddGenericEntry(Entry temp);
