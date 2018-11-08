@@ -41,7 +41,7 @@ namespace kagami {
       return base;
     }
 
-    Object *FindObject(string id, string domain) {
+    Object *FindObject(string id) {
       Object *object = nullptr;
       size_t count = GetContainerPool().size();
       list<ObjectContainer> &base = GetContainerPool();

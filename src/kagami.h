@@ -9,14 +9,15 @@ namespace kagami {
   class ScriptCore {
   private:
     template <class T>
-    void LogOutput(T &stream, const char *path, const char *scriptPath) {
+    void LogOutput(T &stream, const char *path, const char *script_path) {
       using namespace trace;
       string priority;
       auto &logger = GetLogger();
       
       if (!logger.empty()) {
-        stream << "[Script:" << scriptPath << "]" << endl;
+        stream << "[Script:" << script_path << "]" << endl;
       } 
+
       for (log_t unit : GetLogger()) {
         //time
         stream << "[" << unit.first << "]";
@@ -32,7 +33,7 @@ namespace kagami {
       }
     }
   public:
-    void PrintEvents(const char *path, const char *scriptPath);
+    void PrintEvents(string path, string script_path);
     void ExecScriptFile(string target);
     void MyInfo();
   };

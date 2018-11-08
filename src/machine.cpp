@@ -388,7 +388,7 @@ namespace kagami {
       blk->mode = blk->mode_stack.top();
       blk->mode_stack.pop();
     }
-    if (blk->mode == kModeCase) {
+    if (blk->mode == kModeCycle) {
       blk->mode = kModeCycleJump;
       blk->s_continue = true;
     }
@@ -480,10 +480,10 @@ namespace kagami {
     
     switch (arg.type) {
     case AT_NORMAL:
-      obj.Manage(arg.data, arg.tokenType);
+      obj.Manage(arg.data, arg.token_type);
       break;
     case AT_OBJECT:
-      ptr = entry::FindObject(arg.data,obj_domain.GetTypeId());
+      ptr = entry::FindObject(arg.data);
       if (ptr != nullptr) {
         obj.Ref(*ptr);
       }
@@ -702,6 +702,9 @@ namespace kagami {
           meta_blk->returning_base.emplace_back(object);
         }
       }
+      else if (ent.GetTokenEnum() != GT_TYPE_ASSERT){
+        meta_blk->returning_base.emplace_back(Object());
+      }
     }
 
     if (meta_blk->error_returning || 
@@ -742,7 +745,8 @@ namespace kagami {
       }
       else if (token == GT_DEF) {
         if (flag == true) {
-          result = Message(kStrFatalError, kCodeBadExpression, "Define function in function is not supported.").SetIndex(idx);
+          result = Message(kStrFatalError, kCodeBadExpression, 
+            "Define function in function is not supported.").SetIndex(idx);
           break;
         }
         result = MetaProcessing(*meta, "", nullptr);
@@ -801,6 +805,10 @@ namespace kagami {
         create("__name__", "");
       }
     }
+
+    create("__platform__", kPlatformType);
+    create("__version__", kEngineVersion);
+    create("__backend__", kBackendVerison);
   }
 
 

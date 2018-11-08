@@ -1,13 +1,13 @@
 def CaseTest()
-	count = 5
-	case(count)
-	when(1,2,3)
-		print('Fail.')
-	when(5)
-		print('Success.')
-	end
+  count = 5
+  case(count)
+  when(1,2,3)
+    print('Fail.')
+  when(5)
+    print('Success.')
+  end
 end
 
 if (__name__ == '__main__')
-	CaseTest()
+  CaseTest()
 end

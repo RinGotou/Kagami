@@ -26,7 +26,6 @@ namespace kagami {
     std::shared_ptr<void> ptr_;
     string type_id_;
     string methods_;
-    string domain_;
     TokenTypeEnum token_type_;
     bool ro_, ref_, constructor_, destroy_me_;
 
@@ -41,7 +40,6 @@ namespace kagami {
       ptr_(nullptr),
       type_id_(kTypeIdNull),
       methods_(),
-      domain_(),
       ro_(false),
       ref_(false),
       constructor_(false),
@@ -57,7 +55,6 @@ namespace kagami {
       ptr_(ptr), 
       type_id_(type_id), 
       methods_(methods), 
-      domain_(), 
       ro_(ro),
       ref_(false), 
       constructor_(false), 
@@ -70,7 +67,6 @@ namespace kagami {
       ptr_(std::make_shared<string>(str)),
       type_id_(kTypeIdRawString),
       methods_(kRawStringMethods),
-      domain_(),
       token_type_(token_type),
       ro_(false),
       ref_(false),
@@ -163,7 +159,8 @@ namespace kagami {
       ref_ = false;
     }
 
-    bool Compare(Object &object) const {
+    bool Compare(Object &object) {
+      if (ref_) return GetTargetObject()->Compare(object);
       return (ptr_ == object.ptr_ &&
         type_id_ == object.type_id_ &&
         methods_ == object.methods_ &&
@@ -195,15 +192,6 @@ namespace kagami {
       return result;
     }
 
-    Object &SetDomain(string domain) {
-      domain_ = domain;
-      return *this;
-    }
-
-    string GetDomain() const {
-      return domain_;
-    }
-
     Object &Copy(Object &&object) { 
       return this->Copy(object); 
     }
@@ -212,10 +200,10 @@ namespace kagami {
       return ref_; 
     }
 
-    bool operator==(Object &object) const { 
+    bool operator==(Object &object) { 
       return Compare(object); 
     }
-    bool operator!=(Object &object) const { 
+    bool operator!=(Object &object) { 
       return !Compare(object); 
     }
   };
@@ -259,38 +247,33 @@ namespace kagami {
   */
   class ObjectContainer {
   private:
-    list<NamedObject> base;
+    map<string, Object> base_;
 
     bool CheckObject(string id) {
-      for (size_t i = 0; i < base.size(); ++i) {
-        NamedObject &object = base.at(i);
-        if (object.first == id) return false;
-      }
-      return true;
+      return (base_.find(id) != base_.end());
     }
   public:
-    bool Add(string id, Object &source);
-    Object *Find(string id, string domain = kStrEmpty);
-    void Dispose(string id, string domain = kStrEmpty);
+    bool Add(string id, Object source);
+    Object *Find(string id);
+    void Dispose(string id);
 
     ObjectContainer() {}
 
     ObjectContainer(ObjectContainer &&mgr) {}
 
-    ObjectContainer(ObjectContainer &container) {
-      this->base.copy(container.base);
-    }
+    ObjectContainer(ObjectContainer &container) :base_(container.base_) {}
 
     bool Empty() const { 
-      return base.empty(); 
+      return base_.empty(); 
     }
 
     ObjectContainer &operator=(ObjectContainer &mgr) { 
-      base.copy(mgr.base); return *this; 
+      base_ = mgr.base_;
+      return *this;
     }
 
     void clear() {
-      base.clear();
+      base_.clear();
     }
   };
 

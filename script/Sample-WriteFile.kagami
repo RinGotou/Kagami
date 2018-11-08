@@ -1,11 +1,11 @@
 def WriteFile()
-	stream = outstream('script-output.txt','append')
-	recv = ''
-	while (recv != 'quit')
-		recv = input('Stream> ')
-		stream.write(recv)
-	end
-	stream.close()
+  stream = outstream('script-output.txt','append')
+  recv = ''
+  while (recv != 'quit')
+    recv = input('Stream> ')
+    stream.write(recv)
+  end
+  stream.close()
 end
 
 WriteFile()

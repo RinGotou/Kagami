@@ -6,7 +6,7 @@
 #define OBJECT_ASSERT(MAP,ITEM,TYPE)               \
   if (!MAP.CheckTypeId(ITEM,TYPE))                 \
     return Message(kStrFatalError,kCodeIllegalParm,\
-    "Unexpected object type - " + TYPE + ".");
+    "Expected object type - " + TYPE + ".");
 
 #define CONDITION_ASSERT(STATE,MESS)               \
   if(!(STATE)) return Message(kStrFatalError,kCodeIllegalParm,MESS);
@@ -80,7 +80,7 @@ namespace kagami {
   using StringUnit = pair<size_t, string>;
 
   class Machine {
-    using MachCtlBlk = struct {
+    struct MachCtlBlk {
       bool s_continue, 
         s_break, 
         last_index, 
@@ -98,7 +98,7 @@ namespace kagami {
       ObjectMap recursion_map;
     };
 
-    using MetaWorkBlock = struct {
+    struct MetaWorkBlock {
       string error_string;
       deque<Object> returning_base;
       bool error_returning,
@@ -109,6 +109,7 @@ namespace kagami {
         tail_recursion;
     };
 
+    Machine *parent_;
     vector<Meta> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
@@ -206,7 +207,7 @@ namespace kagami {
 #if defined(_WIN32)
   void InitLibraryHandler();
 #endif
-#if defined(_ENABLE_DEBUGGING_) || not defined(_DISABLE_SDL_)
+#if not defined(_DISABLE_SDL_)
   void LoadSDLStuff();
 #endif
   Message FunctionTunnel(ObjectMap &p);

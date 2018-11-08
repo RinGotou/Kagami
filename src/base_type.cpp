@@ -1,12 +1,18 @@
 #include "base_type.h"
 
-
 namespace kagami {
   //Array
-  shared_ptr<void> ArrayCopy(shared_ptr<void> target) {
-    const auto ptr = static_pointer_cast<vector<Object>>(target);
-    vector<Object> base = *ptr;
-    return make_shared<vector<Object>>(std::move(base));
+  shared_ptr<void> CreateArrayCopy(shared_ptr<void> source) {
+    auto &src_base = *static_pointer_cast<ArrayBase>(source);
+    shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
+
+    dest_base->reserve(src_base.size());
+    for (auto &unit : src_base) {
+      dest_base->emplace_back(Object(type::GetObjectCopy(unit), unit.GetTypeId(), 
+        unit.GetMethods(), false).SetTokenType(unit.GetTokenType()));
+    }
+
+    return dest_base;
   }
 
   inline bool IsStringFamily(Object &obj) {
@@ -31,17 +37,12 @@ namespace kagami {
 
     const auto type_id = obj.GetTypeId();
     const auto methods = obj.GetMethods();
-    const auto tokenTypeEnum = obj.GetTokenType();
-    shared_ptr<void> initPtr;
+    const auto token_type = obj.GetTokenType();
     base.reserve(size);
 
     for (auto count = 0; count < size; count++) {
-      initPtr = type::GetObjectCopy(obj);
-      base.emplace_back((Object()
-        .Set(initPtr, type_id)
-        .SetMethods(methods)
-        .SetTokenType(tokenTypeEnum)
-        .set_ro(false)));
+      base.emplace_back(Object(type::GetObjectCopy(obj), type_id, methods, false)
+        .SetTokenType(token_type));
     }
 
     return Message().SetObject(Object(make_shared<ArrayBase>(base),
@@ -201,8 +202,8 @@ namespace kagami {
       ofs = make_shared<ofstream>(ofstream(path.c_str(), 
         std::ios::out | std::ios::trunc));
     }
-    else {
-      ofs = make_shared<ofstream>(ofstream(path.c_str(), 
+    else if (append && !truncate) {
+      ofs = make_shared<ofstream>(ofstream(path.c_str(),
         std::ios::out | std::ios::app));
     }
 
@@ -214,7 +215,7 @@ namespace kagami {
     ofstream &ofs = p.Get<ofstream>(kStrObject);
     Message msg = Message(kStrTrue);
 
-    ASSERT_RETURN(!ofs.good(), kStrFalse);
+    ASSERT_RETURN(ofs.good(), kStrFalse);
 
     if (p.CheckTypeId("str",kTypeIdRawString)) {
       string output = RealString(p.Get<string>("str"));
@@ -230,7 +231,6 @@ namespace kagami {
 
     return msg;
   }
-
 
   //regex
   Message RegexConstructor(ObjectMap &p) {
@@ -272,6 +272,20 @@ namespace kagami {
   Message FunctionGetId(ObjectMap &p) {
     auto &ent = p.Get<Entry>(kStrObject);
     return Message(ent.GetId());
+  }
+
+  Message FunctionGetParameters(ObjectMap &p) {
+    auto &ent = p.Get<Entry>(kStrObject);
+    shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
+    auto origin_vector = ent.GetArguments();
+
+    for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
+      dest_base->emplace_back(Object(make_shared<string>(*it), kTypeIdString, 
+        kStringMethods, false));
+    }
+
+    return Message()
+      .SetObject(Object(dest_base, kTypeIdArrayBase, kArrayBaseMethods, false));
   }
 
   bool AssemblingForAutosized(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
@@ -346,9 +360,8 @@ namespace kagami {
     int count = 0;
     ObjectMap target_map;
     bool state;
-
+    
     CALL_ASSERT(ent.Good(), "Bad entry - " + ent.GetId() + ".");
-
 
     switch (ent.GetArgumentMode()) {
     case kCodeAutoSize:
@@ -361,7 +374,7 @@ namespace kagami {
       break;
     }
 
-    //Error processing is missing
+    CONDITION_ASSERT(state, "Argument error.");
 
     return ent.Start(target_map);
   }
@@ -373,14 +386,14 @@ namespace kagami {
     AddTemplate(kTypeIdFunction, ObjectPlanner(SimpleSharedPtrCopy<Entry>, kFunctionMethods));
     AddEntry(Entry(FunctionGetId, kCodeNormalParm, "", "id", kTypeIdFunction, kFlagMethod));
     AddEntry(Entry(FunctionCall, kCodeAutoSize, "arg", "call", kTypeIdFunction, kFlagMethod));
-
+    AddEntry(Entry(FunctionGetParameters, kCodeNormalParm, "", "parms", kTypeIdFunction, kFlagMethod));
 
     AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, kRawStringMethods));
     AddEntry(Entry(RawStringPrint, kCodeNormalParm, "", "__print", kTypeIdRawString, kFlagMethod));
     AddEntry(Entry(RawStringGetElement, kCodeNormalParm, "subscript", "__at", kTypeIdRawString, kFlagMethod));
     AddEntry(Entry(RawStringGetSize, kCodeNormalParm, "", "size", kTypeIdRawString, kFlagMethod));
 
-    AddTemplate(kTypeIdArrayBase, ObjectPlanner(ArrayCopy, kArrayBaseMethods));
+    AddTemplate(kTypeIdArrayBase, ObjectPlanner(CreateArrayCopy, kArrayBaseMethods));
     AddEntry(Entry(ArrayConstructor, kCodeAutoFill, "size|init_value", "array"));
     AddEntry(Entry(ArrayGetElement, kCodeNormalParm, "index", "__at", kTypeIdArrayBase, kFlagMethod));
     AddEntry(Entry(ArrayPrint, kCodeNormalParm, "", "__print", kTypeIdArrayBase, kFlagMethod));

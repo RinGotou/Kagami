@@ -18,10 +18,8 @@
 #include <type_traits>
 
 //if you build this project by cmake,please turn off all switch macro below.
-//Disbale SDL2 componets for non-GUI environment
+// Disbale SDL2 componets for non-GUI environment
 //#define _DISABLE_SDL_
-//Enable all debugging feature and output info
-#define _ENABLE_DEBUGGING_
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -38,6 +36,15 @@
 #endif
 
 #if not defined(_DISABLE_SDL_)
+#if defined(_WIN32)
+#pragma comment(lib,"SDL2.lib")
+#pragma comment(lib,"SDL2main.lib")
+#if defined(_DEBUG)
+#pragma comment(lib,"SDL2test.lib")
+#endif
+#pragma comment(lib,"SDL2_image.lib")
+#else
+#endif
 #include <SDL.h>
 #include <SDL_image.h>
 #endif
@@ -71,15 +78,15 @@ namespace kagami {
   using CopyCreator = shared_ptr<void>(*)(shared_ptr<void>);
   using CastFunc = pair<string, CopyCreator>;
   
-  const string kEngineVersion = "1.2";
-  const string kCodeName = "Moonlit";
+  const string kEngineVersion = "1.4 'Feathering'";
+  const string kBackendVerison = "August";
 #if defined(_WIN32)
   const string kPlatformType = "Windows";
 #else
   const string kPlatformType = "Linux";
 #endif
-  const string kEngineName = "Kagami - Experimental Scripting util";
-  const string kEngineAuthor = "Suzu Nakamura and Contributor(s)";
+  const string kEngineName = "Kagami";
+  const string kMaintainer = "Suzu Nakamura";
   const string kCopyright = "Copyright(c) 2017-2018";
 
   const string kStrNull = "null",
@@ -188,7 +195,7 @@ namespace kagami {
   const string kInStreamMethods = "get|good|getlines|close|eof";
   const string kOutStreamMethods = "write|good|close";
   const string kRegexMethods = "match";
-  const string kFunctionMethods = "id|call";
+  const string kFunctionMethods = "id|call|parms";
 
   constexpr size_t kModeNormal        = 0;
   constexpr size_t kModeNextCondition = 1;
@@ -247,26 +254,5 @@ namespace kagami {
     kStrArray = "__array",
     kStrTypeAssert = "__type_assert",
     kStrTypeAssertR = "__type_assert_r";
-
-  /*Prompt for terminal*/
-  const string kStrNormalArrow = ">>>",
-    kStrTypeAssertGroup = "...";
-
-  const string kOpAdd = "__add",
-    kOpSub = "__sub",
-    kOpMul = "__mul",
-    kOpDiv = "__div",
-    kOpEqual = "__eq",
-    kOpIs = "__is",
-    kOpLessOrEqual = "__loeq",
-    kOpMoreOrEqual = "__moeq",
-    kOpNotEqual = "__neq",
-    kOpNot = "__not",
-    kOpLess = "__less",
-    kOpMore = "__more",
-    kOpLSelfInc = "__lsinc",
-    kOpRSelfInc = "__rsinc",
-    kOpLSelfDec = "__lsdec",
-    kOpRSelfDec = "__rsdec";
 }
 

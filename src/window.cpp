@@ -4,22 +4,6 @@ namespace kagami {
 #if not defined(_DISABLE_SDL_)
 
   /* Under Construction */
-  Message SDLInit(ObjectMap &p) {
-    int result = SDL_Init(SDL_INIT_EVERYTHING);
-    Message msg;
-    if (result < 0) {
-      msg = Message(kStrFalse);
-    }
-    else {
-      msg = Message(kStrTrue);
-    }
-    return msg;
-  }
-
-  Message SDLQuit(ObjectMap &p) {
-    SDL_Quit();
-    return Message();
-  }
 
   Message SDLCreateWindow(ObjectMap &p) {
     int w = stoi(p.Get<string>("width"));
@@ -77,8 +61,6 @@ namespace kagami {
     AddTemplate(kTypeIdSDLTexture, ObjectPlanner(FakeCopy, ""));
     AddEntry(Entry(SDLCreateTextureFormBMP, kCodeNormalParm, "win|path", "LoadBMP"));
 
-    AddEntry(Entry(SDLInit, kCodeNormalParm, "", "SDLInit"));
-    AddEntry(Entry(SDLQuit, kCodeNormalParm, "", "SDLQuit"));
     AddEntry(Entry(SDLDelay, kCodeNormalParm, "time", "SDLDelay"));
     AddEntry(Entry(SDLTestPresent, kCodeNormalParm, "texture|win", "Present"));
   }

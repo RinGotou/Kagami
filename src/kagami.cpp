@@ -1,132 +1,183 @@
 #include "kagami.h"
 
+using std::string;
+using std::map;
+using std::vector;
+
 namespace kagami {
-  void ScriptCore::PrintEvents(const char *path, const char *scriptPath) {
+  void ScriptCore::PrintEvents(string path, string script_path) {
     using namespace trace;
     string priorityStr;
     auto logger = GetLogger();
 
     /*Write log to a file*/
-    if (path != nullptr) {
+    if (path != "") {
       ofstream ofs;
       ofs.open(path, std::ios::out | std::ios::app);
       if (!ofs.good()) {
-        cout << "Cannot create event log.exit." << endl;
+        cout << "Can't create event log." << endl;
         return;
       }
-      LogOutput<ofstream>(ofs, path, scriptPath);
+      LogOutput<ofstream>(ofs, path.c_str(), script_path.c_str());
       ofs.close();
     }
     /*Print log to screen*/
     else {
-      LogOutput<std::ostream>(cout, path, scriptPath);
+      LogOutput<std::ostream>(cout, nullptr, script_path.c_str());
     }
   }
 
   void ScriptCore::ExecScriptFile(string target) {
-    Activiate();
     Machine machine(target.c_str());
     machine.Run();
   }
 
   void ScriptCore::MyInfo() {
-    //print application info
-    cout << kEngineName
-      << ' ' << "verison:" << kEngineVersion
-      << '(' << kCodeName << ')' << endl;
-    cout << kCopyright << ' ' << kEngineAuthor << endl;
+    cout << kEngineName << " " << kEngineVersion << "\n";
+    cout << "Backend version: " << kBackendVerison << "\n";
+    cout << kCopyright << " " << kMaintainer << endl;
   }
 }
 
-  void HelpFile() {
-    cout << "\nargument with '*': you can leave it blank."
-      << endl;
-    cout << "run   [script-path][*log-path] Open a script file to execute;\n"
-      << "\t[script-path] Directory path of Kagami script file;\n"
-      << "\t[log-path] Directory path of event log file.\n"
-      << "\thint:if user doesn't provide a log-path, application will write into 'project-kagami.log' by default."
-      << "\n" << endl;
-    cout << "runs  [script-path][*log-path] Same as 'run' but pause at application exit."
-      << "\n" << endl;
-    cout << "runp  [script-path] Same as 'run' but event info will print to standard output directly."
-      << "\n" << endl;
-    cout << "help  Show this message."
-      << "\n" << endl;
-  }
+//Main namespace
+void HelpFile() {
+  cout << "Execute a Kagami script.\n";
+  cout << "Usage:kagami [OPTION]...\n\n";
+  cout << "\t-path           Path of script file.\n";
+  cout << "\t-log-path       Path of error log.\n";
+  cout << "\t-pause-at-exit  Automatically pause at application exit.\n";
+  cout << "\t-help           Show this message.\n";
+  cout << "\t-version        Show version message of hatsuki machine.\n";
 
-  int GetOption(char *src) {
-    int res = -1;
-    if (strcmp(src, "run") == 0) res = 1;
-    else if (strcmp(src, "runs") == 0) res = 2;
-    else if (strcmp(src, "runp") == 0) res = 3;
-    else if (strcmp(src, "help") == 0) res = 4;
-    return res;
-  }
+}
 
 #ifndef _NO_CUI_
-  void AtExitHandler() {
-    cout << "Press enter to close..." << endl;
-    cin.get();
-  }
+void AtExitHandler() {
+  cout << "(Application Exit) Press enter to close..." << endl;
+  cin.get();
+}
 #endif
 
-int main(int argc, char **argv) {
-  kagami::ScriptCore scriptCore;
-
+inline void Patch(string locale) {
   std::ios::sync_with_stdio(false);
   //solve utf-8 encoding
   //Although codecvt_utf8 is not available in C++17..
   //But we're now in C++11,isn't it?
   std::locale::global(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
-  std::wcout.imbue(std::locale(""));
+  std::wcout.imbue(std::locale(locale));
+}
 
-  //switch main code between test case and normal case.
-  //this macro can be found in the head of this file.
-#ifdef _ENABLE_DEBUGGING_
-  //set your own test script path here
-  scriptCore.ExecScriptFile("C:\\workspace\\test.kagami");
-  scriptCore.PrintEvents(nullptr, "C:\\workspace\\test.kagami");
-#else
-  if (argc < 2) {
-    scriptCore.MyInfo();
-    HelpFile();
+inline vector<string> Generate(int argc, char **argv) {
+  vector<string> result;
+
+  for (int idx = 1; idx < argc; idx += 1) {
+    result.emplace_back(string(argv[idx]));
   }
-  else {
-    int op = GetOption(argv[1]);
-    switch (op) {
-    case 1:
-    case 2:
-    case 3:
-      if (argc < 3) {
-        scriptCore.MyInfo();
-        cout << "You must provide a script path.exit." << endl;
+
+  return result;
+}
+
+bool ArgumentParser(vector<string> args, map<string,string> &arg_base) {
+  bool arg = false, status = true;
+  string error_arg;
+  string last;
+
+  for (const auto &unit : args) {
+    if (unit[0] == '-' || unit[0] == '/') {
+      arg = true;
+      last = unit.substr(1, unit.size() - 1);
+      arg_base[last] = "";
+      continue;
+    }
+    else {
+      if (arg) {
+        arg_base[last] = unit;
+        last.clear();
+        arg = false;
       }
       else {
-        if (op == 2) atexit(AtExitHandler);
-        scriptCore.ExecScriptFile(argv[2]);
-
-        if (op == 3) {
-          scriptCore.PrintEvents(nullptr, argv[2]);
-        }
-        else if (argc < 4) {
-          scriptCore.PrintEvents("project-kagami.log", argv[2]);
-        }
-        else if (argc == 4) {
-          scriptCore.PrintEvents(argv[3], argv[2]);
-        }
+        status = false;
+        error_arg = unit;
+        break;
       }
-      break;
-    case 4:
-      scriptCore.MyInfo();
-      HelpFile();
-    case -1:
-    default:
-      scriptCore.MyInfo();
-      cout << "Unknown option.exit." << endl;
-      break;
     }
+  }
+
+  if (!status) {
+    cout << "Invaild argument:" + error_arg << endl;
+    return false;
+  }
+
+  return true;
+}
+
+void Do(map<string, string> &base) {
+  kagami::ScriptCore core;
+
+  auto check = [&base](string id)->bool {
+    return base.find(id) != base.end();
+  };
+
+  if (check("path")) {
+    kagami::Activiate();
+
+    string path = base["path"];
+    string log_path = check("log-path") ?
+      base["log-path"] :
+      "project-kagami.log";
+    string locale = check("locale") ?
+      base["locale"] :
+      "";
+
+    Patch(locale);
+
+    bool pause_at_exit = check("pause-at-exit");
+
+    if (check("pause-at-exit")) atexit(AtExitHandler);
+
+    if (check("help") || check("version")) {
+      cout << "Ignore illegal operation..." << endl;
+    }
+
+    core.ExecScriptFile(path);
+    check("log-to-stdout") ?
+      core.PrintEvents("", path) :
+      core.PrintEvents(log_path, path);
+  }
+  else if (check("help")) {
+    HelpFile();
+
+    if (check("path") || check("version")) {
+      cout << "Ignore illegal operation..." << endl;
+    }
+  }
+  else if (check("version")) {
+    kagami::ScriptCore().MyInfo();
+
+    if (check("path") || check("help")) {
+      cout << "Ignore illegal operation..." << endl;
+    }
+  }
+  else {
+    cout << "Nothing to do." << endl;
+  }
+}
+
+int main(int argc, char **argv) {
+#if not defined(_DISABLE_SDL_)
+  if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+    cout << "SDL initialization error!" << endl;
+    return 0;
   }
 #endif
   
+  vector<string> str = Generate(argc, argv);
+  map<string, string> args;
+  bool result = ArgumentParser(str, args);
+  if (result) Do(args);
+
+#if not defined(_DISABLE_SDL_)
+  SDL_Quit();
+#endif
   return 0;
 }
