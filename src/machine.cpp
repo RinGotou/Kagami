@@ -15,6 +15,12 @@ namespace kagami {
     return result;
   }
 
+  void CopyObject(Object &dest, Object &src) {
+    dest.Set(type::GetObjectCopy(src), src.GetTypeId(),
+      src.GetMethods(), false)
+      .SetTokenType(src.GetTokenType());
+  }
+
 #if defined(_WIN32) && defined(_MSC_VER)
   //from MSDN
   std::wstring s2ws(const std::string& s) {
@@ -650,6 +656,10 @@ namespace kagami {
           meta_blk->tail_recursion = false;
       }
 
+      //switch (ent.GetTokenEnum()) {
+      //case GT_BIND:
+      //}
+
       if (ent.NeedRecheck()) {
         id = ent.GetId();
         ent.IsMethod() ?
@@ -862,6 +872,47 @@ namespace kagami {
     blk->recursion_map.clear();
     ResetBlock(blk);
     ResetContainer(name);
+  }
+
+  bool Machine::BindAndSet(MetaWorkBlock *blk, Object dest, Object src) {
+    bool result = true;
+
+    if (dest.IsRef()) {
+      if (!dest.get_ro()) {
+        CopyObject(dest, src);
+      }
+      else {
+        blk->error_string = "Object is read-only.";
+        result = false;
+      }
+    }
+    else {
+      string id = GetObjectStuff<string>(dest);
+
+      if (util::GetTokenType(id) == T_GENERIC) {
+        ObjectPointer real_dest = entry::FindObject(id);
+
+        if (real_dest != nullptr) {
+          CopyObject(*real_dest, src);
+        }
+        else {
+          Object obj(type::GetObjectCopy(src), src.GetTypeId(), src.GetMethods(), false);
+          obj.SetTokenType(src.GetTokenType());
+          ObjectPointer result = entry::CreateObject(id, obj);
+          if (result == nullptr) {
+            blk->error_string = "Object cration is failed.";
+            result = false;
+          }
+        }
+      }
+      else {
+        blk->error_string = "Invalid bind operation.";
+        result = false;
+      }
+
+    }
+
+    return result;
   }
 
   Message Machine::Run(bool create_container, string name) {

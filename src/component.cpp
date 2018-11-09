@@ -55,12 +55,6 @@ namespace kagami {
     return Message(kStrFatalError, kCodeIllegalSymbol, str);
   }
 
-  inline void CopyObject(Object &dest, Object &src) {
-    dest.Set(type::GetObjectCopy(src), src.GetTypeId(),
-      src.GetMethods(), false)
-      .SetTokenType(src.GetTokenType());
-  }
-
   inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm) {
     Message msg;
     auto ent = entry::Order(id, type_id);

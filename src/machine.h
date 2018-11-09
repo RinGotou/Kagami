@@ -140,6 +140,9 @@ namespace kagami {
     void AssemblingForAutosized(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
     void AssemblingForAutoFilling(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
     void AssemblingForNormal(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
+
+    //Object Management (Old)
+    bool BindAndSet(MetaWorkBlock *blk, Object dest, Object src);
   public:
     Machine() : 
       health_(false), 
@@ -221,4 +224,5 @@ namespace kagami {
   shared_ptr<void> NullCopy(shared_ptr<void> target);
   string RealString(const string &src);
   bool IsStringFamily(Object &obj);
+  void CopyObject(Object &dest, Object &src);
 }
