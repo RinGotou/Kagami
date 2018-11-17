@@ -8,6 +8,10 @@ namespace kagami {
     AT_NORMAL, AT_OBJECT, AT_RET, AT_HOLDER
   };
 
+  enum RequestType {
+    RT_MACHINE, RT_REGULAR, RT_NUL
+  };
+
   class Argument {
   public:
     using Domain = struct {
@@ -42,6 +46,28 @@ namespace kagami {
     bool IsPlaceholder() const {
       return type == AT_HOLDER;
     }
+  };
+
+  class Request {
+  public:
+    GenericTokenEnum head_gen;
+    string head_reg;
+    RequestType type;
+
+    Request(GenericTokenEnum token) :
+      head_gen(token),
+      head_reg(),
+      type(RT_MACHINE) {}
+
+    Request(string token):
+      head_gen(GT_NUL),
+      head_reg(token),
+      type(RT_REGULAR) {}
+
+    Request():
+      head_gen(GT_NUL),
+      head_reg(),
+      type(RT_NUL) {}
   };
 
   using Instruction = pair<Entry, deque<Argument>>;

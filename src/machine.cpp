@@ -656,10 +656,6 @@ namespace kagami {
           meta_blk->tail_recursion = false;
       }
 
-      //switch (ent.GetTokenEnum()) {
-      //case GT_BIND:
-      //}
-
       if (ent.NeedRecheck()) {
         id = ent.GetId();
         ent.IsMethod() ?
@@ -694,6 +690,8 @@ namespace kagami {
       if (meta_blk->error_returning || 
         meta_blk->error_obj_checking ||
         meta_blk->error_assembling) break;
+
+      //TODO:Insert here
 
       msg = ent.Start(obj_map);
       msg.Get(&value, &code, &detail);
