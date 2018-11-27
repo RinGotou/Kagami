@@ -52,25 +52,30 @@ namespace kagami {
   public:
     GenericTokenEnum head_gen;
     string head_reg;
+    string domain;
     RequestType type;
 
     Request(GenericTokenEnum token) :
       head_gen(token),
       head_reg(),
+      domain(),
       type(RT_MACHINE) {}
 
     Request(string token):
       head_gen(GT_NUL),
       head_reg(token),
+      domain(),
       type(RT_REGULAR) {}
 
     Request():
       head_gen(GT_NUL),
       head_reg(),
+      domain(),
       type(RT_NUL) {}
   };
 
   using Instruction = pair<Entry, deque<Argument>>;
+  using Instruction2 = pair<Request, deque<Argument>>;
 
   class Analyzer {
     struct AnalyzerWorkBlock {

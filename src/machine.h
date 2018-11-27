@@ -109,7 +109,7 @@ namespace kagami {
         tail_recursion;
     };
 
-    Machine *parent_;
+    //Machine *parent_;
     vector<Meta> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
