@@ -12,13 +12,13 @@ namespace kagami {
     RT_MACHINE, RT_REGULAR, RT_NUL
   };
 
+  struct Domain {
+    string data;
+    ArgumentType type;
+  };
+
   class Argument {
   public:
-    using Domain = struct {
-      string data;
-      ArgumentType type;
-    };
-
     string data;
     ArgumentType type;
     TokenTypeEnum token_type;
@@ -50,9 +50,10 @@ namespace kagami {
 
   class Request {
   public:
+    int priority;
     GenericTokenEnum head_gen;
     string head_reg;
-    string domain;
+    Domain domain;
     RequestType type;
 
     Request(GenericTokenEnum token) :
@@ -61,11 +62,11 @@ namespace kagami {
       domain(),
       type(RT_MACHINE) {}
 
-    Request(string token):
+    Request(string token, bool place_holder = false) :
       head_gen(GT_NUL),
       head_reg(token),
       domain(),
-      type(RT_REGULAR) {}
+      type(place_holder ? RT_NUL : RT_REGULAR) {}
 
     Request():
       head_gen(GT_NUL),
@@ -74,14 +75,13 @@ namespace kagami {
       type(RT_NUL) {}
   };
 
-  using Instruction = pair<Entry, deque<Argument>>;
-  using Instruction2 = pair<Request, deque<Argument>>;
+  using Instruction = pair<Request, deque<Argument>>;
 
   class Analyzer {
     struct AnalyzerWorkBlock {
       deque<Argument> args;
-      deque<Entry> symbol;
-      bool insert_between_object, need_reversing, define_line, assert_r;
+      deque<Request> symbol;
+      bool insert_between_object, need_reversing, define_line;
       Token current;
       Token next;
       Token next_2;
