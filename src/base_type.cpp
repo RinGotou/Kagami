@@ -390,7 +390,7 @@ namespace kagami {
 
     AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, kRawStringMethods));
     AddEntry(Entry(RawStringPrint, kCodeNormalParm, "", "__print", kTypeIdRawString, kFlagMethod));
-    AddEntry(Entry(RawStringGetElement, kCodeNormalParm, "subscript", "__at", kTypeIdRawString, kFlagMethod));
+    AddEntry(Entry(RawStringGetElement, kCodeNormalParm, "index", "__at", kTypeIdRawString, kFlagMethod));
     AddEntry(Entry(RawStringGetSize, kCodeNormalParm, "", "size", kTypeIdRawString, kFlagMethod));
 
     AddTemplate(kTypeIdArrayBase, ObjectPlanner(CreateArrayCopy, kArrayBaseMethods));
