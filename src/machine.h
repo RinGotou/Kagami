@@ -145,7 +145,7 @@ namespace kagami {
     bool BindAndSet(MetaWorkBlock *blk, Object dest, Object src);
 
     //Commands
-    bool GenericRequests(MetaWorkBlock *blk, Request &Request, deque<Argument> &args);
+    bool GenericRequests(MetaWorkBlock *meta_blk, Request &Request, deque<Argument> &args);
 
     bool CheckGenericRequests(GenericTokenEnum token);
   public:

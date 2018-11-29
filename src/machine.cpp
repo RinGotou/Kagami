@@ -605,18 +605,14 @@ namespace kagami {
     }
   }
 
-  bool Machine::GenericRequests(MetaWorkBlock *blk, Request &request, deque<Argument> &args) {
+  bool Machine::GenericRequests(MetaWorkBlock *meta_blk, Request &request, deque<Argument> &args) {
     auto &token = request.head_gen;
     bool result = true;
 
-    switch (token) {
-    case GT_BIND:
-      result = BindAndSet(blk,
-        MakeObject(args[0], blk),
-        MakeObject(args[1], blk));
-      break;
-    default:
-      break;
+    if (token == GT_BIND) {
+      auto dest = MakeObject(args[0], meta_blk);
+      auto src = MakeObject(args[1], meta_blk);
+      result = BindAndSet(meta_blk, dest, src);
     }
 
     return result;
@@ -637,8 +633,6 @@ namespace kagami {
   }
 
   Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
-    int code;
-    string id, type_id, va_arg_head, value, detail;
     Message msg;
     ObjectMap obj_map;
     vector<Instruction> &action_base = meta.GetContains();
@@ -646,19 +640,11 @@ namespace kagami {
       is_operator_token = false;
     bool state = true;
     MetaWorkBlock *meta_blk = new MetaWorkBlock();
-    Entry ent;
-
-    auto reset = [&]()->void {
-      obj_map.clear();
-      id.clear();
-      va_arg_head.clear();
-      type_id.clear();
-    };
 
     ResetMetaWorkBlock(meta_blk);
 
     for (size_t idx = 0; idx < action_base.size(); idx += 1) {
-      reset();
+      obj_map.clear();
 
       auto &request = action_base.at(idx).first;
       auto &args = action_base.at(idx).second;
@@ -667,6 +653,11 @@ namespace kagami {
         state = GenericRequests(meta_blk, request, args);
       }
       else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {   
+        int code;
+        Entry ent;
+        string type_id, value, detail;
+        is_operator_token = entry::IsOperatorToken(request.head_gen);
+        
         (request.head_reg == name && idx == action_base.size() - 2
           && action_base.back().first.head_gen == GT_RETURN) ?
           meta_blk->tail_recursion = true :
@@ -699,7 +690,7 @@ namespace kagami {
         }
 
         if (!ent.Good()) {
-          msg = Message(kStrFatalError, kCodeIllegalCall, "Function not found - " + id);
+          msg = Message(kStrFatalError, kCodeIllegalCall, "Function not found - " + request.head_reg);
           break;
         }
 

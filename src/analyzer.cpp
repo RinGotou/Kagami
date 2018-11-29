@@ -347,6 +347,7 @@ namespace kagami {
     request.domain = blk->args.back();
     blk->symbol.emplace_back(request);
     blk->symbol.emplace_back(Request(blk->current.first, true));
+    blk->args.pop_back();
     blk->args.emplace_back(Argument());
 
     return result;
