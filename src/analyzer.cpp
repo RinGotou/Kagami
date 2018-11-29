@@ -17,6 +17,7 @@ namespace kagami {
     return TOKEN_OTHERS;
   }
 
+
   vector<string> Analyzer::Scanning(string target) {
     string current_string, temp;
     bool string_processing = false;
@@ -191,7 +192,7 @@ namespace kagami {
     deque<Request> *temp_symbol = new deque<Request>();
     deque<Argument> *temp_arg = new deque<Argument>();
 
-    while (!blk->symbol.empty()
+    while (!blk->symbol.empty() && blk->symbol.size() > 1
       && (blk->symbol.back().priority == blk->symbol[blk->symbol.size() - 2].priority)) {
       temp_symbol->push_back(blk->symbol.back());
 
@@ -222,19 +223,25 @@ namespace kagami {
 
   bool Analyzer::InstructionFilling(AnalyzerWorkBlock *blk) {
     deque<Argument> arguments;
-    size_t idx = 0;
+    size_t idx = 0, limit = 0;
 
-    bool reversed = (entry::IsOperatorToken(blk->symbol.back().head_gen) 
-      && blk->need_reversing);
+    bool is_bin_operator = entry::IsOperatorToken(blk->symbol.back().head_gen);
+    bool is_mono_operator = entry::IsMonoOperator(blk->symbol.back().head_gen);
+    bool reversed = (is_bin_operator && blk->need_reversing);
 
-    while (!blk->args.empty() && blk->args.back().IsPlaceholder()) {
+    if (is_bin_operator) limit = 2;
+    if (is_mono_operator) limit = 1;
+    
+    while (!blk->args.empty() && !blk->args.back().IsPlaceholder()) {
+      if ((is_bin_operator || is_mono_operator) && idx >= limit) break;
+
       reversed ?
         arguments.emplace_back(blk->args.back()) :
         arguments.emplace_front(blk->args.back());
       
       blk->args.pop_back();
+      (is_bin_operator || is_mono_operator) ? idx += 1 : idx = idx;
     }
-
 
     if (!blk->args.empty()
       && blk->args.back().IsPlaceholder()
@@ -251,12 +258,13 @@ namespace kagami {
 
   void Analyzer::EqualMark(AnalyzerWorkBlock *blk) {
     if (!blk->args.empty()) {
-      blk->symbol.emplace_back(GT_BIND);
+      Request request(GT_BIND);
+      request.priority = entry::GetTokenPriority(GT_BIND);
+      blk->symbol.emplace_back(request);
     }
   }
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
-    Argument domain_arg = blk->args.back();
     GenericTokenEnum token;
 
     (blk->next_2.first != "(" && blk->next_2.first != "[") ?
@@ -264,12 +272,13 @@ namespace kagami {
       token = GT_TYPE_ASSERT;
     
     deque<Argument> arguments = {
-      domain_arg,
+      blk->args.back(),
       Argument(blk->next.first,AT_NORMAL,blk->next.second)
     };
 
     action_base_.emplace_back(Instruction(Request(token), arguments));
-    blk->domain = domain_arg;
+    blk->domain = blk->args.back();
+    blk->args.pop_back();
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
@@ -289,20 +298,22 @@ namespace kagami {
     string top_token = blk->symbol.back().head_reg;
 
     while (!blk->symbol.empty()
-      && top_token != "{"&&top_token != "["&&top_token != "("
+      && top_token != "{" && top_token != "[" && top_token != "("
       && blk->symbol.back().head_gen != GT_BIND) {
 
       auto first_token = blk->symbol.back().head_gen;
 
-      if (entry::IsOperatorToken(first_token)
-        && entry::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)
-        && checked) {
-        checked = false;
-      }
-      else {
-        checked = true;
-        blk->need_reversing = true;
-        Reversing(blk);
+      if (entry::IsOperatorToken(first_token)) {
+        if (entry::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)) {
+          if (checked) {
+            checked = false;
+          }
+          else {
+            checked = true;
+            blk->need_reversing = true;
+            Reversing(blk);
+          }
+        }
       }
 
       result = InstructionFilling(blk);
@@ -484,12 +495,14 @@ namespace kagami {
     if (blk->symbol.empty()) {
       blk->symbol.push_back(request);
     }
-    else if (currentPriority < blk->symbol.back().priority) {
+    else if (currentPriority < blk->symbol.back().priority
+      && entry::IsOperatorToken(blk->symbol.back().head_gen)) {
       auto j = blk->symbol.size() - 1;
       auto k = blk->args.size();
 
       while (
-        (kBracketPairs.find(blk->symbol[j].head_reg) == kBracketPairs.end())
+        blk->symbol[j].head_reg != "(" && blk->symbol[j].head_reg != "["
+        && blk->symbol[j].head_reg != "{"
         && (currentPriority < blk->symbol[j].priority)) {
 
         k == blk->args.size() ? k -= 2 : k -= 1;

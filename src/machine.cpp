@@ -76,7 +76,7 @@ namespace kagami {
   string IndentationAndCommentProc(string target) {
     if (target == "") return "";
     string data;
-    char current, last;
+    char current = 0, last = 0;
     size_t head = 0, tail = 0;
     bool exempt_blank_char = true;
     bool string_processing = false;

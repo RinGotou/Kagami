@@ -57,18 +57,21 @@ namespace kagami {
     RequestType type;
 
     Request(GenericTokenEnum token) :
+      priority(4),
       head_gen(token),
       head_reg(),
       domain(),
       type(RT_MACHINE) {}
 
     Request(string token, bool place_holder = false) :
+      priority(4),
       head_gen(GT_NUL),
       head_reg(token),
       domain(),
       type(place_holder ? RT_NUL : RT_REGULAR) {}
 
     Request():
+      priority(4),
       head_gen(GT_NUL),
       head_reg(),
       domain(),

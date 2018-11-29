@@ -165,6 +165,9 @@ namespace kagami {
     int GetTokenPriority(GenericTokenEnum token) {
       int result;
       switch (token) {
+      case GT_BIND:
+        result = 0;
+        break;
       case GT_ADD:
       case GT_SUB:
         result = 2;
@@ -189,6 +192,13 @@ namespace kagami {
       }
 
       return result;
+    }
+
+    bool IsMonoOperator(GenericTokenEnum token) {
+      return token == GT_LSELF_DEC
+        || token == GT_LSELF_DEC
+        || token == GT_RSELF_INC
+        || token == GT_RSELF_DEC;
     }
 
     GenericTokenEnum GetGenericToken(string src) {

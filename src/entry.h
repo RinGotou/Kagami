@@ -207,6 +207,7 @@ namespace kagami {
     OperatorCode GetOperatorCode(string src);
     Entry GetGenericProvider(GenericTokenEnum token);
     int GetTokenPriority(GenericTokenEnum token);
+    bool IsMonoOperator(GenericTokenEnum token);
   }
 
   namespace type {

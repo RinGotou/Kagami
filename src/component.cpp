@@ -204,7 +204,9 @@ namespace kagami {
     } 
     else {
       Message tempMsg = CheckEntryAndStart("__print", obj.GetTypeId(), p);
-      if (tempMsg.GetCode() == kCodeIllegalCall) errorMsg();
+      if (tempMsg.GetCode() == kCodeIllegalCall) {
+        errorMsg();
+      }
     }
     return Message();
   }
