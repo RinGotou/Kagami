@@ -53,7 +53,7 @@ namespace kagami {
     int priority;
     GenericTokenEnum head_gen;
     string head_reg;
-    Domain domain;
+    Argument domain;
     RequestType type;
 
     Request(GenericTokenEnum token) :

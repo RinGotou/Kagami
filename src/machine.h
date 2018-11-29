@@ -137,12 +137,17 @@ namespace kagami {
     //Meta Work Block
     Object MakeObject(Argument &arg, MetaWorkBlock *meta_blk, bool checking = false);
     void ResetMetaWorkBlock(MetaWorkBlock *meta_blk);
-    void AssemblingForAutosized(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
-    void AssemblingForAutoFilling(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
-    void AssemblingForNormal(Instruction &inst, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
+    void AssemblingForAutosized(Entry &ent,deque<Argument> parms, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
+    void AssemblingForAutoFilling(Entry &ent, deque<Argument> parmss, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
+    void AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
 
     //Object Management (Old)
     bool BindAndSet(MetaWorkBlock *blk, Object dest, Object src);
+
+    //Commands
+    bool GenericRequests(MetaWorkBlock *blk, Request &Request, deque<Argument> &args);
+
+    bool CheckGenericRequests(GenericTokenEnum token);
   public:
     Machine() : 
       health_(false), 

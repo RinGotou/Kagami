@@ -528,15 +528,14 @@ namespace kagami {
     meta_blk->is_assert_r = false;
   }
 
-  void Machine::AssemblingForAutosized(Instruction &inst, 
+  void Machine::AssemblingForAutosized(Entry &ent, 
+    deque<Argument> parms,
     ObjectMap &obj_map, 
     MetaWorkBlock *meta_blk) {
 
     size_t idx = 0;
     size_t va_arg_size;
     size_t count = 0;
-    auto &ent = inst.first;
-    auto &parms = inst.second;
     auto ent_args = ent.GetArguments();
     auto va_arg_head = ent_args.back();
     auto is_method = (ent.GetFlag() == kFlagMethod);
@@ -559,17 +558,14 @@ namespace kagami {
     }
 
     obj_map.Input(kStrVaSize, Object(to_string(count), T_INTEGER));
-
-    if(is_method) obj_map.Input(kStrObject, MakeObject(parms.back(), meta_blk));
   }
 
-  void Machine::AssemblingForAutoFilling(Instruction &inst, 
+  void Machine::AssemblingForAutoFilling(Entry &ent, 
+    deque<Argument> parms,
     ObjectMap &obj_map, 
     MetaWorkBlock *meta_blk) {
 
     size_t idx = 0;
-    auto &ent = inst.first;
-    auto &parms = inst.second;
     auto ent_args = ent.GetArguments();
     auto is_method = (ent.GetFlag() == kFlagMethod);
 
@@ -579,17 +575,14 @@ namespace kagami {
       obj_map.Input(ent_args[idx], MakeObject(parms[idx], meta_blk));
       idx += 1;
     }
-
-    if (is_method) obj_map.Input(kStrObject, MakeObject(parms.back(), meta_blk));
   }
 
-  void Machine::AssemblingForNormal(Instruction &inst, 
+  void Machine::AssemblingForNormal(Entry &ent, 
+    deque<Argument> parms,
     ObjectMap &obj_map, 
     MetaWorkBlock *meta_blk) {
 
     size_t idx = 0;
-    auto &ent = inst.first;
-    auto &parms = inst.second;
     auto ent_args = ent.GetArguments();
     auto is_method = (ent.GetFlag() == kFlagMethod);
     bool state = true;
@@ -610,9 +603,37 @@ namespace kagami {
         ", but provided argument count is " +
         to_string(parms.size()) + ".";
     }
-    else {
-      if (is_method) obj_map.Input(kStrObject, MakeObject(parms.back(), meta_blk));
+  }
+
+  bool Machine::GenericRequests(MetaWorkBlock *blk, Request &request, deque<Argument> &args) {
+    auto &token = request.head_gen;
+    bool result = true;
+
+    switch (token) {
+    case GT_BIND:
+      result = BindAndSet(blk,
+        MakeObject(args[0], blk),
+        MakeObject(args[1], blk));
+      break;
+    default:
+      break;
     }
+
+    return result;
+  }
+
+  bool Machine::CheckGenericRequests(GenericTokenEnum token) {
+    bool result = false;
+
+    //TODO:Migrate more commands
+    switch (token) {
+    case GT_BIND:
+      result = true;
+    default:
+      break;
+    }
+
+    return result;
   }
 
   Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
@@ -623,7 +644,9 @@ namespace kagami {
     vector<Instruction> &action_base = meta.GetContains();
     bool preprocessing = (blk == nullptr),
       is_operator_token = false;
+    bool state = true;
     MetaWorkBlock *meta_blk = new MetaWorkBlock();
+    Entry ent;
 
     auto reset = [&]()->void {
       obj_map.clear();
@@ -637,83 +660,93 @@ namespace kagami {
     for (size_t idx = 0; idx < action_base.size(); idx += 1) {
       reset();
 
-      auto &ent = action_base[idx].first;
-      auto &parms = action_base[idx].second;
-      is_operator_token = entry::IsOperatorToken(ent.GetTokenEnum());
-      meta_blk->is_assert = (ent.GetTokenEnum() == GT_TYPE_ASSERT ||
-        ent.GetTokenEnum() == GT_ASSERT_R);
-      meta_blk->is_assert_r = (ent.GetTokenEnum() == GT_ASSERT_R);
+      auto &request = action_base.at(idx).first;
+      auto &args = action_base.at(idx).second;
 
-      (ent.GetId() == name && idx == action_base.size() - 2
-        && action_base.back().first.GetTokenEnum() == GT_RETURN) ?
-        meta_blk->tail_recursion = true :
-        meta_blk->tail_recursion = false;
-
-      if (!preprocessing && !meta_blk->tail_recursion) {
-        (ent.GetId() == name && idx == action_base.size() - 1
-          && blk->last_index && name != "") ?
+      if (request.type == RT_MACHINE && CheckGenericRequests(request.head_gen)) {
+        state = GenericRequests(meta_blk, request, args);
+      }
+      else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {   
+        (request.head_reg == name && idx == action_base.size() - 2
+          && action_base.back().first.head_gen == GT_RETURN) ?
           meta_blk->tail_recursion = true :
           meta_blk->tail_recursion = false;
-      }
 
-      //TODO:Inserting sub-processor
+        if (!preprocessing && meta_blk->tail_recursion) {
+          (request.head_reg == name && idx == action_base.size() - 1
+            && blk->last_index && name != "" && name != "__null__") ?
+            meta_blk->tail_recursion = true :
+            meta_blk->tail_recursion = false;
+        }
 
-      if (ent.NeedRecheck()) {
-        id = ent.GetId();
-        ent.IsMethod() ?
-          type_id = MakeObject(parms.back(), meta_blk, true).GetTypeId() :
-          type_id = kTypeIdNull;
-
-        ent = entry::Order(id, type_id);
+        switch (request.type) {
+        case RT_MACHINE:
+          ent = entry::GetGenericProvider(request.head_gen);
+          break;
+        case RT_REGULAR:
+          if (request.domain.type != AT_HOLDER) {
+            Object domain_obj = MakeObject(request.domain, meta_blk, true);
+            type_id = domain_obj.GetTypeId();
+            ent = entry::Order(request.head_reg, type_id);
+            obj_map.Input(kStrObject, domain_obj);
+          }
+          else {
+            ent = entry::Order(request.head_reg);
+          }
+          break;
+        default:
+          break;
+        }
 
         if (!ent.Good()) {
           msg = Message(kStrFatalError, kCodeIllegalCall, "Function not found - " + id);
           break;
         }
-      }
 
-      switch (ent.GetArgumentMode()) {
-      case kCodeAutoSize:
-        AssemblingForAutosized(action_base[idx], obj_map, meta_blk);
-        break;
-      case kCodeAutoFill:
-        AssemblingForAutoFilling(action_base[idx], obj_map, meta_blk);
-        break;
-      default:
-        AssemblingForNormal(action_base[idx], obj_map, meta_blk);
-        break;
-      }
+        switch (ent.GetArgumentMode()) {
+        case kCodeAutoSize:
+          AssemblingForAutosized(ent, args, obj_map, meta_blk);
+          break;
+        case kCodeAutoFill:
+          AssemblingForAutoFilling(ent, args, obj_map, meta_blk);
+          break;
+        default:
+          AssemblingForNormal(ent, args, obj_map, meta_blk);
+          break;
+        }
 
-      if (meta_blk->tail_recursion) {
-        blk->recursion_map = obj_map;
-        break;
-      }
+        if (meta_blk->error_returning ||
+          meta_blk->error_obj_checking ||
+          meta_blk->error_assembling) {
 
-      if (meta_blk->error_returning || 
-        meta_blk->error_obj_checking ||
-        meta_blk->error_assembling) break;
+          break;
+        }
 
-      //TODO:Insert here
+        if (meta_blk->tail_recursion) {
+          blk->recursion_map = obj_map;
+          break;
+        }
 
-      msg = ent.Start(obj_map);
-      msg.Get(&value, &code, &detail);
+        msg = ent.Start(obj_map);
+        msg.Get(&value, &code, &detail);
 
-      if (value == kStrFatalError) break;
+        if (value == kStrFatalError) break;
 
-      if (code == kCodeObject && ent.GetTokenEnum() != GT_TYPE_ASSERT) {
-        auto object = msg.GetObj();
+        if (code == kCodeObject && request.head_gen != GT_TYPE_ASSERT) {
+          auto object = msg.GetObj();
 
-        if (is_operator_token && idx + 1 < action_base.size()) {
-          entry::IsOperatorToken(action_base[idx + 1].first.GetTokenEnum()) ?
-            meta_blk->returning_base.emplace_front(object) :
+          if (is_operator_token && idx + 1 < action_base.size()) {
+            entry::IsOperatorToken(action_base[idx + 1].first.head_gen) ?
+              meta_blk->returning_base.emplace_front(object) :
+              meta_blk->returning_base.emplace_back(object);
+          }
+          else {
             meta_blk->returning_base.emplace_back(object);
+          }
         }
-        else {
-          meta_blk->returning_base.emplace_back(object);
+        else if (request.head_gen != GT_TYPE_ASSERT) {
+          meta_blk->returning_base.emplace_back(Object());
         }
-      }
-      else if (ent.GetTokenEnum() != GT_TYPE_ASSERT){
-        meta_blk->returning_base.emplace_back(Object());
       }
     }
 
@@ -812,7 +845,7 @@ namespace kagami {
         create("__name__", name);
       }
       else {
-        create("__name__", "");
+        create("__name__", "__null__");
       }
     }
 

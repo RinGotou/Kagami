@@ -162,6 +162,35 @@ namespace kagami {
       return base;
     }
 
+    int GetTokenPriority(GenericTokenEnum token) {
+      int result;
+      switch (token) {
+      case GT_ADD:
+      case GT_SUB:
+        result = 2;
+        break;
+      case GT_MUL:
+      case GT_DIV:
+        result = 3;
+        break;
+      case GT_IS:
+      case GT_LESS_OR_EQUAL:
+      case GT_MORE_OR_EQUAL:
+      case GT_NOT_EQUAL:
+      case GT_MORE:
+      case GT_LESS:
+      case GT_AND:
+      case GT_OR:
+        result = 1;
+        break;
+      default:
+        result = 4;
+        break;
+      }
+
+      return result;
+    }
+
     GenericTokenEnum GetGenericToken(string src) {
       auto &base = GetGTBase();
       auto it = base.find(src);

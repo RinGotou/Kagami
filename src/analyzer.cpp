@@ -333,8 +333,7 @@ namespace kagami {
     action_base_.emplace_back(Instruction(Request(GT_TYPE_ASSERT), arguments));
 
     Request request("__at");
-    request.domain.data = blk->args.back().data;
-    request.domain.type = blk->args.back().type;
+    request.domain = blk->args.back();
     blk->symbol.emplace_back(request);
     blk->symbol.emplace_back(Request(blk->current.first, true));
     blk->args.emplace_back(Argument());
@@ -403,8 +402,7 @@ namespace kagami {
         else {
           Request request(blk->current.first);
           if (blk->last.first == ".") {
-            request.domain.data = blk->domain.data;
-            request.domain.type = blk->domain.type;
+            request.domain = blk->domain;
           }
           else {
             request.domain.type = AT_HOLDER;
