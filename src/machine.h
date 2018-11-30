@@ -142,7 +142,13 @@ namespace kagami {
     void AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
 
     //Object Management (Old)
-    bool BindAndSet(MetaWorkBlock *blk, Object dest, Object src);
+    bool BindAndSet(MetaWorkBlock *meta_blk, deque<Argument> args);
+
+    //Bracket
+    void Nop(MetaWorkBlock *meta_blk, deque<Argument> args);
+
+    //Braces
+    void ArrayMaker(MetaWorkBlock *meta_blk, deque<Argument> args);
 
     //Commands
     bool GenericRequests(MetaWorkBlock *meta_blk, Request &Request, deque<Argument> &args);

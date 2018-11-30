@@ -227,30 +227,6 @@ namespace kagami {
     return Message(kStrEmpty, kCodeQuit, kStrEmpty);
   }
 
-  Message Nop(ObjectMap &p) {
-    int size = p.GetVaSize();
-    Object &last_obj = p("nop", size - 1);
-    return Message().SetObject(last_obj);
-  }
-
-  Message ArrayMaker(ObjectMap &p) {
-    vector<Object> base;
-    Message msg;
-    int size = p.GetVaSize();
-
-    if (!p.empty()) {
-      for (int i = 0; i < size; i++) {
-        base.emplace_back(p("item", i));
-      }
-    }
-
-    msg.SetObject(Object(make_shared<vector<Object>>(base), kTypeIdArrayBase,
-      type::GetMethods(kTypeIdArrayBase), false)
-      .SetConstructorFlag());
-
-    return msg;
-  }
-
   Message Dir(ObjectMap &p) {
     Object &obj = p["object"];
     auto vec = util::BuildStringVector(obj.GetMethods());
@@ -367,14 +343,12 @@ namespace kagami {
 
   void GenericRegister() {
     using namespace entry;
-    AddGenericEntry(Entry(Nop, "nop", GT_NOP, kCodeAutoSize));
     AddGenericEntry(Entry(Case, "object", GT_CASE));
     AddGenericEntry(Entry(When, "value", GT_WHEN, kCodeAutoSize));
     AddGenericEntry(Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
     AddGenericEntry(Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_ASSERT_R));
-    AddGenericEntry(Entry(ArrayMaker, "item", GT_ARRAY, kCodeAutoSize));
 
     AddGenericEntry(Entry(CodeMaker<kCodeTailSign>, "", GT_END));
     AddGenericEntry(Entry(CodeMaker<kCodeConditionLeaf>, "", GT_ELSE));

@@ -866,15 +866,17 @@ namespace kagami {
     }
   }
 
-  bool Machine::BindAndSet(MetaWorkBlock *blk, Object dest, Object src) {
+  bool Machine::BindAndSet(MetaWorkBlock *meta_blk, deque<Argument> args) {
     bool result = true;
+    auto dest = MakeObject(args[0], meta_blk);
+    auto src = MakeObject(args[1], meta_blk);
 
     if (dest.IsRef()) {
       if (!dest.get_ro()) {
         CopyObject(dest, src);
       }
       else {
-        blk->error_string = "Object is read-only.";
+        meta_blk->error_string = "Object is read-only.";
         result = false;
       }
     }
@@ -892,13 +894,13 @@ namespace kagami {
           obj.SetTokenType(src.GetTokenType());
           ObjectPointer result = entry::CreateObject(id, obj);
           if (result == nullptr) {
-            blk->error_string = "Object cration is failed.";
+            meta_blk->error_string = "Object cration is failed.";
             result = false;
           }
         }
       }
       else {
-        blk->error_string = "Invalid bind operation.";
+        meta_blk->error_string = "Invalid bind operation.";
         result = false;
       }
 
@@ -907,14 +909,43 @@ namespace kagami {
     return result;
   }
 
+  void Machine::Nop(MetaWorkBlock *meta_blk, deque<Argument> args) {
+    if (!args.empty()) {
+      auto obj = MakeObject(args.back(), meta_blk);
+      meta_blk->returning_base.push_back(obj);
+    }
+  }
+
+  void Machine::ArrayMaker(MetaWorkBlock *meta_blk, deque<Argument> args) {
+    shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
+    
+    if (!args.empty()) {
+      for (size_t idx = 0; idx < args.size(); idx += 1) {
+        base->emplace_back(MakeObject(args[idx], meta_blk));
+      }
+    }
+
+    Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
+    obj.SetConstructorFlag();
+    meta_blk->returning_base.push_back(obj);
+  }
+
   bool Machine::GenericRequests(MetaWorkBlock *meta_blk, Request &request, deque<Argument> &args) {
     auto &token = request.head_gen;
     bool result = true;
 
-    if (token == GT_BIND) {
-      auto dest = MakeObject(args[0], meta_blk);
-      auto src = MakeObject(args[1], meta_blk);
-      result = BindAndSet(meta_blk, dest, src);
+    switch (token) {
+    case GT_BIND:
+      result = BindAndSet(meta_blk, args);
+      break;
+    case GT_NOP:
+      Nop(meta_blk, args);
+      break;
+    case GT_ARRAY:
+      ArrayMaker(meta_blk, args);
+      break;
+    default:
+      break;
     }
 
     return result;
@@ -926,6 +957,8 @@ namespace kagami {
     //TODO:Migrate more commands
     switch (token) {
     case GT_BIND:
+    case GT_NOP:
+    case GT_ARRAY:
       result = true;
     default:
       break;
