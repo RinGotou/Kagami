@@ -60,7 +60,8 @@ namespace kagami {
         temp = current_string;
         temp.append(1, current);
 
-        if (util::GetTokenType(temp) == T_NUL) {
+        auto type = util::GetTokenType(temp);
+        if (type == T_NUL) {
           auto type = util::GetTokenType(current_string);
           switch (type) {
           case T_BLANK:
@@ -85,7 +86,13 @@ namespace kagami {
           }
         }
         else {
-          current_string = temp;
+          if (type == T_INTEGER && (temp[0] == '+' || temp[0] == '-')) {
+            output.emplace_back(string().append(1, temp[0]));
+            current_string = temp.substr(1, temp.size() - 1);
+          }
+          else {
+            current_string = temp;
+          }
         }
 
         delay_switching ?
@@ -134,7 +141,8 @@ namespace kagami {
       }
 
       if (current.first == "+" || current.first == "-") {
-        if (last.second == T_SYMBOL && (next.second == T_INTEGER || next.second == T_FLOAT)) {
+        if ((last.second == T_SYMBOL || last.second == T_NUL) 
+          && (next.second == T_INTEGER || next.second == T_FLOAT)) {
           negative_flag = true;
         }
       }
@@ -443,15 +451,18 @@ namespace kagami {
             error_string_ = "Generic token can't be a object.";
           }
           else {
-            blk->args.emplace_back(
-              Argument(blk->current.first, AT_OBJECT, T_GENERIC));
+            Argument arg(blk->current.first, AT_OBJECT, T_GENERIC);
             if (blk->domain.type != AT_HOLDER) {
-              blk->args.back().domain.data = blk->domain.data;
-              blk->args.back().domain.type = blk->domain.type;
-              blk->domain = Argument();
+              arg.domain.data = blk->domain.data;
+              arg.domain.type = blk->domain.type;
+            }
+            blk->domain = Argument();
+
+            if (blk->insert_between_object) {
+              blk->args.emplace(blk->args.begin() + blk->next_insert_index, arg);
             }
             else {
-              blk->domain = Argument();
+              blk->args.emplace_back(arg);
             }
           }
         }
