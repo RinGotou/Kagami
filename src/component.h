@@ -364,13 +364,13 @@ namespace kagami {
     return Message(kStrEmpty, code, kStrEmpty);
   }
 
-  template <OperatorCode op_code,GenericTokenEnum gen_token,int level>
+  template <OperatorCode op_code,GenericTokenEnum gen_token>
   Entry LogicBinaryOperator() {
-    return Entry(LogicOperation<op_code>, "first|second", gen_token, kCodeNormalParm, level);
+    return Entry(LogicOperation<op_code>, "first|second", gen_token);
   }
 
-  template <OperatorCode op_code, GenericTokenEnum gen_token, int level>
+  template <OperatorCode op_code, GenericTokenEnum gen_token>
   Entry BinaryOperator() {
-    return Entry(CalcOperation<op_code>, "first|second", gen_token, kCodeNormalParm, level);
+    return Entry(CalcOperation<op_code>, "first|second", gen_token);
   }
 }

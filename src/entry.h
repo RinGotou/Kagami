@@ -3,92 +3,68 @@
 #include "message.h"
 
 namespace kagami {
-  /*Entry Class
-  contains function pointer.Processed argument tokens are used for building
-  new argument map.entry provider have two mode:internal function and plugin
-  function.
-  */
-
   class Entry {
     string id_;
     GenericTokenEnum gen_token_;
     Activity activity_;
     vector<string> parms_;
-    int argument_mode_, priority_;
+    int argument_mode_;
     string type_;
     int flag_;
     bool is_user_func_;
   public:
-    Entry() : id_(kStrNull), 
-      activity_(nullptr), 
-      priority_(0), 
-      flag_(kFlagNormalEntry) {
+    /* Empty entry */
+    Entry() : id_(kStrNull),
+      gen_token_(GT_NUL),
+      activity_(nullptr),
+      parms_(),
+      argument_mode_(kCodeIllegalParm),
+      type_(kTypeIdNull),
+      flag_(kFlagNormalEntry),
+      is_user_func_(false) {}
 
-      argument_mode_ = kCodeIllegalParm;
-      type_ = kTypeIdNull;
-      is_user_func_ = false;
-      gen_token_ = GenericTokenEnum::GT_NUL;
-    }
-
-    Entry(Activity activity, 
-      int argumentMode, 
+    /* Plain function */
+    Entry(Activity activity,
+      int argumentMode,
       string parms,
-      string id = kStrEmpty, 
-      string type = kTypeIdNull, 
-      int flag = kFlagNormalEntry, 
-      int priority = 4) :
-      id_(id), 
-      parms_(util::BuildStringVector(parms)), 
-      argument_mode_(argumentMode), 
-      priority_(priority),
-      type_(type), 
-      flag_(flag) {
+      string id = kStrEmpty,
+      string type = kTypeIdNull,
+      int flag = kFlagNormalEntry) :
+      id_(id),
+      gen_token_(GT_NUL),
+      activity_(activity),
+      parms_(util::BuildStringVector(parms)),
+      argument_mode_(argumentMode),
+      type_(type),
+      flag_(flag),
+      is_user_func_(false) {}
 
-      activity_ = activity;
-      is_user_func_ = false;
-      gen_token_ = GenericTokenEnum::GT_NUL;
-    }
+    /* Generic token function */
+    Entry(Activity activity,
+      string parms,
+      GenericTokenEnum token,
+      int argumentMode = kCodeNormalParm) :
+      id_(),
+      gen_token_(token),
+      activity_(activity),
+      parms_(util::BuildStringVector(parms)),
+      argument_mode_(argumentMode),
+      type_(kTypeIdNull),
+      flag_(kFlagNormalEntry),
+      is_user_func_(false) {}
 
-    Entry(Activity activity, 
-      string parms, 
-      GenericTokenEnum tokenEnum, 
-      int argumentMode = kCodeNormalParm, 
-      int priority = 4) :
-      id_(), 
-      parms_(util::BuildStringVector(parms)), 
-      argument_mode_(argumentMode), 
-      priority_(priority) {
-
-      activity_ = activity;
-      gen_token_ = tokenEnum;
-      is_user_func_ = false;
-    }
-
-    Entry(string id) :
-      id_(id), 
-      activity_(nullptr), 
-      priority_(0) {
-
-      argument_mode_ = kCodeNormalParm;
-      type_ = kTypeIdNull;
-      is_user_func_ = false;
-      gen_token_ = GenericTokenEnum::GT_NUL;
-    }
-
-    Entry(Activity activity, 
+    /* user-defined function */
+    Entry(Activity activity,
       string id,
-      vector<string> parms) : 
-      priority_(4) {
-
-      type_ = kTypeIdNull;
-      argument_mode_ = kCodeNormalParm;
-      flag_ = kFlagNormalEntry;
-      is_user_func_ = true;
-      activity_ = activity;
-      id_ = id;
-      parms_ = parms;
-      type_ = kTypeIdNull;
-    }
+      vector<string> parms) :
+      id_(id),
+      gen_token_(GT_NUL),
+      activity_(activity),
+      parms_(parms),
+      argument_mode_(kCodeNormalParm),
+      type_(kTypeIdNull),
+      flag_(kFlagNormalEntry),
+      is_user_func_(true) {}
 
     bool Compare(Entry &target) const;
     Message Start(ObjectMap &map) const;
@@ -119,10 +95,6 @@ namespace kagami {
 
     size_t GetParmSize() const { 
       return parms_.size(); 
-    }
-
-    int GetPriority() const { 
-      return priority_; 
     }
 
     int GetFlag() const {

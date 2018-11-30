@@ -5,13 +5,11 @@ namespace kagami {
     return (target.id_      == id_ &&
       target.activity_      == activity_ &&
       target.argument_mode_ == argument_mode_ &&
-      target.priority_      == priority_ &&
       target.type_          == type_ &&
       target.parms_         == parms_);
   }
 
   Message Entry::Start(ObjectMap &obj_map) const {
-    if (is_placeholder_) return Message();
     Message result;
     if (is_user_func_) {
       obj_map[kStrUserFunc] = Object(id_, T_GENERIC);
