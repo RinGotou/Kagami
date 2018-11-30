@@ -79,36 +79,38 @@ namespace kagami {
   /* Origin index and string data */
   using StringUnit = pair<size_t, string>;
 
+  class MachCtlBlk {
+  public:
+    bool s_continue,
+      s_break,
+      last_index,
+      tail_recursion,
+      tail_call,
+      runtime_error;
+    size_t current;
+    size_t def_start;
+    size_t mode;
+    int nest_head_count;
+    string error_string;
+    stack<size_t> cycle_nest, cycle_tail, mode_stack;
+    stack<bool> condition_stack;
+    vector<string> def_head;
+    ObjectMap recursion_map;
+  };
+
+  class MetaWorkBlock {
+  public:
+    string error_string;
+    deque<Object> returning_base;
+    bool error_returning,
+      error_obj_checking,
+      error_assembling,
+      is_assert,
+      is_assert_r,
+      tail_recursion;
+  };
+
   class Machine {
-    struct MachCtlBlk {
-      bool s_continue, 
-        s_break, 
-        last_index, 
-        tail_recursion, 
-        tail_call, 
-        runtime_error;
-      size_t current;
-      size_t def_start;
-      size_t mode;
-      int nest_head_count;
-      string error_string;
-      stack<size_t> cycle_nest, cycle_tail, mode_stack;
-      stack<bool> condition_stack;
-      vector<string> def_head;
-      ObjectMap recursion_map;
-    };
-
-    struct MetaWorkBlock {
-      string error_string;
-      deque<Object> returning_base;
-      bool error_returning,
-        error_obj_checking,
-        error_assembling,
-        is_assert,
-        is_assert_r,
-        tail_recursion;
-    };
-
     //Machine *parent_;
     vector<Meta> storage_;
     vector<string> parameters_;
@@ -147,6 +149,12 @@ namespace kagami {
     void ArrayMaker(MetaWorkBlock *meta_blk, deque<Argument> args); //Braces
     void ReturnOperator(MetaWorkBlock *meta_blk, deque<Argument> args); //Return
     bool GetTypeId(MetaWorkBlock *meta_blk, deque<Argument> args);      //TypeId
+    bool GetMethods(MetaWorkBlock *meta_blk, deque<Argument> args);     //Dir
+    bool Exist(MetaWorkBlock *meta_blk, deque<Argument> args);          //Exist
+    bool Define(MetaWorkBlock *meta_blk, deque<Argument> args);         //Def
+    bool Case(MetaWorkBlock *meta_blk, deque<Argument> args);
+    bool When(MetaWorkBlock *meta_blk, deque<Argument> args);
+    bool DomainAssert(MetaWorkBlock *meta_blk, deque<Argument> args);
 
     //Command Management
     bool GenericRequests(MetaWorkBlock *meta_blk, Request &Request, deque<Argument> &args);

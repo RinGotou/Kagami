@@ -80,19 +80,19 @@ namespace kagami {
 
   using Instruction = pair<Request, deque<Argument>>;
 
-  class Analyzer {
-    struct AnalyzerWorkBlock {
-      deque<Argument> args;
-      deque<Request> symbol;
-      bool insert_between_object, need_reversing, define_line;
-      Token current;
-      Token next;
-      Token next_2;
-      Token last;
-      size_t mode, next_insert_index;
-      Argument domain;
-    };
+  struct AnalyzerWorkBlock {
+    deque<Argument> args;
+    deque<Request> symbol;
+    bool insert_between_object, need_reversing, define_line;
+    Token current;
+    Token next;
+    Token next_2;
+    Token last;
+    size_t mode, next_insert_index;
+    Argument domain;
+  };
 
+  class Analyzer {
     bool health_;
     vector<Token> tokens_;
     size_t index_;

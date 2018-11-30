@@ -313,12 +313,14 @@ namespace kagami {
 
   void GenericRegister() {
     using namespace entry;
+    //Ready to migrate
     AddGenericEntry(Entry(Case, "object", GT_CASE));
     AddGenericEntry(Entry(When, "value", GT_WHEN, kCodeAutoSize));
     AddGenericEntry(Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_ASSERT_R));
 
+    //Operators
     AddGenericEntry(Entry(CodeMaker<kCodeTailSign>, "", GT_END));
     AddGenericEntry(Entry(CodeMaker<kCodeConditionLeaf>, "", GT_ELSE));
     AddGenericEntry(Entry(CodeMaker<kCodeContinue>, "", GT_CONTINUE));
