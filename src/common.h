@@ -149,7 +149,7 @@ namespace kagami {
     GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
     GT_ARRAY, GT_TYPE_ASSERT, GT_ASSERT_R,
     GT_CONTINUE, GT_BREAK, 
-    GT_CASE, GT_WHEN, 
+    GT_CASE, GT_WHEN, GT_TYPEID,
     GT_NUL
   };
 
@@ -194,7 +194,7 @@ namespace kagami {
   constexpr size_t kModeClass         = 8;
 
   /*Generic Token*/
-  const string 
+  const string
     kStrIf           = "if",
     kStrDef          = "def",
     kStrRef          = "__ref",
@@ -238,6 +238,7 @@ namespace kagami {
     kStrStopSign     = "__stop",
     kStrArray        = "__array",
     kStrTypeAssert   = "__type_assert",
-    kStrTypeAssertR  = "__type_assert_r";
+    kStrTypeAssertR  = "__type_assert_r",
+    kStrTypeId       = "typeid";
 }
 

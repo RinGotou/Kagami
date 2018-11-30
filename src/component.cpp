@@ -80,32 +80,6 @@ namespace kagami {
     return Message(kStrEmpty, kCodeDefineSign, def_head_string);
   }
 
-  Message ReturnSign(ObjectMap &p) {
-    auto &container = entry::GetCurrentContainer();
-    if (p.Search("value")) {
-      auto &obj = p["value"];
-      container.Add(kStrRetValue, 
-        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
-    }
-    else {
-      container.Add(kStrRetValue, Object());
-    }
-
-    return Message(kStrStopSign, kCodeSuccess, kStrEmpty);
-  }
-
-  Message WriteLog(ObjectMap &p) {
-    CONDITION_ASSERT(IsStringObject(p["msg"]), "Illegal output string.");
-
-    Message result;
-    ofstream ofs("kagami-script.log", std::ios::out | std::ios::app);
-    string str = p.Get<string>("msg");
-
-    ofs << RealString(str) << "\n";
-    ofs.close();
-    return result;
-  }
-
   string IncAndDecOperation(Object &obj, bool negative, bool keep) {
     string res, origin;
 
@@ -154,10 +128,6 @@ namespace kagami {
     }
 
     return Message(result);
-  }
-
-  Message GetTypeId(ObjectMap &p) {
-    return Message(p["object"].GetTypeId());
   }
 
   Message Print(ObjectMap &p) {
@@ -346,7 +316,6 @@ namespace kagami {
     AddGenericEntry(Entry(Case, "object", GT_CASE));
     AddGenericEntry(Entry(When, "value", GT_WHEN, kCodeAutoSize));
     AddGenericEntry(Entry(Define, "id|arg", GT_DEF, kCodeAutoSize));
-    AddGenericEntry(Entry(ReturnSign, "value", GT_RETURN, kCodeAutoFill));
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_ASSERT_R));
 
@@ -377,13 +346,11 @@ namespace kagami {
 
   void BasicUtilityRegister() {
     using namespace entry;
-    AddEntry(Entry(WriteLog, kCodeNormalParm, "msg", "log"));
     AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
     AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
     AddEntry(Entry(Print, kCodeNormalParm, kStrObject, "print"));
     AddEntry(Entry(GetTimeDate, kCodeNormalParm, "", "time"));
     AddEntry(Entry(Quit, kCodeNormalParm, "", "quit"));
-    AddEntry(Entry(GetTypeId, kCodeNormalParm, "object", "typeid"));
     AddEntry(Entry(GetRawStringType, kCodeNormalParm, "object", "type"));
     AddEntry(Entry(Dir, kCodeNormalParm, "object", "dir"));
     AddEntry(Entry(Exist, kCodeNormalParm, "object|id", "exist"));

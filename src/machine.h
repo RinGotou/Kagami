@@ -141,16 +141,14 @@ namespace kagami {
     void AssemblingForAutoFilling(Entry &ent, deque<Argument> parmss, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
     void AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
 
-    //Object Management (Old)
-    bool BindAndSet(MetaWorkBlock *meta_blk, deque<Argument> args);
+    //Command Functions
+    bool BindAndSet(MetaWorkBlock *meta_blk, deque<Argument> args); //Object Management (Old)
+    void Nop(MetaWorkBlock *meta_blk, deque<Argument> args);        //Bracket    
+    void ArrayMaker(MetaWorkBlock *meta_blk, deque<Argument> args); //Braces
+    void ReturnOperator(MetaWorkBlock *meta_blk, deque<Argument> args); //Return
+    bool GetTypeId(MetaWorkBlock *meta_blk, deque<Argument> args);      //TypeId
 
-    //Bracket
-    void Nop(MetaWorkBlock *meta_blk, deque<Argument> args);
-
-    //Braces
-    void ArrayMaker(MetaWorkBlock *meta_blk, deque<Argument> args);
-
-    //Commands
+    //Command Management
     bool GenericRequests(MetaWorkBlock *meta_blk, Request &Request, deque<Argument> &args);
     bool CheckGenericRequests(GenericTokenEnum token);
   public:

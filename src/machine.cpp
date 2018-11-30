@@ -912,7 +912,7 @@ namespace kagami {
   void Machine::Nop(MetaWorkBlock *meta_blk, deque<Argument> args) {
     if (!args.empty()) {
       auto obj = MakeObject(args.back(), meta_blk);
-      meta_blk->returning_base.push_back(obj);
+      meta_blk->returning_base.emplace_back(obj);
     }
   }
 
@@ -927,7 +927,52 @@ namespace kagami {
 
     Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
     obj.SetConstructorFlag();
-    meta_blk->returning_base.push_back(obj);
+    meta_blk->returning_base.emplace_back(obj);
+  }
+
+  void Machine::ReturnOperator(MetaWorkBlock *meta_blk, deque<Argument> args) {
+    auto &container = entry::GetCurrentContainer();
+    if (args.size() > 1) {
+      shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
+      for (size_t idx = 0; idx < args.size(); idx += 1) {
+        base->emplace_back(MakeObject(args[idx], meta_blk));
+      }
+      Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
+      container.Add(kStrRetValue,
+        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
+    }
+    else if (args.size() == 1) {
+      auto obj = MakeObject(args[0], meta_blk);
+      container.Add(kStrRetValue,
+        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
+    }
+  }
+
+  bool Machine::GetTypeId(MetaWorkBlock *meta_blk, deque<Argument> args) {
+    bool result = true;
+    
+    if (args.size() > 1) {
+      shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
+      for (size_t idx = 0; idx < args.size(); idx += 1) {
+        auto obj = MakeObject(args[idx], meta_blk);
+        Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
+        base->emplace_back(value_obj);
+      }
+      Object ret_obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
+      ret_obj.SetConstructorFlag();
+      meta_blk->returning_base.emplace_back(ret_obj);
+    }
+    else if (args.size() == 1){
+      auto obj = MakeObject(args[0], meta_blk);
+      Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
+      meta_blk->returning_base.push_back(value_obj);
+    }
+    else {
+      meta_blk->error_string = "Empty argument list.";
+      result = false;
+    }
+
+    return result;
   }
 
   bool Machine::GenericRequests(MetaWorkBlock *meta_blk, Request &request, deque<Argument> &args) {
@@ -944,6 +989,12 @@ namespace kagami {
     case GT_ARRAY:
       ArrayMaker(meta_blk, args);
       break;
+    case GT_RETURN:
+      ReturnOperator(meta_blk, args);
+      break;
+    case GT_TYPEID:
+      GetTypeId(meta_blk, args);
+      break;
     default:
       break;
     }
@@ -959,6 +1010,8 @@ namespace kagami {
     case GT_BIND:
     case GT_NOP:
     case GT_ARRAY:
+    case GT_RETURN:
+    case GT_TYPEID:
       result = true;
     default:
       break;

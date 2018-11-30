@@ -326,7 +326,7 @@ namespace kagami {
 
       result = InstructionFilling(blk);
       if (!result) break;
-      top_token = blk->symbol.back().head_gen;
+      top_token = blk->symbol.back().head_reg;
     }
 
     if (result) {
