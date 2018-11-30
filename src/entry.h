@@ -17,7 +17,7 @@ namespace kagami {
     int argument_mode_, priority_;
     string type_;
     int flag_;
-    bool is_placeholder_, is_user_func_, need_recheck_, is_method_;
+    bool is_user_func_;
   public:
     Entry() : id_(kStrNull), 
       activity_(nullptr), 
@@ -26,10 +26,7 @@ namespace kagami {
 
       argument_mode_ = kCodeIllegalParm;
       type_ = kTypeIdNull;
-      is_placeholder_ = false;
       is_user_func_ = false;
-      need_recheck_ = false;
-      is_method_ = false;
       gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
@@ -48,10 +45,7 @@ namespace kagami {
       flag_(flag) {
 
       activity_ = activity;
-      is_placeholder_ = false;
       is_user_func_ = false;
-      need_recheck_ = false;
-      is_method_ = false;
       gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
@@ -68,9 +62,6 @@ namespace kagami {
       activity_ = activity;
       gen_token_ = tokenEnum;
       is_user_func_ = false;
-      need_recheck_ = false;
-      is_placeholder_ = false;
-      is_method_ = false;
     }
 
     Entry(string id) :
@@ -81,9 +72,6 @@ namespace kagami {
       argument_mode_ = kCodeNormalParm;
       type_ = kTypeIdNull;
       is_user_func_ = false;
-      need_recheck_ = false;
-      is_placeholder_ = true;
-      is_method_ = false;
       gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
@@ -93,23 +81,13 @@ namespace kagami {
       priority_(4) {
 
       type_ = kTypeIdNull;
-      is_placeholder_ = false;
       argument_mode_ = kCodeNormalParm;
       flag_ = kFlagNormalEntry;
       is_user_func_ = true;
       activity_ = activity;
       id_ = id;
-      need_recheck_ = false;
       parms_ = parms;
-      is_method_ = false;
       type_ = kTypeIdNull;
-    }
-
-    void SetRecheckInfo(string id,bool isMethod = false) {
-      id_ = id;
-      is_method_ = isMethod;
-      need_recheck_ = true;
-      gen_token_ = GenericTokenEnum::GT_NUL;
     }
 
     bool Compare(Entry &target) const;
@@ -119,25 +97,12 @@ namespace kagami {
       return Compare(target); 
     }
 
-    Entry &set_is_method() { 
-      is_method_ = true; 
-      return *this; 
-    }
-
-    bool IsMethod() const { 
-      return is_method_; 
-    }
-
     string GetTypeDomain() const { 
       return type_; 
     }
 
     GenericTokenEnum GetTokenEnum() const { 
       return gen_token_; 
-    }
-
-    bool NeedRecheck() const { 
-      return need_recheck_; 
     }
 
     string GetId() const { 

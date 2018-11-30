@@ -845,8 +845,6 @@ namespace kagami {
     create("__backend__", kBackendVerison);
   }
 
-
-
   bool Machine::PredefinedMessage(Message &result, size_t mode, Token token) {
     bool judged = false;
     GenericTokenEnum gen_token = entry::GetGenericToken(token.first);
@@ -953,7 +951,6 @@ namespace kagami {
     InitGlobalObject(create_container, name);
     if (result.GetCode() < kCodeSuccess) return result;
 
-    //Main state machine
     while (blk->current < storage_.size()) {
       if (!health_) break;
 
