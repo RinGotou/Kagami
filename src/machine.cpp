@@ -21,6 +21,7 @@ namespace kagami {
       .SetTokenType(src.GetTokenType());
   }
 
+  /* string/wstring convertor */
 #if defined(_WIN32) && defined(_MSC_VER)
   //from MSDN
   std::wstring s2ws(const std::string& s) {
@@ -64,6 +65,7 @@ namespace kagami {
   }
 #endif
 
+  /* Packaging entry into object and act as a object */
   inline Object GetFunctionObject(string id, string domain) {
     Object obj;
     auto ent = entry::Order(id, domain);
@@ -73,6 +75,7 @@ namespace kagami {
     return obj;
   }
 
+  /* Disposing all indentation and comments */
   string IndentationAndCommentProc(string target) {
     if (target == "") return "";
     string data;
@@ -107,6 +110,7 @@ namespace kagami {
     return data;
   }
 
+  /* Combing line */
   vector<StringUnit> MultilineProcessing(vector<string> &src) {
     vector<StringUnit> output;
     string buf;
@@ -156,6 +160,7 @@ namespace kagami {
     return base;
   }
 
+  /* Add new user-defined function */
   inline void AddFunction(string id, vector<Meta> proc, vector<string> parms) {
     auto &base = GetFunctionBase();
     base[id] = Machine(proc).SetParameters(parms).SetFunc();
@@ -170,6 +175,7 @@ namespace kagami {
     return machine;
   }
 
+  /* Accept arguments from entry and deliver to function */
   Message FunctionTunnel(ObjectMap &p) {
     Message msg;
     Object &func_id = p[kStrUserFunc];
@@ -186,15 +192,6 @@ namespace kagami {
     if (src == kStrFalse) return false;
     if (src == "0" || src.empty()) return false;
     return true;
-  }
-
-  Message Calling(Activity activity, string parmStr, vector<Object> objects) {
-    vector<string> parms = util::BuildStringVector(parmStr);
-    ObjectMap obj_map;
-    for (size_t i = 0; i < parms.size(); i++) {
-      obj_map.insert(NamedObject(parms[i], objects[i]));
-    }
-    return activity(obj_map);
   }
 
   void Machine::ResetBlock(MachCtlBlk *blk) {
@@ -448,6 +445,270 @@ namespace kagami {
     return true;
   }
 
+  Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
+    Message msg;
+    ObjectMap obj_map;
+    vector<Instruction> &action_base = meta.GetContains();
+    bool preprocessing = (blk == nullptr),
+      is_operator_token = false;
+    bool state = true;
+    MetaWorkBlock *meta_blk = new MetaWorkBlock();
+
+    ResetMetaWorkBlock(meta_blk);
+
+    for (size_t idx = 0; idx < action_base.size(); idx += 1) {
+      obj_map.clear();
+
+      auto &request = action_base.at(idx).first;
+      auto &args = action_base.at(idx).second;
+
+      if (request.type == RT_MACHINE && CheckGenericRequests(request.head_gen)) {
+        state = GenericRequests(meta_blk, request, args);
+      }
+      else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {
+        int code;
+        Entry ent;
+        string type_id, value, detail;
+        is_operator_token = entry::IsOperatorToken(request.head_gen);
+
+        (request.head_reg == name && idx == action_base.size() - 2
+          && action_base.back().first.head_gen == GT_RETURN) ?
+          meta_blk->tail_recursion = true :
+          meta_blk->tail_recursion = false;
+
+        if (!preprocessing && meta_blk->tail_recursion) {
+          (request.head_reg == name && idx == action_base.size() - 1
+            && blk->last_index && name != "" && name != "__null__") ?
+            meta_blk->tail_recursion = true :
+            meta_blk->tail_recursion = false;
+        }
+
+        switch (request.type) {
+        case RT_MACHINE:
+          ent = entry::GetGenericProvider(request.head_gen);
+          break;
+        case RT_REGULAR:
+          if (request.domain.type != AT_HOLDER) {
+            Object domain_obj = MakeObject(request.domain, meta_blk, true);
+            type_id = domain_obj.GetTypeId();
+            ent = entry::Order(request.head_reg, type_id);
+            obj_map.Input(kStrObject, domain_obj);
+          }
+          else {
+            ent = entry::Order(request.head_reg);
+          }
+          break;
+        default:
+          break;
+        }
+
+        if (!ent.Good()) {
+          msg = Message(kStrFatalError, kCodeIllegalCall, "Function not found - " + request.head_reg);
+          break;
+        }
+
+        switch (ent.GetArgumentMode()) {
+        case kCodeAutoSize:
+          AssemblingForAutosized(ent, args, obj_map, meta_blk);
+          break;
+        case kCodeAutoFill:
+          AssemblingForAutoFilling(ent, args, obj_map, meta_blk);
+          break;
+        default:
+          AssemblingForNormal(ent, args, obj_map, meta_blk);
+          break;
+        }
+
+        if (meta_blk->error_returning ||
+          meta_blk->error_obj_checking ||
+          meta_blk->error_assembling) {
+
+          break;
+        }
+
+        if (meta_blk->tail_recursion) {
+          blk->recursion_map = obj_map;
+          break;
+        }
+
+        msg = ent.Start(obj_map);
+        msg.Get(&value, &code, &detail);
+
+        if (value == kStrFatalError) break;
+
+        if (code == kCodeObject && request.head_gen != GT_TYPE_ASSERT) {
+          auto object = msg.GetObj();
+
+          if (is_operator_token && idx + 1 < action_base.size()) {
+            entry::IsOperatorToken(action_base[idx + 1].first.head_gen) ?
+              meta_blk->returning_base.emplace_front(object) :
+              meta_blk->returning_base.emplace_back(object);
+          }
+          else {
+            meta_blk->returning_base.emplace_back(object);
+          }
+        }
+        else if (request.head_gen != GT_TYPE_ASSERT) {
+          meta_blk->returning_base.emplace_back(Object());
+        }
+      }
+    }
+
+    if (meta_blk->error_returning ||
+      meta_blk->error_obj_checking ||
+      meta_blk->error_assembling) {
+      msg = Message(kStrFatalError, kCodeIllegalSymbol, meta_blk->error_string);
+    }
+
+    if (!preprocessing && meta_blk->tail_recursion)
+      blk->tail_recursion = meta_blk->tail_recursion;
+
+    obj_map.clear();
+    meta_blk->returning_base.clear();
+    meta_blk->returning_base.shrink_to_fit();
+
+    delete meta_blk;
+
+    return msg;
+  }
+
+  Message Machine::PreProcessing() {
+    Meta *meta = nullptr;
+    GenericTokenEnum token;
+    Message result;
+    bool flag = false;
+    map<size_t, size_t> skipped_idx;
+    using IndexPair = pair<size_t, size_t>;
+    size_t nest_head_count = 0;
+    size_t def_start;
+    vector<string> def_head;
+
+    for (size_t idx = 0; idx < storage_.size(); ++idx) {
+      if (!health_) break;
+      meta = &storage_[idx];
+      token = entry::GetGenericToken(meta->GetMainToken().first);
+      if (token == GT_WHILE || token == GT_IF || token == GT_CASE) {
+        nest_head_count++;
+      }
+      else if (token == GT_DEF) {
+        if (flag == true) {
+          result = Message(kStrFatalError, kCodeBadExpression,
+            "Define function in function is not supported.").SetIndex(idx);
+          break;
+        }
+        result = MetaProcessing(*meta, "", nullptr);
+        def_head = util::BuildStringVector(result.GetDetail());
+        def_start = idx + 1;
+        flag = true;
+      }
+      else if (token == GT_END) {
+        if (nest_head_count > 0) {
+          nest_head_count--;
+        }
+        else {
+          skipped_idx.insert(IndexPair(def_start - 1, idx));
+          MakeFunction(def_start, idx - 1, def_head);
+          def_head.clear();
+          def_head.shrink_to_fit();
+          def_start = 0;
+          flag = false;
+        }
+      }
+    }
+
+    vector<Meta> *otherMeta = new vector<Meta>();
+    bool filter = false;
+    for (size_t idx = 0; idx < storage_.size(); ++idx) {
+      auto it = skipped_idx.find(idx);
+      if (it != skipped_idx.end()) {
+        idx = it->second;
+        continue;
+      }
+      otherMeta->emplace_back(storage_[idx]);
+    }
+
+    storage_.swap(*otherMeta);
+    delete otherMeta;
+
+    return result;
+  }
+
+  void Machine::InitGlobalObject(bool create_container, string name) {
+    if (create_container) entry::CreateContainer();
+
+    auto create = [&](string id, string value)->void {
+      entry::CreateObject(id, Object()
+        .Manage("'" + value + "'", T_STRING));
+    };
+
+    if (is_main_) {
+      create("__name__", "__main__");
+    }
+    else {
+      if (name != kStrEmpty) {
+        create("__name__", name);
+      }
+      else {
+        create("__name__", "__null__");
+      }
+    }
+
+    create("__platform__", kPlatformType);
+    create("__version__", kEngineVersion);
+    create("__backend__", kBackendVerison);
+  }
+
+  bool Machine::PredefinedMessage(Message &result, size_t mode, Token token) {
+    bool judged = false;
+    GenericTokenEnum gen_token = entry::GetGenericToken(token.first);
+
+    switch (mode) {
+    case kModeNextCondition:
+      if (entry::HasTailTokenRequest(gen_token)) {
+        result = Message(kStrTrue);
+        judged = true;
+      }
+      else if (gen_token != GT_ELSE && gen_token != GT_END && gen_token != GT_ELIF) {
+        result = Message(kStrPlaceHolder);
+        judged = true;
+      }
+      break;
+    case kModeCycleJump:
+      if (gen_token != GT_END && gen_token != GT_IF && gen_token != GT_WHILE) {
+        result = Message(kStrPlaceHolder);
+        judged = true;
+      }
+      break;
+    case kModeCaseJump:
+      if (entry::HasTailTokenRequest(gen_token)) {
+        result = Message(kStrTrue);
+        judged = true;
+      }
+      else if (gen_token != GT_WHEN && gen_token != GT_END && gen_token != GT_ELSE) {
+        result = Message(kStrPlaceHolder);
+        judged = true;
+      }
+      break;
+    default:
+      break;
+    }
+
+    return judged;
+  }
+
+  void Machine::TailRecursionActions(MachCtlBlk *blk, string &name) {
+    Object obj = *entry::FindObject(kStrUserFunc);
+    auto &base = entry::GetCurrentContainer();
+    base.clear();
+    base.Add(kStrUserFunc, obj);
+    for (auto &unit : blk->recursion_map) {
+      base.Add(unit.first, unit.second);
+    }
+    blk->recursion_map.clear();
+    ResetBlock(blk);
+    ResetContainer(name);
+  }
+
   Object Machine::MakeObject(Argument &arg, MetaWorkBlock *meta_blk, bool checking) {
     Object obj, obj_domain;
     ObjectPointer ptr;
@@ -605,297 +866,6 @@ namespace kagami {
     }
   }
 
-  bool Machine::GenericRequests(MetaWorkBlock *meta_blk, Request &request, deque<Argument> &args) {
-    auto &token = request.head_gen;
-    bool result = true;
-
-    if (token == GT_BIND) {
-      auto dest = MakeObject(args[0], meta_blk);
-      auto src = MakeObject(args[1], meta_blk);
-      result = BindAndSet(meta_blk, dest, src);
-    }
-
-    return result;
-  }
-
-  bool Machine::CheckGenericRequests(GenericTokenEnum token) {
-    bool result = false;
-
-    //TODO:Migrate more commands
-    switch (token) {
-    case GT_BIND:
-      result = true;
-    default:
-      break;
-    }
-
-    return result;
-  }
-
-  Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
-    Message msg;
-    ObjectMap obj_map;
-    vector<Instruction> &action_base = meta.GetContains();
-    bool preprocessing = (blk == nullptr),
-      is_operator_token = false;
-    bool state = true;
-    MetaWorkBlock *meta_blk = new MetaWorkBlock();
-
-    ResetMetaWorkBlock(meta_blk);
-
-    for (size_t idx = 0; idx < action_base.size(); idx += 1) {
-      obj_map.clear();
-
-      auto &request = action_base.at(idx).first;
-      auto &args = action_base.at(idx).second;
-
-      if (request.type == RT_MACHINE && CheckGenericRequests(request.head_gen)) {
-        state = GenericRequests(meta_blk, request, args);
-      }
-      else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {   
-        int code;
-        Entry ent;
-        string type_id, value, detail;
-        is_operator_token = entry::IsOperatorToken(request.head_gen);
-        
-        (request.head_reg == name && idx == action_base.size() - 2
-          && action_base.back().first.head_gen == GT_RETURN) ?
-          meta_blk->tail_recursion = true :
-          meta_blk->tail_recursion = false;
-
-        if (!preprocessing && meta_blk->tail_recursion) {
-          (request.head_reg == name && idx == action_base.size() - 1
-            && blk->last_index && name != "" && name != "__null__") ?
-            meta_blk->tail_recursion = true :
-            meta_blk->tail_recursion = false;
-        }
-
-        switch (request.type) {
-        case RT_MACHINE:
-          ent = entry::GetGenericProvider(request.head_gen);
-          break;
-        case RT_REGULAR:
-          if (request.domain.type != AT_HOLDER) {
-            Object domain_obj = MakeObject(request.domain, meta_blk, true);
-            type_id = domain_obj.GetTypeId();
-            ent = entry::Order(request.head_reg, type_id);
-            obj_map.Input(kStrObject, domain_obj);
-          }
-          else {
-            ent = entry::Order(request.head_reg);
-          }
-          break;
-        default:
-          break;
-        }
-
-        if (!ent.Good()) {
-          msg = Message(kStrFatalError, kCodeIllegalCall, "Function not found - " + request.head_reg);
-          break;
-        }
-
-        switch (ent.GetArgumentMode()) {
-        case kCodeAutoSize:
-          AssemblingForAutosized(ent, args, obj_map, meta_blk);
-          break;
-        case kCodeAutoFill:
-          AssemblingForAutoFilling(ent, args, obj_map, meta_blk);
-          break;
-        default:
-          AssemblingForNormal(ent, args, obj_map, meta_blk);
-          break;
-        }
-
-        if (meta_blk->error_returning ||
-          meta_blk->error_obj_checking ||
-          meta_blk->error_assembling) {
-
-          break;
-        }
-
-        if (meta_blk->tail_recursion) {
-          blk->recursion_map = obj_map;
-          break;
-        }
-
-        msg = ent.Start(obj_map);
-        msg.Get(&value, &code, &detail);
-
-        if (value == kStrFatalError) break;
-
-        if (code == kCodeObject && request.head_gen != GT_TYPE_ASSERT) {
-          auto object = msg.GetObj();
-
-          if (is_operator_token && idx + 1 < action_base.size()) {
-            entry::IsOperatorToken(action_base[idx + 1].first.head_gen) ?
-              meta_blk->returning_base.emplace_front(object) :
-              meta_blk->returning_base.emplace_back(object);
-          }
-          else {
-            meta_blk->returning_base.emplace_back(object);
-          }
-        }
-        else if (request.head_gen != GT_TYPE_ASSERT) {
-          meta_blk->returning_base.emplace_back(Object());
-        }
-      }
-    }
-
-    if (meta_blk->error_returning || 
-      meta_blk->error_obj_checking ||
-      meta_blk->error_assembling) {
-      msg = Message(kStrFatalError, kCodeIllegalSymbol, meta_blk->error_string);
-    }
-
-    if(!preprocessing && meta_blk->tail_recursion) 
-      blk->tail_recursion = meta_blk->tail_recursion;
-
-    obj_map.clear();
-    meta_blk->returning_base.clear();
-    meta_blk->returning_base.shrink_to_fit();
-
-    delete meta_blk;
-
-    return msg;
-  }
-
-  Message Machine::PreProcessing() {
-    Meta *meta = nullptr;
-    GenericTokenEnum token;
-    Message result;
-    bool flag = false;
-    map<size_t, size_t> skipped_idx;
-    using IndexPair = pair<size_t, size_t>;
-    size_t nest_head_count = 0;
-    size_t def_start;
-    vector<string> def_head;
-
-    for (size_t idx = 0; idx < storage_.size(); ++idx) {
-      if (!health_) break;
-      meta = &storage_[idx];
-      token = entry::GetGenericToken(meta->GetMainToken().first);
-      if (token == GT_WHILE || token == GT_IF || token == GT_CASE) {
-        nest_head_count++;
-      }
-      else if (token == GT_DEF) {
-        if (flag == true) {
-          result = Message(kStrFatalError, kCodeBadExpression, 
-            "Define function in function is not supported.").SetIndex(idx);
-          break;
-        }
-        result = MetaProcessing(*meta, "", nullptr);
-        def_head = util::BuildStringVector(result.GetDetail());
-        def_start = idx + 1;
-        flag = true;
-      }
-      else if (token == GT_END) {
-        if (nest_head_count > 0) {
-          nest_head_count--;
-        }
-        else {
-          skipped_idx.insert(IndexPair(def_start - 1, idx));
-          MakeFunction(def_start, idx - 1, def_head);
-          def_head.clear();
-          def_head.shrink_to_fit();
-          def_start = 0;
-          flag = false;
-        }
-      }
-    }
-
-    vector<Meta> *otherMeta = new vector<Meta>();
-    bool filter = false;
-    for (size_t idx = 0; idx < storage_.size(); ++idx) {
-      auto it = skipped_idx.find(idx);
-      if (it != skipped_idx.end()) {
-        idx = it->second;
-        continue;
-      }
-      otherMeta->emplace_back(storage_[idx]);
-    }
-
-    storage_.swap(*otherMeta);
-    delete otherMeta;
-
-    return result;
-  }
-
-  void Machine::InitGlobalObject(bool create_container, string name) {
-    if (create_container) entry::CreateContainer();
-
-    auto create = [&](string id, string value)->void {
-      entry::CreateObject(id, Object()
-        .Manage("'" + value + "'",T_STRING));
-    };
-
-    if (is_main_) {
-      create("__name__", "__main__");
-    }
-    else {
-      if (name != kStrEmpty) {
-        create("__name__", name);
-      }
-      else {
-        create("__name__", "__null__");
-      }
-    }
-
-    create("__platform__", kPlatformType);
-    create("__version__", kEngineVersion);
-    create("__backend__", kBackendVerison);
-  }
-
-  bool Machine::PredefinedMessage(Message &result, size_t mode, Token token) {
-    bool judged = false;
-    GenericTokenEnum gen_token = entry::GetGenericToken(token.first);
-
-    switch (mode) {
-    case kModeNextCondition:
-      if (entry::HasTailTokenRequest(gen_token)) {
-        result = Message(kStrTrue);
-        judged = true;
-      }
-      else if (gen_token != GT_ELSE && gen_token != GT_END && gen_token != GT_ELIF) {
-        result = Message(kStrPlaceHolder);
-        judged = true;
-      }
-      break;
-    case kModeCycleJump:
-      if (gen_token != GT_END && gen_token != GT_IF && gen_token != GT_WHILE) {
-        result = Message(kStrPlaceHolder);
-        judged = true;
-      }
-      break;
-    case kModeCaseJump:
-      if (entry::HasTailTokenRequest(gen_token)) {
-        result = Message(kStrTrue);
-        judged = true;
-      }
-      else if (gen_token != GT_WHEN && gen_token != GT_END && gen_token != GT_ELSE) {
-        result = Message(kStrPlaceHolder);
-        judged = true;
-      }
-      break;
-    default:
-      break;
-    }
-
-    return judged;
-  }
-
-  void Machine::TailRecursionActions(MachCtlBlk *blk,string &name) {
-    Object obj = *entry::FindObject(kStrUserFunc);
-    auto &base = entry::GetCurrentContainer();
-    base.clear();
-    base.Add(kStrUserFunc, obj);
-    for (auto &unit : blk->recursion_map) {
-      base.Add(unit.first, unit.second);
-    }
-    blk->recursion_map.clear();
-    ResetBlock(blk);
-    ResetContainer(name);
-  }
-
   bool Machine::BindAndSet(MetaWorkBlock *blk, Object dest, Object src) {
     bool result = true;
 
@@ -935,6 +905,81 @@ namespace kagami {
     }
 
     return result;
+  }
+
+  bool Machine::GenericRequests(MetaWorkBlock *meta_blk, Request &request, deque<Argument> &args) {
+    auto &token = request.head_gen;
+    bool result = true;
+
+    if (token == GT_BIND) {
+      auto dest = MakeObject(args[0], meta_blk);
+      auto src = MakeObject(args[1], meta_blk);
+      result = BindAndSet(meta_blk, dest, src);
+    }
+
+    return result;
+  }
+
+  bool Machine::CheckGenericRequests(GenericTokenEnum token) {
+    bool result = false;
+
+    //TODO:Migrate more commands
+    switch (token) {
+    case GT_BIND:
+      result = true;
+    default:
+      break;
+    }
+
+    return result;
+  }
+
+  Machine::Machine(const char *target, bool is_main) {
+    std::wifstream stream;
+    wstring buf;
+    health_ = true;
+    size_t subscript = 0;
+    vector<string> script_buf;
+
+    is_main_ = is_main;
+
+    stream.open(target, std::ios::in);
+    if (stream.good()) {
+      while (!stream.eof()) {
+        std::getline(stream, buf);
+        string temp = ws2s(buf);
+        if (!temp.empty() && temp.back() == '\0') temp.pop_back();
+        script_buf.emplace_back(temp);
+      }
+    }
+    stream.close();
+
+    vector<StringUnit> string_units = MultilineProcessing(script_buf);
+    Analyzer analyzer;
+    Message msg;
+    for (auto it = string_units.begin(); it != string_units.end(); ++it) {
+      if (it->second == "") continue;
+      msg = analyzer.Make(it->second, it->first);
+      if (msg.GetValue() == kStrFatalError) {
+        trace::Log(msg.SetIndex(subscript));
+        health_ = false;
+        break;
+      }
+      if (msg.GetValue() == kStrWarning) {
+        trace::Log(msg.SetIndex(subscript));
+      }
+      storage_.emplace_back(Meta(
+        analyzer.GetOutput(),
+        analyzer.get_index(),
+        analyzer.GetMainToken()));
+      analyzer.Clear();
+    }
+
+    msg = PreProcessing();
+    if (msg.GetValue() == kStrFatalError) {
+      health_ = false;
+      trace::Log(msg);
+    }
   }
 
   Message Machine::Run(bool create_container, string name) {
@@ -1070,53 +1115,7 @@ namespace kagami {
     return msg;
   }
 
-  Machine::Machine(const char *target, bool is_main) {
-    std::wifstream stream;
-    wstring buf;
-    health_ = true;
-    size_t subscript = 0;
-    vector<string> script_buf;
 
-    is_main_ = is_main;
-
-    stream.open(target, std::ios::in);
-    if (stream.good()) {
-      while (!stream.eof()) {
-        std::getline(stream, buf);
-        string temp = ws2s(buf);
-        if (!temp.empty() && temp.back() == '\0') temp.pop_back();
-        script_buf.emplace_back(temp);
-      }
-    }
-    stream.close();
-
-    vector<StringUnit> string_units = MultilineProcessing(script_buf);
-    Analyzer analyzer;
-    Message msg;
-    for (auto it = string_units.begin(); it != string_units.end(); ++it) {
-      if (it->second == "") continue;
-      msg = analyzer.Make(it->second, it->first);
-      if (msg.GetValue() == kStrFatalError) {
-        trace::Log(msg.SetIndex(subscript));
-        health_ = false;
-        break;
-      }
-      if (msg.GetValue() == kStrWarning) {
-        trace::Log(msg.SetIndex(subscript));
-      }
-      storage_.emplace_back(Meta(
-        analyzer.GetOutput(),
-        analyzer.get_index(),
-        analyzer.GetMainToken()));
-      analyzer.Clear();
-    }
-
-    msg = PreProcessing();
-    if (msg.GetValue() == kStrFatalError) {
-      health_ = false;
-      trace::Log(msg);
-    }
-  }
 
   void Machine::Reset(MachCtlBlk *blk) {
     while (!blk->cycle_nest.empty()) blk->cycle_nest.pop();

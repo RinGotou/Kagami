@@ -146,7 +146,6 @@ namespace kagami {
 
     //Commands
     bool GenericRequests(MetaWorkBlock *meta_blk, Request &Request, deque<Argument> &args);
-
     bool CheckGenericRequests(GenericTokenEnum token);
   public:
     Machine() : 
@@ -219,7 +218,6 @@ namespace kagami {
   void LoadSDLStuff();
 #endif
   Message FunctionTunnel(ObjectMap &p);
-  Message Calling(Activity activity, string args, vector<Object> objects);
   std::wstring s2ws(const std::string &s);
   std::string ws2s(const std::wstring &s);
   Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm);

@@ -160,38 +160,6 @@ namespace kagami {
     return Message(p["object"].GetTypeId());
   }
 
-  Message BindAndSet(ObjectMap &p) {
-    Object &dest = p["object"], source = p["source"];
-    Message msg;
-
-    if (dest.IsRef()) {
-      CONDITION_ASSERT(!dest.get_ro(), "Object is read-only.");
-      CopyObject(dest, source);
-    }
-    else {
-      string id = GetObjectStuff<string>(dest);
-      CONDITION_ASSERT(util::GetTokenType(id) == T_GENERIC, 
-        "Illegal bind operation.");
-
-      //TODO:Optimize for domain
-      ObjectPointer real_dest = entry::FindObject(id);
-      if (real_dest != nullptr) {
-        CopyObject(*real_dest, source);
-      }
-      else {
-        Object base(type::GetObjectCopy(source), source.GetTypeId(),
-          source.GetMethods(), false);
-        base.SetTokenType(source.GetTokenType());
-
-        auto result = entry::CreateObject(id, base);
-
-        CALL_ASSERT(result != nullptr, "Object creation failed.");
-      }
-    }
-
-    return msg;
-  }
-
   Message Print(ObjectMap &p) {
     Object &obj = p[kStrObject];
 
@@ -407,7 +375,6 @@ namespace kagami {
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_TYPE_ASSERT));
     AddGenericEntry(Entry(TypeAssert, "object|id", GT_ASSERT_R));
     AddGenericEntry(Entry(ArrayMaker, "item", GT_ARRAY, kCodeAutoSize));
-    AddGenericEntry(Entry(BindAndSet, "object|source", GT_BIND));
 
     AddGenericEntry(Entry(CodeMaker<kCodeTailSign>, "", GT_END));
     AddGenericEntry(Entry(CodeMaker<kCodeConditionLeaf>, "", GT_ELSE));
