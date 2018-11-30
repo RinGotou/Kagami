@@ -332,7 +332,8 @@ namespace kagami {
     if (result) {
       if (blk->need_reversing) blk->need_reversing = false;
       if (blk->symbol.back().head_reg == "("
-        || blk->symbol.back().head_reg == "[") {
+        || blk->symbol.back().head_reg == "["
+        || blk->symbol.back().head_reg == "{") {
 
         blk->symbol.pop_back();
       }
