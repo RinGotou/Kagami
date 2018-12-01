@@ -194,18 +194,216 @@ namespace kagami {
     return true;
   }
 
-  void Machine::ResetBlock(MachCtlBlk *blk) {
-    blk->mode = kModeNormal;
-    blk->nest_head_count = 0;
-    blk->current = 0;
-    blk->mode = kModeNormal;
-    blk->def_start = 0;
-    blk->s_continue = false;
-    blk->s_break = false;
-    blk->last_index = false;
-    blk->tail_recursion = false;
-    blk->tail_call = false;
-    blk->runtime_error = false;
+  void MachCtlBlk::Case(Message &msg) {
+    entry::CreateContainer();
+    mode_stack.push(mode);
+    mode = kModeCaseJump;
+    condition_stack.push(false);
+  }
+
+  void MachCtlBlk::When(bool value) {
+    if (!condition_stack.empty()) {
+      if (mode == kModeCase && condition_stack.top() == true) {
+        mode = kModeCaseJump;
+      }
+      else if (value == true && condition_stack.top() == false) {
+        mode = kModeCase;
+        condition_stack.top() = true;
+      }
+    }
+
+  }
+
+  void MachCtlBlk::ConditionRoot(bool value) {
+    mode_stack.push(mode);
+    entry::CreateContainer();
+    mode = value ? kModeCondition : kModeNextCondition;
+    condition_stack.push(value);
+  }
+
+  void MachCtlBlk::ConditionBranch(bool value) {
+    if (!condition_stack.empty()) {
+      if (condition_stack.top() == false && mode == kModeNextCondition) {
+        entry::CreateContainer();
+        mode = kModeCondition;
+        condition_stack.top() = true;
+      }
+    }
+    else {
+      mode = kModeNextCondition;
+    }
+  }
+
+  bool MachCtlBlk::ConditionLeaf() {
+    bool result = true;
+    if (!condition_stack.empty()) {
+      if (condition_stack.top() == true) {
+        switch (mode) {
+        case kModeCondition:
+        case kModeNextCondition:
+          mode = kModeNextCondition;
+          break;
+        case kModeCase:
+        case kModeCaseJump:
+          mode = kModeCaseJump;
+          break;
+        default:
+          break;
+        }
+      }
+      else {
+        entry::CreateContainer();
+        condition_stack.top() = true;
+        switch (mode) {
+        case kModeNextCondition:
+          mode = kModeCondition;
+          break;
+        case kModeCaseJump:
+          mode = kModeCase;
+          break;
+        }
+      }
+    }
+    else {
+      result = false;
+    }
+
+    return result;
+  }
+
+  void MachCtlBlk::LoopHead(bool value) {
+    if (cycle_nest.empty()) {
+      mode_stack.push(mode);
+      entry::CreateContainer();
+    }
+    else {
+      if (cycle_nest.top() != current - 1) {
+        mode_stack.push(mode);
+        entry::CreateContainer();
+      }
+    }
+
+    if (value == true) {
+      mode = kModeCycle;
+      if (cycle_nest.empty() || cycle_nest.top() != current - 1) {
+        cycle_nest.push(current - 1);
+      }
+    }
+    else {
+      mode = kModeCycleJump;
+      if (cycle_tail.empty()) {
+        current = cycle_tail.top();
+      }
+    }
+  }
+  
+  void MachCtlBlk::End() {
+    if (mode == kModeCondition || mode == kModeNextCondition) {
+      condition_stack.pop();
+      mode = mode_stack.top();
+      mode_stack.pop();
+      entry::DisposeManager();
+    }
+    else if (mode == kModeCycle || mode == kModeCycleJump) {
+      switch (mode) {
+      case kModeCycle:
+        if (cycle_tail.empty() || cycle_tail.top() != current - 1) {
+          cycle_tail.push(current - 1);
+        }
+        current = cycle_nest.top();
+        entry::GetCurrentContainer().clear();
+        break;
+      case kModeCycleJump:
+        if (s_continue) {
+          if (cycle_tail.empty() || cycle_tail.top() != current - 1) {
+            cycle_tail.push(current - 1);
+          }
+          current = cycle_nest.top();
+          mode = kModeCycle;
+          mode_stack.top() = mode;
+          s_continue = false;
+          entry::GetCurrentContainer().clear();
+        }
+        else {
+          if (s_break) s_break = false;
+          mode = mode_stack.top();
+          mode_stack.pop();
+          if (!cycle_nest.empty()) cycle_nest.pop();
+          if (!cycle_tail.empty()) cycle_tail.pop();
+          entry::DisposeManager();
+        }
+        break;
+      default:
+        break;
+      }
+    }
+    else if (mode == kModeCase || mode == kModeCaseJump) {
+      condition_stack.pop();
+      mode = mode_stack.top();
+      mode_stack.pop();
+      entry::DisposeManager();
+    }
+  }
+
+  void MachCtlBlk::Continue() {
+    while (!mode_stack.empty() && mode != kModeCycle) {
+      if (mode == kModeCondition || mode == kModeCase) {
+        condition_stack.pop();
+        nest_head_count += 1;
+      }
+      mode = mode_stack.top();
+      mode_stack.pop();
+    }
+
+    if (mode == kModeCycle) {
+      mode = kModeCycleJump;
+      s_continue = true;
+    }
+    else {
+      runtime_error = true;
+      error_string = "Illegal 'continue' operation.";
+    }
+  }
+
+  void MachCtlBlk::Break() {
+    while (!mode_stack.empty() && mode != kModeCycle) {
+      if (mode == kModeCondition || mode == kModeCase) {
+        condition_stack.pop();
+        nest_head_count += 1;
+      }
+      mode = mode_stack.top();
+      mode_stack.pop();
+    }
+
+    if (mode == kModeCycle) {
+      mode = kModeCycleJump;
+      s_break = true;
+    }
+    else {
+      runtime_error = true;
+      error_string = "Illegal 'break' operation";
+    }
+  }
+
+  void MachCtlBlk::Clear() {
+    s_continue = false;
+    s_break = false;
+    last_index = false;
+    tail_recursion = false;
+    tail_call = false;
+    runtime_error = false;
+    current = 0;
+    def_start = 0;
+    mode = kModeNormal;
+    nest_head_count = 0;
+    error_string.clear();
+    while (!cycle_nest.empty()) cycle_nest.pop();
+    while (!cycle_tail.empty()) cycle_tail.pop();
+    while (!mode_stack.empty()) mode_stack.pop();
+    while (!condition_stack.empty()) condition_stack.pop();
+    def_head.clear();
+    def_head.shrink_to_fit();
+    recursion_map.clear();
   }
 
   void Machine::ResetContainer(string func_id) {
@@ -218,205 +416,6 @@ namespace kagami {
         string value = GetObjectStuff<string>(*func_sign);
         if (value == func_id) break;
       }
-    }
-  }
-
-  void Machine::CaseHead(Message &msg, MachCtlBlk *blk) {
-    entry::CreateContainer();
-    blk->mode_stack.push(blk->mode);
-    blk->mode = kModeCaseJump;
-    blk->condition_stack.push(false);
-  }
-
-  void Machine::WhenHead(bool value, MachCtlBlk *blk) {
-    if (!blk->condition_stack.empty()) {
-      if (blk->mode == kModeCase && blk->condition_stack.top() == true) {
-        blk->mode = kModeCaseJump;
-      }
-      else if (value == true && blk->condition_stack.top() == false) {
-        blk->mode = kModeCase;
-        blk->condition_stack.top() = true;
-      }
-    }
-  }
-
-  void Machine::ConditionRoot(bool value, MachCtlBlk *blk) {
-    blk->mode_stack.push(blk->mode);
-    entry::CreateContainer();
-    if (value == true) {
-      blk->mode = kModeCondition;
-      blk->condition_stack.push(true);
-    }
-    else {
-      blk->mode = kModeNextCondition;
-      blk->condition_stack.push(false);
-    }
-  }
-
-  void Machine::ConditionBranch(bool value, MachCtlBlk *blk) {
-    if (!blk->condition_stack.empty()) {
-      if (blk->condition_stack.top() == false && blk->mode == kModeNextCondition
-        && value == true) {
-        entry::CreateContainer();
-        blk->mode = kModeCondition;
-        blk->condition_stack.top() = true;
-      }
-      else if (blk->condition_stack.top() == true && blk->mode == kModeCondition) {
-        blk->mode = kModeNextCondition;
-      }
-    }
-    else {
-      //msg = Message
-      health_ = false;
-    }
-  }
-
-  void Machine::ConditionLeaf(MachCtlBlk *blk) {
-    if (!blk->condition_stack.empty()) {
-      if (blk->condition_stack.top() == true) {
-        switch (blk->mode) {
-        case kModeCondition:
-        case kModeNextCondition:
-          blk->mode = kModeNextCondition;
-          break;
-        case kModeCase:
-        case kModeCaseJump:
-          blk->mode = kModeCaseJump;
-          break;
-        }
-      }
-      else {
-        entry::CreateContainer();
-        blk->condition_stack.top() = true;
-        switch (blk->mode) {
-        case kModeNextCondition:
-          blk->mode = kModeCondition;
-          break;
-        case kModeCaseJump:
-          blk->mode = kModeCase;
-          break;
-        }
-      }
-    }
-    else {
-      //msg = Message
-      health_ = false;
-    }
-  }
-
-  void Machine::HeadSign(bool value, MachCtlBlk *blk) {
-    if (blk->cycle_nest.empty()) {
-      blk->mode_stack.push(blk->mode);
-      entry::CreateContainer();
-    }
-    else {
-      if (blk->cycle_nest.top() != blk->current - 1) {
-        blk->mode_stack.push(blk->mode);
-        entry::CreateContainer();
-      }
-    }
-    if (value == true) {
-      blk->mode = kModeCycle;
-      if (blk->cycle_nest.empty()) {
-        blk->cycle_nest.push(blk->current - 1);
-      }
-      else if (blk->cycle_nest.top() != blk->current - 1) {
-        blk->cycle_nest.push(blk->current - 1);
-      }
-    }
-    else if (value == false) {
-      blk->mode = kModeCycleJump;
-      if (!blk->cycle_tail.empty()) {
-        blk->current = blk->cycle_tail.top();
-      }
-    }
-    else {
-      health_ = false;
-    }
-  }
-
-  void Machine::TailSign(MachCtlBlk *blk) {
-    if (blk->mode == kModeCondition || blk->mode == kModeNextCondition) {
-      blk->condition_stack.pop();
-      blk->mode = blk->mode_stack.top();
-      blk->mode_stack.pop();
-      entry::DisposeManager();
-    }
-    else if (blk->mode == kModeCycle || blk->mode == kModeCycleJump) {
-      switch (blk->mode) {
-      case kModeCycle:
-        if (blk->cycle_tail.empty() || blk->cycle_tail.top() != blk->current - 1) {
-          blk->cycle_tail.push(blk->current - 1);
-        }
-        blk->current = blk->cycle_nest.top();
-        entry::GetCurrentContainer().clear();
-        break;
-      case kModeCycleJump:
-        if (blk->s_continue) {
-          if (blk->cycle_tail.empty() || blk->cycle_tail.top() != blk->current - 1) {
-            blk->cycle_tail.push(blk->current - 1);
-          }
-          blk->current = blk->cycle_nest.top();
-          blk->mode = kModeCycle;
-          blk->mode_stack.top() = blk->mode;
-          blk->s_continue = false;
-          entry::GetCurrentContainer().clear();
-        }
-        else {
-          if (blk->s_break) blk->s_break = false;
-          blk->mode = blk->mode_stack.top();
-          blk->mode_stack.pop();
-          if (!blk->cycle_nest.empty()) blk->cycle_nest.pop();
-          if (!blk->cycle_tail.empty()) blk->cycle_tail.pop();
-          entry::DisposeManager();
-        }
-        break;
-      default:break;
-      }
-    }
-    else if (blk->mode == kModeCase || blk->mode == kModeCaseJump) {
-      blk->condition_stack.pop();
-      blk->mode = blk->mode_stack.top();
-      blk->mode_stack.pop();
-      entry::DisposeManager();
-    }
-  }
-
-  void Machine::Continue(MachCtlBlk *blk) {
-    while (!blk->mode_stack.empty() && blk->mode != kModeCycle) {
-      if (blk->mode == kModeCondition || blk->mode == kModeCase) {
-        blk->condition_stack.pop();
-        blk->nest_head_count++;
-      }
-      blk->mode = blk->mode_stack.top();
-      blk->mode_stack.pop();
-    }
-    if (blk->mode == kModeCycle) {
-      blk->mode = kModeCycleJump;
-      blk->s_continue = true;
-    }
-    else {
-      blk->runtime_error = true;
-      blk->error_string = "Illegal 'continue' operation.";
-    }
-  }
-
-  void Machine::Break(MachCtlBlk *blk) {
-    while (!blk->mode_stack.empty() && blk->mode != kModeCycle) {
-      if (blk->mode == kModeCondition || blk->mode == kModeCase) {
-        blk->condition_stack.pop();
-        blk->nest_head_count++;
-      }
-      blk->mode = blk->mode_stack.top();
-      blk->mode_stack.pop();
-    }
-    if (blk->mode == kModeCycle) {
-      blk->mode = kModeCycleJump;
-      blk->s_break = true;
-    }
-    else {
-      blk->runtime_error = true;
-      blk->error_string = "Illegal 'break' operation.";
     }
   }
 
@@ -705,7 +704,7 @@ namespace kagami {
       base.Add(unit.first, unit.second);
     }
     blk->recursion_map.clear();
-    ResetBlock(blk);
+    blk->Clear();
     ResetContainer(name);
   }
 
@@ -1073,8 +1072,7 @@ namespace kagami {
     MachCtlBlk *blk = new MachCtlBlk();
     Meta *meta = nullptr;
     bool judged = false;
-
-    ResetBlock(blk);
+    
     health_ = true;
 
     if (storage_.empty()) return result;
@@ -1116,30 +1114,30 @@ namespace kagami {
 
       switch (code) {
       case kCodeContinue:
-        Continue(blk);
+        blk->Continue();
         break;
       case kCodeBreak:
-        Break(blk);
+        blk->Break();
         break;
       case kCodeConditionRoot:
-        ConditionRoot(GetBooleanValue(value), blk); 
+        blk->ConditionRoot(GetBooleanValue(value));
         break;
       case kCodeConditionBranch:
         if (blk->nest_head_count > 0) break;
-        ConditionBranch(GetBooleanValue(value), blk);
+        blk->ConditionBranch(GetBooleanValue(value));
         break;
       case kCodeConditionLeaf:
         if (blk->nest_head_count > 0) break;
-        ConditionLeaf(blk);
+        health_ = blk->ConditionLeaf();
         break;
       case kCodeCase:
-        CaseHead(result, blk);
+        blk->Case(result);
         break;
       case kCodeWhen:
-        WhenHead(GetBooleanValue(value), blk);
+        blk->When(GetBooleanValue(value));
         break;
       case kCodeHeadSign:
-        HeadSign(GetBooleanValue(value), blk);
+        blk->LoopHead(GetBooleanValue(value));
         break;
       case kCodeHeadPlaceholder:
         blk->nest_head_count++;
@@ -1149,7 +1147,7 @@ namespace kagami {
           blk->nest_head_count--;
           break;
         }
-        TailSign(blk);
+        blk->End();
         break;
       default:break;
       }

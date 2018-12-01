@@ -96,6 +96,30 @@ namespace kagami {
     stack<bool> condition_stack;
     vector<string> def_head;
     ObjectMap recursion_map;
+
+    MachCtlBlk():
+      s_continue(false),
+      s_break(false),
+      last_index(false),
+      tail_recursion(false),
+      tail_call(false),
+      runtime_error(false),
+      current(0),
+      def_start(0),
+      mode(kModeNormal),
+      nest_head_count(0),
+      error_string() {}
+
+    void Case(Message &msg);
+    void When(bool value);
+    void ConditionRoot(bool value);
+    void ConditionBranch(bool value);
+    bool ConditionLeaf();
+    void LoopHead(bool value);
+    void End();
+    void Continue();
+    void Break();
+    void Clear();
   };
 
   class MetaWorkBlock {
@@ -116,18 +140,7 @@ namespace kagami {
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
 
-    //Machine Controlling Block
-    void ResetBlock(MachCtlBlk *blk);
     void ResetContainer(string funcId);
-    void CaseHead(Message &msg, MachCtlBlk *blk);
-    void WhenHead(bool value, MachCtlBlk *blk);
-    void ConditionRoot(bool value, MachCtlBlk *blk);
-    void ConditionBranch(bool value, MachCtlBlk *blk);
-    void ConditionLeaf(MachCtlBlk *blk);
-    void HeadSign(bool value, MachCtlBlk *blk);
-    void TailSign(MachCtlBlk *blk);
-    void Continue(MachCtlBlk *blk);
-    void Break(MachCtlBlk *blk);
     void MakeFunction(size_t start, size_t end, vector<string> &defHead);
     static bool IsBlankStr(string target);
     Message MetaProcessing(Meta &meta, string name, MachCtlBlk *blk);
