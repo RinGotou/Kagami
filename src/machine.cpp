@@ -406,6 +406,153 @@ namespace kagami {
     recursion_map.clear();
   }
 
+  Object MetaWorkBlock::MakeObject(Argument &arg, bool checking) {
+    Object obj, obj_domain;
+    ObjectPointer ptr;
+    bool state = true;
+
+    switch (arg.domain.type) {
+    case AT_RET:
+      if (!returning_base.empty()) {
+        obj_domain = returning_base.front();
+      }
+      else {
+        error_returning = true;
+        error_string = "Returning base error.";
+        state = false;
+      }
+      break;
+    case AT_OBJECT:
+      ptr = entry::FindObject(arg.domain.data);
+      if (ptr != nullptr) {
+        obj_domain.Ref(*ptr);
+      }
+      else {
+        obj_domain = GetFunctionObject(arg.domain.data, kTypeIdNull);
+        if (obj_domain.Get() == nullptr) {
+          error_obj_checking = true;
+          error_string = "Object is not found - " + arg.data;
+          state = false;
+        }
+      }
+      break;
+    default:
+      break;
+    }
+
+    if (!state) return Object();
+
+    switch (arg.type) {
+    case AT_NORMAL:
+      obj.Manage(arg.data, arg.token_type);
+      break;
+    case AT_OBJECT:
+      ptr = entry::FindObject(arg.data);
+      if (ptr != nullptr) {
+        obj.Ref(*ptr);
+      }
+      else {
+        obj = GetFunctionObject(arg.data, obj_domain.GetTypeId());
+        if (obj.GetTypeId() == kTypeIdNull) {
+          error_obj_checking = true;
+          error_string = "Object is not found - " + arg.data;
+        }
+      }
+      break;
+    case AT_RET:
+      if (!returning_base.empty()) {
+        obj = returning_base.front();
+        if ((!is_assert && !checking) || is_assert_r)
+          returning_base.pop_front();
+      }
+      else {
+        error_returning = true;
+        error_string = "Returning base error.";
+      }
+      break;
+    default:
+      break;
+    }
+
+    return obj;
+  }
+
+  void MetaWorkBlock::AssemblingForAutoSized(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
+    size_t idx = 0;
+    size_t va_arg_size;
+    size_t count = 0;
+    auto ent_args = ent.GetArguments();
+    auto va_arg_head = ent_args.back();
+    auto is_method = (ent.GetFlag() == kFlagMethod);
+
+    while (idx < ent_args.size() - 1) {
+      obj_map.Input(ent_args[idx],
+        MakeObject(parms[idx]));
+      idx += 1;
+    }
+
+    is_method ?
+      va_arg_size = parms.size() - 1 :
+      va_arg_size = parms.size();
+
+    while (idx < va_arg_size) {
+      obj_map.Input(va_arg_head + to_string(count),
+        MakeObject(parms[idx]));
+      count += 1;
+      idx += 1;
+    }
+
+    obj_map.Input(kStrVaSize, Object(to_string(count), T_INTEGER));
+  }
+
+  void MetaWorkBlock::AssemblingForAutoFilling(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
+      size_t idx = 0;
+      auto ent_args = ent.GetArguments();
+      auto is_method = (ent.GetFlag() == kFlagMethod);
+
+      while (idx < ent_args.size()) {
+        if (idx >= parms.size()) break;
+        if (idx >= parms.size() - 1 && is_method) break;
+        obj_map.Input(ent_args[idx], MakeObject(parms[idx]));
+        idx += 1;
+      }
+  }
+
+  void MetaWorkBlock::AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
+    size_t idx = 0;
+    auto ent_args = ent.GetArguments();
+    auto is_method = (ent.GetFlag() == kFlagMethod);
+    bool state = true;
+
+    while (idx < ent_args.size()) {
+      if (idx >= parms.size()) {
+        state = false;
+        break;
+      }
+      obj_map.Input(ent_args[idx], MakeObject(parms[idx]));
+      idx += 1;
+    }
+
+    if (!state) {
+      error_assembling = true;
+      error_string = "Required argument count is " +
+        to_string(ent_args.size()) +
+        ", but provided argument count is " +
+        to_string(parms.size()) + ".";
+    }
+  }
+
+  void MetaWorkBlock::Reset() {
+    error_string.clear();
+    error_returning = false;
+    error_obj_checking = false;
+    tail_recursion = false;
+    error_assembling = false;
+    is_assert = false;
+    is_assert_r = false;
+    returning_base.clear();
+  }
+
   void Machine::ResetContainer(string func_id) {
     Object *func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
 
@@ -453,8 +600,6 @@ namespace kagami {
     bool state = true;
     MetaWorkBlock *meta_blk = new MetaWorkBlock();
 
-    ResetMetaWorkBlock(meta_blk);
-
     for (size_t idx = 0; idx < action_base.size(); idx += 1) {
       obj_map.clear();
 
@@ -488,7 +633,7 @@ namespace kagami {
           break;
         case RT_REGULAR:
           if (request.domain.type != AT_HOLDER) {
-            Object domain_obj = MakeObject(request.domain, meta_blk, true);
+            Object domain_obj = meta_blk->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
             ent = entry::Order(request.head_reg, type_id);
             obj_map.Input(kStrObject, domain_obj);
@@ -508,13 +653,13 @@ namespace kagami {
 
         switch (ent.GetArgumentMode()) {
         case kCodeAutoSize:
-          AssemblingForAutosized(ent, args, obj_map, meta_blk);
+          meta_blk->AssemblingForAutoSized(ent, args, obj_map);
           break;
         case kCodeAutoFill:
-          AssemblingForAutoFilling(ent, args, obj_map, meta_blk);
+          meta_blk->AssemblingForAutoFilling(ent, args, obj_map);
           break;
         default:
-          AssemblingForNormal(ent, args, obj_map, meta_blk);
+          meta_blk->AssemblingForNormal(ent, args, obj_map);
           break;
         }
 
@@ -708,167 +853,10 @@ namespace kagami {
     ResetContainer(name);
   }
 
-  Object Machine::MakeObject(Argument &arg, MetaWorkBlock *meta_blk, bool checking) {
-    Object obj, obj_domain;
-    ObjectPointer ptr;
-    bool state = true;
-
-    switch (arg.domain.type) {
-    case AT_RET:
-      if (!meta_blk->returning_base.empty()) {
-        obj_domain = meta_blk->returning_base.front();
-      }
-      else {
-        meta_blk->error_returning = true;
-        meta_blk->error_string = "Returning base error.";
-        state = false;
-      }
-      break;
-    case AT_OBJECT:
-      ptr = entry::FindObject(arg.domain.data);
-      if (ptr != nullptr) {
-        obj_domain.Ref(*ptr);
-      }
-      else {
-        obj_domain = GetFunctionObject(arg.domain.data, kTypeIdNull);
-        if (obj_domain.Get() == nullptr) {
-          meta_blk->error_obj_checking = true;
-          meta_blk->error_string = "Object is not found - " + arg.data;
-          state = false;
-        }
-      }
-      break;
-    default:
-      break;
-    }
-
-    if (!state) return Object();
-    
-    switch (arg.type) {
-    case AT_NORMAL:
-      obj.Manage(arg.data, arg.token_type);
-      break;
-    case AT_OBJECT:
-      ptr = entry::FindObject(arg.data);
-      if (ptr != nullptr) {
-        obj.Ref(*ptr);
-      }
-      else {
-        obj = GetFunctionObject(arg.data, obj_domain.GetTypeId());
-        if (obj.GetTypeId() == kTypeIdNull) {
-          meta_blk->error_obj_checking = true;
-          meta_blk->error_string = "Object is not found - " + arg.data;
-        }
-      }
-      break;
-    case AT_RET:
-      if (!meta_blk->returning_base.empty()) {
-        obj = meta_blk->returning_base.front();
-        if ((!meta_blk->is_assert && !checking) || meta_blk->is_assert_r) 
-          meta_blk->returning_base.pop_front();
-      }
-      else {
-        meta_blk->error_returning = true;
-        meta_blk->error_string = "Returning base error.";
-      }
-      break;
-    default:
-      break;
-    }
-
-    return obj;
-  }
-
-  void Machine::ResetMetaWorkBlock(MetaWorkBlock *meta_blk) {
-    meta_blk->error_returning = false;
-    meta_blk->error_obj_checking = false;
-    meta_blk->tail_recursion = false;
-    meta_blk->error_assembling = false;
-    meta_blk->is_assert = false;
-    meta_blk->is_assert_r = false;
-  }
-
-  void Machine::AssemblingForAutosized(Entry &ent, 
-    deque<Argument> parms,
-    ObjectMap &obj_map, 
-    MetaWorkBlock *meta_blk) {
-
-    size_t idx = 0;
-    size_t va_arg_size;
-    size_t count = 0;
-    auto ent_args = ent.GetArguments();
-    auto va_arg_head = ent_args.back();
-    auto is_method = (ent.GetFlag() == kFlagMethod);
-
-    while (idx < ent_args.size() - 1) {
-      obj_map.Input(ent_args[idx], 
-        MakeObject(parms[idx], meta_blk));
-      idx += 1;
-    }
-
-    is_method ?
-      va_arg_size = parms.size() - 1 :
-      va_arg_size = parms.size();
-
-    while (idx < va_arg_size) {
-      obj_map.Input(va_arg_head + to_string(count), 
-        MakeObject(parms[idx], meta_blk));
-      count += 1;
-      idx += 1;
-    }
-
-    obj_map.Input(kStrVaSize, Object(to_string(count), T_INTEGER));
-  }
-
-  void Machine::AssemblingForAutoFilling(Entry &ent, 
-    deque<Argument> parms,
-    ObjectMap &obj_map, 
-    MetaWorkBlock *meta_blk) {
-
-    size_t idx = 0;
-    auto ent_args = ent.GetArguments();
-    auto is_method = (ent.GetFlag() == kFlagMethod);
-
-    while (idx < ent_args.size()) {
-      if (idx >= parms.size()) break;
-      if (idx >= parms.size() - 1 && is_method) break;
-      obj_map.Input(ent_args[idx], MakeObject(parms[idx], meta_blk));
-      idx += 1;
-    }
-  }
-
-  void Machine::AssemblingForNormal(Entry &ent, 
-    deque<Argument> parms,
-    ObjectMap &obj_map, 
-    MetaWorkBlock *meta_blk) {
-
-    size_t idx = 0;
-    auto ent_args = ent.GetArguments();
-    auto is_method = (ent.GetFlag() == kFlagMethod);
-    bool state = true;
-
-    while (idx < ent_args.size()) {
-      if (idx >= parms.size()) {
-        state = false;
-        break;
-      }
-      obj_map.Input(ent_args[idx], MakeObject(parms[idx], meta_blk));
-      idx += 1;
-    }
-
-    if (!state) {
-      meta_blk->error_assembling = true;
-      meta_blk->error_string = "Required argument count is " +
-        to_string(ent_args.size()) +
-        ", but provided argument count is " +
-        to_string(parms.size()) + ".";
-    }
-  }
-
   bool Machine::BindAndSet(MetaWorkBlock *meta_blk, deque<Argument> args) {
     bool result = true;
-    auto dest = MakeObject(args[0], meta_blk);
-    auto src = MakeObject(args[1], meta_blk);
+    auto dest = meta_blk->MakeObject(args[0]);
+    auto src = meta_blk->MakeObject(args[1]);
 
     if (dest.IsRef()) {
       if (!dest.get_ro()) {
@@ -910,7 +898,7 @@ namespace kagami {
 
   void Machine::Nop(MetaWorkBlock *meta_blk, deque<Argument> args) {
     if (!args.empty()) {
-      auto obj = MakeObject(args.back(), meta_blk);
+      auto obj = meta_blk->MakeObject(args.back());
       meta_blk->returning_base.emplace_back(obj);
     }
   }
@@ -920,7 +908,7 @@ namespace kagami {
     
     if (!args.empty()) {
       for (size_t idx = 0; idx < args.size(); idx += 1) {
-        base->emplace_back(MakeObject(args[idx], meta_blk));
+        base->emplace_back(meta_blk->MakeObject(args[idx]));
       }
     }
 
@@ -934,14 +922,14 @@ namespace kagami {
     if (args.size() > 1) {
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
       for (size_t idx = 0; idx < args.size(); idx += 1) {
-        base->emplace_back(MakeObject(args[idx], meta_blk));
+        base->emplace_back(meta_blk->MakeObject(args[idx]));
       }
       Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
       container.Add(kStrRetValue,
         Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
     }
     else if (args.size() == 1) {
-      auto obj = MakeObject(args[0], meta_blk);
+      auto obj = meta_blk->MakeObject(args[0]);
       container.Add(kStrRetValue,
         Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
     }
@@ -953,7 +941,7 @@ namespace kagami {
     if (args.size() > 1) {
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
       for (size_t idx = 0; idx < args.size(); idx += 1) {
-        auto obj = MakeObject(args[idx], meta_blk);
+        auto obj = meta_blk->MakeObject(args[idx]);
         Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
         base->emplace_back(value_obj);
       }
@@ -962,7 +950,7 @@ namespace kagami {
       meta_blk->returning_base.emplace_back(ret_obj);
     }
     else if (args.size() == 1){
-      auto obj = MakeObject(args[0], meta_blk);
+      auto obj = meta_blk->MakeObject(args[0]);
       Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
       meta_blk->returning_base.push_back(value_obj);
     }

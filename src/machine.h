@@ -125,13 +125,28 @@ namespace kagami {
   class MetaWorkBlock {
   public:
     string error_string;
-    deque<Object> returning_base;
     bool error_returning,
       error_obj_checking,
       error_assembling,
       is_assert,
       is_assert_r,
       tail_recursion;
+    deque<Object> returning_base;
+
+    MetaWorkBlock():
+      error_string(),
+      error_returning(false),
+      error_obj_checking(false),
+      error_assembling(false),
+      is_assert(false),
+      is_assert_r(false),
+      tail_recursion(false) {}
+
+    Object MakeObject(Argument &arg, bool checking = false);
+    void AssemblingForAutoSized(Entry &ent, deque<Argument> parms, ObjectMap &obj_map);
+    void AssemblingForAutoFilling(Entry &ent, deque<Argument> parms, ObjectMap &obj_map);
+    void AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map);
+    void Reset();
   };
 
   class Machine {
@@ -148,13 +163,6 @@ namespace kagami {
     void InitGlobalObject(bool create_container,string name);
     bool PredefinedMessage(Message &result, size_t mode, Token token);
     void TailRecursionActions(MachCtlBlk *blk, string &name);
-
-    //Meta Work Block
-    Object MakeObject(Argument &arg, MetaWorkBlock *meta_blk, bool checking = false);
-    void ResetMetaWorkBlock(MetaWorkBlock *meta_blk);
-    void AssemblingForAutosized(Entry &ent,deque<Argument> parms, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
-    void AssemblingForAutoFilling(Entry &ent, deque<Argument> parmss, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
-    void AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map, MetaWorkBlock *meta_blk);
 
     //Command Functions
     bool BindAndSet(MetaWorkBlock *meta_blk, deque<Argument> args); //Object Management (Old)
