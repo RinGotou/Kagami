@@ -33,12 +33,6 @@ namespace kagami {
     return make_shared<T>(temp);
   }
 
-  template <class T>
-  Object MakeObject(T t) {
-    string str = to_string(t);
-    return Object(str, util::GetTokenType(str)).set_ro(false);
-  }
-
   class Meta {
     bool health_;
     vector<Instruction> action_base_;
@@ -181,6 +175,11 @@ namespace kagami {
     bool When(MetaWorkBlock *meta_blk, deque<Argument> args);
     bool DomainAssert(MetaWorkBlock *meta_blk, deque<Argument> args, bool returning);
     void Quit(MetaWorkBlock *meta_blk);
+    void End(MetaWorkBlock *meta_blk);
+    void Continue(MetaWorkBlock *meta_blk);
+    void Break(MetaWorkBlock *meta_blk);
+    void Else(MetaWorkBlock *meta_blk);
+    bool ConditionAndLoop(MetaWorkBlock *meta_blk, deque<Argument> args, int code);
 
     //Command Management
     bool GenericRequests(MetaWorkBlock *meta_blk, Request &Request, deque<Argument> &args);

@@ -1,6 +1,12 @@
 #include "component.h"
 
 namespace kagami {
+  template <class T>
+  Object MakeObject(T t) {
+    string str = to_string(t);
+    return Object(str, util::GetTokenType(str)).set_ro(false);
+  }
+
   GroupTypeEnum GetGroupType(Object &A, Object &B) {
     auto data_A = GetObjectStuff<string>(A),
       data_B = GetObjectStuff<string>(B);
@@ -26,11 +32,6 @@ namespace kagami {
     return group_type;
   }
 
-  inline bool IsStringObject(Object &obj) {
-    auto id = obj.GetTypeId();
-    return (id == kTypeIdRawString || id == kTypeIdString);
-  }
-
   inline bool CheckObjectType(Object &obj, string type_id) {
     return (obj.GetTypeId() == type_id);
   }
@@ -49,10 +50,6 @@ namespace kagami {
 
   inline Message IllegalParmMsg(string str) {
     return Message(kStrFatalError, kCodeIllegalParm, str);
-  }
-
-  inline Message IllegalSymbolMsg(string str) {
-    return Message(kStrFatalError, kCodeIllegalSymbol, str);
   }
 
   inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm) {
@@ -177,25 +174,13 @@ namespace kagami {
     return Message().SetObject(Object(str, type));
   }
 
-  Message Quit(ObjectMap &p) {
-    return Message(kStrEmpty, kCodeQuit, kStrEmpty);
-  }
-
   Message IsNull(ObjectMap &p) {
     auto &obj = p["object"];
     return Message(obj.GetTypeId() == kTypeIdNull ? kStrTrue : kStrFalse);
   }
 
-  void GenericRegister() {
+  void OperatorRegister() {
     using namespace entry;
-    //Operators
-    AddGenericEntry(Entry(CodeMaker<kCodeTailSign>, "", GT_END));
-    AddGenericEntry(Entry(CodeMaker<kCodeConditionLeaf>, "", GT_ELSE));
-    AddGenericEntry(Entry(CodeMaker<kCodeContinue>, "", GT_CONTINUE));
-    AddGenericEntry(Entry(CodeMaker<kCodeBreak>, "", GT_BREAK));
-    AddGenericEntry(Entry(ConditionMaker<kCodeConditionRoot>, "state", GT_IF));
-    AddGenericEntry(Entry(ConditionMaker<kCodeHeadSign>, "state", GT_WHILE));
-    AddGenericEntry(Entry(ConditionMaker<kCodeConditionBranch>, "state", GT_ELIF));
     AddGenericEntry(BinaryOperator<OperatorCode::ADD, GT_ADD>());
     AddGenericEntry(BinaryOperator<OperatorCode::SUB, GT_SUB>());
     AddGenericEntry(BinaryOperator<OperatorCode::MUL, GT_MUL>());
@@ -220,14 +205,13 @@ namespace kagami {
     AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
     AddEntry(Entry(Print, kCodeNormalParm, kStrObject, "print"));
     AddEntry(Entry(GetTimeDate, kCodeNormalParm, "", "time"));
-    AddEntry(Entry(Quit, kCodeNormalParm, "", "quit"));
     AddEntry(Entry(GetRawStringType, kCodeNormalParm, "object", "type"));
     AddEntry(Entry(IsNull, kCodeNormalParm, "object", "isnull"));
   }
 
   void Activiate() {
     using namespace entry;
-    GenericRegister();
+    OperatorRegister();
     BasicUtilityRegister();
     InitPlanners();
 #if defined(_WIN32)

@@ -150,7 +150,7 @@ namespace kagami {
     GT_ARRAY, GT_TYPE_ASSERT, GT_ASSERT_R,
     GT_CONTINUE, GT_BREAK, 
     GT_CASE, GT_WHEN, GT_TYPEID, GT_EXIST,
-    GT_DIR, 
+    GT_DIR, GT_QUIT,
     GT_NUL
   };
 
@@ -242,6 +242,7 @@ namespace kagami {
     kStrTypeAssertR  = "__type_assert_r",
     kStrTypeId       = "typeid",
     kStrDir          = "dir",
-    kStrExist        = "exist";
+    kStrExist        = "exist",
+    kStrQuit         = "quit";
 }
 

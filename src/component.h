@@ -354,16 +354,6 @@ namespace kagami {
     return Message(result_str);
   }
 
-  template<int code>
-  Message ConditionMaker(ObjectMap &p) {
-    return Message(p.Get<string>("state"), code, kStrEmpty);
-  }
-
-  template<int code>
-  Message CodeMaker(ObjectMap &p) {
-    return Message(kStrEmpty, code, kStrEmpty);
-  }
-
   template <OperatorCode op_code,GenericTokenEnum gen_token>
   Entry LogicBinaryOperator() {
     return Entry(LogicOperation<op_code>, "first|second", gen_token);

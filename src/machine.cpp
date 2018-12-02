@@ -21,6 +21,11 @@ namespace kagami {
       .SetTokenType(src.GetTokenType());
   }
 
+  bool IsStringObject(Object &obj) {
+    auto id = obj.GetTypeId();
+    return (id == kTypeIdRawString || id == kTypeIdString);
+  }
+
   /* string/wstring convertor */
 #if defined(_WIN32) && defined(_MSC_VER)
   //from MSDN
@@ -973,7 +978,7 @@ namespace kagami {
     bool result = true;
 
     if (!args.empty()) {
-      Object obj = MakeObject(args[0]);
+      Object obj = meta_blk->MakeObject(args[0]);
       auto vec = util::BuildStringVector(obj.GetMethods());
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
 
@@ -998,8 +1003,8 @@ namespace kagami {
     bool result = true;
 
     if (args.size() == 2) {
-      Object obj = MakeObject(args[0]);
-      Object str_obj = MakeObject(args[1]);
+      Object obj = meta_blk->MakeObject(args[0]);
+      Object str_obj = meta_blk->MakeObject(args[1]);
       Object ret_obj;
       string target_str = RealString(GetObjectStuff<string>(str_obj));
       util::FindInStringGroup(target_str, obj.GetMethods()) ?
@@ -1046,7 +1051,7 @@ namespace kagami {
     bool result = true;
 
     if (!args.empty()) {
-      Object obj = MakeObject(args[0]);
+      Object obj = meta_blk->MakeObject(args[0]);
 
       if (!IsStringObject(obj)) {
         result = false;
@@ -1074,10 +1079,10 @@ namespace kagami {
     if (!args.empty()) {
       ObjectPointer case_head = entry::FindObject("__case");
       string case_content = GetObjectStuff<string>(*case_head);
-      bool state = false, found = false;
+      bool state = true, found = false;
 
       for (size_t idx = 0; idx < args.size(); idx += 1) {
-        auto obj = MakeObject(args[idx]);
+        auto obj = meta_blk->MakeObject(args[idx]);
         if (!IsStringObject(obj)) {
           state = false;
           break;
@@ -1111,19 +1116,27 @@ namespace kagami {
   bool Machine::DomainAssert(MetaWorkBlock *meta_blk, deque<Argument> args, bool returning) {
     bool result = true;
 
-    Object obj = MakeObject(args[0]);
-    Object id_obj = MakeObject(args[1]);
+    Object obj = meta_blk->MakeObject(args[0]);
+    Object id_obj = meta_blk->MakeObject(args[1]);
+    string id = GetObjectStuff<string>(id_obj);
 
-    bool result = util::FindInStringGroup(GetObjectStuff<string>(id_obj), obj.GetMethods());
+    result = util::FindInStringGroup(id, obj.GetMethods());
+
+    if (!result) {
+      meta_blk->error_string = "Method/Member is not found. - " + id;
+      return result;
+    }
 
     //TODO:reserved for object member 
-    ObjectPointer ret_ptr = entry::FindObject(GetObjectStuff<string>(id_obj));
+    
+    ObjectPointer ret_ptr = entry::FindObject(id);
+    
     if (ret_ptr != nullptr) {
       if (returning) meta_blk->returning_base.emplace_back(*ret_ptr);
     }
     else {
       Object ent_obj;
-      auto ent = entry::Order(GetObjectStuff<string>(id_obj), obj.GetTypeId());
+      auto ent = entry::Order(id, obj.GetTypeId());
       if (ent.Good()) {
         if (returning) {
           ent_obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods, false);
@@ -1132,8 +1145,81 @@ namespace kagami {
       }
       else {
         result = false;
-        meta_blk->error_string = "Method/Member is not found.";
+        meta_blk->error_string = "Method/Member is not found. - " + id;
       }
+    }
+
+    return result;
+  }
+
+  inline void MakeCode(int code, MetaWorkBlock *meta_blk) {
+    meta_blk->deliver = true;
+    meta_blk->msg = Message(kStrEmpty, code, kStrEmpty);
+  }
+
+  void Machine::Quit(MetaWorkBlock *meta_blk) {
+    MakeCode(kCodeQuit, meta_blk);
+  }
+
+  void Machine::End(MetaWorkBlock *meta_blk) {
+    MakeCode(kCodeTailSign, meta_blk);
+  }
+
+  void Machine::Continue(MetaWorkBlock *meta_blk) {
+    MakeCode(kCodeContinue, meta_blk);
+  }
+
+  void Machine::Break(MetaWorkBlock *meta_blk) {
+    MakeCode(kCodeBreak, meta_blk);
+  }
+
+  void Machine::Else(MetaWorkBlock *meta_blk) {
+    MakeCode(kCodeConditionLeaf, meta_blk);
+  }
+
+  bool Machine::ConditionAndLoop(MetaWorkBlock *meta_blk, deque<Argument> args,int code) {
+    bool result = true;
+    if (args.size() == 1) {
+      Object obj = meta_blk->MakeObject(args[0]);
+      meta_blk->deliver = true;
+      if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdNull) {
+        meta_blk->msg = Message(kStrTrue, code, kStrEmpty);
+      }
+      else {
+        string state_str = GetObjectStuff<string>(obj);
+        if (state_str == kStrTrue || state_str == kStrFalse) {
+          meta_blk->msg = Message(state_str, code, kStrEmpty);
+        }
+        else {
+          auto type = util::GetTokenType(state_str);
+
+          bool state = false;
+          switch (type) {
+          case T_INTEGER:
+            state = (stoi(state_str) != 0);
+            break;
+          case T_FLOAT:
+            state = (stod(state_str) != 0.0);
+            break;
+          case T_STRING:
+            state = (RealString(state_str).size() > 0);
+            break;
+          default:
+            break;
+          }
+
+          meta_blk->msg = Message(state ? kStrTrue : kStrFalse, 
+            code, kStrEmpty);
+        }
+      }
+    }
+    else if (args.empty()) {
+      meta_blk->error_string = "Too few arguments.";
+      result = false;
+    }
+    else {
+      meta_blk->error_string = "Too many arguments.";
+      result = false;
     }
 
     return result;
@@ -1179,6 +1265,29 @@ namespace kagami {
       break;
     case GT_ASSERT_R:
       result = DomainAssert(meta_blk, args, true);
+    case GT_QUIT:
+      Quit(meta_blk);
+      break;
+    case GT_END:
+      End(meta_blk);
+      break;
+    case GT_CONTINUE:
+      Continue(meta_blk);
+      break;
+    case GT_BREAK:
+      Break(meta_blk);
+      break;
+    case GT_ELSE:
+      Else(meta_blk);
+    case GT_IF:
+      result = ConditionAndLoop(meta_blk, args, kCodeConditionRoot);
+      break;
+    case GT_ELIF:
+      result = ConditionAndLoop(meta_blk, args, kCodeConditionBranch);
+      break;
+    case GT_WHILE:
+      result = ConditionAndLoop(meta_blk, args, kCodeHeadSign);
+      break;
     default:
       break;
     }
@@ -1186,11 +1295,9 @@ namespace kagami {
     return result;
   }
 
-  /* This will be erased in the future */
   bool Machine::CheckGenericRequests(GenericTokenEnum token) {
     bool result = false;
 
-    //TODO:Migrate more commands
     switch (token) {
     case GT_BIND:
     case GT_NOP:
@@ -1204,6 +1311,14 @@ namespace kagami {
     case GT_WHEN:
     case GT_TYPE_ASSERT:
     case GT_ASSERT_R:
+    case GT_QUIT:
+    case GT_END:
+    case GT_CONTINUE:
+    case GT_BREAK:
+    case GT_ELSE:
+    case GT_IF:
+    case GT_ELIF:
+    case GT_WHILE:
       result = true;
     default:
       break;
