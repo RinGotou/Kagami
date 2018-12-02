@@ -156,7 +156,8 @@ namespace kagami {
         T(kStrCase        ,GT_CASE),
         T(kStrWhen        ,GT_WHEN),
         T(kStrTypeAssertR ,GT_ASSERT_R),
-        T(kStrTypeId      ,GT_TYPEID)
+        T(kStrTypeId      ,GT_TYPEID),
+        T(kStrDir         ,GT_DIR)
       };
       return base;
     }

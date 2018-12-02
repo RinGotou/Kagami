@@ -73,13 +73,13 @@ namespace kagami {
   using std::wstring;
 
   const string kEngineVersion  = "1.4 'Feathering'";
-  const string kBackendVerison = "August";
+  const string kBackendVerison = "Hatsuki";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else
   const string kPlatformType   = "Linux";
 #endif
-  const string kEngineName     = "Kagami";
+  const string kEngineName     = "Kagami Script (Hatsuki)";
   const string kMaintainer     = "Suzu Nakamura";
   const string kCopyright      = "Copyright(c) 2017-2018";
 
@@ -149,7 +149,8 @@ namespace kagami {
     GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
     GT_ARRAY, GT_TYPE_ASSERT, GT_ASSERT_R,
     GT_CONTINUE, GT_BREAK, 
-    GT_CASE, GT_WHEN, GT_TYPEID,
+    GT_CASE, GT_WHEN, GT_TYPEID, GT_EXIST,
+    GT_DIR, 
     GT_NUL
   };
 
@@ -239,6 +240,8 @@ namespace kagami {
     kStrArray        = "__array",
     kStrTypeAssert   = "__type_assert",
     kStrTypeAssertR  = "__type_assert_r",
-    kStrTypeId       = "typeid";
+    kStrTypeId       = "typeid",
+    kStrDir          = "dir",
+    kStrExist        = "exist";
 }
 

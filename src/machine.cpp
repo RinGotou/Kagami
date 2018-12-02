@@ -550,6 +550,8 @@ namespace kagami {
     error_assembling = false;
     is_assert = false;
     is_assert_r = false;
+    deliver = false;
+    msg = Message();
     returning_base.clear();
   }
 
@@ -607,18 +609,24 @@ namespace kagami {
       auto &args = action_base.at(idx).second;
 
       if (request.type == RT_MACHINE && CheckGenericRequests(request.head_gen)) {
+        (request.head_reg == name && idx == action_base.size() - 2
+          && action_base.back().first.head_gen == GT_RETURN) ?
+          meta_blk->tail_recursion = true :
+          meta_blk->tail_recursion = false;
+
         state = GenericRequests(meta_blk, request, args);
+
+        if (meta_blk->deliver) {
+          msg = meta_blk->msg;
+          meta_blk->deliver = false;
+          meta_blk->msg = Message();
+        }
       }
       else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {
         int code;
         Entry ent;
         string type_id, value, detail;
         is_operator_token = entry::IsOperatorToken(request.head_gen);
-
-        (request.head_reg == name && idx == action_base.size() - 2
-          && action_base.back().first.head_gen == GT_RETURN) ?
-          meta_blk->tail_recursion = true :
-          meta_blk->tail_recursion = false;
 
         if (!preprocessing && meta_blk->tail_recursion) {
           (request.head_reg == name && idx == action_base.size() - 1
@@ -890,7 +898,6 @@ namespace kagami {
         meta_blk->error_string = "Invalid bind operation.";
         result = false;
       }
-
     }
 
     return result;
@@ -962,6 +969,176 @@ namespace kagami {
     return result;
   }
 
+  bool Machine::GetMethods(MetaWorkBlock *meta_blk, deque<Argument> args) {
+    bool result = true;
+
+    if (!args.empty()) {
+      Object obj = MakeObject(args[0]);
+      auto vec = util::BuildStringVector(obj.GetMethods());
+      shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
+
+      for (const auto &unit : vec) {
+        base->emplace_back(Object(make_shared<string>(unit), kTypeIdString,
+          type::GetMethods(kTypeIdString), true));
+      }
+
+      Object ret_obj(base, kTypeIdArrayBase, kArrayBaseMethods, true);
+      ret_obj.SetConstructorFlag();
+      meta_blk->returning_base.emplace_back(ret_obj);
+    }
+    else {
+      meta_blk->error_string = "Empty argument list.";
+      result = false;
+    }
+
+    return result;
+  }
+
+  bool Machine::Exist(MetaWorkBlock *meta_blk, deque<Argument> args) {
+    bool result = true;
+
+    if (args.size() == 2) {
+      Object obj = MakeObject(args[0]);
+      Object str_obj = MakeObject(args[1]);
+      Object ret_obj;
+      string target_str = RealString(GetObjectStuff<string>(str_obj));
+      util::FindInStringGroup(target_str, obj.GetMethods()) ?
+        ret_obj = Object(kStrTrue, T_BOOLEAN) :
+        ret_obj = Object(kStrFalse, T_BOOLEAN);
+
+      meta_blk->returning_base.emplace_back(ret_obj);
+    }
+    else if (args.size() > 2) {
+      meta_blk->error_string = "Too many arguments.";
+      result = false;
+    }
+    else if (args.size() < 2) {
+      meta_blk->error_string = "Too few arguments.";
+      result = false;
+    }
+
+    return result;
+  }
+
+  bool Machine::Define(MetaWorkBlock *meta_blk, deque<Argument> args) {
+    bool result = true;
+
+    if (!args.empty()) {
+      vector<string> def_head;
+
+      for (size_t idx = 0; idx < args.size(); idx += 1) {
+        def_head.emplace_back(args[idx].data);
+      }
+
+      string def_head_string = util::CombineStringVector(def_head);
+      meta_blk->deliver = true;
+      meta_blk->msg = Message(kStrEmpty, kCodeDefineSign, def_head_string);
+    }
+    else {
+      meta_blk->error_string = "Empty argument list.";
+      result = false;
+    }
+
+    return result;
+  }
+
+  bool Machine::Case(MetaWorkBlock *meta_blk, deque<Argument> args) {
+    bool result = true;
+
+    if (!args.empty()) {
+      Object obj = MakeObject(args[0]);
+
+      if (!IsStringObject(obj)) {
+        result = false;
+        meta_blk->error_string = "Case-when is not supported for this object.";
+      }
+      else {
+        auto copy = type::GetObjectCopy(obj);
+        Object base(copy, obj.GetTypeId(), obj.GetMethods(), false);
+        entry::CreateObject("__case", base);
+        meta_blk->deliver = true;
+        meta_blk->msg = Message(kStrTrue).SetCode(kCodeCase);
+      }
+    }
+    else {
+      result = false;
+      meta_blk->error_string = "Empty argument list.";
+    }
+
+    return result;
+  }
+
+  bool Machine::When(MetaWorkBlock *meta_blk, deque<Argument> args) {
+    bool result = true;
+
+    if (!args.empty()) {
+      ObjectPointer case_head = entry::FindObject("__case");
+      string case_content = GetObjectStuff<string>(*case_head);
+      bool state = false, found = false;
+
+      for (size_t idx = 0; idx < args.size(); idx += 1) {
+        auto obj = MakeObject(args[idx]);
+        if (!IsStringObject(obj)) {
+          state = false;
+          break;
+        }
+
+        if (case_content == GetObjectStuff<string>(obj)) {
+          found = true;
+          break;
+        }
+      }
+
+      if (state) {
+        meta_blk->deliver = true;
+        meta_blk->msg = found ? 
+          Message(kStrTrue, kCodeWhen, kStrEmpty) :
+          Message(kStrFalse, kCodeWhen, kStrEmpty);
+      }
+      else {
+        meta_blk->error_string = "Case-when is not supported for non-string object.";
+        result = false;
+      }
+    }
+    else {
+      meta_blk->error_string = "Empty argument list.";
+      result = false;
+    }
+
+    return result;
+  }
+
+  bool Machine::DomainAssert(MetaWorkBlock *meta_blk, deque<Argument> args, bool returning) {
+    bool result = true;
+
+    Object obj = MakeObject(args[0]);
+    Object id_obj = MakeObject(args[1]);
+
+    bool result = util::FindInStringGroup(GetObjectStuff<string>(id_obj), obj.GetMethods());
+
+    //TODO:reserved for object member 
+    ObjectPointer ret_ptr = entry::FindObject(GetObjectStuff<string>(id_obj));
+    if (ret_ptr != nullptr) {
+      if (returning) meta_blk->returning_base.emplace_back(*ret_ptr);
+    }
+    else {
+      Object ent_obj;
+      auto ent = entry::Order(GetObjectStuff<string>(id_obj), obj.GetTypeId());
+      if (ent.Good()) {
+        if (returning) {
+          ent_obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods, false);
+          meta_blk->returning_base.emplace_back(ent_obj);
+        }
+      }
+      else {
+        result = false;
+        meta_blk->error_string = "Method/Member is not found.";
+      }
+    }
+
+    return result;
+  }
+
   bool Machine::GenericRequests(MetaWorkBlock *meta_blk, Request &request, deque<Argument> &args) {
     auto &token = request.head_gen;
     bool result = true;
@@ -982,6 +1159,26 @@ namespace kagami {
     case GT_TYPEID:
       GetTypeId(meta_blk, args);
       break;
+    case GT_DIR:
+      result = GetMethods(meta_blk, args);
+      break;
+    case GT_EXIST:
+      result = Exist(meta_blk, args);
+      break;
+    case GT_DEF:
+      result = Define(meta_blk, args);
+      break;
+    case GT_CASE:
+      result = Case(meta_blk, args);
+      break;
+    case GT_WHEN:
+      result = When(meta_blk, args);
+      break;
+    case GT_TYPE_ASSERT:
+      result = DomainAssert(meta_blk, args, false);
+      break;
+    case GT_ASSERT_R:
+      result = DomainAssert(meta_blk, args, true);
     default:
       break;
     }
@@ -989,6 +1186,7 @@ namespace kagami {
     return result;
   }
 
+  /* This will be erased in the future */
   bool Machine::CheckGenericRequests(GenericTokenEnum token) {
     bool result = false;
 
@@ -999,6 +1197,13 @@ namespace kagami {
     case GT_ARRAY:
     case GT_RETURN:
     case GT_TYPEID:
+    case GT_DIR:
+    case GT_EXIST:
+    case GT_DEF:
+    case GT_CASE:
+    case GT_WHEN:
+    case GT_TYPE_ASSERT:
+    case GT_ASSERT_R:
       result = true;
     default:
       break;

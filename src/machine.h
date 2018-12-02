@@ -130,17 +130,21 @@ namespace kagami {
       error_assembling,
       is_assert,
       is_assert_r,
+      deliver,
       tail_recursion;
+    Message msg;
     deque<Object> returning_base;
 
-    MetaWorkBlock():
+    MetaWorkBlock() :
       error_string(),
       error_returning(false),
       error_obj_checking(false),
       error_assembling(false),
       is_assert(false),
       is_assert_r(false),
-      tail_recursion(false) {}
+      deliver(false),
+      tail_recursion(false),
+      msg() {}
 
     Object MakeObject(Argument &arg, bool checking = false);
     void AssemblingForAutoSized(Entry &ent, deque<Argument> parms, ObjectMap &obj_map);
@@ -175,7 +179,8 @@ namespace kagami {
     bool Define(MetaWorkBlock *meta_blk, deque<Argument> args);         //Def
     bool Case(MetaWorkBlock *meta_blk, deque<Argument> args);
     bool When(MetaWorkBlock *meta_blk, deque<Argument> args);
-    bool DomainAssert(MetaWorkBlock *meta_blk, deque<Argument> args);
+    bool DomainAssert(MetaWorkBlock *meta_blk, deque<Argument> args, bool returning);
+    void Quit(MetaWorkBlock *meta_blk);
 
     //Command Management
     bool GenericRequests(MetaWorkBlock *meta_blk, Request &Request, deque<Argument> &args);
