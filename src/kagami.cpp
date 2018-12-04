@@ -104,7 +104,7 @@ bool ArgumentParser(vector<string> args, map<string,string> &arg_base) {
   }
 
   if (!status) {
-    cout << "Invaild argument:" + error_arg << endl;
+    cout << "Invalid argument:" + error_arg << endl;
     return false;
   }
 

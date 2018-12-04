@@ -269,8 +269,17 @@ namespace kagami {
 
   class ContainerManager {
   private:
+    ContainerManager *parent_;
     list<ObjectContainer> pool_;
   public:
+    ContainerManager() : parent_(nullptr) {
+      pool_.push_back(ObjectContainer());
+    }
+
+    ContainerManager(ContainerManager *parent) : parent_(parent) {
+      pool_.push_back(ObjectContainer());
+    }
+
     bool Create(string id, Object object) {
       return pool_.back().Find(id);
     }
