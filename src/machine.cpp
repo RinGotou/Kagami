@@ -1331,7 +1331,6 @@ namespace kagami {
     std::wifstream stream;
     wstring buf;
     health_ = true;
-    size_t subscript = 0;
     vector<string> script_buf;
 
     is_main_ = is_main;
@@ -1354,12 +1353,12 @@ namespace kagami {
       if (it->second == "") continue;
       msg = analyzer.Make(it->second, it->first);
       if (msg.GetValue() == kStrFatalError) {
-        trace::Log(msg.SetIndex(subscript));
+        trace::Log(msg.SetIndex(it->first));
         health_ = false;
         break;
       }
       if (msg.GetValue() == kStrWarning) {
-        trace::Log(msg.SetIndex(subscript));
+        trace::Log(msg.SetIndex(it->first));
       }
       storage_.emplace_back(Meta(
         analyzer.GetOutput(),
