@@ -72,14 +72,14 @@ namespace kagami {
   using std::stod;
   using std::wstring;
 
-  const string kEngineVersion  = "1.4 'Feathering'";
+  const string kEngineVersion  = "1.5 'Cello'";
   const string kBackendVerison = "Hatsuki";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else
   const string kPlatformType   = "Linux";
 #endif
-  const string kEngineName     = "Kagami Script (Hatsuki)";
+  const string kEngineName     = "Kagami Project";
   const string kMaintainer     = "Suzu Nakamura";
   const string kCopyright      = "Copyright(c) 2017-2018";
 

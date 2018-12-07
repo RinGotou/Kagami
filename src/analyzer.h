@@ -78,7 +78,7 @@ namespace kagami {
       type(RT_NUL) {}
   };
 
-  using Instruction = pair<Request, deque<Argument>>;
+  using KIL = pair<Request, deque<Argument>>;
 
   struct AnalyzerWorkBlock {
     deque<Argument> args;
@@ -96,7 +96,7 @@ namespace kagami {
     bool health_;
     vector<Token> tokens_;
     size_t index_;
-    vector<Instruction> action_base_;
+    vector<KIL> action_base_;
     string error_string_;
 
     vector<string> Scanning(string target);
@@ -128,7 +128,7 @@ namespace kagami {
       return index_; 
     }
 
-    vector<Instruction> GetOutput() const { 
+    vector<KIL> GetOutput() const { 
       return action_base_; 
     }
 

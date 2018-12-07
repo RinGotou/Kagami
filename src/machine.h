@@ -33,17 +33,17 @@ namespace kagami {
     return make_shared<T>(temp);
   }
 
-  class Meta {
+  class KILSet {
     bool health_;
-    vector<Instruction> action_base_;
+    vector<KIL> action_base_;
     size_t index_;
     Token main_token_;
   public:
-    Meta() : 
+    KILSet() : 
       health_(false), 
       index_(0) {}
 
-    Meta(vector<Instruction> actionBase, 
+    KILSet(vector<KIL> actionBase, 
       size_t index = 0, 
       Token mainToken = Token()) : 
       health_(true), 
@@ -53,7 +53,7 @@ namespace kagami {
       this->main_token_ = mainToken;
     }
 
-    vector<Instruction> &GetContains() { 
+    vector<KIL> &GetContains() { 
       return action_base_; 
     }
 
@@ -116,7 +116,7 @@ namespace kagami {
     void Clear();
   };
 
-  class MetaWorkBlock {
+  class IRWorker {
   public:
     string error_string;
     bool error_returning,
@@ -129,7 +129,7 @@ namespace kagami {
     Message msg;
     deque<Object> returning_base;
 
-    MetaWorkBlock() :
+    IRWorker() :
       error_string(),
       error_returning(false),
       error_obj_checking(false),
@@ -149,40 +149,40 @@ namespace kagami {
 
   class Machine {
     //Machine *parent_;
-    vector<Meta> storage_;
+    vector<KILSet> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
 
     void ResetContainer(string funcId);
     void MakeFunction(size_t start, size_t end, vector<string> &defHead);
     static bool IsBlankStr(string target);
-    Message MetaProcessing(Meta &meta, string name, MachCtlBlk *blk);
+    Message IRProcessing(KILSet &IL_set, string name, MachCtlBlk *blk);
     Message PreProcessing();
     void InitGlobalObject(bool create_container,string name);
     bool PredefinedMessage(Message &result, size_t mode, Token token);
     void TailRecursionActions(MachCtlBlk *blk, string &name);
 
     //Command Functions
-    bool BindAndSet(MetaWorkBlock *meta_blk, deque<Argument> args); //Object Management (Old)
-    void Nop(MetaWorkBlock *meta_blk, deque<Argument> args);        //Bracket    
-    void ArrayMaker(MetaWorkBlock *meta_blk, deque<Argument> args); //Braces
-    void ReturnOperator(MetaWorkBlock *meta_blk, deque<Argument> args); //Return
-    bool GetTypeId(MetaWorkBlock *meta_blk, deque<Argument> args);      //TypeId
-    bool GetMethods(MetaWorkBlock *meta_blk, deque<Argument> args);     //Dir
-    bool Exist(MetaWorkBlock *meta_blk, deque<Argument> args);          //Exist
-    bool Define(MetaWorkBlock *meta_blk, deque<Argument> args);         //Def
-    bool Case(MetaWorkBlock *meta_blk, deque<Argument> args);
-    bool When(MetaWorkBlock *meta_blk, deque<Argument> args);
-    bool DomainAssert(MetaWorkBlock *meta_blk, deque<Argument> args, bool returning);
-    void Quit(MetaWorkBlock *meta_blk);
-    void End(MetaWorkBlock *meta_blk);
-    void Continue(MetaWorkBlock *meta_blk);
-    void Break(MetaWorkBlock *meta_blk);
-    void Else(MetaWorkBlock *meta_blk);
-    bool ConditionAndLoop(MetaWorkBlock *meta_blk, deque<Argument> args, int code);
+    bool BindAndSet(IRWorker *worker, deque<Argument> args); //Object Management (Old)
+    void Nop(IRWorker *worker, deque<Argument> args);        //Bracket    
+    void ArrayMaker(IRWorker *worker, deque<Argument> args); //Braces
+    void ReturnOperator(IRWorker *worker, deque<Argument> args); //Return
+    bool GetTypeId(IRWorker *worker, deque<Argument> args);      //TypeId
+    bool GetMethods(IRWorker *worker, deque<Argument> args);     //Dir
+    bool Exist(IRWorker *worker, deque<Argument> args);          //Exist
+    bool Define(IRWorker *worker, deque<Argument> args);         //Def
+    bool Case(IRWorker *worker, deque<Argument> args);
+    bool When(IRWorker *worker, deque<Argument> args);
+    bool DomainAssert(IRWorker *worker, deque<Argument> args, bool returning);
+    void Quit(IRWorker *worker);
+    void End(IRWorker *worker);
+    void Continue(IRWorker *worker);
+    void Break(IRWorker *worker);
+    void Else(IRWorker *worker);
+    bool ConditionAndLoop(IRWorker *worker, deque<Argument> args, int code);
 
     //Command Management
-    bool GenericRequests(MetaWorkBlock *meta_blk, Request &Request, deque<Argument> &args);
+    bool GenericRequests(IRWorker *worker, Request &Request, deque<Argument> &args);
     bool CheckGenericRequests(GenericTokenEnum token);
   public:
     Machine() : 
@@ -203,7 +203,7 @@ namespace kagami {
       is_main_ = false;
     }
 
-    Machine(vector<Meta> storage) :
+    Machine(vector<KILSet> storage) :
       health_(true),
       is_main_(false),
       is_func_(false) {

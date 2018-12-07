@@ -166,7 +166,7 @@ namespace kagami {
   }
 
   /* Add new user-defined function */
-  inline void AddFunction(string id, vector<Meta> proc, vector<string> parms) {
+  inline void AddFunction(string id, vector<KILSet> proc, vector<string> parms) {
     auto &base = GetFunctionBase();
     base[id] = Machine(proc).SetParameters(parms).SetFunc();
     entry::AddEntry(Entry(FunctionTunnel, id, parms));
@@ -411,7 +411,7 @@ namespace kagami {
     recursion_map.clear();
   }
 
-  Object MetaWorkBlock::MakeObject(Argument &arg, bool checking) {
+  Object IRWorker::MakeObject(Argument &arg, bool checking) {
     Object obj, obj_domain;
     ObjectPointer ptr;
     bool state = true;
@@ -482,7 +482,7 @@ namespace kagami {
     return obj;
   }
 
-  void MetaWorkBlock::AssemblingForAutoSized(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
+  void IRWorker::AssemblingForAutoSized(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
     size_t idx = 0;
     size_t va_arg_size;
     size_t count = 0;
@@ -510,7 +510,7 @@ namespace kagami {
     obj_map.Input(kStrVaSize, Object(to_string(count), T_INTEGER));
   }
 
-  void MetaWorkBlock::AssemblingForAutoFilling(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
+  void IRWorker::AssemblingForAutoFilling(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
       size_t idx = 0;
       auto ent_args = ent.GetArguments();
       auto is_method = (ent.GetFlag() == kFlagMethod);
@@ -523,7 +523,7 @@ namespace kagami {
       }
   }
 
-  void MetaWorkBlock::AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
+  void IRWorker::AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
     size_t idx = 0;
     auto ent_args = ent.GetArguments();
     auto is_method = (ent.GetFlag() == kFlagMethod);
@@ -547,7 +547,7 @@ namespace kagami {
     }
   }
 
-  void MetaWorkBlock::Reset() {
+  void IRWorker::Reset() {
     error_string.clear();
     error_returning = false;
     error_obj_checking = false;
@@ -577,7 +577,7 @@ namespace kagami {
     if (start > end) return;
     string id = def_head[0];
     vector<string> parms;
-    vector<Meta> proc;
+    vector<KILSet> proc;
 
     for (size_t i = 1; i < def_head.size(); ++i) {
       parms.push_back(def_head[i]);
@@ -598,14 +598,14 @@ namespace kagami {
     return true;
   }
 
-  Message Machine::MetaProcessing(Meta &meta, string name, MachCtlBlk *blk) {
+  Message Machine::IRProcessing(KILSet &IL_set, string name, MachCtlBlk *blk) {
     Message msg;
     ObjectMap obj_map;
-    vector<Instruction> &action_base = meta.GetContains();
+    vector<KIL> &action_base = IL_set.GetContains();
     bool preprocessing = (blk == nullptr),
       is_operator_token = false;
     bool state = true;
-    MetaWorkBlock *meta_blk = new MetaWorkBlock();
+    IRWorker *worker = new IRWorker();
 
     for (size_t idx = 0; idx < action_base.size(); idx += 1) {
       obj_map.clear();
@@ -616,15 +616,15 @@ namespace kagami {
       if (request.type == RT_MACHINE && CheckGenericRequests(request.head_gen)) {
         (request.head_reg == name && idx == action_base.size() - 2
           && action_base.back().first.head_gen == GT_RETURN) ?
-          meta_blk->tail_recursion = true :
-          meta_blk->tail_recursion = false;
+          worker->tail_recursion = true :
+          worker->tail_recursion = false;
 
-        state = GenericRequests(meta_blk, request, args);
+        state = GenericRequests(worker, request, args);
 
-        if (meta_blk->deliver) {
-          msg = meta_blk->msg;
-          meta_blk->deliver = false;
-          meta_blk->msg = Message();
+        if (worker->deliver) {
+          msg = worker->msg;
+          worker->deliver = false;
+          worker->msg = Message();
         }
       }
       else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {
@@ -633,11 +633,11 @@ namespace kagami {
         string type_id, value, detail;
         is_operator_token = entry::IsOperatorToken(request.head_gen);
 
-        if (!preprocessing && meta_blk->tail_recursion) {
+        if (!preprocessing && worker->tail_recursion) {
           (request.head_reg == name && idx == action_base.size() - 1
             && blk->last_index && name != "" && name != "__null__") ?
-            meta_blk->tail_recursion = true :
-            meta_blk->tail_recursion = false;
+            worker->tail_recursion = true :
+            worker->tail_recursion = false;
         }
 
         switch (request.type) {
@@ -646,7 +646,7 @@ namespace kagami {
           break;
         case RT_REGULAR:
           if (request.domain.type != AT_HOLDER) {
-            Object domain_obj = meta_blk->MakeObject(request.domain, true);
+            Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
             ent = entry::Order(request.head_reg, type_id);
             obj_map.Input(kStrObject, domain_obj);
@@ -666,24 +666,24 @@ namespace kagami {
 
         switch (ent.GetArgumentMode()) {
         case kCodeAutoSize:
-          meta_blk->AssemblingForAutoSized(ent, args, obj_map);
+          worker->AssemblingForAutoSized(ent, args, obj_map);
           break;
         case kCodeAutoFill:
-          meta_blk->AssemblingForAutoFilling(ent, args, obj_map);
+          worker->AssemblingForAutoFilling(ent, args, obj_map);
           break;
         default:
-          meta_blk->AssemblingForNormal(ent, args, obj_map);
+          worker->AssemblingForNormal(ent, args, obj_map);
           break;
         }
 
-        if (meta_blk->error_returning ||
-          meta_blk->error_obj_checking ||
-          meta_blk->error_assembling) {
+        if (worker->error_returning ||
+          worker->error_obj_checking ||
+          worker->error_assembling) {
 
           break;
         }
 
-        if (meta_blk->tail_recursion) {
+        if (worker->tail_recursion) {
           blk->recursion_map = obj_map;
           break;
         }
@@ -698,39 +698,39 @@ namespace kagami {
 
           if (is_operator_token && idx + 1 < action_base.size()) {
             entry::IsOperatorToken(action_base[idx + 1].first.head_gen) ?
-              meta_blk->returning_base.emplace_front(object) :
-              meta_blk->returning_base.emplace_back(object);
+              worker->returning_base.emplace_front(object) :
+              worker->returning_base.emplace_back(object);
           }
           else {
-            meta_blk->returning_base.emplace_back(object);
+            worker->returning_base.emplace_back(object);
           }
         }
         else if (request.head_gen != GT_TYPE_ASSERT) {
-          meta_blk->returning_base.emplace_back(Object());
+          worker->returning_base.emplace_back(Object());
         }
       }
     }
 
-    if (meta_blk->error_returning ||
-      meta_blk->error_obj_checking ||
-      meta_blk->error_assembling) {
-      msg = Message(kStrFatalError, kCodeIllegalSymbol, meta_blk->error_string);
+    if (worker->error_returning ||
+      worker->error_obj_checking ||
+      worker->error_assembling) {
+      msg = Message(kStrFatalError, kCodeIllegalSymbol, worker->error_string);
     }
 
-    if (!preprocessing && meta_blk->tail_recursion)
-      blk->tail_recursion = meta_blk->tail_recursion;
+    if (!preprocessing && worker->tail_recursion)
+      blk->tail_recursion = worker->tail_recursion;
 
     obj_map.clear();
-    meta_blk->returning_base.clear();
-    meta_blk->returning_base.shrink_to_fit();
+    worker->returning_base.clear();
+    worker->returning_base.shrink_to_fit();
 
-    delete meta_blk;
+    delete worker;
 
     return msg;
   }
 
   Message Machine::PreProcessing() {
-    Meta *meta = nullptr;
+    KILSet *IL_set = nullptr;
     GenericTokenEnum token;
     Message result;
     bool flag = false;
@@ -742,8 +742,8 @@ namespace kagami {
 
     for (size_t idx = 0; idx < storage_.size(); ++idx) {
       if (!health_) break;
-      meta = &storage_[idx];
-      token = entry::GetGenericToken(meta->GetMainToken().first);
+      IL_set = &storage_[idx];
+      token = entry::GetGenericToken(IL_set->GetMainToken().first);
       if (token == GT_WHILE || token == GT_IF || token == GT_CASE) {
         nest_head_count++;
       }
@@ -753,7 +753,7 @@ namespace kagami {
             "Define function in function is not supported.").SetIndex(idx);
           break;
         }
-        result = MetaProcessing(*meta, "", nullptr);
+        result = IRProcessing(*IL_set, "", nullptr);
         def_head = util::BuildStringVector(result.GetDetail());
         def_start = idx + 1;
         flag = true;
@@ -773,7 +773,7 @@ namespace kagami {
       }
     }
 
-    vector<Meta> *otherMeta = new vector<Meta>();
+    vector<KILSet> *other_sets = new vector<KILSet>();
     bool filter = false;
     for (size_t idx = 0; idx < storage_.size(); ++idx) {
       auto it = skipped_idx.find(idx);
@@ -781,11 +781,11 @@ namespace kagami {
         idx = it->second;
         continue;
       }
-      otherMeta->emplace_back(storage_[idx]);
+      other_sets->emplace_back(storage_[idx]);
     }
 
-    storage_.swap(*otherMeta);
-    delete otherMeta;
+    storage_.swap(*other_sets);
+    delete other_sets;
 
     return result;
   }
@@ -866,17 +866,17 @@ namespace kagami {
     ResetContainer(name);
   }
 
-  bool Machine::BindAndSet(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  bool Machine::BindAndSet(IRWorker *worker, deque<Argument> args) {
     bool result = true;
-    auto dest = meta_blk->MakeObject(args[0]);
-    auto src = meta_blk->MakeObject(args[1]);
+    auto dest = worker->MakeObject(args[0]);
+    auto src = worker->MakeObject(args[1]);
 
     if (dest.IsRef()) {
       if (!dest.get_ro()) {
         CopyObject(dest, src);
       }
       else {
-        meta_blk->error_string = "Object is read-only.";
+        worker->error_string = "Object is read-only.";
         result = false;
       }
     }
@@ -894,13 +894,13 @@ namespace kagami {
           obj.SetTokenType(src.GetTokenType());
           ObjectPointer result = entry::CreateObject(id, obj);
           if (result == nullptr) {
-            meta_blk->error_string = "Object cration is failed.";
+            worker->error_string = "Object cration is failed.";
             result = false;
           }
         }
       }
       else {
-        meta_blk->error_string = "Invalid bind operation.";
+        worker->error_string = "Invalid bind operation.";
         result = false;
       }
     }
@@ -908,77 +908,77 @@ namespace kagami {
     return result;
   }
 
-  void Machine::Nop(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  void Machine::Nop(IRWorker *worker, deque<Argument> args) {
     if (!args.empty()) {
-      auto obj = meta_blk->MakeObject(args.back());
-      meta_blk->returning_base.emplace_back(obj);
+      auto obj = worker->MakeObject(args.back());
+      worker->returning_base.emplace_back(obj);
     }
   }
 
-  void Machine::ArrayMaker(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  void Machine::ArrayMaker(IRWorker *worker, deque<Argument> args) {
     shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
     
     if (!args.empty()) {
       for (size_t idx = 0; idx < args.size(); idx += 1) {
-        base->emplace_back(meta_blk->MakeObject(args[idx]));
+        base->emplace_back(worker->MakeObject(args[idx]));
       }
     }
 
     Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
     obj.SetConstructorFlag();
-    meta_blk->returning_base.emplace_back(obj);
+    worker->returning_base.emplace_back(obj);
   }
 
-  void Machine::ReturnOperator(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  void Machine::ReturnOperator(IRWorker *worker, deque<Argument> args) {
     auto &container = entry::GetCurrentContainer();
     if (args.size() > 1) {
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
       for (size_t idx = 0; idx < args.size(); idx += 1) {
-        base->emplace_back(meta_blk->MakeObject(args[idx]));
+        base->emplace_back(worker->MakeObject(args[idx]));
       }
       Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
       container.Add(kStrRetValue,
         Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
     }
     else if (args.size() == 1) {
-      auto obj = meta_blk->MakeObject(args[0]);
+      auto obj = worker->MakeObject(args[0]);
       container.Add(kStrRetValue,
         Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
     }
   }
 
-  bool Machine::GetTypeId(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  bool Machine::GetTypeId(IRWorker *worker, deque<Argument> args) {
     bool result = true;
     
     if (args.size() > 1) {
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
       for (size_t idx = 0; idx < args.size(); idx += 1) {
-        auto obj = meta_blk->MakeObject(args[idx]);
+        auto obj = worker->MakeObject(args[idx]);
         Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
         base->emplace_back(value_obj);
       }
       Object ret_obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
       ret_obj.SetConstructorFlag();
-      meta_blk->returning_base.emplace_back(ret_obj);
+      worker->returning_base.emplace_back(ret_obj);
     }
     else if (args.size() == 1){
-      auto obj = meta_blk->MakeObject(args[0]);
+      auto obj = worker->MakeObject(args[0]);
       Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
-      meta_blk->returning_base.push_back(value_obj);
+      worker->returning_base.push_back(value_obj);
     }
     else {
-      meta_blk->error_string = "Empty argument list.";
+      worker->error_string = "Empty argument list.";
       result = false;
     }
 
     return result;
   }
 
-  bool Machine::GetMethods(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  bool Machine::GetMethods(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (!args.empty()) {
-      Object obj = meta_blk->MakeObject(args[0]);
+      Object obj = worker->MakeObject(args[0]);
       auto vec = util::BuildStringVector(obj.GetMethods());
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
 
@@ -989,43 +989,43 @@ namespace kagami {
 
       Object ret_obj(base, kTypeIdArrayBase, kArrayBaseMethods, true);
       ret_obj.SetConstructorFlag();
-      meta_blk->returning_base.emplace_back(ret_obj);
+      worker->returning_base.emplace_back(ret_obj);
     }
     else {
-      meta_blk->error_string = "Empty argument list.";
+      worker->error_string = "Empty argument list.";
       result = false;
     }
 
     return result;
   }
 
-  bool Machine::Exist(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  bool Machine::Exist(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (args.size() == 2) {
-      Object obj = meta_blk->MakeObject(args[0]);
-      Object str_obj = meta_blk->MakeObject(args[1]);
+      Object obj = worker->MakeObject(args[0]);
+      Object str_obj = worker->MakeObject(args[1]);
       Object ret_obj;
       string target_str = RealString(GetObjectStuff<string>(str_obj));
       util::FindInStringGroup(target_str, obj.GetMethods()) ?
         ret_obj = Object(kStrTrue, T_BOOLEAN) :
         ret_obj = Object(kStrFalse, T_BOOLEAN);
 
-      meta_blk->returning_base.emplace_back(ret_obj);
+      worker->returning_base.emplace_back(ret_obj);
     }
     else if (args.size() > 2) {
-      meta_blk->error_string = "Too many arguments.";
+      worker->error_string = "Too many arguments.";
       result = false;
     }
     else if (args.size() < 2) {
-      meta_blk->error_string = "Too few arguments.";
+      worker->error_string = "Too few arguments.";
       result = false;
     }
 
     return result;
   }
 
-  bool Machine::Define(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  bool Machine::Define(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1036,44 +1036,44 @@ namespace kagami {
       }
 
       string def_head_string = util::CombineStringVector(def_head);
-      meta_blk->deliver = true;
-      meta_blk->msg = Message(kStrEmpty, kCodeDefineSign, def_head_string);
+      worker->deliver = true;
+      worker->msg = Message(kStrEmpty, kCodeDefineSign, def_head_string);
     }
     else {
-      meta_blk->error_string = "Empty argument list.";
+      worker->error_string = "Empty argument list.";
       result = false;
     }
 
     return result;
   }
 
-  bool Machine::Case(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  bool Machine::Case(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (!args.empty()) {
-      Object obj = meta_blk->MakeObject(args[0]);
+      Object obj = worker->MakeObject(args[0]);
 
       if (!IsStringObject(obj)) {
         result = false;
-        meta_blk->error_string = "Case-when is not supported for this object.";
+        worker->error_string = "Case-when is not supported for this object.";
       }
       else {
         auto copy = type::GetObjectCopy(obj);
         Object base(copy, obj.GetTypeId(), obj.GetMethods(), false);
         entry::CreateObject("__case", base);
-        meta_blk->deliver = true;
-        meta_blk->msg = Message(kStrTrue).SetCode(kCodeCase);
+        worker->deliver = true;
+        worker->msg = Message(kStrTrue).SetCode(kCodeCase);
       }
     }
     else {
       result = false;
-      meta_blk->error_string = "Empty argument list.";
+      worker->error_string = "Empty argument list.";
     }
 
     return result;
   }
 
-  bool Machine::When(MetaWorkBlock *meta_blk, deque<Argument> args) {
+  bool Machine::When(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1082,7 +1082,7 @@ namespace kagami {
       bool state = true, found = false;
 
       for (size_t idx = 0; idx < args.size(); idx += 1) {
-        auto obj = meta_blk->MakeObject(args[idx]);
+        auto obj = worker->MakeObject(args[idx]);
         if (!IsStringObject(obj)) {
           state = false;
           break;
@@ -1095,35 +1095,35 @@ namespace kagami {
       }
 
       if (state) {
-        meta_blk->deliver = true;
-        meta_blk->msg = found ? 
+        worker->deliver = true;
+        worker->msg = found ? 
           Message(kStrTrue, kCodeWhen, kStrEmpty) :
           Message(kStrFalse, kCodeWhen, kStrEmpty);
       }
       else {
-        meta_blk->error_string = "Case-when is not supported for non-string object.";
+        worker->error_string = "Case-when is not supported for non-string object.";
         result = false;
       }
     }
     else {
-      meta_blk->error_string = "Empty argument list.";
+      worker->error_string = "Empty argument list.";
       result = false;
     }
 
     return result;
   }
 
-  bool Machine::DomainAssert(MetaWorkBlock *meta_blk, deque<Argument> args, bool returning) {
+  bool Machine::DomainAssert(IRWorker *worker, deque<Argument> args, bool returning) {
     bool result = true;
 
-    Object obj = meta_blk->MakeObject(args[0]);
-    Object id_obj = meta_blk->MakeObject(args[1]);
+    Object obj = worker->MakeObject(args[0]);
+    Object id_obj = worker->MakeObject(args[1]);
     string id = GetObjectStuff<string>(id_obj);
 
     result = util::FindInStringGroup(id, obj.GetMethods());
 
     if (!result) {
-      meta_blk->error_string = "Method/Member is not found. - " + id;
+      worker->error_string = "Method/Member is not found. - " + id;
       return result;
     }
 
@@ -1132,7 +1132,7 @@ namespace kagami {
     ObjectPointer ret_ptr = entry::FindObject(id);
     
     if (ret_ptr != nullptr) {
-      if (returning) meta_blk->returning_base.emplace_back(*ret_ptr);
+      if (returning) worker->returning_base.emplace_back(*ret_ptr);
     }
     else {
       Object ent_obj;
@@ -1140,55 +1140,55 @@ namespace kagami {
       if (ent.Good()) {
         if (returning) {
           ent_obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods, false);
-          meta_blk->returning_base.emplace_back(ent_obj);
+          worker->returning_base.emplace_back(ent_obj);
         }
       }
       else {
         result = false;
-        meta_blk->error_string = "Method/Member is not found. - " + id;
+        worker->error_string = "Method/Member is not found. - " + id;
       }
     }
 
     return result;
   }
 
-  inline void MakeCode(int code, MetaWorkBlock *meta_blk) {
-    meta_blk->deliver = true;
-    meta_blk->msg = Message(kStrEmpty, code, kStrEmpty);
+  inline void MakeCode(int code, IRWorker *worker) {
+    worker->deliver = true;
+    worker->msg = Message(kStrEmpty, code, kStrEmpty);
   }
 
-  void Machine::Quit(MetaWorkBlock *meta_blk) {
-    MakeCode(kCodeQuit, meta_blk);
+  void Machine::Quit(IRWorker *worker) {
+    MakeCode(kCodeQuit, worker);
   }
 
-  void Machine::End(MetaWorkBlock *meta_blk) {
-    MakeCode(kCodeTailSign, meta_blk);
+  void Machine::End(IRWorker *worker) {
+    MakeCode(kCodeTailSign, worker);
   }
 
-  void Machine::Continue(MetaWorkBlock *meta_blk) {
-    MakeCode(kCodeContinue, meta_blk);
+  void Machine::Continue(IRWorker *worker) {
+    MakeCode(kCodeContinue, worker);
   }
 
-  void Machine::Break(MetaWorkBlock *meta_blk) {
-    MakeCode(kCodeBreak, meta_blk);
+  void Machine::Break(IRWorker *worker) {
+    MakeCode(kCodeBreak, worker);
   }
 
-  void Machine::Else(MetaWorkBlock *meta_blk) {
-    MakeCode(kCodeConditionLeaf, meta_blk);
+  void Machine::Else(IRWorker *worker) {
+    MakeCode(kCodeConditionLeaf, worker);
   }
 
-  bool Machine::ConditionAndLoop(MetaWorkBlock *meta_blk, deque<Argument> args,int code) {
+  bool Machine::ConditionAndLoop(IRWorker *worker, deque<Argument> args,int code) {
     bool result = true;
     if (args.size() == 1) {
-      Object obj = meta_blk->MakeObject(args[0]);
-      meta_blk->deliver = true;
+      Object obj = worker->MakeObject(args[0]);
+      worker->deliver = true;
       if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdNull) {
-        meta_blk->msg = Message(kStrTrue, code, kStrEmpty);
+        worker->msg = Message(kStrTrue, code, kStrEmpty);
       }
       else {
         string state_str = GetObjectStuff<string>(obj);
         if (state_str == kStrTrue || state_str == kStrFalse) {
-          meta_blk->msg = Message(state_str, code, kStrEmpty);
+          worker->msg = Message(state_str, code, kStrEmpty);
         }
         else {
           auto type = util::GetTokenType(state_str);
@@ -1208,85 +1208,85 @@ namespace kagami {
             break;
           }
 
-          meta_blk->msg = Message(state ? kStrTrue : kStrFalse, 
+          worker->msg = Message(state ? kStrTrue : kStrFalse, 
             code, kStrEmpty);
         }
       }
     }
     else if (args.empty()) {
-      meta_blk->error_string = "Too few arguments.";
+      worker->error_string = "Too few arguments.";
       result = false;
     }
     else {
-      meta_blk->error_string = "Too many arguments.";
+      worker->error_string = "Too many arguments.";
       result = false;
     }
 
     return result;
   }
 
-  bool Machine::GenericRequests(MetaWorkBlock *meta_blk, Request &request, deque<Argument> &args) {
+  bool Machine::GenericRequests(IRWorker *worker, Request &request, deque<Argument> &args) {
     auto &token = request.head_gen;
     bool result = true;
 
     switch (token) {
     case GT_BIND:
-      result = BindAndSet(meta_blk, args);
+      result = BindAndSet(worker, args);
       break;
     case GT_NOP:
-      Nop(meta_blk, args);
+      Nop(worker, args);
       break;
     case GT_ARRAY:
-      ArrayMaker(meta_blk, args);
+      ArrayMaker(worker, args);
       break;
     case GT_RETURN:
-      ReturnOperator(meta_blk, args);
+      ReturnOperator(worker, args);
       break;
     case GT_TYPEID:
-      GetTypeId(meta_blk, args);
+      GetTypeId(worker, args);
       break;
     case GT_DIR:
-      result = GetMethods(meta_blk, args);
+      result = GetMethods(worker, args);
       break;
     case GT_EXIST:
-      result = Exist(meta_blk, args);
+      result = Exist(worker, args);
       break;
     case GT_DEF:
-      result = Define(meta_blk, args);
+      result = Define(worker, args);
       break;
     case GT_CASE:
-      result = Case(meta_blk, args);
+      result = Case(worker, args);
       break;
     case GT_WHEN:
-      result = When(meta_blk, args);
+      result = When(worker, args);
       break;
     case GT_TYPE_ASSERT:
-      result = DomainAssert(meta_blk, args, false);
+      result = DomainAssert(worker, args, false);
       break;
     case GT_ASSERT_R:
-      result = DomainAssert(meta_blk, args, true);
+      result = DomainAssert(worker, args, true);
     case GT_QUIT:
-      Quit(meta_blk);
+      Quit(worker);
       break;
     case GT_END:
-      End(meta_blk);
+      End(worker);
       break;
     case GT_CONTINUE:
-      Continue(meta_blk);
+      Continue(worker);
       break;
     case GT_BREAK:
-      Break(meta_blk);
+      Break(worker);
       break;
     case GT_ELSE:
-      Else(meta_blk);
+      Else(worker);
     case GT_IF:
-      result = ConditionAndLoop(meta_blk, args, kCodeConditionRoot);
+      result = ConditionAndLoop(worker, args, kCodeConditionRoot);
       break;
     case GT_ELIF:
-      result = ConditionAndLoop(meta_blk, args, kCodeConditionBranch);
+      result = ConditionAndLoop(worker, args, kCodeConditionBranch);
       break;
     case GT_WHILE:
-      result = ConditionAndLoop(meta_blk, args, kCodeHeadSign);
+      result = ConditionAndLoop(worker, args, kCodeHeadSign);
       break;
     default:
       break;
@@ -1364,7 +1364,7 @@ namespace kagami {
         trace::Log(msg.SetIndex(it->first));
       }
 
-      storage_.emplace_back(Meta(
+      storage_.emplace_back(KILSet(
         analyzer.GetOutput(),
         analyzer.get_index(),
         analyzer.GetMainToken()
@@ -1383,7 +1383,7 @@ namespace kagami {
   Message Machine::Run(bool create_container, string name) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
-    Meta *meta = nullptr;
+    KILSet *IL_set = nullptr;
     bool judged = false;
     
     health_ = true;
@@ -1397,11 +1397,11 @@ namespace kagami {
       if (!health_) break;
 
       blk->last_index = (blk->current == storage_.size() - 1);
-      meta = &storage_[blk->current];
+      IL_set = &storage_[blk->current];
 
-      judged = PredefinedMessage(result, blk->mode, meta->GetMainToken());
+      judged = PredefinedMessage(result, blk->mode, IL_set->GetMainToken());
       
-      if (!judged) result = MetaProcessing(*meta, name, blk);
+      if (!judged) result = IRProcessing(*IL_set, name, blk);
 
       const auto value = result.GetValue();
       const auto code  = result.GetCode();
