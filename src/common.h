@@ -72,7 +72,7 @@ namespace kagami {
   using std::stod;
   using std::wstring;
 
-  const string kEngineVersion  = "1.4 'Feathering'";
+  const string kEngineVersion  = "1.5 'White'";
   const string kBackendVerison = "Hatsuki";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
