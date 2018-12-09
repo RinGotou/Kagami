@@ -147,6 +147,14 @@ namespace kagami {
     void Reset();
   };
 
+  class IRMaker {
+  public:
+    bool health;
+    vector<KIL> output;
+
+    IRMaker(const char *path);
+  };
+
   class Machine {
     //Machine *parent_;
     vector<KILSet> storage_;
@@ -210,7 +218,7 @@ namespace kagami {
       storage_ = storage;
     }
 
-    void operator=(Machine &machine){
+    void operator=(Machine &machine) {
       storage_ = machine.storage_;
       parameters_ = machine.parameters_;
       is_main_ = false;

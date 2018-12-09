@@ -560,6 +560,58 @@ namespace kagami {
     returning_base.clear();
   }
 
+  IRMaker::IRMaker(const char *path) : health(true) {
+    std::wifstream stream(path);
+    wstring buf;
+    string temp;
+    vector<string> script_buf;
+    vector<StringUnit> string_units;
+    Analyzer analyzer;
+    Message msg;
+
+    if (!stream.good()) {
+      health = false;
+      return;
+    }
+
+    while (!stream.eof()) {
+      std::getline(stream, buf);
+      temp = ws2s(buf);
+      if (!temp.empty() && temp.back() == '\0') temp.pop_back();
+      script_buf.emplace_back(temp);
+    }
+
+    stream.close();
+
+    string_units = MultilineProcessing(script_buf);
+    script_buf.clear();
+    script_buf.shrink_to_fit();
+
+    for (auto it = string_units.begin();
+      it != string_units.end(); it++) {
+
+      msg = analyzer.Make(it->second, it->first).SetIndex(it->first);
+
+      if (msg.GetValue() == kStrFatalError) {
+        trace::Log(msg);
+        health = false;
+        break;
+      }
+
+      if (msg.GetValue() == kStrWarning) {
+        trace::Log(msg);
+      }
+
+      output.emplace_back(KILSet(
+        analyzer.GetOutput(),
+        analyzer.get_index(),
+        analyzer.GetMainToken()
+      ));
+
+      analyzer.Clear();
+    }
+  }
+
   void Machine::ResetContainer(string func_id) {
     Object *func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
 
@@ -660,7 +712,7 @@ namespace kagami {
         }
 
         if (!ent.Good()) {
-          msg = Message(kStrFatalError, kCodeIllegalCall, "Function not found - " + request.head_reg);
+          msg = Message(kStrFatalError, kCodeIllegalCall, "Function is not found - " + request.head_reg);
           break;
         }
 
@@ -1352,16 +1404,16 @@ namespace kagami {
     for (auto it = string_units.begin(); it != string_units.end(); ++it) {
       if (it->second == "") continue;
 
-      msg = analyzer.Make(it->second, it->first);
+      msg = analyzer.Make(it->second, it->first).SetIndex(it->first);
 
       if (msg.GetValue() == kStrFatalError) {
-        trace::Log(msg.SetIndex(it->first));
+        trace::Log(msg);
         health_ = false;
         break;
       }
 
       if (msg.GetValue() == kStrWarning) {
-        trace::Log(msg.SetIndex(it->first));
+        trace::Log(msg);
       }
 
       storage_.emplace_back(KILSet(
