@@ -28,8 +28,12 @@ namespace kagami {
   }
 
   void ScriptCore::ExecScriptFile(string target) {
-    Machine machine(target.c_str());
-    machine.Run();
+    IRMaker maker(target.c_str());
+    Machine main_module(maker, true);
+
+    if (main_module.GetHealth()) {
+      main_module.Run();
+    }
   }
 
   void ScriptCore::MyInfo() {

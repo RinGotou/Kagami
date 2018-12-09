@@ -1379,59 +1379,6 @@ namespace kagami {
     return result;
   }
 
-  Machine::Machine(const char *target, bool is_main) : is_main_(is_main) {
-    std::wifstream stream;
-    wstring buf;
-    health_ = true;
-    vector<string> script_buf;
-    vector<StringUnit> string_units;
-    Analyzer analyzer;
-    Message msg;
-
-    stream.open(target, std::ios::in);
-
-    while (stream.good() && !stream.eof()) {
-      std::getline(stream, buf);
-      string temp = ws2s(buf);
-      if (!temp.empty() && temp.back() == '\0') temp.pop_back();
-      script_buf.emplace_back(temp);
-    }
-    
-    stream.close();
-
-    string_units = MultilineProcessing(script_buf);
-
-    for (auto it = string_units.begin(); it != string_units.end(); ++it) {
-      if (it->second == "") continue;
-
-      msg = analyzer.Make(it->second, it->first).SetIndex(it->first);
-
-      if (msg.GetValue() == kStrFatalError) {
-        trace::Log(msg);
-        health_ = false;
-        break;
-      }
-
-      if (msg.GetValue() == kStrWarning) {
-        trace::Log(msg);
-      }
-
-      storage_.emplace_back(KILSet(
-        analyzer.GetOutput(),
-        analyzer.get_index(),
-        analyzer.GetMainToken()
-      ));
-
-      analyzer.Clear();
-    }
-
-    msg = PreProcessing();
-    if (msg.GetValue() == kStrFatalError) {
-      health_ = false;
-      trace::Log(msg);
-    }
-  }
-
   Message Machine::Run(bool create_container, string name) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();

@@ -150,8 +150,9 @@ namespace kagami {
   class IRMaker {
   public:
     bool health;
-    vector<KIL> output;
+    vector<KILSet> output;
 
+    IRMaker() {}
     IRMaker(const char *path);
   };
 
@@ -208,6 +209,7 @@ namespace kagami {
 
     Machine(Machine &&machine) :
       Machine(machine) {
+
       is_main_ = false;
     }
 
@@ -215,7 +217,29 @@ namespace kagami {
       health_(true),
       is_main_(false),
       is_func_(false) {
+
       storage_ = storage;
+    }
+
+    Machine(IRMaker &maker, bool is_main) :
+      health_(true),
+      is_main_(is_main),
+      is_func_(false) {
+
+      Message msg;
+
+      if (maker.health) {
+        storage_ = maker.output;
+        msg = PreProcessing();
+        if (msg.GetValue() == kStrFatalError) {
+          health_ = false;
+          trace::Log(msg);
+        }
+      }
+      else {
+        health_ = false;
+        trace::Log(Message(kStrFatalError, kCodeBadStream, "Invalid script path."));
+      }
     }
 
     void operator=(Machine &machine) {
@@ -247,8 +271,6 @@ namespace kagami {
       parameters_ = parms;
       return *this;
     }
-
-    explicit Machine(const char *target, bool is_main = true);
     Message Run(bool create_container = true, string name = kStrEmpty);
     Message RunAsFunction(ObjectMap &p);
     void Reset(MachCtlBlk *blk);
