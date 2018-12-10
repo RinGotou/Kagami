@@ -25,18 +25,31 @@ namespace kagami {
 
     /* Plain function */
     Entry(Activity activity,
-      int argumentMode,
       string parms,
-      string id = kStrEmpty,
-      string type = kTypeIdNull,
-      int flag = kFlagNormalEntry) :
+      string id,
+      int argument_mode = kCodeNormalParm) :
       id_(id),
       gen_token_(GT_NUL),
       activity_(activity),
       parms_(util::BuildStringVector(parms)),
-      argument_mode_(argumentMode),
+      argument_mode_(argument_mode),
+      type_(kTypeIdNull),
+      flag_(kFlagNormalEntry),
+      is_user_func_(false) {}
+
+    /* Method */
+    Entry(Activity activity,
+      string parms,
+      string id,
+      string type,
+      int argument_mode = kCodeNormalParm) :
+      id_(id),
+      gen_token_(GT_NUL),
+      activity_(activity),
+      parms_(util::BuildStringVector(parms)),
+      argument_mode_(argument_mode),
       type_(type),
-      flag_(flag),
+      flag_(kFlagMethod),
       is_user_func_(false) {}
 
     /* Generic token function */

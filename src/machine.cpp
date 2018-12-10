@@ -1177,9 +1177,7 @@ namespace kagami {
     if (!result) {
       worker->error_string = "Method/Member is not found. - " + id;
       return result;
-    }
-
-    //TODO:reserved for object member 
+    } 
     
     ObjectPointer ret_ptr = entry::FindObject(id);
     
@@ -1510,8 +1508,6 @@ namespace kagami {
     entry::DisposeManager();
     return msg;
   }
-
-
 
   void Machine::Reset(MachCtlBlk *blk) {
     while (!blk->cycle_nest.empty()) blk->cycle_nest.pop();

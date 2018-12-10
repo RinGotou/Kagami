@@ -201,12 +201,12 @@ namespace kagami {
 
   void BasicUtilityRegister() {
     using namespace entry;
-    AddEntry(Entry(Convert, kCodeNormalParm, "object", "convert"));
-    AddEntry(Entry(Input, kCodeAutoFill, "msg", "input"));
-    AddEntry(Entry(Print, kCodeNormalParm, kStrObject, "print"));
-    AddEntry(Entry(GetTimeDate, kCodeNormalParm, "", "time"));
-    AddEntry(Entry(GetRawStringType, kCodeNormalParm, "object", "type"));
-    AddEntry(Entry(IsNull, kCodeNormalParm, "object", "isnull"));
+    AddEntry(Entry(Convert, "object", "convert"));
+    AddEntry(Entry(Input, "msg", "input", kCodeAutoFill));
+    AddEntry(Entry(Print, kStrObject, "print"));
+    AddEntry(Entry(GetTimeDate, "", "time"));
+    AddEntry(Entry(GetRawStringType, "object", "type"));
+    AddEntry(Entry(IsNull, "object", "isnull"));
   }
 
   void Activiate() {

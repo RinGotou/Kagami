@@ -17,6 +17,7 @@ namespace kagami {
     return Message(result);
   }
 
+  /* Unified String Convertor Generator */
   template <class DestType>
   class StringConvertor {
   public:
@@ -41,6 +42,7 @@ namespace kagami {
     string Do(const string &str) { return str; }
   };
 
+  /* Binary Operator Generator */
   template <class Type, class DestType, OperatorCode op_code>
   class Operation {
   public:

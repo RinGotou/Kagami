@@ -56,13 +56,13 @@ namespace kagami {
 
     /* For test only */
     AddTemplate(kTypeIdSDLWindow, ObjectPlanner(FakeCopy, ""));
-    AddEntry(Entry(SDLCreateWindow, kCodeNormalParm, "width|height|title", "window"));
+    AddEntry(Entry(SDLCreateWindow, "width|height|title", "window"));
 
     AddTemplate(kTypeIdSDLTexture, ObjectPlanner(FakeCopy, ""));
-    AddEntry(Entry(SDLCreateTextureFormBMP, kCodeNormalParm, "win|path", "LoadBMP"));
+    AddEntry(Entry(SDLCreateTextureFormBMP, "win|path", "LoadBMP"));
 
-    AddEntry(Entry(SDLDelay, kCodeNormalParm, "time", "SDLDelay"));
-    AddEntry(Entry(SDLTestPresent, kCodeNormalParm, "texture|win", "Present"));
+    AddEntry(Entry(SDLDelay, "time", "SDLDelay"));
+    AddEntry(Entry(SDLTestPresent, "texture|win", "Present"));
   }
 #endif
 }

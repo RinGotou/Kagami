@@ -384,53 +384,53 @@ namespace kagami {
     using entry::AddEntry;
 
     AddTemplate(kTypeIdFunction, ObjectPlanner(SimpleSharedPtrCopy<Entry>, kFunctionMethods));
-    AddEntry(Entry(FunctionGetId, kCodeNormalParm, "", "id", kTypeIdFunction, kFlagMethod));
-    AddEntry(Entry(FunctionCall, kCodeAutoSize, "arg", "call", kTypeIdFunction, kFlagMethod));
-    AddEntry(Entry(FunctionGetParameters, kCodeNormalParm, "", "parms", kTypeIdFunction, kFlagMethod));
+    AddEntry(Entry(FunctionGetId, "", "id", kTypeIdFunction));
+    AddEntry(Entry(FunctionCall, "arg", "call", kTypeIdFunction, kCodeAutoSize));
+    AddEntry(Entry(FunctionGetParameters, "", "parms", kTypeIdFunction));
 
     AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, kRawStringMethods));
-    AddEntry(Entry(RawStringPrint, kCodeNormalParm, "", "__print", kTypeIdRawString, kFlagMethod));
-    AddEntry(Entry(RawStringGetElement, kCodeNormalParm, "index", "__at", kTypeIdRawString, kFlagMethod));
-    AddEntry(Entry(RawStringGetSize, kCodeNormalParm, "", "size", kTypeIdRawString, kFlagMethod));
+    AddEntry(Entry(RawStringPrint, "", "__print", kTypeIdRawString));
+    AddEntry(Entry(RawStringGetElement, "index", "__at", kTypeIdRawString));
+    AddEntry(Entry(RawStringGetSize, "", "size", kTypeIdRawString));
 
     AddTemplate(kTypeIdArrayBase, ObjectPlanner(CreateArrayCopy, kArrayBaseMethods));
-    AddEntry(Entry(ArrayConstructor, kCodeAutoFill, "size|init_value", "array"));
-    AddEntry(Entry(ArrayGetElement, kCodeNormalParm, "index", "__at", kTypeIdArrayBase, kFlagMethod));
-    AddEntry(Entry(ArrayPrint, kCodeNormalParm, "", "__print", kTypeIdArrayBase, kFlagMethod));
-    AddEntry(Entry(ArrayGetSize, kCodeNormalParm, "", "size", kTypeIdArrayBase, kFlagMethod));
+    AddEntry(Entry(ArrayConstructor, "size|init_value", "array", kCodeAutoFill));
+    AddEntry(Entry(ArrayGetElement, "index", "__at", kTypeIdArrayBase));
+    AddEntry(Entry(ArrayPrint, "", "__print", kTypeIdArrayBase));
+    AddEntry(Entry(ArrayGetSize, "", "size", kTypeIdArrayBase));
 
     AddTemplate(kTypeIdString, ObjectPlanner(SimpleSharedPtrCopy<string>, kStringMethods));
-    AddEntry(Entry(StringConstructor, kCodeNormalParm, "raw_string", "string"));
-    AddEntry(Entry(StringFamilyGetElement<string>, kCodeNormalParm, "index", "__at", kTypeIdString, kFlagMethod));
-    AddEntry(Entry(StringFamilyPrint<string, std::ostream>, kCodeNormalParm, "", "__print", kTypeIdString, kFlagMethod));
-    AddEntry(Entry(StringFamilySubStr<string>, kCodeNormalParm, "start|size", "substr", kTypeIdString, kFlagMethod));
-    AddEntry(Entry(GetStringFamilySize<string>, kCodeNormalParm, "", "size", kTypeIdString, kFlagMethod));
-    AddEntry(Entry(StringFamilyConverting<wstring, string>, kCodeNormalParm, "", "to_wide", kTypeIdString, kFlagMethod));
+    AddEntry(Entry(StringConstructor, "raw_string", "string"));
+    AddEntry(Entry(StringFamilyGetElement<string>, "index", "__at", kTypeIdString));
+    AddEntry(Entry(StringFamilyPrint<string, std::ostream>, "", "__print", kTypeIdString));
+    AddEntry(Entry(StringFamilySubStr<string>, "start|size", "substr", kTypeIdString));
+    AddEntry(Entry(GetStringFamilySize<string>, "", "size", kTypeIdString));
+    AddEntry(Entry(StringFamilyConverting<wstring, string>, "", "to_wide",  kTypeIdString));
 
     AddTemplate(kTypeIdInStream, ObjectPlanner(FakeCopy, kInStreamMethods));
-    AddEntry(Entry(InStreamConsturctor, kCodeNormalParm, "path", "instream"));
-    AddEntry(Entry(InStreamGet, kCodeNormalParm, "", "get", kTypeIdInStream, kFlagMethod));
-    AddEntry(Entry(StreamFamilyState<ifstream>, kCodeNormalParm, "", "good", kTypeIdInStream, kFlagMethod));
-    AddEntry(Entry(InStreamEOF, kCodeNormalParm, "", "eof", kTypeIdInStream, kFlagMethod));
-    AddEntry(Entry(StreamFamilyClose<ifstream>, kCodeNormalParm, "", "close", kTypeIdInStream, kFlagMethod));
+    AddEntry(Entry(InStreamConsturctor, "path", "instream"));
+    AddEntry(Entry(InStreamGet, "", "get", kTypeIdInStream));
+    AddEntry(Entry(StreamFamilyState<ifstream>, "", "good", kTypeIdInStream));
+    AddEntry(Entry(InStreamEOF, "", "eof", kTypeIdInStream));
+    AddEntry(Entry(StreamFamilyClose<ifstream>, "", "close", kTypeIdInStream));
 
     AddTemplate(kTypeIdOutStream, ObjectPlanner(FakeCopy, kOutStreamMethods));
-    AddEntry(Entry(OutStreamConstructor, kCodeNormalParm, "path|mode", "outstream"));
-    AddEntry(Entry(OutStreamWrite, kCodeNormalParm, "str", "write", kTypeIdOutStream, kFlagMethod));
-    AddEntry(Entry(StreamFamilyState<ofstream>, kCodeNormalParm, "", "good", kTypeIdOutStream, kFlagMethod));
-    AddEntry(Entry(StreamFamilyClose<ofstream>, kCodeNormalParm, "", "close", kTypeIdOutStream, kFlagMethod));
+    AddEntry(Entry(OutStreamConstructor, "path|mode", "outstream"));
+    AddEntry(Entry(OutStreamWrite, "str", "write", kTypeIdOutStream));
+    AddEntry(Entry(StreamFamilyState<ofstream>, "", "good", kTypeIdOutStream));
+    AddEntry(Entry(StreamFamilyClose<ofstream>, "", "close", kTypeIdOutStream));
 
     AddTemplate(kTypeIdRegex, ObjectPlanner(FakeCopy, kTypeIdRegex));
-    AddEntry(Entry(RegexConstructor, kCodeNormalParm, "regex", "regex"));
-    AddEntry(Entry(RegexMatch, kCodeNormalParm, "str", "match", kTypeIdRegex, kFlagMethod));
+    AddEntry(Entry(RegexConstructor, "regex", "regex"));
+    AddEntry(Entry(RegexMatch, "str", "match", kTypeIdRegex));
 
     AddTemplate(kTypeIdWideString, ObjectPlanner(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
-    AddEntry(Entry(WideStringContructor, kCodeNormalParm, "raw_string", "wstring"));
-    AddEntry(Entry(GetStringFamilySize<wstring>, kCodeNormalParm, "", "size", kTypeIdWideString, kFlagMethod));
-    AddEntry(Entry(StringFamilyGetElement<wstring>, kCodeNormalParm, "index", "__at", kTypeIdWideString, kFlagMethod));
-    AddEntry(Entry(StringFamilyPrint<wstring, std::wostream>, kCodeNormalParm, "", "__print", kTypeIdWideString, kFlagMethod));
-    AddEntry(Entry(StringFamilySubStr<wstring>, kCodeNormalParm, "start|size", "substr", kTypeIdWideString, kFlagMethod));
-    AddEntry(Entry(StringFamilyConverting<string, wstring>, kCodeNormalParm, "", "to_byte", kTypeIdWideString, kFlagMethod));
+    AddEntry(Entry(WideStringContructor, "raw_string", "wstring"));
+    AddEntry(Entry(GetStringFamilySize<wstring>,  "", "size", kTypeIdWideString));
+    AddEntry(Entry(StringFamilyGetElement<wstring>, "index", "__at", kTypeIdWideString));
+    AddEntry(Entry(StringFamilyPrint<wstring, std::wostream>, "", "__print", kTypeIdWideString));
+    AddEntry(Entry(StringFamilySubStr<wstring>, "start|size", "substr", kTypeIdWideString));
+    AddEntry(Entry(StringFamilyConverting<string, wstring>, "", "to_byte", kTypeIdWideString));
 
     AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
   }

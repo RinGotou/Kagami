@@ -94,8 +94,8 @@ namespace kagami {
     using entry::AddEntry;
 #if defined(_WIN32)
     AddTemplate(kTypeIdLib, ObjectPlanner(SimpleSharedPtrCopy<LibraryHandler>, kLibraryMethods));
-    AddEntry(Entry(LibHandlerConstructor, kCodeNormalParm, "path", "library"));
-    AddEntry(Entry(LibCall, kCodeAutoSize, "id|arg", "call", kTypeIdLib, kFlagMethod));
+    AddEntry(Entry(LibHandlerConstructor, "path", "library"));
+    AddEntry(Entry(LibCall, "id|arg", "call", kTypeIdLib, kCodeAutoSize));
 #else
 
 #endif
