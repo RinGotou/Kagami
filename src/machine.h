@@ -157,7 +157,6 @@ namespace kagami {
   };
 
   class Machine {
-    //Machine *parent_;
     vector<KILSet> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;

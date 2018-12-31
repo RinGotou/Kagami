@@ -138,9 +138,9 @@ namespace kagami {
   using Token = pair<string, TokenTypeEnum>;
 
   enum GenericTokenEnum {
-    GT_NOP, GT_DEF, GT_REF, GT_CODE_SUB,
+    GT_NOP, GT_DEF, 
     GT_IF, GT_ELIF, GT_END, GT_ELSE, 
-    GT_VAR, GT_SET, GT_BIND, 
+    GT_BIND, 
     GT_WHILE, GT_FOR, GT_LSELF_INC, GT_LSELF_DEC,
     GT_RSELF_INC, GT_RSELF_DEC,
     GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_IS, 
