@@ -24,7 +24,7 @@ namespace kagami {
     string type_id_;
     string methods_;
     TokenTypeEnum token_type_;
-    bool ro_, ref_, constructor_, destroy_me_;
+    bool ro_, ref_, constructor_;
 
     ObjectPointer GetTargetObject() { 
       return static_pointer_cast<TargetObject>(ptr_)->ptr; 
@@ -39,8 +39,7 @@ namespace kagami {
       methods_(),
       ro_(false),
       ref_(false),
-      constructor_(false),
-      destroy_me_(false) {
+      constructor_(false) {
 
       token_type_ = TokenTypeEnum::T_NUL;
     }
@@ -54,8 +53,7 @@ namespace kagami {
       methods_(methods), 
       ro_(ro),
       ref_(false), 
-      constructor_(false), 
-      destroy_me_(false) {
+      constructor_(false) {
 
       token_type_ = TokenTypeEnum::T_NUL;
     }
@@ -67,8 +65,7 @@ namespace kagami {
       token_type_(token_type),
       ro_(false),
       ref_(false),
-      constructor_(false),
-      destroy_me_(false) {}
+      constructor_(false) {}
 
     Object &AppendMethod(string method) {
       if (ref_) return GetTargetObject()->AppendMethod(method);
@@ -96,20 +93,6 @@ namespace kagami {
     bool get_ro() {
       if (ref_) return GetTargetObject()->get_ro();
       return ro_;
-    }
-
-    Object &set_destroy_me() {
-      destroy_me_ = true;
-      return *this;
-    }
-
-    Object &remove_destory_me() {
-      destroy_me_ = false;
-      return *this;
-    }
-
-    bool get_destroy_me() const {
-      return destroy_me_;
     }
 
     string GetMethods() {
