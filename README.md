@@ -1,5 +1,10 @@
 # Kagami
 
+## Hint
+This is old and crispy implementation. I will not add any new feature and stuff to this verison any more.
+
+[Nagatsuki](https://github.com/suzunakamura/nagatsuki) will be the new main implementation.
+
 ## What's this?
 It's a simple and tiny script language.The name of this project is from Japanese kanji "鏡（かがみ）".
 
