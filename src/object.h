@@ -250,36 +250,6 @@ namespace kagami {
     }
   };
 
-  class ContainerManager {
-  private:
-    ContainerManager *parent_;
-    list<ObjectContainer> pool_;
-  public:
-    ContainerManager() : parent_(nullptr) {
-      pool_.push_back(ObjectContainer());
-    }
-
-    ContainerManager(ContainerManager *parent) : parent_(parent) {
-      pool_.push_back(ObjectContainer());
-    }
-
-    bool Create(string id, Object object) {
-      return pool_.back().Find(id);
-    }
-
-    size_t push() {
-      pool_.push_back(ObjectContainer());
-      return pool_.size();
-    }
-
-    size_t pop() {
-      if (!pool_.empty()) pool_.pop_back();
-      return pool_.size();
-    }
-
-    Object *Find(string id, bool keep_scope);
-  };
-
   class ObjectMap : public map<string, Object> {
   protected:
     using ComparingFunction = bool(*)(Object &);

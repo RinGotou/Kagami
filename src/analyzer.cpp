@@ -69,7 +69,7 @@ namespace kagami {
             current_string.append(1, current);
             break;
           case T_INTEGER:
-            if (current == '.' && isdigit(next) != 0) {
+            if (current == '.' && util::IsDigit(next) != 0) {
               current_string.append(1, current);
             }
             else {
