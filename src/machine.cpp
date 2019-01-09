@@ -166,7 +166,7 @@ namespace kagami {
   }
 
   /* Add new user-defined function */
-  inline void AddFunction(string id, vector<KILSet> proc, vector<string> parms) {
+  inline void AddFunction(string id, vector<IR> proc, vector<string> parms) {
     auto &base = GetFunctionBase();
     base[id] = Machine(proc).SetParameters(parms).SetFunc();
     entry::AddEntry(Entry(FunctionTunnel, id, parms));
@@ -602,7 +602,7 @@ namespace kagami {
         trace::Log(msg);
       }
 
-      output.emplace_back(KILSet(
+      output.emplace_back(IR(
         analyzer.GetOutput(),
         analyzer.get_index(),
         analyzer.GetMainToken()
@@ -629,7 +629,7 @@ namespace kagami {
     if (start > end) return;
     string id = def_head[0];
     vector<string> parms;
-    vector<KILSet> proc;
+    vector<IR> proc;
 
     for (size_t i = 1; i < def_head.size(); ++i) {
       parms.push_back(def_head[i]);
@@ -650,10 +650,10 @@ namespace kagami {
     return true;
   }
 
-  Message Machine::IRProcessing(KILSet &IL_set, string name, MachCtlBlk *blk) {
+  Message Machine::IRProcessing(IR &IL_set, string name, MachCtlBlk *blk) {
     Message msg;
     ObjectMap obj_map;
-    vector<KIL> &action_base = IL_set.GetContains();
+    vector<Command> &action_base = IL_set.GetContains();
     bool preprocessing = (blk == nullptr),
       is_operator_token = false;
     bool state = true;
@@ -782,7 +782,7 @@ namespace kagami {
   }
 
   Message Machine::PreProcessing() {
-    KILSet *IL_set = nullptr;
+    IR *IL_set = nullptr;
     GenericTokenEnum token;
     Message result;
     bool flag = false;
@@ -825,7 +825,7 @@ namespace kagami {
       }
     }
 
-    vector<KILSet> *other_sets = new vector<KILSet>();
+    vector<IR> *other_sets = new vector<IR>();
     bool filter = false;
     for (size_t idx = 0; idx < storage_.size(); ++idx) {
       auto it = skipped_idx.find(idx);
@@ -1380,7 +1380,7 @@ namespace kagami {
   Message Machine::Run(bool create_container, string name) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
-    KILSet *IL_set = nullptr;
+    IR *IL_set = nullptr;
     bool judged = false;
     
     health_ = true;

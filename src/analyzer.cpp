@@ -258,7 +258,7 @@ namespace kagami {
       blk->args.pop_back();
     }
 
-    action_base_.emplace_back(KIL(blk->symbol.back(), arguments));
+    action_base_.emplace_back(Command(blk->symbol.back(), arguments));
     blk->symbol.pop_back();
     blk->args.emplace_back(Argument("", AT_RET, T_NUL));
     return health_;
@@ -284,7 +284,7 @@ namespace kagami {
       Argument(blk->next.first,AT_NORMAL,blk->next.second)
     };
 
-    action_base_.emplace_back(KIL(Request(token), arguments));
+    action_base_.emplace_back(Command(Request(token), arguments));
     blk->domain = blk->args.back();
     blk->args.pop_back();
   }
@@ -350,7 +350,7 @@ namespace kagami {
       Argument("__at", AT_NORMAL, T_GENERIC)
     };
 
-    action_base_.emplace_back(KIL(Request(GT_TYPE_ASSERT), arguments));
+    action_base_.emplace_back(Command(Request(GT_TYPE_ASSERT), arguments));
 
     Request request("__at");
     request.domain = blk->args.back();

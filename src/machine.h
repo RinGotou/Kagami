@@ -33,17 +33,17 @@ namespace kagami {
     return make_shared<T>(temp);
   }
 
-  class KILSet {
+  class IR {
     bool health_;
-    vector<KIL> action_base_;
+    vector<Command> action_base_;
     size_t index_;
     Token main_token_;
   public:
-    KILSet() : 
+    IR() : 
       health_(false), 
       index_(0) {}
 
-    KILSet(vector<KIL> actionBase, 
+    IR(vector<Command> actionBase, 
       size_t index = 0, 
       Token mainToken = Token()) : 
       health_(true), 
@@ -53,7 +53,7 @@ namespace kagami {
       this->main_token_ = mainToken;
     }
 
-    vector<KIL> &GetContains() { 
+    vector<Command> &GetContains() { 
       return action_base_; 
     }
 
@@ -150,21 +150,21 @@ namespace kagami {
   class IRMaker {
   public:
     bool health;
-    vector<KILSet> output;
+    vector<IR> output;
 
     IRMaker() {}
     IRMaker(const char *path);
   };
 
   class Machine {
-    vector<KILSet> storage_;
+    vector<IR> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
 
     void ResetContainer(string funcId);
     void MakeFunction(size_t start, size_t end, vector<string> &defHead);
     static bool IsBlankStr(string target);
-    Message IRProcessing(KILSet &IL_set, string name, MachCtlBlk *blk);
+    Message IRProcessing(IR &IL_set, string name, MachCtlBlk *blk);
     Message PreProcessing();
     void InitGlobalObject(bool create_container,string name);
     bool PredefinedMessage(Message &result, size_t mode, Token token);
@@ -212,7 +212,7 @@ namespace kagami {
       is_main_ = false;
     }
 
-    Machine(vector<KILSet> storage) :
+    Machine(vector<IR> storage) :
       health_(true),
       is_main_(false),
       is_func_(false) {

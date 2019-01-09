@@ -49,7 +49,7 @@ namespace kagami {
     SDL_Delay(time);
     return Message();
   }
-
+ 
   void LoadSDLStuff() {
     using entry::AddEntry;
     using type::AddTemplate;
