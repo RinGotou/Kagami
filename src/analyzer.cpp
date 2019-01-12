@@ -69,7 +69,7 @@ namespace kagami {
             current_string.append(1, current);
             break;
           case T_INTEGER:
-            if (current == '.' && util::IsDigit(next) != 0) {
+            if (current == '.' && util::IsDigit(next)) {
               current_string.append(1, current);
             }
             else {
@@ -119,7 +119,6 @@ namespace kagami {
 
   Message Analyzer::Tokenizer(vector<string> target) {
     bool negative_flag = false;
-    vector<string> output;
     stack<string> bracket_stack;
     Token current = Token("", T_NUL),
       next = Token("", T_NUL),
@@ -182,9 +181,10 @@ namespace kagami {
           tokens_.emplace_back(current);
         }
       }
-      else if (negative_flag && (last.first == "+" || last.first == "-")) {
+      else if (negative_flag) {
         Token res = Token(last.first + current.first, current.second);
         tokens_.back() = res;
+        negative_flag = false;
       }
       else {
         tokens_.emplace_back(current);
