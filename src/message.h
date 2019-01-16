@@ -4,75 +4,61 @@
 
 namespace kagami {
   class Message {
-    string value_;
+  private:
+    StateLevel level_;
     string detail_;
-    int code_;
+    StateCode code_;
     shared_ptr<void> object_;
     size_t idx_;
 
-    void Copy(const Message &msg) {
-      value_ = msg.value_;
-      detail_ = msg.detail_;
-      code_ = msg.code_;
-      object_ = msg.object_;
-      idx_ = msg.idx_;
-    }
   public:
     Message() :
-      value_(kStrEmpty), 
-      detail_(kStrEmpty), 
+      level_(kStateNormal), 
+      detail_(""), 
       code_(kCodeSuccess), 
       idx_(0) {}
 
-    Message(string value, 
-      int code, 
-      string detail) :
-      value_(value), 
+    Message(const Message &msg) :
+      level_(msg.level_),
+      detail_(msg.detail_),
+      code_(msg.code_),
+      object_(msg.object_),
+      idx_(msg.idx_) {}
+
+    Message(const Message &&msg) :
+      Message(msg) {}
+
+    Message(StateCode code, string detail, StateLevel level = kStateNormal) :
+      level_(level), 
       detail_(detail), 
       code_(code), 
       idx_(0) {}
 
     Message(string detail) :
-      value_(kStrEmpty), 
+      level_(kStateNormal), 
       code_(kCodeObject), 
-      detail_(kStrEmpty), 
-      idx_(0) {
-
-      object_ = 
-        make_shared<Object>(detail, util::GetTokenType(detail));
-    }
-
-    Message(const Message &msg) {
-      value_ = msg.value_;
-      detail_ = msg.detail_;
-      code_ = msg.code_;
-      object_ = msg.object_;
-      idx_ = msg.idx_;
-    }
-
-    Message(const Message &&msg) {
-      value_ = msg.value_;
-      detail_ = msg.detail_;
-      code_ = msg.code_;
-      object_ = msg.object_;
-      idx_ = msg.idx_;
-    }
+      detail_(""), 
+      object_(make_shared<Object>(detail, util::GetTokenType(detail))),
+      idx_(0) {}
 
     Message &operator=(Message &msg) {
-      Copy(msg);
+      level_ = msg.level_;
+      detail_ = msg.detail_;
+      code_ = msg.code_;
+      object_ = msg.object_;
+      idx_ = msg.idx_;
       return *this;
     }
 
     Message &operator=(Message &&msg) {
-      Copy(msg);
-      return *this;
+      return this->operator=(msg);
     }
 
-    string GetValue() const { 
-      return value_; 
+    StateLevel GetLevel() const {
+      return level_;
     }
 
-    int GetCode() const { 
+    StateCode GetCode() const { 
       return code_; 
     }
 
@@ -98,18 +84,12 @@ namespace kagami {
       return this->SetObject(object);
     }
 
-    void SetRawString(string str) {
-      value_ = kStrRedirect;
-      code_ = kCodeSuccess;
-      detail_ = str;
-    }
-
-    Message &SetValue(const string &value) {
-      value_ = value;
+    Message &SetLevel(StateLevel level) {
+      level_ = level;
       return *this;
     }
 
-    Message &SetCode(const int &code) {
+    Message &SetCode(StateCode code) {
       code_ = code;
       return *this;
     }
@@ -122,12 +102,6 @@ namespace kagami {
     Message &SetIndex(const size_t index) {
       idx_ = index;
       return *this;
-    }
-
-    void Get(string *value, int *code, string *detail) {
-      if (value != nullptr) *value = value_;
-      if (code != nullptr) *code = code_;
-      if (detail != nullptr) *detail = detail_;
     }
   };
 }

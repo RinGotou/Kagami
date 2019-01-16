@@ -1,5 +1,5 @@
 #pragma once
-#include "machine.h"
+#include "module.h"
 
 namespace kagami {
   enum GroupTypeEnum { G_INT, G_FLOAT, G_STR, G_NUL };

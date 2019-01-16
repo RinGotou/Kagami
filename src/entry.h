@@ -88,7 +88,7 @@ namespace kagami {
         result = activity_(obj_map);
       }
       else {
-        result = Message(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
+        result = Message(kCodeIllegalCall, "Invalid entry.", kStateError);
       }
       return result;
     }
@@ -133,7 +133,7 @@ namespace kagami {
       bool conditionA =
         ((activity_ != nullptr) && (argument_mode_ != kCodeIllegalParm));
       bool conditionB =
-        (is_user_func_ && id_ != kStrEmpty);
+        (is_user_func_ && id_ != "");
 
       return (conditionA || conditionB);
     }

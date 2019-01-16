@@ -41,11 +41,11 @@ namespace kagami {
   }
 
   inline Message IllegalCallMsg(string str) {
-    return Message(kStrFatalError, kCodeIllegalCall, str);
+    return Message(kCodeIllegalCall, str, kStateError);
   }
 
   inline Message IllegalParmMsg(string str) {
-    return Message(kStrFatalError, kCodeIllegalParm, str);
+    return Message(kCodeIllegalParm, str, kStateError);
   }
 
   inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm) {
@@ -209,9 +209,7 @@ namespace kagami {
     OperatorRegister();
     BasicUtilityRegister();
     InitPlanners();
-#if defined(_WIN32)
-    InitLibraryHandler();
-#endif
+
 #if not defined(_DISABLE_SDL_)
     LoadSDLStuff();
 #endif

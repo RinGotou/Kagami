@@ -1,5 +1,5 @@
 #pragma once
-#include "machine.h"
+#include "module.h"
 
 using std::cout;
 using std::endl;
@@ -24,10 +24,11 @@ namespace kagami {
         //line
         stream << "(Line:" << to_string(unit.second.GetIndex() + 1) << ")";
         //message string
-        const auto value = unit.second.GetValue();
-        if (value == kStrFatalError) priority = "Fatal:";
-        else if (value == kStrWarning) priority = "Warning:";
-        if (unit.second.GetDetail() != kStrEmpty) {
+        switch (unit.second.GetLevel()) {
+        case kStateError:priority = "Fatal:"; break;
+        case kStateWarning:priority = "Warning:"; break;
+        }
+        if (unit.second.GetDetail() != "") {
           stream << priority << unit.second.GetDetail() << endl;
         }
       }

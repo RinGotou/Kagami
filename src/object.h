@@ -142,7 +142,7 @@ namespace kagami {
     string methods_;
   public:
     ObjectCopyingPolicy() : 
-      methods_(kStrEmpty) { 
+      methods_("") { 
 
       solver_ = nullptr; 
     }

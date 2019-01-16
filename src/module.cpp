@@ -1,4 +1,4 @@
-#include "machine.h"
+#include "module.h"
 
 namespace kagami {
   shared_ptr<void> FakeCopy(shared_ptr<void> target) {
@@ -159,24 +159,24 @@ namespace kagami {
     return output;
   }
 
-  map<string, Machine> &GetFunctionBase() {
-    static map<string, Machine> base;
+  map<string, Module> &GetFunctionBase() {
+    static map<string, Module> base;
     return base;
   }
 
   /* Add new user-defined function */
   inline void AddFunction(string id, vector<IR> proc, vector<string> parms) {
     auto &base = GetFunctionBase();
-    base[id] = Machine(proc).SetParameters(parms).SetFunc();
+    base[id] = Module(proc).SetParameters(parms).SetFunc();
     management::AddEntry(Entry(FunctionTunnel, id, parms));
   }
 
-  inline Machine *GetFunction(string id) {
-    Machine *machine = nullptr;
+  inline Module *GetFunction(string id) {
+    Module *module = nullptr;
     auto &base = GetFunctionBase();
     auto it = base.find(id);
-    if (it != base.end()) machine = &(it->second);
-    return machine;
+    if (it != base.end()) module = &(it->second);
+    return module;
   }
 
   /* Accept arguments from entry and deliver to function */
@@ -184,7 +184,7 @@ namespace kagami {
     Message msg;
     Object &func_id = p[kStrUserFunc];
     string id = *static_pointer_cast<string>(func_id.Get());
-    Machine *mach = GetFunction(id);
+    Module *mach = GetFunction(id);
     if (mach != nullptr) {
       msg = mach->RunAsFunction(p);
     }
@@ -198,7 +198,7 @@ namespace kagami {
     return true;
   }
 
-  void MachCtlBlk::Case(Message &msg) {
+  void MachCtlBlk::Case() {
     management::CreateContainer();
     mode_stack.push(mode);
     mode = kModeCaseJump;
@@ -586,19 +586,21 @@ namespace kagami {
     script_buf.clear();
     script_buf.shrink_to_fit();
 
-    for (auto it = string_units.begin();
-      it != string_units.end(); it++) {
+    for (auto it = string_units.begin();it != string_units.end(); it++) {
+      if (!health) break;
 
       msg = analyzer.Make(it->second, it->first).SetIndex(it->first);
 
-      if (msg.GetValue() == kStrFatalError) {
+      switch (msg.GetLevel()) {
+      case kStateError:
         trace::Log(msg);
         health = false;
+        continue;
         break;
-      }
-
-      if (msg.GetValue() == kStrWarning) {
+      case kStateWarning:
         trace::Log(msg);
+        break;
+      default:break;
       }
 
       output.emplace_back(IR(
@@ -611,7 +613,7 @@ namespace kagami {
     }
   }
 
-  void Machine::ResetContainer(string func_id) {
+  void Module::ResetContainer(string func_id) {
     Object *func_sign = management::GetCurrentContainer().Find(kStrUserFunc);
 
     while (func_sign == nullptr) {
@@ -624,7 +626,7 @@ namespace kagami {
     }
   }
 
-  void Machine::MakeFunction(size_t start, size_t end, vector<string> &def_head) {
+  void Module::MakeFunction(size_t start, size_t end, vector<string> &def_head) {
     if (start > end) return;
     string id = def_head[0];
     vector<string> parms;
@@ -639,7 +641,7 @@ namespace kagami {
     AddFunction(id, proc, parms);
   }
 
-  bool Machine::IsBlankStr(string target) {
+  bool Module::IsBlankStr(string target) {
     if (target.empty() || target.size() == 0) return true;
     for (const auto unit : target) {
       if (unit != '\n' && unit != ' ' && unit != '\t' && unit != '\r') {
@@ -649,10 +651,10 @@ namespace kagami {
     return true;
   }
 
-  Message Machine::IRProcessing(IR &IL_set, string name, MachCtlBlk *blk) {
+  Message Module::IRProcessing(IR &ir, string name, MachCtlBlk *blk) {
     Message msg;
     ObjectMap obj_map;
-    vector<Command> &action_base = IL_set.GetContains();
+    vector<Command> &action_base = ir.GetContains();
     bool preprocessing = (blk == nullptr),
       is_operator_token = false;
     bool state = true;
@@ -679,7 +681,7 @@ namespace kagami {
         }
       }
       else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {
-        int code;
+        StateCode code;
         Entry ent;
         string type_id, value, detail;
         is_operator_token = util::IsOperatorToken(request.head_gen);
@@ -711,7 +713,9 @@ namespace kagami {
         }
 
         if (!ent.Good()) {
-          msg = Message(kStrFatalError, kCodeIllegalCall, "Function is not found - " + request.head_reg);
+          msg = Message(kCodeIllegalCall, 
+            "Function is not found - " + request.head_reg,
+            kStateError);
           break;
         }
 
@@ -740,9 +744,11 @@ namespace kagami {
         }
 
         msg = ent.Start(obj_map);
-        msg.Get(&value, &code, &detail);
+        
+        if (msg.GetLevel() == kStateError) break;
 
-        if (value == kStrFatalError) break;
+        code = msg.GetCode();
+        detail = msg.GetDetail();
 
         if (code == kCodeObject && request.head_gen != GT_TYPE_ASSERT) {
           auto object = msg.GetObj();
@@ -765,7 +771,7 @@ namespace kagami {
     if (worker->error_returning ||
       worker->error_obj_checking ||
       worker->error_assembling) {
-      msg = Message(kStrFatalError, kCodeIllegalSymbol, worker->error_string);
+      msg = Message(kCodeIllegalSymbol, worker->error_string, kStateError);
     }
 
     if (!preprocessing && worker->tail_recursion)
@@ -780,8 +786,8 @@ namespace kagami {
     return msg;
   }
 
-  Message Machine::PreProcessing() {
-    IR *IL_set = nullptr;
+  Message Module::PreProcessing() {
+    IR *ir = nullptr;
     GenericTokenEnum token;
     Message result;
     bool flag = false;
@@ -793,18 +799,19 @@ namespace kagami {
 
     for (size_t idx = 0; idx < storage_.size(); ++idx) {
       if (!health_) break;
-      IL_set = &storage_[idx];
-      token = util::GetGenericToken(IL_set->GetMainToken().first);
+      ir = &storage_[idx];
+      token = util::GetGenericToken(ir->GetMainToken().first);
       if (token == GT_WHILE || token == GT_IF || token == GT_CASE) {
         nest_head_count++;
       }
       else if (token == GT_DEF) {
         if (flag == true) {
-          result = Message(kStrFatalError, kCodeBadExpression,
-            "Define function in function is not supported.").SetIndex(idx);
+          result = Message(kCodeBadExpression,
+            "Define function in function is not supported.",
+            kStateError).SetIndex(idx);
           break;
         }
-        result = IRProcessing(*IL_set, "", nullptr);
+        result = IRProcessing(*ir, "", nullptr);
         def_head = util::BuildStringVector(result.GetDetail());
         def_start = idx + 1;
         flag = true;
@@ -841,7 +848,7 @@ namespace kagami {
     return result;
   }
 
-  void Machine::InitGlobalObject(bool create_container, string name) {
+  void Module::InitGlobalObject(bool create_container, string name) {
     if (create_container) management::CreateContainer();
 
     auto create = [&](string id, string value)->void {
@@ -853,7 +860,7 @@ namespace kagami {
       create("__name__", "__main__");
     }
     else {
-      if (name != kStrEmpty) {
+      if (name != "") {
         create("__name__", name);
       }
       else {
@@ -866,7 +873,7 @@ namespace kagami {
     create("__backend__", kBackendVerison);
   }
 
-  bool Machine::PredefinedMessage(Message &result, size_t mode, Token token) {
+  bool Module::PredefinedMessage(Message &result, size_t mode, Token token) {
     bool judged = false;
     GenericTokenEnum gen_token = util::GetGenericToken(token.first);
 
@@ -904,7 +911,7 @@ namespace kagami {
     return judged;
   }
 
-  void Machine::TailRecursionActions(MachCtlBlk *blk, string &name) {
+  void Module::TailRecursionActions(MachCtlBlk *blk, string &name) {
     Object obj = *management::FindObject(kStrUserFunc);
     auto &base = management::GetCurrentContainer();
     base.clear();
@@ -917,7 +924,7 @@ namespace kagami {
     ResetContainer(name);
   }
 
-  bool Machine::BindAndSet(IRWorker *worker, deque<Argument> args) {
+  bool Module::BindAndSet(IRWorker *worker, deque<Argument> args) {
     bool result = true;
     auto dest = worker->MakeObject(args[0]);
     auto src = worker->MakeObject(args[1]);
@@ -952,14 +959,14 @@ namespace kagami {
     return result;
   }
 
-  void Machine::Nop(IRWorker *worker, deque<Argument> args) {
+  void Module::Nop(IRWorker *worker, deque<Argument> args) {
     if (!args.empty()) {
       auto obj = worker->MakeObject(args.back());
       worker->returning_base.emplace_back(obj);
     }
   }
 
-  void Machine::ArrayMaker(IRWorker *worker, deque<Argument> args) {
+  void Module::ArrayMaker(IRWorker *worker, deque<Argument> args) {
     shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
     
     if (!args.empty()) {
@@ -973,7 +980,7 @@ namespace kagami {
     worker->returning_base.emplace_back(obj);
   }
 
-  void Machine::ReturnOperator(IRWorker *worker, deque<Argument> args) {
+  void Module::ReturnOperator(IRWorker *worker, deque<Argument> args) {
     auto &container = management::GetCurrentContainer();
     if (args.size() > 1) {
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
@@ -989,9 +996,11 @@ namespace kagami {
       container.Add(kStrRetValue,
         Object(obj.Get(), obj.GetTypeId(), obj.GetMethods()));
     }
+    worker->msg = Message(kCodeReturn, "");
+    worker->deliver = true;
   }
 
-  bool Machine::GetTypeId(IRWorker *worker, deque<Argument> args) {
+  bool Module::GetTypeId(IRWorker *worker, deque<Argument> args) {
     bool result = true;
     
     if (args.size() > 1) {
@@ -1018,7 +1027,7 @@ namespace kagami {
     return result;
   }
 
-  bool Machine::GetMethods(IRWorker *worker, deque<Argument> args) {
+  bool Module::GetMethods(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1043,7 +1052,7 @@ namespace kagami {
     return result;
   }
 
-  bool Machine::Exist(IRWorker *worker, deque<Argument> args) {
+  bool Module::Exist(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (args.size() == 2) {
@@ -1069,7 +1078,7 @@ namespace kagami {
     return result;
   }
 
-  bool Machine::Define(IRWorker *worker, deque<Argument> args) {
+  bool Module::Define(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1081,7 +1090,7 @@ namespace kagami {
 
       string def_head_string = util::CombineStringVector(def_head);
       worker->deliver = true;
-      worker->msg = Message(kStrEmpty, kCodeDefineSign, def_head_string);
+      worker->msg = Message(kCodeDefineSign, def_head_string);
     }
     else {
       worker->error_string = "Empty argument list.";
@@ -1091,7 +1100,7 @@ namespace kagami {
     return result;
   }
 
-  bool Machine::Case(IRWorker *worker, deque<Argument> args) {
+  bool Module::Case(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1106,7 +1115,7 @@ namespace kagami {
         Object base(copy, obj.GetTypeId(), obj.GetMethods());
         management::CreateObject("__case", base);
         worker->deliver = true;
-        worker->msg = Message(kStrTrue).SetCode(kCodeCase);
+        worker->msg = Message().SetCode(kCodeCase);
       }
     }
     else {
@@ -1117,7 +1126,7 @@ namespace kagami {
     return result;
   }
 
-  bool Machine::When(IRWorker *worker, deque<Argument> args) {
+  bool Module::When(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1141,8 +1150,8 @@ namespace kagami {
       if (state) {
         worker->deliver = true;
         worker->msg = found ? 
-          Message(kStrTrue, kCodeWhen, kStrEmpty) :
-          Message(kStrFalse, kCodeWhen, kStrEmpty);
+          Message(kCodeWhen, kStrTrue) :
+          Message(kCodeWhen, kStrFalse);
       }
       else {
         worker->error_string = "Case-when is not supported for non-string object.";
@@ -1157,7 +1166,7 @@ namespace kagami {
     return result;
   }
 
-  bool Machine::DomainAssert(IRWorker *worker, deque<Argument> args, bool returning) {
+  bool Module::DomainAssert(IRWorker *worker, deque<Argument> args, bool returning) {
     bool result = true;
 
     Object obj = worker->MakeObject(args[0]);
@@ -1194,43 +1203,43 @@ namespace kagami {
     return result;
   }
 
-  inline void MakeCode(int code, IRWorker *worker) {
+  inline void MakeCode(StateCode code, IRWorker *worker) {
     worker->deliver = true;
-    worker->msg = Message(kStrEmpty, code, kStrEmpty);
+    worker->msg = Message(code, "");
   }
 
-  void Machine::Quit(IRWorker *worker) {
+  void Module::Quit(IRWorker *worker) {
     MakeCode(kCodeQuit, worker);
   }
 
-  void Machine::End(IRWorker *worker) {
+  void Module::End(IRWorker *worker) {
     MakeCode(kCodeTailSign, worker);
   }
 
-  void Machine::Continue(IRWorker *worker) {
+  void Module::Continue(IRWorker *worker) {
     MakeCode(kCodeContinue, worker);
   }
 
-  void Machine::Break(IRWorker *worker) {
+  void Module::Break(IRWorker *worker) {
     MakeCode(kCodeBreak, worker);
   }
 
-  void Machine::Else(IRWorker *worker) {
+  void Module::Else(IRWorker *worker) {
     MakeCode(kCodeConditionLeaf, worker);
   }
 
-  bool Machine::ConditionAndLoop(IRWorker *worker, deque<Argument> args,int code) {
+  bool Module::ConditionAndLoop(IRWorker *worker, deque<Argument> args, StateCode code) {
     bool result = true;
     if (args.size() == 1) {
       Object obj = worker->MakeObject(args[0]);
       worker->deliver = true;
       if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdNull) {
-        worker->msg = Message(kStrTrue, code, kStrEmpty);
+        worker->msg = Message(code, kStrTrue);
       }
       else {
         string state_str = GetObjectStuff<string>(obj);
         if (state_str == kStrTrue || state_str == kStrFalse) {
-          worker->msg = Message(state_str, code, kStrEmpty);
+          worker->msg = Message(code, state_str);
         }
         else {
           auto type = util::GetTokenType(state_str);
@@ -1250,8 +1259,7 @@ namespace kagami {
             break;
           }
 
-          worker->msg = Message(state ? kStrTrue : kStrFalse, 
-            code, kStrEmpty);
+          worker->msg = Message(code, state ? kStrTrue : kStrFalse);
         }
       }
     }
@@ -1267,7 +1275,7 @@ namespace kagami {
     return result;
   }
 
-  bool Machine::GenericRequests(IRWorker *worker, Request &request, deque<Argument> &args) {
+  bool Module::GenericRequests(IRWorker *worker, Request &request, deque<Argument> &args) {
     auto &token = request.head_gen;
     bool result = true;
 
@@ -1337,7 +1345,7 @@ namespace kagami {
     return result;
   }
 
-  bool Machine::CheckGenericRequests(GenericTokenEnum token) {
+  bool Module::CheckGenericRequests(GenericTokenEnum token) {
     bool result = false;
 
     switch (token) {
@@ -1369,10 +1377,10 @@ namespace kagami {
     return result;
   }
 
-  Message Machine::Run(bool create_container, string name) {
+  Message Module::Run(bool create_container, string name) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
-    IR *IL_set = nullptr;
+    IR *ir = nullptr;
     bool judged = false;
     
     health_ = true;
@@ -1386,13 +1394,24 @@ namespace kagami {
       if (!health_) break;
 
       blk->last_index = (blk->current == storage_.size() - 1);
-      IL_set = &storage_[blk->current];
+      ir = &storage_[blk->current];
 
-      judged = PredefinedMessage(result, blk->mode, IL_set->GetMainToken());
+      judged = PredefinedMessage(result, blk->mode, ir->GetMainToken());
       
-      if (!judged) result = IRProcessing(*IL_set, name, blk);
+      if (!judged) result = IRProcessing(*ir, name, blk);
 
-      const auto value = result.GetValue();
+      switch (result.GetLevel()) {
+      case kStateError:
+        health_ = false;
+        trace::Log(result.SetIndex(storage_[blk->current].GetIndex()));
+        continue;
+        break;
+      case kStateWarning:
+        trace::Log(result.SetIndex(storage_[blk->current].GetIndex()));
+        break;
+      default:break;
+      }
+
       const auto code  = result.GetCode();
       const auto detail = result.GetDetail();
 
@@ -1401,16 +1420,7 @@ namespace kagami {
         continue;
       }
 
-      if (value == kStrFatalError) {
-        trace::Log(result.SetIndex(storage_[blk->current].GetIndex()));
-        break;
-      }
-
-      if (value == kStrWarning) {
-        trace::Log(result.SetIndex(storage_[blk->current].GetIndex()));
-      }
-
-      if (value == kStrStopSign) {
+      if (code == kCodeReturn) {
         break;
       }
 
@@ -1422,24 +1432,24 @@ namespace kagami {
         blk->Break();
         break;
       case kCodeConditionRoot:
-        blk->ConditionRoot(GetBooleanValue(value));
+        blk->ConditionRoot(GetBooleanValue(detail));
         break;
       case kCodeConditionBranch:
         if (blk->nest_head_count > 0) break;
-        blk->ConditionBranch(GetBooleanValue(value));
+        blk->ConditionBranch(GetBooleanValue(detail));
         break;
       case kCodeConditionLeaf:
         if (blk->nest_head_count > 0) break;
         health_ = blk->ConditionLeaf();
         break;
       case kCodeCase:
-        blk->Case(result);
+        blk->Case();
         break;
       case kCodeWhen:
-        blk->When(GetBooleanValue(value));
+        blk->When(GetBooleanValue(detail));
         break;
       case kCodeHeadSign:
-        blk->LoopHead(GetBooleanValue(value));
+        blk->LoopHead(GetBooleanValue(detail));
         break;
       case kCodeHeadPlaceholder:
         blk->nest_head_count++;
@@ -1461,8 +1471,8 @@ namespace kagami {
     }
 
     if (blk->runtime_error) {
-      trace::Log(Message(kStrFatalError, kCodeBadExpression, 
-        blk->error_string).SetIndex(blk->current));
+      trace::Log(Message(kCodeBadExpression, blk->error_string, kStateError)
+        .SetIndex(blk->current));
     }
 
     if (create_container) management::DisposeManager();
@@ -1471,7 +1481,7 @@ namespace kagami {
     return result;
   }
 
-  Message Machine::RunAsFunction(ObjectMap &p) {
+  Message Module::RunAsFunction(ObjectMap &p) {
     Message msg;
     auto &base = management::CreateContainer();
     string func_id = p.Get<string>(kStrUserFunc);
@@ -1501,7 +1511,7 @@ namespace kagami {
     return msg;
   }
 
-  void Machine::Reset(MachCtlBlk *blk) {
+  void Module::Reset(MachCtlBlk *blk) {
     while (!blk->cycle_nest.empty()) blk->cycle_nest.pop();
     while (!blk->cycle_tail.empty()) blk->cycle_tail.pop();
     while (!blk->mode_stack.empty()) blk->mode_stack.pop();

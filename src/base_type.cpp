@@ -426,6 +426,6 @@ namespace kagami {
     AddEntry(Entry(StringFamilySubStr<wstring>, "start|size", "substr", kTypeIdWideString));
     AddEntry(Entry(StringFamilyConverting<string, wstring>, "", "to_byte", kTypeIdWideString));
 
-    AddTemplate(kTypeIdNull, ObjectCopyingPolicy(NullCopy, kStrEmpty));
+    AddTemplate(kTypeIdNull, ObjectCopyingPolicy(NullCopy, ""));
   }
 }

@@ -135,7 +135,9 @@ namespace kagami {
         next = Token("", T_NUL);
 
       if (current.second == T_NUL) {
-        msg = Message(kStrFatalError, kCodeBadExpression, "Unknown token - " + current.first + ".");
+        msg = Message(kCodeBadExpression,
+          "Unknown token - " + current.first + ".",
+          kStateError);
         break;
       }
 
@@ -152,7 +154,9 @@ namespace kagami {
 
       if (current.first == ")" || current.first == "]" || current.first == "}") {
         if (!bracket_stack.empty() && bracket_stack.top() != kBracketPairs.at(current.first)) {
-          msg = Message(kStrFatalError, kCodeBadExpression, "Left bracket is missing.");
+          msg = Message(kCodeBadExpression, 
+            "Left bracket is missing.",
+            kStateError);
           break;
         }
         else {
@@ -168,7 +172,10 @@ namespace kagami {
           last.first != "'" &&
           last.first != "++" &&
           last.first != "--") {
-          msg = Message(kStrFatalError, kCodeBadExpression, "Illegal comma location.");
+          msg = Message(
+            kCodeBadExpression, 
+            "Illegal comma location.",
+            kStateError);
           break;
         }
       }
@@ -610,7 +617,7 @@ namespace kagami {
         state = FunctionAndObject(blk);
       }
       else if (token_type == TokenTypeEnum::T_NUL) {
-        result = Message(kStrFatalError, kCodeIllegalParm, "Illegal token.");
+        result = Message(kCodeIllegalParm, "Illegal token.", kStateError);
         state = false;
       }
       else OtherToken(blk);
@@ -621,7 +628,7 @@ namespace kagami {
       FinalProcessing(blk);
     }
     if (!state || !health_) {
-      result = Message(kStrFatalError, kCodeBadExpression, error_string_);
+      result = Message(kCodeBadExpression, error_string_, kStateError);
     }
 
     blk->args.clear();

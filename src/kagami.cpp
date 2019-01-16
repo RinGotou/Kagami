@@ -35,7 +35,7 @@ namespace kagami {
 
   void ScriptCore::ExecScriptFile(string target) {
     IRMaker maker(target.c_str());
-    Machine main_module(maker, true);
+    Module main_module(maker, true);
     Activiate();
 
     if (main_module.GetHealth()) {
@@ -58,7 +58,7 @@ void HelpFile() {
   cout << "\tlog            Path of error log.\n";
   cout << "\twait           Automatically pause at application exit.\n";
   cout << "\thelp           Show this message.\n";
-  cout << "\tversion        Show version message of hatsuki machine.\n";
+  cout << "\tversion        Show version message of interpreter.\n";
 
 }
 

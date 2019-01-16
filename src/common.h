@@ -84,41 +84,44 @@ namespace kagami {
   const string kCopyright      = "Copyright(c) 2017-2018";
 
   const string kStrNull        = "null",
-    kStrEmpty                  = "",
-    kStrFatalError             = "__FATAL__",
-    kStrWarning                = "__WARNING__",
-    kStrSuccess                = "__SUCCESS__",
     kStrRedirect               = "__*__",
     kStrTrue                   = "true",
     kStrFalse                  = "false",
     kStrObject                 = "__object",
     kMethodPrint               = "__print";
 
-  constexpr int
-    kCodeWhen            = 18,
-    kCodeCase            = 17,
-    kCodeBreak           = 16,
-    kCodeContinue        = 15,
-    kCodeAutoSize        = 14,
-    kCodeDefineSign      = 13,
-    kCodeAutoFill        = 12,
-    kCodeNormalParm      = 11,
+  enum StateCode {
+    kCodeWhen = 18,
+    kCodeCase = 17,
+    kCodeBreak = 16,
+    kCodeContinue = 15,
+    kCodeAutoSize = 14,
+    kCodeDefineSign = 13,
+    kCodeAutoFill = 12,
+    kCodeNormalParm = 11,
     kCodeHeadPlaceholder = 10,
-    kCodeReturn          = 9,
-    kCodeConditionLeaf   = 8,
+    kCodeReturn = 9,
+    kCodeConditionLeaf = 8,
     kCodeConditionBranch = 7,
-    kCodeConditionRoot   = 6,
-    kCodeObject          = 5,
-    kCodeTailSign        = 4,
-    kCodeHeadSign        = 3,
-    kCodeQuit            = 2,
-    kCodeRedirect        = 1,
-    kCodeSuccess         = 0,
-    kCodeIllegalParm     = -1,
-    kCodeIllegalCall     = -2,
-    kCodeIllegalSymbol   = -3,
-    kCodeBadStream       = -4,
-    kCodeBadExpression   = -5;
+    kCodeConditionRoot = 6,
+    kCodeObject = 5,
+    kCodeTailSign = 4,
+    kCodeHeadSign = 3,
+    kCodeQuit = 2,
+    kCodeRedirect = 1,
+    kCodeSuccess = 0,
+    kCodeIllegalParm = -1,
+    kCodeIllegalCall = -2,
+    kCodeIllegalSymbol = -3,
+    kCodeBadStream = -4,
+    kCodeBadExpression = -5
+  };
+
+  enum StateLevel {
+    kStateNormal,
+    kStateError,
+    kStateWarning
+  };
 
   const int 
     kFlagNormalEntry = 0,

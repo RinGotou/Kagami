@@ -1,5 +1,5 @@
 #pragma once
-#include "machine.h"
+#include "module.h"
 
 namespace kagami {
   using ArrayBase = vector<Object>;

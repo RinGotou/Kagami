@@ -6,20 +6,21 @@
 
 #define OBJECT_ASSERT(MAP,ITEM,TYPE)               \
   if (!MAP.CheckTypeId(ITEM,TYPE))                 \
-    return Message(kStrFatalError,kCodeIllegalParm,\
-    "Expected object type - " + TYPE + ".");
+    return Message(kCodeIllegalParm,               \
+    "Expected object type - " + TYPE + ".",        \
+    kStateError);
 
 #define CONDITION_ASSERT(STATE,MESS)               \
-  if(!(STATE)) return Message(kStrFatalError,kCodeIllegalParm,MESS);
+  if(!(STATE)) return Message(kCodeIllegalParm,MESS,kStateError);
 
 #define CALL_ASSERT(STATE,MESS)                    \
-  if(!(STATE)) return Message(kStrFatalError,kCodeIllegalCall,MESS);
+  if(!(STATE)) return Message(kCodeIllegalCall,MESS,kStateError);
 
 #define ASSERT_RETURN(STATE,VALUE)                 \
   if(!(STATE)) return Message(VALUE);
 
 #define CUSTOM_ASSERT(STATE,CODE,MESS)             \
-  if(!(STATE)) return Message(kStrFatalError,CODE,MESS);
+  if(!(STATE)) return Message(CODE,MESS,kStateError);
 
 
 namespace kagami {
@@ -35,35 +36,29 @@ namespace kagami {
   }
 
   class IR {
-    bool health_;
-    vector<Command> action_base_;
+  private:
+    vector<Command> container_;
     size_t index_;
     Token main_token_;
   public:
     IR() : 
-      health_(false), 
       index_(0) {}
 
-    IR(vector<Command> actionBase, 
+    IR(vector<Command> commands, 
       size_t index = 0, 
-      Token mainToken = Token()) : 
-      health_(true), 
+      Token main_token = Token()) : 
       index_(index) {
 
-      this->action_base_ = actionBase;
-      this->main_token_ = mainToken;
+      container_ = commands;
+      this->main_token_ = main_token;
     }
 
     vector<Command> &GetContains() { 
-      return action_base_; 
+      return container_; 
     }
 
     size_t GetIndex() const { 
       return index_; 
-    }
-
-    bool IsHealth() const { 
-      return health_; 
     }
 
     Token GetMainToken() const { 
@@ -105,7 +100,7 @@ namespace kagami {
       nest_head_count(0),
       error_string() {}
 
-    void Case(Message &msg);
+    void Case();
     void When(bool value);
     void ConditionRoot(bool value);
     void ConditionBranch(bool value);
@@ -157,7 +152,7 @@ namespace kagami {
     IRMaker(const char *path);
   };
 
-  class Machine {
+  class Module {
     vector<IR> storage_;
     vector<string> parameters_;
     bool health_, is_main_, is_func_;
@@ -188,32 +183,32 @@ namespace kagami {
     void Continue(IRWorker *worker);
     void Break(IRWorker *worker);
     void Else(IRWorker *worker);
-    bool ConditionAndLoop(IRWorker *worker, deque<Argument> args, int code);
+    bool ConditionAndLoop(IRWorker *worker, deque<Argument> args, StateCode code);
 
     //Command Management
     bool GenericRequests(IRWorker *worker, Request &Request, deque<Argument> &args);
     bool CheckGenericRequests(GenericTokenEnum token);
   public:
-    Machine() : 
+    Module() : 
       health_(false), 
       is_main_(false), 
       is_func_(false) {}
 
-    Machine(const Machine &machine) :
-      health_(machine.health_),
-      is_main_(machine.is_main_),
-      is_func_(machine.is_func_) {
-      storage_ = machine.storage_;
-      parameters_ = machine.parameters_;
+    Module(const Module &module) :
+      health_(module.health_),
+      is_main_(module.is_main_),
+      is_func_(module.is_func_) {
+      storage_ = module.storage_;
+      parameters_ = module.parameters_;
     }
 
-    Machine(Machine &&machine) :
-      Machine(machine) {
+    Module(Module &&module) :
+      Module(module) {
 
       is_main_ = false;
     }
 
-    Machine(vector<IR> storage) :
+    Module(vector<IR> storage) :
       health_(true),
       is_main_(false),
       is_func_(false) {
@@ -221,7 +216,7 @@ namespace kagami {
       storage_ = storage;
     }
 
-    Machine(IRMaker &maker, bool is_main) :
+    Module(IRMaker &maker, bool is_main) :
       health_(true),
       is_main_(is_main),
       is_func_(false) {
@@ -231,34 +226,34 @@ namespace kagami {
       if (maker.health) {
         storage_ = maker.output;
         msg = PreProcessing();
-        if (msg.GetValue() == kStrFatalError) {
+        if (msg.GetLevel() == kStateError) {
           health_ = false;
           trace::Log(msg);
         }
       }
       else {
         health_ = false;
-        trace::Log(Message(kStrFatalError, kCodeBadStream, "Invalid script path."));
+        trace::Log(Message(kCodeBadStream, "Invalid script path.", kStateError));
       }
     }
 
-    void operator=(Machine &machine) {
-      storage_ = machine.storage_;
-      parameters_ = machine.parameters_;
+    void operator=(Module &module) {
+      storage_ = module.storage_;
+      parameters_ = module.parameters_;
       is_main_ = false;
     }
 
-    void operator=(Machine &&machine) {
-      storage_ = machine.storage_;
-      parameters_ = machine.parameters_;
+    void operator=(Module &&module) {
+      storage_ = module.storage_;
+      parameters_ = module.parameters_;
     }
 
-    Machine &SetFunc() { 
+    Module &SetFunc() { 
       is_func_ = true; 
       return *this;
     }
 
-    Machine &SetMain() {
+    Module &SetMain() {
       is_main_ = true;
       return *this;
     }
@@ -267,20 +262,17 @@ namespace kagami {
       return health_; 
     }
 
-    Machine &SetParameters(vector<string> parms) {
+    Module &SetParameters(vector<string> parms) {
       parameters_ = parms;
       return *this;
     }
-    Message Run(bool create_container = true, string name = kStrEmpty);
+    Message Run(bool create_container = true, string name = "");
     Message RunAsFunction(ObjectMap &p);
     void Reset(MachCtlBlk *blk);
   };
 
   void Activiate();
   void InitPlanners();
-#if defined(_WIN32)
-  void InitLibraryHandler();
-#endif
 #if not defined(_DISABLE_SDL_)
   void LoadSDLStuff();
 #endif
