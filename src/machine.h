@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include "trace.h"
+#include "management.h"
 
 #define OBJECT_ASSERT(MAP,ITEM,TYPE)               \
   if (!MAP.CheckTypeId(ITEM,TYPE))                 \

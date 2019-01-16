@@ -4,7 +4,7 @@
 namespace kagami {
   enum GroupTypeEnum { G_INT, G_FLOAT, G_STR, G_NUL };
 
-  using OperatorCode = entry::OperatorCode;
+  using OperatorCode = management::OperatorCode;
 
   string IncAndDecOperation(Object &obj, bool negative, bool keep);
   GroupTypeEnum GetGroupType(Object &A, Object &B);

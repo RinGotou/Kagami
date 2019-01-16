@@ -1,7 +1,6 @@
 #pragma once
 #include "object.h"
 #include "message.h"
-#include "entry.h"
 
 namespace kagami {
   enum ArgumentType {

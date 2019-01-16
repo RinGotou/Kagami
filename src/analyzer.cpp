@@ -233,8 +233,8 @@ namespace kagami {
     deque<Argument> arguments;
     size_t idx = 0, limit = 0;
 
-    bool is_bin_operator = entry::IsOperatorToken(blk->symbol.back().head_gen);
-    bool is_mono_operator = entry::IsMonoOperator(blk->symbol.back().head_gen);
+    bool is_bin_operator = util::IsOperatorToken(blk->symbol.back().head_gen);
+    bool is_mono_operator = util::IsMonoOperator(blk->symbol.back().head_gen);
     bool reversed = (is_bin_operator && blk->need_reversing);
 
     if (is_bin_operator) limit = 2;
@@ -253,7 +253,7 @@ namespace kagami {
 
     if (!blk->args.empty()
       && blk->args.back().IsPlaceholder()
-      && !entry::IsOperatorToken(blk->symbol.back().head_gen)) {
+      && !util::IsOperatorToken(blk->symbol.back().head_gen)) {
       
       blk->args.pop_back();
     }
@@ -267,7 +267,7 @@ namespace kagami {
   void Analyzer::EqualMark(AnalyzerWorkBlock *blk) {
     if (!blk->args.empty()) {
       Request request(GT_BIND);
-      request.priority = entry::GetTokenPriority(GT_BIND);
+      request.priority = util::GetTokenPriority(GT_BIND);
       blk->symbol.emplace_back(request);
     }
   }
@@ -311,8 +311,8 @@ namespace kagami {
 
       auto first_token = blk->symbol.back().head_gen;
 
-      if (entry::IsOperatorToken(first_token)) {
-        if (entry::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)) {
+      if (util::IsOperatorToken(first_token)) {
+        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)) {
           if (checked) {
             checked = false;
           }
@@ -406,7 +406,7 @@ namespace kagami {
   bool Analyzer::FunctionAndObject(AnalyzerWorkBlock *blk) {
     bool function = false;
     bool result = true;
-    GenericTokenEnum token = entry::GetGenericToken(blk->current.first);
+    GenericTokenEnum token = util::GetGenericToken(blk->current.first);
 
     if (blk->define_line) {
       blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, T_GENERIC));
@@ -500,8 +500,8 @@ namespace kagami {
   }
 
   void Analyzer::OtherSymbol(AnalyzerWorkBlock *blk) {
-    GenericTokenEnum token = entry::GetGenericToken(blk->current.first);
-    int currentPriority = entry::GetTokenPriority(token);
+    GenericTokenEnum token = util::GetGenericToken(blk->current.first);
+    int currentPriority = util::GetTokenPriority(token);
     Request request(token);
     request.priority = currentPriority;
 
@@ -509,7 +509,7 @@ namespace kagami {
       blk->symbol.push_back(request);
     }
     else if (currentPriority < blk->symbol.back().priority
-      && entry::IsOperatorToken(blk->symbol.back().head_gen)) {
+      && util::IsOperatorToken(blk->symbol.back().head_gen)) {
       auto j = blk->symbol.size() - 1;
       auto k = blk->args.size();
 
@@ -542,8 +542,8 @@ namespace kagami {
       }
 
       auto firstEnum = blk->symbol.back().head_gen;
-      if (blk->symbol.size() > 1 && entry::IsOperatorToken(firstEnum)) {
-        if (entry::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)) {
+      if (blk->symbol.size() > 1 && util::IsOperatorToken(firstEnum)) {
+        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)) {
           if (checked) {
             checked = false;
           }
@@ -555,7 +555,7 @@ namespace kagami {
         }
       }
 
-      if (!entry::IsOperatorToken(blk->symbol.back().head_gen)) {
+      if (!util::IsOperatorToken(blk->symbol.back().head_gen)) {
         blk->need_reversing = false;
       }
 
@@ -564,7 +564,6 @@ namespace kagami {
   }
 
   Message Analyzer::Parser() {
-    using namespace entry;
     auto state = true;
     const auto size = tokens_.size();
     Message result;

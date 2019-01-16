@@ -23,7 +23,8 @@ namespace kagami {
     std::shared_ptr<void> ptr_;
     string type_id_;
     string methods_;
-    bool ref_, constructor_;
+    bool ref_;
+    bool constructor_;
 
     ObjectPointer GetTargetObject() { 
       return static_pointer_cast<TargetObject>(ptr_)->ptr; 
@@ -100,13 +101,6 @@ namespace kagami {
       if (ref_) return GetTargetObject()->Get();
       return ptr_;
     }
-
-    //void Clear() {
-    //  ptr_ = make_shared<int>(0);
-    //  type_id_ = kTypeIdNull;
-    //  methods_.clear();
-    //  ref_ = false;
-    //}
 
     Object &SetMethods(string methods) {
       if (ref_) return GetTargetObject()->SetMethods(methods);

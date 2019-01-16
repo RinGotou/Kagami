@@ -79,11 +79,26 @@ namespace kagami {
       flag_(kFlagNormalEntry),
       is_user_func_(true) {}
 
-    bool Compare(Entry &target) const;
-    Message Start(ObjectMap &map) const;
+    Message Start(ObjectMap &obj_map) const {
+      Message result;
+      if (is_user_func_) {
+        obj_map[kStrUserFunc] = Object(id_, T_GENERIC);
+      }
+      if (Good()) {
+        result = activity_(obj_map);
+      }
+      else {
+        result = Message(kStrFatalError, kCodeIllegalCall, "Illegal entry.");
+      }
+      return result;
+    }
 
     bool operator==(Entry &target) const { 
-      return Compare(target); 
+      return (target.id_ == id_ &&
+        target.activity_ == activity_ &&
+        target.argument_mode_ == argument_mode_ &&
+        target.type_ == type_ &&
+        target.parms_ == parms_);
     }
 
     string GetTypeDomain() const { 
@@ -123,47 +138,4 @@ namespace kagami {
       return (conditionA || conditionB);
     }
   };
-
-  namespace entry {
-    enum OperatorCode {
-      ADD, SUB, MUL, DIV, EQUAL, IS,
-      MORE, LESS, NOT_EQUAL, MORE_OR_EQUAL, LESS_OR_EQUAL,
-      SELFINC, SELFDEC, AND, OR, NOT, BIT_AND, BIT_OR, 
-      NUL
-    };
-
-    OperatorCode GetOperatorCode(string src);
-
-    using EntryMapUnit = map<string, Entry>::value_type;
-
-    ContainerPool &GetContainerPool();
-    ObjectContainer &GetCurrentContainer();
-    ObjectContainer &CreateContainer();
-    Object *FindObjectInCurrentContainer(string id);
-    Object *FindObject(string id);
-    Object *CreateObject(string id, Object &object);
-
-    string GetTypeId(string id);
-    string GetGenTokenValue(GenericTokenEnum token);
-    void AddEntry(Entry temp);
-    void AddGenericEntry(Entry temp);
-    
-    bool DisposeManager();
-    bool IsOperatorToken(GenericTokenEnum token);
-    bool HasTailTokenRequest(GenericTokenEnum token);
-
-    Entry Order(string id, string type = kTypeIdNull, int size = -1);
-    GenericTokenEnum GetGenericToken(string src);
-    OperatorCode GetOperatorCode(string src);
-    Entry GetGenericProvider(GenericTokenEnum token);
-    int GetTokenPriority(GenericTokenEnum token);
-    bool IsMonoOperator(GenericTokenEnum token);
-  }
-
-  namespace type {
-    ObjectCopyingPolicy *GetPlanner(string name);
-    string GetMethods(string name);
-    void AddTemplate(string name, ObjectCopyingPolicy temp);
-    shared_ptr<void> GetObjectCopy(Object &object);
-  }
 }

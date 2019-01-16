@@ -27,6 +27,7 @@
     <ClInclude Include="..\..\src\kagami.h" />
     <ClInclude Include="..\..\src\library.h" />
     <ClInclude Include="..\..\src\list.h" />
+    <ClInclude Include="..\..\src\management.h" />
     <ClInclude Include="..\..\src\message.h" />
     <ClInclude Include="..\..\src\object.h" />
     <ClInclude Include="..\..\src\machine.h" />
@@ -38,9 +39,9 @@
     <ClCompile Include="..\..\src\analyzer.cpp" />
     <ClCompile Include="..\..\src\base_type.cpp" />
     <ClCompile Include="..\..\src\component.cpp" />
-    <ClCompile Include="..\..\src\entry.cpp" />
     <ClCompile Include="..\..\src\kagami.cpp" />
     <ClCompile Include="..\..\src\library.cpp" />
+    <ClCompile Include="..\..\src\management.cpp" />
     <ClCompile Include="..\..\src\object.cpp" />
     <ClCompile Include="..\..\src\machine.cpp" />
     <ClCompile Include="..\..\src\trace.cpp" />

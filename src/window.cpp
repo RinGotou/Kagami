@@ -51,8 +51,8 @@ namespace kagami {
   }
  
   void LoadSDLStuff() {
-    using entry::AddEntry;
-    using type::AddTemplate;
+    using management::AddEntry;
+    using management::type::AddTemplate;
 
     /* For test only */
     AddTemplate(kTypeIdSDLWindow, ObjectCopyingPolicy(FakeCopy, ""));

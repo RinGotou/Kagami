@@ -50,7 +50,7 @@ namespace kagami {
 
   inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm) {
     Message msg;
-    auto ent = entry::Order(id, type_id);
+    auto ent = management::Order(id, type_id);
     ent.Good() ?
       msg = ent.Start(parm) :
       msg.SetCode(kCodeIllegalCall);
@@ -176,7 +176,7 @@ namespace kagami {
   }
 
   void OperatorRegister() {
-    using namespace entry;
+    using namespace management;
     AddGenericEntry(BinaryOperator<OperatorCode::ADD, GT_ADD>());
     AddGenericEntry(BinaryOperator<OperatorCode::SUB, GT_SUB>());
     AddGenericEntry(BinaryOperator<OperatorCode::MUL, GT_MUL>());
@@ -196,7 +196,7 @@ namespace kagami {
   }
 
   void BasicUtilityRegister() {
-    using namespace entry;
+    using namespace management;
     AddEntry(Entry(Convert, "object", "convert"));
     AddEntry(Entry(Input, "msg", "input", kCodeAutoFill));
     AddEntry(Entry(Print, kStrObject, "print"));
@@ -206,7 +206,6 @@ namespace kagami {
   }
 
   void Activiate() {
-    using namespace entry;
     OperatorRegister();
     BasicUtilityRegister();
     InitPlanners();

@@ -8,7 +8,7 @@ namespace kagami {
 
     dest_base->reserve(src_base.size());
     for (auto &unit : src_base) {
-      dest_base->emplace_back(Object(type::GetObjectCopy(unit), unit.GetTypeId(), 
+      dest_base->emplace_back(Object(management::type::GetObjectCopy(unit), unit.GetTypeId(), 
         unit.GetMethods()));
     }
 
@@ -40,7 +40,7 @@ namespace kagami {
     base.reserve(size);
 
     for (auto count = 0; count < size; count++) {
-      base.emplace_back(Object(type::GetObjectCopy(obj), type_id, methods));
+      base.emplace_back(Object(management::type::GetObjectCopy(obj), type_id, methods));
     }
 
     return Message().SetObject(Object(make_shared<ArrayBase>(base),
@@ -71,7 +71,7 @@ namespace kagami {
     ObjectMap obj_map;
 
     auto &base = p.Get<ArrayBase>(kStrObject);
-    auto ent = entry::Order("print", kTypeIdNull, -1);
+    auto ent = management::Order("print", kTypeIdNull, -1);
 
     for (auto &unit : base) {
       obj_map.Input(kStrObject, unit);
@@ -374,8 +374,8 @@ namespace kagami {
   }
 
   void InitPlanners() {
-    using type::AddTemplate;
-    using entry::AddEntry;
+    using management::type::AddTemplate;
+    using management::AddEntry;
 
     AddTemplate(kTypeIdFunction, ObjectCopyingPolicy(SimpleSharedPtrCopy<Entry>, kFunctionMethods));
     AddEntry(Entry(FunctionGetId, "", "id", kTypeIdFunction));

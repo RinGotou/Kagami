@@ -89,8 +89,8 @@ namespace kagami {
 
 #endif
   void InitLibraryHandler() {
-    using type::AddTemplate;
-    using entry::AddEntry;
+    using management::type::AddTemplate;
+    using management::AddEntry;
 #if defined(_WIN32)
     AddTemplate(kTypeIdLib, ObjectCopyingPolicy(SimpleSharedPtrCopy<LibraryHandler>, kLibraryMethods));
     AddEntry(Entry(LibHandlerConstructor, "path", "library"));

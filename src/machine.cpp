@@ -16,7 +16,7 @@ namespace kagami {
   }
 
   void CopyObject(Object &dest, Object &src) {
-    dest.Set(type::GetObjectCopy(src), src.GetTypeId(),
+    dest.Set(management::type::GetObjectCopy(src), src.GetTypeId(),
       src.GetMethods());
   }
 
@@ -72,7 +72,7 @@ namespace kagami {
   /* Packaging entry into object and act as a object */
   inline Object GetFunctionObject(string id, string domain) {
     Object obj;
-    auto ent = entry::Order(id, domain);
+    auto ent = management::Order(id, domain);
     if (ent.Good()) {
       obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods);
     }
@@ -168,7 +168,7 @@ namespace kagami {
   inline void AddFunction(string id, vector<IR> proc, vector<string> parms) {
     auto &base = GetFunctionBase();
     base[id] = Machine(proc).SetParameters(parms).SetFunc();
-    entry::AddEntry(Entry(FunctionTunnel, id, parms));
+    management::AddEntry(Entry(FunctionTunnel, id, parms));
   }
 
   inline Machine *GetFunction(string id) {
@@ -199,7 +199,7 @@ namespace kagami {
   }
 
   void MachCtlBlk::Case(Message &msg) {
-    entry::CreateContainer();
+    management::CreateContainer();
     mode_stack.push(mode);
     mode = kModeCaseJump;
     condition_stack.push(false);
@@ -220,7 +220,7 @@ namespace kagami {
 
   void MachCtlBlk::ConditionRoot(bool value) {
     mode_stack.push(mode);
-    entry::CreateContainer();
+    management::CreateContainer();
     mode = value ? kModeCondition : kModeNextCondition;
     condition_stack.push(value);
   }
@@ -228,7 +228,7 @@ namespace kagami {
   void MachCtlBlk::ConditionBranch(bool value) {
     if (!condition_stack.empty()) {
       if (condition_stack.top() == false && mode == kModeNextCondition) {
-        entry::CreateContainer();
+        management::CreateContainer();
         mode = kModeCondition;
         condition_stack.top() = true;
       }
@@ -256,7 +256,7 @@ namespace kagami {
         }
       }
       else {
-        entry::CreateContainer();
+        management::CreateContainer();
         condition_stack.top() = true;
         switch (mode) {
         case kModeNextCondition:
@@ -278,12 +278,12 @@ namespace kagami {
   void MachCtlBlk::LoopHead(bool value) {
     if (cycle_nest.empty()) {
       mode_stack.push(mode);
-      entry::CreateContainer();
+      management::CreateContainer();
     }
     else {
       if (cycle_nest.top() != current - 1) {
         mode_stack.push(mode);
-        entry::CreateContainer();
+        management::CreateContainer();
       }
     }
 
@@ -306,7 +306,7 @@ namespace kagami {
       condition_stack.pop();
       mode = mode_stack.top();
       mode_stack.pop();
-      entry::DisposeManager();
+      management::DisposeManager();
     }
     else if (mode == kModeCycle || mode == kModeCycleJump) {
       switch (mode) {
@@ -315,7 +315,7 @@ namespace kagami {
           cycle_tail.push(current - 1);
         }
         current = cycle_nest.top();
-        entry::GetCurrentContainer().clear();
+        management::GetCurrentContainer().clear();
         break;
       case kModeCycleJump:
         if (s_continue) {
@@ -326,7 +326,7 @@ namespace kagami {
           mode = kModeCycle;
           mode_stack.top() = mode;
           s_continue = false;
-          entry::GetCurrentContainer().clear();
+          management::GetCurrentContainer().clear();
         }
         else {
           if (s_break) s_break = false;
@@ -334,7 +334,7 @@ namespace kagami {
           mode_stack.pop();
           if (!cycle_nest.empty()) cycle_nest.pop();
           if (!cycle_tail.empty()) cycle_tail.pop();
-          entry::DisposeManager();
+          management::DisposeManager();
         }
         break;
       default:
@@ -345,7 +345,7 @@ namespace kagami {
       condition_stack.pop();
       mode = mode_stack.top();
       mode_stack.pop();
-      entry::DisposeManager();
+      management::DisposeManager();
     }
   }
 
@@ -427,7 +427,7 @@ namespace kagami {
       }
       break;
     case AT_OBJECT:
-      ptr = entry::FindObject(arg.domain.data);
+      ptr = management::FindObject(arg.domain.data);
       if (ptr != nullptr) {
         obj_domain.Ref(*ptr);
       }
@@ -451,7 +451,7 @@ namespace kagami {
       obj.Set(make_shared<string>(arg.data), kTypeIdRawString, kRawStringMethods);
       break;
     case AT_OBJECT:
-      ptr = entry::FindObject(arg.data);
+      ptr = management::FindObject(arg.data);
       if (ptr != nullptr) {
         obj.Ref(*ptr);
       }
@@ -612,11 +612,11 @@ namespace kagami {
   }
 
   void Machine::ResetContainer(string func_id) {
-    Object *func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
+    Object *func_sign = management::GetCurrentContainer().Find(kStrUserFunc);
 
     while (func_sign == nullptr) {
-      entry::DisposeManager();
-      func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
+      management::DisposeManager();
+      func_sign = management::GetCurrentContainer().Find(kStrUserFunc);
       if (func_sign != nullptr) {
         string value = GetObjectStuff<string>(*func_sign);
         if (value == func_id) break;
@@ -682,7 +682,7 @@ namespace kagami {
         int code;
         Entry ent;
         string type_id, value, detail;
-        is_operator_token = entry::IsOperatorToken(request.head_gen);
+        is_operator_token = util::IsOperatorToken(request.head_gen);
 
         if (!preprocessing && worker->tail_recursion) {
           (request.head_reg == name && idx == action_base.size() - 1
@@ -693,17 +693,17 @@ namespace kagami {
 
         switch (request.type) {
         case RT_MACHINE:
-          ent = entry::GetGenericProvider(request.head_gen);
+          ent = management::GetGenericProvider(request.head_gen);
           break;
         case RT_REGULAR:
           if (request.domain.type != AT_HOLDER) {
             Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
-            ent = entry::Order(request.head_reg, type_id);
+            ent = management::Order(request.head_reg, type_id);
             obj_map.Input(kStrObject, domain_obj);
           }
           else {
-            ent = entry::Order(request.head_reg);
+            ent = management::Order(request.head_reg);
           }
           break;
         default:
@@ -748,7 +748,7 @@ namespace kagami {
           auto object = msg.GetObj();
 
           if (is_operator_token && idx + 1 < action_base.size()) {
-            entry::IsOperatorToken(action_base[idx + 1].first.head_gen) ?
+            util::IsOperatorToken(action_base[idx + 1].first.head_gen) ?
               worker->returning_base.emplace_front(object) :
               worker->returning_base.emplace_back(object);
           }
@@ -794,7 +794,7 @@ namespace kagami {
     for (size_t idx = 0; idx < storage_.size(); ++idx) {
       if (!health_) break;
       IL_set = &storage_[idx];
-      token = entry::GetGenericToken(IL_set->GetMainToken().first);
+      token = util::GetGenericToken(IL_set->GetMainToken().first);
       if (token == GT_WHILE || token == GT_IF || token == GT_CASE) {
         nest_head_count++;
       }
@@ -842,10 +842,10 @@ namespace kagami {
   }
 
   void Machine::InitGlobalObject(bool create_container, string name) {
-    if (create_container) entry::CreateContainer();
+    if (create_container) management::CreateContainer();
 
     auto create = [&](string id, string value)->void {
-      entry::CreateObject(id, Object()
+      management::CreateObject(id, Object()
         .Set(make_shared<string>("'" + value + "'"), kTypeIdRawString, kRawStringMethods));
     };
 
@@ -868,11 +868,11 @@ namespace kagami {
 
   bool Machine::PredefinedMessage(Message &result, size_t mode, Token token) {
     bool judged = false;
-    GenericTokenEnum gen_token = entry::GetGenericToken(token.first);
+    GenericTokenEnum gen_token = util::GetGenericToken(token.first);
 
     switch (mode) {
     case kModeNextCondition:
-      if (entry::HasTailTokenRequest(gen_token)) {
+      if (management::HasTailTokenRequest(gen_token)) {
         result = Message(kStrTrue);
         judged = true;
       }
@@ -888,7 +888,7 @@ namespace kagami {
       }
       break;
     case kModeCaseJump:
-      if (entry::HasTailTokenRequest(gen_token)) {
+      if (management::HasTailTokenRequest(gen_token)) {
         result = Message(kStrTrue);
         judged = true;
       }
@@ -905,8 +905,8 @@ namespace kagami {
   }
 
   void Machine::TailRecursionActions(MachCtlBlk *blk, string &name) {
-    Object obj = *entry::FindObject(kStrUserFunc);
-    auto &base = entry::GetCurrentContainer();
+    Object obj = *management::FindObject(kStrUserFunc);
+    auto &base = management::GetCurrentContainer();
     base.clear();
     base.Add(kStrUserFunc, obj);
     for (auto &unit : blk->recursion_map) {
@@ -929,14 +929,14 @@ namespace kagami {
       string id = GetObjectStuff<string>(dest);
 
       if (util::GetTokenType(id) == T_GENERIC) {
-        ObjectPointer real_dest = entry::FindObject(id);
+        ObjectPointer real_dest = management::FindObject(id);
 
         if (real_dest != nullptr) {
           CopyObject(*real_dest, src);
         }
         else {
-          Object obj(type::GetObjectCopy(src), src.GetTypeId(), src.GetMethods());
-          ObjectPointer result = entry::CreateObject(id, obj);
+          Object obj(management::type::GetObjectCopy(src), src.GetTypeId(), src.GetMethods());
+          ObjectPointer result = management::CreateObject(id, obj);
           if (result == nullptr) {
             worker->error_string = "Object cration is failed.";
             result = false;
@@ -968,19 +968,19 @@ namespace kagami {
       }
     }
 
-    Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase));
+    Object obj(base, kTypeIdArrayBase, management::type::GetMethods(kTypeIdArrayBase));
     obj.SetConstructorFlag();
     worker->returning_base.emplace_back(obj);
   }
 
   void Machine::ReturnOperator(IRWorker *worker, deque<Argument> args) {
-    auto &container = entry::GetCurrentContainer();
+    auto &container = management::GetCurrentContainer();
     if (args.size() > 1) {
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
       for (size_t idx = 0; idx < args.size(); idx += 1) {
         base->emplace_back(worker->MakeObject(args[idx]));
       }
-      Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase));
+      Object obj(base, kTypeIdArrayBase, management::type::GetMethods(kTypeIdArrayBase));
       container.Add(kStrRetValue,
         Object(obj.Get(), obj.GetTypeId(), obj.GetMethods()));
     }
@@ -1001,7 +1001,7 @@ namespace kagami {
         Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
         base->emplace_back(value_obj);
       }
-      Object ret_obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase));
+      Object ret_obj(base, kTypeIdArrayBase, management::type::GetMethods(kTypeIdArrayBase));
       ret_obj.SetConstructorFlag();
       worker->returning_base.emplace_back(ret_obj);
     }
@@ -1028,7 +1028,7 @@ namespace kagami {
 
       for (const auto &unit : vec) {
         base->emplace_back(Object(make_shared<string>(unit), kTypeIdString,
-          type::GetMethods(kTypeIdString)));
+          management::type::GetMethods(kTypeIdString)));
       }
 
       Object ret_obj(base, kTypeIdArrayBase, kArrayBaseMethods);
@@ -1102,9 +1102,9 @@ namespace kagami {
         worker->error_string = "Case-when is not supported for this object.";
       }
       else {
-        auto copy = type::GetObjectCopy(obj);
+        auto copy = management::type::GetObjectCopy(obj);
         Object base(copy, obj.GetTypeId(), obj.GetMethods());
-        entry::CreateObject("__case", base);
+        management::CreateObject("__case", base);
         worker->deliver = true;
         worker->msg = Message(kStrTrue).SetCode(kCodeCase);
       }
@@ -1121,7 +1121,7 @@ namespace kagami {
     bool result = true;
 
     if (!args.empty()) {
-      ObjectPointer case_head = entry::FindObject("__case");
+      ObjectPointer case_head = management::FindObject("__case");
       string case_content = GetObjectStuff<string>(*case_head);
       bool state = true, found = false;
 
@@ -1171,14 +1171,14 @@ namespace kagami {
       return result;
     } 
     
-    ObjectPointer ret_ptr = entry::FindObject(id);
+    ObjectPointer ret_ptr = management::FindObject(id);
     
     if (ret_ptr != nullptr) {
       if (returning) worker->returning_base.emplace_back(*ret_ptr);
     }
     else {
       Object ent_obj;
-      auto ent = entry::Order(id, obj.GetTypeId());
+      auto ent = management::Order(id, obj.GetTypeId());
       if (ent.Good()) {
         if (returning) {
           ent_obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods);
@@ -1465,7 +1465,7 @@ namespace kagami {
         blk->error_string).SetIndex(blk->current));
     }
 
-    if (create_container) entry::DisposeManager();
+    if (create_container) management::DisposeManager();
 
     delete blk;
     return result;
@@ -1473,7 +1473,7 @@ namespace kagami {
 
   Message Machine::RunAsFunction(ObjectMap &p) {
     Message msg;
-    auto &base = entry::CreateContainer();
+    auto &base = management::CreateContainer();
     string func_id = p.Get<string>(kStrUserFunc);
 
     for (auto &unit : p) {
@@ -1484,7 +1484,7 @@ namespace kagami {
 
     if (msg.GetCode() >= kCodeSuccess) {
       msg = Message();
-      auto &currentBase = entry::GetCurrentContainer();
+      auto &currentBase = management::GetCurrentContainer();
       Object *ret = currentBase.Find(kStrRetValue);
       if (ret != nullptr) {
         Object obj;
@@ -1493,11 +1493,11 @@ namespace kagami {
       }
     }
 
-    Object *func_sign = entry::GetCurrentContainer().Find(kStrUserFunc);
+    Object *func_sign = management::GetCurrentContainer().Find(kStrUserFunc);
 
     ResetContainer(func_id);
 
-    entry::DisposeManager();
+    management::DisposeManager();
     return msg;
   }
 

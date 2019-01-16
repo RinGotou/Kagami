@@ -2,6 +2,124 @@
 
 namespace kagami {
   namespace util {
+    bool IsOperatorToken(GenericTokenEnum token) {
+      bool result;
+      switch (token) {
+      case GT_ADD:
+      case GT_SUB:
+      case GT_MUL:
+      case GT_DIV:
+      case GT_IS:
+      case GT_LESS_OR_EQUAL:
+      case GT_MORE_OR_EQUAL:
+      case GT_NOT_EQUAL:
+      case GT_MORE:
+      case GT_LESS:
+      case GT_AND:
+      case GT_OR:
+      case GT_NOT:
+      case GT_BIT_AND:
+      case GT_BIT_OR:
+        result = true;
+        break;
+      default:
+        result = false;
+        break;
+      }
+      return result;
+    }
+
+    bool IsMonoOperator(GenericTokenEnum token) {
+      return token == GT_LSELF_DEC
+        || token == GT_LSELF_DEC
+        || token == GT_RSELF_INC
+        || token == GT_RSELF_DEC;
+    }
+
+    int GetTokenPriority(GenericTokenEnum token) {
+      int result;
+      switch (token) {
+      case GT_BIND:
+        result = 0;
+        break;
+      case GT_ADD:
+      case GT_SUB:
+        result = 2;
+        break;
+      case GT_MUL:
+      case GT_DIV:
+        result = 3;
+        break;
+      case GT_IS:
+      case GT_LESS_OR_EQUAL:
+      case GT_MORE_OR_EQUAL:
+      case GT_NOT_EQUAL:
+      case GT_MORE:
+      case GT_LESS:
+      case GT_AND:
+      case GT_OR:
+        result = 1;
+        break;
+      default:
+        result = 4;
+        break;
+      }
+
+      return result;
+    }
+
+    map<string, GenericTokenEnum> &GetGTBase() {
+      using T = pair<string, GenericTokenEnum>;
+      static map<string, GenericTokenEnum> base = {
+        T(kStrIf          ,GT_IF),
+        T(kStrNop         ,GT_NOP),
+        T(kStrDef         ,GT_DEF),
+        T(kStrEnd         ,GT_END),
+        T(kStrBind        ,GT_BIND),
+        T(kStrFor         ,GT_FOR),
+        T(kStrElse        ,GT_ELSE),
+        T(kStrElif        ,GT_ELIF),
+        T(kStrWhile       ,GT_WHILE),
+        T(kStrLeftSelfInc ,GT_LSELF_INC),
+        T(kStrLeftSelfDec ,GT_LSELF_DEC),
+        T(kStrRightSelfInc,GT_RSELF_INC),
+        T(kStrRightSelfDec,GT_RSELF_DEC),
+        T(kStrAdd         ,GT_ADD),
+        T(kStrSub         ,GT_SUB),
+        T(kStrMul         ,GT_MUL),
+        T(kStrDiv         ,GT_DIV),
+        T(kStrIs          ,GT_IS),
+        T(kStrAnd         ,GT_AND),
+        T(kStrOr          ,GT_OR),
+        T(kStrNot         ,GT_NOT),
+        T(kStrBitAnd      ,GT_BIT_AND),
+        T(kStrBitOr       ,GT_BIT_OR),
+        T(kStrLessOrEqual ,GT_LESS_OR_EQUAL),
+        T(kStrMoreOrEqual ,GT_MORE_OR_EQUAL),
+        T(kStrNotEqual    ,GT_NOT_EQUAL),
+        T(kStrMore        ,GT_MORE),
+        T(kStrLess        ,GT_LESS),
+        T(kStrReturn      ,GT_RETURN),
+        T(kStrArray       ,GT_ARRAY),
+        T(kStrTypeAssert  ,GT_TYPE_ASSERT),
+        T(kStrContinue    ,GT_CONTINUE),
+        T(kStrBreak       ,GT_BREAK),
+        T(kStrCase        ,GT_CASE),
+        T(kStrWhen        ,GT_WHEN),
+        T(kStrTypeAssertR ,GT_ASSERT_R),
+        T(kStrTypeId      ,GT_TYPEID),
+        T(kStrDir         ,GT_DIR)
+      };
+      return base;
+    }
+
+    GenericTokenEnum GetGenericToken(string src) {
+      auto &base = GetGTBase();
+      auto it = base.find(src);
+      if (it != base.end()) return it->second;
+      return GT_NUL;
+    }
+
     bool IsString(string target) {
       if (target.empty()) return false;
       if (target.size() == 1) return false;
