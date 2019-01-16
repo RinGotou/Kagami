@@ -76,12 +76,6 @@ namespace kagami {
       return this->operator=(object);
     }
 
-    Object &AppendMethod(string method) {
-      if (ref_) return GetTargetObject()->AppendMethod(method);
-      methods_.append("|" + method);
-      return *this;
-    }
-
     string GetMethods() {
       if (ref_) return GetTargetObject()->GetMethods();
       return methods_;
@@ -107,12 +101,12 @@ namespace kagami {
       return ptr_;
     }
 
-    void Clear() {
-      ptr_ = make_shared<int>(0);
-      type_id_ = kTypeIdNull;
-      methods_.clear();
-      ref_ = false;
-    }
+    //void Clear() {
+    //  ptr_ = make_shared<int>(0);
+    //  type_id_ = kTypeIdNull;
+    //  methods_.clear();
+    //  ref_ = false;
+    //}
 
     Object &SetMethods(string methods) {
       if (ref_) return GetTargetObject()->SetMethods(methods);
@@ -222,14 +216,6 @@ namespace kagami {
     template <class T>
     T &Get(string id) {
       return *static_pointer_cast<T>(this->at(id).Get());
-    }
-
-    Object &operator()(string id) {
-      return this->at(id);
-    }
-
-    Object &operator()(string id, int index) {
-      return this->at(id + to_string(index));
     }
 
     bool CheckTypeId(string id, string type_id) {

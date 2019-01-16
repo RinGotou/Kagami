@@ -291,7 +291,7 @@ namespace kagami {
     auto is_method = (ent.GetFlag() == kFlagMethod);
 
     while (idx < int(ent_args.size() - 1)) {
-      target_map.Input(ent_args[idx], p("arg", idx));
+      target_map.Input(ent_args[idx], p["arg" + to_string(idx)]);
       idx += 1;
     }
 
