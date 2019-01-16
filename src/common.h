@@ -6,7 +6,6 @@
 #include <map>
 #include <deque>
 #include <regex>
-#include <cstddef>
 #include <stack>
 #include <locale>
 #include <codecvt>
@@ -72,7 +71,7 @@ namespace kagami {
   using std::stod;
   using std::wstring;
 
-  const string kEngineVersion  = "1.5 'White'";
+  const string kEngineVersion  = "1.51";
   const string kBackendVerison = "Hatsuki";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
@@ -82,13 +81,6 @@ namespace kagami {
   const string kEngineName     = "Kagami Project";
   const string kMaintainer     = "Suzu Nakamura";
   const string kCopyright      = "Copyright(c) 2017-2018";
-
-  const string kStrNull        = "null",
-    kStrRedirect               = "__*__",
-    kStrTrue                   = "true",
-    kStrFalse                  = "false",
-    kStrObject                 = "__object",
-    kMethodPrint               = "__print";
 
   enum StateCode {
     kCodeWhen = 18,
@@ -123,10 +115,6 @@ namespace kagami {
     kStateWarning
   };
 
-  const int 
-    kFlagNormalEntry = 0,
-    kFlagMethod      = 1;
-
   const map<string, string> kBracketPairs = {
     pair<string,string>(")", "("),
     pair<string,string>("]", "["),
@@ -142,11 +130,8 @@ namespace kagami {
 
   enum GenericTokenEnum {
     GT_NOP, GT_DEF, 
-    GT_IF, GT_ELIF, GT_END, GT_ELSE, 
-    GT_BIND, 
-    GT_WHILE, GT_FOR, GT_LSELF_INC, GT_LSELF_DEC,
-    GT_RSELF_INC, GT_RSELF_DEC,
-    GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_IS, 
+    GT_IF, GT_ELIF, GT_END, GT_ELSE, GT_BIND, 
+    GT_WHILE, GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_IS, 
     GT_LESS_OR_EQUAL, GT_MORE_OR_EQUAL, GT_NOT_EQUAL,
     GT_MORE, GT_LESS, GT_RETURN,
     GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
@@ -160,11 +145,20 @@ namespace kagami {
   enum BasicTokenEnum {
     TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT,
     TOKEN_COLON, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_SQRBRACKET, TOKEN_RIGHT_BRACKET,
-    TOKEN_SELFOP, TOKEN_LEFT_CURBRACKET, TOKEN_RIGHT_CURBRACKET, 
+    TOKEN_LEFT_CURBRACKET, TOKEN_RIGHT_CURBRACKET, 
     TOKEN_OTHERS
   };
 
-  
+  enum MachineMode {
+    kModeNormal,
+    kModeNextCondition,
+    kModeCycle,
+    kModeCycleJump,
+    kModeCondition,
+    kModeDef,
+    kModeCase,
+    kModeCaseJump
+  };
 
   const string kTypeIdNull       = "Null";
   const string kTypeIdString     = "String";
@@ -187,20 +181,9 @@ namespace kagami {
   const string kRegexMethods      = "match";
   const string kFunctionMethods   = "id|call|parms";
 
-  constexpr size_t kModeNormal        = 0;
-  constexpr size_t kModeNextCondition = 1;
-  constexpr size_t kModeCycle         = 2;
-  constexpr size_t kModeCycleJump     = 3;
-  constexpr size_t kModeCondition     = 4;
-  constexpr size_t kModeDef           = 5;
-  constexpr size_t kModeCase          = 6;
-  constexpr size_t kModeCaseJump      = 7;
-  constexpr size_t kModeClass         = 8;
-
-  /*Generic Token*/
   const string
     kStrIf           = "if",
-    kStrDef          = "def",
+    kStrDef          = "fn",
     kStrRef          = "__ref",
     kStrEnd          = "end",
     kStrVar          = "var",
@@ -246,6 +229,9 @@ namespace kagami {
     kStrTypeId       = "typeid",
     kStrDir          = "dir",
     kStrExist        = "exist",
-    kStrQuit         = "quit";
+    kStrQuit         = "quit",
+    kStrTrue         = "true",
+    kStrFalse        = "false",
+    kStrObject       = "__object";
 }
 

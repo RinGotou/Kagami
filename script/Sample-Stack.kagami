@@ -1,18 +1,18 @@
 stack = array(5)
 index = 0
 
-def push(obj)
+fn push(obj)
   if (index < 5)
     stack[index] = obj
-    index++
+    index = index + 1
   else
     print('Stack is full.')
   end
 end
 
-def pop()
+fn pop()
   if (index > 0)
-    index--
+    index = index - 1
     return(stack[index])
   else
     print('stack is empty.')
@@ -20,12 +20,12 @@ def pop()
   end
 end
 
-def GetInput()
+fn GetInput()
   choice = convert(input('(1.Push/2.Pop)> '))
   return(choice)
 end
 
-def main()
+fn main()
   obj = 0
   
   while(true)

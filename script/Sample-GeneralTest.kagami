@@ -1,14 +1,14 @@
-def PrintWithTime(msg)
+fn PrintWithTime(msg)
   print('[' + time() + ']' + msg)
   print('PrintWithTime end.')
 end
 
-def Greet(name)
+fn Greet(name)
   print('Hello,' + name + '!')
   print('Greet end.')
 end
 
-def CalcTest()
+fn CalcTest()
   result0 = 1 - 2 - 3
   result1 = 1 - (2 - 3)
   print(1+2*5)
@@ -25,7 +25,7 @@ def CalcTest()
   print('CalcTest end.')
 end
 
-def LogicTest()
+fn LogicTest()
   result0 = true && false
   result1 = true && true
   result2 = true || false
@@ -37,7 +37,7 @@ def LogicTest()
   print('LogicTest end.')
 end
 
-def TypeTest()
+fn TypeTest()
   str0 = '123'
   str1 = '\'string\''
   str2 = '1.23'
@@ -53,20 +53,20 @@ def TypeTest()
   print('TypeTest end.')
 end
 
-def ArrayTest()
+fn ArrayTest()
   ar = array(5,'hello')
   print('Array size:' + ar.size())
   print(ar)
   i = 0
   while(i < 5)
     ar[i] = ar[i] + ' Loop x' + i
-    i++
+    i = i + 1
   end
   print(ar)
   print('ArrayTest end.')
 end
 
-def StringTest()
+fn StringTest()
   origin = input('Input a string (size>10) : ')
   str = string(origin)
   print('String size:' + str.size())
@@ -76,12 +76,12 @@ def StringTest()
   print('StringTest end.')
 end
 
-def Menu()
+fn Menu()
   choice = convert(input('> '))
   return(choice)
 end
 
-def main()
+fn main()
   flag = 0
   print('Menu:\n1.Greet Test\n2.Time Test\n3.Calculator Test')
   print('4.Logic Test\n5.Type Test\n6.Array Test\n7.String Test\n0.Quit')

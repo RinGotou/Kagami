@@ -108,12 +108,12 @@ namespace kagami {
     void LeftBracket(AnalyzerWorkBlock *blk);
     bool RightBracket(AnalyzerWorkBlock *blk);
     bool LeftSqrBracket(AnalyzerWorkBlock *blk);
-    bool SelfOperator(AnalyzerWorkBlock *blk);
     bool LeftCurBracket(AnalyzerWorkBlock *blk);
     bool FunctionAndObject(AnalyzerWorkBlock *blk);
     void OtherToken(AnalyzerWorkBlock *blk);
     void OtherSymbol(AnalyzerWorkBlock *blk);
     void FinalProcessing(AnalyzerWorkBlock *blk);
+    void Comma(AnalyzerWorkBlock *blk);
     Message Parser();
   public:
     Analyzer() :health_(false), index_(0) {  }
@@ -135,7 +135,16 @@ namespace kagami {
       return health_; 
     }
 
-    void Clear();
+    void Clear() {
+      tokens_.clear();
+      tokens_.shrink_to_fit();
+      action_base_.clear();
+      action_base_.shrink_to_fit();
+      health_ = false;
+      error_string_.clear();
+      index_ = 0;
+    }
+
     Message Make(string target, size_t index = 0);
   };
 }

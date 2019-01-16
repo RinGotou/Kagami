@@ -1,4 +1,4 @@
-def CaseTest()
+fn CaseTest()
   count = 5
   case(count)
   when(1,2,3)

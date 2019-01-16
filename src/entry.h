@@ -3,6 +3,10 @@
 #include "message.h"
 
 namespace kagami {
+  enum EntryType {
+    kEntryNormal, kEntryMethod
+  };
+
   class Entry {
     string id_;
     GenericTokenEnum gen_token_;
@@ -10,17 +14,17 @@ namespace kagami {
     vector<string> parms_;
     int argument_mode_;
     string type_;
-    int flag_;
+    EntryType entry_type_;
     bool is_user_func_;
   public:
     /* Empty entry */
-    Entry() : id_(kStrNull),
+    Entry() : id_(),
       gen_token_(GT_NUL),
       activity_(nullptr),
       parms_(),
       argument_mode_(kCodeIllegalParm),
       type_(kTypeIdNull),
-      flag_(kFlagNormalEntry),
+      entry_type_(kEntryNormal),
       is_user_func_(false) {}
 
     /* Plain function */
@@ -34,7 +38,7 @@ namespace kagami {
       parms_(util::BuildStringVector(parms)),
       argument_mode_(argument_mode),
       type_(kTypeIdNull),
-      flag_(kFlagNormalEntry),
+      entry_type_(kEntryNormal),
       is_user_func_(false) {}
 
     /* Method */
@@ -49,7 +53,7 @@ namespace kagami {
       parms_(util::BuildStringVector(parms)),
       argument_mode_(argument_mode),
       type_(type),
-      flag_(kFlagMethod),
+      entry_type_(kEntryMethod),
       is_user_func_(false) {}
 
     /* Generic token function */
@@ -63,7 +67,7 @@ namespace kagami {
       parms_(util::BuildStringVector(parms)),
       argument_mode_(argumentMode),
       type_(kTypeIdNull),
-      flag_(kFlagNormalEntry),
+      entry_type_(kEntryMethod),
       is_user_func_(false) {}
 
     /* user-defined function */
@@ -76,7 +80,7 @@ namespace kagami {
       parms_(parms),
       argument_mode_(kCodeNormalParm),
       type_(kTypeIdNull),
-      flag_(kFlagNormalEntry),
+      entry_type_(kEntryNormal),
       is_user_func_(true) {}
 
     Message Start(ObjectMap &obj_map) const {
@@ -125,8 +129,8 @@ namespace kagami {
       return parms_.size(); 
     }
 
-    int GetFlag() const {
-      return flag_; 
+    EntryType GetEntryType() const {
+      return entry_type_;
     }
 
     bool Good() const { 

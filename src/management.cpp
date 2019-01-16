@@ -38,20 +38,6 @@ namespace kagami {
       return GetContainerPool().back();
     }
 
-    Object *FindObjectInCurrentContainer(string id) {
-      Object *object = nullptr;
-      ObjectContainer &base = GetContainerPool().back();
-
-      while (!base.Empty()) {
-        object = base.Find(id);
-        if (object != nullptr) {
-          break;
-        }
-      }
-
-      return object;
-    }
-
     Object *CreateObject(string id, Object &object) {
       ObjectContainer &base = GetContainerPool().back();
       if (base.Find(id) != nullptr) {
@@ -60,26 +46,6 @@ namespace kagami {
       base.Add(id, object);
       const auto result = base.Find(id);
       return result;
-    }
-
-    string GetTypeId(const string id) {
-      auto result = kTypeIdNull;
-      auto count = GetContainerPool().size();
-      auto &base = GetContainerPool();
-
-      while (count > 0) {
-        const auto object = base[count - 1].Find(id);
-        if (object != nullptr) {
-          result = object->GetTypeId();
-        }
-        count--;
-      }
-
-      return result;
-    }
-
-    void ResetObject() {
-      while (!GetContainerPool().empty()) GetContainerPool().pop_back();
     }
 
     ObjectContainer &CreateContainer() {
@@ -98,38 +64,6 @@ namespace kagami {
 
     bool HasTailTokenRequest(GenericTokenEnum token) {
       return (token == GT_IF || token == GT_WHILE || token == GT_CASE);
-    }
-
-    map<string, OperatorCode> &GetOPBase() {
-      using T = pair<string, OperatorCode>;
-      static map<string, OperatorCode> base = {
-        T("+" ,ADD),
-        T("-" ,SUB),
-        T("*" ,MUL),
-        T("/" ,DIV),
-        T("=" ,EQUAL),
-        T("==",IS),
-        T("<=",LESS_OR_EQUAL),
-        T(">=",MORE_OR_EQUAL),
-        T("!=",NOT_EQUAL),
-        T(">" ,MORE),
-        T("<" ,LESS),
-        T("++",SELFINC),
-        T("--",SELFDEC),
-        T("&&",AND),
-        T("||",OR),
-        T("!" ,NOT),
-        T("&" ,BIT_AND),
-        T("|" ,BIT_OR)
-      };
-      return base;
-    }
-
-    OperatorCode GetOperatorCode(string src) {
-      auto &base = GetOPBase();
-      auto it = base.find(src);
-      if (it != base.end()) return base[src];
-      return NUL;
     }
 
     void AddEntry(Entry temp) {
@@ -203,11 +137,6 @@ namespace kagami {
 
       void AddTemplate(string name, ObjectCopyingPolicy temp) {
         GetPlannerBase().insert(pair<string, ObjectCopyingPolicy>(name, temp));
-      }
-
-      void DisposeTemplate(const string name) {
-        const auto it = GetPlannerBase().find(name);
-        if (it != GetPlannerBase().end()) GetPlannerBase().erase(it);
       }
     }
   }

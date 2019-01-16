@@ -487,7 +487,7 @@ namespace kagami {
     size_t count = 0;
     auto ent_args = ent.GetArguments();
     auto va_arg_head = ent_args.back();
-    auto is_method = (ent.GetFlag() == kFlagMethod);
+    auto is_method = (ent.GetEntryType() == kEntryMethod);
 
     while (idx < ent_args.size() - 1) {
       obj_map.Input(ent_args[idx],
@@ -512,7 +512,7 @@ namespace kagami {
   void IRWorker::AssemblingForAutoFilling(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
       size_t idx = 0;
       auto ent_args = ent.GetArguments();
-      auto is_method = (ent.GetFlag() == kFlagMethod);
+      auto is_method = (ent.GetEntryType() == kEntryMethod);
 
       while (idx < ent_args.size()) {
         if (idx >= parms.size()) break;
@@ -525,7 +525,7 @@ namespace kagami {
   void IRWorker::AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
     size_t idx = 0;
     auto ent_args = ent.GetArguments();
-    auto is_method = (ent.GetFlag() == kFlagMethod);
+    auto is_method = (ent.GetEntryType() == kEntryMethod);
     bool state = true;
 
     while (idx < ent_args.size()) {

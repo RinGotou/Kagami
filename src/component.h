@@ -4,18 +4,14 @@
 namespace kagami {
   enum GroupTypeEnum { G_INT, G_FLOAT, G_STR, G_NUL };
 
-  using OperatorCode = management::OperatorCode;
+  enum OperatorCode {
+    ADD, SUB, MUL, DIV, EQUAL, IS,
+    MORE, LESS, NOT_EQUAL, MORE_OR_EQUAL, LESS_OR_EQUAL,
+    AND, OR, NOT, BIT_AND, BIT_OR,
+    NUL
+  };
 
-  string IncAndDecOperation(Object &obj, bool negative, bool keep);
   GroupTypeEnum GetGroupType(Object &A, Object &B);
-
-  template <bool negative, bool keep>
-  Message SelfOperator(ObjectMap &p) {
-    Object &obj = p["object"];
-    //TODO:error
-    string result = IncAndDecOperation(obj, negative, keep);
-    return Message(result);
-  }
 
   /* Unified String Convertor Generator */
   template <class DestType>

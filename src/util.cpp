@@ -29,13 +29,6 @@ namespace kagami {
       return result;
     }
 
-    bool IsMonoOperator(GenericTokenEnum token) {
-      return token == GT_LSELF_DEC
-        || token == GT_LSELF_DEC
-        || token == GT_RSELF_INC
-        || token == GT_RSELF_DEC;
-    }
-
     int GetTokenPriority(GenericTokenEnum token) {
       int result;
       switch (token) {
@@ -76,14 +69,9 @@ namespace kagami {
         T(kStrDef         ,GT_DEF),
         T(kStrEnd         ,GT_END),
         T(kStrBind        ,GT_BIND),
-        T(kStrFor         ,GT_FOR),
         T(kStrElse        ,GT_ELSE),
         T(kStrElif        ,GT_ELIF),
         T(kStrWhile       ,GT_WHILE),
-        T(kStrLeftSelfInc ,GT_LSELF_INC),
-        T(kStrLeftSelfDec ,GT_LSELF_DEC),
-        T(kStrRightSelfInc,GT_RSELF_INC),
-        T(kStrRightSelfDec,GT_RSELF_DEC),
         T(kStrAdd         ,GT_ADD),
         T(kStrSub         ,GT_SUB),
         T(kStrMul         ,GT_MUL),
@@ -221,7 +209,7 @@ namespace kagami {
 
 
     bool IsSymbol(string target) {
-      static const regex kPatternSymbol(R"(\+\+|--|==|<=|>=|!=|&&|\|\||[[:Punct:]])");
+      static const regex kPatternSymbol(R"(==|<=|>=|!=|&&|\|\||[[:Punct:]])");
       if (target.empty()) return false;
       return std::regex_match(target, kPatternSymbol);
     }
@@ -232,7 +220,7 @@ namespace kagami {
 
     TokenTypeEnum GetTokenType(string src) {
       TokenTypeEnum type = TokenTypeEnum::T_NUL;
-      if (src == kStrNull || src.empty()) type = TokenTypeEnum::T_NUL;
+      if (src.empty()) type = TokenTypeEnum::T_NUL;
       else if (IsBoolean(src)) type = TokenTypeEnum::T_BOOLEAN;
       else if (IsGenericToken(src)) type = TokenTypeEnum::T_GENERIC;
       else if (IsInteger(src)) type = TokenTypeEnum::T_INTEGER;

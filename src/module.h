@@ -79,10 +79,11 @@ namespace kagami {
       runtime_error;
     size_t current;
     size_t def_start;
-    size_t mode;
+    MachineMode mode;
     int nest_head_count;
     string error_string;
-    stack<size_t> cycle_nest, cycle_tail, mode_stack;
+    stack<size_t> cycle_nest, cycle_tail;
+    stack<MachineMode> mode_stack;
     stack<bool> condition_stack;
     vector<string> def_head;
     ObjectMap recursion_map;

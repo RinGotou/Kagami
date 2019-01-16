@@ -1,26 +1,26 @@
 ar0 = array(3,'')
 
-def Calc(numA,numB)
+fn Calc(numA,numB)
   return(numA + numB)
 end
 
-def Loop(count)
+fn Loop(count)
   i = 0
   while(i < count)
     print('Loop Count' + i)
-    i++
+    i = i + 1
   end
 end
 
-def PrintArray()
+fn PrintArray()
   i = 0
   while(i < 3)
     print(ar0[i])
-    i++
+    i = i + 1
   end
 end
 
-def SetArray(idx,str)
+fn SetArray(idx,str)
   ar0[idx] = str
 end
 

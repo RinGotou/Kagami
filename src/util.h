@@ -4,7 +4,6 @@
 namespace kagami {
   namespace util {
     bool IsOperatorToken(GenericTokenEnum token);
-    bool IsMonoOperator(GenericTokenEnum token);
     int GetTokenPriority(GenericTokenEnum token);
     GenericTokenEnum GetGenericToken(string src);
     string GetRawString(string target);

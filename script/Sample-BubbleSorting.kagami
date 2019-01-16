@@ -1,15 +1,17 @@
-def Sort()
+fn Sort()
   print('Bubble sorting for 100000 number...')
   startTime = time()
   ar = array(100000,0)
   i = 99999
+  
   while(i >= 0)
     ar[i] = i
-    i--
+    i = i + 1
   end
   
   i = 0
   j = 0
+  
   while(i < 100000)
     while(j < (100000 - i - 1))
       if (ar[j] < ar[j])
@@ -17,10 +19,11 @@ def Sort()
         i = j
         j = k
       end
-      j++
+      j = j + 1
     end
-    i++
+    i = i + 1
   end
+  
   endTime = time()
   print('Start=' + startTime)
   print('End=' + endTime)

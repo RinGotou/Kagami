@@ -288,14 +288,14 @@ namespace kagami {
     int idx = 0;
     int va_arg_size = 0;
     int count = 0;
-    auto is_method = (ent.GetFlag() == kFlagMethod);
+    
 
     while (idx < int(ent_args.size() - 1)) {
       target_map.Input(ent_args[idx], p["arg" + to_string(idx)]);
       idx += 1;
     }
 
-    is_method ?
+    ent.GetEntryType() == kEntryMethod ?
       va_arg_size = size - 1 :
       va_arg_size = size;
 
@@ -306,14 +306,14 @@ namespace kagami {
     }
 
     target_map.Input(kStrVaSize, Object(to_string(count), T_INTEGER));
-    if (is_method) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
+    if (ent.GetEntryType() == kEntryMethod) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
     return true;
   }
 
   bool AssemblingForAutoFilling(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
     auto ent_args = ent.GetArguments();
     int idx = 0;
-    auto is_method = (ent.GetFlag() == kFlagMethod);
+    auto is_method = (ent.GetEntryType() == kEntryMethod);
 
     while (idx < ent_args.size()) {
       if (idx >= size) break;
@@ -329,7 +329,7 @@ namespace kagami {
   bool AssemblingForNormal(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
     auto ent_args = ent.GetArguments();
     int idx = 0;
-    auto is_method = (ent.GetFlag() == kFlagMethod);
+    auto is_method = (ent.GetEntryType() == kEntryMethod);
     bool state = true;
 
     while (idx < ent_args.size()) {

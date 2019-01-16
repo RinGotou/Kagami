@@ -138,12 +138,12 @@ end
 
 函数也可以作为变量使用，只不过其实质为一个动态包装，你无法对函数本身进行任何修改。
 
-函数由def关键字定义，以end作为函数结尾。
+函数由fn关键字定义，以end作为函数结尾。
 
 当前版本不可以在函数内定义函数。
 
 ```
-def hello(name)
+fn hello(name)
   print('hello,' + name)
 end
 
@@ -153,7 +153,7 @@ print(hello.id()) #函数自动包装成变量，并调用其方法
 
 使用return关键字可以返回特定值，如果return参数为空或者不存在return则返回类型为Null的变量。
 ```
-def calc(a,b)
+fn calc(a,b)
   return(a+b)
 end
 

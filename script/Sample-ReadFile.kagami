@@ -1,4 +1,4 @@
-def ReadFile()
+fn ReadFile()
   stream = instream('SomeWords.txt')
   while(stream.eof() != true)
     print(stream.get())

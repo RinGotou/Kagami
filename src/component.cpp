@@ -57,29 +57,6 @@ namespace kagami {
     return msg;
   }
 
-  string IncAndDecOperation(Object &obj, bool negative, bool keep) {
-    string res, origin;
-
-    if (CheckObjectType(obj, kTypeIdRawString)) {
-      origin = GetObjectStuff<string>(obj);
-      if (util::GetTokenType(origin) == T_INTEGER) {
-        int data = stoi(origin);
-        negative ?
-          data -= 1 :
-          data += 1;
-        keep ?
-          res = origin :
-          res = to_string(data);
-        obj.Copy(MakeObject(data));
-      }
-      else {
-        res = origin;
-      }
-    }
-
-    return res;
-  }
-
   inline void CheckSelfOperatorMsg(Message &msg, string res) {
     res.empty() ?
       msg = Message(res) :
@@ -164,7 +141,7 @@ namespace kagami {
     string str;
 
     (type == T_NUL || type == T_GENERIC) ?
-      str = kStrNull :
+      str = "" :
       str = origin;
     
     return Message().SetObject(Object(str, type));
@@ -189,10 +166,6 @@ namespace kagami {
     AddGenericEntry(LogicBinaryOperator<OperatorCode::LESS, GT_LESS>());
     AddGenericEntry(LogicBinaryOperator<OperatorCode::AND, GT_AND>());
     AddGenericEntry(LogicBinaryOperator<OperatorCode::OR, GT_OR>());
-    AddGenericEntry(Entry(SelfOperator<false, false>, "object", GT_LSELF_INC));
-    AddGenericEntry(Entry(SelfOperator<true, false>, "object", GT_LSELF_DEC));
-    AddGenericEntry(Entry(SelfOperator<false, true>, "object", GT_RSELF_INC));
-    AddGenericEntry(Entry(SelfOperator<true, true>, "object", GT_RSELF_DEC));
   }
 
   void BasicUtilityRegister() {

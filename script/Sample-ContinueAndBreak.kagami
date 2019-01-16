@@ -1,9 +1,9 @@
-def Test()
+fn Test()
   i = 0
   print('Continue')
   while(i < 5)
     if (i == 3) 
-      i++
+      i = i + 1
       continue
     end
     print(i)
@@ -17,7 +17,7 @@ def Test()
       break
     end
     print(i)
-    i++
+    i = i + 1
   end
 end
 

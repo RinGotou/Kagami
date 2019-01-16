@@ -10,8 +10,6 @@ namespace kagami {
     if (src == "(")   return TOKEN_LEFT_BRACKET;
     if (src == "]")   return TOKEN_RIGHT_SQRBRACKET;
     if (src == ")")   return TOKEN_RIGHT_BRACKET;
-    if (src == "++")  return TOKEN_SELFOP;
-    if (src == "--")  return TOKEN_SELFOP;
     if (src == "{")   return TOKEN_LEFT_CURBRACKET;
     if (src == "}")   return TOKEN_RIGHT_CURBRACKET;
     return TOKEN_OTHERS;
@@ -241,21 +239,19 @@ namespace kagami {
     size_t idx = 0, limit = 0;
 
     bool is_bin_operator = util::IsOperatorToken(blk->symbol.back().head_gen);
-    bool is_mono_operator = util::IsMonoOperator(blk->symbol.back().head_gen);
     bool reversed = (is_bin_operator && blk->need_reversing);
 
     if (is_bin_operator) limit = 2;
-    if (is_mono_operator) limit = 1;
     
     while (!blk->args.empty() && !blk->args.back().IsPlaceholder()) {
-      if ((is_bin_operator || is_mono_operator) && idx >= limit) break;
+      if ((is_bin_operator) && idx >= limit) break;
 
       reversed ?
         arguments.emplace_back(blk->args.back()) :
         arguments.emplace_front(blk->args.back());
       
       blk->args.pop_back();
-      (is_bin_operator || is_mono_operator) ? idx += 1 : idx = idx;
+      (is_bin_operator) ? idx += 1 : idx = idx;
     }
 
     if (!blk->args.empty()
@@ -366,32 +362,6 @@ namespace kagami {
     blk->args.pop_back();
     blk->args.emplace_back(Argument());
 
-    return result;
-  }
-
-  bool Analyzer::SelfOperator(AnalyzerWorkBlock *blk) {
-    bool result = true;
-
-    if (blk->last.second == T_GENERIC) {
-      if (blk->current.first == "++") {
-        blk->symbol.emplace_back(Request(GT_RSELF_INC));
-      }
-      else if (blk->current.first == "--") {
-        blk->symbol.emplace_back(Request(GT_RSELF_DEC));
-      }
-    }
-    else if (blk->last.second != T_GENERIC && blk->next.second == T_GENERIC) {
-      if (blk->current.first == "++") {
-        blk->symbol.emplace_back(Request(GT_LSELF_INC));
-      }
-      else if (blk->current.first == "--") {
-        blk->symbol.emplace_back(Request(GT_LSELF_DEC));
-      }
-    }
-    else {
-      error_string_ = "Unknown self operation";
-      result = false;
-    }
     return result;
   }
 
@@ -570,6 +540,36 @@ namespace kagami {
     }
   }
 
+  void Analyzer::Comma(AnalyzerWorkBlock *blk) {
+    string top_token = blk->symbol.back().head_reg;
+    bool checked = false;
+    bool result = true;
+
+    while (!blk->symbol.empty()
+      && top_token != "{" && top_token != "[" && top_token != "("
+      && blk->symbol.back().head_gen != GT_BIND) {
+
+      auto first_token = blk->symbol.back().head_gen;
+
+      if (util::IsOperatorToken(first_token)) {
+        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)) {
+          if (checked) {
+            checked = false;
+          }
+          else {
+            checked = true;
+            blk->need_reversing = true;
+            Reversing(blk);
+          }
+        }
+      }
+
+      result = InstructionFilling(blk);
+      if (!result) break;
+      top_token = blk->symbol.back().head_reg;
+    }
+  }
+
   Message Analyzer::Parser() {
     auto state = true;
     const auto size = tokens_.size();
@@ -589,24 +589,22 @@ namespace kagami {
       blk->current = tokens_[i];
       i + 1 < size ?
         blk->next = tokens_[i + 1] :
-        blk->next = Token(kStrNull, TokenTypeEnum::T_NUL);
+        blk->next = Token(string(), TokenTypeEnum::T_NUL);
       i + 2 < size ?
         blk->next_2 = tokens_[i + 2] :
-        blk->next_2 = Token(kStrNull, TokenTypeEnum::T_NUL);
+        blk->next_2 = Token(string(), TokenTypeEnum::T_NUL);
 
       auto token_type = blk->current.second;
       if (token_type == TokenTypeEnum::T_SYMBOL) {
         BasicTokenEnum value = GetBasicToken(blk->current.first);
         switch (value) {
         case TOKEN_EQUAL: EqualMark(blk); break;
-        case TOKEN_COMMA: break;
-        case TOKEN_COLON: break;
+        case TOKEN_COMMA: Comma(blk); break;
         case TOKEN_LEFT_SQRBRACKET: state = LeftSqrBracket(blk); break;
         case TOKEN_DOT:             Dot(blk); break;
         case TOKEN_LEFT_BRACKET:    LeftBracket(blk); break;
         case TOKEN_RIGHT_SQRBRACKET:state = RightBracket(blk); break;
         case TOKEN_RIGHT_BRACKET:   state = RightBracket(blk); break;
-        case TOKEN_SELFOP:          state = SelfOperator(blk); break;
         case TOKEN_LEFT_CURBRACKET: state = LeftCurBracket(blk); break;
         case TOKEN_RIGHT_CURBRACKET:state = RightBracket(blk); break;
         case TOKEN_OTHERS:          OtherSymbol(blk); break;
@@ -640,16 +638,6 @@ namespace kagami {
     blk->current = Token();
     delete blk;
     return result;
-  }
-
-  void Analyzer::Clear() {
-    tokens_.clear();
-    tokens_.shrink_to_fit();
-    action_base_.clear();
-    action_base_.shrink_to_fit();
-    health_ = false;
-    error_string_.clear();
-    index_ = 0;
   }
 
   Message Analyzer::Make(string target, size_t index) {
