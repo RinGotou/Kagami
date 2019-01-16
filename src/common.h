@@ -90,7 +90,7 @@ namespace kagami {
     kCodeAutoSize = 14,
     kCodeDefineSign = 13,
     kCodeAutoFill = 12,
-    kCodeNormalParm = 11,
+    kCodeNormalParam = 11,
     kCodeHeadPlaceholder = 10,
     kCodeReturn = 9,
     kCodeConditionLeaf = 8,
@@ -102,7 +102,7 @@ namespace kagami {
     kCodeQuit = 2,
     kCodeRedirect = 1,
     kCodeSuccess = 0,
-    kCodeIllegalParm = -1,
+    kCodeIllegalParam = -1,
     kCodeIllegalCall = -2,
     kCodeIllegalSymbol = -3,
     kCodeBadStream = -4,
@@ -179,7 +179,7 @@ namespace kagami {
   const string kInStreamMethods   = "get|good|getlines|close|eof";
   const string kOutStreamMethods  = "write|good|close";
   const string kRegexMethods      = "match";
-  const string kFunctionMethods   = "id|call|parms";
+  const string kFunctionMethods   = "id|call|params";
 
   const string
     kStrIf           = "if",
@@ -198,10 +198,6 @@ namespace kagami {
     kStrBreak        = "break",
     kStrCase         = "case",
     kStrWhen         = "when",
-    kStrLeftSelfInc  = "lSelfInc",
-    kStrLeftSelfDec  = "lSelfDec",
-    kStrRightSelfInc = "rSelfInc",
-    kStrRightSelfDec = "rSelfDec",
     kStrReturn       = "return",
     kStrAdd          = "+",
     kStrSub          = "-",

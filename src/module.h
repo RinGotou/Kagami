@@ -6,12 +6,12 @@
 
 #define OBJECT_ASSERT(MAP,ITEM,TYPE)               \
   if (!MAP.CheckTypeId(ITEM,TYPE))                 \
-    return Message(kCodeIllegalParm,               \
+    return Message(kCodeIllegalParam,               \
     "Expected object type - " + TYPE + ".",        \
     kStateError);
 
 #define CONDITION_ASSERT(STATE,MESS)               \
-  if(!(STATE)) return Message(kCodeIllegalParm,MESS,kStateError);
+  if(!(STATE)) return Message(kCodeIllegalParam,MESS,kStateError);
 
 #define CALL_ASSERT(STATE,MESS)                    \
   if(!(STATE)) return Message(kCodeIllegalCall,MESS,kStateError);
@@ -124,7 +124,7 @@ namespace kagami {
       deliver,
       tail_recursion;
     Message msg;
-    deque<Object> returning_base;
+    stack<Object> returning_base;
 
     IRWorker() :
       error_string(),
@@ -138,9 +138,9 @@ namespace kagami {
       msg() {}
 
     Object MakeObject(Argument &arg, bool checking = false);
-    void AssemblingForAutoSized(Entry &ent, deque<Argument> parms, ObjectMap &obj_map);
-    void AssemblingForAutoFilling(Entry &ent, deque<Argument> parms, ObjectMap &obj_map);
-    void AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map);
+    void AssemblingForAutoSized(Entry &entry, deque<Argument> params, ObjectMap &obj_map);
+    void AssemblingForAutoFilling(Entry &entry, deque<Argument> params, ObjectMap &obj_map);
+    void AssemblingForNormal(Entry &entry, deque<Argument> params, ObjectMap &obj_map);
     void Reset();
   };
 
@@ -263,8 +263,8 @@ namespace kagami {
       return health_; 
     }
 
-    Module &SetParameters(vector<string> parms) {
-      parameters_ = parms;
+    Module &SetParameters(vector<string> params) {
+      parameters_ = params;
       return *this;
     }
     Message Run(bool create_container = true, string name = "");
@@ -280,7 +280,7 @@ namespace kagami {
   Message FunctionTunnel(ObjectMap &p);
   std::wstring s2ws(const std::string &s);
   std::string ws2s(const std::wstring &s);
-  Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm);
+  Message CheckEntryAndStart(string id, string type_id, ObjectMap &param);
   bool IsStringObject(Object &obj);
   Object GetFunctionObject(string id, string domain);
   shared_ptr<void> FakeCopy(shared_ptr<void> target);

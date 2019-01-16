@@ -95,7 +95,7 @@ namespace kagami {
       //TODO:rewrite here
       for (auto &unit : base) {
         bool typeChecking = (ignore_type || type == unit.GetTypeDomain());
-        bool sizeChecking = (size == -1 || size == int(unit.GetParmSize()));
+        bool sizeChecking = (size == -1 || size == int(unit.GetParamSize()));
         if (id == unit.GetId() && typeChecking && sizeChecking) {
           result = unit;
           break;

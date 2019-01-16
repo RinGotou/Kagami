@@ -38,7 +38,7 @@ namespace kagami {
       level_(kStateNormal), 
       code_(kCodeObject), 
       detail_(""), 
-      object_(make_shared<Object>(detail, util::GetTokenType(detail))),
+      object_(make_shared<Object>(detail)),
       idx_(0) {}
 
     Message &operator=(Message &msg) {

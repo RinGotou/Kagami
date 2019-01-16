@@ -72,9 +72,9 @@ namespace kagami {
   /* Packaging entry into object and act as a object */
   inline Object GetFunctionObject(string id, string domain) {
     Object obj;
-    auto ent = management::Order(id, domain);
-    if (ent.Good()) {
-      obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods);
+    auto entry = management::Order(id, domain);
+    if (entry.Good()) {
+      obj.Set(make_shared<Entry>(entry), kTypeIdFunction, kFunctionMethods);
     }
     return obj;
   }
@@ -165,10 +165,10 @@ namespace kagami {
   }
 
   /* Add new user-defined function */
-  inline void AddFunction(string id, vector<IR> proc, vector<string> parms) {
+  inline void AddFunction(string id, vector<IR> proc, vector<string> params) {
     auto &base = GetFunctionBase();
-    base[id] = Module(proc).SetParameters(parms).SetFunc();
-    management::AddEntry(Entry(FunctionTunnel, id, parms));
+    base[id] = Module(proc).SetParameters(params).SetFunc();
+    management::AddEntry(Entry(FunctionTunnel, id, params));
   }
 
   inline Module *GetFunction(string id) {
@@ -418,7 +418,7 @@ namespace kagami {
     switch (arg.domain.type) {
     case AT_RET:
       if (!returning_base.empty()) {
-        obj_domain = returning_base.front();
+        obj_domain = returning_base.top();
       }
       else {
         error_returning = true;
@@ -465,9 +465,9 @@ namespace kagami {
       break;
     case AT_RET:
       if (!returning_base.empty()) {
-        obj = returning_base.front();
+        obj = returning_base.top();
         if ((!is_assert && !checking) || is_assert_r)
-          returning_base.pop_front();
+          returning_base.pop();
       }
       else {
         error_returning = true;
@@ -481,60 +481,77 @@ namespace kagami {
     return obj;
   }
 
-  void IRWorker::AssemblingForAutoSized(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
+  void IRWorker::AssemblingForAutoSized(Entry &entry,
+    deque<Argument> params, ObjectMap &obj_map) {
     size_t idx = 0;
-    size_t va_arg_size;
     size_t count = 0;
-    auto ent_args = ent.GetArguments();
+    auto ent_args = entry.GetArguments();
     auto va_arg_head = ent_args.back();
-    auto is_method = (ent.GetEntryType() == kEntryMethod);
+    auto is_method = (entry.GetEntryType() == kEntryMethod);
+
+    /* TODO:Reconstrction */
+    deque<Object> temp;
+
+    while (params.size() >= ent_args.size() - 1) {
+      temp.emplace_front(MakeObject(params.back()));
+      params.pop_back();
+    }
+
+    for (size_t idx = 0; idx < temp.size(); idx += 1) {
+      obj_map.insert(NamedObject(va_arg_head + to_string(idx), temp[idx]));
+    }
+
+    obj_map.insert(NamedObject(kStrVaSize, Object(to_string(count))));
+    temp.clear();
+
+    auto it = ent_args.rbegin()++;
+
+    for (; it != ent_args.rend(); ++it) {
+      obj_map.insert(NamedObject(*it, MakeObject(params.back())));
+      params.pop_back();
+    }
 
     while (idx < ent_args.size() - 1) {
       obj_map.Input(ent_args[idx],
-        MakeObject(parms[idx]));
+        MakeObject(params[idx]));
       idx += 1;
     }
-
-    is_method ?
-      va_arg_size = parms.size() - 1 :
-      va_arg_size = parms.size();
-
-    while (idx < va_arg_size) {
-      obj_map.Input(va_arg_head + to_string(count),
-        MakeObject(parms[idx]));
-      count += 1;
-      idx += 1;
-    }
-
-    obj_map.Input(kStrVaSize, Object(to_string(count), T_INTEGER));
   }
 
-  void IRWorker::AssemblingForAutoFilling(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
+  void IRWorker::AssemblingForAutoFilling(Entry &entry, 
+    deque<Argument> params, ObjectMap &obj_map) {
       size_t idx = 0;
-      auto ent_args = ent.GetArguments();
-      auto is_method = (ent.GetEntryType() == kEntryMethod);
+      auto ent_args = entry.GetArguments();
+      auto is_method = (entry.GetEntryType() == kEntryMethod);
 
-      while (idx < ent_args.size()) {
-        if (idx >= parms.size()) break;
-        if (idx >= parms.size() - 1 && is_method) break;
-        obj_map.Input(ent_args[idx], MakeObject(parms[idx]));
-        idx += 1;
+      auto it = ent_args.rbegin();
+
+      while (params.size() != ent_args.size() && it != ent_args.rend()) {
+        obj_map.insert(NamedObject(*it, Object()));
+        params.pop_back();
+        ++it;
+      }
+
+      for (; it != ent_args.rend(); ++it) {
+        obj_map.insert(NamedObject(*it, MakeObject(params.back())));
+        params.pop_back();
       }
   }
 
-  void IRWorker::AssemblingForNormal(Entry &ent, deque<Argument> parms, ObjectMap &obj_map) {
+  void IRWorker::AssemblingForNormal(Entry &entry, 
+    deque<Argument> params, ObjectMap &obj_map) {
     size_t idx = 0;
-    auto ent_args = ent.GetArguments();
-    auto is_method = (ent.GetEntryType() == kEntryMethod);
+    auto ent_args = entry.GetArguments();
+    auto is_method = (entry.GetEntryType() == kEntryMethod);
     bool state = true;
-
-    while (idx < ent_args.size()) {
-      if (idx >= parms.size()) {
+    
+    for (auto it = ent_args.rbegin(); it != ent_args.rend(); it++) {
+      if (params.empty()) {
         state = false;
         break;
       }
-      obj_map.Input(ent_args[idx], MakeObject(parms[idx]));
-      idx += 1;
+      obj_map.insert(NamedObject(*it, MakeObject(params.back())));
+      params.pop_back();
     }
 
     if (!state) {
@@ -542,7 +559,7 @@ namespace kagami {
       error_string = "Required argument count is " +
         to_string(ent_args.size()) +
         ", but provided argument count is " +
-        to_string(parms.size()) + ".";
+        to_string(params.size()) + ".";
     }
   }
 
@@ -556,7 +573,7 @@ namespace kagami {
     is_assert_r = false;
     deliver = false;
     msg = Message();
-    returning_base.clear();
+    while (!returning_base.empty()) returning_base.pop();
   }
 
   IRMaker::IRMaker(const char *path) : health(true) {
@@ -629,16 +646,16 @@ namespace kagami {
   void Module::MakeFunction(size_t start, size_t end, vector<string> &def_head) {
     if (start > end) return;
     string id = def_head[0];
-    vector<string> parms;
+    vector<string> params;
     vector<IR> proc;
 
     for (size_t i = 1; i < def_head.size(); ++i) {
-      parms.push_back(def_head[i]);
+      params.push_back(def_head[i]);
     }
     for (size_t j = start; j <= end; ++j) {
       proc.push_back(storage_[j]);
     }
-    AddFunction(id, proc, parms);
+    AddFunction(id, proc, params);
   }
 
   bool Module::IsBlankStr(string target) {
@@ -681,9 +698,8 @@ namespace kagami {
         }
       }
       else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {
-        StateCode code;
-        Entry ent;
-        string type_id, value, detail;
+        Entry entry;
+        string type_id, value;
         is_operator_token = util::IsOperatorToken(request.head_gen);
 
         if (!preprocessing && worker->tail_recursion) {
@@ -695,39 +711,39 @@ namespace kagami {
 
         switch (request.type) {
         case RT_MACHINE:
-          ent = management::GetGenericProvider(request.head_gen);
+          entry = management::GetGenericProvider(request.head_gen);
           break;
         case RT_REGULAR:
           if (request.domain.type != AT_HOLDER) {
             Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
-            ent = management::Order(request.head_reg, type_id);
+            entry = management::Order(request.head_reg, type_id);
             obj_map.Input(kStrObject, domain_obj);
           }
           else {
-            ent = management::Order(request.head_reg);
+            entry = management::Order(request.head_reg);
           }
           break;
         default:
           break;
         }
 
-        if (!ent.Good()) {
+        if (!entry.Good()) {
           msg = Message(kCodeIllegalCall, 
             "Function is not found - " + request.head_reg,
             kStateError);
           break;
         }
 
-        switch (ent.GetArgumentMode()) {
+        switch (entry.GetArgumentMode()) {
         case kCodeAutoSize:
-          worker->AssemblingForAutoSized(ent, args, obj_map);
+          worker->AssemblingForAutoSized(entry, args, obj_map);
           break;
         case kCodeAutoFill:
-          worker->AssemblingForAutoFilling(ent, args, obj_map);
+          worker->AssemblingForAutoFilling(entry, args, obj_map);
           break;
         default:
-          worker->AssemblingForNormal(ent, args, obj_map);
+          worker->AssemblingForNormal(entry, args, obj_map);
           break;
         }
 
@@ -743,27 +759,15 @@ namespace kagami {
           break;
         }
 
-        msg = ent.Start(obj_map);
+        msg = entry.Start(obj_map);
         
         if (msg.GetLevel() == kStateError) break;
 
-        code = msg.GetCode();
-        detail = msg.GetDetail();
+        if (request.head_gen != GT_TYPE_ASSERT) {
+          Object object = msg.GetCode() == kCodeObject ?
+            msg.GetObj() : Object();
 
-        if (code == kCodeObject && request.head_gen != GT_TYPE_ASSERT) {
-          auto object = msg.GetObj();
-
-          if (is_operator_token && idx + 1 < action_base.size()) {
-            util::IsOperatorToken(action_base[idx + 1].first.head_gen) ?
-              worker->returning_base.emplace_front(object) :
-              worker->returning_base.emplace_back(object);
-          }
-          else {
-            worker->returning_base.emplace_back(object);
-          }
-        }
-        else if (request.head_gen != GT_TYPE_ASSERT) {
-          worker->returning_base.emplace_back(Object());
+          worker->returning_base.push(object);
         }
       }
     }
@@ -778,8 +782,7 @@ namespace kagami {
       blk->tail_recursion = worker->tail_recursion;
 
     obj_map.clear();
-    worker->returning_base.clear();
-    worker->returning_base.shrink_to_fit();
+    while(!worker->returning_base.empty()) worker->returning_base.pop();
 
     delete worker;
 
@@ -926,8 +929,8 @@ namespace kagami {
 
   bool Module::BindAndSet(IRWorker *worker, deque<Argument> args) {
     bool result = true;
-    auto dest = worker->MakeObject(args[0]);
     auto src = worker->MakeObject(args[1]);
+    auto dest = worker->MakeObject(args[0]);
 
     if (dest.IsRef()) {
       CopyObject(dest, src);
@@ -962,7 +965,7 @@ namespace kagami {
   void Module::Nop(IRWorker *worker, deque<Argument> args) {
     if (!args.empty()) {
       auto obj = worker->MakeObject(args.back());
-      worker->returning_base.emplace_back(obj);
+      worker->returning_base.push(obj);
     }
   }
 
@@ -977,7 +980,7 @@ namespace kagami {
 
     Object obj(base, kTypeIdArrayBase, management::type::GetMethods(kTypeIdArrayBase));
     obj.SetConstructorFlag();
-    worker->returning_base.emplace_back(obj);
+    worker->returning_base.push(obj);
   }
 
   void Module::ReturnOperator(IRWorker *worker, deque<Argument> args) {
@@ -1007,17 +1010,17 @@ namespace kagami {
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
       for (size_t idx = 0; idx < args.size(); idx += 1) {
         auto obj = worker->MakeObject(args[idx]);
-        Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
+        Object value_obj(obj.GetTypeId());
         base->emplace_back(value_obj);
       }
       Object ret_obj(base, kTypeIdArrayBase, management::type::GetMethods(kTypeIdArrayBase));
       ret_obj.SetConstructorFlag();
-      worker->returning_base.emplace_back(ret_obj);
+      worker->returning_base.push(ret_obj);
     }
     else if (args.size() == 1){
       auto obj = worker->MakeObject(args[0]);
-      Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
-      worker->returning_base.push_back(value_obj);
+      Object value_obj(obj.GetTypeId());
+      worker->returning_base.push(value_obj);
     }
     else {
       worker->error_string = "Empty argument list.";
@@ -1042,7 +1045,7 @@ namespace kagami {
 
       Object ret_obj(base, kTypeIdArrayBase, kArrayBaseMethods);
       ret_obj.SetConstructorFlag();
-      worker->returning_base.emplace_back(ret_obj);
+      worker->returning_base.push(ret_obj);
     }
     else {
       worker->error_string = "Empty argument list.";
@@ -1061,10 +1064,10 @@ namespace kagami {
       Object ret_obj;
       string target_str = RealString(GetObjectStuff<string>(str_obj));
       util::FindInStringGroup(target_str, obj.GetMethods()) ?
-        ret_obj = Object(kStrTrue, T_BOOLEAN) :
-        ret_obj = Object(kStrFalse, T_BOOLEAN);
+        ret_obj = Object(kStrTrue) :
+        ret_obj = Object(kStrFalse);
 
-      worker->returning_base.emplace_back(ret_obj);
+      worker->returning_base.push(ret_obj);
     }
     else if (args.size() > 2) {
       worker->error_string = "Too many arguments.";
@@ -1183,15 +1186,15 @@ namespace kagami {
     ObjectPointer ret_ptr = management::FindObject(id);
     
     if (ret_ptr != nullptr) {
-      if (returning) worker->returning_base.emplace_back(*ret_ptr);
+      if (returning) worker->returning_base.push(*ret_ptr);
     }
     else {
       Object ent_obj;
-      auto ent = management::Order(id, obj.GetTypeId());
-      if (ent.Good()) {
+      auto entry = management::Order(id, obj.GetTypeId());
+      if (entry.Good()) {
         if (returning) {
-          ent_obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods);
-          worker->returning_base.emplace_back(ent_obj);
+          ent_obj.Set(make_shared<Entry>(entry), kTypeIdFunction, kFunctionMethods);
+          worker->returning_base.push(ent_obj);
         }
       }
       else {

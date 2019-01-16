@@ -113,7 +113,8 @@ namespace kagami {
     void OtherToken(AnalyzerWorkBlock *blk);
     void OtherSymbol(AnalyzerWorkBlock *blk);
     void FinalProcessing(AnalyzerWorkBlock *blk);
-    void Comma(AnalyzerWorkBlock *blk);
+    bool CleanupStack(AnalyzerWorkBlock *blk);
+    
     Message Parser();
   public:
     Analyzer() :health_(false), index_(0) {  }

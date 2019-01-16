@@ -71,11 +71,11 @@ namespace kagami {
     ObjectMap obj_map;
 
     auto &base = p.Get<ArrayBase>(kStrObject);
-    auto ent = management::Order("print", kTypeIdNull, -1);
+    auto entry = management::Order("print", kTypeIdNull, -1);
 
     for (auto &unit : base) {
       obj_map.Input(kStrObject, unit);
-      result = ent.Start(obj_map);
+      result = entry.Start(obj_map);
       obj_map.clear();
     }
 
@@ -264,14 +264,14 @@ namespace kagami {
 
   //Function
   Message FunctionGetId(ObjectMap &p) {
-    auto &ent = p.Get<Entry>(kStrObject);
-    return Message(ent.GetId());
+    auto &entry = p.Get<Entry>(kStrObject);
+    return Message(entry.GetId());
   }
 
   Message FunctionGetParameters(ObjectMap &p) {
-    auto &ent = p.Get<Entry>(kStrObject);
+    auto &entry = p.Get<Entry>(kStrObject);
     shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
-    auto origin_vector = ent.GetArguments();
+    auto origin_vector = entry.GetArguments();
 
     for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
       dest_base->emplace_back(Object(make_shared<string>(*it), kTypeIdString, 
@@ -282,8 +282,8 @@ namespace kagami {
       .SetObject(Object(dest_base, kTypeIdArrayBase, kArrayBaseMethods));
   }
 
-  bool AssemblingForAutosized(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
-    auto ent_args = ent.GetArguments();
+  bool AssemblingForAutosized(Entry &entry, ObjectMap &p, ObjectMap &target_map, int size) {
+    auto ent_args = entry.GetArguments();
     auto va_arg_head = ent_args.back();
     int idx = 0;
     int va_arg_size = 0;
@@ -295,7 +295,7 @@ namespace kagami {
       idx += 1;
     }
 
-    ent.GetEntryType() == kEntryMethod ?
+    entry.GetEntryType() == kEntryMethod ?
       va_arg_size = size - 1 :
       va_arg_size = size;
 
@@ -305,15 +305,15 @@ namespace kagami {
       idx += 1;
     }
 
-    target_map.Input(kStrVaSize, Object(to_string(count), T_INTEGER));
-    if (ent.GetEntryType() == kEntryMethod) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
+    target_map.Input(kStrVaSize, Object(to_string(count)));
+    if (entry.GetEntryType() == kEntryMethod) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
     return true;
   }
 
-  bool AssemblingForAutoFilling(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
-    auto ent_args = ent.GetArguments();
+  bool AssemblingForAutoFilling(Entry &entry, ObjectMap &p, ObjectMap &target_map, int size) {
+    auto ent_args = entry.GetArguments();
     int idx = 0;
-    auto is_method = (ent.GetEntryType() == kEntryMethod);
+    auto is_method = (entry.GetEntryType() == kEntryMethod);
 
     while (idx < ent_args.size()) {
       if (idx >= size) break;
@@ -326,10 +326,10 @@ namespace kagami {
     return true;
   }
 
-  bool AssemblingForNormal(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {
-    auto ent_args = ent.GetArguments();
+  bool AssemblingForNormal(Entry &entry, ObjectMap &p, ObjectMap &target_map, int size) {
+    auto ent_args = entry.GetArguments();
     int idx = 0;
-    auto is_method = (ent.GetEntryType() == kEntryMethod);
+    auto is_method = (entry.GetEntryType() == kEntryMethod);
     bool state = true;
 
     while (idx < ent_args.size()) {
@@ -349,28 +349,28 @@ namespace kagami {
   }
 
   Message FunctionCall(ObjectMap &p) {
-    auto &ent = p.Get<Entry>(kStrObject);
+    auto &entry = p.Get<Entry>(kStrObject);
     int size = stoi(p.Get<string>(kStrVaSize));
     int count = 0;
     ObjectMap target_map;
     bool state;
     
-    CALL_ASSERT(ent.Good(), "Bad entry - " + ent.GetId() + ".");
+    CALL_ASSERT(entry.Good(), "Bad entry - " + entry.GetId() + ".");
 
-    switch (ent.GetArgumentMode()) {
+    switch (entry.GetArgumentMode()) {
     case kCodeAutoSize:
-      state = AssemblingForAutosized(ent, p, target_map, size);
+      state = AssemblingForAutosized(entry, p, target_map, size);
       break;
     case kCodeAutoFill:
-      state = AssemblingForAutoFilling(ent, p, target_map, size);
+      state = AssemblingForAutoFilling(entry, p, target_map, size);
     default:
-      state = AssemblingForNormal(ent, p, target_map, size);
+      state = AssemblingForNormal(entry, p, target_map, size);
       break;
     }
 
     CONDITION_ASSERT(state, "Argument error.");
 
-    return ent.Start(target_map);
+    return entry.Start(target_map);
   }
 
   void InitPlanners() {
@@ -380,7 +380,7 @@ namespace kagami {
     AddTemplate(kTypeIdFunction, ObjectCopyingPolicy(SimpleSharedPtrCopy<Entry>, kFunctionMethods));
     AddEntry(Entry(FunctionGetId, "", "id", kTypeIdFunction));
     AddEntry(Entry(FunctionCall, "arg", "call", kTypeIdFunction, kCodeAutoSize));
-    AddEntry(Entry(FunctionGetParameters, "", "parms", kTypeIdFunction));
+    AddEntry(Entry(FunctionGetParameters, "", "params", kTypeIdFunction));
 
     AddTemplate(kTypeIdRawString, ObjectCopyingPolicy(SimpleSharedPtrCopy<string>, kRawStringMethods));
     AddEntry(Entry(RawStringPrint, "", "__print", kTypeIdRawString));

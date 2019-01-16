@@ -44,15 +44,15 @@ namespace kagami {
     return Message(kCodeIllegalCall, str, kStateError);
   }
 
-  inline Message IllegalParmMsg(string str) {
-    return Message(kCodeIllegalParm, str, kStateError);
+  inline Message IllegalParamMsg(string str) {
+    return Message(kCodeIllegalParam, str, kStateError);
   }
 
-  inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &parm) {
+  inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &param) {
     Message msg;
-    auto ent = management::Order(id, type_id);
-    ent.Good() ?
-      msg = ent.Start(parm) :
+    auto entry = management::Order(id, type_id);
+    entry.Good() ?
+      msg = entry.Start(param) :
       msg.SetCode(kCodeIllegalCall);
     return msg;
   }
@@ -60,7 +60,7 @@ namespace kagami {
   inline void CheckSelfOperatorMsg(Message &msg, string res) {
     res.empty() ?
       msg = Message(res) :
-      msg = IllegalParmMsg("Illegal self-operator.");
+      msg = IllegalParamMsg("Illegal self-operator.");
   }
 
   Message GetRawStringType(ObjectMap &p) {
@@ -144,7 +144,7 @@ namespace kagami {
       str = "" :
       str = origin;
     
-    return Message().SetObject(Object(str, type));
+    return Message().SetObject(Object(str));
   }
 
   Message IsNull(ObjectMap &p) {

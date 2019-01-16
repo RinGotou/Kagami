@@ -92,10 +92,6 @@ a <= b
 a >= b
 a != b
 a == b
-a++
-++a
-a--
---a
 ```
 
 ### 条件表达式
@@ -130,7 +126,7 @@ while-end
 a = 0
 while(a <= 10)
   #bla
-  a++
+  a = a + 1
 end
 ```
 
@@ -153,11 +149,11 @@ print(hello.id()) #函数自动包装成变量，并调用其方法
 
 使用return关键字可以返回特定值，如果return参数为空或者不存在return则返回类型为Null的变量。
 ```
-fn calc(a,b)
-  return(a+b)
+fn calc(a, b)
+  return(a + b)
 end
 
-result = calc(1,2)
+result = calc(1, 2)
 ```
 
 # 待续

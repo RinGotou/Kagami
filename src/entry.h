@@ -11,8 +11,8 @@ namespace kagami {
     string id_;
     GenericTokenEnum gen_token_;
     Activity activity_;
-    vector<string> parms_;
-    int argument_mode_;
+    vector<string> params_;
+    StateCode argument_mode_;
     string type_;
     EntryType entry_type_;
     bool is_user_func_;
@@ -21,21 +21,21 @@ namespace kagami {
     Entry() : id_(),
       gen_token_(GT_NUL),
       activity_(nullptr),
-      parms_(),
-      argument_mode_(kCodeIllegalParm),
+      params_(),
+      argument_mode_(kCodeIllegalParam),
       type_(kTypeIdNull),
       entry_type_(kEntryNormal),
       is_user_func_(false) {}
 
     /* Plain function */
     Entry(Activity activity,
-      string parms,
+      string params,
       string id,
-      int argument_mode = kCodeNormalParm) :
+      StateCode argument_mode = kCodeNormalParam) :
       id_(id),
       gen_token_(GT_NUL),
       activity_(activity),
-      parms_(util::BuildStringVector(parms)),
+      params_(util::BuildStringVector(params)),
       argument_mode_(argument_mode),
       type_(kTypeIdNull),
       entry_type_(kEntryNormal),
@@ -43,14 +43,14 @@ namespace kagami {
 
     /* Method */
     Entry(Activity activity,
-      string parms,
+      string params,
       string id,
       string type,
-      int argument_mode = kCodeNormalParm) :
+      StateCode argument_mode = kCodeNormalParam) :
       id_(id),
       gen_token_(GT_NUL),
       activity_(activity),
-      parms_(util::BuildStringVector(parms)),
+      params_(util::BuildStringVector(params)),
       argument_mode_(argument_mode),
       type_(type),
       entry_type_(kEntryMethod),
@@ -58,13 +58,13 @@ namespace kagami {
 
     /* Generic token function */
     Entry(Activity activity,
-      string parms,
+      string params,
       GenericTokenEnum token,
-      int argumentMode = kCodeNormalParm) :
+      StateCode argumentMode = kCodeNormalParam) :
       id_(),
       gen_token_(token),
       activity_(activity),
-      parms_(util::BuildStringVector(parms)),
+      params_(util::BuildStringVector(params)),
       argument_mode_(argumentMode),
       type_(kTypeIdNull),
       entry_type_(kEntryMethod),
@@ -73,12 +73,12 @@ namespace kagami {
     /* user-defined function */
     Entry(Activity activity,
       string id,
-      vector<string> parms) :
+      vector<string> params) :
       id_(id),
       gen_token_(GT_NUL),
       activity_(activity),
-      parms_(parms),
-      argument_mode_(kCodeNormalParm),
+      params_(params),
+      argument_mode_(kCodeNormalParam),
       type_(kTypeIdNull),
       entry_type_(kEntryNormal),
       is_user_func_(true) {}
@@ -86,7 +86,7 @@ namespace kagami {
     Message Start(ObjectMap &obj_map) const {
       Message result;
       if (is_user_func_) {
-        obj_map[kStrUserFunc] = Object(id_, T_GENERIC);
+        obj_map[kStrUserFunc] = Object(id_);
       }
       if (Good()) {
         result = activity_(obj_map);
@@ -102,7 +102,7 @@ namespace kagami {
         target.activity_ == activity_ &&
         target.argument_mode_ == argument_mode_ &&
         target.type_ == type_ &&
-        target.parms_ == parms_);
+        target.params_ == params_);
     }
 
     string GetTypeDomain() const { 
@@ -122,11 +122,11 @@ namespace kagami {
     }
 
     vector<string> GetArguments() const { 
-      return parms_; 
+      return params_; 
     }
 
-    size_t GetParmSize() const { 
-      return parms_.size(); 
+    size_t GetParamSize() const { 
+      return params_.size(); 
     }
 
     EntryType GetEntryType() const {
@@ -135,7 +135,7 @@ namespace kagami {
 
     bool Good() const { 
       bool conditionA =
-        ((activity_ != nullptr) && (argument_mode_ != kCodeIllegalParm));
+        ((activity_ != nullptr) && (argument_mode_ != kCodeIllegalParam));
       bool conditionB =
         (is_user_func_ && id_ != "");
 

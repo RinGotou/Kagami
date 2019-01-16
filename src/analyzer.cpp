@@ -303,34 +303,7 @@ namespace kagami {
   }
 
   bool Analyzer::RightBracket(AnalyzerWorkBlock *blk) {
-    bool result = true;
-    bool checked = false;
-
-    string top_token = blk->symbol.back().head_reg;
-
-    while (!blk->symbol.empty()
-      && top_token != "{" && top_token != "[" && top_token != "("
-      && blk->symbol.back().head_gen != GT_BIND) {
-
-      auto first_token = blk->symbol.back().head_gen;
-
-      if (util::IsOperatorToken(first_token)) {
-        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)) {
-          if (checked) {
-            checked = false;
-          }
-          else {
-            checked = true;
-            blk->need_reversing = true;
-            Reversing(blk);
-          }
-        }
-      }
-
-      result = InstructionFilling(blk);
-      if (!result) break;
-      top_token = blk->symbol.back().head_reg;
-    }
+    bool result = CleanupStack(blk);
 
     if (result) {
       if (blk->need_reversing) blk->need_reversing = false;
@@ -540,8 +513,9 @@ namespace kagami {
     }
   }
 
-  void Analyzer::Comma(AnalyzerWorkBlock *blk) {
-    string top_token = blk->symbol.back().head_reg;
+  bool Analyzer::CleanupStack(AnalyzerWorkBlock *blk) {
+    string top_token = blk->symbol.empty()? "(" :
+      blk->symbol.back().head_reg;
     bool checked = false;
     bool result = true;
 
@@ -568,6 +542,8 @@ namespace kagami {
       if (!result) break;
       top_token = blk->symbol.back().head_reg;
     }
+
+    return result;
   }
 
   Message Analyzer::Parser() {
@@ -599,7 +575,7 @@ namespace kagami {
         BasicTokenEnum value = GetBasicToken(blk->current.first);
         switch (value) {
         case TOKEN_EQUAL: EqualMark(blk); break;
-        case TOKEN_COMMA: Comma(blk); break;
+        case TOKEN_COMMA: state = CleanupStack(blk); break;
         case TOKEN_LEFT_SQRBRACKET: state = LeftSqrBracket(blk); break;
         case TOKEN_DOT:             Dot(blk); break;
         case TOKEN_LEFT_BRACKET:    LeftBracket(blk); break;
@@ -615,7 +591,7 @@ namespace kagami {
         state = FunctionAndObject(blk);
       }
       else if (token_type == TokenTypeEnum::T_NUL) {
-        result = Message(kCodeIllegalParm, "Illegal token.", kStateError);
+        result = Message(kCodeIllegalParam, "Illegal token.", kStateError);
         state = false;
       }
       else OtherToken(blk);

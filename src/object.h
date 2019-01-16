@@ -57,7 +57,7 @@ namespace kagami {
       ref_(false), 
       constructor_(false) {}
 
-    Object(string str, TokenTypeEnum token_type) :
+    Object(string str) :
       ptr_(std::make_shared<string>(str)),
       type_id_(kTypeIdRawString),
       methods_(kRawStringMethods),
