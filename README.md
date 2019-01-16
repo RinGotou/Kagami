@@ -1,8 +1,6 @@
 # Kagami
 
 ## Hint
-I will not add any new thing to this project.I'm working on something else.
-
 This project contains many terrible design.
 
 ## What's this?
@@ -27,9 +25,11 @@ end
 ## Feature
 [√] Dynamic and weak typing language with reflection support
 
-[√] GC based on referenced count
+[√] Stack-based Backend Machine
 
-[√] Fully based on C++11 and STL
+[√] GC based on referenced count(base on C++ STL)
+
+[√] Fully based on C++11
 
 ## How to use these codes?
 Strongly recommend to compile them in Visual Studio 2010 or later version.You can also compile by using g++/clang++ with -std=c++11 option.
