@@ -17,8 +17,7 @@ namespace kagami {
 
   void CopyObject(Object &dest, Object &src) {
     dest.Set(type::GetObjectCopy(src), src.GetTypeId(),
-      src.GetMethods())
-      .SetTokenType(src.GetTokenType());
+      src.GetMethods());
   }
 
   bool IsStringObject(Object &obj) {
@@ -449,7 +448,7 @@ namespace kagami {
 
     switch (arg.type) {
     case AT_NORMAL:
-      obj.Manage(arg.data, arg.token_type);
+      obj.Set(make_shared<string>(arg.data), kTypeIdRawString, kRawStringMethods);
       break;
     case AT_OBJECT:
       ptr = entry::FindObject(arg.data);
@@ -847,7 +846,7 @@ namespace kagami {
 
     auto create = [&](string id, string value)->void {
       entry::CreateObject(id, Object()
-        .Manage("'" + value + "'", T_STRING));
+        .Set(make_shared<string>("'" + value + "'"), kTypeIdRawString, kRawStringMethods));
     };
 
     if (is_main_) {
@@ -937,7 +936,6 @@ namespace kagami {
         }
         else {
           Object obj(type::GetObjectCopy(src), src.GetTypeId(), src.GetMethods());
-          obj.SetTokenType(src.GetTokenType());
           ObjectPointer result = entry::CreateObject(id, obj);
           if (result == nullptr) {
             worker->error_string = "Object cration is failed.";

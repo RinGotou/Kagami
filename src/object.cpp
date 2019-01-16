@@ -23,7 +23,6 @@ namespace kagami {
       ptr_ = object.ptr_;
       type_id_ = object.type_id_;
       methods_ = object.methods_;
-      token_type_ = object.token_type_;
       ref_ = object.ref_;
       constructor_ = object.constructor_;
     };

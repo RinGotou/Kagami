@@ -9,7 +9,7 @@ namespace kagami {
     dest_base->reserve(src_base.size());
     for (auto &unit : src_base) {
       dest_base->emplace_back(Object(type::GetObjectCopy(unit), unit.GetTypeId(), 
-        unit.GetMethods()).SetTokenType(unit.GetTokenType()));
+        unit.GetMethods()));
     }
 
     return dest_base;
@@ -36,12 +36,11 @@ namespace kagami {
 
     const auto type_id = obj.GetTypeId();
     const auto methods = obj.GetMethods();
-    const auto token_type = obj.GetTokenType();
+
     base.reserve(size);
 
     for (auto count = 0; count < size; count++) {
-      base.emplace_back(Object(type::GetObjectCopy(obj), type_id, methods)
-        .SetTokenType(token_type));
+      base.emplace_back(Object(type::GetObjectCopy(obj), type_id, methods));
     }
 
     return Message().SetObject(Object(make_shared<ArrayBase>(base),
@@ -378,23 +377,23 @@ namespace kagami {
     using type::AddTemplate;
     using entry::AddEntry;
 
-    AddTemplate(kTypeIdFunction, ObjectPlanner(SimpleSharedPtrCopy<Entry>, kFunctionMethods));
+    AddTemplate(kTypeIdFunction, ObjectCopyingPolicy(SimpleSharedPtrCopy<Entry>, kFunctionMethods));
     AddEntry(Entry(FunctionGetId, "", "id", kTypeIdFunction));
     AddEntry(Entry(FunctionCall, "arg", "call", kTypeIdFunction, kCodeAutoSize));
     AddEntry(Entry(FunctionGetParameters, "", "parms", kTypeIdFunction));
 
-    AddTemplate(kTypeIdRawString, ObjectPlanner(SimpleSharedPtrCopy<string>, kRawStringMethods));
+    AddTemplate(kTypeIdRawString, ObjectCopyingPolicy(SimpleSharedPtrCopy<string>, kRawStringMethods));
     AddEntry(Entry(RawStringPrint, "", "__print", kTypeIdRawString));
     AddEntry(Entry(RawStringGetElement, "index", "__at", kTypeIdRawString));
     AddEntry(Entry(RawStringGetSize, "", "size", kTypeIdRawString));
 
-    AddTemplate(kTypeIdArrayBase, ObjectPlanner(CreateArrayCopy, kArrayBaseMethods));
+    AddTemplate(kTypeIdArrayBase, ObjectCopyingPolicy(CreateArrayCopy, kArrayBaseMethods));
     AddEntry(Entry(ArrayConstructor, "size|init_value", "array", kCodeAutoFill));
     AddEntry(Entry(ArrayGetElement, "index", "__at", kTypeIdArrayBase));
     AddEntry(Entry(ArrayPrint, "", "__print", kTypeIdArrayBase));
     AddEntry(Entry(ArrayGetSize, "", "size", kTypeIdArrayBase));
 
-    AddTemplate(kTypeIdString, ObjectPlanner(SimpleSharedPtrCopy<string>, kStringMethods));
+    AddTemplate(kTypeIdString, ObjectCopyingPolicy(SimpleSharedPtrCopy<string>, kStringMethods));
     AddEntry(Entry(StringConstructor, "raw_string", "string"));
     AddEntry(Entry(StringFamilyGetElement<string>, "index", "__at", kTypeIdString));
     AddEntry(Entry(StringFamilyPrint<string, std::ostream>, "", "__print", kTypeIdString));
@@ -402,24 +401,24 @@ namespace kagami {
     AddEntry(Entry(GetStringFamilySize<string>, "", "size", kTypeIdString));
     AddEntry(Entry(StringFamilyConverting<wstring, string>, "", "to_wide",  kTypeIdString));
 
-    AddTemplate(kTypeIdInStream, ObjectPlanner(FakeCopy, kInStreamMethods));
+    AddTemplate(kTypeIdInStream, ObjectCopyingPolicy(FakeCopy, kInStreamMethods));
     AddEntry(Entry(InStreamConsturctor, "path", "instream"));
     AddEntry(Entry(InStreamGet, "", "get", kTypeIdInStream));
     AddEntry(Entry(StreamFamilyState<ifstream>, "", "good", kTypeIdInStream));
     AddEntry(Entry(InStreamEOF, "", "eof", kTypeIdInStream));
     AddEntry(Entry(StreamFamilyClose<ifstream>, "", "close", kTypeIdInStream));
 
-    AddTemplate(kTypeIdOutStream, ObjectPlanner(FakeCopy, kOutStreamMethods));
+    AddTemplate(kTypeIdOutStream, ObjectCopyingPolicy(FakeCopy, kOutStreamMethods));
     AddEntry(Entry(OutStreamConstructor, "path|mode", "outstream"));
     AddEntry(Entry(OutStreamWrite, "str", "write", kTypeIdOutStream));
     AddEntry(Entry(StreamFamilyState<ofstream>, "", "good", kTypeIdOutStream));
     AddEntry(Entry(StreamFamilyClose<ofstream>, "", "close", kTypeIdOutStream));
 
-    AddTemplate(kTypeIdRegex, ObjectPlanner(FakeCopy, kTypeIdRegex));
+    AddTemplate(kTypeIdRegex, ObjectCopyingPolicy(FakeCopy, kTypeIdRegex));
     AddEntry(Entry(RegexConstructor, "regex", "regex"));
     AddEntry(Entry(RegexMatch, "str", "match", kTypeIdRegex));
 
-    AddTemplate(kTypeIdWideString, ObjectPlanner(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
+    AddTemplate(kTypeIdWideString, ObjectCopyingPolicy(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
     AddEntry(Entry(WideStringContructor, "raw_string", "wstring"));
     AddEntry(Entry(GetStringFamilySize<wstring>,  "", "size", kTypeIdWideString));
     AddEntry(Entry(StringFamilyGetElement<wstring>, "index", "__at", kTypeIdWideString));
@@ -427,6 +426,6 @@ namespace kagami {
     AddEntry(Entry(StringFamilySubStr<wstring>, "start|size", "substr", kTypeIdWideString));
     AddEntry(Entry(StringFamilyConverting<string, wstring>, "", "to_byte", kTypeIdWideString));
 
-    AddTemplate(kTypeIdNull, ObjectPlanner(NullCopy, kStrEmpty));
+    AddTemplate(kTypeIdNull, ObjectCopyingPolicy(NullCopy, kStrEmpty));
   }
 }

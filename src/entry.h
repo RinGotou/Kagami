@@ -161,9 +161,9 @@ namespace kagami {
   }
 
   namespace type {
-    ObjectPlanner *GetPlanner(string name);
+    ObjectCopyingPolicy *GetPlanner(string name);
     string GetMethods(string name);
-    void AddTemplate(string name, ObjectPlanner temp);
+    void AddTemplate(string name, ObjectCopyingPolicy temp);
     shared_ptr<void> GetObjectCopy(Object &object);
   }
 }

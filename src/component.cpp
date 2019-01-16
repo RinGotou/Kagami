@@ -10,8 +10,8 @@ namespace kagami {
   GroupTypeEnum GetGroupType(Object &A, Object &B) {
     auto data_A = GetObjectStuff<string>(A),
       data_B = GetObjectStuff<string>(B);
-    auto data_type_A = A.GetTokenType();
-    auto data_type_B = B.GetTokenType();
+    auto data_type_A = util::GetTokenType(data_A);
+    auto data_type_B = util::GetTokenType(data_B);
 
     GroupTypeEnum group_type = GroupTypeEnum::G_NUL;
 
@@ -34,10 +34,6 @@ namespace kagami {
 
   inline bool CheckObjectType(Object &obj, string type_id) {
     return (obj.GetTypeId() == type_id);
-  }
-
-  inline bool CheckTokenType(Object &obj, TokenTypeEnum token_type) {
-    return (obj.GetTokenType() == token_type);
   }
 
   inline bool IsRawStringObject(Object &obj) {
@@ -66,7 +62,7 @@ namespace kagami {
 
     if (CheckObjectType(obj, kTypeIdRawString)) {
       origin = GetObjectStuff<string>(obj);
-      if (CheckTokenType(obj, T_INTEGER)) {
+      if (util::GetTokenType(origin) == T_INTEGER) {
         int data = stoi(origin);
         negative ?
           data -= 1 :

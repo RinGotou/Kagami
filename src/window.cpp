@@ -55,10 +55,10 @@ namespace kagami {
     using type::AddTemplate;
 
     /* For test only */
-    AddTemplate(kTypeIdSDLWindow, ObjectPlanner(FakeCopy, ""));
+    AddTemplate(kTypeIdSDLWindow, ObjectCopyingPolicy(FakeCopy, ""));
     AddEntry(Entry(SDLCreateWindow, "width|height|title", "window"));
 
-    AddTemplate(kTypeIdSDLTexture, ObjectPlanner(FakeCopy, ""));
+    AddTemplate(kTypeIdSDLTexture, ObjectCopyingPolicy(FakeCopy, ""));
     AddEntry(Entry(SDLCreateTextureFormBMP, "win|path", "LoadBMP"));
 
     AddEntry(Entry(SDLDelay, "time", "SDLDelay"));

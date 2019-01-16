@@ -4,44 +4,48 @@
 
 namespace kagami {
   class Object;
-  class ObjectPlanner;
+  class ObjectCopyingPolicy;
   class ObjectContainer;
   class ObjectMap;
   class Message;
 
   using ObjectPointer = Object * ;
-  using ObjectPair = pair<string, Object>;
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
-  using CopySolver = shared_ptr<void>(*)(shared_ptr<void>);
-  using ObjTypeId = string;
-
+  using CopyingPolicy = shared_ptr<void>(*)(shared_ptr<void>);
   using ContainerPool = kagami::list<ObjectContainer>;
 
   class Object {
-    using TargetObject = struct { Object *ptr; };
+    struct TargetObject { 
+      Object *ptr; 
+    };
+
     std::shared_ptr<void> ptr_;
     string type_id_;
     string methods_;
-    TokenTypeEnum token_type_;
     bool ref_, constructor_;
 
     ObjectPointer GetTargetObject() { 
       return static_pointer_cast<TargetObject>(ptr_)->ptr; 
     }
-  public:
-    Object &Ref(Object &object);
-    Object &Copy(Object &object, bool force = false);
 
+  public:
     Object() :
       ptr_(nullptr),
       type_id_(kTypeIdNull),
       methods_(),
       ref_(false),
-      constructor_(false) {
+      constructor_(false) {}
 
-      token_type_ = TokenTypeEnum::T_NUL;
-    }
+    Object(const Object &obj) :
+      ptr_(obj.ptr_),
+      type_id_(obj.type_id_),
+      methods_(obj.methods_),
+      ref_(obj.ref_),
+      constructor_(obj.constructor_) {}
+
+    Object(const Object &&obj) :
+      Object(obj) {}
 
     Object(shared_ptr<void> ptr, 
       string type_id, 
@@ -50,34 +54,32 @@ namespace kagami {
       type_id_(type_id), 
       methods_(methods), 
       ref_(false), 
-      constructor_(false) {
-
-      token_type_ = TokenTypeEnum::T_NUL;
-    }
+      constructor_(false) {}
 
     Object(string str, TokenTypeEnum token_type) :
       ptr_(std::make_shared<string>(str)),
       type_id_(kTypeIdRawString),
       methods_(kRawStringMethods),
-      token_type_(token_type),
       ref_(false),
       constructor_(false) {}
+
+    Object &operator=(const Object &object) {
+      ptr_ = object.ptr_;
+      type_id_ = object.type_id_;
+      methods_ = object.methods_;
+      ref_ = object.ref_;
+      constructor_ = object.constructor_;
+      return *this;
+    }
+
+    Object &operator=(const Object &&object) {
+      return this->operator=(object);
+    }
 
     Object &AppendMethod(string method) {
       if (ref_) return GetTargetObject()->AppendMethod(method);
       methods_.append("|" + method);
       return *this;
-    }
-
-    Object &SetTokenType(TokenTypeEnum token_type) {
-      if (ref_) return GetTargetObject()->SetTokenType(token_type);
-      token_type_ = token_type;
-      return *this;
-    }
-
-    TokenTypeEnum GetTokenType() {
-      if (ref_) return GetTargetObject()->GetTokenType();
-      return token_type_;
     }
 
     string GetMethods() {
@@ -89,15 +91,6 @@ namespace kagami {
       if (ref_) return GetTargetObject()->Set(ptr, type_id);
       ptr_ = ptr;
       type_id_ = type_id;
-      return *this;
-    }
-
-    Object &Manage(string str, TokenTypeEnum token_type) {
-      if (ref_) return GetTargetObject()->Manage(str, token_type);
-      ptr_ = std::make_shared<string>(str);
-      type_id_ = kTypeIdRawString;
-      methods_ = kRawStringMethods;
-      token_type_ = token_type;
       return *this;
     }
 
@@ -118,7 +111,6 @@ namespace kagami {
       ptr_ = make_shared<int>(0);
       type_id_ = kTypeIdNull;
       methods_.clear();
-      token_type_ = TokenTypeEnum::T_NUL;
       ref_ = false;
     }
 
@@ -151,19 +143,22 @@ namespace kagami {
     bool IsRef() const { 
       return ref_; 
     }
+
+    Object &Ref(Object &object);
+    Object &Copy(Object &object, bool force = false);
   };
 
-  class ObjectPlanner {
+  class ObjectCopyingPolicy {
   private:
-    CopySolver solver_;
+    CopyingPolicy solver_;
     string methods_;
   public:
-    ObjectPlanner() : 
+    ObjectCopyingPolicy() : 
       methods_(kStrEmpty) { 
 
       solver_ = nullptr; 
     }
-    ObjectPlanner(CopySolver solver, 
+    ObjectCopyingPolicy(CopyingPolicy solver, 
       string methods) : 
       methods_(methods){
 

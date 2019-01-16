@@ -321,8 +321,8 @@ namespace kagami {
   }
 
   namespace type {
-    map <string, ObjectPlanner> &GetPlannerBase() {
-      static map<string, ObjectPlanner> base;
+    map <string, ObjectCopyingPolicy> &GetPlannerBase() {
+      static map<string, ObjectCopyingPolicy> base;
       return base;
     }
 
@@ -341,8 +341,8 @@ namespace kagami {
       return result;
     }
 
-    ObjectPlanner *GetPlanner(const string name) {
-      ObjectPlanner *result = nullptr;
+    ObjectCopyingPolicy *GetPlanner(const string name) {
+      ObjectCopyingPolicy *result = nullptr;
       const auto it = GetPlannerBase().find(name);
 
       if (it != GetPlannerBase().end()) {
@@ -361,8 +361,8 @@ namespace kagami {
       return result;
     }
 
-    void AddTemplate(string name, ObjectPlanner temp) {
-      GetPlannerBase().insert(pair<string, ObjectPlanner>(name, temp));
+    void AddTemplate(string name, ObjectCopyingPolicy temp) {
+      GetPlannerBase().insert(pair<string, ObjectCopyingPolicy>(name, temp));
     }
 
     void DisposeTemplate(const string name) {
