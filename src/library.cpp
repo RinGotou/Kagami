@@ -19,8 +19,7 @@ namespace kagami {
       LibraryHandler handler(h_ins);
       Object obj;
       obj.Set(make_shared<LibraryHandler>(handler), kTypeIdLib)
-        .SetMethods(kLibraryMethods)
-        .set_ro(false);
+        .SetMethods(kLibraryMethods);
       msg.SetObject(obj);
     }
     else {

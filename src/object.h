@@ -24,7 +24,7 @@ namespace kagami {
     string type_id_;
     string methods_;
     TokenTypeEnum token_type_;
-    bool ro_, ref_, constructor_;
+    bool ref_, constructor_;
 
     ObjectPointer GetTargetObject() { 
       return static_pointer_cast<TargetObject>(ptr_)->ptr; 
@@ -37,7 +37,6 @@ namespace kagami {
       ptr_(nullptr),
       type_id_(kTypeIdNull),
       methods_(),
-      ro_(false),
       ref_(false),
       constructor_(false) {
 
@@ -46,12 +45,10 @@ namespace kagami {
 
     Object(shared_ptr<void> ptr, 
       string type_id, 
-      string methods, 
-      bool ro) :
+      string methods) :
       ptr_(ptr), 
       type_id_(type_id), 
       methods_(methods), 
-      ro_(ro),
       ref_(false), 
       constructor_(false) {
 
@@ -63,7 +60,6 @@ namespace kagami {
       type_id_(kTypeIdRawString),
       methods_(kRawStringMethods),
       token_type_(token_type),
-      ro_(false),
       ref_(false),
       constructor_(false) {}
 
@@ -82,17 +78,6 @@ namespace kagami {
     TokenTypeEnum GetTokenType() {
       if (ref_) return GetTargetObject()->GetTokenType();
       return token_type_;
-    }
-
-    Object &set_ro(bool ro) {
-      if (ref_) return GetTargetObject()->set_ro(ro);
-      ro_ = ro;
-      return *this;
-    }
-
-    bool get_ro() {
-      if (ref_) return GetTargetObject()->get_ro();
-      return ro_;
     }
 
     string GetMethods() {
@@ -116,12 +101,11 @@ namespace kagami {
       return *this;
     }
 
-    Object &Set(shared_ptr<void> ptr, string type_id, string methods, bool ro) {
-      if (ref_) return GetTargetObject()->Set(ptr, type_id, methods, ro);
+    Object &Set(shared_ptr<void> ptr, string type_id, string methods) {
+      if (ref_) return GetTargetObject()->Set(ptr, type_id, methods);
       ptr_ = ptr;
       type_id_ = type_id;
       methods_ = methods;
-      ro_ = ro;
       return *this;
     }
 
@@ -135,19 +119,7 @@ namespace kagami {
       type_id_ = kTypeIdNull;
       methods_.clear();
       token_type_ = TokenTypeEnum::T_NUL;
-      ro_ = false;
       ref_ = false;
-    }
-
-    bool Compare(Object &object) {
-      if (ref_) return GetTargetObject()->Compare(object);
-      return (ptr_ == object.ptr_ &&
-        type_id_ == object.type_id_ &&
-        methods_ == object.methods_ &&
-        token_type_ == object.token_type_ &&
-        ro_ == object.ro_ &&
-        constructor_ == object.constructor_ &&
-        ref_ == object.ref_);
     }
 
     Object &SetMethods(string methods) {
@@ -178,13 +150,6 @@ namespace kagami {
 
     bool IsRef() const { 
       return ref_; 
-    }
-
-    bool operator==(Object &object) { 
-      return Compare(object); 
-    }
-    bool operator!=(Object &object) { 
-      return !Compare(object); 
     }
   };
 

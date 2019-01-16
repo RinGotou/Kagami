@@ -9,7 +9,7 @@ namespace kagami {
     dest_base->reserve(src_base.size());
     for (auto &unit : src_base) {
       dest_base->emplace_back(Object(type::GetObjectCopy(unit), unit.GetTypeId(), 
-        unit.GetMethods(), false).SetTokenType(unit.GetTokenType()));
+        unit.GetMethods()).SetTokenType(unit.GetTokenType()));
     }
 
     return dest_base;
@@ -30,7 +30,6 @@ namespace kagami {
 
     if (p.Search("init_value")) {
       obj.Copy(p["init_value"]);
-      obj.set_ro(false);
     }
 
     CONDITION_ASSERT(size > 0, "Illegal array size.");
@@ -41,13 +40,13 @@ namespace kagami {
     base.reserve(size);
 
     for (auto count = 0; count < size; count++) {
-      base.emplace_back(Object(type::GetObjectCopy(obj), type_id, methods, false)
+      base.emplace_back(Object(type::GetObjectCopy(obj), type_id, methods)
         .SetTokenType(token_type));
     }
 
     return Message().SetObject(Object(make_shared<ArrayBase>(base),
       kTypeIdArrayBase,
-      kArrayBaseMethods, false)
+      kArrayBaseMethods)
       .SetConstructorFlag());
   }
 
@@ -129,21 +128,18 @@ namespace kagami {
       wstring wstr = GetObjectStuff<wstring>(obj);
       string output = ws2s(wstr);
 
-      base.Set(make_shared<string>(output),
-        kTypeIdString, kStringMethods, false)
+      base.Set(make_shared<string>(output), kTypeIdString, kStringMethods)
         .SetConstructorFlag();
     }
     else if (obj.GetTypeId() == kTypeIdString) {
       base.Set(obj.Get(), kTypeIdString)
         .SetConstructorFlag()
-        .SetMethods(kStringMethods)
-        .set_ro(false);
+        .SetMethods(kStringMethods);
     }
     else {
       string output = RealString(GetObjectStuff<string>(obj));
 
-      base.Set(make_shared<string>(output), kTypeIdString, 
-        kStringMethods, false)
+      base.Set(make_shared<string>(output), kTypeIdString, kStringMethods)
         .SetConstructorFlag();
     }
 
@@ -160,7 +156,7 @@ namespace kagami {
     shared_ptr<ifstream> ifs = 
       make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
 
-    return Message().SetObject(Object(ifs, kTypeIdInStream, kInStreamMethods, false));
+    return Message().SetObject(Object(ifs, kTypeIdInStream, kInStreamMethods));
   }
 
   Message InStreamGet(ObjectMap &p) {
@@ -175,8 +171,7 @@ namespace kagami {
     std::getline(ifs, str);
 
     return Message()
-      .SetObject(Object(make_shared<string>(str), kTypeIdString, 
-        kStringMethods, false));
+      .SetObject(Object(make_shared<string>(str), kTypeIdString, kStringMethods));
   }
 
   Message InStreamEOF(ObjectMap &p) {
@@ -208,7 +203,7 @@ namespace kagami {
     }
 
     return Message()
-      .SetObject(Object(ofs, kTypeIdOutStream, kOutStreamMethods, false));
+      .SetObject(Object(ofs, kTypeIdOutStream, kOutStreamMethods));
   }
 
   Message OutStreamWrite(ObjectMap &p) {
@@ -240,7 +235,7 @@ namespace kagami {
     string pattern_string = RealString(p.Get<string>("regex"));
     shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
 
-    return Message().SetObject(Object(reg, kTypeIdRegex, kRegexMethods, false));
+    return Message().SetObject(Object(reg, kTypeIdRegex, kRegexMethods));
   }
 
   Message RegexMatch(ObjectMap &p) {
@@ -265,7 +260,7 @@ namespace kagami {
 
     return Message()
       .SetObject(Object(make_shared<wstring>(wstr), 
-        kTypeIdWideString, kWideStringMethods, false));
+        kTypeIdWideString, kWideStringMethods));
   }
 
   //Function
@@ -281,11 +276,11 @@ namespace kagami {
 
     for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
       dest_base->emplace_back(Object(make_shared<string>(*it), kTypeIdString, 
-        kStringMethods, false));
+        kStringMethods));
     }
 
     return Message()
-      .SetObject(Object(dest_base, kTypeIdArrayBase, kArrayBaseMethods, false));
+      .SetObject(Object(dest_base, kTypeIdArrayBase, kArrayBaseMethods));
   }
 
   bool AssemblingForAutosized(Entry &ent, ObjectMap &p, ObjectMap &target_map, int size) {

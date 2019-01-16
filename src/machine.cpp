@@ -17,7 +17,7 @@ namespace kagami {
 
   void CopyObject(Object &dest, Object &src) {
     dest.Set(type::GetObjectCopy(src), src.GetTypeId(),
-      src.GetMethods(), false)
+      src.GetMethods())
       .SetTokenType(src.GetTokenType());
   }
 
@@ -75,7 +75,7 @@ namespace kagami {
     Object obj;
     auto ent = entry::Order(id, domain);
     if (ent.Good()) {
-      obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods, false);
+      obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods);
     }
     return obj;
   }
@@ -924,13 +924,7 @@ namespace kagami {
     auto src = worker->MakeObject(args[1]);
 
     if (dest.IsRef()) {
-      if (!dest.get_ro()) {
-        CopyObject(dest, src);
-      }
-      else {
-        worker->error_string = "Object is read-only.";
-        result = false;
-      }
+      CopyObject(dest, src);
     }
     else {
       string id = GetObjectStuff<string>(dest);
@@ -942,7 +936,7 @@ namespace kagami {
           CopyObject(*real_dest, src);
         }
         else {
-          Object obj(type::GetObjectCopy(src), src.GetTypeId(), src.GetMethods(), false);
+          Object obj(type::GetObjectCopy(src), src.GetTypeId(), src.GetMethods());
           obj.SetTokenType(src.GetTokenType());
           ObjectPointer result = entry::CreateObject(id, obj);
           if (result == nullptr) {
@@ -976,7 +970,7 @@ namespace kagami {
       }
     }
 
-    Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
+    Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase));
     obj.SetConstructorFlag();
     worker->returning_base.emplace_back(obj);
   }
@@ -988,14 +982,14 @@ namespace kagami {
       for (size_t idx = 0; idx < args.size(); idx += 1) {
         base->emplace_back(worker->MakeObject(args[idx]));
       }
-      Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
+      Object obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase));
       container.Add(kStrRetValue,
-        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
+        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods()));
     }
     else if (args.size() == 1) {
       auto obj = worker->MakeObject(args[0]);
       container.Add(kStrRetValue,
-        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods(), false));
+        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods()));
     }
   }
 
@@ -1009,7 +1003,7 @@ namespace kagami {
         Object value_obj(obj.GetTypeId(), util::GetTokenType(obj.GetTypeId()));
         base->emplace_back(value_obj);
       }
-      Object ret_obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase), false);
+      Object ret_obj(base, kTypeIdArrayBase, type::GetMethods(kTypeIdArrayBase));
       ret_obj.SetConstructorFlag();
       worker->returning_base.emplace_back(ret_obj);
     }
@@ -1036,10 +1030,10 @@ namespace kagami {
 
       for (const auto &unit : vec) {
         base->emplace_back(Object(make_shared<string>(unit), kTypeIdString,
-          type::GetMethods(kTypeIdString), true));
+          type::GetMethods(kTypeIdString)));
       }
 
-      Object ret_obj(base, kTypeIdArrayBase, kArrayBaseMethods, true);
+      Object ret_obj(base, kTypeIdArrayBase, kArrayBaseMethods);
       ret_obj.SetConstructorFlag();
       worker->returning_base.emplace_back(ret_obj);
     }
@@ -1111,7 +1105,7 @@ namespace kagami {
       }
       else {
         auto copy = type::GetObjectCopy(obj);
-        Object base(copy, obj.GetTypeId(), obj.GetMethods(), false);
+        Object base(copy, obj.GetTypeId(), obj.GetMethods());
         entry::CreateObject("__case", base);
         worker->deliver = true;
         worker->msg = Message(kStrTrue).SetCode(kCodeCase);
@@ -1189,7 +1183,7 @@ namespace kagami {
       auto ent = entry::Order(id, obj.GetTypeId());
       if (ent.Good()) {
         if (returning) {
-          ent_obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods, false);
+          ent_obj.Set(make_shared<Entry>(ent), kTypeIdFunction, kFunctionMethods);
           worker->returning_base.emplace_back(ent_obj);
         }
       }

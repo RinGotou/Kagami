@@ -23,7 +23,7 @@ namespace kagami {
     StringType output = str.substr(start, size);
 
     return Message()
-      .SetObject(Object(make_shared<StringType>(output), type_id, methods, false));
+      .SetObject(Object(make_shared<StringType>(output), type_id, methods));
   }
 
   template <class StringType>
@@ -39,7 +39,7 @@ namespace kagami {
     shared_ptr<StringType> output = make_shared<StringType>();
 
     output->append(1, str[idx]);
-    return Message().SetObject(Object(output, type_id, methods, false));
+    return Message().SetObject(Object(output, type_id, methods));
   }
 
   template <class StringType, class StreamType>
@@ -130,6 +130,6 @@ namespace kagami {
       methods = kStringMethods;
     }
 
-    return Message().SetObject(Object(dest, type_id, methods, false));
+    return Message().SetObject(Object(dest, type_id, methods));
   }
 }

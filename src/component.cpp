@@ -4,7 +4,7 @@ namespace kagami {
   template <class T>
   Object MakeObject(T t) {
     string str = to_string(t);
-    return Object(str, util::GetTokenType(str)).set_ro(false);
+    return Object(str, util::GetTokenType(str));
   }
 
   GroupTypeEnum GetGroupType(Object &A, Object &B) {
