@@ -54,12 +54,6 @@
     <ClInclude Include="..\..\src\component.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\socket_linux.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\socket_win.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\util.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -93,12 +87,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\library.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\socket_linux.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\socket_win.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\util.cpp">
