@@ -9,7 +9,7 @@ It's a simple and tiny script language.The name of this project is from Japanese
 ## What does it looks like?
 
 ```
-def ReadFile()
+fn ReadFile()
     stream = instream('SomeWords.txt')
     while(stream.eof() != true)
         print(stream.get())
