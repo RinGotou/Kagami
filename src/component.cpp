@@ -7,29 +7,29 @@ namespace kagami {
     return Object(str, util::GetTokenType(str));
   }
 
-  GroupTypeEnum GetGroupType(Object &A, Object &B) {
+  PairTypePolicy GetTypePolicy(Object &A, Object &B) {
     auto data_A = GetObjectStuff<string>(A),
       data_B = GetObjectStuff<string>(B);
     auto data_type_A = util::GetTokenType(data_A);
     auto data_type_B = util::GetTokenType(data_B);
 
-    GroupTypeEnum group_type = GroupTypeEnum::G_NUL;
+    PairTypePolicy policy = PairTypePolicy::G_NUL;
 
     if (data_type_A == T_FLOAT || data_type_B == T_FLOAT) {
-      group_type = G_FLOAT;
+      policy = G_FLOAT;
     }
     if (data_type_A == T_INTEGER && data_type_B == T_INTEGER) {
-      group_type = G_INT;
+      policy = G_INT;
     }
     if (util::IsString(data_A) || util::IsString(data_B)) {
-      group_type = G_STR;
+      policy = G_STR;
     }
     if ((data_A == kStrTrue || data_A == kStrFalse) &&
       (data_B == kStrTrue || data_B == kStrFalse)) {
-      group_type = G_STR;
+      policy = G_STR;
     }
 
-    return group_type;
+    return policy;
   }
 
   inline bool CheckObjectType(Object &obj, string type_id) {
