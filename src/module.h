@@ -35,36 +35,7 @@ namespace kagami {
     return make_shared<T>(temp);
   }
 
-  class IR {
-  private:
-    vector<Command> container_;
-    size_t index_;
-    Token main_token_;
-  public:
-    IR() : 
-      index_(0) {}
 
-    IR(vector<Command> commands, 
-      size_t index = 0, 
-      Token main_token = Token()) : 
-      index_(index) {
-
-      container_ = commands;
-      this->main_token_ = main_token;
-    }
-
-    vector<Command> &GetContains() { 
-      return container_; 
-    }
-
-    size_t GetIndex() const { 
-      return index_; 
-    }
-
-    Token GetMainToken() const { 
-      return main_token_; 
-    }
-  };
 
   /* Origin index and string data */
   using StringUnit = pair<size_t, string>;
@@ -138,9 +109,9 @@ namespace kagami {
       msg() {}
 
     Object MakeObject(Argument &arg, bool checking = false);
-    void AssemblingForAutoSized(Interface &interface, deque<Argument> params, ObjectMap &obj_map);
-    void AssemblingForAutoFilling(Interface &interface, deque<Argument> params, ObjectMap &obj_map);
-    void AssemblingForNormal(Interface &interface, deque<Argument> params, ObjectMap &obj_map);
+    void AssemblingForAutoSized(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
+    void AssemblingForAutoFilling(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
+    void AssemblingForNormal(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
     void Reset();
   };
 
@@ -154,9 +125,9 @@ namespace kagami {
   };
 
   class Module {
+  private:
     vector<IR> storage_;
-    vector<string> parameters_;
-    bool health_, is_main_, is_func_;
+    bool health_, is_main_;
 
     void ResetContainer(string funcId);
     void MakeFunction(size_t start, size_t end, vector<string> &defHead);
@@ -192,15 +163,12 @@ namespace kagami {
   public:
     Module() : 
       health_(false), 
-      is_main_(false), 
-      is_func_(false) {}
+      is_main_(false) {}
 
     Module(const Module &module) :
       health_(module.health_),
-      is_main_(module.is_main_),
-      is_func_(module.is_func_) {
+      is_main_(module.is_main_) {
       storage_ = module.storage_;
-      parameters_ = module.parameters_;
     }
 
     Module(Module &&module) :
@@ -211,16 +179,14 @@ namespace kagami {
 
     Module(vector<IR> storage) :
       health_(true),
-      is_main_(false),
-      is_func_(false) {
+      is_main_(false) {
 
       storage_ = storage;
     }
 
     Module(IRMaker &maker, bool is_main) :
       health_(true),
-      is_main_(is_main),
-      is_func_(false) {
+      is_main_(is_main) {
 
       Message msg;
 
@@ -240,18 +206,11 @@ namespace kagami {
 
     void operator=(Module &module) {
       storage_ = module.storage_;
-      parameters_ = module.parameters_;
       is_main_ = false;
     }
 
     void operator=(Module &&module) {
-      storage_ = module.storage_;
-      parameters_ = module.parameters_;
-    }
-
-    Module &SetFunc() { 
-      is_func_ = true; 
-      return *this;
+      return this->operator=(module);
     }
 
     Module &SetMain() {
@@ -263,10 +222,6 @@ namespace kagami {
       return health_; 
     }
 
-    Module &SetParameters(vector<string> params) {
-      parameters_ = params;
-      return *this;
-    }
     Message Run(bool create_container = true, string name = "");
     Message RunAsFunction(ObjectMap &p);
     void Reset(MachCtlBlk *blk);

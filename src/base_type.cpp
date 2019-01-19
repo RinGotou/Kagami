@@ -289,7 +289,7 @@ namespace kagami {
   Message FunctionGetParameters(ObjectMap &p) {
     auto &interface = p.Get<Interface>(kStrObject);
     shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
-    auto origin_vector = interface.GetArguments();
+    auto origin_vector = interface.GetParameters();
 
     for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
       dest_base->emplace_back(Object(make_shared<string>(*it), kTypeIdString, 
@@ -301,19 +301,19 @@ namespace kagami {
   }
 
   bool AssemblingForAutosized(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
-    auto ent_args = interface.GetArguments();
-    auto va_arg_head = ent_args.back();
+    auto ent_params = interface.GetParameters();
+    auto va_arg_head = ent_params.back();
     int idx = 0;
     int va_arg_size = 0;
     int count = 0;
     
 
-    while (idx < int(ent_args.size() - 1)) {
-      target_map.Input(ent_args[idx], p["arg" + to_string(idx)]);
+    while (idx < int(ent_params.size() - 1)) {
+      target_map.Input(ent_params[idx], p["arg" + to_string(idx)]);
       idx += 1;
     }
 
-    interface.GetEntryType() == kEntryMethod ?
+    interface.GetInterfaceType() == kInterfaceTypeMethod ?
       va_arg_size = size - 1 :
       va_arg_size = size;
 
@@ -324,19 +324,19 @@ namespace kagami {
     }
 
     target_map.Input(kStrVaSize, Object(to_string(count)));
-    if (interface.GetEntryType() == kEntryMethod) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
+    if (interface.GetInterfaceType() == kInterfaceTypeMethod) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
     return true;
   }
 
   bool AssemblingForAutoFilling(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
-    auto ent_args = interface.GetArguments();
+    auto ent_params = interface.GetParameters();
     int idx = 0;
-    auto is_method = (interface.GetEntryType() == kEntryMethod);
+    auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
 
-    while (idx < ent_args.size()) {
+    while (idx < ent_params.size()) {
       if (idx >= size) break;
       if (idx >= size - 1 && is_method) break;
-      target_map.Input(ent_args[idx], p["arg" + to_string(idx)]);
+      target_map.Input(ent_params[idx], p["arg" + to_string(idx)]);
       idx += 1;
     }
 
@@ -345,18 +345,18 @@ namespace kagami {
   }
 
   bool AssemblingForNormal(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
-    auto ent_args = interface.GetArguments();
+    auto ent_params = interface.GetParameters();
     int idx = 0;
-    auto is_method = (interface.GetEntryType() == kEntryMethod);
+    auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
     bool state = true;
 
-    while (idx < ent_args.size()) {
+    while (idx < ent_params.size()) {
       if (idx >= size || (idx >= size - 1 && is_method)) {
         state = false;
         break;
       }
 
-      target_map.Input(ent_args[idx], p["arg" + to_string(idx)]);
+      target_map.Input(ent_params[idx], p["arg" + to_string(idx)]);
       idx += 1;
     }
 

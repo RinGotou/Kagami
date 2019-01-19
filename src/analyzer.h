@@ -1,83 +1,8 @@
 #pragma once
-#include "object.h"
-#include "message.h"
+#include "ir.h"
 
 namespace kagami {
-  enum ArgumentType {
-    AT_NORMAL, AT_OBJECT, AT_RET, AT_HOLDER
-  };
 
-  enum RequestType {
-    RT_MACHINE, RT_REGULAR, RT_NUL
-  };
-
-  struct Domain {
-    string data;
-    ArgumentType type;
-  };
-
-  class Argument {
-  public:
-    string data;
-    ArgumentType type;
-    TokenTypeEnum token_type;
-    Domain domain;
-
-    Argument() :
-      data(),
-      type(AT_HOLDER),
-      token_type(T_NUL) {
-    
-      domain.type = AT_HOLDER;
-    }
-
-    Argument(string data,
-      ArgumentType type,
-      TokenTypeEnum token_type) :
-      data(data),
-      type(type),
-      token_type(token_type) {
-
-      this->domain.data = "";
-      this->domain.type = AT_HOLDER;
-    }
-
-    bool IsPlaceholder() const {
-      return type == AT_HOLDER;
-    }
-  };
-
-  class Request {
-  public:
-    int priority;
-    GenericTokenEnum head_gen;
-    string head_reg;
-    Argument domain;
-    RequestType type;
-
-    Request(GenericTokenEnum token) :
-      priority(4),
-      head_gen(token),
-      head_reg(),
-      domain(),
-      type(RT_MACHINE) {}
-
-    Request(string token, bool place_holder = false) :
-      priority(4),
-      head_gen(GT_NUL),
-      head_reg(token),
-      domain(),
-      type(place_holder ? RT_NUL : RT_REGULAR) {}
-
-    Request():
-      priority(4),
-      head_gen(GT_NUL),
-      head_reg(),
-      domain(),
-      type(RT_NUL) {}
-  };
-
-  using Command = pair<Request, deque<Argument>>;
 
   struct AnalyzerWorkBlock {
     deque<Argument> args;

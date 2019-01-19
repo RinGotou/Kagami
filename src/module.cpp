@@ -159,36 +159,8 @@ namespace kagami {
     return output;
   }
 
-  map<string, Module> &GetFunctionBase() {
-    static map<string, Module> base;
-    return base;
-  }
-
-  /* Add new user-defined function */
-  inline void AddFunction(string id, vector<IR> proc, vector<string> params) {
-    auto &base = GetFunctionBase();
-    base[id] = Module(proc).SetParameters(params).SetFunc();
-    management::CreateInterface(Interface(FunctionTunnel, id, params));
-  }
-
-  inline Module *GetFunction(string id) {
-    Module *module = nullptr;
-    auto &base = GetFunctionBase();
-    auto it = base.find(id);
-    if (it != base.end()) module = &(it->second);
-    return module;
-  }
-
-  /* Accept arguments from interface and deliver to function */
-  Message FunctionTunnel(ObjectMap &p) {
-    Message msg;
-    Object &func_id = p[kStrUserFunc];
-    string id = *static_pointer_cast<string>(func_id.Get());
-    Module *mach = GetFunction(id);
-    if (mach != nullptr) {
-      msg = mach->RunAsFunction(p);
-    }
-    return msg;
+  Message FunctionAgentTunnel(ObjectMap &p, vector<IR> storage) {
+    return Module(storage).RunAsFunction(p);
   }
 
   inline bool GetBooleanValue(string src) {
@@ -482,19 +454,19 @@ namespace kagami {
   }
 
   void IRWorker::AssemblingForAutoSized(Interface &interface,
-    deque<Argument> params, ObjectMap &obj_map) {
+    deque<Argument> args, ObjectMap &obj_map) {
     size_t idx = 0;
     size_t count = 0;
-    auto ent_args = interface.GetArguments();
-    auto va_arg_head = ent_args.back();
-    auto is_method = (interface.GetEntryType() == kEntryMethod);
+    auto ent_params = interface.GetParameters();
+    auto va_arg_head = ent_params.back();
+    auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
 
     /* TODO:Reconstrction */
     deque<Object> temp;
 
-    while (params.size() >= ent_args.size() - 1) {
-      temp.emplace_front(MakeObject(params.back()));
-      params.pop_back();
+    while (args.size() >= ent_params.size() - 1) {
+      temp.emplace_front(MakeObject(args.back()));
+      args.pop_back();
     }
 
     for (size_t idx = 0; idx < temp.size(); idx += 1) {
@@ -504,62 +476,62 @@ namespace kagami {
     obj_map.insert(NamedObject(kStrVaSize, Object(to_string(count))));
     temp.clear();
 
-    auto it = ent_args.rbegin()++;
+    auto it = ent_params.rbegin()++;
 
-    for (; it != ent_args.rend(); ++it) {
-      obj_map.insert(NamedObject(*it, MakeObject(params.back())));
-      params.pop_back();
+    for (; it != ent_params.rend(); ++it) {
+      obj_map.insert(NamedObject(*it, MakeObject(args.back())));
+      args.pop_back();
     }
 
-    while (idx < ent_args.size() - 1) {
-      obj_map.Input(ent_args[idx],
-        MakeObject(params[idx]));
+    while (idx < ent_params.size() - 1) {
+      obj_map.Input(ent_params[idx],
+        MakeObject(args[idx]));
       idx += 1;
     }
   }
 
   void IRWorker::AssemblingForAutoFilling(Interface &interface, 
-    deque<Argument> params, ObjectMap &obj_map) {
+    deque<Argument> args, ObjectMap &obj_map) {
       size_t idx = 0;
-      auto ent_args = interface.GetArguments();
-      auto is_method = (interface.GetEntryType() == kEntryMethod);
+      auto ent_params = interface.GetParameters();
+      auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
 
-      auto it = ent_args.rbegin();
+      auto it = ent_params.rbegin();
 
-      while (params.size() != ent_args.size() && it != ent_args.rend()) {
+      while (args.size() != ent_params.size() && it != ent_params.rend()) {
         obj_map.insert(NamedObject(*it, Object()));
-        params.pop_back();
+        args.pop_back();
         ++it;
       }
 
-      for (; it != ent_args.rend(); ++it) {
-        obj_map.insert(NamedObject(*it, MakeObject(params.back())));
-        params.pop_back();
+      for (; it != ent_params.rend(); ++it) {
+        obj_map.insert(NamedObject(*it, MakeObject(args.back())));
+        args.pop_back();
       }
   }
 
   void IRWorker::AssemblingForNormal(Interface &interface, 
-    deque<Argument> params, ObjectMap &obj_map) {
+    deque<Argument> args, ObjectMap &obj_map) {
     size_t idx = 0;
-    auto ent_args = interface.GetArguments();
-    auto is_method = (interface.GetEntryType() == kEntryMethod);
+    auto ent_params = interface.GetParameters();
+    auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
     bool state = true;
     
-    for (auto it = ent_args.rbegin(); it != ent_args.rend(); it++) {
-      if (params.empty()) {
+    for (auto it = ent_params.rbegin(); it != ent_params.rend(); it++) {
+      if (args.empty()) {
         state = false;
         break;
       }
-      obj_map.insert(NamedObject(*it, MakeObject(params.back())));
-      params.pop_back();
+      obj_map.insert(NamedObject(*it, MakeObject(args.back())));
+      args.pop_back();
     }
 
     if (!state) {
       error_assembling = true;
       error_string = "Required argument count is " +
-        to_string(ent_args.size()) +
+        to_string(ent_params.size()) +
         ", but provided argument count is " +
-        to_string(params.size()) + ".";
+        to_string(args.size()) + ".";
     }
   }
 
@@ -655,7 +627,10 @@ namespace kagami {
     for (size_t j = start; j <= end; ++j) {
       proc.push_back(storage_[j]);
     }
-    AddFunction(id, proc, params);
+
+    management::CreateInterface(
+      Interface(proc, id, params, FunctionAgentTunnel)
+    );
   }
 
   bool Module::IsBlankStr(string target) {
