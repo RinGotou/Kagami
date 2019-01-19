@@ -414,6 +414,9 @@ namespace kagami {
     AddEntry(Entry(StreamFamilyState<ofstream>, "", "good", kTypeIdOutStream));
     AddEntry(Entry(StreamFamilyClose<ofstream>, "", "close", kTypeIdOutStream));
 
+    management::CreateConstantObject("kOutstreamModeAppend", Object("'append'"));
+    management::CreateConstantObject("kOutstreamModeTruncate", Object("'truncate'"));
+
     AddTemplate(kTypeIdRegex, ObjectCopyingPolicy(FakeCopy, kTypeIdRegex));
     AddEntry(Entry(RegexConstructor, "regex", "regex"));
     AddEntry(Entry(RegexMatch, "str", "match", kTypeIdRegex));

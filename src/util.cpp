@@ -89,7 +89,7 @@ namespace kagami {
         T(kStrLess        ,GT_LESS),
         T(kStrReturn      ,GT_RETURN),
         T(kStrArray       ,GT_ARRAY),
-        T(kStrTypeAssert  ,GT_TYPE_ASSERT),
+        T(kStrTypeAssert  ,GT_ASSERT),
         T(kStrContinue    ,GT_CONTINUE),
         T(kStrBreak       ,GT_BREAK),
         T(kStrCase        ,GT_CASE),

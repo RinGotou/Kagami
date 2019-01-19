@@ -8,6 +8,11 @@ namespace kagami {
       return base;
     }
 
+    ObjectContainer &GetConstantBase() {
+      static ObjectContainer base;
+      return base;
+    }
+
     vector<Entry> &GetEntryBase() {
       static vector<Entry> base;
       return base;
@@ -22,6 +27,7 @@ namespace kagami {
       Object *object = nullptr;
       size_t count = GetContainerPool().size();
       list<ObjectContainer> &base = GetContainerPool();
+      ObjectContainer &const_base = GetConstantBase();
 
       while (!base.empty() && count > 0) {
         object = base[count - 1].Find(id);
@@ -29,6 +35,11 @@ namespace kagami {
           break;
         }
         count--;
+      }
+
+      //TODO:constant write lock
+      if (object == nullptr) {
+        object = const_base.Find(id);
       }
 
       return object;
@@ -40,12 +51,32 @@ namespace kagami {
 
     Object *CreateObject(string id, Object &object) {
       ObjectContainer &base = GetContainerPool().back();
-      if (base.Find(id) != nullptr) {
+      ObjectContainer &const_base = GetConstantBase();
+
+      if (base.Find(id) != nullptr && const_base.Find(id) != nullptr) {
         return nullptr;
       }
       base.Add(id, object);
-      const auto result = base.Find(id);
+      auto result = base.Find(id);
       return result;
+    }
+
+    Object *CreateObject(string id, Object &&object) {
+      return CreateObject(id, object);
+    }
+
+    Object *CreateConstantObject(string id, Object &object) {
+      ObjectContainer &base = GetConstantBase();
+
+      if (base.Find(id) != nullptr) return nullptr;
+
+      base.Add(id, object);
+      auto result = base.Find(id);
+      return result;
+    }
+
+    Object *CreateConstantObject(string id, Object &&object) {
+      return CreateConstantObject(id, object);
     }
 
     ObjectContainer &CreateContainer() {

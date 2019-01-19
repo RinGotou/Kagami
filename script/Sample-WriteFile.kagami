@@ -1,5 +1,5 @@
 fn WriteFile()
-  stream = outstream('script-output.txt','append')
+  stream = outstream('script-output.txt',kOutstreamModeAppend)
   recv = ''
   while (recv != 'quit')
     recv = input('Stream> ')

@@ -8,12 +8,15 @@ namespace kagami {
     ObjectContainer &CreateContainer();
     Object *FindObject(string id);
     Object *CreateObject(string id, Object &object);
+    Object *CreateObject(string id, Object &&object);
     void AddEntry(Entry temp);
     void AddGenericEntry(Entry temp);
     bool DisposeManager();
     bool HasTailTokenRequest(GenericTokenEnum token);
     Entry Order(string id, string type = kTypeIdNull, int size = -1);
     Entry GetGenericProvider(GenericTokenEnum token);
+    Object *CreateConstantObject(string id, Object &object);
+    Object *CreateConstantObject(string id, Object &&object);
 
     namespace type {
       extern string GetMethods(string name);

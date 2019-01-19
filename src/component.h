@@ -2,7 +2,7 @@
 #include "module.h"
 
 namespace kagami {
-  enum GroupTypeEnum { G_INT, G_FLOAT, G_STR, G_NUL };
+  enum PairTypePolicy { G_INT, G_FLOAT, G_STR, G_NUL };
 
   enum OperatorCode {
     ADD, SUB, MUL, DIV, EQUAL, IS,
@@ -11,7 +11,7 @@ namespace kagami {
     NUL
   };
 
-  GroupTypeEnum GetGroupType(Object &A, Object &B);
+  PairTypePolicy GetTypePolicy(Object &A, Object &B);
 
   /* Unified String Convertor Generator */
   template <class DestType>
@@ -248,13 +248,13 @@ namespace kagami {
     }
   };
 
-  template <GroupTypeEnum group_type ,OperatorCode op_code>
+  template <PairTypePolicy group_type ,OperatorCode op_code>
   class GroupCalcBase {
   public:
     string Do(string A, string B) {}
   };
 
-  template <GroupTypeEnum group_type, OperatorCode op_code>
+  template <PairTypePolicy group_type, OperatorCode op_code>
   class GroupLogicBase {
   public:
     string Do(string A, string B) {}
@@ -322,7 +322,7 @@ namespace kagami {
     Object &A = p["first"], &B = p["second"];
     string data_A = GetObjectStuff<string>(A);
     string data_B = GetObjectStuff<string>(B);
-    GroupTypeEnum group_type = GetGroupType(A, B);
+    PairTypePolicy group_type = GetTypePolicy(A, B);
     string result_str;
     switch (group_type) {
     case G_INT:result_str = int_base.Do(data_A, data_B); break;
@@ -341,7 +341,7 @@ namespace kagami {
     Object &A = p["first"], &B = p["second"];
     string data_A = GetObjectStuff<string>(A);
     string data_B = GetObjectStuff<string>(B);
-    GroupTypeEnum group_type = GetGroupType(A, B);
+    PairTypePolicy group_type = GetTypePolicy(A, B);
     string result_str;
     switch (group_type) {
     case G_INT:result_str = int_base.Do(data_A, data_B); break;

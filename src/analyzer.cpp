@@ -280,7 +280,7 @@ namespace kagami {
 
     (blk->next_2.first != "(" && blk->next_2.first != "[") ?
       token = GT_ASSERT_R :
-      token = GT_TYPE_ASSERT;
+      token = GT_ASSERT;
     
     deque<Argument> arguments = {
       blk->args.back(),
@@ -326,7 +326,7 @@ namespace kagami {
       Argument("__at", AT_NORMAL, T_GENERIC)
     };
 
-    action_base_.emplace_back(Command(Request(GT_TYPE_ASSERT), arguments));
+    action_base_.emplace_back(Command(Request(GT_ASSERT), arguments));
 
     Request request("__at");
     request.domain = blk->args.back();

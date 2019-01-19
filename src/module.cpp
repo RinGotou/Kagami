@@ -763,7 +763,7 @@ namespace kagami {
         
         if (msg.GetLevel() == kStateError) break;
 
-        if (request.head_gen != GT_TYPE_ASSERT) {
+        if (request.head_gen != GT_ASSERT) {
           Object object = msg.GetCode() == kCodeObject ?
             msg.GetObj() : Object();
 
@@ -855,8 +855,7 @@ namespace kagami {
     if (create_container) management::CreateContainer();
 
     auto create = [&](string id, string value)->void {
-      management::CreateObject(id, Object()
-        .Set(make_shared<string>("'" + value + "'"), kTypeIdRawString, kRawStringMethods));
+      management::CreateObject(id, Object("'" + value + "'"));
     };
 
     if (is_main_) {
@@ -870,10 +869,6 @@ namespace kagami {
         create("__name__", "__null__");
       }
     }
-
-    create("__platform__", kPlatformType);
-    create("__version__", kEngineVersion);
-    create("__backend__", kBackendVerison);
   }
 
   bool Module::PredefinedMessage(Message &result, size_t mode, Token token) {
@@ -1313,7 +1308,7 @@ namespace kagami {
     case GT_WHEN:
       result = When(worker, args);
       break;
-    case GT_TYPE_ASSERT:
+    case GT_ASSERT:
       result = DomainAssert(worker, args, false);
       break;
     case GT_ASSERT_R:
@@ -1362,7 +1357,7 @@ namespace kagami {
     case GT_DEF:
     case GT_CASE:
     case GT_WHEN:
-    case GT_TYPE_ASSERT:
+    case GT_ASSERT:
     case GT_ASSERT_R:
     case GT_QUIT:
     case GT_END:
