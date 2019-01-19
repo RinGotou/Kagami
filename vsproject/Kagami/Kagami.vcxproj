@@ -23,7 +23,7 @@
     <ClInclude Include="..\..\src\base_type.h" />
     <ClInclude Include="..\..\src\common.h" />
     <ClInclude Include="..\..\src\component.h" />
-    <ClInclude Include="..\..\src\entry.h" />
+    <ClInclude Include="..\..\src\interface.h" />
     <ClInclude Include="..\..\src\kagami.h" />
     <ClInclude Include="..\..\src\list.h" />
     <ClInclude Include="..\..\src\management.h" />

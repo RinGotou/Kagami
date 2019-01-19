@@ -51,18 +51,18 @@ namespace kagami {
   }
  
   void LoadSDLStuff() {
-    using management::AddEntry;
+    using management::CreateInterface;
     using management::type::AddTemplate;
 
     /* For test only */
     AddTemplate(kTypeIdSDLWindow, ObjectCopyingPolicy(FakeCopy, ""));
-    AddEntry(Entry(SDLCreateWindow, "width|height|title", "window"));
+    CreateInterface(Interface(SDLCreateWindow, "width|height|title", "window"));
 
     AddTemplate(kTypeIdSDLTexture, ObjectCopyingPolicy(FakeCopy, ""));
-    AddEntry(Entry(SDLCreateTextureFormBMP, "win|path", "LoadBMP"));
+    CreateInterface(Interface(SDLCreateTextureFormBMP, "win|path", "LoadBMP"));
 
-    AddEntry(Entry(SDLDelay, "time", "SDLDelay"));
-    AddEntry(Entry(SDLTestPresent, "texture|win", "Present"));
+    CreateInterface(Interface(SDLDelay, "time", "SDLDelay"));
+    CreateInterface(Interface(SDLTestPresent, "texture|win", "Present"));
   }
 #endif
 }

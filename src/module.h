@@ -138,9 +138,9 @@ namespace kagami {
       msg() {}
 
     Object MakeObject(Argument &arg, bool checking = false);
-    void AssemblingForAutoSized(Entry &entry, deque<Argument> params, ObjectMap &obj_map);
-    void AssemblingForAutoFilling(Entry &entry, deque<Argument> params, ObjectMap &obj_map);
-    void AssemblingForNormal(Entry &entry, deque<Argument> params, ObjectMap &obj_map);
+    void AssemblingForAutoSized(Interface &interface, deque<Argument> params, ObjectMap &obj_map);
+    void AssemblingForAutoFilling(Interface &interface, deque<Argument> params, ObjectMap &obj_map);
+    void AssemblingForNormal(Interface &interface, deque<Argument> params, ObjectMap &obj_map);
     void Reset();
   };
 

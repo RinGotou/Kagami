@@ -44,7 +44,7 @@ namespace kagami {
     }
 
     return Message().SetObject(Object(make_shared<ArrayBase>(base),
-      kTypeIdArrayBase,
+      kTypeIdArray,
       kArrayBaseMethods)
       .SetConstructorFlag());
   }
@@ -66,16 +66,34 @@ namespace kagami {
     return Message(to_string(GetObjectStuff<ArrayBase>(obj).size()));
   }
 
+  Message ArrayPush(ObjectMap &p) {
+    ArrayBase &base = p.Get<ArrayBase>(kStrObject);
+
+    base.emplace_back(p["object"]);
+
+    return Message();
+  }
+
+  Message ArrayPop(ObjectMap &p) {
+    ArrayBase &base = p.Get<ArrayBase>(kStrObject);
+
+    if (!base.empty()) base.pop_back();
+
+    return Message().SetObject(
+      base.empty() ? kStrTrue : kStrFalse
+    );
+  }
+ 
   Message ArrayPrint(ObjectMap &p) {
     Message result;
     ObjectMap obj_map;
 
     auto &base = p.Get<ArrayBase>(kStrObject);
-    auto entry = management::Order("print", kTypeIdNull, -1);
+    auto interface = management::Order("print", kTypeIdNull, -1);
 
     for (auto &unit : base) {
       obj_map.Input(kStrObject, unit);
-      result = entry.Start(obj_map);
+      result = interface.Start(obj_map);
       obj_map.clear();
     }
 
@@ -264,14 +282,14 @@ namespace kagami {
 
   //Function
   Message FunctionGetId(ObjectMap &p) {
-    auto &entry = p.Get<Entry>(kStrObject);
-    return Message(entry.GetId());
+    auto &interface = p.Get<Interface>(kStrObject);
+    return Message(interface.GetId());
   }
 
   Message FunctionGetParameters(ObjectMap &p) {
-    auto &entry = p.Get<Entry>(kStrObject);
+    auto &interface = p.Get<Interface>(kStrObject);
     shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
-    auto origin_vector = entry.GetArguments();
+    auto origin_vector = interface.GetArguments();
 
     for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
       dest_base->emplace_back(Object(make_shared<string>(*it), kTypeIdString, 
@@ -279,11 +297,11 @@ namespace kagami {
     }
 
     return Message()
-      .SetObject(Object(dest_base, kTypeIdArrayBase, kArrayBaseMethods));
+      .SetObject(Object(dest_base, kTypeIdArray, kArrayBaseMethods));
   }
 
-  bool AssemblingForAutosized(Entry &entry, ObjectMap &p, ObjectMap &target_map, int size) {
-    auto ent_args = entry.GetArguments();
+  bool AssemblingForAutosized(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
+    auto ent_args = interface.GetArguments();
     auto va_arg_head = ent_args.back();
     int idx = 0;
     int va_arg_size = 0;
@@ -295,7 +313,7 @@ namespace kagami {
       idx += 1;
     }
 
-    entry.GetEntryType() == kEntryMethod ?
+    interface.GetEntryType() == kEntryMethod ?
       va_arg_size = size - 1 :
       va_arg_size = size;
 
@@ -306,14 +324,14 @@ namespace kagami {
     }
 
     target_map.Input(kStrVaSize, Object(to_string(count)));
-    if (entry.GetEntryType() == kEntryMethod) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
+    if (interface.GetEntryType() == kEntryMethod) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
     return true;
   }
 
-  bool AssemblingForAutoFilling(Entry &entry, ObjectMap &p, ObjectMap &target_map, int size) {
-    auto ent_args = entry.GetArguments();
+  bool AssemblingForAutoFilling(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
+    auto ent_args = interface.GetArguments();
     int idx = 0;
-    auto is_method = (entry.GetEntryType() == kEntryMethod);
+    auto is_method = (interface.GetEntryType() == kEntryMethod);
 
     while (idx < ent_args.size()) {
       if (idx >= size) break;
@@ -326,10 +344,10 @@ namespace kagami {
     return true;
   }
 
-  bool AssemblingForNormal(Entry &entry, ObjectMap &p, ObjectMap &target_map, int size) {
-    auto ent_args = entry.GetArguments();
+  bool AssemblingForNormal(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
+    auto ent_args = interface.GetArguments();
     int idx = 0;
-    auto is_method = (entry.GetEntryType() == kEntryMethod);
+    auto is_method = (interface.GetEntryType() == kEntryMethod);
     bool state = true;
 
     while (idx < ent_args.size()) {
@@ -349,85 +367,87 @@ namespace kagami {
   }
 
   Message FunctionCall(ObjectMap &p) {
-    auto &entry = p.Get<Entry>(kStrObject);
+    auto &interface = p.Get<Interface>(kStrObject);
     int size = stoi(p.Get<string>(kStrVaSize));
     int count = 0;
     ObjectMap target_map;
     bool state;
     
-    CALL_ASSERT(entry.Good(), "Bad entry - " + entry.GetId() + ".");
+    CALL_ASSERT(interface.Good(), "Bad interface - " + interface.GetId() + ".");
 
-    switch (entry.GetArgumentMode()) {
+    switch (interface.GetArgumentMode()) {
     case kCodeAutoSize:
-      state = AssemblingForAutosized(entry, p, target_map, size);
+      state = AssemblingForAutosized(interface, p, target_map, size);
       break;
     case kCodeAutoFill:
-      state = AssemblingForAutoFilling(entry, p, target_map, size);
+      state = AssemblingForAutoFilling(interface, p, target_map, size);
     default:
-      state = AssemblingForNormal(entry, p, target_map, size);
+      state = AssemblingForNormal(interface, p, target_map, size);
       break;
     }
 
     CONDITION_ASSERT(state, "Argument error.");
 
-    return entry.Start(target_map);
+    return interface.Start(target_map);
   }
 
   void InitPlanners() {
     using management::type::AddTemplate;
-    using management::AddEntry;
+    using management::CreateInterface;
 
-    AddTemplate(kTypeIdFunction, ObjectCopyingPolicy(SimpleSharedPtrCopy<Entry>, kFunctionMethods));
-    AddEntry(Entry(FunctionGetId, "", "id", kTypeIdFunction));
-    AddEntry(Entry(FunctionCall, "arg", "call", kTypeIdFunction, kCodeAutoSize));
-    AddEntry(Entry(FunctionGetParameters, "", "params", kTypeIdFunction));
+    AddTemplate(kTypeIdFunction, ObjectCopyingPolicy(SimpleSharedPtrCopy<Interface>, kFunctionMethods));
+    CreateInterface(Interface(FunctionGetId, "", "id", kTypeIdFunction));
+    CreateInterface(Interface(FunctionCall, "arg", "call", kTypeIdFunction, kCodeAutoSize));
+    CreateInterface(Interface(FunctionGetParameters, "", "params", kTypeIdFunction));
 
     AddTemplate(kTypeIdRawString, ObjectCopyingPolicy(SimpleSharedPtrCopy<string>, kRawStringMethods));
-    AddEntry(Entry(RawStringPrint, "", "__print", kTypeIdRawString));
-    AddEntry(Entry(RawStringGetElement, "index", "__at", kTypeIdRawString));
-    AddEntry(Entry(RawStringGetSize, "", "size", kTypeIdRawString));
+    CreateInterface(Interface(RawStringPrint, "", "__print", kTypeIdRawString));
+    CreateInterface(Interface(RawStringGetElement, "index", "__at", kTypeIdRawString));
+    CreateInterface(Interface(RawStringGetSize, "", "size", kTypeIdRawString));
 
-    AddTemplate(kTypeIdArrayBase, ObjectCopyingPolicy(CreateArrayCopy, kArrayBaseMethods));
-    AddEntry(Entry(ArrayConstructor, "size|init_value", "array", kCodeAutoFill));
-    AddEntry(Entry(ArrayGetElement, "index", "__at", kTypeIdArrayBase));
-    AddEntry(Entry(ArrayPrint, "", "__print", kTypeIdArrayBase));
-    AddEntry(Entry(ArrayGetSize, "", "size", kTypeIdArrayBase));
+    AddTemplate(kTypeIdArray, ObjectCopyingPolicy(CreateArrayCopy, kArrayBaseMethods));
+    CreateInterface(Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill));
+    CreateInterface(Interface(ArrayGetElement, "index", "__at", kTypeIdArray));
+    CreateInterface(Interface(ArrayPrint, "", "__print", kTypeIdArray));
+    CreateInterface(Interface(ArrayGetSize, "", "size", kTypeIdArray));
+    CreateInterface(Interface(ArrayPush, "push", "object", kTypeIdArray));
+    CreateInterface(Interface(ArrayPop, "pop", "object", kTypeIdArray));
 
     AddTemplate(kTypeIdString, ObjectCopyingPolicy(SimpleSharedPtrCopy<string>, kStringMethods));
-    AddEntry(Entry(StringConstructor, "raw_string", "string"));
-    AddEntry(Entry(StringFamilyGetElement<string>, "index", "__at", kTypeIdString));
-    AddEntry(Entry(StringFamilyPrint<string, std::ostream>, "", "__print", kTypeIdString));
-    AddEntry(Entry(StringFamilySubStr<string>, "start|size", "substr", kTypeIdString));
-    AddEntry(Entry(GetStringFamilySize<string>, "", "size", kTypeIdString));
-    AddEntry(Entry(StringFamilyConverting<wstring, string>, "", "to_wide",  kTypeIdString));
+    CreateInterface(Interface(StringConstructor, "raw_string", "string"));
+    CreateInterface(Interface(StringFamilyGetElement<string>, "index", "__at", kTypeIdString));
+    CreateInterface(Interface(StringFamilyPrint<string, std::ostream>, "", "__print", kTypeIdString));
+    CreateInterface(Interface(StringFamilySubStr<string>, "start|size", "substr", kTypeIdString));
+    CreateInterface(Interface(GetStringFamilySize<string>, "", "size", kTypeIdString));
+    CreateInterface(Interface(StringFamilyConverting<wstring, string>, "", "to_wide",  kTypeIdString));
 
     AddTemplate(kTypeIdInStream, ObjectCopyingPolicy(FakeCopy, kInStreamMethods));
-    AddEntry(Entry(InStreamConsturctor, "path", "instream"));
-    AddEntry(Entry(InStreamGet, "", "get", kTypeIdInStream));
-    AddEntry(Entry(StreamFamilyState<ifstream>, "", "good", kTypeIdInStream));
-    AddEntry(Entry(InStreamEOF, "", "eof", kTypeIdInStream));
-    AddEntry(Entry(StreamFamilyClose<ifstream>, "", "close", kTypeIdInStream));
+    CreateInterface(Interface(InStreamConsturctor, "path", "instream"));
+    CreateInterface(Interface(InStreamGet, "", "get", kTypeIdInStream));
+    CreateInterface(Interface(StreamFamilyState<ifstream>, "", "good", kTypeIdInStream));
+    CreateInterface(Interface(InStreamEOF, "", "eof", kTypeIdInStream));
+    CreateInterface(Interface(StreamFamilyClose<ifstream>, "", "close", kTypeIdInStream));
 
     AddTemplate(kTypeIdOutStream, ObjectCopyingPolicy(FakeCopy, kOutStreamMethods));
-    AddEntry(Entry(OutStreamConstructor, "path|mode", "outstream"));
-    AddEntry(Entry(OutStreamWrite, "str", "write", kTypeIdOutStream));
-    AddEntry(Entry(StreamFamilyState<ofstream>, "", "good", kTypeIdOutStream));
-    AddEntry(Entry(StreamFamilyClose<ofstream>, "", "close", kTypeIdOutStream));
+    CreateInterface(Interface(OutStreamConstructor, "path|mode", "outstream"));
+    CreateInterface(Interface(OutStreamWrite, "str", "write", kTypeIdOutStream));
+    CreateInterface(Interface(StreamFamilyState<ofstream>, "", "good", kTypeIdOutStream));
+    CreateInterface(Interface(StreamFamilyClose<ofstream>, "", "close", kTypeIdOutStream));
 
     management::CreateConstantObject("kOutstreamModeAppend", Object("'append'"));
     management::CreateConstantObject("kOutstreamModeTruncate", Object("'truncate'"));
 
     AddTemplate(kTypeIdRegex, ObjectCopyingPolicy(FakeCopy, kTypeIdRegex));
-    AddEntry(Entry(RegexConstructor, "regex", "regex"));
-    AddEntry(Entry(RegexMatch, "str", "match", kTypeIdRegex));
+    CreateInterface(Interface(RegexConstructor, "regex", "regex"));
+    CreateInterface(Interface(RegexMatch, "str", "match", kTypeIdRegex));
 
     AddTemplate(kTypeIdWideString, ObjectCopyingPolicy(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
-    AddEntry(Entry(WideStringContructor, "raw_string", "wstring"));
-    AddEntry(Entry(GetStringFamilySize<wstring>,  "", "size", kTypeIdWideString));
-    AddEntry(Entry(StringFamilyGetElement<wstring>, "index", "__at", kTypeIdWideString));
-    AddEntry(Entry(StringFamilyPrint<wstring, std::wostream>, "", "__print", kTypeIdWideString));
-    AddEntry(Entry(StringFamilySubStr<wstring>, "start|size", "substr", kTypeIdWideString));
-    AddEntry(Entry(StringFamilyConverting<string, wstring>, "", "to_byte", kTypeIdWideString));
+    CreateInterface(Interface(WideStringContructor, "raw_string", "wstring"));
+    CreateInterface(Interface(GetStringFamilySize<wstring>,  "", "size", kTypeIdWideString));
+    CreateInterface(Interface(StringFamilyGetElement<wstring>, "index", "__at", kTypeIdWideString));
+    CreateInterface(Interface(StringFamilyPrint<wstring, std::wostream>, "", "__print", kTypeIdWideString));
+    CreateInterface(Interface(StringFamilySubStr<wstring>, "start|size", "substr", kTypeIdWideString));
+    CreateInterface(Interface(StringFamilyConverting<string, wstring>, "", "to_byte", kTypeIdWideString));
 
     AddTemplate(kTypeIdNull, ObjectCopyingPolicy(NullCopy, ""));
   }

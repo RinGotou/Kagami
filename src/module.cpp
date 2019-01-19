@@ -47,7 +47,7 @@ namespace kagami {
     return r;
   }
 #else
-  //from https://www.yasuhisay.info/entry/20090722/1248245439
+  //from https://www.yasuhisay.info/interface/20090722/1248245439
   std::wstring s2ws(const std::string& s) {
     if (s.empty()) return wstring();
     size_t length = s.size();
@@ -69,12 +69,12 @@ namespace kagami {
   }
 #endif
 
-  /* Packaging entry into object and act as a object */
+  /* Packaging interface into object and act as a object */
   inline Object GetFunctionObject(string id, string domain) {
     Object obj;
-    auto entry = management::Order(id, domain);
-    if (entry.Good()) {
-      obj.Set(make_shared<Entry>(entry), kTypeIdFunction, kFunctionMethods);
+    auto interface = management::Order(id, domain);
+    if (interface.Good()) {
+      obj.Set(make_shared<Interface>(interface), kTypeIdFunction, kFunctionMethods);
     }
     return obj;
   }
@@ -168,7 +168,7 @@ namespace kagami {
   inline void AddFunction(string id, vector<IR> proc, vector<string> params) {
     auto &base = GetFunctionBase();
     base[id] = Module(proc).SetParameters(params).SetFunc();
-    management::AddEntry(Entry(FunctionTunnel, id, params));
+    management::CreateInterface(Interface(FunctionTunnel, id, params));
   }
 
   inline Module *GetFunction(string id) {
@@ -179,7 +179,7 @@ namespace kagami {
     return module;
   }
 
-  /* Accept arguments from entry and deliver to function */
+  /* Accept arguments from interface and deliver to function */
   Message FunctionTunnel(ObjectMap &p) {
     Message msg;
     Object &func_id = p[kStrUserFunc];
@@ -481,13 +481,13 @@ namespace kagami {
     return obj;
   }
 
-  void IRWorker::AssemblingForAutoSized(Entry &entry,
+  void IRWorker::AssemblingForAutoSized(Interface &interface,
     deque<Argument> params, ObjectMap &obj_map) {
     size_t idx = 0;
     size_t count = 0;
-    auto ent_args = entry.GetArguments();
+    auto ent_args = interface.GetArguments();
     auto va_arg_head = ent_args.back();
-    auto is_method = (entry.GetEntryType() == kEntryMethod);
+    auto is_method = (interface.GetEntryType() == kEntryMethod);
 
     /* TODO:Reconstrction */
     deque<Object> temp;
@@ -518,11 +518,11 @@ namespace kagami {
     }
   }
 
-  void IRWorker::AssemblingForAutoFilling(Entry &entry, 
+  void IRWorker::AssemblingForAutoFilling(Interface &interface, 
     deque<Argument> params, ObjectMap &obj_map) {
       size_t idx = 0;
-      auto ent_args = entry.GetArguments();
-      auto is_method = (entry.GetEntryType() == kEntryMethod);
+      auto ent_args = interface.GetArguments();
+      auto is_method = (interface.GetEntryType() == kEntryMethod);
 
       auto it = ent_args.rbegin();
 
@@ -538,11 +538,11 @@ namespace kagami {
       }
   }
 
-  void IRWorker::AssemblingForNormal(Entry &entry, 
+  void IRWorker::AssemblingForNormal(Interface &interface, 
     deque<Argument> params, ObjectMap &obj_map) {
     size_t idx = 0;
-    auto ent_args = entry.GetArguments();
-    auto is_method = (entry.GetEntryType() == kEntryMethod);
+    auto ent_args = interface.GetArguments();
+    auto is_method = (interface.GetEntryType() == kEntryMethod);
     bool state = true;
     
     for (auto it = ent_args.rbegin(); it != ent_args.rend(); it++) {
@@ -698,7 +698,7 @@ namespace kagami {
         }
       }
       else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {
-        Entry entry;
+        Interface interface;
         string type_id, value;
         is_operator_token = util::IsOperatorToken(request.head_gen);
 
@@ -711,39 +711,39 @@ namespace kagami {
 
         switch (request.type) {
         case RT_MACHINE:
-          entry = management::GetGenericProvider(request.head_gen);
+          interface = management::GetGenericInterface(request.head_gen);
           break;
         case RT_REGULAR:
           if (request.domain.type != AT_HOLDER) {
             Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
-            entry = management::Order(request.head_reg, type_id);
+            interface = management::Order(request.head_reg, type_id);
             obj_map.Input(kStrObject, domain_obj);
           }
           else {
-            entry = management::Order(request.head_reg);
+            interface = management::Order(request.head_reg);
           }
           break;
         default:
           break;
         }
 
-        if (!entry.Good()) {
+        if (!interface.Good()) {
           msg = Message(kCodeIllegalCall, 
             "Function is not found - " + request.head_reg,
             kStateError);
           break;
         }
 
-        switch (entry.GetArgumentMode()) {
+        switch (interface.GetArgumentMode()) {
         case kCodeAutoSize:
-          worker->AssemblingForAutoSized(entry, args, obj_map);
+          worker->AssemblingForAutoSized(interface, args, obj_map);
           break;
         case kCodeAutoFill:
-          worker->AssemblingForAutoFilling(entry, args, obj_map);
+          worker->AssemblingForAutoFilling(interface, args, obj_map);
           break;
         default:
-          worker->AssemblingForNormal(entry, args, obj_map);
+          worker->AssemblingForNormal(interface, args, obj_map);
           break;
         }
 
@@ -759,7 +759,7 @@ namespace kagami {
           break;
         }
 
-        msg = entry.Start(obj_map);
+        msg = interface.Start(obj_map);
         
         if (msg.GetLevel() == kStateError) break;
 
@@ -973,7 +973,7 @@ namespace kagami {
       }
     }
 
-    Object obj(base, kTypeIdArrayBase, management::type::GetMethods(kTypeIdArrayBase));
+    Object obj(base, kTypeIdArray, management::type::GetMethods(kTypeIdArray));
     obj.SetConstructorFlag();
     worker->returning_base.push(obj);
   }
@@ -985,7 +985,7 @@ namespace kagami {
       for (size_t idx = 0; idx < args.size(); idx += 1) {
         base->emplace_back(worker->MakeObject(args[idx]));
       }
-      Object obj(base, kTypeIdArrayBase, management::type::GetMethods(kTypeIdArrayBase));
+      Object obj(base, kTypeIdArray, management::type::GetMethods(kTypeIdArray));
       container.Add(kStrRetValue,
         Object(obj.Get(), obj.GetTypeId(), obj.GetMethods()));
     }
@@ -1008,7 +1008,7 @@ namespace kagami {
         Object value_obj(obj.GetTypeId());
         base->emplace_back(value_obj);
       }
-      Object ret_obj(base, kTypeIdArrayBase, management::type::GetMethods(kTypeIdArrayBase));
+      Object ret_obj(base, kTypeIdArray, management::type::GetMethods(kTypeIdArray));
       ret_obj.SetConstructorFlag();
       worker->returning_base.push(ret_obj);
     }
@@ -1038,7 +1038,7 @@ namespace kagami {
           management::type::GetMethods(kTypeIdString)));
       }
 
-      Object ret_obj(base, kTypeIdArrayBase, kArrayBaseMethods);
+      Object ret_obj(base, kTypeIdArray, kArrayBaseMethods);
       ret_obj.SetConstructorFlag();
       worker->returning_base.push(ret_obj);
     }
@@ -1185,10 +1185,10 @@ namespace kagami {
     }
     else {
       Object ent_obj;
-      auto entry = management::Order(id, obj.GetTypeId());
-      if (entry.Good()) {
+      auto interface = management::Order(id, obj.GetTypeId());
+      if (interface.Good()) {
         if (returning) {
-          ent_obj.Set(make_shared<Entry>(entry), kTypeIdFunction, kFunctionMethods);
+          ent_obj.Set(make_shared<Interface>(interface), kTypeIdFunction, kFunctionMethods);
           worker->returning_base.push(ent_obj);
         }
       }

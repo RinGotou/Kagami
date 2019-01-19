@@ -50,9 +50,9 @@ namespace kagami {
 
   inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &param) {
     Message msg;
-    auto entry = management::Order(id, type_id);
-    entry.Good() ?
-      msg = entry.Start(param) :
+    auto interface = management::Order(id, type_id);
+    interface.Good() ?
+      msg = interface.Start(param) :
       msg.SetCode(kCodeIllegalCall);
     return msg;
   }
@@ -154,28 +154,28 @@ namespace kagami {
 
   void OperatorRegister() {
     using namespace management;
-    AddGenericEntry(BinaryOperator<OperatorCode::ADD, GT_ADD>());
-    AddGenericEntry(BinaryOperator<OperatorCode::SUB, GT_SUB>());
-    AddGenericEntry(BinaryOperator<OperatorCode::MUL, GT_MUL>());
-    AddGenericEntry(BinaryOperator<OperatorCode::DIV, GT_DIV>());
-    AddGenericEntry(LogicBinaryOperator<OperatorCode::IS, GT_IS>());
-    AddGenericEntry(LogicBinaryOperator<OperatorCode::LESS_OR_EQUAL, GT_LESS_OR_EQUAL>());
-    AddGenericEntry(LogicBinaryOperator<OperatorCode::MORE_OR_EQUAL, GT_MORE_OR_EQUAL>());
-    AddGenericEntry(LogicBinaryOperator<OperatorCode::NOT_EQUAL, GT_NOT_EQUAL>());
-    AddGenericEntry(LogicBinaryOperator<OperatorCode::MORE, GT_MORE>());
-    AddGenericEntry(LogicBinaryOperator<OperatorCode::LESS, GT_LESS>());
-    AddGenericEntry(LogicBinaryOperator<OperatorCode::AND, GT_AND>());
-    AddGenericEntry(LogicBinaryOperator<OperatorCode::OR, GT_OR>());
+    CreateGenericInterface(BinaryOperator<OperatorCode::ADD, GT_ADD>());
+    CreateGenericInterface(BinaryOperator<OperatorCode::SUB, GT_SUB>());
+    CreateGenericInterface(BinaryOperator<OperatorCode::MUL, GT_MUL>());
+    CreateGenericInterface(BinaryOperator<OperatorCode::DIV, GT_DIV>());
+    CreateGenericInterface(LogicBinaryOperator<OperatorCode::IS, GT_IS>());
+    CreateGenericInterface(LogicBinaryOperator<OperatorCode::LESS_OR_EQUAL, GT_LESS_OR_EQUAL>());
+    CreateGenericInterface(LogicBinaryOperator<OperatorCode::MORE_OR_EQUAL, GT_MORE_OR_EQUAL>());
+    CreateGenericInterface(LogicBinaryOperator<OperatorCode::NOT_EQUAL, GT_NOT_EQUAL>());
+    CreateGenericInterface(LogicBinaryOperator<OperatorCode::MORE, GT_MORE>());
+    CreateGenericInterface(LogicBinaryOperator<OperatorCode::LESS, GT_LESS>());
+    CreateGenericInterface(LogicBinaryOperator<OperatorCode::AND, GT_AND>());
+    CreateGenericInterface(LogicBinaryOperator<OperatorCode::OR, GT_OR>());
   }
 
   void BasicUtilityRegister() {
     using namespace management;
-    AddEntry(Entry(Convert, "object", "convert"));
-    AddEntry(Entry(Input, "msg", "input", kCodeAutoFill));
-    AddEntry(Entry(Print, kStrObject, "print"));
-    AddEntry(Entry(GetTimeDate, "", "time"));
-    AddEntry(Entry(GetRawStringType, "object", "type"));
-    AddEntry(Entry(IsNull, "object", "isnull"));
+    CreateInterface(Interface(Convert, "object", "convert"));
+    CreateInterface(Interface(Input, "msg", "input", kCodeAutoFill));
+    CreateInterface(Interface(Print, kStrObject, "print"));
+    CreateInterface(Interface(GetTimeDate, "", "time"));
+    CreateInterface(Interface(GetRawStringType, "object", "type"));
+    CreateInterface(Interface(IsNull, "object", "isnull"));
   }
 
   void Activiate() {

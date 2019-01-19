@@ -1,5 +1,5 @@
 #pragma once
-#include "entry.h"
+#include "interface.h"
 
 namespace kagami {
   namespace management {
@@ -9,12 +9,12 @@ namespace kagami {
     Object *FindObject(string id);
     Object *CreateObject(string id, Object &object);
     Object *CreateObject(string id, Object &&object);
-    void AddEntry(Entry temp);
-    void AddGenericEntry(Entry temp);
+    void CreateInterface(Interface temp);
+    void CreateGenericInterface(Interface temp);
     bool DisposeManager();
     bool HasTailTokenRequest(GenericTokenEnum token);
-    Entry Order(string id, string type = kTypeIdNull, int size = -1);
-    Entry GetGenericProvider(GenericTokenEnum token);
+    Interface Order(string id, string type = kTypeIdNull, int size = -1);
+    Interface GetGenericInterface(GenericTokenEnum token);
     Object *CreateConstantObject(string id, Object &object);
     Object *CreateConstantObject(string id, Object &&object);
 

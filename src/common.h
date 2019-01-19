@@ -15,6 +15,7 @@
 #include <iostream>
 #include <ctime>
 #include <type_traits>
+#include "shio/src/shio.h"
 
 //if you build this project by cmake,please turn off all switch macro below.
 // Disbale SDL2 componets for non-GUI environment
@@ -164,7 +165,7 @@ namespace kagami {
   const string kTypeIdString     = "String";
   const string kTypeIdWideString = "WString";
   const string kTypeIdRawString  = "RawString";
-  const string kTypeIdArrayBase  = "Array";
+  const string kTypeIdArray  = "Array";
   const string kTypeIdInStream   = "Instream";
   const string kTypeIdOutStream  = "Outstream";
   const string kTypeIdRegex      = "Regex";

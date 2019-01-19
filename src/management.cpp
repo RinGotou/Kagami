@@ -13,13 +13,13 @@ namespace kagami {
       return base;
     }
 
-    vector<Entry> &GetEntryBase() {
-      static vector<Entry> base;
+    vector<Interface> &GetEntryBase() {
+      static vector<Interface> base;
       return base;
     }
 
-    map<GenericTokenEnum, Entry> &GetGenProviderBase() {
-      static map<GenericTokenEnum, Entry> base;
+    map<GenericTokenEnum, Interface> &GetGenericInterfaceBase() {
+      static map<GenericTokenEnum, Interface> base;
       return base;
     }
 
@@ -97,31 +97,31 @@ namespace kagami {
       return (token == GT_IF || token == GT_WHILE || token == GT_CASE);
     }
 
-    void AddEntry(Entry temp) {
+    void CreateInterface(Interface temp) {
       GetEntryBase().emplace_back(temp);
     }
 
-    void AddGenericEntry(Entry temp) {
-      GetGenProviderBase().insert(pair<GenericTokenEnum, Entry>(
+    void CreateGenericInterface(Interface temp) {
+      GetGenericInterfaceBase().insert(pair<GenericTokenEnum, Interface>(
         temp.GetTokenEnum(), temp));
     }
 
-    Entry GetGenericProvider(GenericTokenEnum token) {
-      auto &base = GetGenProviderBase();
-      map<GenericTokenEnum, Entry>::iterator it = base.find(token);
+    Interface GetGenericInterface(GenericTokenEnum token) {
+      auto &base = GetGenericInterfaceBase();
+      map<GenericTokenEnum, Interface>::iterator it = base.find(token);
       if (it != base.end()) return it->second;
-      return Entry();
+      return Interface();
     }
 
 
-    Entry Order(string id, string type, int size) {
+    Interface Order(string id, string type, int size) {
       GenericTokenEnum basicOpCode = util::GetGenericToken(id);
       if (basicOpCode != GT_NUL) {
-        return GetGenericProvider(basicOpCode);
+        return GetGenericInterface(basicOpCode);
       }
 
-      vector<Entry> &base = GetEntryBase();
-      Entry result;
+      vector<Interface> &base = GetEntryBase();
+      Interface result;
       bool ignore_type = (type == kTypeIdNull);
       //TODO:rewrite here
       for (auto &unit : base) {

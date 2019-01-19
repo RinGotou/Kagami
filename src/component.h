@@ -353,12 +353,12 @@ namespace kagami {
   }
 
   template <OperatorCode op_code,GenericTokenEnum gen_token>
-  Entry LogicBinaryOperator() {
-    return Entry(LogicOperation<op_code>, "first|second", gen_token);
+  Interface LogicBinaryOperator() {
+    return Interface(LogicOperation<op_code>, "first|second", gen_token);
   }
 
   template <OperatorCode op_code, GenericTokenEnum gen_token>
-  Entry BinaryOperator() {
-    return Entry(CalcOperation<op_code>, "first|second", gen_token);
+  Interface BinaryOperator() {
+    return Interface(CalcOperation<op_code>, "first|second", gen_token);
   }
 }

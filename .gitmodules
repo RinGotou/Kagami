@@ -1,0 +1,3 @@
+[submodule "src/shio"]
+	path = src/shio
+	url = https://github.com/suzunakamura/shio
