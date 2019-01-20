@@ -5,15 +5,15 @@ namespace kagami {
     bool IsOperatorToken(GenericToken token) {
       bool result;
       switch (token) {
-      case GT_ADD:
-      case GT_SUB:
-      case GT_MUL:
+      case GT_PLUS:
+      case GT_MINUS:
+      case GT_TIMES:
       case GT_DIV:
-      case GT_IS:
+      case GT_EQUALS:
       case GT_LESS_OR_EQUAL:
-      case GT_MORE_OR_EQUAL:
+      case GT_GREATER_OR_EQUAL:
       case GT_NOT_EQUAL:
-      case GT_MORE:
+      case GT_GREATER:
       case GT_LESS:
       case GT_AND:
       case GT_OR:
@@ -35,19 +35,19 @@ namespace kagami {
       case GT_BIND:
         result = 0;
         break;
-      case GT_ADD:
-      case GT_SUB:
+      case GT_PLUS:
+      case GT_MINUS:
         result = 2;
         break;
-      case GT_MUL:
+      case GT_TIMES:
       case GT_DIV:
         result = 3;
         break;
-      case GT_IS:
+      case GT_EQUALS:
       case GT_LESS_OR_EQUAL:
-      case GT_MORE_OR_EQUAL:
+      case GT_GREATER_OR_EQUAL:
       case GT_NOT_EQUAL:
-      case GT_MORE:
+      case GT_GREATER:
       case GT_LESS:
       case GT_AND:
       case GT_OR:
@@ -72,20 +72,20 @@ namespace kagami {
         T(kStrElse        ,GT_ELSE),
         T(kStrElif        ,GT_ELIF),
         T(kStrWhile       ,GT_WHILE),
-        T(kStrAdd         ,GT_ADD),
-        T(kStrSub         ,GT_SUB),
-        T(kStrMul         ,GT_MUL),
+        T(kStrAdd         ,GT_PLUS),
+        T(kStrSub         ,GT_MINUS),
+        T(kStrMul         ,GT_TIMES),
         T(kStrDiv         ,GT_DIV),
-        T(kStrIs          ,GT_IS),
+        T(kStrIs          ,GT_EQUALS),
         T(kStrAnd         ,GT_AND),
         T(kStrOr          ,GT_OR),
         T(kStrNot         ,GT_NOT),
         T(kStrBitAnd      ,GT_BIT_AND),
         T(kStrBitOr       ,GT_BIT_OR),
         T(kStrLessOrEqual ,GT_LESS_OR_EQUAL),
-        T(kStrMoreOrEqual ,GT_MORE_OR_EQUAL),
+        T(kStrMoreOrEqual ,GT_GREATER_OR_EQUAL),
         T(kStrNotEqual    ,GT_NOT_EQUAL),
-        T(kStrMore        ,GT_MORE),
+        T(kStrMore        ,GT_GREATER),
         T(kStrLess        ,GT_LESS),
         T(kStrReturn      ,GT_RETURN),
         T(kStrArray       ,GT_ARRAY),
