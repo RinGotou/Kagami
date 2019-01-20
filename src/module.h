@@ -159,7 +159,7 @@ namespace kagami {
 
     //Command Management
     bool GenericRequests(IRWorker *worker, Request &Request, deque<Argument> &args);
-    bool CheckGenericRequests(GenericTokenEnum token);
+    bool CheckGenericRequests(GenericToken token);
   public:
     Module() : 
       health_(false), 

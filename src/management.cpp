@@ -18,8 +18,8 @@ namespace kagami {
       return base;
     }
 
-    map<GenericTokenEnum, Interface> &GetGenericInterfaceBase() {
-      static map<GenericTokenEnum, Interface> base;
+    map<GenericToken, Interface> &GetGenericInterfaceBase() {
+      static map<GenericToken, Interface> base;
       return base;
     }
 
@@ -93,7 +93,7 @@ namespace kagami {
 
 
 
-    bool HasTailTokenRequest(GenericTokenEnum token) {
+    bool HasTailTokenRequest(GenericToken token) {
       return (token == GT_IF || token == GT_WHILE || token == GT_CASE);
     }
 
@@ -102,20 +102,20 @@ namespace kagami {
     }
 
     void CreateGenericInterface(Interface temp) {
-      GetGenericInterfaceBase().insert(pair<GenericTokenEnum, Interface>(
+      GetGenericInterfaceBase().insert(pair<GenericToken, Interface>(
         temp.GetTokenEnum(), temp));
     }
 
-    Interface GetGenericInterface(GenericTokenEnum token) {
+    Interface GetGenericInterface(GenericToken token) {
       auto &base = GetGenericInterfaceBase();
-      map<GenericTokenEnum, Interface>::iterator it = base.find(token);
+      map<GenericToken, Interface>::iterator it = base.find(token);
       if (it != base.end()) return it->second;
       return Interface();
     }
 
 
     Interface Order(string id, string type, int size) {
-      GenericTokenEnum basicOpCode = util::GetGenericToken(id);
+      GenericToken basicOpCode = util::GetGenericToken(id);
       if (basicOpCode != GT_NUL) {
         return GetGenericInterface(basicOpCode);
       }

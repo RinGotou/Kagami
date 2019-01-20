@@ -3,9 +3,9 @@
 
 namespace kagami {
   namespace util {
-    bool IsOperatorToken(GenericTokenEnum token);
-    int GetTokenPriority(GenericTokenEnum token);
-    GenericTokenEnum GetGenericToken(string src);
+    bool IsOperatorToken(GenericToken token);
+    int GetTokenPriority(GenericToken token);
+    GenericToken GetGenericToken(string src);
     string GetRawString(string target);
     bool IsString(string target);
     bool IsGenericToken(string target);
@@ -14,7 +14,7 @@ namespace kagami {
     bool IsBlank(string target);
     bool IsSymbol(string target);
     bool IsBoolean(string target);
-    TokenTypeEnum GetTokenType(string target);
+    TokenType GetTokenType(string target);
     bool FindInStringGroup(string target, string source);
     vector<string> BuildStringVector(string source);
     char GetEscapeChar(char target);

@@ -2,11 +2,11 @@
 #include "module.h"
 
 namespace kagami {
-  enum PairTypePolicy { G_INT, G_FLOAT, G_STR, G_NUL };
+  enum PairTypePolicy { G_INT, G_FLOAT, G_STR, G_OTHER_OBJ };
 
   enum OperatorCode {
-    ADD, SUB, MUL, DIV, EQUAL, IS,
-    MORE, LESS, NOT_EQUAL, MORE_OR_EQUAL, LESS_OR_EQUAL,
+    PLUS, MINUS, TIMES, DIV, EQUAL, EQUALS,
+    GREATER, LESS, NOT_EQUAL, GREATER_OR_EQUAL, LESS_OR_EQUAL,
     AND, OR, NOT, BIT_AND, BIT_OR,
     NUL
   };
@@ -46,7 +46,7 @@ namespace kagami {
   };
 
   template <class Type>
-  class Operation<Type, bool, OperatorCode::IS> {
+  class Operation<Type, bool, OperatorCode::EQUALS> {
   public:
     bool Do(Type A, Type B) { return A == B; }
   };
@@ -58,7 +58,7 @@ namespace kagami {
   };
 
   template <class Type>
-  class Operation<Type, bool, OperatorCode::MORE_OR_EQUAL> {
+  class Operation<Type, bool, OperatorCode::GREATER_OR_EQUAL> {
   public:
     bool Do(Type A, Type B) { return A >= B; }
   };
@@ -70,7 +70,7 @@ namespace kagami {
   };
 
   template <class Type>
-  class Operation<Type, bool, OperatorCode::MORE> {
+  class Operation<Type, bool, OperatorCode::GREATER> {
   public:
     bool Do(Type A, Type B) { return A > B; }
   };
@@ -82,43 +82,43 @@ namespace kagami {
   };
 
   template<class Type, class DestType>
-  class Operation<Type, DestType, OperatorCode::ADD> {
+  class Operation<Type, DestType, OperatorCode::PLUS> {
   public:
     DestType Do(Type A, Type B) { return A + B; }
   };
 
   template<class Type, class DestType>
-  class Operation<Type, DestType, OperatorCode::SUB> {
+  class Operation<Type, DestType, OperatorCode::MINUS> {
   public:
     DestType Do(Type A, Type B) { return A - B; }
   };
 
   template<>
-  class Operation<string, string, OperatorCode::SUB> {
+  class Operation<string, string, OperatorCode::MINUS> {
   public:
     string Do(string A, string B) { return string(); }
   };
 
   template<class Type, class DestType>
-  class Operation<Type, DestType, OperatorCode::MUL> {
+  class Operation<Type, DestType, OperatorCode::TIMES> {
   public:
     DestType Do(Type A, Type B) { return A * B; }
   };
 
   template<>
-  class Operation<int, int, OperatorCode::MUL> {
+  class Operation<int, int, OperatorCode::TIMES> {
   public:
     int Do(int A, int B) { return A * B; }
   };
 
   template<>
-  class Operation<double, double, OperatorCode::MUL> {
+  class Operation<double, double, OperatorCode::TIMES> {
   public:
     double Do(double A, double B) { return A * B; }
   };
 
   template<>
-  class Operation<string, string, OperatorCode::MUL> {
+  class Operation<string, string, OperatorCode::TIMES> {
   public:
     string Do(string A, string B) { return string(); }
   };
@@ -148,7 +148,7 @@ namespace kagami {
   };
 
   template<>
-  class Operation<string, string, OperatorCode::ADD> {
+  class Operation<string, string, OperatorCode::PLUS> {
   public:
     string Do(string A, string B) {
       string temp;
@@ -162,203 +162,142 @@ namespace kagami {
   };
 
   template<>
-  class Operation<string, string, OperatorCode::NOT_EQUAL> {
+  class Operation<string, bool, OperatorCode::AND> {
   public:
-    string Do(string A, string B) {
-      Operation<string, bool, OperatorCode::NOT_EQUAL> op;
-      string result_str;
-      util::MakeBoolean(op.Do(A, B), result_str);
-      return result_str;
-    }
-  };
+    bool Do(string A, string B) {
+      bool result;
 
-  template<>
-  class Operation<string, string, OperatorCode::IS> {
-  public:
-    string Do(string A, string B) {
-      Operation<string, bool, OperatorCode::IS> op;
-      string result_str;
-      util::MakeBoolean(op.Do(A, B), result_str);
-      return result_str;
-    }
-  };
-
-  template<>
-  class Operation<string, string, OperatorCode::AND> {
-  public:
-    string Do(string A, string B) {
-      string result_str;
       if (util::IsBoolean(A) && util::IsBoolean(B)) {
-        util::MakeBoolean(A == kStrTrue && B == kStrTrue, result_str);
+        result = A == kStrTrue && B == kStrTrue;
       }
       else {
-        result_str = kStrFalse;
+        result = false;
       }
-      return result_str;
+
+      return result;
     }
   };
 
   template<>
-  class Operation<string, string, OperatorCode::OR> {
+  class Operation<string, bool, OperatorCode::OR> {
   public:
-    string Do(string A, string B) {
-      string result_str;
+    bool Do(string A, string B) {
+      bool result;
+
       if (util::IsBoolean(A) && util::IsBoolean(B)) {
-        util::MakeBoolean(A == kStrTrue || B == kStrTrue, result_str);
+        result = A == kStrTrue || B == kStrTrue;
       }
       else {
-        result_str = kStrFalse;
+        result = false;
       }
-      return result_str;
+
+      return result;
     }
   };
 
-  template<class SrcType,OperatorCode op_code>
-  class CalcBase {
+  template <class ResultType>
+  class ResultAction {
   public:
-    string Do(string data_A, string data_B) {
-      StringConvertor<SrcType> cvt;
-      Operation<SrcType, SrcType, op_code> op;
-      return to_string(op.Do(cvt.Do(data_A), cvt.Do(data_B)));
+    string Convert(ResultType src) {
+      return to_string(src);
     }
   };
 
-  template <class SrcType, OperatorCode op_code>
-  class LogicBase {
+  template<>
+  class ResultAction<string> {
   public:
-    string Do(string data_A, string data_B) {
-      StringConvertor<SrcType> cvt;
-      Operation<SrcType, bool, op_code> op;
-      string result_str;
-      bool result = op.Do(cvt.Do(data_A), cvt.Do(data_B));
-      result ?
-        result_str = kStrTrue :
-        result_str = kStrFalse;
-      return result_str;
+    string Convert(string src) {
+      return src;
     }
   };
 
-  template <OperatorCode op_code>
-  class StringBase {
+  template<>
+  class ResultAction<bool> {
   public:
-    string Do(string data_A, string data_B) {
-      Operation<string, string, op_code> op;
-      string result_str = op.Do(data_A, data_B);
-      return result_str;
+    string Convert(bool src) {
+      return src ? kStrTrue : kStrFalse;
     }
   };
 
-  template <PairTypePolicy group_type ,OperatorCode op_code>
-  class GroupCalcBase {
+  class Action {
   public:
-    string Do(string A, string B) {}
+    virtual Message Do(Object &, Object &) = 0;
   };
 
-  template <PairTypePolicy group_type, OperatorCode op_code>
-  class GroupLogicBase {
+  template<class ConvertorTargetType, OperatorCode op_code, class ResultType>
+  class PlainStringAction : public Action {
   public:
-    string Do(string A, string B) {}
-  };
+    Message Do(Object &A, Object &B) override {
+      StringConvertor<ConvertorTargetType> cvt;
+      Operation<ConvertorTargetType, ResultType, op_code> op;
+      ResultAction<ResultType> result_action;
 
-  template<OperatorCode op_code>
-  class GroupCalcBase<G_INT, op_code> {
-  public:
-    string Do(string A, string B) {
-      CalcBase<int, op_code> base;
-      return base.Do(A, B);
+      string data_A = GetObjectStuff<string>(A);
+      string data_B = GetObjectStuff<string>(B);
+      ResultType result = op.Do(cvt.Do(data_A), cvt.Do(data_B));
+      string result_content = result_action.Convert(result);
+
+      Message msg(result_content);
+
+      return msg;
     }
   };
 
   template<OperatorCode op_code>
-  class GroupCalcBase<G_FLOAT, op_code> {
+  class ObjectAction : public Action {
   public:
-    string Do(string A, string B) {
-      CalcBase<double, op_code> base;
-      return base.Do(A, B);
+    Message Do(Object &A, Object &B) override {
+      //TODO:
+      return Message();
     }
   };
 
-  template<OperatorCode op_code> 
-  class GroupCalcBase<G_STR, op_code> {
+  template<class Type, bool boolean_result>
+  class ResultTypeTraits {};
+
+  template<class Type>
+  class ResultTypeTraits<Type, true> {
   public:
-    string Do(string A, string B) {
-      StringBase<op_code> base;
-      return base.Do(A, B);
-    }
+    using ResultType = bool;
   };
 
-  template<OperatorCode op_code>
-  class GroupLogicBase<G_INT, op_code> {
+  template<class Type>
+  class ResultTypeTraits<Type, false> {
   public:
-    string Do(string A, string B) {
-      LogicBase<int, op_code> base;
-      return base.Do(A, B);
-    }
+    using ResultType = Type;
   };
 
-  template<OperatorCode op_code>
-  class GroupLogicBase<G_FLOAT, op_code> {
-  public:
-    string Do(string A, string B) {
-      LogicBase<double, op_code> base;
-      return base.Do(A, B);
-    }
-  };
+  template<OperatorCode op_code, bool boolean_result>
+  Message OperatorFunction(ObjectMap &p) {
+    Message result;
+    Object &A = p["first"];
+    Object &B = p["second"];
+    PairTypePolicy policy = GetTypePolicy(A, B);
+    std::unique_ptr<Action> action;
 
-  template<OperatorCode op_code>
-  class GroupLogicBase<G_STR, op_code> {
-  public:
-    string Do(string A, string B) {
-      StringBase<op_code> base;
-      return base.Do(A, B);
+    switch (policy) {
+    case G_INT: action = std::make_unique<PlainStringAction<
+        int, op_code, typename ResultTypeTraits<int, boolean_result>::ResultType>>();
+      break;
+    case G_FLOAT: action = std::make_unique<PlainStringAction<
+        double, op_code, typename ResultTypeTraits<double, boolean_result>::ResultType>>();
+      break;
+    case G_STR: action = std::make_unique<PlainStringAction<
+      string, op_code, typename ResultTypeTraits<string, boolean_result>::ResultType>>();
+      break;
+    case G_OTHER_OBJ: action = std::make_unique<ObjectAction<op_code>>();
+      break;
+    default:
+      break;
     }
-  };
 
-  template<OperatorCode op_code>
-  Message CalcOperation(ObjectMap &p) {
-    GroupCalcBase<G_INT, op_code> int_base;
-    GroupCalcBase<G_FLOAT, op_code> float_base;
-    GroupCalcBase<G_STR, op_code> string_base;
-    Object &A = p["first"], &B = p["second"];
-    string data_A = GetObjectStuff<string>(A);
-    string data_B = GetObjectStuff<string>(B);
-    PairTypePolicy group_type = GetTypePolicy(A, B);
-    string result_str;
-    switch (group_type) {
-    case G_INT:result_str = int_base.Do(data_A, data_B); break;
-    case G_FLOAT:result_str = float_base.Do(data_A, data_B); break;
-    case G_STR:result_str = string_base.Do(data_A, data_B); break;
-    default:break;
-    }
-    return Message(result_str);
+    result = action->Do(A, B);
+
+    return result;
   }
 
-  template<OperatorCode op_code>
-  Message LogicOperation(ObjectMap &p) {
-    GroupLogicBase<G_INT, op_code> int_base;
-    GroupLogicBase<G_FLOAT, op_code> float_base;
-    GroupLogicBase<G_STR, op_code> string_base;
-    Object &A = p["first"], &B = p["second"];
-    string data_A = GetObjectStuff<string>(A);
-    string data_B = GetObjectStuff<string>(B);
-    PairTypePolicy group_type = GetTypePolicy(A, B);
-    string result_str;
-    switch (group_type) {
-    case G_INT:result_str = int_base.Do(data_A, data_B); break;
-    case G_FLOAT:result_str = float_base.Do(data_A, data_B); break;
-    case G_STR:result_str = string_base.Do(data_A, data_B); break;
-    default:break;
-    }
-    return Message(result_str);
-  }
-
-  template <OperatorCode op_code,GenericTokenEnum gen_token>
-  Interface LogicBinaryOperator() {
-    return Interface(LogicOperation<op_code>, "first|second", gen_token);
-  }
-
-  template <OperatorCode op_code, GenericTokenEnum gen_token>
-  Interface BinaryOperator() {
-    return Interface(CalcOperation<op_code>, "first|second", gen_token);
+  template<OperatorCode op_code, GenericToken token, bool boolean_result = false>
+  Interface OperatorGenerator() {
+    return Interface(OperatorFunction<op_code, boolean_result>, "first|second", token);
   }
 }

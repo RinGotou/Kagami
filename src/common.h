@@ -122,14 +122,14 @@ namespace kagami {
     pair<string,string>("}", "{")
   };
 
-  enum TokenTypeEnum {
+  enum TokenType {
     T_GENERIC, T_STRING, T_INTEGER, T_FLOAT,
     T_BOOLEAN, T_SYMBOL, T_BLANK, T_CHAR, T_NUL
   };
 
-  using Token = pair<string, TokenTypeEnum>;
+  using Token = pair<string, TokenType>;
 
-  enum GenericTokenEnum {
+  enum GenericToken {
     GT_NOP, GT_DEF, 
     GT_IF, GT_ELIF, GT_END, GT_ELSE, GT_BIND, 
     GT_WHILE, GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_IS, 

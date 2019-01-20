@@ -92,7 +92,7 @@ namespace kagami {
     for (size_t count = 0; count < target.size(); ++count) {
       current = target[count];
       auto type = kagami::util::GetTokenType(toString(current));
-      if (type != TokenTypeEnum::T_BLANK && exempt_blank_char) {
+      if (type != TokenType::T_BLANK && exempt_blank_char) {
         head = count;
         exempt_blank_char = false;
       }
@@ -108,7 +108,7 @@ namespace kagami {
     if (data.front() == '#') return "";
 
     while (!data.empty() &&
-      util::GetTokenType(toString(data.back())) == TokenTypeEnum::T_BLANK) {
+      util::GetTokenType(toString(data.back())) == TokenType::T_BLANK) {
       data.pop_back();
     }
     return data;
@@ -766,7 +766,7 @@ namespace kagami {
 
   Message Module::PreProcessing() {
     IR *ir = nullptr;
-    GenericTokenEnum token;
+    GenericToken token;
     Message result;
     bool flag = false;
     map<size_t, size_t> skipped_idx;
@@ -848,7 +848,7 @@ namespace kagami {
 
   bool Module::PredefinedMessage(Message &result, size_t mode, Token token) {
     bool judged = false;
-    GenericTokenEnum gen_token = util::GetGenericToken(token.first);
+    GenericToken gen_token = util::GetGenericToken(token.first);
 
     switch (mode) {
     case kModeNextCondition:
@@ -1318,7 +1318,7 @@ namespace kagami {
     return result;
   }
 
-  bool Module::CheckGenericRequests(GenericTokenEnum token) {
+  bool Module::CheckGenericRequests(GenericToken token) {
     bool result = false;
 
     switch (token) {

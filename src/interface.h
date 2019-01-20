@@ -47,7 +47,7 @@ namespace kagami {
 
   private:
     string id_;
-    GenericTokenEnum token_;
+    GenericToken token_;
     vector<string> params_;
     StateCode argument_mode_;
     string domain_;
@@ -85,7 +85,7 @@ namespace kagami {
     Interface(
       Activity activity,
       string params,
-      GenericTokenEnum token,
+      GenericToken token,
       StateCode argument_mode = kCodeNormalParam
     ) :
       policy_(make_shared<CXXFunctionPolicy>(activity)),
@@ -175,7 +175,7 @@ namespace kagami {
       return domain_;
     }
 
-    GenericTokenEnum GetTokenEnum() const {
+    GenericToken GetTokenEnum() const {
       return token_;
     }
 

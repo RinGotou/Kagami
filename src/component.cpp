@@ -8,12 +8,26 @@ namespace kagami {
   }
 
   PairTypePolicy GetTypePolicy(Object &A, Object &B) {
+    PairTypePolicy policy = PairTypePolicy::G_OTHER_OBJ;
+
+    if (A.GetTypeId() == kTypeIdRawString && B.GetTypeId() == kTypeIdRawString) {
+      string data_A = GetObjectStuff<string>(A);
+      string data_B = GetObjectStuff<string>(B);
+      TokenType type_A = util::GetTokenType(data_A);
+      TokenType type_B = util::GetTokenType(data_B);
+
+      if (type_A == T_FLOAT || type_B == T_FLOAT) policy = G_FLOAT;
+      if (type_A == T_INTEGER && type_B == T_INTEGER) policy = G_INT;
+
+    }
+
+
     auto data_A = GetObjectStuff<string>(A),
       data_B = GetObjectStuff<string>(B);
     auto data_type_A = util::GetTokenType(data_A);
     auto data_type_B = util::GetTokenType(data_B);
 
-    PairTypePolicy policy = PairTypePolicy::G_NUL;
+    
 
     if (data_type_A == T_FLOAT || data_type_B == T_FLOAT) {
       policy = G_FLOAT;
@@ -154,18 +168,18 @@ namespace kagami {
 
   void OperatorRegister() {
     using namespace management;
-    CreateGenericInterface(BinaryOperator<OperatorCode::ADD, GT_ADD>());
-    CreateGenericInterface(BinaryOperator<OperatorCode::SUB, GT_SUB>());
-    CreateGenericInterface(BinaryOperator<OperatorCode::MUL, GT_MUL>());
-    CreateGenericInterface(BinaryOperator<OperatorCode::DIV, GT_DIV>());
-    CreateGenericInterface(LogicBinaryOperator<OperatorCode::IS, GT_IS>());
-    CreateGenericInterface(LogicBinaryOperator<OperatorCode::LESS_OR_EQUAL, GT_LESS_OR_EQUAL>());
-    CreateGenericInterface(LogicBinaryOperator<OperatorCode::MORE_OR_EQUAL, GT_MORE_OR_EQUAL>());
-    CreateGenericInterface(LogicBinaryOperator<OperatorCode::NOT_EQUAL, GT_NOT_EQUAL>());
-    CreateGenericInterface(LogicBinaryOperator<OperatorCode::MORE, GT_MORE>());
-    CreateGenericInterface(LogicBinaryOperator<OperatorCode::LESS, GT_LESS>());
-    CreateGenericInterface(LogicBinaryOperator<OperatorCode::AND, GT_AND>());
-    CreateGenericInterface(LogicBinaryOperator<OperatorCode::OR, GT_OR>());
+    CreateGenericInterface(OperatorGenerator<PLUS, GT_PLUS>());
+    CreateGenericInterface(OperatorGenerator<MINUS, GT_MINUS>());
+    CreateGenericInterface(OperatorGenerator<TIMES, GT_TIMES>());
+    CreateGenericInterface(OperatorGenerator<DIV, GT_DIV>());
+    CreateGenericInterface(OperatorGenerator<EQUALS, GT_EQUALS, true>());
+    CreateGenericInterface(OperatorGenerator<NOT_EQUAL, GT_NOT_EQUAL, true>());
+    CreateGenericInterface(OperatorGenerator<LESS_OR_EQUAL, GT_LESS_OR_EQUAL, true>());
+    CreateGenericInterface(OperatorGenerator<GREATER_OR_EQUAL, GT_GREATER_OR_EQUAL, true>());
+    CreateGenericInterface(OperatorGenerator<GREATER, GT_GREATER, true>());
+    CreateGenericInterface(OperatorGenerator<LESS, GT_LESS, true>());
+    CreateGenericInterface(OperatorGenerator<AND, GT_AND, true>());
+    CreateGenericInterface(OperatorGenerator<OR, GT_OR, true>());
   }
 
   void BasicUtilityRegister() {

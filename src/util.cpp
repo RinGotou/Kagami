@@ -2,7 +2,7 @@
 
 namespace kagami {
   namespace util {
-    bool IsOperatorToken(GenericTokenEnum token) {
+    bool IsOperatorToken(GenericToken token) {
       bool result;
       switch (token) {
       case GT_ADD:
@@ -29,7 +29,7 @@ namespace kagami {
       return result;
     }
 
-    int GetTokenPriority(GenericTokenEnum token) {
+    int GetTokenPriority(GenericToken token) {
       int result;
       switch (token) {
       case GT_BIND:
@@ -61,9 +61,9 @@ namespace kagami {
       return result;
     }
 
-    map<string, GenericTokenEnum> &GetGTBase() {
-      using T = pair<string, GenericTokenEnum>;
-      static map<string, GenericTokenEnum> base = {
+    map<string, GenericToken> &GetGTBase() {
+      using T = pair<string, GenericToken>;
+      static map<string, GenericToken> base = {
         T(kStrIf          ,GT_IF),
         T(kStrNop         ,GT_NOP),
         T(kStrDef         ,GT_DEF),
@@ -101,7 +101,7 @@ namespace kagami {
       return base;
     }
 
-    GenericTokenEnum GetGenericToken(string src) {
+    GenericToken GetGenericToken(string src) {
       auto &base = GetGTBase();
       auto it = base.find(src);
       if (it != base.end()) return it->second;
@@ -218,16 +218,16 @@ namespace kagami {
       return (target == "true" || target == "false");
     }
 
-    TokenTypeEnum GetTokenType(string src) {
-      TokenTypeEnum type = TokenTypeEnum::T_NUL;
-      if (src.empty()) type = TokenTypeEnum::T_NUL;
-      else if (IsBoolean(src)) type = TokenTypeEnum::T_BOOLEAN;
-      else if (IsGenericToken(src)) type = TokenTypeEnum::T_GENERIC;
-      else if (IsInteger(src)) type = TokenTypeEnum::T_INTEGER;
-      else if (IsFloat(src)) type = TokenTypeEnum::T_FLOAT;
-      else if (IsSymbol(src)) type = TokenTypeEnum::T_SYMBOL;
-      else if (IsBlank(src)) type = TokenTypeEnum::T_BLANK;
-      else if (IsString(src)) type = TokenTypeEnum::T_STRING;
+    TokenType GetTokenType(string src) {
+      TokenType type = TokenType::T_NUL;
+      if (src.empty()) type = TokenType::T_NUL;
+      else if (IsBoolean(src)) type = TokenType::T_BOOLEAN;
+      else if (IsGenericToken(src)) type = TokenType::T_GENERIC;
+      else if (IsInteger(src)) type = TokenType::T_INTEGER;
+      else if (IsFloat(src)) type = TokenType::T_FLOAT;
+      else if (IsSymbol(src)) type = TokenType::T_SYMBOL;
+      else if (IsBlank(src)) type = TokenType::T_BLANK;
+      else if (IsString(src)) type = TokenType::T_STRING;
       return type;
     }
 

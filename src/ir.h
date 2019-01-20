@@ -20,7 +20,7 @@ namespace kagami {
   public:
     string data;
     ArgumentType type;
-    TokenTypeEnum token_type;
+    TokenType token_type;
     Domain domain;
 
     Argument() :
@@ -33,7 +33,7 @@ namespace kagami {
 
     Argument(string data,
       ArgumentType type,
-      TokenTypeEnum token_type) :
+      TokenType token_type) :
       data(data),
       type(type),
       token_type(token_type) {
@@ -50,12 +50,12 @@ namespace kagami {
   class Request {
   public:
     int priority;
-    GenericTokenEnum head_gen;
+    GenericToken head_gen;
     string head_reg;
     Argument domain;
     RequestType type;
 
-    Request(GenericTokenEnum token) :
+    Request(GenericToken token) :
       priority(4),
       head_gen(token),
       head_reg(),
