@@ -25,22 +25,6 @@ namespace kagami {
     return policy;
   }
 
-  inline bool CheckObjectType(Object &obj, string type_id) {
-    return (obj.GetTypeId() == type_id);
-  }
-
-  inline bool IsRawStringObject(Object &obj) {
-    return CheckObjectType(obj, kTypeIdRawString);
-  }
-
-  inline Message IllegalCallMsg(string str) {
-    return Message(kCodeIllegalCall, str, kStateError);
-  }
-
-  inline Message IllegalParamMsg(string str) {
-    return Message(kCodeIllegalParam, str, kStateError);
-  }
-
   inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &param) {
     Message msg;
     auto interface = management::Order(id, type_id);
@@ -48,12 +32,6 @@ namespace kagami {
       msg = interface.Start(param) :
       msg.SetCode(kCodeIllegalCall);
     return msg;
-  }
-
-  inline void CheckSelfOperatorMsg(Message &msg, string res) {
-    res.empty() ?
-      msg = Message(res) :
-      msg = IllegalParamMsg("Illegal self-operator.");
   }
 
   Message GetRawStringType(ObjectMap &p) {

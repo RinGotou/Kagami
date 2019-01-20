@@ -857,23 +857,23 @@ namespace kagami {
         judged = true;
       }
       else if (gen_token != GT_ELSE && gen_token != GT_END && gen_token != GT_ELIF) {
-        result = Message(kStrPlaceHolder);
+        result = Message();
         judged = true;
       }
       break;
     case kModeCycleJump:
       if (gen_token != GT_END && gen_token != GT_IF && gen_token != GT_WHILE) {
-        result = Message(kStrPlaceHolder);
+        result = Message();
         judged = true;
       }
       break;
     case kModeCaseJump:
       if (management::HasTailTokenRequest(gen_token)) {
-        result = Message(kStrTrue);
+        result = Message();
         judged = true;
       }
       else if (gen_token != GT_WHEN && gen_token != GT_END && gen_token != GT_ELSE) {
-        result = Message(kStrPlaceHolder);
+        result = Message();
         judged = true;
       }
       break;
