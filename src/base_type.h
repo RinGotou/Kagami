@@ -114,22 +114,29 @@ namespace kagami {
     string operator()(const wstring &src) { return ws2s(src); }
   };
 
+  template<bool is_wstring>
+  class ConvertingInfoPolicy {};
+
+  template<>
+  class ConvertingInfoPolicy<true> {
+  public:
+    string TypeId() { return kTypeIdWideString; }
+    string Methods() { return kWideStringMethods; }
+  };
+
+  template<>
+  class ConvertingInfoPolicy<false> {
+  public:
+    string TypeId() { return kTypeIdString; }
+    string Methods() { return kStringMethods; }
+  };
+
   template<class DestType,class SrcType>
   Message StringFamilyConverting(ObjectMap &p) {
     StringConvertor<DestType, SrcType> convertor;
     SrcType &str = p.Get<SrcType>(kStrObject);
     shared_ptr<DestType> dest = make_shared<DestType>(convertor(str));
-    string type_id, methods;
-
-    if (std::is_same<DestType, wstring>::value) {
-      type_id = kTypeIdWideString;
-      methods = kWideStringMethods;
-    }
-    else {
-      type_id = kTypeIdString;
-      methods = kStringMethods;
-    }
-
-    return Message().SetObject(Object(dest, type_id, methods));
+    ConvertingInfoPolicy<std::is_same<DestType, wstring>::value> info_policy;
+    return Message().SetObject(Object(dest, info_policy.TypeId(), info_policy.Methods()));
   }
 }

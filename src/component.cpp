@@ -18,29 +18,8 @@ namespace kagami {
 
       if (type_A == T_FLOAT || type_B == T_FLOAT) policy = G_FLOAT;
       if (type_A == T_INTEGER && type_B == T_INTEGER) policy = G_INT;
-
-    }
-
-
-    auto data_A = GetObjectStuff<string>(A),
-      data_B = GetObjectStuff<string>(B);
-    auto data_type_A = util::GetTokenType(data_A);
-    auto data_type_B = util::GetTokenType(data_B);
-
-    
-
-    if (data_type_A == T_FLOAT || data_type_B == T_FLOAT) {
-      policy = G_FLOAT;
-    }
-    if (data_type_A == T_INTEGER && data_type_B == T_INTEGER) {
-      policy = G_INT;
-    }
-    if (util::IsString(data_A) || util::IsString(data_B)) {
-      policy = G_STR;
-    }
-    if ((data_A == kStrTrue || data_A == kStrFalse) &&
-      (data_B == kStrTrue || data_B == kStrFalse)) {
-      policy = G_STR;
+      if (util::IsString(data_A) || util::IsString(data_B)) policy = G_STR;
+      if (util::IsBoolean(data_A) && util::IsBoolean(data_B)) policy = G_STR;
     }
 
     return policy;
