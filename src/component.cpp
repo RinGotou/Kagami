@@ -25,15 +25,6 @@ namespace kagami {
     return policy;
   }
 
-  inline Message CheckEntryAndStart(string id, string type_id, ObjectMap &param) {
-    Message msg;
-    auto interface = management::Order(id, type_id);
-    interface.Good() ?
-      msg = interface.Start(param) :
-      msg.SetCode(kCodeIllegalCall);
-    return msg;
-  }
-
   Message GetRawStringType(ObjectMap &p) {
     OBJECT_ASSERT(p, "object", kTypeIdRawString);
 
@@ -57,23 +48,18 @@ namespace kagami {
 
   Message Print(ObjectMap &p) {
     Object &obj = p[kStrObject];
-    string methods = management::type::GetMethods(obj.GetTypeId());
+    vector<string> methods = management::type::GetMethods(obj.GetTypeId());
 
     auto errorMsg = []() {
       std::cout << "You can't print this object." << std::endl;
     };
 
-    if (!util::FindInStringGroup("__print", methods)) {
+    if (!find_in_vector<string>("__print", methods)) {
       errorMsg();
       return Message();
-    } 
-
-    Message tempMsg = CheckEntryAndStart("__print", obj.GetTypeId(), p);
-    if (tempMsg.GetCode() == kCodeIllegalCall) {
-      errorMsg();
     }
-    
-    return Message();
+
+    return management::Order("__print", obj.GetTypeId()).Start(p);
   }
 
   Message GetTimeDate(ObjectMap &p) {
@@ -144,13 +130,12 @@ namespace kagami {
   void BasicUtilityRegister() {
     using namespace management;
 
-    CreateInterface({
-      Interface(Convert, "object", "convert"),
-      Interface(Input, "msg", "input", kCodeAutoFill),
-      Interface(GetTimeDate, "", "time"),
-      Interface(GetRawStringType, "object", "type"),
-      Interface(IsNull, "object", "null")
-      });
+    CreateInterface(Interface(Convert, "object", "convert"));
+    CreateInterface(Interface(Input, "msg", "input", kCodeAutoFill));
+    CreateInterface(Interface(Print, kStrObject, "print"));
+    CreateInterface(Interface(GetTimeDate, "", "time"));
+    CreateInterface(Interface(GetRawStringType, "object", "type"));
+    CreateInterface(Interface(IsNull, "object", "isnull"));
   }
 
   void Activiate() {

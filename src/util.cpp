@@ -320,10 +320,10 @@ namespace kagami {
       return output;
     }
 
-    void MakeBoolean(bool origin, string &target) {
-      origin ?
-        target = kStrTrue :
-        target = kStrFalse;
+    string MakeBoolean(bool origin) {
+      return origin ?
+        kStrTrue :
+        kStrFalse;
     }
 
     bool IsDigit(char c) {

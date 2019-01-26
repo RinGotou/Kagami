@@ -14,7 +14,6 @@ namespace kagami {
     StringType &str = p.Get<StringType>(kStrObject);
 
     string type_id = p[kStrObject].GetTypeId();
-    string methods = management::type::GetMethods(type_id);
 
     int start = stoi(p.Get<string>("start"));
     int size = stoi(p.Get<string>("size"));
@@ -24,16 +23,13 @@ namespace kagami {
 
     StringType output = str.substr(start, size);
 
-    return Message()
-      .SetObject(Object(make_shared<StringType>(output), type_id));
+    return Message().SetObject(Object(make_shared<StringType>(output), type_id));
   }
 
   template <class StringType>
   Message StringFamilyGetElement(ObjectMap &p) {
     StringType &str = p.Get<StringType>(kStrObject);
     string type_id = p[kStrObject].GetTypeId();
-
-    string methods = management::type::GetMethods(type_id);
 
     int size = int(str.size());
     int idx = stoi(p.Get<string>("index"));
@@ -96,7 +92,7 @@ namespace kagami {
   Message StreamFamilyState(ObjectMap &p) {
     StreamType &stream = p.Get<StreamType>(kStrObject);
     string temp;
-    util::MakeBoolean(stream.good(), temp);
+    temp = util::MakeBoolean(stream.good());
     return Message(temp);
   }
 
@@ -125,14 +121,12 @@ namespace kagami {
   class ConvertingInfoPolicy<true> {
   public:
     string TypeId() { return kTypeIdWideString; }
-    string Methods() { return kWideStringMethods; }
   };
 
   template<>
   class ConvertingInfoPolicy<false> {
   public:
     string TypeId() { return kTypeIdString; }
-    string Methods() { return kStringMethods; }
   };
 
   template<class DestType,class SrcType>

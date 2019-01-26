@@ -200,26 +200,16 @@ namespace kagami {
     kModeCaseJump
   };
 
-  const string kTypeIdNull       = "Null";
-  const string kTypeIdString     = "String";
-  const string kTypeIdWideString = "WString";
-  const string kTypeIdRawString  = "RawString";
-  const string kTypeIdArray      = "Array";
-  const string kTypeIdInStream   = "Instream";
-  const string kTypeIdOutStream  = "Outstream";
-  const string kTypeIdRegex      = "Regex";
-  const string kTypeIdRef        = "Ref";
-  const string kTypeIdLib        = "Library";
-  const string kTypeIdFunction   = "Function";
-
-  const string kRawStringMethods  = "size|__at|__print";
-  const string kArrayMethods      = "size|__at|__print|push|pop|empty";
-  const string kStringMethods     = "size|__at|__print|substr|to_wide";
-  const string kWideStringMethods = "size|__at|__print|substr|to_byte";
-  const string kInStreamMethods   = "get|good|getlines|close|eof";
-  const string kOutStreamMethods  = "write|good|close";
-  const string kRegexMethods      = "match";
-  const string kFunctionMethods   = "id|call|params";
+  const string kTypeIdNull       = "null";
+  const string kTypeIdString     = "string";
+  const string kTypeIdWideString = "wstring";
+  const string kTypeIdRawString  = "rawstring";
+  const string kTypeIdArray      = "array";
+  const string kTypeIdInStream   = "instream";
+  const string kTypeIdOutStream  = "outstream";
+  const string kTypeIdRegex      = "regex";
+  const string kTypeIdRef        = "ref";
+  const string kTypeIdFunction   = "function";
 
   const string
     kStrIf             = "if",
@@ -272,6 +262,17 @@ namespace kagami {
       if (lhs == unit) result = true;
     }
     return result;
+  }
+
+  template <class T>
+  bool find_in_vector(T t, vector<T> vec) {
+    for (auto &unit : vec) {
+      if (t == unit) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
 

@@ -4,7 +4,7 @@
 
 namespace kagami {
   class Object;
-  class ObjectCopyingPolicy;
+  class ObjectPolicy;
   class ObjectContainer;
   class ObjectMap;
   class Message;
@@ -115,22 +115,18 @@ namespace kagami {
     Object &Copy(Object &object, bool force = false);
   };
 
-  class ObjectCopyingPolicy {
+  class ObjectPolicy {
   private:
     CopyingPolicy solver_;
-    string methods_;
+    vector<string> methods_;
   public:
-    ObjectCopyingPolicy() : 
-      methods_("") { 
+    ObjectPolicy() : 
+      solver_(nullptr),
+      methods_() {}
 
-      solver_ = nullptr; 
-    }
-    ObjectCopyingPolicy(CopyingPolicy solver, 
-      string methods) : 
-      methods_(methods){
-
-      solver_ = solver;
-    }
+    ObjectPolicy(CopyingPolicy solver, string methods) : 
+      solver_(solver),
+      methods_(util::BuildStringVector(methods)) {}
 
     shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
       shared_ptr<void> result = nullptr;
@@ -140,7 +136,7 @@ namespace kagami {
       return result;
     }
 
-    string GetMethods() const { 
+    vector<string> GetMethods() const { 
       return methods_; 
     }
   };

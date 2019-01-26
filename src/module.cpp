@@ -965,7 +965,7 @@ namespace kagami {
     }
     else if (args.size() == 1) {
       auto obj = worker->MakeObject(args[0]);
-      string methods = management::type::GetMethods(obj.GetTypeId());
+
       container.Add(kStrRetValue, Object(obj.Get(), obj.GetTypeId()));
     }
     worker->msg = Message(kCodeReturn, "");
@@ -1004,11 +1004,10 @@ namespace kagami {
 
     if (!args.empty()) {
       Object obj = worker->MakeObject(args[0]);
-      string methods = management::type::GetMethods(obj.GetTypeId());
-      auto vec = util::BuildStringVector(methods);
+      vector<string> methods = management::type::GetMethods(obj.GetTypeId());
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
 
-      for (const auto &unit : vec) {
+      for (const auto &unit : methods) {
         base->emplace_back(Object(make_shared<string>(unit), kTypeIdString));
       }
 
@@ -1030,12 +1029,9 @@ namespace kagami {
     if (args.size() == 2) {
       Object obj = worker->MakeObject(args[0]);
       Object str_obj = worker->MakeObject(args[1]);
-      Object ret_obj;
-      string target_str = RealString(GetObjectStuff<string>(str_obj));
-      string methods = management::type::GetMethods(obj.GetTypeId());
-      util::FindInStringGroup(target_str, methods) ?
-        ret_obj = Object(kStrTrue) :
-        ret_obj = Object(kStrFalse);
+      string target = RealString(GetObjectStuff<string>(str_obj));
+      vector<string> methods = management::type::GetMethods(obj.GetTypeId());
+      Object ret_obj(util::MakeBoolean(find_in_vector<string>(target, methods)));
 
       worker->returning_base.push(ret_obj);
     }
@@ -1140,13 +1136,11 @@ namespace kagami {
   }
 
   bool Module::DomainAssert(IRWorker *worker, deque<Argument> args, bool returning) {
-    bool result = true;
-
     Object obj = worker->MakeObject(args[0]);
     Object id_obj = worker->MakeObject(args[1]);
     string id = GetObjectStuff<string>(id_obj);
-    string methods = management::type::GetMethods(obj.GetTypeId());
-    result = util::FindInStringGroup(id, methods);
+    vector<string> methods = management::type::GetMethods(obj.GetTypeId());
+    bool result = find_in_vector<string>(id, methods);
 
     if (!result) {
       worker->error_string = "Method/Member is not found. - " + id;

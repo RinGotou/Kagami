@@ -51,14 +51,14 @@ namespace kagami {
   }
  
   void LoadSDLStuff() {
+    using management::type::NewTypeSetup;
     using management::CreateInterface;
-    using management::type::AddTemplate;
 
     /* For test only */
-    AddTemplate(kTypeIdSDLWindow, ObjectCopyingPolicy(FakeCopy, ""));
-    CreateInterface(Interface(SDLCreateWindow, "width|height|title", "window"));
+    NewTypeSetup(kTypeIdSDLWindow, FakeCopy)
+      .InitConstructor(Interface(SDLCreateWindow, "width|height|title", "window"));
 
-    AddTemplate(kTypeIdSDLTexture, ObjectCopyingPolicy(FakeCopy, ""));
+    NewTypeSetup(kTypeIdSDLTexture, FakeCopy);
     CreateInterface(Interface(SDLCreateTextureFormBMP, "win|path", "LoadBMP"));
 
     CreateInterface(Interface(SDLDelay, "time", "SDLDelay"));

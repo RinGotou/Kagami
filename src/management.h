@@ -10,7 +10,6 @@ namespace kagami {
     Object *CreateObject(string id, Object &object);
     Object *CreateObject(string id, Object &&object);
     void CreateInterface(Interface temp);
-    void CreateInterface(std::initializer_list<Interface> &&rhs);
     void CreateGenericInterface(Interface temp);
     bool DisposeManager();
     bool HasTailTokenRequest(GenericToken token);
@@ -20,9 +19,9 @@ namespace kagami {
     Object *CreateConstantObject(string id, Object &&object);
 
     namespace type {
-      extern string GetMethods(string name);
-      extern void NewType(string name, ObjectPolicy temp);
-      extern shared_ptr<void> GetObjectCopy(Object &object);
+      vector<string> GetMethods(string name);
+      void NewType(string name, ObjectPolicy temp);
+      shared_ptr<void> GetObjectCopy(Object &object);
 
       class NewTypeSetup {
       private:
@@ -30,6 +29,7 @@ namespace kagami {
         string methods_;
         CopyingPolicy policy_;
         vector<Interface> interfaces_;
+        Interface constructor_;
 
       public:
         NewTypeSetup() = delete;
@@ -37,20 +37,30 @@ namespace kagami {
         NewTypeSetup(string type_name, CopyingPolicy policy) :
           type_name_(type_name), policy_(policy) {}
 
+        NewTypeSetup &InitConstructor(Interface interface) {
+          constructor_ = interface;
+          return *this;
+        }
+
         NewTypeSetup &InitMethods(std::initializer_list<Interface> &&rhs) {
           interfaces_ = rhs;
-          string method_list;
+          string method_list("");
 
           for (auto &unit : interfaces_) {
             unit.SetDomain(type_name_);
             method_list.append(unit.GetId()).append("|");
           }
 
-          methods_ = method_list.substr(0, method_list.size() - 1);
+          if (method_list != "") {
+            methods_ = method_list.substr(0, method_list.size() - 1);
+          }
+
+          return *this;
         }
 
         ~NewTypeSetup() {
           NewType(type_name_, ObjectPolicy(policy_, methods_));
+          CreateInterface(constructor_);
           for (auto &unit : interfaces_) {
             CreateInterface(unit);
           }

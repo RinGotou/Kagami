@@ -21,7 +21,7 @@ namespace kagami {
     wchar_t GetEscapeCharW(wchar_t target);
     bool IsWideString(string target);
     string CombineStringVector(vector<string> target);
-    void MakeBoolean(bool origin, string &target);
+    string MakeBoolean(bool origin);
     bool IsDigit(char c);
     bool IsAlpha(char c);
   };

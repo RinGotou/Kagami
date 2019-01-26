@@ -99,13 +99,6 @@ namespace kagami {
       GetInterfaceBase().emplace_back(temp);
     }
 
-    void CreateInterface(std::initializer_list<Interface> &&rhs) {
-      auto &base = GetInterfaceBase();
-      for (auto &unit : rhs) {
-        base.emplace_back(unit);
-      }
-    }
-
     void CreateGenericInterface(Interface temp) {
       GetGenericInterfaceBase().insert(pair<GenericToken, Interface>(
         temp.GetTokenEnum(), temp));
@@ -141,8 +134,8 @@ namespace kagami {
     }
 
     namespace type {
-      map <string, ObjectCopyingPolicy> &GetPlannerBase() {
-        static map<string, ObjectCopyingPolicy> base;
+      map <string, ObjectPolicy> &GetPlannerBase() {
+        static map<string, ObjectPolicy> base;
         return base;
       }
 
@@ -161,8 +154,8 @@ namespace kagami {
         return result;
       }
 
-      string GetMethods(string name) {
-        string result;
+      vector<string> GetMethods(string name) {
+        vector<string> result;
         const auto it = GetPlannerBase().find(name);
 
         if (it != GetPlannerBase().end()) {
@@ -171,8 +164,8 @@ namespace kagami {
         return result;
       }
 
-      void AddTemplate(string name, ObjectCopyingPolicy temp) {
-        GetPlannerBase().insert(pair<string, ObjectCopyingPolicy>(name, temp));
+      void NewType(string name, ObjectPolicy temp) {
+        GetPlannerBase().insert(pair<string, ObjectPolicy>(name, temp));
       }
     }
   }

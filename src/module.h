@@ -233,7 +233,6 @@ namespace kagami {
 
   std::wstring s2ws(const std::string &s);
   std::string ws2s(const std::wstring &s);
-  Message CheckEntryAndStart(string id, string type_id, ObjectMap &param);
   bool IsStringObject(Object &obj);
   Object GetFunctionObject(string id, string domain);
   shared_ptr<void> FakeCopy(shared_ptr<void> target);
