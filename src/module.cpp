@@ -5,10 +5,6 @@ namespace kagami {
     return target;
   }
 
-  shared_ptr<void> NullCopy(shared_ptr<void> target) {
-    return make_shared<int>(0);
-  }
-
   string RealString(const string &src) {
     string result = src;
     if (util::IsString(result)) result = util::GetRawString(result);
@@ -602,13 +598,13 @@ namespace kagami {
   }
 
   void Module::ResetContainer(string func_id) {
-    Object *func_sign = management::GetCurrentContainer().Find(kStrUserFunc);
+    Object *id_obj = management::GetCurrentContainer().Find(kStrUserFunc);
 
-    while (func_sign == nullptr) {
+    while (id_obj == nullptr) {
       management::DisposeManager();
-      func_sign = management::GetCurrentContainer().Find(kStrUserFunc);
-      if (func_sign != nullptr) {
-        string value = GetObjectStuff<string>(*func_sign);
+      id_obj = management::GetCurrentContainer().Find(kStrUserFunc);
+      if (id_obj != nullptr) {
+        string value = id_obj->Cast<string>();
         if (value == func_id) break;
       }
     }
@@ -677,10 +673,12 @@ namespace kagami {
         is_operator_token = util::IsOperatorToken(request.head_gen);
 
         if (!preprocessing && worker->tail_recursion) {
-          (request.head_reg == name && idx == action_base.size() - 1
-            && blk->last_index && name != "" && name != "__null__") ?
-            worker->tail_recursion = true :
-            worker->tail_recursion = false;
+          worker->tail_recursion = (
+            request.head_reg == name
+            && idx == action_base.size() - 1
+            && blk->last_index
+            && !compare(name, { "", "__null__" })
+            );
         }
 
         switch (request.type) {
@@ -721,10 +719,9 @@ namespace kagami {
           break;
         }
 
-        if (worker->error_returning ||
-          worker->error_obj_checking ||
-          worker->error_assembling) {
-
+        if (worker->error_returning 
+          || worker->error_obj_checking 
+          || worker->error_assembling) {
           break;
         }
 
@@ -737,18 +734,16 @@ namespace kagami {
         
         if (msg.GetLevel() == kStateError) break;
 
-        if (request.head_gen != kTokenAssert) {
-          Object object = msg.GetCode() == kCodeObject ?
-            msg.GetObj() : Object();
+        Object object = msg.GetCode() == kCodeObject ?
+          msg.GetObj() : Object();
 
-          worker->returning_base.push(object);
-        }
+        worker->returning_base.push(object);
       }
     }
 
-    if (worker->error_returning ||
-      worker->error_obj_checking ||
-      worker->error_assembling) {
+    if (worker->error_returning 
+      || worker->error_obj_checking 
+      || worker->error_assembling) {
       msg = Message(kCodeIllegalSymbol, worker->error_string, kStateError);
     }
 
@@ -778,7 +773,7 @@ namespace kagami {
       if (!health_) break;
       ir = &storage_[idx];
       token = util::GetGenericToken(ir->GetMainToken().first);
-      if (token == kTokenWhile || token == kTokenIf || token == kTokenCase) {
+      if (compare(token, { kTokenWhile,kTokenIf,kTokenCase })) {
         nest_head_count++;
       }
       else if (token == kTokenFn) {
@@ -905,7 +900,7 @@ namespace kagami {
       CopyObject(dest, src);
     }
     else {
-      string id = GetObjectStuff<string>(dest);
+      string id = dest.Cast<string>();
 
       if (util::GetTokenType(id) == kTokenTypeGeneric) {
         ObjectPointer real_dest = management::FindObject(id);
@@ -1029,7 +1024,7 @@ namespace kagami {
     if (args.size() == 2) {
       Object obj = worker->MakeObject(args[0]);
       Object str_obj = worker->MakeObject(args[1]);
-      string target = RealString(GetObjectStuff<string>(str_obj));
+      string target = RealString(str_obj.Cast<string>());
       vector<string> methods = management::type::GetMethods(obj.GetTypeId());
       Object ret_obj(util::MakeBoolean(find_in_vector<string>(target, methods)));
 
@@ -1100,7 +1095,7 @@ namespace kagami {
 
     if (!args.empty()) {
       ObjectPointer case_head = management::FindObject("__case");
-      string case_content = GetObjectStuff<string>(*case_head);
+      string case_content = case_head->Cast<string>();
       bool state = true, found = false;
 
       for (size_t idx = 0; idx < args.size(); idx += 1) {
@@ -1110,7 +1105,7 @@ namespace kagami {
           break;
         }
 
-        if (case_content == GetObjectStuff<string>(obj)) {
+        if (case_content == obj.Cast<string>()) {
           found = true;
           break;
         }
@@ -1138,7 +1133,7 @@ namespace kagami {
   bool Module::DomainAssert(IRWorker *worker, deque<Argument> args, bool returning) {
     Object obj = worker->MakeObject(args[0]);
     Object id_obj = worker->MakeObject(args[1]);
-    string id = GetObjectStuff<string>(id_obj);
+    string id = id_obj.Cast<string>();
     vector<string> methods = management::type::GetMethods(obj.GetTypeId());
     bool result = find_in_vector<string>(id, methods);
 
@@ -1204,7 +1199,8 @@ namespace kagami {
         worker->msg = Message(code, kStrTrue);
       }
       else {
-        string state_str = GetObjectStuff<string>(obj);
+        string state_str = obj.Cast<string>();
+
         if (state_str == kStrTrue || state_str == kStrFalse) {
           worker->msg = Message(code, state_str);
         }
@@ -1451,7 +1447,7 @@ namespace kagami {
   Message Module::RunAsFunction(ObjectMap &p) {
     Message msg;
     auto &base = management::CreateContainer();
-    string func_id = p.Get<string>(kStrUserFunc);
+    string func_id = p.Cast<string>(kStrUserFunc);
 
     for (auto &unit : p) {
       base.Add(unit.first, unit.second);
@@ -1465,12 +1461,12 @@ namespace kagami {
       Object *ret = currentBase.Find(kStrRetValue);
       if (ret != nullptr) {
         Object obj;
-        obj.Copy(*ret);
+        obj.CloneFrom(*ret);
         msg.SetObject(obj);
       }
     }
 
-    Object *func_sign = management::GetCurrentContainer().Find(kStrUserFunc);
+    Object *id_obj = management::GetCurrentContainer().Find(kStrUserFunc);
 
     ResetContainer(func_id);
 

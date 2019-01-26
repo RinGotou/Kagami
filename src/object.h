@@ -15,6 +15,32 @@ namespace kagami {
   using CopyingPolicy = shared_ptr<void>(*)(shared_ptr<void>);
   using ContainerPool = kagami::list<ObjectContainer>;
 
+  class ObjectPolicy {
+  private:
+    CopyingPolicy copying_policy_;
+    vector<string> methods_;
+  public:
+    ObjectPolicy() :
+      copying_policy_(nullptr),
+      methods_() {}
+
+    ObjectPolicy(CopyingPolicy copying_policy, string methods) :
+      copying_policy_(copying_policy),
+      methods_(util::BuildStringVector(methods)) {}
+
+    shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
+      shared_ptr<void> result = nullptr;
+      if (target != nullptr) {
+        result = copying_policy_(target);
+      }
+      return result;
+    }
+
+    vector<string> GetMethods() const {
+      return methods_;
+    }
+  };
+
   class Object {
     struct TargetObject { 
       Object *ptr; 
@@ -69,7 +95,6 @@ namespace kagami {
       return this->operator=(object);
     }
 
-
     Object &Set(shared_ptr<void> ptr, string type_id) {
       if (ref_) return GetTargetObject()->Set(ptr, type_id);
       ptr_ = ptr;
@@ -103,8 +128,8 @@ namespace kagami {
       return result;
     }
 
-    Object &Copy(Object &&object) { 
-      return this->Copy(object); 
+    Object &CloneFrom(Object &&object) { 
+      return this->CloneFrom(object); 
     }
 
     bool IsRef() const { 
@@ -112,34 +137,10 @@ namespace kagami {
     }
 
     Object &Ref(Object &object);
-    Object &Copy(Object &object, bool force = false);
+    Object &CloneFrom(Object &object, bool force = false);
   };
 
-  class ObjectPolicy {
-  private:
-    CopyingPolicy solver_;
-    vector<string> methods_;
-  public:
-    ObjectPolicy() : 
-      solver_(nullptr),
-      methods_() {}
 
-    ObjectPolicy(CopyingPolicy solver, string methods) : 
-      solver_(solver),
-      methods_(util::BuildStringVector(methods)) {}
-
-    shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
-      shared_ptr<void> result = nullptr;
-      if (target != nullptr) {
-        result = solver_(target);
-      }
-      return result;
-    }
-
-    vector<string> GetMethods() const { 
-      return methods_; 
-    }
-  };
 
   class ObjectContainer {
   private:
@@ -183,8 +184,8 @@ namespace kagami {
     }
 
     template <class T>
-    T &Get(string id) {
-      return *static_pointer_cast<T>(this->at(id).Get());
+    T &Cast(string id) {
+      return this->at(id).Cast<T>();
     }
 
     bool CheckTypeId(string id, string type_id) {
@@ -204,12 +205,8 @@ namespace kagami {
     }
 
     int GetVaSize() {
-      int size;
       auto it = this->find(kStrVaSize);
-      it != this->end() ?
-        size = stoi(*static_pointer_cast<string>(it->second.Get())) :
-        size = -1;
-      return size;
+      return it != this->end() ? stoi(it->second.Cast<string>()) : -1;
     }
   };
 }

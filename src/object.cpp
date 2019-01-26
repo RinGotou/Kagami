@@ -18,7 +18,7 @@ namespace kagami {
     return *this;
   }
 
-  Object &Object::Copy(Object &object, bool force) {
+  Object &Object::CloneFrom(Object &object, bool force) {
     auto mod = [&]() {
       ptr_ = object.ptr_;
       type_id_ = object.type_id_;
@@ -30,7 +30,7 @@ namespace kagami {
       mod();
     }
     else {
-      if (ref_) GetTargetObject()->Copy(object);
+      if (ref_) GetTargetObject()->CloneFrom(object);
       else mod();
     }
     return *this;

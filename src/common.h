@@ -217,6 +217,7 @@ namespace kagami {
     kStrEnd            = "end",
     kStrBind           = "__bind",
     kStrVaSize         = "__size",
+    kStrPrint          = "__print",
     kStrFor            = "for",
     kStrElse           = "else",
     kStrElif           = "elif",

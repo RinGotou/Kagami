@@ -25,11 +25,6 @@
 
 namespace kagami {
   template <class T>
-  T &GetObjectStuff(Object &obj) {
-    return *static_pointer_cast<T>(obj.Get());
-  }
-
-  template <class T>
   shared_ptr<void> SimpleSharedPtrCopy(shared_ptr<void> target) {
     T temp(*static_pointer_cast<T>(target));
     return make_shared<T>(temp);
@@ -226,7 +221,7 @@ namespace kagami {
   };
 
   void Activiate();
-  void InitPlanners();
+  void InitBaseTypes();
 #if not defined(_DISABLE_SDL_)
   void LoadSDLStuff();
 #endif
@@ -236,7 +231,6 @@ namespace kagami {
   bool IsStringObject(Object &obj);
   Object GetFunctionObject(string id, string domain);
   shared_ptr<void> FakeCopy(shared_ptr<void> target);
-  shared_ptr<void> NullCopy(shared_ptr<void> target);
   string RealString(const string &src);
   bool IsStringFamily(Object &obj);
   void CopyObject(Object &dest, Object &src);

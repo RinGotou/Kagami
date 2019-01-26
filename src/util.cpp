@@ -137,14 +137,11 @@ namespace kagami {
       if (target.empty()) return false;
       const auto head = target.front();
 
-      if ((head == '-' || head == '+') &&
-        target.size() == 1) {
+      if (compare(head, { '-','+' }) && target.size() == 1) {
         return false;
       }
 
-      if (!IsDigit(head) &&
-        head != '-' &&
-        head != '+') {
+      if (!IsDigit(head) && !compare(head, {'-', '+'})) {
         return false;
       }
 
@@ -163,11 +160,11 @@ namespace kagami {
       const auto head = target.front();
       bool dot = false;
 
-      if ((head == '-' || head == '+') && target.size() == 1) return false;
+      if (compare(head, { '-','+' }) && target.size() == 1) {
+        return false;
+      }
 
-      if (!IsDigit(head) &&
-        head != '-' &&
-        head != '+') {
+      if (!IsDigit(head) && !compare(head, { '-', '+' })) {
         return false;
       }
 
@@ -199,7 +196,7 @@ namespace kagami {
       if (target.empty()) return false;
       bool result = true;
       for (auto &unit : target) {
-        if (unit != ' ' && unit != '\t' && unit != '\r' && unit != '\n') {
+        if (!compare(unit, { ' ','\t','\r','\n' })) {
           result = false;
           break;
         }
@@ -215,7 +212,7 @@ namespace kagami {
     }
 
     bool IsBoolean(string target) {
-      return (target == "true" || target == "false");
+      return compare(target, { "true","false" });
     }
 
     TokenType GetTokenType(string src) {
@@ -229,18 +226,6 @@ namespace kagami {
       else if (IsBlank(src)) type = TokenType::kTokenTypeBlank;
       else if (IsString(src)) type = TokenType::kTokenTypeString;
       return type;
-    }
-
-    bool FindInStringGroup(string target, string source) {
-      bool result = false;
-      auto methods = BuildStringVector(source);
-      for (auto &unit : methods) {
-        if (unit == target) {
-          result = true;
-          break;
-        }
-      }
-      return result;
     }
 
     vector<string> BuildStringVector(string source) {
@@ -283,7 +268,7 @@ namespace kagami {
     bool IsWideString(string target) {
       auto result = false;
       for (auto &unit : target) {
-        if (unit < 0 || unit>127) {
+        if (unit < 0 || unit > 127) {
           result = true;
           break;
         }
@@ -321,9 +306,7 @@ namespace kagami {
     }
 
     string MakeBoolean(bool origin) {
-      return origin ?
-        kStrTrue :
-        kStrFalse;
+      return origin ? kStrTrue : kStrFalse;
     }
 
     bool IsDigit(char c) {

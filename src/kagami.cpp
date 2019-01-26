@@ -17,7 +17,7 @@ namespace kagami {
     auto logger = GetLogger();
 
     /*Write log to a file*/
-    if (path != "stdout" && path != "") {
+    if (!compare(path, { "stdout", "" })) {
       ofstream ofs;
       ofs.open(path, std::ios::out | std::ios::app);
       if (!ofs.good()) {
@@ -36,7 +36,13 @@ namespace kagami {
   void ScriptCore::ExecScriptFile(string target) {
     IRMaker maker(target.c_str());
     Module main_module(maker, true);
+
+    //Initializers
     Activiate();
+    InitBaseTypes();
+#if not defined(_DISABLE_SDL_)
+    LoadSDLStuff();
+#endif
 
     if (main_module.Good()) {
       main_module.Run();
@@ -103,25 +109,23 @@ void Processing(Processor &processor) {
 }
 
 int main(int argc, char **argv) {
+  Processor processor = {
+    Pattern("path"   , Option(true, false, 1)),
+    Pattern("help"   , Option(false, false, 1)),
+    Pattern("version", Option(false, false, 1)),
+    Pattern("log"    , Option(true, true)),
+    Pattern("wait"   , Option(false, true))
+  };
+
 #if not defined(_DISABLE_SDL_)
   if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
     cout << "SDL initialization error!" << endl;
     return 0;
   }
 #endif
-  
-  Processor processor = {
-    Pattern("path", Option(true, false, 1)),
-    Pattern("help", Option(false, false, 1)),
-    Pattern("version", Option(false, false, 1)),
-    Pattern("log", Option(true, true)),
-    Pattern("wait", Option(false, true))
-  };
 
   if (!processor.Generate(argc, argv)) {
-    cout << 
-      ArgumentProcessorError(processor.Error())
-      .Report(processor.BadArg()) 
+    cout << ArgumentProcessorError(processor.Error()).Report(processor.BadArg()) 
       << endl;
     HelpFile();
   }

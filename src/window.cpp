@@ -6,9 +6,9 @@ namespace kagami {
   /* Under Construction */
 
   Message SDLCreateWindow(ObjectMap &p) {
-    int w = stoi(p.Get<string>("width"));
-    int h = stoi(p.Get<string>("height"));
-    string title = p.Get<string>("title");
+    int w = stoi(p.Cast<string>("width"));
+    int h = stoi(p.Cast<string>("height"));
+    string title = p.Cast<string>("title");
     Object ret;
     WindowBase win_base = make_shared<Window>();
     win_base->window = SDL_CreateWindow(title.c_str(),
@@ -23,8 +23,8 @@ namespace kagami {
   }
   
   Message SDLCreateTextureFormBMP(ObjectMap &p) {
-    string image_path = p.Get<string>("path");
-    Window &win = p.Get<Window>("win");
+    string image_path = p.Cast<string>("path");
+    Window &win = p.Cast<Window>("win");
     Object ret;
     TextureBase texture_base = make_shared<Texture>();
     SDL_Surface *image = SDL_LoadBMP(image_path.c_str());
@@ -36,8 +36,8 @@ namespace kagami {
  
 
   Message SDLTestPresent(ObjectMap &p) {
-    Texture &te = p.Get<Texture>("texture");
-    Window &win = p.Get<Window>("win");
+    Texture &te = p.Cast<Texture>("texture");
+    Window &win = p.Cast<Window>("win");
     SDL_RenderClear(win.render);
     SDL_RenderCopy(win.render, te.texture, NULL, NULL);
     SDL_RenderPresent(win.render);
@@ -45,7 +45,7 @@ namespace kagami {
   }
 
   Message SDLDelay(ObjectMap &p) {
-    int time = stoi(p.Get<string>("time"));
+    int time = stoi(p.Cast<string>("time"));
     SDL_Delay(time);
     return Message();
   }

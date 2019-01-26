@@ -15,7 +15,6 @@ namespace kagami {
     bool IsSymbol(string target);
     bool IsBoolean(string target);
     TokenType GetTokenType(string target);
-    bool FindInStringGroup(string target, string source);
     vector<string> BuildStringVector(string source);
     char GetEscapeChar(char target);
     wchar_t GetEscapeCharW(wchar_t target);

@@ -1,7 +1,6 @@
 #include "base_type.h"
 
 namespace kagami {
-
   inline bool IsStringFamily(Object &obj) {
     return compare(obj.GetTypeId(), { kTypeIdRawString,kTypeIdString,kTypeIdWideString });
   }
@@ -10,13 +9,13 @@ namespace kagami {
     shared_ptr<ArrayBase> base(make_shared<ArrayBase>());
 
     if (p.Search("size")) {
-      auto size = stoi(p.Get<string>("size"));
+      auto size = stoi(p.Cast<string>("size"));
       CONDITION_ASSERT(size > 0, "Illegal array size.");
 
       Object obj;
       
       p.Search("init_value") ?
-        obj.Copy(p["init_value"]) :
+        obj.CloneFrom(p["init_value"]) :
         obj = Object();
 
       base->reserve(size);
@@ -33,8 +32,8 @@ namespace kagami {
   Message ArrayGetElement(ObjectMap &p) {
     OBJECT_ASSERT(p, "index", kTypeIdRawString);
 
-    ArrayBase &base = p.Get<ArrayBase>(kStrObject);
-    int idx = stoi(p.Get<string>("index"));
+    ArrayBase &base = p.Cast<ArrayBase>(kStrObject);
+    int idx = stoi(p.Cast<string>("index"));
     int size = int(base.size());
 
     CONDITION_ASSERT(idx < size, "Subscript is out of range.");
@@ -44,18 +43,17 @@ namespace kagami {
 
   Message ArrayGetSize(ObjectMap &p) {
     auto &obj = p[kStrObject];
-    return Message(to_string(GetObjectStuff<ArrayBase>(obj).size()));
+    return Message(to_string(obj.Cast<ArrayBase>().size()));
   }
 
   Message ArrayEmpty(ObjectMap &p) {
     return Message(
-      GetObjectStuff<ArrayBase>(p[kStrObject]).empty() ?
-      kStrTrue : kStrFalse
+      util::MakeBoolean(p[kStrObject].Cast<ArrayBase>().empty())
     );
   }
 
   Message ArrayPush(ObjectMap &p) {
-    ArrayBase &base = p.Get<ArrayBase>(kStrObject);
+    ArrayBase &base = p.Cast<ArrayBase>(kStrObject);
 
     base.emplace_back(p["object"]);
 
@@ -63,20 +61,18 @@ namespace kagami {
   }
 
   Message ArrayPop(ObjectMap &p) {
-    ArrayBase &base = p.Get<ArrayBase>(kStrObject);
+    ArrayBase &base = p.Cast<ArrayBase>(kStrObject);
 
     if (!base.empty()) base.pop_back();
 
-    return Message().SetObject(
-      base.empty() ? kStrTrue : kStrFalse
-    );
+    return Message().SetObject(util::MakeBoolean(base.empty()));
   }
  
   Message ArrayPrint(ObjectMap &p) {
     Message result;
     ObjectMap obj_map;
 
-    auto &base = p.Get<ArrayBase>(kStrObject);
+    auto &base = p.Cast<ArrayBase>(kStrObject);
     auto interface = management::Order("print", kTypeIdNull, -1);
 
     for (auto &unit : base) {
@@ -92,13 +88,13 @@ namespace kagami {
   Message RawStringGetElement(ObjectMap &p) {
     OBJECT_ASSERT(p, "index", kTypeIdRawString);
 
-    int idx = stoi(p.Get<string>("index"));
+    int idx = stoi(p.Cast<string>("index"));
 
     const auto makeStrToken = [](char target)->string {
       return string().append("'").append(1, target).append("'");
     };
 
-    string data = RealString(p.Get<string>(kStrObject));
+    string data = RealString(p.Cast<string>(kStrObject));
     size_t size = data.size();
 
     CONDITION_ASSERT(idx < int(size - 1), "Subscript is out of range.");
@@ -107,14 +103,14 @@ namespace kagami {
   }
 
   Message RawStringGetSize(ObjectMap &p) {
-    auto str = RealString(p.Get<string>(kStrObject));
+    auto str = RealString(p.Cast<string>(kStrObject));
     return Message(to_string(str.size()));
   }
 
   Message RawStringPrint(ObjectMap &p) {
     bool doNotWrap = (p.Search("not_wrap"));
     
-    auto data = RealString(p.Get<string>(kStrObject));
+    auto data = RealString(p.Cast<string>(kStrObject));
     std::cout << data;
     if (!doNotWrap) std::cout << std::endl;
     
@@ -130,18 +126,19 @@ namespace kagami {
       "String constructor can't accept this object.");
 
     if (obj.GetTypeId() == kTypeIdWideString) {
-      wstring wstr = GetObjectStuff<wstring>(obj);
+      wstring wstr = obj.Cast<wstring>();
       string output = ws2s(wstr);
 
       base.Set(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
     }
     else if (obj.GetTypeId() == kTypeIdString) {
-      base.Set(obj.Get(), kTypeIdString)
+      string copy = obj.Cast<string>();
+      base.Set(make_shared<string>(copy), kTypeIdString)
         .SetConstructorFlag();
     }
     else {
-      string output = RealString(GetObjectStuff<string>(obj));
+      string output = RealString(obj.Cast<string>());
 
       base.Set(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
@@ -155,7 +152,7 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(p["path"]), 
       "Illegal path.");
 
-    string path = RealString(p.Get<string>("path"));
+    string path = RealString(p.Cast<string>("path"));
 
     shared_ptr<ifstream> ifs = 
       make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
@@ -164,7 +161,7 @@ namespace kagami {
   }
 
   Message InStreamGet(ObjectMap &p) {
-    ifstream &ifs = p.Get<ifstream>(kStrObject);
+    ifstream &ifs = p.Cast<ifstream>(kStrObject);
     Message msg;
 
     CUSTOM_ASSERT(ifs.good(), kCodeBadStream, "InStream is not working.");
@@ -178,8 +175,8 @@ namespace kagami {
   }
 
   Message InStreamEOF(ObjectMap &p) {
-    ifstream &ifs = p.Get<ifstream>(kStrObject);
-    return Message(ifs.eof() ? kStrTrue : kStrFalse);
+    ifstream &ifs = p.Cast<ifstream>(kStrObject);
+    return Message(util::MakeBoolean(ifs.eof()));
   }
 
   //OutStream
@@ -189,8 +186,8 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(p["mode"]), 
       "Illegal mode option.");
 
-    string path = RealString(p.Get<string>("path"));
-    string mode = RealString(p.Get<string>("mode"));
+    string path = RealString(p.Cast<string>("path"));
+    string mode = RealString(p.Cast<string>("mode"));
 
     shared_ptr<ofstream> ofs;
     bool append = (mode == "append");
@@ -209,17 +206,17 @@ namespace kagami {
   }
 
   Message OutStreamWrite(ObjectMap &p) {
-    ofstream &ofs = p.Get<ofstream>(kStrObject);
+    ofstream &ofs = p.Cast<ofstream>(kStrObject);
     Message msg = Message(kStrTrue);
 
     ASSERT_RETURN(ofs.good(), kStrFalse);
 
     if (p.CheckTypeId("str",kTypeIdRawString)) {
-      string output = RealString(p.Get<string>("str"));
+      string output = RealString(p.Cast<string>("str"));
       ofs << output;
     }
     else if (p.CheckTypeId("str",kTypeIdString)) {
-      string origin = p.Get<string>("str");
+      string origin = p.Cast<string>("str");
       ofs << origin;
     }
     else {
@@ -234,7 +231,7 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(p["pattern"]), 
       "Illegal pattern string.");
 
-    string pattern_string = RealString(p.Get<string>("pattern"));
+    string pattern_string = RealString(p.Cast<string>("pattern"));
     shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
 
     return Message().SetObject(Object(reg, kTypeIdRegex));
@@ -244,10 +241,10 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(p["str"]), 
       "Illegal target string.");
 
-    string str = RealString(p.Get<string>("str"));
-    auto &pat = p.Get<regex>(kStrObject);
+    string str = RealString(p.Cast<string>("str"));
+    auto &pat = p.Cast<regex>(kStrObject);
 
-    return Message(regex_match(str, pat) ? kStrTrue : kStrFalse);
+    return Message(util::MakeBoolean(regex_match(str, pat)));
   }
 
   //wstring
@@ -257,7 +254,7 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(obj), 
       "String constructor can't accept this object.");
 
-    string output = RealString(GetObjectStuff<string>(obj));
+    string output = RealString(obj.Cast<string>());
     wstring wstr = s2ws(output);
 
     return Message()
@@ -266,12 +263,12 @@ namespace kagami {
 
   //Function
   Message FunctionGetId(ObjectMap &p) {
-    auto &interface = p.Get<Interface>(kStrObject);
+    auto &interface = p.Cast<Interface>(kStrObject);
     return Message(interface.GetId());
   }
 
   Message FunctionGetParameters(ObjectMap &p) {
-    auto &interface = p.Get<Interface>(kStrObject);
+    auto &interface = p.Cast<Interface>(kStrObject);
     shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
     auto origin_vector = interface.GetParameters();
 
@@ -349,8 +346,8 @@ namespace kagami {
   }
 
   Message FunctionCall(ObjectMap &p) {
-    auto &interface = p.Get<Interface>(kStrObject);
-    int size = stoi(p.Get<string>(kStrVaSize));
+    auto &interface = p.Cast<Interface>(kStrObject);
+    int size = stoi(p.Cast<string>(kStrVaSize));
     int count = 0;
     ObjectMap target_map;
     bool state;
@@ -373,22 +370,26 @@ namespace kagami {
     return interface.Start(target_map);
   }
 
-  void InitPlanners() {
+  void InitBaseTypes() {
     using management::type::NewTypeSetup;
 
     NewTypeSetup(kTypeIdFunction, SimpleSharedPtrCopy<Interface>)
-      .InitMethods({
-        Interface(FunctionGetId, "", "id"),
-        Interface(FunctionCall, "arg", "call", kCodeAutoSize),
-        Interface(FunctionGetParameters, "", "params")
-        });
+      .InitMethods(
+        {
+          Interface(FunctionGetId, "", "id"),
+          Interface(FunctionCall, "arg", "call", kCodeAutoSize),
+          Interface(FunctionGetParameters, "", "params")
+        }
+    );
 
     NewTypeSetup(kTypeIdRawString, SimpleSharedPtrCopy<string>)
-      .InitMethods({
-        Interface(RawStringPrint, "", "__print"),
-        Interface(RawStringGetElement, "index", "__at"),
-        Interface(RawStringGetSize, "", "size")
-        });
+      .InitMethods(
+        {
+          Interface(RawStringPrint, "", "__print"),
+          Interface(RawStringGetElement, "index", "__at"),
+          Interface(RawStringGetSize, "", "size")
+        }
+    );
 
     NewTypeSetup(kTypeIdArray, [](shared_ptr<void> source) -> shared_ptr<void> {
         auto &src_base = *static_pointer_cast<ArrayBase>(source);
@@ -403,65 +404,85 @@ namespace kagami {
         return dest_base;
       })
       .InitConstructor(
-        Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill))
-      .InitMethods({
-        Interface(ArrayGetElement, "index", "__at"),
-        Interface(ArrayPrint, "", "__print"),
-        Interface(ArrayGetSize, "", "size"),
-        Interface(ArrayPush, "object", "push"),
-        Interface(ArrayPop, "object", "pop"),
-        Interface(ArrayEmpty, "", "empty")
-        });
+        Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill)
+      )
+      .InitMethods(
+        {
+          Interface(ArrayGetElement, "index", "__at"),
+          Interface(ArrayPrint, "", "__print"),
+          Interface(ArrayGetSize, "", "size"),
+          Interface(ArrayPush, "object", "push"),
+          Interface(ArrayPop, "object", "pop"),
+          Interface(ArrayEmpty, "", "empty")
+        }
+    );
 
     NewTypeSetup(kTypeIdString, SimpleSharedPtrCopy<string>)
       .InitConstructor(
-        Interface(StringConstructor, "raw_string", "string"))
-      .InitMethods({
-        Interface(StringFamilyGetElement<string>, "index", "__at"),
-        Interface(StringFamilyPrint<string, std::ostream>, "", "__print"),
-        Interface(StringFamilySubStr<string>, "start|size", "substr"),
-        Interface(GetStringFamilySize<string>, "", "size"),
-        Interface(StringFamilyConverting<wstring, string>, "", "to_wide")
-        });
+        Interface(StringConstructor, "raw_string", "string")
+      )
+      .InitMethods(
+        {
+          Interface(StringFamilyGetElement<string>, "index", "__at"),
+          Interface(StringFamilyPrint<string, std::ostream>, "", "__print"),
+          Interface(StringFamilySubStr<string>, "start|size", "substr"),
+          Interface(GetStringFamilySize<string>, "", "size"),
+          Interface(StringFamilyConverting<wstring, string>, "", "to_wide")
+        }
+    );
 
     NewTypeSetup(kTypeIdInStream, FakeCopy)
       .InitConstructor(
-        Interface(InStreamConsturctor, "path", "instream"))
-      .InitMethods({
-        Interface(InStreamGet, "", "get"),
-        Interface(InStreamEOF, "", "eof"),
-        Interface(StreamFamilyClose<ifstream>, "", "close")
-        });
+        Interface(InStreamConsturctor, "path", "instream")
+      )
+      .InitMethods(
+        {
+          Interface(InStreamGet, "", "get"),
+          Interface(InStreamEOF, "", "eof"),
+          Interface(StreamFamilyClose<ifstream>, "", "close")
+        }
+    );
 
     NewTypeSetup(kTypeIdOutStream, FakeCopy)
       .InitConstructor(
-        Interface(OutStreamConstructor, "path|mode", "outstream"))
-      .InitMethods({
-        Interface(OutStreamWrite, "str", "write"),
-        Interface(StreamFamilyState<ofstream>, "", "good"),
-        Interface(StreamFamilyClose<ofstream>, "", "close")
-        });
+        Interface(OutStreamConstructor, "path|mode", "outstream")
+      )
+      .InitMethods(
+        {
+          Interface(OutStreamWrite, "str", "write"),
+          Interface(StreamFamilyState<ofstream>, "", "good"),
+          Interface(StreamFamilyClose<ofstream>, "", "close")
+        }
+    );
     management::CreateConstantObject("kOutstreamModeAppend", Object("'append'"));
     management::CreateConstantObject("kOutstreamModeTruncate", Object("'truncate'"));
 
     NewTypeSetup(kTypeIdRegex, FakeCopy)
       .InitConstructor(
-        Interface(RegexConstructor, "pattern", "regex"))
-      .InitMethods({
-        Interface(RegexMatch, "str", "match")
-        });
+        Interface(RegexConstructor, "pattern", "regex")
+      )
+      .InitMethods(
+        {
+          Interface(RegexMatch, "str", "match")
+        }
+    );
 
     NewTypeSetup(kTypeIdWideString, SimpleSharedPtrCopy<wstring>)
       .InitConstructor(
-        Interface(WideStringContructor, "raw_string", "wstring"))
-      .InitMethods({
-        Interface(GetStringFamilySize<wstring>,  "", "size"),
-        Interface(StringFamilyGetElement<wstring>, "index", "__at"),
-        Interface(StringFamilyPrint<wstring, std::wostream>, "", "__print"),
-        Interface(StringFamilySubStr<wstring>, "start|size", "substr"),
-        Interface(StringFamilyConverting<string, wstring>, "", "to_byte")
-        });
+        Interface(WideStringContructor, "raw_string", "wstring")
+      )
+      .InitMethods(
+        {
+          Interface(GetStringFamilySize<wstring>,  "", "size"),
+          Interface(StringFamilyGetElement<wstring>, "index", "__at"),
+          Interface(StringFamilyPrint<wstring, std::wostream>, "", "__print"),
+          Interface(StringFamilySubStr<wstring>, "start|size", "substr"),
+          Interface(StringFamilyConverting<string, wstring>, "", "to_byte")
+        }
+    );
 
-    NewTypeSetup(kTypeIdNull, NullCopy);
+    NewTypeSetup(kTypeIdNull, [](shared_ptr<void>) -> shared_ptr<void> { 
+      return nullptr; 
+    });
   }
 }

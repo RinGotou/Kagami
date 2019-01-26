@@ -232,8 +232,8 @@ namespace kagami {
       Operation<ConvertorTargetType, ResultType, op_code> op;
       ResultAction<ResultType> result_action;
 
-      string data_A = GetObjectStuff<string>(A);
-      string data_B = GetObjectStuff<string>(B);
+      string data_A = A.Cast<string>();
+      string data_B = B.Cast<string>();
       ResultType result = op.Do(cvt.Do(data_A), cvt.Do(data_B));
       string result_content = result_action.Convert(result);
 
@@ -297,7 +297,8 @@ namespace kagami {
   }
 
   template<OperatorCode op_code, GenericToken token, bool boolean_result = false>
-  Interface OperatorGenerator() {
-    return Interface(OperatorFunction<op_code, boolean_result>, "first|second", token);
+  void OperatorGenerator() {
+    management::CreateInterface(
+      Interface(OperatorFunction<op_code, boolean_result>, "first|second", token));
   }
 }

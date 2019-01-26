@@ -140,6 +140,7 @@ namespace kagami {
       }
 
       shared_ptr<void> GetObjectCopy(Object &object) {
+        //Ignore copying policy
         if (object.GetConstructorFlag()) {
           return object.Get();
         }

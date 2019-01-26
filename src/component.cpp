@@ -1,18 +1,12 @@
 #include "component.h"
 
 namespace kagami {
-  template <class T>
-  Object MakeObject(T t) {
-    string str = to_string(t);
-    return Object(str, util::GetTokenType(str));
-  }
-
   PairTypePolicy GetTypePolicy(Object &A, Object &B) {
     PairTypePolicy policy = PairTypePolicy::G_OTHER_OBJ;
 
     if (A.GetTypeId() == kTypeIdRawString && B.GetTypeId() == kTypeIdRawString) {
-      string data_A = GetObjectStuff<string>(A);
-      string data_B = GetObjectStuff<string>(B);
+      string data_A = A.Cast<string>();
+      string data_B = B.Cast<string>();
       TokenType type_A = util::GetTokenType(data_A);
       TokenType type_B = util::GetTokenType(data_B);
 
@@ -29,7 +23,7 @@ namespace kagami {
     OBJECT_ASSERT(p, "object", kTypeIdRawString);
 
     string result;
-    string str = RealString(p.Get<string>("object"));
+    string str = RealString(p.Cast<string>("object"));
 
     switch (util::GetTokenType(str)) {
     case kTokenTypeBool:result = "'boolean'"; break;
@@ -54,12 +48,12 @@ namespace kagami {
       std::cout << "You can't print this object." << std::endl;
     };
 
-    if (!find_in_vector<string>("__print", methods)) {
+    if (!find_in_vector<string>(kStrPrint, methods)) {
       errorMsg();
       return Message();
     }
 
-    return management::Order("__print", obj.GetTypeId()).Start(p);
+    return management::Order(kStrPrint, obj.GetTypeId()).Start(p);
   }
 
   Message GetTimeDate(ObjectMap &p) {
@@ -95,7 +89,7 @@ namespace kagami {
   Message Convert(ObjectMap &p) {
     OBJECT_ASSERT(p, "object", kTypeIdRawString);
 
-    string origin = RealString(p.Get<string>("object"));
+    string origin = RealString(p.Cast<string>("object"));
     auto type = util::GetTokenType(origin);
     string str;
 
@@ -111,24 +105,21 @@ namespace kagami {
     return Message(obj.GetTypeId() == kTypeIdNull ? kStrTrue : kStrFalse);
   }
 
-  void OperatorRegister() {
-    using namespace management;
-    CreateGenericInterface(OperatorGenerator<PLUS, kTokenPlus>());
-    CreateGenericInterface(OperatorGenerator<MINUS, kTokenMinus>());
-    CreateGenericInterface(OperatorGenerator<TIMES, kTokenTimes>());
-    CreateGenericInterface(OperatorGenerator<DIV, kTokenDivide>());
-    CreateGenericInterface(OperatorGenerator<EQUALS, kTokenEquals, true>());
-    CreateGenericInterface(OperatorGenerator<NOT_EQUAL, kTokenNotEqual, true>());
-    CreateGenericInterface(OperatorGenerator<LESS_OR_EQUAL, kTokenLessOrEqual, true>());
-    CreateGenericInterface(OperatorGenerator<GREATER_OR_EQUAL, kTokenGreaterOrEqual, true>());
-    CreateGenericInterface(OperatorGenerator<GREATER, kTokenGreater, true>());
-    CreateGenericInterface(OperatorGenerator<LESS, kTokenLess, true>());
-    CreateGenericInterface(OperatorGenerator<AND, kTokenAnd, true>());
-    CreateGenericInterface(OperatorGenerator<OR, kTokenOr, true>());
-  }
+  void Activiate() {
+    using management::CreateInterface;
 
-  void BasicUtilityRegister() {
-    using namespace management;
+    OperatorGenerator<PLUS, kTokenPlus>();
+    OperatorGenerator<MINUS, kTokenMinus>();
+    OperatorGenerator<TIMES, kTokenTimes>();
+    OperatorGenerator<DIV, kTokenDivide>();
+    OperatorGenerator<EQUALS, kTokenEquals, true>();
+    OperatorGenerator<NOT_EQUAL, kTokenNotEqual, true>();
+    OperatorGenerator<LESS_OR_EQUAL, kTokenLessOrEqual, true>();
+    OperatorGenerator<GREATER_OR_EQUAL, kTokenGreaterOrEqual, true>();
+    OperatorGenerator<GREATER, kTokenGreater, true>();
+    OperatorGenerator<LESS, kTokenLess, true>();
+    OperatorGenerator<AND, kTokenAnd, true>();
+    OperatorGenerator<OR, kTokenOr, true>();
 
     CreateInterface(Interface(Convert, "object", "convert"));
     CreateInterface(Interface(Input, "msg", "input", kCodeAutoFill));
@@ -136,16 +127,6 @@ namespace kagami {
     CreateInterface(Interface(GetTimeDate, "", "time"));
     CreateInterface(Interface(GetRawStringType, "object", "type"));
     CreateInterface(Interface(IsNull, "object", "isnull"));
-  }
-
-  void Activiate() {
-    OperatorRegister();
-    BasicUtilityRegister();
-    InitPlanners();
-
-#if not defined(_DISABLE_SDL_)
-    LoadSDLStuff();
-#endif
 
     auto create_constant = [](string id, string content) {
       management::CreateConstantObject(
