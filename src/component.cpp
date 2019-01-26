@@ -113,7 +113,7 @@ namespace kagami {
     auto type = util::GetTokenType(origin);
     string str;
 
-    (type == kTokenTypeNull || type == kTokenTypeGeneric) ?
+    compare(type, { kTokenTypeNull,kTokenTypeGeneric }) ?
       str = "" :
       str = origin;
     
@@ -143,12 +143,14 @@ namespace kagami {
 
   void BasicUtilityRegister() {
     using namespace management;
-    CreateInterface(Interface(Convert, "object", "convert"));
-    CreateInterface(Interface(Input, "msg", "input", kCodeAutoFill));
-    CreateInterface(Interface(Print, kStrObject, "print"));
-    CreateInterface(Interface(GetTimeDate, "", "time"));
-    CreateInterface(Interface(GetRawStringType, "object", "type"));
-    CreateInterface(Interface(IsNull, "object", "isnull"));
+
+    CreateInterface({
+      Interface(Convert, "object", "convert"),
+      Interface(Input, "msg", "input", kCodeAutoFill),
+      Interface(GetTimeDate, "", "time"),
+      Interface(GetRawStringType, "object", "type"),
+      Interface(IsNull, "object", "null")
+      });
   }
 
   void Activiate() {

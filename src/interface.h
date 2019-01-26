@@ -199,6 +199,11 @@ namespace kagami {
       return params_.size();
     }
 
+    Interface &SetDomain(string domain) {
+      domain_ = domain;
+      return *this;
+    }
+
     bool Good() const {
       return (policy_ != nullptr && argument_mode_ != kCodeIllegalParam);
     }

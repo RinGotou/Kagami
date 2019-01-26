@@ -71,6 +71,8 @@ namespace kagami {
   using std::stof;
   using std::stod;
   using std::wstring;
+  using shio::any;
+  using shio::any_cast;
 
   const string kInterpreterVersion  = "1.53";
   const string kIRFrameworkVersion = "August";
@@ -262,5 +264,14 @@ namespace kagami {
     kStrTrue           = "true",
     kStrFalse          = "false",
     kStrObject         = "__object";
+
+  template <class Tx, class Ty>
+  bool compare(Tx lhs, const std::initializer_list<Ty> &&rhs) {
+    bool result = false;
+    for (const auto &unit : rhs) {
+      if (lhs == unit) result = true;
+    }
+    return result;
+  }
 }
 

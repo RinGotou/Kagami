@@ -13,7 +13,7 @@ namespace kagami {
       return base;
     }
 
-    vector<Interface> &GetEntryBase() {
+    vector<Interface> &GetInterfaceBase() {
       static vector<Interface> base;
       return base;
     }
@@ -91,14 +91,19 @@ namespace kagami {
       return base.empty();
     }
 
-
-
     bool HasTailTokenRequest(GenericToken token) {
       return (token == kTokenIf || token == kTokenWhile || token == kTokenCase);
     }
 
     void CreateInterface(Interface temp) {
-      GetEntryBase().emplace_back(temp);
+      GetInterfaceBase().emplace_back(temp);
+    }
+
+    void CreateInterface(std::initializer_list<Interface> &&rhs) {
+      auto &base = GetInterfaceBase();
+      for (auto &unit : rhs) {
+        base.emplace_back(unit);
+      }
     }
 
     void CreateGenericInterface(Interface temp) {
@@ -120,7 +125,7 @@ namespace kagami {
         return GetGenericInterface(basicOpCode);
       }
 
-      vector<Interface> &base = GetEntryBase();
+      vector<Interface> &base = GetInterfaceBase();
       Interface result;
       bool ignore_type = (type == kTypeIdNull);
       //TODO:rewrite here

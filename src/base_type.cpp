@@ -16,9 +16,7 @@ namespace kagami {
   }
 
   inline bool IsStringFamily(Object &obj) {
-    return obj.GetTypeId() == kTypeIdRawString ||
-      obj.GetTypeId() == kTypeIdString ||
-      obj.GetTypeId() == kTypeIdWideString;
+    return compare(obj.GetTypeId(), { kTypeIdRawString,kTypeIdString,kTypeIdWideString });
   }
 
   Message ArrayConstructor(ObjectMap &p) {
@@ -389,64 +387,79 @@ namespace kagami {
   }
 
   void InitPlanners() {
-    using management::type::AddTemplate;
+    using management::type::NewType;
     using management::CreateInterface;
 
-    AddTemplate(kTypeIdFunction, ObjectCopyingPolicy(SimpleSharedPtrCopy<Interface>, kFunctionMethods));
-    CreateInterface(Interface(FunctionGetId, "", "id", kTypeIdFunction));
-    CreateInterface(Interface(FunctionCall, "arg", "call", kTypeIdFunction, kCodeAutoSize));
-    CreateInterface(Interface(FunctionGetParameters, "", "params", kTypeIdFunction));
+    NewType(kTypeIdFunction, ObjectPolicy(SimpleSharedPtrCopy<Interface>, kFunctionMethods));
+    CreateInterface({
+      Interface(FunctionGetId, "", "id", kTypeIdFunction),
+      Interface(FunctionCall, "arg", "call", kTypeIdFunction, kCodeAutoSize),
+      Interface(FunctionGetParameters, "", "params", kTypeIdFunction)
+      });
 
-    AddTemplate(kTypeIdRawString, ObjectCopyingPolicy(SimpleSharedPtrCopy<string>, kRawStringMethods));
-    CreateInterface(Interface(RawStringPrint, "", "__print", kTypeIdRawString));
-    CreateInterface(Interface(RawStringGetElement, "index", "__at", kTypeIdRawString));
-    CreateInterface(Interface(RawStringGetSize, "", "size", kTypeIdRawString));
 
-    AddTemplate(kTypeIdArray, ObjectCopyingPolicy(CreateArrayCopy, kArrayMethods));
-    CreateInterface(Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill));
-    CreateInterface(Interface(ArrayGetElement, "index", "__at", kTypeIdArray));
-    CreateInterface(Interface(ArrayPrint, "", "__print", kTypeIdArray));
-    CreateInterface(Interface(ArrayGetSize, "", "size", kTypeIdArray));
-    CreateInterface(Interface(ArrayPush, "push", "object", kTypeIdArray));
-    CreateInterface(Interface(ArrayPop, "pop", "object", kTypeIdArray));
-    CreateInterface(Interface(ArrayEmpty, "empty", "", kTypeIdArray));
+    NewType(kTypeIdRawString, ObjectPolicy(SimpleSharedPtrCopy<string>, kRawStringMethods));
+    CreateInterface({
+      Interface(RawStringPrint, "", "__print", kTypeIdRawString),
+      Interface(RawStringGetElement, "index", "__at", kTypeIdRawString),
+      Interface(RawStringGetSize, "", "size", kTypeIdRawString)
+      });
 
-    AddTemplate(kTypeIdString, ObjectCopyingPolicy(SimpleSharedPtrCopy<string>, kStringMethods));
-    CreateInterface(Interface(StringConstructor, "raw_string", "string"));
-    CreateInterface(Interface(StringFamilyGetElement<string>, "index", "__at", kTypeIdString));
-    CreateInterface(Interface(StringFamilyPrint<string, std::ostream>, "", "__print", kTypeIdString));
-    CreateInterface(Interface(StringFamilySubStr<string>, "start|size", "substr", kTypeIdString));
-    CreateInterface(Interface(GetStringFamilySize<string>, "", "size", kTypeIdString));
-    CreateInterface(Interface(StringFamilyConverting<wstring, string>, "", "to_wide",  kTypeIdString));
+    NewType(kTypeIdArray, ObjectPolicy(CreateArrayCopy, kArrayMethods));
+    CreateInterface({
+      Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill),
+      Interface(ArrayGetElement, "index", "__at", kTypeIdArray),
+      Interface(ArrayPrint, "", "__print", kTypeIdArray),
+      Interface(ArrayGetSize, "", "size", kTypeIdArray),
+      Interface(ArrayPush, "push", "object", kTypeIdArray),
+      Interface(ArrayPop, "pop", "object", kTypeIdArray),
+      Interface(ArrayEmpty, "empty", "", kTypeIdArray)
+      });
 
-    AddTemplate(kTypeIdInStream, ObjectCopyingPolicy(FakeCopy, kInStreamMethods));
-    CreateInterface(Interface(InStreamConsturctor, "path", "instream"));
-    CreateInterface(Interface(InStreamGet, "", "get", kTypeIdInStream));
-    CreateInterface(Interface(StreamFamilyState<ifstream>, "", "good", kTypeIdInStream));
-    CreateInterface(Interface(InStreamEOF, "", "eof", kTypeIdInStream));
-    CreateInterface(Interface(StreamFamilyClose<ifstream>, "", "close", kTypeIdInStream));
+    NewType(kTypeIdString, ObjectPolicy(SimpleSharedPtrCopy<string>, kStringMethods));
+    CreateInterface({
+      Interface(StringConstructor, "raw_string", "string"),
+      Interface(StringFamilyGetElement<string>, "index", "__at", kTypeIdString),
+      Interface(StringFamilyPrint<string, std::ostream>, "", "__print", kTypeIdString),
+      Interface(StringFamilySubStr<string>, "start|size", "substr", kTypeIdString),
+      Interface(GetStringFamilySize<string>, "", "size", kTypeIdString),
+      Interface(StringFamilyConverting<wstring, string>, "", "to_wide",  kTypeIdString)
+      });
 
-    AddTemplate(kTypeIdOutStream, ObjectCopyingPolicy(FakeCopy, kOutStreamMethods));
-    CreateInterface(Interface(OutStreamConstructor, "path|mode", "outstream"));
-    CreateInterface(Interface(OutStreamWrite, "str", "write", kTypeIdOutStream));
-    CreateInterface(Interface(StreamFamilyState<ofstream>, "", "good", kTypeIdOutStream));
-    CreateInterface(Interface(StreamFamilyClose<ofstream>, "", "close", kTypeIdOutStream));
+    NewType(kTypeIdInStream, ObjectPolicy(FakeCopy, kInStreamMethods));
+    CreateInterface({
+      Interface(InStreamConsturctor, "path", "instream"),
+      Interface(InStreamGet, "", "get", kTypeIdInStream),
+      Interface(InStreamEOF, "", "eof", kTypeIdInStream),
+      Interface(StreamFamilyClose<ifstream>, "", "close", kTypeIdInStream)
+      });
 
+    NewType(kTypeIdOutStream, ObjectPolicy(FakeCopy, kOutStreamMethods));
+    CreateInterface({
+      Interface(OutStreamConstructor, "path|mode", "outstream"),
+      Interface(OutStreamWrite, "str", "write", kTypeIdOutStream),
+      Interface(StreamFamilyState<ofstream>, "", "good", kTypeIdOutStream),
+      Interface(StreamFamilyClose<ofstream>, "", "close", kTypeIdOutStream)
+      });
     management::CreateConstantObject("kOutstreamModeAppend", Object("'append'"));
     management::CreateConstantObject("kOutstreamModeTruncate", Object("'truncate'"));
 
-    AddTemplate(kTypeIdRegex, ObjectCopyingPolicy(FakeCopy, kTypeIdRegex));
-    CreateInterface(Interface(RegexConstructor, "regex", "regex"));
-    CreateInterface(Interface(RegexMatch, "str", "match", kTypeIdRegex));
+    NewType(kTypeIdRegex, ObjectPolicy(FakeCopy, kTypeIdRegex));
+    CreateInterface({
+      Interface(RegexConstructor, "regex", "regex"),
+      Interface(RegexMatch, "str", "match", kTypeIdRegex)
+      });
 
-    AddTemplate(kTypeIdWideString, ObjectCopyingPolicy(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
-    CreateInterface(Interface(WideStringContructor, "raw_string", "wstring"));
-    CreateInterface(Interface(GetStringFamilySize<wstring>,  "", "size", kTypeIdWideString));
-    CreateInterface(Interface(StringFamilyGetElement<wstring>, "index", "__at", kTypeIdWideString));
-    CreateInterface(Interface(StringFamilyPrint<wstring, std::wostream>, "", "__print", kTypeIdWideString));
-    CreateInterface(Interface(StringFamilySubStr<wstring>, "start|size", "substr", kTypeIdWideString));
-    CreateInterface(Interface(StringFamilyConverting<string, wstring>, "", "to_byte", kTypeIdWideString));
+    NewType(kTypeIdWideString, ObjectPolicy(SimpleSharedPtrCopy<wstring>, kWideStringMethods));
+    CreateInterface({
+      Interface(WideStringContructor, "raw_string", "wstring"),
+      Interface(GetStringFamilySize<wstring>,  "", "size", kTypeIdWideString),
+      Interface(StringFamilyGetElement<wstring>, "index", "__at", kTypeIdWideString),
+      Interface(StringFamilyPrint<wstring, std::wostream>, "", "__print", kTypeIdWideString),
+      Interface(StringFamilySubStr<wstring>, "start|size", "substr", kTypeIdWideString),
+      Interface(StringFamilyConverting<string, wstring>, "", "to_byte", kTypeIdWideString)
+      });
 
-    AddTemplate(kTypeIdNull, ObjectCopyingPolicy(NullCopy, ""));
+    NewType(kTypeIdNull, ObjectPolicy(NullCopy, ""));
   }
 }

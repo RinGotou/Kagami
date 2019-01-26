@@ -138,22 +138,20 @@ namespace kagami {
         break;
       }
 
-      if (current.first == "+" || current.first == "-") {
-        if ((last.second == kTokenTypeSymbol || last.second == kTokenTypeNull) 
-          && (next.second == kTokenTypeInt || next.second == kTokenTypeFloat)) {
+      if (compare(current.first, { "+", "-" })) {
+        if (compare(last.second, { kTokenTypeSymbol,kTokenTypeNull })
+          && compare(next.second, { kTokenTypeInt,kTokenTypeFloat })) {
           negative_flag = true;
         }
       }
 
-      if (current.first == "(" || current.first == "[" || current.first == "{") {
+      if (compare(current.first, { "(", "[", "{" })) {
         bracket_stack.push(current.first);
       }
 
-      if (current.first == ")" || current.first == "]" || current.first == "}") {
+      if (compare(current.first, { ")", "]", "}" })) {
         if (!bracket_stack.empty() && bracket_stack.top() != kBracketPairs.at(current.first)) {
-          msg = Message(kCodeBadExpression, 
-            "Left bracket is missing.",
-            kStateError);
+          msg = Message(kCodeBadExpression, "Left bracket is missing.", kStateError);
           break;
         }
         else {
@@ -163,21 +161,13 @@ namespace kagami {
 
       if (current.first == ",") {
         if (last.second == kTokenTypeSymbol &&
-          last.first != "]" &&
-          last.first != ")" &&
-          last.first != "}" &&
-          last.first != "'" &&
-          last.first != "++" &&
-          last.first != "--") {
-          msg = Message(
-            kCodeBadExpression, 
-            "Illegal comma location.",
-            kStateError);
+          !compare(last.first, { "]", ")", "}", "'" })) {
+          msg = Message(kCodeBadExpression, "Illegal comma position.", kStateError);
           break;
         }
       }
 
-      if ((current.first == "+" || current.first == "-") && !tokens_.empty()) {
+      if (compare(current.first, { "+", "-" }) && !tokens_.empty()) {
         if (tokens_.back().first == current.first) {
           tokens_.back().first.append(current.first);
         }
@@ -185,6 +175,7 @@ namespace kagami {
           tokens_.emplace_back(current);
         }
       }
+
       else if (negative_flag) {
         Token res = Token(last.first + current.first, current.second);
         tokens_.back() = res;
@@ -303,15 +294,15 @@ namespace kagami {
 
   bool Analyzer::RightBracket(AnalyzerWorkBlock *blk) {
     bool result = CleanupStack(blk);
+    auto &symbol = blk->symbol;
 
     if (result) {
       if (blk->need_reversing) blk->need_reversing = false;
-      if (blk->symbol.back().head_reg == "("
-        || blk->symbol.back().head_reg == "["
-        || blk->symbol.back().head_reg == "{") {
 
-        blk->symbol.pop_back();
+      if (compare(symbol.back().head_reg, { "(","[","{" })) {
+        symbol.pop_back();
       }
+
       result = InstructionFilling(blk);
     }
     return result;
@@ -381,11 +372,8 @@ namespace kagami {
         }
       }
       else {
-        if (blk->current.first == kStrEnd 
-          || blk->current.first == kStrElse
-          || blk->current.first == kStrContinue
-          || blk->current.first == kStrBreak) {
-
+        if (compare(blk->current.first, 
+          { kStrEnd,kStrElse,kStrContinue,kStrBreak })) {
           Request request(token);
           blk->symbol.emplace_back(request);
         }
@@ -419,9 +407,8 @@ namespace kagami {
       }
     }
 
-    if (function && blk->next.first != "("
-      && blk->current.first != kStrElse 
-      && blk->current.first != kStrEnd) {
+    if (function && blk->next.first != "(" && 
+      !compare(blk->current.first, { kStrElse,kStrEnd })) {
       health_ = false;
       result = false;
       error_string_ = "Left bracket after function is missing";
@@ -462,9 +449,7 @@ namespace kagami {
       auto j = blk->symbol.size() - 1;
       auto k = blk->args.size();
 
-      while (
-        blk->symbol[j].head_reg != "(" && blk->symbol[j].head_reg != "["
-        && blk->symbol[j].head_reg != "{"
+      while (!compare(blk->symbol[j].head_reg, { "(","[","{" })
         && (currentPriority < blk->symbol[j].priority)) {
 
         k == blk->args.size() ? k -= 2 : k -= 1;
@@ -518,8 +503,7 @@ namespace kagami {
     bool checked = false;
     bool result = true;
 
-    while (!blk->symbol.empty()
-      && top_token != "{" && top_token != "[" && top_token != "("
+    while (!blk->symbol.empty() && !compare(top_token, { "{","[","(" })
       && blk->symbol.back().head_gen != kTokenBind) {
 
       auto first_token = blk->symbol.back().head_gen;
