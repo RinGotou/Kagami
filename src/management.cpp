@@ -94,7 +94,7 @@ namespace kagami {
 
 
     bool HasTailTokenRequest(GenericToken token) {
-      return (token == GT_IF || token == GT_WHILE || token == GT_CASE);
+      return (token == kTokenIf || token == kTokenWhile || token == kTokenCase);
     }
 
     void CreateInterface(Interface temp) {
@@ -116,7 +116,7 @@ namespace kagami {
 
     Interface Order(string id, string type, int size) {
       GenericToken basicOpCode = util::GetGenericToken(id);
-      if (basicOpCode != GT_NUL) {
+      if (basicOpCode != kTokenNull) {
         return GetGenericInterface(basicOpCode);
       }
 

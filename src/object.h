@@ -22,7 +22,6 @@ namespace kagami {
 
     std::shared_ptr<void> ptr_;
     string type_id_;
-    string methods_;
     bool ref_;
     bool constructor_;
 
@@ -34,40 +33,33 @@ namespace kagami {
     Object() :
       ptr_(nullptr),
       type_id_(kTypeIdNull),
-      methods_(),
       ref_(false),
       constructor_(false) {}
 
     Object(const Object &obj) :
       ptr_(obj.ptr_),
       type_id_(obj.type_id_),
-      methods_(obj.methods_),
       ref_(obj.ref_),
       constructor_(obj.constructor_) {}
 
     Object(const Object &&obj) :
       Object(obj) {}
 
-    Object(shared_ptr<void> ptr, 
-      string type_id, 
-      string methods) :
+    Object(shared_ptr<void> ptr, string type_id) :
       ptr_(ptr), 
       type_id_(type_id), 
-      methods_(methods), 
       ref_(false), 
       constructor_(false) {}
 
     Object(string str) :
       ptr_(std::make_shared<string>(str)),
       type_id_(kTypeIdRawString),
-      methods_(kRawStringMethods),
       ref_(false),
       constructor_(false) {}
 
     Object &operator=(const Object &object) {
       ptr_ = object.ptr_;
       type_id_ = object.type_id_;
-      methods_ = object.methods_;
       ref_ = object.ref_;
       constructor_ = object.constructor_;
       return *this;
@@ -77,10 +69,6 @@ namespace kagami {
       return this->operator=(object);
     }
 
-    string GetMethods() {
-      if (ref_) return GetTargetObject()->GetMethods();
-      return methods_;
-    }
 
     Object &Set(shared_ptr<void> ptr, string type_id) {
       if (ref_) return GetTargetObject()->Set(ptr, type_id);
@@ -89,23 +77,14 @@ namespace kagami {
       return *this;
     }
 
-    Object &Set(shared_ptr<void> ptr, string type_id, string methods) {
-      if (ref_) return GetTargetObject()->Set(ptr, type_id, methods);
-      ptr_ = ptr;
-      type_id_ = type_id;
-      methods_ = methods;
-      return *this;
-    }
-
     shared_ptr<void> Get() {
       if (ref_) return GetTargetObject()->Get();
       return ptr_;
     }
 
-    Object &SetMethods(string methods) {
-      if (ref_) return GetTargetObject()->SetMethods(methods);
-      methods_ = methods;
-      return *this;
+    template <class Tx>
+    Tx &Cast() {
+      return std::static_pointer_cast<Tx>(ptr_);
     }
 
     string GetTypeId() {

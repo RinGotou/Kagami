@@ -5,21 +5,21 @@ namespace kagami {
     bool IsOperatorToken(GenericToken token) {
       bool result;
       switch (token) {
-      case GT_PLUS:
-      case GT_MINUS:
-      case GT_TIMES:
-      case GT_DIV:
-      case GT_EQUALS:
-      case GT_LESS_OR_EQUAL:
-      case GT_GREATER_OR_EQUAL:
-      case GT_NOT_EQUAL:
-      case GT_GREATER:
-      case GT_LESS:
-      case GT_AND:
-      case GT_OR:
-      case GT_NOT:
-      case GT_BIT_AND:
-      case GT_BIT_OR:
+      case kTokenPlus:
+      case kTokenMinus:
+      case kTokenTimes:
+      case kTokenDivide:
+      case kTokenEquals:
+      case kTokenLessOrEqual:
+      case kTokenGreaterOrEqual:
+      case kTokenNotEqual:
+      case kTokenGreater:
+      case kTokenLess:
+      case kTokenAnd:
+      case kTokenOr:
+      case kTokenNot:
+      case kTokenBitAnd:
+      case kTokenBitOr:
         result = true;
         break;
       default:
@@ -32,25 +32,25 @@ namespace kagami {
     int GetTokenPriority(GenericToken token) {
       int result;
       switch (token) {
-      case GT_BIND:
+      case kTokenBind:
         result = 0;
         break;
-      case GT_PLUS:
-      case GT_MINUS:
+      case kTokenPlus:
+      case kTokenMinus:
         result = 2;
         break;
-      case GT_TIMES:
-      case GT_DIV:
+      case kTokenTimes:
+      case kTokenDivide:
         result = 3;
         break;
-      case GT_EQUALS:
-      case GT_LESS_OR_EQUAL:
-      case GT_GREATER_OR_EQUAL:
-      case GT_NOT_EQUAL:
-      case GT_GREATER:
-      case GT_LESS:
-      case GT_AND:
-      case GT_OR:
+      case kTokenEquals:
+      case kTokenLessOrEqual:
+      case kTokenGreaterOrEqual:
+      case kTokenNotEqual:
+      case kTokenGreater:
+      case kTokenLess:
+      case kTokenAnd:
+      case kTokenOr:
         result = 1;
         break;
       default:
@@ -64,39 +64,39 @@ namespace kagami {
     map<string, GenericToken> &GetGTBase() {
       using T = pair<string, GenericToken>;
       static map<string, GenericToken> base = {
-        T(kStrIf          ,GT_IF),
-        T(kStrNop         ,GT_NOP),
-        T(kStrDef         ,GT_DEF),
-        T(kStrEnd         ,GT_END),
-        T(kStrBind        ,GT_BIND),
-        T(kStrElse        ,GT_ELSE),
-        T(kStrElif        ,GT_ELIF),
-        T(kStrWhile       ,GT_WHILE),
-        T(kStrAdd         ,GT_PLUS),
-        T(kStrSub         ,GT_MINUS),
-        T(kStrMul         ,GT_TIMES),
-        T(kStrDiv         ,GT_DIV),
-        T(kStrIs          ,GT_EQUALS),
-        T(kStrAnd         ,GT_AND),
-        T(kStrOr          ,GT_OR),
-        T(kStrNot         ,GT_NOT),
-        T(kStrBitAnd      ,GT_BIT_AND),
-        T(kStrBitOr       ,GT_BIT_OR),
-        T(kStrLessOrEqual ,GT_LESS_OR_EQUAL),
-        T(kStrMoreOrEqual ,GT_GREATER_OR_EQUAL),
-        T(kStrNotEqual    ,GT_NOT_EQUAL),
-        T(kStrMore        ,GT_GREATER),
-        T(kStrLess        ,GT_LESS),
-        T(kStrReturn      ,GT_RETURN),
-        T(kStrArray       ,GT_ARRAY),
-        T(kStrTypeAssert  ,GT_ASSERT),
-        T(kStrContinue    ,GT_CONTINUE),
-        T(kStrBreak       ,GT_BREAK),
-        T(kStrCase        ,GT_CASE),
-        T(kStrWhen        ,GT_WHEN),
-        T(kStrTypeAssertR ,GT_ASSERT_R),
-        T(kStrTypeId      ,GT_TYPEID),
-        T(kStrDir         ,GT_DIR)
+        T(kStrIf          ,kTokenIf),
+        T(kStrNop         ,kTokenNop),
+        T(kStrFn         ,kTokenFn),
+        T(kStrEnd         ,kTokenEnd),
+        T(kStrBind        ,kTokenBind),
+        T(kStrElse        ,kTokenElse),
+        T(kStrElif        ,kTokenElif),
+        T(kStrWhile       ,kTokenWhile),
+        T(kStrPlus         ,kTokenPlus),
+        T(kStrMinus         ,kTokenMinus),
+        T(kStrTimes         ,kTokenTimes),
+        T(kStrDiv         ,kTokenDivide),
+        T(kStrIs          ,kTokenEquals),
+        T(kStrAnd         ,kTokenAnd),
+        T(kStrOr          ,kTokenOr),
+        T(kStrNot         ,kTokenNot),
+        T(kStrBitAnd      ,kTokenBitAnd),
+        T(kStrBitOr       ,kTokenBitOr),
+        T(kStrLessOrEqual ,kTokenLessOrEqual),
+        T(kStrGreaterOrEqual ,kTokenGreaterOrEqual),
+        T(kStrNotEqual    ,kTokenNotEqual),
+        T(kStrGreater        ,kTokenGreater),
+        T(kStrLess        ,kTokenLess),
+        T(kStrReturn      ,kTokenReturn),
+        T(kStrArray       ,kTokenInitialArray),
+        T(kStrTypeAssert  ,kTokenAssert),
+        T(kStrContinue    ,kTokenContinue),
+        T(kStrBreak       ,kTokenBreak),
+        T(kStrCase        ,kTokenCase),
+        T(kStrWhen        ,kTokenWhen),
+        T(kStrTypeAssertR ,kTokenAssertR),
+        T(kStrTypeId      ,kTokenTypeId),
+        T(kStrDir         ,kTokenDir)
       };
       return base;
     }
@@ -105,7 +105,7 @@ namespace kagami {
       auto &base = GetGTBase();
       auto it = base.find(src);
       if (it != base.end()) return it->second;
-      return GT_NUL;
+      return kTokenNull;
     }
 
     bool IsString(string target) {
@@ -219,15 +219,15 @@ namespace kagami {
     }
 
     TokenType GetTokenType(string src) {
-      TokenType type = TokenType::T_NUL;
-      if (src.empty()) type = TokenType::T_NUL;
-      else if (IsBoolean(src)) type = TokenType::T_BOOLEAN;
-      else if (IsGenericToken(src)) type = TokenType::T_GENERIC;
-      else if (IsInteger(src)) type = TokenType::T_INTEGER;
-      else if (IsFloat(src)) type = TokenType::T_FLOAT;
-      else if (IsSymbol(src)) type = TokenType::T_SYMBOL;
-      else if (IsBlank(src)) type = TokenType::T_BLANK;
-      else if (IsString(src)) type = TokenType::T_STRING;
+      TokenType type = TokenType::kTokenTypeNull;
+      if (src.empty()) type = TokenType::kTokenTypeNull;
+      else if (IsBoolean(src)) type = TokenType::kTokenTypeBool;
+      else if (IsGenericToken(src)) type = TokenType::kTokenTypeGeneric;
+      else if (IsInteger(src)) type = TokenType::kTokenTypeInt;
+      else if (IsFloat(src)) type = TokenType::kTokenTypeFloat;
+      else if (IsSymbol(src)) type = TokenType::kTokenTypeSymbol;
+      else if (IsBlank(src)) type = TokenType::kTokenTypeBlank;
+      else if (IsString(src)) type = TokenType::kTokenTypeString;
       return type;
     }
 

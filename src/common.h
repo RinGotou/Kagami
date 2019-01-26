@@ -72,8 +72,9 @@ namespace kagami {
   using std::stod;
   using std::wstring;
 
-  const string kEngineVersion  = "1.51";
-  const string kBackendVerison = "Hatsuki";
+  const string kInterpreterVersion  = "1.53";
+  const string kIRFrameworkVersion = "August";
+  const string kPatchName = "Kaleidoscope";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else
@@ -122,31 +123,68 @@ namespace kagami {
   };
 
   enum TokenType {
-    T_GENERIC, T_STRING, T_INTEGER, T_FLOAT,
-    T_BOOLEAN, T_SYMBOL, T_BLANK, T_CHAR, T_NUL
+    kTokenTypeGeneric, 
+    kTokenTypeString, 
+    kTokenTypeInt, 
+    kTokenTypeFloat,
+    kTokenTypeBool, 
+    kTokenTypeSymbol, 
+    kTokenTypeBlank,
+    kTokenTypeNull
   };
 
   using Token = pair<string, TokenType>;
 
   enum GenericToken {
-    GT_NOP, GT_DEF, 
-    GT_IF, GT_ELIF, GT_END, GT_ELSE, GT_BIND, 
-    GT_WHILE, GT_PLUS, GT_MINUS, GT_TIMES, GT_DIV, GT_EQUALS, 
-    GT_LESS_OR_EQUAL, GT_GREATER_OR_EQUAL, GT_NOT_EQUAL,
-    GT_GREATER, GT_LESS, GT_RETURN,
-    GT_AND, GT_OR, GT_NOT, GT_BIT_AND, GT_BIT_OR, 
-    GT_ARRAY, GT_ASSERT, GT_ASSERT_R,
-    GT_CONTINUE, GT_BREAK, 
-    GT_CASE, GT_WHEN, GT_TYPEID, GT_EXIST,
-    GT_DIR, GT_QUIT,
-    GT_NUL
+    kTokenNop, 
+    kTokenFn, 
+    kTokenIf, 
+    kTokenElif, 
+    kTokenEnd, 
+    kTokenElse, 
+    kTokenBind, 
+    kTokenWhile, 
+    kTokenPlus, 
+    kTokenMinus, 
+    kTokenTimes, 
+    kTokenDivide, 
+    kTokenEquals, 
+    kTokenLessOrEqual, 
+    kTokenGreaterOrEqual, 
+    kTokenNotEqual,
+    kTokenGreater, 
+    kTokenLess, 
+    kTokenReturn,
+    kTokenAnd, 
+    kTokenOr, 
+    kTokenNot, 
+    kTokenBitAnd, 
+    kTokenBitOr, 
+    kTokenInitialArray, 
+    kTokenAssert, 
+    kTokenAssertR,
+    kTokenContinue, 
+    kTokenBreak, 
+    kTokenCase, 
+    kTokenWhen, 
+    kTokenTypeId, 
+    kTokenExist,
+    kTokenDir, 
+    kTokenQuit,
+    kTokenNull
   };
 
-  enum BasicTokenEnum {
-    TOKEN_EQUAL, TOKEN_COMMA, TOKEN_LEFT_SQRBRACKET, TOKEN_DOT,
-    TOKEN_COLON, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_SQRBRACKET, TOKEN_RIGHT_BRACKET,
-    TOKEN_LEFT_CURBRACKET, TOKEN_RIGHT_CURBRACKET, 
-    TOKEN_OTHERS
+  enum BasicToken {
+    kBasicTokenAssign, 
+    kBasicTokenComma, 
+    kBasicTokenLeftSqrBracket, 
+    kBasicTokenDot,
+    kBasicTokenLeftBracket, 
+    kBasicTokenRightSqrBracket, 
+    kBasicTokenRightBracket,
+    kBasicTokenLeftCurBracket, 
+    kBasicTokenRightCurBracket, 
+    kBasicTokenOther
   };
 
   enum MachineMode {
@@ -164,7 +202,7 @@ namespace kagami {
   const string kTypeIdString     = "String";
   const string kTypeIdWideString = "WString";
   const string kTypeIdRawString  = "RawString";
-  const string kTypeIdArray  = "Array";
+  const string kTypeIdArray      = "Array";
   const string kTypeIdInStream   = "Instream";
   const string kTypeIdOutStream  = "Outstream";
   const string kTypeIdRegex      = "Regex";
@@ -173,7 +211,7 @@ namespace kagami {
   const string kTypeIdFunction   = "Function";
 
   const string kRawStringMethods  = "size|__at|__print";
-  const string kArrayBaseMethods  = "size|__at|__print";
+  const string kArrayMethods      = "size|__at|__print|push|pop|empty";
   const string kStringMethods     = "size|__at|__print|substr|to_wide";
   const string kWideStringMethods = "size|__at|__print|substr|to_byte";
   const string kInStreamMethods   = "get|good|getlines|close|eof";
@@ -182,47 +220,47 @@ namespace kagami {
   const string kFunctionMethods   = "id|call|params";
 
   const string
-    kStrIf = "if",
-    kStrDef = "fn",
-    kStrEnd = "end",
-    kStrBind = "__bind",
-    kStrVaSize = "__size",
-    kStrFor = "for",
-    kStrElse = "else",
-    kStrElif = "elif",
-    kStrWhile = "while",
-    kStrContinue = "continue",
-    kStrBreak = "break",
-    kStrCase = "case",
-    kStrWhen = "when",
-    kStrReturn = "return",
-    kStrPlus = "+",
-    kStrMinus = "-",
-    kStrTimes = "*",
-    kStrDiv = "/",
-    kStrIs = "==",
-    kStrAnd = "&&",
-    kStrOr = "||",
-    kStrNot = "!",
-    kStrBitAnd = "&",
-    kStrBitOr = "|",
-    kStrLessOrEqual = "<=",
+    kStrIf             = "if",
+    kStrFn             = "fn",
+    kStrEnd            = "end",
+    kStrBind           = "__bind",
+    kStrVaSize         = "__size",
+    kStrFor            = "for",
+    kStrElse           = "else",
+    kStrElif           = "elif",
+    kStrWhile          = "while",
+    kStrContinue       = "continue",
+    kStrBreak          = "break",
+    kStrCase           = "case",
+    kStrWhen           = "when",
+    kStrReturn         = "return",
+    kStrPlus           = "+",
+    kStrMinus          = "-",
+    kStrTimes          = "*",
+    kStrDiv            = "/",
+    kStrIs             = "==",
+    kStrAnd            = "&&",
+    kStrOr             = "||",
+    kStrNot            = "!",
+    kStrBitAnd         = "&",
+    kStrBitOr          = "|",
+    kStrLessOrEqual    = "<=",
     kStrGreaterOrEqual = ">=",
-    kStrNotEqual = "!=",
-    kStrGreater = ">",
-    kStrLess = "<",
-    kStrNop = "__nop",
-    kStrUserFunc = "__func",
-    kStrRetValue = "__ret",
-    kStrArray = "__array",
-    kStrTypeAssert = "__type_assert",
-    kStrTypeAssertR = "__type_assert_r",
-    kStrTypeId = "typeid",
-    kStrDir = "dir",
-    kStrExist = "exist",
-    kStrQuit = "quit",
-    kStrTrue = "true",
-    kStrFalse = "false",
-    kStrObject = "__object";
+    kStrNotEqual       = "!=",
+    kStrGreater        = ">",
+    kStrLess           = "<",
+    kStrNop            = "__nop",
+    kStrUserFunc       = "__func",
+    kStrRetValue       = "__ret",
+    kStrArray          = "__array",
+    kStrTypeAssert     = "__type_assert",
+    kStrTypeAssertR    = "__type_assert_r",
+    kStrTypeId         = "typeid",
+    kStrDir            = "dir",
+    kStrExist          = "exist",
+    kStrQuit           = "quit",
+    kStrTrue           = "true",
+    kStrFalse          = "false",
+    kStrObject         = "__object";
 }
 

@@ -16,8 +16,8 @@ namespace kagami {
       TokenType type_A = util::GetTokenType(data_A);
       TokenType type_B = util::GetTokenType(data_B);
 
-      if (type_A == T_FLOAT || type_B == T_FLOAT) policy = G_FLOAT;
-      if (type_A == T_INTEGER && type_B == T_INTEGER) policy = G_INT;
+      if (type_A == kTokenTypeFloat || type_B == kTokenTypeFloat) policy = G_FLOAT;
+      if (type_A == kTokenTypeInt && type_B == kTokenTypeInt) policy = G_INT;
       if (util::IsString(data_A) || util::IsString(data_B)) policy = G_STR;
       if (util::IsBoolean(data_A) && util::IsBoolean(data_B)) policy = G_STR;
     }
@@ -41,14 +41,14 @@ namespace kagami {
     string str = RealString(p.Get<string>("object"));
 
     switch (util::GetTokenType(str)) {
-    case T_BOOLEAN:result = "'boolean'"; break;
-    case T_GENERIC:result = "'generic'"; break;
-    case T_INTEGER:result = "'integer'"; break;
-    case T_FLOAT:result = "'float'"; break;
-    case T_SYMBOL:result = "'symbol'"; break;
-    case T_BLANK:result = "'blank'"; break;
-    case T_STRING:result = "'string'"; break;
-    case T_NUL:result = "'null'"; break;
+    case kTokenTypeBool:result = "'boolean'"; break;
+    case kTokenTypeGeneric:result = "'generic'"; break;
+    case kTokenTypeInt:result = "'integer'"; break;
+    case kTokenTypeFloat:result = "'float'"; break;
+    case kTokenTypeSymbol:result = "'symbol'"; break;
+    case kTokenTypeBlank:result = "'blank'"; break;
+    case kTokenTypeString:result = "'string'"; break;
+    case kTokenTypeNull:result = "'null'"; break;
     default:result = "'null'"; break;
     }
 
@@ -57,20 +57,22 @@ namespace kagami {
 
   Message Print(ObjectMap &p) {
     Object &obj = p[kStrObject];
+    string methods = management::type::GetMethods(obj.GetTypeId());
 
     auto errorMsg = []() {
       std::cout << "You can't print this object." << std::endl;
     };
 
-    if (!util::FindInStringGroup("__print", obj.GetMethods())) {
+    if (!util::FindInStringGroup("__print", methods)) {
       errorMsg();
+      return Message();
     } 
-    else {
-      Message tempMsg = CheckEntryAndStart("__print", obj.GetTypeId(), p);
-      if (tempMsg.GetCode() == kCodeIllegalCall) {
-        errorMsg();
-      }
+
+    Message tempMsg = CheckEntryAndStart("__print", obj.GetTypeId(), p);
+    if (tempMsg.GetCode() == kCodeIllegalCall) {
+      errorMsg();
     }
+    
     return Message();
   }
 
@@ -111,7 +113,7 @@ namespace kagami {
     auto type = util::GetTokenType(origin);
     string str;
 
-    (type == T_NUL || type == T_GENERIC) ?
+    (type == kTokenTypeNull || type == kTokenTypeGeneric) ?
       str = "" :
       str = origin;
     
@@ -125,18 +127,18 @@ namespace kagami {
 
   void OperatorRegister() {
     using namespace management;
-    CreateGenericInterface(OperatorGenerator<PLUS, GT_PLUS>());
-    CreateGenericInterface(OperatorGenerator<MINUS, GT_MINUS>());
-    CreateGenericInterface(OperatorGenerator<TIMES, GT_TIMES>());
-    CreateGenericInterface(OperatorGenerator<DIV, GT_DIV>());
-    CreateGenericInterface(OperatorGenerator<EQUALS, GT_EQUALS, true>());
-    CreateGenericInterface(OperatorGenerator<NOT_EQUAL, GT_NOT_EQUAL, true>());
-    CreateGenericInterface(OperatorGenerator<LESS_OR_EQUAL, GT_LESS_OR_EQUAL, true>());
-    CreateGenericInterface(OperatorGenerator<GREATER_OR_EQUAL, GT_GREATER_OR_EQUAL, true>());
-    CreateGenericInterface(OperatorGenerator<GREATER, GT_GREATER, true>());
-    CreateGenericInterface(OperatorGenerator<LESS, GT_LESS, true>());
-    CreateGenericInterface(OperatorGenerator<AND, GT_AND, true>());
-    CreateGenericInterface(OperatorGenerator<OR, GT_OR, true>());
+    CreateGenericInterface(OperatorGenerator<PLUS, kTokenPlus>());
+    CreateGenericInterface(OperatorGenerator<MINUS, kTokenMinus>());
+    CreateGenericInterface(OperatorGenerator<TIMES, kTokenTimes>());
+    CreateGenericInterface(OperatorGenerator<DIV, kTokenDivide>());
+    CreateGenericInterface(OperatorGenerator<EQUALS, kTokenEquals, true>());
+    CreateGenericInterface(OperatorGenerator<NOT_EQUAL, kTokenNotEqual, true>());
+    CreateGenericInterface(OperatorGenerator<LESS_OR_EQUAL, kTokenLessOrEqual, true>());
+    CreateGenericInterface(OperatorGenerator<GREATER_OR_EQUAL, kTokenGreaterOrEqual, true>());
+    CreateGenericInterface(OperatorGenerator<GREATER, kTokenGreater, true>());
+    CreateGenericInterface(OperatorGenerator<LESS, kTokenLess, true>());
+    CreateGenericInterface(OperatorGenerator<AND, kTokenAnd, true>());
+    CreateGenericInterface(OperatorGenerator<OR, kTokenOr, true>());
   }
 
   void BasicUtilityRegister() {
@@ -165,8 +167,9 @@ namespace kagami {
       );
     };
 
-    create_constant("kVersion", kEngineVersion);
+    create_constant("kVersion", kInterpreterVersion);
     create_constant("kPlatform", kPlatformType);
+    create_constant("kInternalName", kPatchName);
     create_constant("kStringTypeBool", "boolean");
     create_constant("kStringTypeGenericId", "generic");
     create_constant("kStringTypeInteger", "integer");

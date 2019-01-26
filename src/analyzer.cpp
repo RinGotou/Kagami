@@ -1,18 +1,17 @@
 #include "analyzer.h"
 
 namespace kagami {
-  BasicTokenEnum GetBasicToken(string src) {
-    if (src == "=")   return TOKEN_EQUAL;
-    if (src == ",")   return TOKEN_COMMA;
-    if (src == "[")   return TOKEN_LEFT_SQRBRACKET;
-    if (src == ".")   return TOKEN_DOT;
-    if (src == ":")   return TOKEN_COLON;
-    if (src == "(")   return TOKEN_LEFT_BRACKET;
-    if (src == "]")   return TOKEN_RIGHT_SQRBRACKET;
-    if (src == ")")   return TOKEN_RIGHT_BRACKET;
-    if (src == "{")   return TOKEN_LEFT_CURBRACKET;
-    if (src == "}")   return TOKEN_RIGHT_CURBRACKET;
-    return TOKEN_OTHERS;
+  BasicToken GetBasicToken(string src) {
+    if (src == "=")   return kBasicTokenAssign;
+    if (src == ",")   return kBasicTokenComma;
+    if (src == "[")   return kBasicTokenLeftSqrBracket;
+    if (src == ".")   return kBasicTokenDot;
+    if (src == "(")   return kBasicTokenLeftBracket;
+    if (src == "]")   return kBasicTokenRightSqrBracket;
+    if (src == ")")   return kBasicTokenRightBracket;
+    if (src == "{")   return kBasicTokenLeftCurBracket;
+    if (src == "}")   return kBasicTokenRightCurBracket;
+    return kBasicTokenOther;
   }
 
 
@@ -45,7 +44,7 @@ namespace kagami {
       if (disable_escape) disable_escape = false;
 
       if (current == '\'' && !escape_flag) {
-        if (!string_processing && util::GetTokenType(current_string) == T_BLANK) {
+        if (!string_processing && util::GetTokenType(current_string) == kTokenTypeBlank) {
           current_string.clear();
         }
 
@@ -59,14 +58,14 @@ namespace kagami {
         temp.append(1, current);
 
         auto type = util::GetTokenType(temp);
-        if (type == T_NUL) {
+        if (type == kTokenTypeNull) {
           auto type = util::GetTokenType(current_string);
           switch (type) {
-          case T_BLANK:
+          case kTokenTypeBlank:
             current_string.clear();
             current_string.append(1, current);
             break;
-          case T_INTEGER:
+          case kTokenTypeInt:
             if (current == '.' && util::IsDigit(next)) {
               current_string.append(1, current);
             }
@@ -84,7 +83,7 @@ namespace kagami {
           }
         }
         else {
-          if (type == T_INTEGER && (temp[0] == '+' || temp[0] == '-')) {
+          if (type == kTokenTypeInt && (temp[0] == '+' || temp[0] == '-')) {
             output.emplace_back(string().append(1, temp[0]));
             current_string = temp.substr(1, temp.size() - 1);
           }
@@ -108,7 +107,7 @@ namespace kagami {
       last = target[idx];
     }
 
-    if (util::GetTokenType(current_string) != T_BLANK) {
+    if (util::GetTokenType(current_string) != kTokenTypeBlank) {
       output.emplace_back(current_string);
     }
 
@@ -118,9 +117,9 @@ namespace kagami {
   Message Analyzer::Tokenizer(vector<string> target) {
     bool negative_flag = false;
     stack<string> bracket_stack;
-    Token current = Token("", T_NUL),
-      next = Token("", T_NUL),
-      last = Token("", T_NUL);
+    Token current = Token("", kTokenTypeNull),
+      next = Token("", kTokenTypeNull),
+      last = Token("", kTokenTypeNull);
     Message msg;
     
     tokens_.clear();
@@ -130,9 +129,9 @@ namespace kagami {
       current = Token(target[idx], util::GetTokenType(target[idx]));
       (idx < target.size() - 1) ?
         next = Token(target[idx + 1], util::GetTokenType(target[idx + 1])) :
-        next = Token("", T_NUL);
+        next = Token("", kTokenTypeNull);
 
-      if (current.second == T_NUL) {
+      if (current.second == kTokenTypeNull) {
         msg = Message(kCodeBadExpression,
           "Unknown token - " + current.first + ".",
           kStateError);
@@ -140,8 +139,8 @@ namespace kagami {
       }
 
       if (current.first == "+" || current.first == "-") {
-        if ((last.second == T_SYMBOL || last.second == T_NUL) 
-          && (next.second == T_INTEGER || next.second == T_FLOAT)) {
+        if ((last.second == kTokenTypeSymbol || last.second == kTokenTypeNull) 
+          && (next.second == kTokenTypeInt || next.second == kTokenTypeFloat)) {
           negative_flag = true;
         }
       }
@@ -163,7 +162,7 @@ namespace kagami {
       }
 
       if (current.first == ",") {
-        if (last.second == T_SYMBOL &&
+        if (last.second == kTokenTypeSymbol &&
           last.first != "]" &&
           last.first != ")" &&
           last.first != "}" &&
@@ -263,14 +262,14 @@ namespace kagami {
 
     action_base_.emplace_back(Command(blk->symbol.back(), arguments));
     blk->symbol.pop_back();
-    blk->args.emplace_back(Argument("", AT_RET, T_NUL));
+    blk->args.emplace_back(Argument("", AT_RET, kTokenTypeNull));
     return health_;
   }
 
   void Analyzer::EqualMark(AnalyzerWorkBlock *blk) {
     if (!blk->args.empty()) {
-      Request request(GT_BIND);
-      request.priority = util::GetTokenPriority(GT_BIND);
+      Request request(kTokenBind);
+      request.priority = util::GetTokenPriority(kTokenBind);
       blk->symbol.emplace_back(request);
     }
   }
@@ -279,8 +278,8 @@ namespace kagami {
     GenericToken token;
 
     (blk->next_2.first != "(" && blk->next_2.first != "[") ?
-      token = GT_ASSERT_R :
-      token = GT_ASSERT;
+      token = kTokenAssertR :
+      token = kTokenAssert;
     
     deque<Argument> arguments = {
       blk->args.back(),
@@ -294,8 +293,8 @@ namespace kagami {
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
     if (blk->define_line) return;
-    if (blk->last.second != TokenType::T_GENERIC) {
-      blk->symbol.emplace_back(Request(GT_NOP));
+    if (blk->last.second != TokenType::kTokenTypeGeneric) {
+      blk->symbol.emplace_back(Request(kTokenNop));
     }
     
     blk->symbol.push_back(Request(blk->current.first));
@@ -323,10 +322,10 @@ namespace kagami {
 
     deque<Argument> arguments = {
       blk->args.back(),
-      Argument("__at", AT_NORMAL, T_GENERIC)
+      Argument("__at", AT_NORMAL, kTokenTypeGeneric)
     };
 
-    action_base_.emplace_back(Command(Request(GT_ASSERT), arguments));
+    action_base_.emplace_back(Command(Request(kTokenAssert), arguments));
 
     Request request("__at");
     request.domain = blk->args.back();
@@ -340,8 +339,8 @@ namespace kagami {
 
   bool Analyzer::LeftCurBracket(AnalyzerWorkBlock *blk) {
     bool result;
-    if (blk->last.second == TokenType::T_SYMBOL) {
-      blk->symbol.emplace_back(Request(GT_ARRAY));
+    if (blk->last.second == TokenType::kTokenTypeSymbol) {
+      blk->symbol.emplace_back(Request(kTokenInitialArray));
       blk->symbol.emplace_back(Request(blk->current.first, true));
       blk->args.emplace_back(Argument());
       result = true;
@@ -359,14 +358,14 @@ namespace kagami {
     GenericToken token = util::GetGenericToken(blk->current.first);
 
     if (blk->define_line) {
-      blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, T_GENERIC));
+      blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, kTokenTypeGeneric));
     }
     else {
       if (blk->next.first == "=") {
-        blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, T_GENERIC));
+        blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, kTokenTypeGeneric));
       }
       else if (blk->next.first == "(") {
-        if (token != GT_NUL) {
+        if (token != kTokenNull) {
           Request request(token);
           blk->symbol.emplace_back(request);
         }
@@ -390,19 +389,19 @@ namespace kagami {
           Request request(token);
           blk->symbol.emplace_back(request);
         }
-        else if (blk->current.first == kStrDef) {
+        else if (blk->current.first == kStrFn) {
           blk->define_line = true;
-          blk->symbol.emplace_back(Request(GT_DEF));
+          blk->symbol.emplace_back(Request(kTokenFn));
           blk->symbol.emplace_back(Request("(", true));
           blk->args.emplace_back(Argument());
         }
         else {
-          if (token != GT_NUL) {
+          if (token != kTokenNull) {
             result = false;
             error_string_ = "Generic token can't be a object.";
           }
           else {
-            Argument arg(blk->current.first, AT_OBJECT, T_GENERIC);
+            Argument arg(blk->current.first, AT_OBJECT, kTokenTypeGeneric);
             if (blk->domain.type != AT_HOLDER) {
               arg.domain.data = blk->domain.data;
               arg.domain.type = blk->domain.type;
@@ -428,7 +427,7 @@ namespace kagami {
       error_string_ = "Left bracket after function is missing";
     }
 
-    if (blk->define_line && blk->last.first == kStrDef && blk->next.first != "(") {
+    if (blk->define_line && blk->last.first == kStrFn && blk->next.first != "(") {
       health_ = false;
       result = false;
       error_string_ = "Wrong definition pattern";
@@ -521,7 +520,7 @@ namespace kagami {
 
     while (!blk->symbol.empty()
       && top_token != "{" && top_token != "[" && top_token != "("
-      && blk->symbol.back().head_gen != GT_BIND) {
+      && blk->symbol.back().head_gen != kTokenBind) {
 
       auto first_token = blk->symbol.back().head_gen;
 
@@ -565,32 +564,32 @@ namespace kagami {
       blk->current = tokens_[i];
       i + 1 < size ?
         blk->next = tokens_[i + 1] :
-        blk->next = Token(string(), TokenType::T_NUL);
+        blk->next = Token(string(), TokenType::kTokenTypeNull);
       i + 2 < size ?
         blk->next_2 = tokens_[i + 2] :
-        blk->next_2 = Token(string(), TokenType::T_NUL);
+        blk->next_2 = Token(string(), TokenType::kTokenTypeNull);
 
       auto token_type = blk->current.second;
-      if (token_type == TokenType::T_SYMBOL) {
-        BasicTokenEnum value = GetBasicToken(blk->current.first);
+      if (token_type == TokenType::kTokenTypeSymbol) {
+        BasicToken value = GetBasicToken(blk->current.first);
         switch (value) {
-        case TOKEN_EQUAL: EqualMark(blk); break;
-        case TOKEN_COMMA: state = CleanupStack(blk); break;
-        case TOKEN_LEFT_SQRBRACKET: state = LeftSqrBracket(blk); break;
-        case TOKEN_DOT:             Dot(blk); break;
-        case TOKEN_LEFT_BRACKET:    LeftBracket(blk); break;
-        case TOKEN_RIGHT_SQRBRACKET:state = RightBracket(blk); break;
-        case TOKEN_RIGHT_BRACKET:   state = RightBracket(blk); break;
-        case TOKEN_LEFT_CURBRACKET: state = LeftCurBracket(blk); break;
-        case TOKEN_RIGHT_CURBRACKET:state = RightBracket(blk); break;
-        case TOKEN_OTHERS:          OtherSymbol(blk); break;
+        case kBasicTokenAssign: EqualMark(blk); break;
+        case kBasicTokenComma: state = CleanupStack(blk); break;
+        case kBasicTokenLeftSqrBracket: state = LeftSqrBracket(blk); break;
+        case kBasicTokenDot:             Dot(blk); break;
+        case kBasicTokenLeftBracket:    LeftBracket(blk); break;
+        case kBasicTokenRightSqrBracket:state = RightBracket(blk); break;
+        case kBasicTokenRightBracket:   state = RightBracket(blk); break;
+        case kBasicTokenLeftCurBracket: state = LeftCurBracket(blk); break;
+        case kBasicTokenRightCurBracket:state = RightBracket(blk); break;
+        case kBasicTokenOther:          OtherSymbol(blk); break;
         default:break;
         }
       }
-      else if (token_type == TokenType::T_GENERIC) {
+      else if (token_type == TokenType::kTokenTypeGeneric) {
         state = FunctionAndObject(blk);
       }
-      else if (token_type == TokenType::T_NUL) {
+      else if (token_type == TokenType::kTokenTypeNull) {
         result = Message(kCodeIllegalParam, "Illegal token.", kStateError);
         state = false;
       }

@@ -38,27 +38,27 @@ namespace kagami {
     Module main_module(maker, true);
     Activiate();
 
-    if (main_module.GetHealth()) {
+    if (main_module.Good()) {
       main_module.Run();
     }
   }
 
   void ScriptCore::MyInfo() {
-    cout << kEngineName << " " << kEngineVersion << "\n";
-    cout << "Backend version: " << kBackendVerison << "\n";
+    cout << kEngineName << " " << kInterpreterVersion << "\n";
+    cout << "IR Framework Version: " << kIRFrameworkVersion << "\n";
+    cout << "Patch: " << kPatchName << "\n";
     cout << kCopyright << " " << kMaintainer << endl;
   }
 }
 
 //Main namespace
 void HelpFile() {
-  cout << "Execute a Kagami script.\n";
-  cout << "Usage:kagami [-OPTION]...\n\n";
-  cout << "\tpath           Path of script file.\n";
-  cout << "\tlog            Path of error log.\n";
-  cout << "\twait           Automatically pause at application exit.\n";
-  cout << "\thelp           Show this message.\n";
-  cout << "\tversion        Show version message of interpreter.\n";
+  cout << "Usage:kagami [-OPTION][-OPTION=VALUE]...\n\n";
+  cout << "\tpath=PATH         Path of script file.\n";
+  cout << "\tlog=(PATH|stdout) Output of error log.\n";
+  cout << "\twait              Automatically pause at application exit.\n";
+  cout << "\thelp              Show this message.\n";
+  cout << "\tversion           Show version message of interpreter.\n";
 
 }
 

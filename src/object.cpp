@@ -22,7 +22,6 @@ namespace kagami {
     auto mod = [&]() {
       ptr_ = object.ptr_;
       type_id_ = object.type_id_;
-      methods_ = object.methods_;
       ref_ = object.ref_;
       constructor_ = object.constructor_;
     };

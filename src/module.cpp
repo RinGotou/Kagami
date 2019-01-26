@@ -16,8 +16,7 @@ namespace kagami {
   }
 
   void CopyObject(Object &dest, Object &src) {
-    dest.Set(management::type::GetObjectCopy(src), src.GetTypeId(),
-      src.GetMethods());
+    dest.Set(management::type::GetObjectCopy(src), src.GetTypeId());
   }
 
   bool IsStringObject(Object &obj) {
@@ -74,7 +73,7 @@ namespace kagami {
     Object obj;
     auto interface = management::Order(id, domain);
     if (interface.Good()) {
-      obj.Set(make_shared<Interface>(interface), kTypeIdFunction, kFunctionMethods);
+      obj.Set(make_shared<Interface>(interface), kTypeIdFunction);
     }
     return obj;
   }
@@ -92,7 +91,7 @@ namespace kagami {
     for (size_t count = 0; count < target.size(); ++count) {
       current = target[count];
       auto type = kagami::util::GetTokenType(toString(current));
-      if (type != TokenType::T_BLANK && exempt_blank_char) {
+      if (type != TokenType::kTokenTypeBlank && exempt_blank_char) {
         head = count;
         exempt_blank_char = false;
       }
@@ -108,7 +107,7 @@ namespace kagami {
     if (data.front() == '#') return "";
 
     while (!data.empty() &&
-      util::GetTokenType(toString(data.back())) == TokenType::T_BLANK) {
+      util::GetTokenType(toString(data.back())) == TokenType::kTokenTypeBlank) {
       data.pop_back();
     }
     return data;
@@ -420,7 +419,7 @@ namespace kagami {
 
     switch (arg.type) {
     case AT_NORMAL:
-      obj.Set(make_shared<string>(arg.data), kTypeIdRawString, kRawStringMethods);
+      obj.Set(make_shared<string>(arg.data), kTypeIdRawString);
       break;
     case AT_OBJECT:
       ptr = management::FindObject(arg.data);
@@ -660,7 +659,7 @@ namespace kagami {
 
       if (request.type == RT_MACHINE && CheckGenericRequests(request.head_gen)) {
         (request.head_reg == name && idx == action_base.size() - 2
-          && action_base.back().first.head_gen == GT_RETURN) ?
+          && action_base.back().first.head_gen == kTokenReturn) ?
           worker->tail_recursion = true :
           worker->tail_recursion = false;
 
@@ -738,7 +737,7 @@ namespace kagami {
         
         if (msg.GetLevel() == kStateError) break;
 
-        if (request.head_gen != GT_ASSERT) {
+        if (request.head_gen != kTokenAssert) {
           Object object = msg.GetCode() == kCodeObject ?
             msg.GetObj() : Object();
 
@@ -779,10 +778,10 @@ namespace kagami {
       if (!health_) break;
       ir = &storage_[idx];
       token = util::GetGenericToken(ir->GetMainToken().first);
-      if (token == GT_WHILE || token == GT_IF || token == GT_CASE) {
+      if (token == kTokenWhile || token == kTokenIf || token == kTokenCase) {
         nest_head_count++;
       }
-      else if (token == GT_DEF) {
+      else if (token == kTokenFn) {
         if (flag == true) {
           result = Message(kCodeBadExpression,
             "Define function in function is not supported.",
@@ -794,7 +793,7 @@ namespace kagami {
         def_start = idx + 1;
         flag = true;
       }
-      else if (token == GT_END) {
+      else if (token == kTokenEnd) {
         if (nest_head_count > 0) {
           nest_head_count--;
         }
@@ -856,13 +855,13 @@ namespace kagami {
         result = Message(kStrTrue);
         judged = true;
       }
-      else if (gen_token != GT_ELSE && gen_token != GT_END && gen_token != GT_ELIF) {
+      else if (gen_token != kTokenElse && gen_token != kTokenEnd && gen_token != kTokenElif) {
         result = Message();
         judged = true;
       }
       break;
     case kModeCycleJump:
-      if (gen_token != GT_END && gen_token != GT_IF && gen_token != GT_WHILE) {
+      if (gen_token != kTokenEnd && gen_token != kTokenIf && gen_token != kTokenWhile) {
         result = Message();
         judged = true;
       }
@@ -872,7 +871,7 @@ namespace kagami {
         result = Message();
         judged = true;
       }
-      else if (gen_token != GT_WHEN && gen_token != GT_END && gen_token != GT_ELSE) {
+      else if (gen_token != kTokenWhen && gen_token != kTokenEnd && gen_token != kTokenElse) {
         result = Message();
         judged = true;
       }
@@ -908,14 +907,14 @@ namespace kagami {
     else {
       string id = GetObjectStuff<string>(dest);
 
-      if (util::GetTokenType(id) == T_GENERIC) {
+      if (util::GetTokenType(id) == kTokenTypeGeneric) {
         ObjectPointer real_dest = management::FindObject(id);
 
         if (real_dest != nullptr) {
           CopyObject(*real_dest, src);
         }
         else {
-          Object obj(management::type::GetObjectCopy(src), src.GetTypeId(), src.GetMethods());
+          Object obj(management::type::GetObjectCopy(src), src.GetTypeId());
           ObjectPointer result = management::CreateObject(id, obj);
           if (result == nullptr) {
             worker->error_string = "Object cration is failed.";
@@ -948,7 +947,7 @@ namespace kagami {
       }
     }
 
-    Object obj(base, kTypeIdArray, management::type::GetMethods(kTypeIdArray));
+    Object obj(base, kTypeIdArray);
     obj.SetConstructorFlag();
     worker->returning_base.push(obj);
   }
@@ -960,14 +959,14 @@ namespace kagami {
       for (size_t idx = 0; idx < args.size(); idx += 1) {
         base->emplace_back(worker->MakeObject(args[idx]));
       }
-      Object obj(base, kTypeIdArray, management::type::GetMethods(kTypeIdArray));
-      container.Add(kStrRetValue,
-        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods()));
+
+      Object obj(base, kTypeIdArray);
+      container.Add(kStrRetValue, Object(obj.Get(), obj.GetTypeId()));
     }
     else if (args.size() == 1) {
       auto obj = worker->MakeObject(args[0]);
-      container.Add(kStrRetValue,
-        Object(obj.Get(), obj.GetTypeId(), obj.GetMethods()));
+      string methods = management::type::GetMethods(obj.GetTypeId());
+      container.Add(kStrRetValue, Object(obj.Get(), obj.GetTypeId()));
     }
     worker->msg = Message(kCodeReturn, "");
     worker->deliver = true;
@@ -983,7 +982,7 @@ namespace kagami {
         Object value_obj(obj.GetTypeId());
         base->emplace_back(value_obj);
       }
-      Object ret_obj(base, kTypeIdArray, management::type::GetMethods(kTypeIdArray));
+      Object ret_obj(base, kTypeIdArray);
       ret_obj.SetConstructorFlag();
       worker->returning_base.push(ret_obj);
     }
@@ -1005,15 +1004,15 @@ namespace kagami {
 
     if (!args.empty()) {
       Object obj = worker->MakeObject(args[0]);
-      auto vec = util::BuildStringVector(obj.GetMethods());
+      string methods = management::type::GetMethods(obj.GetTypeId());
+      auto vec = util::BuildStringVector(methods);
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
 
       for (const auto &unit : vec) {
-        base->emplace_back(Object(make_shared<string>(unit), kTypeIdString,
-          management::type::GetMethods(kTypeIdString)));
+        base->emplace_back(Object(make_shared<string>(unit), kTypeIdString));
       }
 
-      Object ret_obj(base, kTypeIdArray, kArrayBaseMethods);
+      Object ret_obj(base, kTypeIdArray);
       ret_obj.SetConstructorFlag();
       worker->returning_base.push(ret_obj);
     }
@@ -1033,7 +1032,8 @@ namespace kagami {
       Object str_obj = worker->MakeObject(args[1]);
       Object ret_obj;
       string target_str = RealString(GetObjectStuff<string>(str_obj));
-      util::FindInStringGroup(target_str, obj.GetMethods()) ?
+      string methods = management::type::GetMethods(obj.GetTypeId());
+      util::FindInStringGroup(target_str, methods) ?
         ret_obj = Object(kStrTrue) :
         ret_obj = Object(kStrFalse);
 
@@ -1051,7 +1051,7 @@ namespace kagami {
     return result;
   }
 
-  bool Module::Define(IRWorker *worker, deque<Argument> args) {
+  bool Module::Fn(IRWorker *worker, deque<Argument> args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1085,7 +1085,7 @@ namespace kagami {
       }
       else {
         auto copy = management::type::GetObjectCopy(obj);
-        Object base(copy, obj.GetTypeId(), obj.GetMethods());
+        Object base(copy, obj.GetTypeId());
         management::CreateObject("__case", base);
         worker->deliver = true;
         worker->msg = Message().SetCode(kCodeCase);
@@ -1145,8 +1145,8 @@ namespace kagami {
     Object obj = worker->MakeObject(args[0]);
     Object id_obj = worker->MakeObject(args[1]);
     string id = GetObjectStuff<string>(id_obj);
-
-    result = util::FindInStringGroup(id, obj.GetMethods());
+    string methods = management::type::GetMethods(obj.GetTypeId());
+    result = util::FindInStringGroup(id, methods);
 
     if (!result) {
       worker->error_string = "Method/Member is not found. - " + id;
@@ -1163,7 +1163,7 @@ namespace kagami {
       auto interface = management::Order(id, obj.GetTypeId());
       if (interface.Good()) {
         if (returning) {
-          ent_obj.Set(make_shared<Interface>(interface), kTypeIdFunction, kFunctionMethods);
+          ent_obj.Set(make_shared<Interface>(interface), kTypeIdFunction);
           worker->returning_base.push(ent_obj);
         }
       }
@@ -1219,13 +1219,13 @@ namespace kagami {
 
           bool state = false;
           switch (type) {
-          case T_INTEGER:
+          case kTokenTypeInt:
             state = (stoi(state_str) != 0);
             break;
-          case T_FLOAT:
+          case kTokenTypeFloat:
             state = (stod(state_str) != 0.0);
             break;
-          case T_STRING:
+          case kTokenTypeString:
             state = (RealString(state_str).size() > 0);
             break;
           default:
@@ -1253,62 +1253,62 @@ namespace kagami {
     bool result = true;
 
     switch (token) {
-    case GT_BIND:
+    case kTokenBind:
       result = BindAndSet(worker, args);
       break;
-    case GT_NOP:
+    case kTokenNop:
       Nop(worker, args);
       break;
-    case GT_ARRAY:
+    case kTokenInitialArray:
       ArrayMaker(worker, args);
       break;
-    case GT_RETURN:
+    case kTokenReturn:
       ReturnOperator(worker, args);
       break;
-    case GT_TYPEID:
+    case kTokenTypeId:
       GetTypeId(worker, args);
       break;
-    case GT_DIR:
+    case kTokenDir:
       result = GetMethods(worker, args);
       break;
-    case GT_EXIST:
+    case kTokenExist:
       result = Exist(worker, args);
       break;
-    case GT_DEF:
-      result = Define(worker, args);
+    case kTokenFn:
+      result = Fn(worker, args);
       break;
-    case GT_CASE:
+    case kTokenCase:
       result = Case(worker, args);
       break;
-    case GT_WHEN:
+    case kTokenWhen:
       result = When(worker, args);
       break;
-    case GT_ASSERT:
+    case kTokenAssert:
       result = DomainAssert(worker, args, false);
       break;
-    case GT_ASSERT_R:
+    case kTokenAssertR:
       result = DomainAssert(worker, args, true);
-    case GT_QUIT:
+    case kTokenQuit:
       Quit(worker);
       break;
-    case GT_END:
+    case kTokenEnd:
       End(worker);
       break;
-    case GT_CONTINUE:
+    case kTokenContinue:
       Continue(worker);
       break;
-    case GT_BREAK:
+    case kTokenBreak:
       Break(worker);
       break;
-    case GT_ELSE:
+    case kTokenElse:
       Else(worker);
-    case GT_IF:
+    case kTokenIf:
       result = ConditionAndLoop(worker, args, kCodeConditionRoot);
       break;
-    case GT_ELIF:
+    case kTokenElif:
       result = ConditionAndLoop(worker, args, kCodeConditionBranch);
       break;
-    case GT_WHILE:
+    case kTokenWhile:
       result = ConditionAndLoop(worker, args, kCodeHeadSign);
       break;
     default:
@@ -1322,26 +1322,26 @@ namespace kagami {
     bool result = false;
 
     switch (token) {
-    case GT_BIND:
-    case GT_NOP:
-    case GT_ARRAY:
-    case GT_RETURN:
-    case GT_TYPEID:
-    case GT_DIR:
-    case GT_EXIST:
-    case GT_DEF:
-    case GT_CASE:
-    case GT_WHEN:
-    case GT_ASSERT:
-    case GT_ASSERT_R:
-    case GT_QUIT:
-    case GT_END:
-    case GT_CONTINUE:
-    case GT_BREAK:
-    case GT_ELSE:
-    case GT_IF:
-    case GT_ELIF:
-    case GT_WHILE:
+    case kTokenBind:
+    case kTokenNop:
+    case kTokenInitialArray:
+    case kTokenReturn:
+    case kTokenTypeId:
+    case kTokenDir:
+    case kTokenExist:
+    case kTokenFn:
+    case kTokenCase:
+    case kTokenWhen:
+    case kTokenAssert:
+    case kTokenAssertR:
+    case kTokenQuit:
+    case kTokenEnd:
+    case kTokenContinue:
+    case kTokenBreak:
+    case kTokenElse:
+    case kTokenIf:
+    case kTokenElif:
+    case kTokenWhile:
       result = true;
     default:
       break;

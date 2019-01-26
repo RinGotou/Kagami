@@ -58,7 +58,7 @@ namespace kagami {
     Interface() :
       policy_(nullptr),
       id_(),
-      token_(GT_NUL),
+      token_(kTokenNull),
       params_(),
       argument_mode_(kCodeIllegalParam),
       domain_(kTypeIdNull),
@@ -74,7 +74,7 @@ namespace kagami {
     ) :
       policy_(make_shared<CXXFunctionPolicy>(activity)),
       id_(id),
-      token_(GT_NUL),
+      token_(kTokenNull),
       params_(util::BuildStringVector(params)),
       argument_mode_(argument_mode),
       domain_(kTypeIdNull),
@@ -107,7 +107,7 @@ namespace kagami {
     ) :
       policy_(make_shared<CXXFunctionPolicy>(activity)),
       id_(id),
-      token_(GT_NUL),
+      token_(kTokenNull),
       params_(util::BuildStringVector(params)),
       argument_mode_(argument_mode),
       domain_(domain),
@@ -123,7 +123,7 @@ namespace kagami {
     ) :
       policy_(make_shared<IRFunctionPolicy>(ir_set, agent)),
       id_(id),
-      token_(GT_NUL),
+      token_(kTokenNull),
       params_(params),
       argument_mode_(kCodeNormalParam),
       domain_(kTypeIdNull),

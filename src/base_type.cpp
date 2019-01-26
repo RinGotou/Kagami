@@ -7,9 +7,9 @@ namespace kagami {
     shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
 
     dest_base->reserve(src_base.size());
+
     for (auto &unit : src_base) {
-      dest_base->emplace_back(Object(management::type::GetObjectCopy(unit), unit.GetTypeId(), 
-        unit.GetMethods()));
+      dest_base->emplace_back(Object(management::type::GetObjectCopy(unit), unit.GetTypeId()));
     }
 
     return dest_base;
@@ -22,31 +22,27 @@ namespace kagami {
   }
 
   Message ArrayConstructor(ObjectMap &p) {
-    OBJECT_ASSERT(p, "size", kTypeIdRawString);
+    shared_ptr<ArrayBase> base(make_shared<ArrayBase>());
 
-    ArrayBase base;
-    auto size = stoi(p.Get<string>("size"));
-    Object obj = Object();
+    if (p.Search("size")) {
+      auto size = stoi(p.Get<string>("size"));
+      CONDITION_ASSERT(size > 0, "Illegal array size.");
 
-    if (p.Search("init_value")) {
-      obj.Copy(p["init_value"]);
+      Object obj;
+      
+      p.Search("init_value") ?
+        obj.Copy(p["init_value"]) :
+        obj = Object();
+
+      base->reserve(size);
+      auto type_id = obj.GetTypeId();
+
+      for (auto count = 0; count < size; count++) {
+        base->emplace_back(Object(management::type::GetObjectCopy(obj), type_id));
+      }
     }
 
-    CONDITION_ASSERT(size > 0, "Illegal array size.");
-
-    const auto type_id = obj.GetTypeId();
-    const auto methods = obj.GetMethods();
-
-    base.reserve(size);
-
-    for (auto count = 0; count < size; count++) {
-      base.emplace_back(Object(management::type::GetObjectCopy(obj), type_id, methods));
-    }
-
-    return Message().SetObject(Object(make_shared<ArrayBase>(base),
-      kTypeIdArray,
-      kArrayBaseMethods)
-      .SetConstructorFlag());
+    return Message().SetObject(Object(base, kTypeIdArray).SetConstructorFlag());
   }
 
   Message ArrayGetElement(ObjectMap &p) {
@@ -64,6 +60,13 @@ namespace kagami {
   Message ArrayGetSize(ObjectMap &p) {
     auto &obj = p[kStrObject];
     return Message(to_string(GetObjectStuff<ArrayBase>(obj).size()));
+  }
+
+  Message ArrayEmpty(ObjectMap &p) {
+    return Message(
+      GetObjectStuff<ArrayBase>(p[kStrObject]).empty() ?
+      kStrTrue : kStrFalse
+    );
   }
 
   Message ArrayPush(ObjectMap &p) {
@@ -145,18 +148,17 @@ namespace kagami {
       wstring wstr = GetObjectStuff<wstring>(obj);
       string output = ws2s(wstr);
 
-      base.Set(make_shared<string>(output), kTypeIdString, kStringMethods)
+      base.Set(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
     }
     else if (obj.GetTypeId() == kTypeIdString) {
       base.Set(obj.Get(), kTypeIdString)
-        .SetConstructorFlag()
-        .SetMethods(kStringMethods);
+        .SetConstructorFlag();
     }
     else {
       string output = RealString(GetObjectStuff<string>(obj));
 
-      base.Set(make_shared<string>(output), kTypeIdString, kStringMethods)
+      base.Set(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
     }
 
@@ -173,7 +175,7 @@ namespace kagami {
     shared_ptr<ifstream> ifs = 
       make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
 
-    return Message().SetObject(Object(ifs, kTypeIdInStream, kInStreamMethods));
+    return Message().SetObject(Object(ifs, kTypeIdInStream));
   }
 
   Message InStreamGet(ObjectMap &p) {
@@ -187,8 +189,7 @@ namespace kagami {
     string str;
     std::getline(ifs, str);
 
-    return Message()
-      .SetObject(Object(make_shared<string>(str), kTypeIdString, kStringMethods));
+    return Message().SetObject(Object(make_shared<string>(str), kTypeIdString));
   }
 
   Message InStreamEOF(ObjectMap &p) {
@@ -219,8 +220,7 @@ namespace kagami {
         std::ios::out | std::ios::app));
     }
 
-    return Message()
-      .SetObject(Object(ofs, kTypeIdOutStream, kOutStreamMethods));
+    return Message().SetObject(Object(ofs, kTypeIdOutStream));
   }
 
   Message OutStreamWrite(ObjectMap &p) {
@@ -252,7 +252,7 @@ namespace kagami {
     string pattern_string = RealString(p.Get<string>("regex"));
     shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
 
-    return Message().SetObject(Object(reg, kTypeIdRegex, kRegexMethods));
+    return Message().SetObject(Object(reg, kTypeIdRegex));
   }
 
   Message RegexMatch(ObjectMap &p) {
@@ -276,8 +276,7 @@ namespace kagami {
     wstring wstr = s2ws(output);
 
     return Message()
-      .SetObject(Object(make_shared<wstring>(wstr), 
-        kTypeIdWideString, kWideStringMethods));
+      .SetObject(Object(make_shared<wstring>(wstr), kTypeIdWideString));
   }
 
   //Function
@@ -292,12 +291,10 @@ namespace kagami {
     auto origin_vector = interface.GetParameters();
 
     for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
-      dest_base->emplace_back(Object(make_shared<string>(*it), kTypeIdString, 
-        kStringMethods));
+      dest_base->emplace_back(Object(make_shared<string>(*it), kTypeIdString));
     }
 
-    return Message()
-      .SetObject(Object(dest_base, kTypeIdArray, kArrayBaseMethods));
+    return Message().SetObject(Object(dest_base, kTypeIdArray));
   }
 
   bool AssemblingForAutosized(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
@@ -405,13 +402,14 @@ namespace kagami {
     CreateInterface(Interface(RawStringGetElement, "index", "__at", kTypeIdRawString));
     CreateInterface(Interface(RawStringGetSize, "", "size", kTypeIdRawString));
 
-    AddTemplate(kTypeIdArray, ObjectCopyingPolicy(CreateArrayCopy, kArrayBaseMethods));
+    AddTemplate(kTypeIdArray, ObjectCopyingPolicy(CreateArrayCopy, kArrayMethods));
     CreateInterface(Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill));
     CreateInterface(Interface(ArrayGetElement, "index", "__at", kTypeIdArray));
     CreateInterface(Interface(ArrayPrint, "", "__print", kTypeIdArray));
     CreateInterface(Interface(ArrayGetSize, "", "size", kTypeIdArray));
     CreateInterface(Interface(ArrayPush, "push", "object", kTypeIdArray));
     CreateInterface(Interface(ArrayPop, "pop", "object", kTypeIdArray));
+    CreateInterface(Interface(ArrayEmpty, "empty", "", kTypeIdArray));
 
     AddTemplate(kTypeIdString, ObjectCopyingPolicy(SimpleSharedPtrCopy<string>, kStringMethods));
     CreateInterface(Interface(StringConstructor, "raw_string", "string"));

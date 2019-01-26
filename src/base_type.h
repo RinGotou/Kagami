@@ -12,8 +12,10 @@ namespace kagami {
   template <class StringType>
   Message StringFamilySubStr(ObjectMap &p) {
     StringType &str = p.Get<StringType>(kStrObject);
+
     string type_id = p[kStrObject].GetTypeId();
-    string methods = p[kStrObject].GetMethods();
+    string methods = management::type::GetMethods(type_id);
+
     int start = stoi(p.Get<string>("start"));
     int size = stoi(p.Get<string>("size"));
 
@@ -23,14 +25,16 @@ namespace kagami {
     StringType output = str.substr(start, size);
 
     return Message()
-      .SetObject(Object(make_shared<StringType>(output), type_id, methods));
+      .SetObject(Object(make_shared<StringType>(output), type_id));
   }
 
   template <class StringType>
   Message StringFamilyGetElement(ObjectMap &p) {
     StringType &str = p.Get<StringType>(kStrObject);
     string type_id = p[kStrObject].GetTypeId();
-    string methods = p[kStrObject].GetMethods();
+
+    string methods = management::type::GetMethods(type_id);
+
     int size = int(str.size());
     int idx = stoi(p.Get<string>("index"));
 
@@ -39,7 +43,7 @@ namespace kagami {
     shared_ptr<StringType> output = make_shared<StringType>();
 
     output->append(1, str[idx]);
-    return Message().SetObject(Object(output, type_id, methods));
+    return Message().SetObject(Object(output, type_id));
   }
 
   template <class StringType, class StreamType>
@@ -137,6 +141,6 @@ namespace kagami {
     SrcType &str = p.Get<SrcType>(kStrObject);
     shared_ptr<DestType> dest = make_shared<DestType>(convertor(str));
     ConvertingInfoPolicy<std::is_same<DestType, wstring>::value> info_policy;
-    return Message().SetObject(Object(dest, info_policy.TypeId(), info_policy.Methods()));
+    return Message().SetObject(Object(dest, info_policy.TypeId()));
   }
 }

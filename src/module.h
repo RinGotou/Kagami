@@ -35,8 +35,6 @@ namespace kagami {
     return make_shared<T>(temp);
   }
 
-
-
   /* Origin index and string data */
   using StringUnit = pair<size_t, string>;
 
@@ -146,7 +144,7 @@ namespace kagami {
     bool GetTypeId(IRWorker *worker, deque<Argument> args);      //TypeId
     bool GetMethods(IRWorker *worker, deque<Argument> args);     //Dir
     bool Exist(IRWorker *worker, deque<Argument> args);          //Exist
-    bool Define(IRWorker *worker, deque<Argument> args);         //Def
+    bool Fn(IRWorker *worker, deque<Argument> args);         //Def
     bool Case(IRWorker *worker, deque<Argument> args);
     bool When(IRWorker *worker, deque<Argument> args);
     bool DomainAssert(IRWorker *worker, deque<Argument> args, bool returning);
@@ -218,7 +216,7 @@ namespace kagami {
       return *this;
     }
 
-    bool GetHealth() const { 
+    bool Good() const { 
       return health_; 
     }
 
@@ -232,7 +230,7 @@ namespace kagami {
 #if not defined(_DISABLE_SDL_)
   void LoadSDLStuff();
 #endif
-  Message FunctionTunnel(ObjectMap &p);
+
   std::wstring s2ws(const std::string &s);
   std::string ws2s(const std::wstring &s);
   Message CheckEntryAndStart(string id, string type_id, ObjectMap &param);

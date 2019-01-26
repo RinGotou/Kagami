@@ -26,7 +26,7 @@ namespace kagami {
     Argument() :
       data(),
       type(AT_HOLDER),
-      token_type(T_NUL) {
+      token_type(kTokenTypeNull) {
 
       domain.type = AT_HOLDER;
     }
@@ -64,14 +64,14 @@ namespace kagami {
 
     Request(string token, bool place_holder = false) :
       priority(4),
-      head_gen(GT_NUL),
+      head_gen(kTokenNull),
       head_reg(token),
       domain(),
       type(place_holder ? RT_NUL : RT_REGULAR) {}
 
     Request() :
       priority(4),
-      head_gen(GT_NUL),
+      head_gen(kTokenNull),
       head_reg(),
       domain(),
       type(RT_NUL) {}
