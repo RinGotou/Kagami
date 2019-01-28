@@ -15,6 +15,8 @@ namespace kagami {
   using CopyingPolicy = shared_ptr<void>(*)(shared_ptr<void>);
   using ContainerPool = kagami::list<ObjectContainer>;
 
+  vector<string> BuildStringVector(string source);
+  
   class ObjectPolicy {
   private:
     CopyingPolicy copying_policy_;
@@ -26,7 +28,7 @@ namespace kagami {
 
     ObjectPolicy(CopyingPolicy copying_policy, string methods) :
       copying_policy_(copying_policy),
-      methods_(util::BuildStringVector(methods)) {}
+      methods_(BuildStringVector(methods)) {}
 
     shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
       shared_ptr<void> result = nullptr;
@@ -95,8 +97,8 @@ namespace kagami {
       return this->operator=(object);
     }
 
-    Object &Set(shared_ptr<void> ptr, string type_id) {
-      if (ref_) return GetTargetObject()->Set(ptr, type_id);
+    Object &ManageContent(shared_ptr<void> ptr, string type_id) {
+      if (ref_) return GetTargetObject()->ManageContent(ptr, type_id);
       ptr_ = ptr;
       type_id_ = type_id;
       return *this;
@@ -109,7 +111,7 @@ namespace kagami {
 
     template <class Tx>
     Tx &Cast() {
-      return std::static_pointer_cast<Tx>(ptr_);
+      return *std::static_pointer_cast<Tx>(ptr_);
     }
 
     string GetTypeId() {
@@ -136,7 +138,7 @@ namespace kagami {
       return ref_; 
     }
 
-    Object &Ref(Object &object);
+    Object &CreateRef(Object &object);
     Object &CloneFrom(Object &object, bool force = false);
   };
 
@@ -202,11 +204,6 @@ namespace kagami {
 
     void Input(string id) {
       this->insert(NamedObject(id, Object()));
-    }
-
-    int GetVaSize() {
-      auto it = this->find(kStrVaSize);
-      return it != this->end() ? stoi(it->second.Cast<string>()) : -1;
     }
   };
 }

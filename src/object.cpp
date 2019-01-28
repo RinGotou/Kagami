@@ -2,8 +2,23 @@
 
 namespace kagami {
 
-  Object &Object::Ref(Object &object) {
-    type_id_ = kTypeIdRef;
+  vector<string> BuildStringVector(string source) {
+    vector<string> result;
+    string temp;
+    for (auto unit : source) {
+      if (unit == '|') {
+        result.push_back(temp);
+        temp.clear();
+        continue;
+      }
+      temp.append(1, unit);
+    }
+    if (temp != "") result.push_back(temp);
+    return result;
+  }
+
+  Object &Object::CreateRef(Object &object) {
+    type_id_ = object.type_id_;
     ref_ = true;
 
     TargetObject target;

@@ -208,7 +208,6 @@ namespace kagami {
   const string kTypeIdInStream   = "instream";
   const string kTypeIdOutStream  = "outstream";
   const string kTypeIdRegex      = "regex";
-  const string kTypeIdRef        = "ref";
   const string kTypeIdFunction   = "function";
 
   const string
@@ -216,7 +215,6 @@ namespace kagami {
     kStrFn             = "fn",
     kStrEnd            = "end",
     kStrBind           = "__bind",
-    kStrVaSize         = "__size",
     kStrPrint          = "__print",
     kStrFor            = "for",
     kStrElse           = "else",

@@ -6,7 +6,7 @@ namespace kagami {
   }
 
   Message ArrayConstructor(ObjectMap &p) {
-    shared_ptr<ArrayBase> base(make_shared<ArrayBase>());
+    shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
 
     if (p.Search("size")) {
       auto size = stoi(p.Cast<string>("size"));
@@ -32,28 +32,28 @@ namespace kagami {
   Message ArrayGetElement(ObjectMap &p) {
     OBJECT_ASSERT(p, "index", kTypeIdRawString);
 
-    ArrayBase &base = p.Cast<ArrayBase>(kStrObject);
+    ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
     int idx = stoi(p.Cast<string>("index"));
     int size = int(base.size());
 
     CONDITION_ASSERT(idx < size, "Subscript is out of range.");
 
-    return Message().SetObject(Object().Ref(base[idx]));
+    return Message().SetObject(Object().CreateRef(base[idx]));
   }
 
   Message ArrayGetSize(ObjectMap &p) {
     auto &obj = p[kStrObject];
-    return Message(to_string(obj.Cast<ArrayBase>().size()));
+    return Message(to_string(obj.Cast<ObjectArray>().size()));
   }
 
   Message ArrayEmpty(ObjectMap &p) {
     return Message(
-      util::MakeBoolean(p[kStrObject].Cast<ArrayBase>().empty())
+      util::MakeBoolean(p[kStrObject].Cast<ObjectArray>().empty())
     );
   }
 
   Message ArrayPush(ObjectMap &p) {
-    ArrayBase &base = p.Cast<ArrayBase>(kStrObject);
+    ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
 
     base.emplace_back(p["object"]);
 
@@ -61,7 +61,7 @@ namespace kagami {
   }
 
   Message ArrayPop(ObjectMap &p) {
-    ArrayBase &base = p.Cast<ArrayBase>(kStrObject);
+    ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
 
     if (!base.empty()) base.pop_back();
 
@@ -72,7 +72,7 @@ namespace kagami {
     Message result;
     ObjectMap obj_map;
 
-    auto &base = p.Cast<ArrayBase>(kStrObject);
+    auto &base = p.Cast<ObjectArray>(kStrObject);
     auto interface = management::Order("print", kTypeIdNull, -1);
 
     for (auto &unit : base) {
@@ -129,18 +129,18 @@ namespace kagami {
       wstring wstr = obj.Cast<wstring>();
       string output = ws2s(wstr);
 
-      base.Set(make_shared<string>(output), kTypeIdString)
+      base.ManageContent(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
     }
     else if (obj.GetTypeId() == kTypeIdString) {
       string copy = obj.Cast<string>();
-      base.Set(make_shared<string>(copy), kTypeIdString)
+      base.ManageContent(make_shared<string>(copy), kTypeIdString)
         .SetConstructorFlag();
     }
     else {
       string output = RealString(obj.Cast<string>());
 
-      base.Set(make_shared<string>(output), kTypeIdString)
+      base.ManageContent(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
     }
 
@@ -269,7 +269,7 @@ namespace kagami {
 
   Message FunctionGetParameters(ObjectMap &p) {
     auto &interface = p.Cast<Interface>(kStrObject);
-    shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
+    shared_ptr<ObjectArray> dest_base = make_shared<ObjectArray>();
     auto origin_vector = interface.GetParameters();
 
     for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
@@ -279,75 +279,76 @@ namespace kagami {
     return Message().SetObject(Object(dest_base, kTypeIdArray));
   }
 
-  bool AssemblingForAutosized(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
+  bool GeneratingAutoSized(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
+    if (arg_list.size() != interface.GetParameters().size()) return false;
     auto ent_params = interface.GetParameters();
     auto va_arg_head = ent_params.back();
-    int idx = 0;
-    int va_arg_size = 0;
-    int count = 0;
-    
 
-    while (idx < int(ent_params.size() - 1)) {
-      target_map.Input(ent_params[idx], p["arg" + to_string(idx)]);
-      idx += 1;
+    deque<Object> temp;
+
+    while (arg_list.size() >= ent_params.size() - 1) {
+      temp.emplace_back(arg_list.back());
+      arg_list.pop_back();
     }
 
-    interface.GetInterfaceType() == kInterfaceTypeMethod ?
-      va_arg_size = size - 1 :
-      va_arg_size = size;
+    shared_ptr<ObjectArray> va_base = make_shared<ObjectArray>();
 
-    while (idx < va_arg_size) {
-      target_map.Input(va_arg_head + to_string(count), p["arg" + to_string(idx)]);
-      count += 1;
-      idx += 1;
+    for (auto it = temp.begin(); it != temp.end(); ++it) {
+      va_base->emplace_back(*it);
     }
 
-    target_map.Input(kStrVaSize, Object(to_string(count)));
-    if (interface.GetInterfaceType() == kInterfaceTypeMethod) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
+    temp.clear();
+    temp.shrink_to_fit();
+
+    target_map.insert(NamedObject(va_arg_head, Object(va_base, kTypeIdArray)));
+
+    auto it = ent_params.rbegin()++;
+
+    for (; it != ent_params.rend(); ++it) {
+      target_map.insert(NamedObject(*it, arg_list.back()));
+      arg_list.pop_back();
+    }
+
+    if (interface.GetInterfaceType() == kInterfaceTypeMethod) {
+      target_map.insert(NamedObject(kStrObject, arg_list.back()));
+      arg_list.pop_back();
+    }
+
     return true;
   }
 
-  bool AssemblingForAutoFilling(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
+  bool GeneratingAutoFilling(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
+    if (arg_list.size() > interface.GetParameters().size()) return false;
     auto ent_params = interface.GetParameters();
-    int idx = 0;
-    auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
 
-    while (idx < ent_params.size()) {
-      if (idx >= size) break;
-      if (idx >= size - 1 && is_method) break;
-      target_map.Input(ent_params[idx], p["arg" + to_string(idx)]);
-      idx += 1;
+    while (ent_params.size() > arg_list.size()) {
+      target_map.insert(NamedObject(ent_params.back(), Object()));
+      ent_params.pop_back();
     }
 
-    if (is_method) target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
+    for (auto it = ent_params.rbegin(); it != ent_params.rend(); ++it) {
+      target_map.insert(NamedObject(*it, arg_list.back()));
+      arg_list.pop_back();
+    }
+
     return true;
   }
 
-  bool AssemblingForNormal(Interface &interface, ObjectMap &p, ObjectMap &target_map, int size) {
+  bool Generating(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
+    if (arg_list.size() != interface.GetParameters().size()) return false;
     auto ent_params = interface.GetParameters();
-    int idx = 0;
-    auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
-    bool state = true;
 
-    while (idx < ent_params.size()) {
-      if (idx >= size || (idx >= size - 1 && is_method)) {
-        state = false;
-        break;
-      }
-
-      target_map.Input(ent_params[idx], p["arg" + to_string(idx)]);
-      idx += 1;
+    for (auto it = ent_params.rbegin(); it != ent_params.rend(); ++it) {
+      target_map.insert(NamedObject(*it, arg_list.back()));
+      arg_list.pop_back();
     }
 
-    if (is_method && state) 
-      target_map.Input(kStrObject, p["arg" + to_string(size - 1)]);
-
-    return state;
+    return true;
   }
 
   Message FunctionCall(ObjectMap &p) {
     auto &interface = p.Cast<Interface>(kStrObject);
-    int size = stoi(p.Cast<string>(kStrVaSize));
+    auto &arg_list = p.Cast<ObjectArray>("arg");
     int count = 0;
     ObjectMap target_map;
     bool state;
@@ -356,12 +357,12 @@ namespace kagami {
 
     switch (interface.GetArgumentMode()) {
     case kCodeAutoSize:
-      state = AssemblingForAutosized(interface, p, target_map, size);
+      state = GeneratingAutoSized(interface, arg_list, target_map);
       break;
     case kCodeAutoFill:
-      state = AssemblingForAutoFilling(interface, p, target_map, size);
+      state = GeneratingAutoFilling(interface, arg_list, target_map);
     default:
-      state = AssemblingForNormal(interface, p, target_map, size);
+      state = Generating(interface, arg_list, target_map);
       break;
     }
 
@@ -392,8 +393,8 @@ namespace kagami {
     );
 
     NewTypeSetup(kTypeIdArray, [](shared_ptr<void> source) -> shared_ptr<void> {
-        auto &src_base = *static_pointer_cast<ArrayBase>(source);
-        shared_ptr<ArrayBase> dest_base = make_shared<ArrayBase>();
+        auto &src_base = *static_pointer_cast<ObjectArray>(source);
+        shared_ptr<ObjectArray> dest_base = make_shared<ObjectArray>();
 
         dest_base->reserve(src_base.size());
 

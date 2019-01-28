@@ -228,21 +228,6 @@ namespace kagami {
       return type;
     }
 
-    vector<string> BuildStringVector(string source) {
-      vector<string> result;
-      string temp;
-      for (auto unit : source) {
-        if (unit == '|') {
-          result.push_back(temp);
-          temp.clear();
-          continue;
-        }
-        temp.append(1, unit);
-      }
-      if (temp != "") result.push_back(temp);
-      return result;
-    }
-
     char GetEscapeChar(char target) {
       char result;
       switch (target) {

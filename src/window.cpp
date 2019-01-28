@@ -18,7 +18,7 @@ namespace kagami {
     win_base->render = SDL_CreateRenderer(win_base->window, -1,
       SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    ret.Set(win_base, kTypeIdSDLWindow);
+    ret.ManageContent(win_base, kTypeIdSDLWindow);
     return Message().SetObject(ret);
   }
   
@@ -30,7 +30,7 @@ namespace kagami {
     SDL_Surface *image = SDL_LoadBMP(image_path.c_str());
     texture_base->texture = SDL_CreateTextureFromSurface(win.render, image);
     SDL_FreeSurface(image);
-    ret.Set(texture_base, kTypeIdSDLTexture);
+    ret.ManageContent(texture_base, kTypeIdSDLTexture);
     return Message().SetObject(ret);
   }
  

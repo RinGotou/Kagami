@@ -75,7 +75,7 @@ namespace kagami {
       policy_(make_shared<CXXFunctionPolicy>(activity)),
       id_(id),
       token_(kTokenNull),
-      params_(util::BuildStringVector(params)),
+      params_(BuildStringVector(params)),
       argument_mode_(argument_mode),
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
@@ -91,7 +91,7 @@ namespace kagami {
       policy_(make_shared<CXXFunctionPolicy>(activity)),
       id_(),
       token_(token),
-      params_(util::BuildStringVector(params)),
+      params_(BuildStringVector(params)),
       argument_mode_(argument_mode),
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
@@ -108,7 +108,7 @@ namespace kagami {
     //  policy_(make_shared<CXXFunctionPolicy>(activity)),
     //  id_(id),
     //  token_(kTokenNull),
-    //  params_(util::BuildStringVector(params)),
+    //  params_(BuildStringVector(params)),
     //  argument_mode_(argument_mode),
     //  domain_(domain),
     //  interface_type_(kInterfaceTypeMethod),
@@ -175,7 +175,7 @@ namespace kagami {
       return domain_;
     }
 
-    GenericToken GetTokenEnum() const {
+    GenericToken GetToken() const {
       return token_;
     }
 
@@ -183,7 +183,7 @@ namespace kagami {
       return id_;
     }
 
-    int GetArgumentMode() const {
+    StateCode GetArgumentMode() const {
       return argument_mode_;
     }
 

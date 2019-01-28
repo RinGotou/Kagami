@@ -101,7 +101,7 @@ namespace kagami {
 
     void CreateGenericInterface(Interface temp) {
       GetGenericInterfaceBase().insert(pair<GenericToken, Interface>(
-        temp.GetTokenEnum(), temp));
+        temp.GetToken(), temp));
     }
 
     Interface GetGenericInterface(GenericToken token) {

@@ -12,7 +12,7 @@ namespace kagami {
   }
 
   void CopyObject(Object &dest, Object &src) {
-    dest.Set(management::type::GetObjectCopy(src), src.GetTypeId());
+    dest.ManageContent(management::type::GetObjectCopy(src), src.GetTypeId());
   }
 
   bool IsStringObject(Object &obj) {
@@ -69,7 +69,7 @@ namespace kagami {
     Object obj;
     auto interface = management::Order(id, domain);
     if (interface.Good()) {
-      obj.Set(make_shared<Interface>(interface), kTypeIdFunction);
+      obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
     }
     return obj;
   }
@@ -396,7 +396,7 @@ namespace kagami {
     case AT_OBJECT:
       ptr = management::FindObject(arg.domain.data);
       if (ptr != nullptr) {
-        obj_domain.Ref(*ptr);
+        obj_domain.CreateRef(*ptr);
       }
       else {
         obj_domain = GetFunctionObject(arg.domain.data, kTypeIdNull);
@@ -415,12 +415,12 @@ namespace kagami {
 
     switch (arg.type) {
     case AT_NORMAL:
-      obj.Set(make_shared<string>(arg.data), kTypeIdRawString);
+      obj.ManageContent(make_shared<string>(arg.data), kTypeIdRawString);
       break;
     case AT_OBJECT:
       ptr = management::FindObject(arg.data);
       if (ptr != nullptr) {
-        obj.Ref(*ptr);
+        obj.CreateRef(*ptr);
       }
       else {
         obj = GetFunctionObject(arg.data, obj_domain.GetTypeId());
@@ -450,13 +450,11 @@ namespace kagami {
 
   void IRWorker::AssemblingForAutoSized(Interface &interface,
     deque<Argument> args, ObjectMap &obj_map) {
-    size_t idx = 0;
-    size_t count = 0;
     auto ent_params = interface.GetParameters();
     auto va_arg_head = ent_params.back();
-    auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
 
     /* TODO:Reconstrction */
+    /* TODO:Make Array */
     deque<Object> temp;
 
     while (args.size() >= ent_params.size() - 1) {
@@ -464,12 +462,16 @@ namespace kagami {
       args.pop_back();
     }
 
-    for (size_t idx = 0; idx < temp.size(); idx += 1) {
-      obj_map.insert(NamedObject(va_arg_head + to_string(idx), temp[idx]));
+    shared_ptr<vector<Object>> va_base = make_shared<vector<Object>>();
+
+    for (auto it = temp.begin(); it != temp.end(); ++it) {
+      va_base->emplace_back(*it);
     }
 
-    obj_map.insert(NamedObject(kStrVaSize, Object(to_string(count))));
+    obj_map.insert(NamedObject(va_arg_head, Object(va_base, kTypeIdArray)));
+
     temp.clear();
+    temp.shrink_to_fit();
 
     auto it = ent_params.rbegin()++;
 
@@ -477,39 +479,35 @@ namespace kagami {
       obj_map.insert(NamedObject(*it, MakeObject(args.back())));
       args.pop_back();
     }
-
-    while (idx < ent_params.size() - 1) {
-      obj_map.Input(ent_params[idx],
-        MakeObject(args[idx]));
-      idx += 1;
-    }
   }
 
   void IRWorker::AssemblingForAutoFilling(Interface &interface, 
     deque<Argument> args, ObjectMap &obj_map) {
-      size_t idx = 0;
-      auto ent_params = interface.GetParameters();
-      auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
+    if (args.size() > interface.GetParameters().size()) {
+      error_assembling = true;
+      error_string = "Too many arguments.";
+    }
 
-      auto it = ent_params.rbegin();
+    auto ent_params = interface.GetParameters();
 
-      while (args.size() != ent_params.size() && it != ent_params.rend()) {
-        obj_map.insert(NamedObject(*it, Object()));
-        args.pop_back();
-        ++it;
-      }
+    while (args.size() != ent_params.size()) {
+      obj_map.insert(NamedObject(ent_params.back(), Object()));
+      ent_params.pop_back();
+    }
 
-      for (; it != ent_params.rend(); ++it) {
-        obj_map.insert(NamedObject(*it, MakeObject(args.back())));
-        args.pop_back();
-      }
+    for (auto it = ent_params.rbegin(); it != ent_params.rend(); ++it) {
+      obj_map.insert(NamedObject(*it, MakeObject(args.back())));
+      args.pop_back();
+    }
   }
 
-  void IRWorker::AssemblingForNormal(Interface &interface, 
-    deque<Argument> args, ObjectMap &obj_map) {
-    size_t idx = 0;
+  void IRWorker::Assembling(Interface &interface, deque<Argument> args, ObjectMap &obj_map) {
+    if (args.size() > interface.GetParameters().size()) {
+      error_assembling = true;
+      error_string = "Too many arguments.";
+    }
+
     auto ent_params = interface.GetParameters();
-    auto is_method = (interface.GetInterfaceType() == kInterfaceTypeMethod);
     bool state = true;
     
     for (auto it = ent_params.rbegin(); it != ent_params.rend(); it++) {
@@ -715,7 +713,7 @@ namespace kagami {
           worker->AssemblingForAutoFilling(interface, args, obj_map);
           break;
         default:
-          worker->AssemblingForNormal(interface, args, obj_map);
+          worker->Assembling(interface, args, obj_map);
           break;
         }
 
@@ -784,7 +782,7 @@ namespace kagami {
           break;
         }
         result = IRProcessing(*ir, "", nullptr);
-        def_head = util::BuildStringVector(result.GetDetail());
+        def_head = BuildStringVector(result.GetDetail());
         def_start = idx + 1;
         flag = true;
       }
@@ -1152,7 +1150,7 @@ namespace kagami {
       auto interface = management::Order(id, obj.GetTypeId());
       if (interface.Good()) {
         if (returning) {
-          ent_obj.Set(make_shared<Interface>(interface), kTypeIdFunction);
+          ent_obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
           worker->returning_base.push(ent_obj);
         }
       }

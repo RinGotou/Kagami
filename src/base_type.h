@@ -2,21 +2,21 @@
 #include "module.h"
 
 namespace kagami {
-  using ArrayBase = vector<Object>;
+  using ObjectArray = vector<Object>;
   template <class StringType>
   Message GetStringFamilySize(ObjectMap &p) {
-    StringType &str = p.Get<StringType>(kStrObject);
+    StringType &str = p.Cast<StringType>(kStrObject);
     return Message(to_string(str.size()));
   }
   
   template <class StringType>
   Message StringFamilySubStr(ObjectMap &p) {
-    StringType &str = p.Get<StringType>(kStrObject);
+    StringType &str = p.Cast<StringType>(kStrObject);
 
     string type_id = p[kStrObject].GetTypeId();
 
-    int start = stoi(p.Get<string>("start"));
-    int size = stoi(p.Get<string>("size"));
+    int start = stoi(p.Cast<string>("start"));
+    int size = stoi(p.Cast<string>("size"));
 
     CONDITION_ASSERT((start >= 0 && size <= int(str.size()) - start),
       "Illegal index or size.");
@@ -28,11 +28,11 @@ namespace kagami {
 
   template <class StringType>
   Message StringFamilyGetElement(ObjectMap &p) {
-    StringType &str = p.Get<StringType>(kStrObject);
+    StringType &str = p.Cast<StringType>(kStrObject);
     string type_id = p[kStrObject].GetTypeId();
 
     int size = int(str.size());
-    int idx = stoi(p.Get<string>("index"));
+    int idx = stoi(p.Cast<string>("index"));
 
     CONDITION_ASSERT((idx > size && idx >= 0), "Index out of range.");
 
@@ -75,7 +75,7 @@ namespace kagami {
 
   template <class StringType, class StreamType>
   Message StringFamilyPrint(ObjectMap &p) {
-    StringType &str = p.Get<StringType>(kStrObject);
+    StringType &str = p.Cast<StringType>(kStrObject);
     StreamBase<StringType, StreamType> stream;
     stream << str << std::endl;
     return Message();
@@ -83,14 +83,14 @@ namespace kagami {
 
   template <class StreamType>
   Message StreamFamilyClose(ObjectMap &p) {
-    StreamType &stream = p.Get<StreamType>(kStrObject);
+    StreamType &stream = p.Cast<StreamType>(kStrObject);
     stream.close();
     return Message();
   }
 
   template <class StreamType>
   Message StreamFamilyState(ObjectMap &p) {
-    StreamType &stream = p.Get<StreamType>(kStrObject);
+    StreamType &stream = p.Cast<StreamType>(kStrObject);
     string temp;
     temp = util::MakeBoolean(stream.good());
     return Message(temp);
@@ -132,7 +132,7 @@ namespace kagami {
   template<class DestType,class SrcType>
   Message StringFamilyConverting(ObjectMap &p) {
     StringConvertor<DestType, SrcType> convertor;
-    SrcType &str = p.Get<SrcType>(kStrObject);
+    SrcType &str = p.Cast<SrcType>(kStrObject);
     shared_ptr<DestType> dest = make_shared<DestType>(convertor(str));
     ConvertingInfoPolicy<std::is_same<DestType, wstring>::value> info_policy;
     return Message().SetObject(Object(dest, info_policy.TypeId()));
