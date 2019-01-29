@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
     Pattern("path"   , Option(true, false, 1)),
     Pattern("help"   , Option(false, false, 1)),
     Pattern("version", Option(false, false, 1)),
-    Pattern("rtlog"  , Option(false,true)),
+    Pattern("rtlog"  , Option(false, true)),
     Pattern("log"    , Option(true, true)),
     Pattern("wait"   , Option(false, true))
   };

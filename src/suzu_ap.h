@@ -236,7 +236,7 @@ namespace suzu {
   protected:
     ArgumentProcessorErrorEnum error_;
     std::string bad_arg_;
-    Parameters parms_;
+    Parameters params_;
     HeadChecker<head> head_checker_;
     JoinerChecker<joiner> joiner_checker_;
     AnalyzedArgument analyzed_;
@@ -251,10 +251,10 @@ namespace suzu {
     ArgumentProcessor(const std::initializer_list<Pattern> &&rhs) :
       error_(kErrorNone),
       bad_arg_(),
-      parms_(rhs) {}
+      params_(rhs) {}
 
     ArgumentProcessor &operator=(const std::initializer_list<Pattern> &rhs) {
-      parms_ = rhs;
+      params_ = rhs;
       return *this;
     }
 
@@ -263,7 +263,7 @@ namespace suzu {
     }
 
     bool Generate(int argc,char **argv) {
-      if (parms_.empty()) {
+      if (params_.empty()) {
         error_ = kErrorEmptyPattern;
         return false;
       }
@@ -275,9 +275,9 @@ namespace suzu {
       for (const auto &unit : generator.output) {
         if (head_checker_.Do(unit)) {
           bool has_joiner = joiner_checker_.Do(head_checker_.output);
-          Parameters::iterator it = parms_.find(joiner_checker_.value.first);
+          Parameters::iterator it = params_.find(joiner_checker_.value.first);
 
-          if (it != parms_.end()) {
+          if (it != params_.end()) {
             if (it->second.has_value && has_joiner) {
               analyzed_.insert(joiner_checker_.value);
             }
@@ -315,7 +315,7 @@ namespace suzu {
         std::map<int, bool> tracker;
         std::map<int, bool> optional_tracker;
 
-        for (const auto &unit : parms_) {
+        for (const auto &unit : params_) {
           if (unit.second.group != 0) {
             optional_tracker[unit.second.group] = unit.second.optional;
             bool found = (analyzed_.find(unit.first) != analyzed_.end());
