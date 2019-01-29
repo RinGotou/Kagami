@@ -102,8 +102,8 @@ namespace kagami {
       msg() {}
 
     Object MakeObject(Argument &arg, bool checking = false);
-    void AssemblingForAutoSized(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
-    void AssemblingForAutoFilling(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
+    void Assembling_AutoSize(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
+    void Assembling_AutoFill(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
     void Assembling(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
     void Reset();
   };
@@ -132,7 +132,7 @@ namespace kagami {
     void TailRecursionActions(MachCtlBlk *blk, string &name);
 
     //Command Functions
-    bool BindAndSet(IRWorker *worker, deque<Argument> args); //Object Management (Old)
+    bool BindAndSet(IRWorker *worker, deque<Argument> args);
     void Nop(IRWorker *worker, deque<Argument> args);        //Bracket    
     void ArrayMaker(IRWorker *worker, deque<Argument> args); //Braces
     void ReturnOperator(IRWorker *worker, deque<Argument> args); //Return
@@ -188,12 +188,12 @@ namespace kagami {
         msg = PreProcessing();
         if (msg.GetLevel() == kStateError) {
           health_ = false;
-          trace::Log(msg);
+          trace::AddEvent(msg);
         }
       }
       else {
         health_ = false;
-        trace::Log(Message(kCodeBadStream, "Invalid script path.", kStateError));
+        trace::AddEvent(Message(kCodeBadStream, "Invalid script path.", kStateError));
       }
     }
 

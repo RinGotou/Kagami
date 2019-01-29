@@ -13,6 +13,7 @@
 #include <cctype>
 #include <typeinfo>
 #include <iostream>
+#include <fstream>
 #include <ctime>
 #include <type_traits>
 #include "shio/src/shio.h"
@@ -56,12 +57,12 @@ namespace kagami {
   using std::map;
   using std::deque;
   using std::shared_ptr;
+  using std::unique_ptr;
   using std::static_pointer_cast;
   using std::regex;
   using std::regex_match;
-  using std::shared_ptr;
-  using std::static_pointer_cast;
   using std::make_shared;
+  using std::make_unique;
   using std::size_t;
   using std::ifstream;
   using std::ofstream;
@@ -73,6 +74,7 @@ namespace kagami {
   using std::wstring;
   using shio::any;
   using shio::any_cast;
+  using std::ostream;
 
   const string kInterpreterVersion  = "1.53";
   const string kIRFrameworkVersion = "August";

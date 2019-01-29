@@ -76,7 +76,7 @@ namespace kagami {
     auto interface = management::Order("print", kTypeIdNull, -1);
 
     for (auto &unit : base) {
-      obj_map.Input(kStrObject, unit);
+      obj_map.insert(NamedObject(kStrObject, unit));
       result = interface.Start(obj_map);
       obj_map.clear();
     }
@@ -279,7 +279,7 @@ namespace kagami {
     return Message().SetObject(Object(dest_base, kTypeIdArray));
   }
 
-  bool GeneratingAutoSized(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
+  bool Generating_AutoSize(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
     if (arg_list.size() != interface.GetParameters().size()) return false;
     auto ent_params = interface.GetParameters();
     auto va_arg_head = ent_params.back();
@@ -317,7 +317,7 @@ namespace kagami {
     return true;
   }
 
-  bool GeneratingAutoFilling(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
+  bool Generating_AutoFill(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
     if (arg_list.size() > interface.GetParameters().size()) return false;
     auto ent_params = interface.GetParameters();
 
@@ -357,10 +357,10 @@ namespace kagami {
 
     switch (interface.GetArgumentMode()) {
     case kCodeAutoSize:
-      state = GeneratingAutoSized(interface, arg_list, target_map);
+      state = Generating_AutoSize(interface, arg_list, target_map);
       break;
     case kCodeAutoFill:
-      state = GeneratingAutoFilling(interface, arg_list, target_map);
+      state = Generating_AutoFill(interface, arg_list, target_map);
     default:
       state = Generating(interface, arg_list, target_map);
       break;

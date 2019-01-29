@@ -2,24 +2,30 @@
 
 namespace kagami {
   namespace trace {
-    vector<log_t> &GetLogger() {
-      static vector<log_t> base;
-      return base;
+    LoggerPolicy *ContactLogger(LoggerPolicy *policy = nullptr) {
+      static LoggerPolicy *logger_policy = nullptr;
+
+      if (policy != nullptr) {
+        logger_policy = policy;
+      }
+
+      return logger_policy;
     }
 
-    void Log(Message msg) {
-      auto now = time(nullptr);
-#if defined(_WIN32) && defined(_MSC_VER)
-      char nowtime[30] = { ' ' };
-      ctime_s(nowtime, sizeof(nowtime), &now);
-      string str(nowtime);
-      str.pop_back();
-      GetLogger().emplace_back(log_t(str, msg));
-#else
-      string nowtime(ctime(&now));
-      nowtime.pop_back();
-      GetLogger().emplace_back(log_t(nowtime, msg));
-#endif
+    void InitLogger(LoggerPolicy *policy) {
+      ContactLogger(policy)->Init();
+    }
+
+    void AddEvent(Message msg) {
+      auto *logger = ContactLogger();
+      logger->Add(msg);
+    }
+
+    void AddEvent(string info) {
+      Message msg(kCodeSuccess, info);
+      
+      auto *logger = ContactLogger();
+      logger->Add(msg);
     }
   }
 }

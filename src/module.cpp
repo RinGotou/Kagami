@@ -383,7 +383,7 @@ namespace kagami {
     bool state = true;
 
     switch (arg.domain.type) {
-    case AT_RET:
+    case kArgumentReturningStack:
       if (!returning_base.empty()) {
         obj_domain = returning_base.top();
       }
@@ -393,7 +393,7 @@ namespace kagami {
         state = false;
       }
       break;
-    case AT_OBJECT:
+    case kArgumentObjectPool:
       ptr = management::FindObject(arg.domain.data);
       if (ptr != nullptr) {
         obj_domain.CreateRef(*ptr);
@@ -414,10 +414,10 @@ namespace kagami {
     if (!state) return Object();
 
     switch (arg.type) {
-    case AT_NORMAL:
+    case kArgumentNormal:
       obj.ManageContent(make_shared<string>(arg.data), kTypeIdRawString);
       break;
-    case AT_OBJECT:
+    case kArgumentObjectPool:
       ptr = management::FindObject(arg.data);
       if (ptr != nullptr) {
         obj.CreateRef(*ptr);
@@ -430,7 +430,7 @@ namespace kagami {
         }
       }
       break;
-    case AT_RET:
+    case kArgumentReturningStack:
       if (!returning_base.empty()) {
         obj = returning_base.top();
         if ((!is_assert && !checking) || is_assert_r)
@@ -448,7 +448,7 @@ namespace kagami {
     return obj;
   }
 
-  void IRWorker::AssemblingForAutoSized(Interface &interface,
+  void IRWorker::Assembling_AutoSize(Interface &interface,
     deque<Argument> args, ObjectMap &obj_map) {
     auto ent_params = interface.GetParameters();
     auto va_arg_head = ent_params.back();
@@ -481,7 +481,7 @@ namespace kagami {
     }
   }
 
-  void IRWorker::AssemblingForAutoFilling(Interface &interface, 
+  void IRWorker::Assembling_AutoFill(Interface &interface, 
     deque<Argument> args, ObjectMap &obj_map) {
     if (args.size() > interface.GetParameters().size()) {
       error_assembling = true;
@@ -575,12 +575,12 @@ namespace kagami {
 
       switch (msg.GetLevel()) {
       case kStateError:
-        trace::Log(msg);
+        trace::AddEvent(msg);
         health = false;
         continue;
         break;
       case kStateWarning:
-        trace::Log(msg);
+        trace::AddEvent(msg);
         break;
       default:break;
       }
@@ -651,7 +651,7 @@ namespace kagami {
       auto &request = action_base.at(idx).first;
       auto &args = action_base.at(idx).second;
 
-      if (request.type == RT_MACHINE && CheckGenericRequests(request.head_gen)) {
+      if (request.type == kRequestCommand && CheckGenericRequests(request.head_gen)) {
         (request.head_reg == name && idx == action_base.size() - 2
           && action_base.back().first.head_gen == kTokenReturn) ?
           worker->tail_recursion = true :
@@ -665,7 +665,7 @@ namespace kagami {
           worker->msg = Message();
         }
       }
-      else if (request.type == RT_REGULAR || (request.type == RT_MACHINE && !CheckGenericRequests(request.head_gen))) {
+      else if (request.type == kRequestInterface || (request.type == kRequestCommand && !CheckGenericRequests(request.head_gen))) {
         Interface interface;
         string type_id, value;
         is_operator_token = util::IsOperatorToken(request.head_gen);
@@ -680,15 +680,15 @@ namespace kagami {
         }
 
         switch (request.type) {
-        case RT_MACHINE:
+        case kRequestCommand:
           interface = management::GetGenericInterface(request.head_gen);
           break;
-        case RT_REGULAR:
-          if (request.domain.type != AT_HOLDER) {
+        case kRequestInterface:
+          if (request.domain.type != kArgumentNull) {
             Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
             interface = management::Order(request.head_reg, type_id);
-            obj_map.Input(kStrObject, domain_obj);
+            obj_map.insert(NamedObject(kStrObject, domain_obj));
           }
           else {
             interface = management::Order(request.head_reg);
@@ -699,18 +699,29 @@ namespace kagami {
         }
 
         if (!interface.Good()) {
-          msg = Message(kCodeIllegalCall, 
-            "Function is not found - " + request.head_reg,
-            kStateError);
+          switch (request.type) {
+          case kRequestInterface:
+            msg = Message(kCodeIllegalCall,
+              "Function is not found - " + request.head_reg,
+              kStateError);
+            break;
+          case kRequestCommand:
+            msg = Message(kCodeIllegalCall,
+              "IR Framework Panic, please check interpreter version or contact author.",
+              kStateError);
+            break;
+          default:break;
+          }
+
           break;
         }
 
         switch (interface.GetArgumentMode()) {
         case kCodeAutoSize:
-          worker->AssemblingForAutoSized(interface, args, obj_map);
+          worker->Assembling_AutoSize(interface, args, obj_map);
           break;
         case kCodeAutoFill:
-          worker->AssemblingForAutoFilling(interface, args, obj_map);
+          worker->Assembling_AutoFill(interface, args, obj_map);
           break;
         default:
           worker->Assembling(interface, args, obj_map);
@@ -1364,11 +1375,11 @@ namespace kagami {
       switch (result.GetLevel()) {
       case kStateError:
         health_ = false;
-        trace::Log(result.SetIndex(storage_[blk->current].GetIndex()));
+        trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
         continue;
         break;
       case kStateWarning:
-        trace::Log(result.SetIndex(storage_[blk->current].GetIndex()));
+        trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
         break;
       default:break;
       }
@@ -1432,7 +1443,7 @@ namespace kagami {
     }
 
     if (blk->runtime_error) {
-      trace::Log(Message(kCodeBadExpression, blk->error_string, kStateError)
+      trace::AddEvent(Message(kCodeBadExpression, blk->error_string, kStateError)
         .SetIndex(blk->current));
     }
 

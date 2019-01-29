@@ -1,4 +1,4 @@
-#include "kagami.h"
+#include "module.h"
 #include "suzu_ap.h"
 
 using suzu::ArgumentProcessor;
@@ -6,55 +6,52 @@ using suzu::Option;
 using suzu::ArgumentProcessorError;
 using suzu::Pattern;
 using std::string;
-using std::map;
-using std::vector;
+using std::cout;
+using std::endl;
+using std::cin;
 using Processor = ArgumentProcessor<suzu::kHeadHorizon, suzu::kJoinerEquals>;
+using namespace kagami;
 
-namespace kagami {
-  void ScriptCore::PrintEvents(string path, string script_path) {
-    using namespace trace;
-    string priorityStr;
-    auto logger = GetLogger();
 
-    /*Write log to a file*/
-    if (!compare(path, { "stdout", "" })) {
-      ofstream ofs;
-      ofs.open(path, std::ios::out | std::ios::app);
-      if (!ofs.good()) {
-        cout << "Can't create event log." << endl;
-        return;
-      }
-      LogOutput<ofstream>(ofs, path.c_str(), script_path.c_str());
-      ofs.close();
-    }
-    /*Print log to screen*/
-    else {
-      LogOutput<std::ostream>(cout, nullptr, script_path.c_str());
-    }
+void StartInterpreter(string path, string log_path, bool real_time_log) {
+  trace::LoggerPolicy *logger = nullptr;
+
+  if (real_time_log) {
+    logger = new trace::RealTimePolicy();
+  }
+  else {
+    logger = new trace::CachePolicy();
   }
 
-  void ScriptCore::ExecScriptFile(string target) {
-    IRMaker maker(target.c_str());
-    Module main_module(maker, true);
+  logger->Inject(log_path, path);
 
-    //Initializers
-    Activiate();
-    InitBaseTypes();
+  trace::InitLogger(logger);
+  trace::AddEvent("Interpreter start");
+
+  IRMaker maker(path.c_str());
+  Module main_module(maker, true);
+
+  //Initializers
+  Activiate();
+  InitBaseTypes();
 #if not defined(_DISABLE_SDL_)
-    LoadSDLStuff();
+  LoadSDLStuff();
 #endif
 
-    if (main_module.Good()) {
-      main_module.Run();
-    }
+  if (main_module.Good()) {
+    main_module.Run();
   }
 
-  void ScriptCore::MyInfo() {
-    cout << kEngineName << " " << kInterpreterVersion << "\n";
-    cout << "IR Framework Version: " << kIRFrameworkVersion << "\n";
-    cout << "Patch: " << kPatchName << "\n";
-    cout << kCopyright << " " << kMaintainer << endl;
-  }
+  trace::AddEvent("Interpreter exit");
+  logger->Final();
+  delete logger;
+}
+
+void ApplicationInfo() {
+  cout << kEngineName << " " << kInterpreterVersion << "\n";
+  cout << "IR Framework Version: " << kIRFrameworkVersion << "\n";
+  cout << "Patch: " << kPatchName << "\n";
+  cout << kCopyright << " " << kMaintainer << endl;
 }
 
 //Main namespace
@@ -62,10 +59,10 @@ void HelpFile() {
   cout << "Usage:kagami [-OPTION][-OPTION=VALUE]...\n\n";
   cout << "\tpath=PATH         Path of script file.\n";
   cout << "\tlog=(PATH|stdout) Output of error log.\n";
+  cout << "\trtlog             Enable real-time logger\n";
   cout << "\twait              Automatically pause at application exit.\n";
   cout << "\thelp              Show this message.\n";
   cout << "\tversion           Show version message of interpreter.\n";
-
 }
 
 void AtExitHandler() {
@@ -83,8 +80,6 @@ inline void Patch(string locale) {
 }
 
 void Processing(Processor &processor) {
-  kagami::ScriptCore core;
-
   if (processor.Exist("path")) {
     string path = processor.ValueOf("path");
     string log = processor.Exist("log") ?
@@ -97,14 +92,13 @@ void Processing(Processor &processor) {
 
     Patch("");
 
-    core.ExecScriptFile(path);
-    core.PrintEvents(log, path);
+    StartInterpreter(path, log, processor.Exist("rtlog"));
   }
   else if (processor.Exist("help")) {
     HelpFile();
   }
   else if (processor.Exist("version")) {
-    core.MyInfo();
+    ApplicationInfo();
   }
 }
 
@@ -113,6 +107,7 @@ int main(int argc, char **argv) {
     Pattern("path"   , Option(true, false, 1)),
     Pattern("help"   , Option(false, false, 1)),
     Pattern("version", Option(false, false, 1)),
+    Pattern("rtlog"  , Option(false,true)),
     Pattern("log"    , Option(true, true)),
     Pattern("wait"   , Option(false, true))
   };

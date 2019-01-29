@@ -298,7 +298,7 @@ namespace kagami {
 
   template<OperatorCode op_code, GenericToken token, bool boolean_result = false>
   void OperatorGenerator() {
-    management::CreateInterface(
+    management::CreateGenericInterface(
       Interface(OperatorFunction<op_code, boolean_result>, "first|second", token));
   }
 }

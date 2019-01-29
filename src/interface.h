@@ -8,7 +8,6 @@ namespace kagami {
 
   using AgentActivity = Message(*)(ObjectMap &, vector<IR>);
 
-  //TODO:Pending modify
   class InterfacePolicy {
   public:
     virtual Message Start(ObjectMap &p) = 0;
@@ -96,23 +95,6 @@ namespace kagami {
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
       policy_type_(kInterfaceCXX) {}
-
-    //Method (CXX Type)
-    //Interface(
-    //  Activity activity,
-    //  string params,
-    //  string id,
-    //  string domain,
-    //  StateCode argument_mode = kCodeNormalParam
-    //) :
-    //  policy_(make_shared<CXXFunctionPolicy>(activity)),
-    //  id_(id),
-    //  token_(kTokenNull),
-    //  params_(BuildStringVector(params)),
-    //  argument_mode_(argument_mode),
-    //  domain_(domain),
-    //  interface_type_(kInterfaceTypeMethod),
-    //  policy_type_(kInterfaceCXX) {}
 
     //Plain Function (IR Type)
     Interface(

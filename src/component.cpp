@@ -75,9 +75,11 @@ namespace kagami {
       CONDITION_ASSERT(IsStringFamily(p["msg"]), 
         "Illegal message string.");
       
-      ObjectMap obj_map;
-      obj_map.Input("not_wrap");
-      obj_map.Input(kStrObject, p["msg"]);
+      ObjectMap obj_map = {
+        NamedObject("not_wrap", Object(kStrTrue)),
+        NamedObject(kStrObject, p["msg"])
+      };
+
       Print(obj_map);
     }
 

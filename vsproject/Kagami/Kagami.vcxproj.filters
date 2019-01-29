@@ -18,9 +18,6 @@
     <ClInclude Include="..\..\src\common.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\kagami.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\list.h">
       <Filter>头文件</Filter>
     </ClInclude>

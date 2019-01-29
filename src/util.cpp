@@ -64,39 +64,39 @@ namespace kagami {
     map<string, GenericToken> &GetGTBase() {
       using T = pair<string, GenericToken>;
       static map<string, GenericToken> base = {
-        T(kStrIf          ,kTokenIf),
-        T(kStrNop         ,kTokenNop),
-        T(kStrFn         ,kTokenFn),
-        T(kStrEnd         ,kTokenEnd),
-        T(kStrBind        ,kTokenBind),
-        T(kStrElse        ,kTokenElse),
-        T(kStrElif        ,kTokenElif),
-        T(kStrWhile       ,kTokenWhile),
-        T(kStrPlus         ,kTokenPlus),
-        T(kStrMinus         ,kTokenMinus),
-        T(kStrTimes         ,kTokenTimes),
-        T(kStrDiv         ,kTokenDivide),
-        T(kStrIs          ,kTokenEquals),
-        T(kStrAnd         ,kTokenAnd),
-        T(kStrOr          ,kTokenOr),
-        T(kStrNot         ,kTokenNot),
-        T(kStrBitAnd      ,kTokenBitAnd),
-        T(kStrBitOr       ,kTokenBitOr),
-        T(kStrLessOrEqual ,kTokenLessOrEqual),
+        T(kStrIf             ,kTokenIf),
+        T(kStrNop            ,kTokenNop),
+        T(kStrFn             ,kTokenFn),
+        T(kStrEnd            ,kTokenEnd),
+        T(kStrBind           ,kTokenBind),
+        T(kStrElse           ,kTokenElse),
+        T(kStrElif           ,kTokenElif),
+        T(kStrWhile          ,kTokenWhile),
+        T(kStrPlus           ,kTokenPlus),
+        T(kStrMinus          ,kTokenMinus),
+        T(kStrTimes          ,kTokenTimes),
+        T(kStrDiv            ,kTokenDivide),
+        T(kStrIs             ,kTokenEquals),
+        T(kStrAnd            ,kTokenAnd),
+        T(kStrOr             ,kTokenOr),
+        T(kStrNot            ,kTokenNot),
+        T(kStrBitAnd         ,kTokenBitAnd),
+        T(kStrBitOr          ,kTokenBitOr),
+        T(kStrLessOrEqual    ,kTokenLessOrEqual),
         T(kStrGreaterOrEqual ,kTokenGreaterOrEqual),
-        T(kStrNotEqual    ,kTokenNotEqual),
+        T(kStrNotEqual       ,kTokenNotEqual),
         T(kStrGreater        ,kTokenGreater),
-        T(kStrLess        ,kTokenLess),
-        T(kStrReturn      ,kTokenReturn),
-        T(kStrArray       ,kTokenInitialArray),
-        T(kStrTypeAssert  ,kTokenAssert),
-        T(kStrContinue    ,kTokenContinue),
-        T(kStrBreak       ,kTokenBreak),
-        T(kStrCase        ,kTokenCase),
-        T(kStrWhen        ,kTokenWhen),
-        T(kStrTypeAssertR ,kTokenAssertR),
-        T(kStrTypeId      ,kTokenTypeId),
-        T(kStrDir         ,kTokenDir)
+        T(kStrLess           ,kTokenLess),
+        T(kStrReturn         ,kTokenReturn),
+        T(kStrArray          ,kTokenInitialArray),
+        T(kStrTypeAssert     ,kTokenAssert),
+        T(kStrContinue       ,kTokenContinue),
+        T(kStrBreak          ,kTokenBreak),
+        T(kStrCase           ,kTokenCase),
+        T(kStrWhen           ,kTokenWhen),
+        T(kStrTypeAssertR    ,kTokenAssertR),
+        T(kStrTypeId         ,kTokenTypeId),
+        T(kStrDir            ,kTokenDir)
       };
       return base;
     }
@@ -122,9 +122,7 @@ namespace kagami {
 
       bool result = true;
       for (auto &unit : target) {
-        if (!IsDigit(unit) &&
-          !IsAlpha(unit) &&
-          unit != '_') {
+        if (!IsDigit(unit) && !IsAlpha(unit) && unit != '_') {
           result = false;
           break;
         }

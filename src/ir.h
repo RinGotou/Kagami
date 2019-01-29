@@ -4,11 +4,16 @@
 
 namespace kagami {
   enum ArgumentType {
-    AT_NORMAL, AT_OBJECT, AT_RET, AT_HOLDER
+    kArgumentNormal, 
+    kArgumentObjectPool, 
+    kArgumentReturningStack, 
+    kArgumentNull
   };
 
   enum RequestType {
-    RT_MACHINE, RT_REGULAR, RT_NUL
+    kRequestCommand, 
+    kRequestInterface, 
+    kRequestNull
   };
 
   struct Domain {
@@ -25,10 +30,10 @@ namespace kagami {
 
     Argument() :
       data(),
-      type(AT_HOLDER),
+      type(kArgumentNull),
       token_type(kTokenTypeNull) {
 
-      domain.type = AT_HOLDER;
+      domain.type = kArgumentNull;
     }
 
     Argument(string data,
@@ -39,11 +44,11 @@ namespace kagami {
       token_type(token_type) {
 
       this->domain.data = "";
-      this->domain.type = AT_HOLDER;
+      this->domain.type = kArgumentNull;
     }
 
     bool IsPlaceholder() const {
-      return type == AT_HOLDER;
+      return type == kArgumentNull;
     }
   };
 
@@ -60,21 +65,21 @@ namespace kagami {
       head_gen(token),
       head_reg(),
       domain(),
-      type(RT_MACHINE) {}
+      type(kRequestCommand) {}
 
     Request(string token, bool place_holder = false) :
       priority(4),
       head_gen(kTokenNull),
       head_reg(token),
       domain(),
-      type(place_holder ? RT_NUL : RT_REGULAR) {}
+      type(place_holder ? kRequestNull : kRequestInterface) {}
 
     Request() :
       priority(4),
       head_gen(kTokenNull),
       head_reg(),
       domain(),
-      type(RT_NUL) {}
+      type(kRequestNull) {}
   };
 
   using Command = pair<Request, deque<Argument>>;

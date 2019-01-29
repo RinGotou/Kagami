@@ -253,7 +253,7 @@ namespace kagami {
 
     action_base_.emplace_back(Command(blk->symbol.back(), arguments));
     blk->symbol.pop_back();
-    blk->args.emplace_back(Argument("", AT_RET, kTokenTypeNull));
+    blk->args.emplace_back(Argument("", kArgumentReturningStack, kTokenTypeNull));
     return health_;
   }
 
@@ -274,7 +274,7 @@ namespace kagami {
     
     deque<Argument> arguments = {
       blk->args.back(),
-      Argument(blk->next.first,AT_NORMAL,blk->next.second)
+      Argument(blk->next.first,kArgumentNormal,blk->next.second)
     };
 
     action_base_.emplace_back(Command(Request(token), arguments));
@@ -313,7 +313,7 @@ namespace kagami {
 
     deque<Argument> arguments = {
       blk->args.back(),
-      Argument("__at", AT_NORMAL, kTokenTypeGeneric)
+      Argument("__at", kArgumentNormal, kTokenTypeGeneric)
     };
 
     action_base_.emplace_back(Command(Request(kTokenAssert), arguments));
@@ -349,11 +349,11 @@ namespace kagami {
     GenericToken token = util::GetGenericToken(blk->current.first);
 
     if (blk->define_line) {
-      blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, kTokenTypeGeneric));
+      blk->args.emplace_back(Argument(blk->current.first, kArgumentNormal, kTokenTypeGeneric));
     }
     else {
       if (blk->next.first == "=") {
-        blk->args.emplace_back(Argument(blk->current.first, AT_NORMAL, kTokenTypeGeneric));
+        blk->args.emplace_back(Argument(blk->current.first, kArgumentNormal, kTokenTypeGeneric));
       }
       else if (blk->next.first == "(") {
         if (token != kTokenNull) {
@@ -366,7 +366,7 @@ namespace kagami {
             request.domain = blk->domain;
           }
           else {
-            request.domain.type = AT_HOLDER;
+            request.domain.type = kArgumentNull;
           }
           blk->symbol.emplace_back(request);
         }
@@ -389,8 +389,8 @@ namespace kagami {
             error_string_ = "Generic token can't be a object.";
           }
           else {
-            Argument arg(blk->current.first, AT_OBJECT, kTokenTypeGeneric);
-            if (blk->domain.type != AT_HOLDER) {
+            Argument arg(blk->current.first, kArgumentObjectPool, kTokenTypeGeneric);
+            if (blk->domain.type != kArgumentNull) {
               arg.domain.data = blk->domain.data;
               arg.domain.type = blk->domain.type;
             }
@@ -426,12 +426,12 @@ namespace kagami {
   void Analyzer::OtherToken(AnalyzerWorkBlock *blk) {
     if (blk->insert_between_object) {
       blk->args.emplace(blk->args.begin() + blk->next_insert_index,
-        Argument(blk->current.first, AT_NORMAL, blk->current.second));
+        Argument(blk->current.first, kArgumentNormal, blk->current.second));
       blk->insert_between_object = false;
     }
     else {
       blk->args.emplace_back(
-        Argument(blk->current.first, AT_NORMAL, blk->current.second));
+        Argument(blk->current.first, kArgumentNormal, blk->current.second));
     }
   }
 

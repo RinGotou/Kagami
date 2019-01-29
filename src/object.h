@@ -111,6 +111,7 @@ namespace kagami {
 
     template <class Tx>
     Tx &Cast() {
+      if (ref_) return GetTargetObject()->Cast<Tx>();
       return *std::static_pointer_cast<Tx>(ptr_);
     }
 
@@ -119,9 +120,9 @@ namespace kagami {
       return type_id_;
     }
 
-    Object &SetConstructorFlag() { 
-      constructor_ = true; 
-      return *this; 
+    Object &SetConstructorFlag() {
+      constructor_ = true;
+      return *this;
     }
 
     bool GetConstructorFlag() {
@@ -130,12 +131,12 @@ namespace kagami {
       return result;
     }
 
-    Object &CloneFrom(Object &&object) { 
-      return this->CloneFrom(object); 
+    Object &CloneFrom(Object &&object) {
+      return this->CloneFrom(object);
     }
 
-    bool IsRef() const { 
-      return ref_; 
+    bool IsRef() const {
+      return ref_;
     }
 
     Object &CreateRef(Object &object);
@@ -162,11 +163,11 @@ namespace kagami {
 
     ObjectContainer(ObjectContainer &container) :base_(container.base_) {}
 
-    bool Empty() const { 
-      return base_.empty(); 
+    bool Empty() const {
+      return base_.empty();
     }
 
-    ObjectContainer &operator=(ObjectContainer &mgr) { 
+    ObjectContainer &operator=(ObjectContainer &mgr) {
       base_ = mgr.base_;
       return *this;
     }
@@ -177,9 +178,39 @@ namespace kagami {
   };
 
   class ObjectMap : public map<string, Object> {
-  protected:
-    using ComparingFunction = bool(*)(Object &);
   public:
+    using ComparingFunction = bool(*)(Object &);
+
+  public:
+    ObjectMap() {}
+
+    ObjectMap(const ObjectMap &rhs) :
+      map<string, Object>(rhs) {}
+
+    ObjectMap(const ObjectMap &&rhs) :
+      map<string, Object>(rhs) {}
+
+    ObjectMap(const std::initializer_list<NamedObject> &&rhs) {
+      for (const auto &unit : rhs) {
+        this->insert(unit);
+      }
+    }
+
+    ObjectMap &operator=(const std::initializer_list<NamedObject> &&rhs){
+      for (const auto &unit : rhs) {
+        this->insert(unit);
+      }
+
+      return *this;
+    }
+
+    ObjectMap &operator=(const ObjectMap &rhs) {
+      for (const auto &unit : rhs) {
+        this->insert(unit);
+      }
+      return *this;
+    }
+
     bool Search(string id) {
       auto it = this->find(id);
       return it != this->end();
@@ -196,14 +227,6 @@ namespace kagami {
 
     bool CheckTypeId(string id, ComparingFunction func) {
       return func(this->at(id));
-    }
-
-    void Input(string id, Object obj) {
-      this->insert(NamedObject(id, obj));
-    }
-
-    void Input(string id) {
-      this->insert(NamedObject(id, Object()));
     }
   };
 }
