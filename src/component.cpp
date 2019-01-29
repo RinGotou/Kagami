@@ -26,15 +26,15 @@ namespace kagami {
     string str = RealString(p.Cast<string>("object"));
 
     switch (util::GetTokenType(str)) {
-    case kTokenTypeBool:result = "'boolean'"; break;
+    case kTokenTypeBool:   result = "'boolean'"; break;
     case kTokenTypeGeneric:result = "'generic'"; break;
-    case kTokenTypeInt:result = "'integer'"; break;
-    case kTokenTypeFloat:result = "'float'"; break;
-    case kTokenTypeSymbol:result = "'symbol'"; break;
-    case kTokenTypeBlank:result = "'blank'"; break;
-    case kTokenTypeString:result = "'string'"; break;
-    case kTokenTypeNull:result = "'null'"; break;
-    default:result = "'null'"; break;
+    case kTokenTypeInt:    result = "'integer'"; break;
+    case kTokenTypeFloat:  result = "'float'"; break;
+    case kTokenTypeSymbol: result = "'symbol'"; break;
+    case kTokenTypeBlank:  result = "'blank'"; break;
+    case kTokenTypeString: result = "'string'"; break;
+    case kTokenTypeNull:   result = "'null'"; break;
+    default:               result = "'null'"; break;
     }
 
     return Message(result);
@@ -54,20 +54,6 @@ namespace kagami {
     }
 
     return management::Order(kStrPrint, obj.GetTypeId()).Start(p);
-  }
-
-  Message GetTimeDate(ObjectMap &p) {
-    auto now = time(nullptr);
-#if defined(_WIN32) && defined(_MSC_VER)
-    char nowTime[30] = { ' ' };
-    ctime_s(nowTime, sizeof(nowTime), &now);
-    string str(nowTime);
-    str.pop_back(); //erase '\n'
-    return Message("'" + str + "'");
-#else
-    string TimeData(ctime(&now));
-    return Message("'" + TimeData + "'");
-#endif
   }
 
   Message Input(ObjectMap &p) {
@@ -107,6 +93,16 @@ namespace kagami {
     return Message(obj.GetTypeId() == kTypeIdNull ? kStrTrue : kStrFalse);
   }
 
+  Message Log(ObjectMap &p) {
+    OBJECT_ASSERT(p, "msg", kTypeIdRawString);
+
+    string msg = p.Cast<string>("msg");
+
+    trace::AddEvent(msg);
+
+    return Message();
+  }
+
   void Activiate() {
     using management::CreateInterface;
 
@@ -126,7 +122,6 @@ namespace kagami {
     CreateInterface(Interface(Convert, "object", "convert"));
     CreateInterface(Interface(Input, "msg", "input", kCodeAutoFill));
     CreateInterface(Interface(Print, kStrObject, "print"));
-    CreateInterface(Interface(GetTimeDate, "", "time"));
     CreateInterface(Interface(GetRawStringType, "object", "type"));
     CreateInterface(Interface(IsNull, "object", "isnull"));
 

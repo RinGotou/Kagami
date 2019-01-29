@@ -542,6 +542,8 @@ namespace kagami {
   }
 
   IRMaker::IRMaker(const char *path) : health(true) {
+    DEBUG_EVENT("IR Generating start");
+
     std::wifstream stream(path);
     wstring buf;
     string temp;
@@ -593,6 +595,8 @@ namespace kagami {
 
       analyzer.Clear();
     }
+
+    DEBUG_EVENT("IR Generating complete. IR count is " + to_string(output.size()));
   }
 
   void Module::ResetContainer(string func_id) {

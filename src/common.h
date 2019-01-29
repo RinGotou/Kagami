@@ -19,8 +19,11 @@
 #include "shio/src/shio.h"
 
 //if you build this project by cmake,please turn off all switch macro below.
-// Disbale SDL2 componets for non-GUI environment
+//Disbale SDL2 componets for non-GUI environment
 //#define _DISABLE_SDL_
+
+//Switching Debugging Feature
+#define _DEBUG_
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN

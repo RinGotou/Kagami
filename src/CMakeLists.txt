@@ -14,6 +14,10 @@ if(DISABLE_SDL)
 	add_definitions(-D_DISABLE_SDL_)
 endif()
 
+if(DEBUG)
+  add_definitions(-D_DEBUG_)
+endif()
+
 file(GLOB PROJECT_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
 )

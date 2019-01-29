@@ -28,6 +28,8 @@ void StartInterpreter(string path, string log_path, bool real_time_log) {
   trace::InitLogger(logger);
   trace::AddEvent("Interpreter start");
 
+  DEBUG_EVENT("Your're running a copy of Kagami interpreter with debug flag!");
+
   IRMaker maker(path.c_str());
   Module main_module(maker, true);
 

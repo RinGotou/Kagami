@@ -235,3 +235,9 @@ namespace kagami {
   }
 }
 
+#if defined(_DEBUG_)
+#define DEBUG_EVENT(MSG) trace::AddEvent(MSG)
+#else
+#define DEBUG_EVENT(MSG)
+#endif
+
