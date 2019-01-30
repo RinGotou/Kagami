@@ -143,7 +143,7 @@ namespace kagami {
     Object &CloneFrom(Object &object, bool force = false);
   };
 
-
+  using ObjectArray = vector<Object>;
 
   class ObjectContainer {
   private:

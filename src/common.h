@@ -143,7 +143,7 @@ namespace kagami {
   using Token = pair<string, TokenType>;
 
   enum GenericToken {
-    kTokenNop, 
+    kTokenExpList, 
     kTokenFn, 
     kTokenIf, 
     kTokenElif, 
@@ -219,7 +219,6 @@ namespace kagami {
     kStrIf             = "if",
     kStrFn             = "fn",
     kStrEnd            = "end",
-    kStrBind           = "__bind",
     kStrPrint          = "__print",
     kStrFor            = "for",
     kStrElse           = "else",
@@ -245,7 +244,6 @@ namespace kagami {
     kStrNotEqual       = "!=",
     kStrGreater        = ">",
     kStrLess           = "<",
-    kStrNop            = "__nop",
     kStrUserFunc       = "__func",
     kStrRetValue       = "__ret",
     kStrArray          = "__array",

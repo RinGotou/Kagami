@@ -78,6 +78,12 @@ namespace kagami {
   };
 
   class IRWorker {
+  private:
+    void MakeCode(StateCode code) {
+      deliver = true;
+      msg = Message(code, "");
+    }
+
   public:
     string error_string;
     bool error_returning,
@@ -102,10 +108,12 @@ namespace kagami {
       msg() {}
 
     Object MakeObject(Argument &arg, bool checking = false);
-    void Assembling_AutoSize(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
-    void Assembling_AutoFill(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
-    void Assembling(Interface &interface, deque<Argument> args, ObjectMap &obj_map);
+    void Assembling_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
+    void Assembling_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map);
+    void Assembling(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Reset();
+
+    
   };
 
   class IRMaker {
@@ -133,26 +141,26 @@ namespace kagami {
     void CallMachineFunction(StateCode code, string detail, MachCtlBlk *blk);
 
     //Command Functions
-    bool BindAndSet(IRWorker *worker, deque<Argument> args);
-    void Nop(IRWorker *worker, deque<Argument> args);        //Bracket    
-    void ArrayMaker(IRWorker *worker, deque<Argument> args); //Braces
-    void ReturnOperator(IRWorker *worker, deque<Argument> args); //Return
-    bool GetTypeId(IRWorker *worker, deque<Argument> args);      //TypeId
-    bool GetMethods(IRWorker *worker, deque<Argument> args);     //Dir
-    bool Exist(IRWorker *worker, deque<Argument> args);          //Exist
-    bool Fn(IRWorker *worker, deque<Argument> args);         //Def
-    bool Case(IRWorker *worker, deque<Argument> args);
-    bool When(IRWorker *worker, deque<Argument> args);
-    bool DomainAssert(IRWorker *worker, deque<Argument> args, bool returning);
+    bool Bind(IRWorker *worker, ArgumentList args);
+    void ExpList(IRWorker *worker, ArgumentList args);        
+    void InitArray(IRWorker *worker, ArgumentList args); 
+    void ReturnOperator(IRWorker *worker, ArgumentList args); 
+    bool GetTypeId(IRWorker *worker, ArgumentList args);      
+    bool GetMethods(IRWorker *worker, ArgumentList args);     
+    bool Exist(IRWorker *worker, ArgumentList args);          
+    bool Fn(IRWorker *worker, ArgumentList args);     
+    bool Case(IRWorker *worker, ArgumentList args);
+    bool When(IRWorker *worker, ArgumentList args);
+    bool DomainAssert(IRWorker *worker, ArgumentList args, bool returning);
     void Quit(IRWorker *worker);
     void End(IRWorker *worker);
     void Continue(IRWorker *worker);
     void Break(IRWorker *worker);
     void Else(IRWorker *worker);
-    bool ConditionAndLoop(IRWorker *worker, deque<Argument> args, StateCode code);
+    bool ConditionAndLoop(IRWorker *worker, ArgumentList args, StateCode code);
 
     //Command Management
-    bool GenericRequests(IRWorker *worker, Request &Request, deque<Argument> &args);
+    bool GenericRequests(IRWorker *worker, Request &Request, ArgumentList &args);
     bool CheckGenericRequests(GenericToken token);
   public:
     Module() : 

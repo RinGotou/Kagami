@@ -285,7 +285,7 @@ namespace kagami {
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
     if (blk->define_line) return;
     if (blk->last.second != TokenType::kTokenTypeGeneric) {
-      blk->symbol.emplace_back(Request(kTokenNop));
+      blk->symbol.emplace_back(Request(kTokenExpList));
     }
     
     blk->symbol.push_back(Request(blk->current.first));

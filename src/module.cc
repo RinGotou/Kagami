@@ -449,7 +449,7 @@ namespace kagami {
   }
 
   void IRWorker::Assembling_AutoSize(Interface &interface,
-    deque<Argument> args, ObjectMap &obj_map) {
+    ArgumentList args, ObjectMap &obj_map) {
     auto ent_params = interface.GetParameters();
     auto va_arg_head = ent_params.back();
 
@@ -482,7 +482,7 @@ namespace kagami {
   }
 
   void IRWorker::Assembling_AutoFill(Interface &interface, 
-    deque<Argument> args, ObjectMap &obj_map) {
+    ArgumentList args, ObjectMap &obj_map) {
     if (args.size() > interface.GetParameters().size()) {
       error_assembling = true;
       error_string = "Too many arguments.";
@@ -501,7 +501,7 @@ namespace kagami {
     }
   }
 
-  void IRWorker::Assembling(Interface &interface, deque<Argument> args, ObjectMap &obj_map) {
+  void IRWorker::Assembling(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
     if (args.size() > interface.GetParameters().size()) {
       error_assembling = true;
       error_string = "Too many arguments.";
@@ -902,7 +902,7 @@ namespace kagami {
     ResetContainer(name);
   }
 
-  bool Module::BindAndSet(IRWorker *worker, deque<Argument> args) {
+  bool Module::Bind(IRWorker *worker, ArgumentList args) {
     bool result = true;
     auto src = worker->MakeObject(args[1]);
     auto dest = worker->MakeObject(args[0]);
@@ -979,14 +979,14 @@ namespace kagami {
     }
   }
 
-  void Module::Nop(IRWorker *worker, deque<Argument> args) {
+  void Module::ExpList(IRWorker *worker, ArgumentList args) {
     if (!args.empty()) {
       auto obj = worker->MakeObject(args.back());
       worker->returning_base.push(obj);
     }
   }
 
-  void Module::ArrayMaker(IRWorker *worker, deque<Argument> args) {
+  void Module::InitArray(IRWorker *worker, ArgumentList args) {
     shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
     
     if (!args.empty()) {
@@ -1000,7 +1000,7 @@ namespace kagami {
     worker->returning_base.push(obj);
   }
 
-  void Module::ReturnOperator(IRWorker *worker, deque<Argument> args) {
+  void Module::ReturnOperator(IRWorker *worker, ArgumentList args) {
     auto &container = management::GetCurrentContainer();
     if (args.size() > 1) {
       shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
@@ -1020,7 +1020,7 @@ namespace kagami {
     worker->deliver = true;
   }
 
-  bool Module::GetTypeId(IRWorker *worker, deque<Argument> args) {
+  bool Module::GetTypeId(IRWorker *worker, ArgumentList args) {
     bool result = true;
     
     if (args.size() > 1) {
@@ -1047,7 +1047,7 @@ namespace kagami {
     return result;
   }
 
-  bool Module::GetMethods(IRWorker *worker, deque<Argument> args) {
+  bool Module::GetMethods(IRWorker *worker, ArgumentList args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1071,7 +1071,7 @@ namespace kagami {
     return result;
   }
 
-  bool Module::Exist(IRWorker *worker, deque<Argument> args) {
+  bool Module::Exist(IRWorker *worker, ArgumentList args) {
     bool result = true;
 
     if (args.size() == 2) {
@@ -1095,7 +1095,7 @@ namespace kagami {
     return result;
   }
 
-  bool Module::Fn(IRWorker *worker, deque<Argument> args) {
+  bool Module::Fn(IRWorker *worker, ArgumentList args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1117,7 +1117,7 @@ namespace kagami {
     return result;
   }
 
-  bool Module::Case(IRWorker *worker, deque<Argument> args) {
+  bool Module::Case(IRWorker *worker, ArgumentList args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1143,7 +1143,7 @@ namespace kagami {
     return result;
   }
 
-  bool Module::When(IRWorker *worker, deque<Argument> args) {
+  bool Module::When(IRWorker *worker, ArgumentList args) {
     bool result = true;
 
     if (!args.empty()) {
@@ -1183,7 +1183,7 @@ namespace kagami {
     return result;
   }
 
-  bool Module::DomainAssert(IRWorker *worker, deque<Argument> args, bool returning) {
+  bool Module::DomainAssert(IRWorker *worker, ArgumentList args, bool returning) {
     Object obj = worker->MakeObject(args[0]);
     Object id_obj = worker->MakeObject(args[1]);
     string id = id_obj.Cast<string>();
@@ -1243,7 +1243,7 @@ namespace kagami {
     MakeCode(kCodeConditionLeaf, worker);
   }
 
-  bool Module::ConditionAndLoop(IRWorker *worker, deque<Argument> args, StateCode code) {
+  bool Module::ConditionAndLoop(IRWorker *worker, ArgumentList args, StateCode code) {
     bool result = true;
     if (args.size() == 1) {
       Object obj = worker->MakeObject(args[0]);
@@ -1291,19 +1291,19 @@ namespace kagami {
     return result;
   }
 
-  bool Module::GenericRequests(IRWorker *worker, Request &request, deque<Argument> &args) {
+  bool Module::GenericRequests(IRWorker *worker, Request &request, ArgumentList &args) {
     auto &token = request.head_command;
     bool result = true;
 
     switch (token) {
     case kTokenBind:
-      result = BindAndSet(worker, args);
+      result = Bind(worker, args);
       break;
-    case kTokenNop:
-      Nop(worker, args);
+    case kTokenExpList:
+      ExpList(worker, args);
       break;
     case kTokenInitialArray:
-      ArrayMaker(worker, args);
+      InitArray(worker, args);
       break;
     case kTokenReturn:
       ReturnOperator(worker, args);
@@ -1366,7 +1366,7 @@ namespace kagami {
 
     switch (token) {
     case kTokenBind:
-    case kTokenNop:
+    case kTokenExpList:
     case kTokenInitialArray:
     case kTokenReturn:
     case kTokenTypeId:

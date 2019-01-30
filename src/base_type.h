@@ -2,7 +2,6 @@
 #include "module.h"
 
 namespace kagami {
-  using ObjectArray = vector<Object>;
   template <class StringType>
   Message GetStringFamilySize(ObjectMap &p) {
     StringType &str = p.Cast<StringType>(kStrObject);

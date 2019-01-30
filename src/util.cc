@@ -65,10 +65,8 @@ namespace kagami {
       using T = pair<string, GenericToken>;
       static map<string, GenericToken> base = {
         T(kStrIf             ,kTokenIf),
-        T(kStrNop            ,kTokenNop),
         T(kStrFn             ,kTokenFn),
         T(kStrEnd            ,kTokenEnd),
-        T(kStrBind           ,kTokenBind),
         T(kStrElse           ,kTokenElse),
         T(kStrElif           ,kTokenElif),
         T(kStrWhile          ,kTokenWhile),

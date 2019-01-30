@@ -82,7 +82,8 @@ namespace kagami {
       type(kRequestNull) {}
   };
 
-  using Command = pair<Request, deque<Argument>>;
+  using ArgumentList = deque <Argument>;
+  using Command = pair<Request, ArgumentList>;
 
   class IR {
   private:
