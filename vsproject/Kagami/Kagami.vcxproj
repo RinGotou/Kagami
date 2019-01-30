@@ -35,16 +35,16 @@
     <ClInclude Include="..\..\src\window.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\analyzer.cpp" />
-    <ClCompile Include="..\..\src\base_type.cpp" />
-    <ClCompile Include="..\..\src\component.cpp" />
-    <ClCompile Include="..\..\src\kagami.cpp" />
-    <ClCompile Include="..\..\src\management.cpp" />
-    <ClCompile Include="..\..\src\object.cpp" />
-    <ClCompile Include="..\..\src\module.cpp" />
-    <ClCompile Include="..\..\src\trace.cpp" />
-    <ClCompile Include="..\..\src\util.cpp" />
-    <ClCompile Include="..\..\src\window.cpp" />
+    <ClCompile Include="..\..\src\analyzer.cc" />
+    <ClCompile Include="..\..\src\base_type.cc" />
+    <ClCompile Include="..\..\src\component.cc" />
+    <ClCompile Include="..\..\src\kagami.cc" />
+    <ClCompile Include="..\..\src\management.cc" />
+    <ClCompile Include="..\..\src\object.cc" />
+    <ClCompile Include="..\..\src\module.cc" />
+    <ClCompile Include="..\..\src\trace.cc" />
+    <ClCompile Include="..\..\src\util.cc" />
+    <ClCompile Include="..\..\src\window.cc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

@@ -228,7 +228,7 @@ namespace kagami {
     deque<Argument> arguments;
     size_t idx = 0, limit = 0;
 
-    bool is_bin_operator = util::IsOperatorToken(blk->symbol.back().head_gen);
+    bool is_bin_operator = util::IsOperatorToken(blk->symbol.back().head_command);
     bool reversed = (is_bin_operator && blk->need_reversing);
 
     if (is_bin_operator) limit = 2;
@@ -246,7 +246,7 @@ namespace kagami {
 
     if (!blk->args.empty()
       && blk->args.back().IsPlaceholder()
-      && !util::IsOperatorToken(blk->symbol.back().head_gen)) {
+      && !util::IsOperatorToken(blk->symbol.back().head_command)) {
       
       blk->args.pop_back();
     }
@@ -299,7 +299,7 @@ namespace kagami {
     if (result) {
       if (blk->need_reversing) blk->need_reversing = false;
 
-      if (compare(symbol.back().head_reg, { "(","[","{" })) {
+      if (compare(symbol.back().head_interface, { "(","[","{" })) {
         symbol.pop_back();
       }
 
@@ -445,11 +445,11 @@ namespace kagami {
       blk->symbol.push_back(request);
     }
     else if (currentPriority < blk->symbol.back().priority
-      && util::IsOperatorToken(blk->symbol.back().head_gen)) {
+      && util::IsOperatorToken(blk->symbol.back().head_command)) {
       auto j = blk->symbol.size() - 1;
       auto k = blk->args.size();
 
-      while (!compare(blk->symbol[j].head_reg, { "(","[","{" })
+      while (!compare(blk->symbol[j].head_interface, { "(","[","{" })
         && (currentPriority < blk->symbol[j].priority)) {
 
         k == blk->args.size() ? k -= 2 : k -= 1;
@@ -469,15 +469,15 @@ namespace kagami {
   void Analyzer::FinalProcessing(AnalyzerWorkBlock *blk) {
     bool checked = false;
     while (!blk->symbol.empty()) {
-      if (blk->symbol.back().head_reg == "(") {
+      if (blk->symbol.back().head_interface == "(") {
         error_string_ = "Right bracket is missing";
         health_ = false;
         break;
       }
 
-      auto firstEnum = blk->symbol.back().head_gen;
+      auto firstEnum = blk->symbol.back().head_command;
       if (blk->symbol.size() > 1 && util::IsOperatorToken(firstEnum)) {
-        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)) {
+        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_command)) {
           if (checked) {
             checked = false;
           }
@@ -489,7 +489,7 @@ namespace kagami {
         }
       }
 
-      if (!util::IsOperatorToken(blk->symbol.back().head_gen)) {
+      if (!util::IsOperatorToken(blk->symbol.back().head_command)) {
         blk->need_reversing = false;
       }
 
@@ -499,17 +499,17 @@ namespace kagami {
 
   bool Analyzer::CleanupStack(AnalyzerWorkBlock *blk) {
     string top_token = blk->symbol.empty()? "(" :
-      blk->symbol.back().head_reg;
+      blk->symbol.back().head_interface;
     bool checked = false;
     bool result = true;
 
     while (!blk->symbol.empty() && !compare(top_token, { "{","[","(" })
-      && blk->symbol.back().head_gen != kTokenBind) {
+      && blk->symbol.back().head_command != kTokenBind) {
 
-      auto first_token = blk->symbol.back().head_gen;
+      auto first_token = blk->symbol.back().head_command;
 
       if (util::IsOperatorToken(first_token)) {
-        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_gen)) {
+        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_command)) {
           if (checked) {
             checked = false;
           }
@@ -523,7 +523,7 @@ namespace kagami {
 
       result = InstructionFilling(blk);
       if (!result) break;
-      top_token = blk->symbol.back().head_reg;
+      top_token = blk->symbol.back().head_interface;
     }
 
     return result;

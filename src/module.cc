@@ -633,7 +633,7 @@ namespace kagami {
   bool Module::IsBlankStr(string target) {
     if (target.empty() || target.size() == 0) return true;
     for (const auto unit : target) {
-      if (unit != '\n' && unit != ' ' && unit != '\t' && unit != '\r') {
+      if (!compare(unit, { '\n',' ','\t','\r' })) {
         return false;
       }
     }
@@ -655,9 +655,9 @@ namespace kagami {
       auto &request = action_base.at(idx).first;
       auto &args = action_base.at(idx).second;
 
-      if (request.type == kRequestCommand && CheckGenericRequests(request.head_gen)) {
-        (request.head_reg == name && idx == action_base.size() - 2
-          && action_base.back().first.head_gen == kTokenReturn) ?
+      if (request.type == kRequestCommand && CheckGenericRequests(request.head_command)) {
+        (request.head_interface == name && idx == action_base.size() - 2
+          && action_base.back().first.head_command == kTokenReturn) ?
           worker->tail_recursion = true :
           worker->tail_recursion = false;
 
@@ -669,14 +669,14 @@ namespace kagami {
           worker->msg = Message();
         }
       }
-      else if (request.type == kRequestInterface || (request.type == kRequestCommand && !CheckGenericRequests(request.head_gen))) {
+      else if (request.type == kRequestInterface || (request.type == kRequestCommand && !CheckGenericRequests(request.head_command))) {
         Interface interface;
         string type_id, value;
-        is_operator_token = util::IsOperatorToken(request.head_gen);
+        is_operator_token = util::IsOperatorToken(request.head_command);
 
         if (!preprocessing && worker->tail_recursion) {
           worker->tail_recursion = (
-            request.head_reg == name
+            request.head_interface == name
             && idx == action_base.size() - 1
             && blk->last_index
             && !compare(name, { "", "__null__" })
@@ -685,17 +685,17 @@ namespace kagami {
 
         switch (request.type) {
         case kRequestCommand:
-          interface = management::GetGenericInterface(request.head_gen);
+          interface = management::GetGenericInterface(request.head_command);
           break;
         case kRequestInterface:
           if (request.domain.type != kArgumentNull) {
             Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
-            interface = management::Order(request.head_reg, type_id);
+            interface = management::Order(request.head_interface, type_id);
             obj_map.insert(NamedObject(kStrObject, domain_obj));
           }
           else {
-            interface = management::Order(request.head_reg);
+            interface = management::Order(request.head_interface);
           }
           break;
         default:
@@ -706,7 +706,7 @@ namespace kagami {
           switch (request.type) {
           case kRequestInterface:
             msg = Message(kCodeIllegalCall,
-              "Function is not found - " + request.head_reg,
+              "Function is not found - " + request.head_interface,
               kStateError);
             break;
           case kRequestCommand:
@@ -853,36 +853,34 @@ namespace kagami {
     }
   }
 
-  bool Module::PredefinedMessage(Message &result, size_t mode, Token token) {
+  bool Module::PredefinedMessage(size_t mode, Token token) {
     bool judged = false;
     GenericToken gen_token = util::GetGenericToken(token.first);
 
     switch (mode) {
     case kModeNextCondition:
       if (management::HasTailTokenRequest(gen_token)) {
-        result = Message(kStrTrue);
         judged = true;
       }
-      else if (gen_token != kTokenElse && gen_token != kTokenEnd && gen_token != kTokenElif) {
-        result = Message();
+      else if (!compare(gen_token, { kTokenElse, kTokenEnd,kTokenElif })) {
         judged = true;
       }
+
       break;
     case kModeCycleJump:
-      if (gen_token != kTokenEnd && gen_token != kTokenIf && gen_token != kTokenWhile) {
-        result = Message();
+      if (!compare(gen_token, { kTokenEnd,kTokenIf,kTokenWhile })) {
         judged = true;
       }
+
       break;
     case kModeCaseJump:
       if (management::HasTailTokenRequest(gen_token)) {
-        result = Message();
         judged = true;
       }
-      else if (gen_token != kTokenWhen && gen_token != kTokenEnd && gen_token != kTokenElse) {
-        result = Message();
+      else if (!compare(gen_token, { kTokenWhen,kTokenEnd,kTokenElse })) {
         judged = true;
       }
+
       break;
     default:
       break;
@@ -937,6 +935,48 @@ namespace kagami {
     }
 
     return result;
+  }
+
+  void Module::CallMachineFunction(StateCode code, string detail, MachCtlBlk *blk) {
+    switch (code) {
+    case kCodeContinue:
+      blk->Continue();
+      break;
+    case kCodeBreak:
+      blk->Break();
+      break;
+    case kCodeConditionRoot:
+      blk->ConditionRoot(GetBooleanValue(detail));
+      break;
+    case kCodeConditionBranch:
+      if (blk->nest_head_count > 0) break;
+      blk->ConditionBranch(GetBooleanValue(detail));
+      break;
+    case kCodeConditionLeaf:
+      if (blk->nest_head_count > 0) break;
+      health_ = blk->ConditionLeaf();
+      break;
+    case kCodeCase:
+      blk->Case();
+      break;
+    case kCodeWhen:
+      blk->When(GetBooleanValue(detail));
+      break;
+    case kCodeHeadSign:
+      blk->LoopHead(GetBooleanValue(detail));
+      break;
+    case kCodeHeadPlaceholder:
+      blk->nest_head_count++;
+      break;
+    case kCodeTailSign:
+      if (blk->nest_head_count > 0) {
+        blk->nest_head_count--;
+        break;
+      }
+      blk->End();
+      break;
+    default:break;
+    }
   }
 
   void Module::Nop(IRWorker *worker, deque<Argument> args) {
@@ -1252,7 +1292,7 @@ namespace kagami {
   }
 
   bool Module::GenericRequests(IRWorker *worker, Request &request, deque<Argument> &args) {
-    auto &token = request.head_gen;
+    auto &token = request.head_command;
     bool result = true;
 
     switch (token) {
@@ -1372,77 +1412,41 @@ namespace kagami {
       blk->last_index = (blk->current == storage_.size() - 1);
       ir = &storage_[blk->current];
 
-      judged = PredefinedMessage(result, blk->mode, ir->GetMainToken());
+      judged = PredefinedMessage(blk->mode, ir->GetMainToken());
       
-      if (!judged) result = IRProcessing(*ir, name, blk);
+      if (!judged) {
+        result = IRProcessing(*ir, name, blk);
 
-      switch (result.GetLevel()) {
-      case kStateError:
-        health_ = false;
-        trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
-        continue;
-        break;
-      case kStateWarning:
-        trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
-        break;
-      default:break;
-      }
+        switch (result.GetLevel()) {
+        case kStateError:
+          health_ = false;
+          trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
+          continue;
+          break;
+        case kStateWarning:
+          trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
+          break;
+        default:break;
+        }
 
-      const auto code  = result.GetCode();
-      const auto detail = result.GetDetail();
+        const auto code = result.GetCode();
+        const auto detail = result.GetDetail();
 
-      if (blk->tail_recursion) {
-        TailRecursionActions(blk, name);
-        continue;
-      }
+        if (blk->tail_recursion) {
+          TailRecursionActions(blk, name);
+          continue;
+        }
 
-      if (code == kCodeReturn) {
-        break;
-      }
-
-      switch (code) {
-      case kCodeContinue:
-        blk->Continue();
-        break;
-      case kCodeBreak:
-        blk->Break();
-        break;
-      case kCodeConditionRoot:
-        blk->ConditionRoot(GetBooleanValue(detail));
-        break;
-      case kCodeConditionBranch:
-        if (blk->nest_head_count > 0) break;
-        blk->ConditionBranch(GetBooleanValue(detail));
-        break;
-      case kCodeConditionLeaf:
-        if (blk->nest_head_count > 0) break;
-        health_ = blk->ConditionLeaf();
-        break;
-      case kCodeCase:
-        blk->Case();
-        break;
-      case kCodeWhen:
-        blk->When(GetBooleanValue(detail));
-        break;
-      case kCodeHeadSign:
-        blk->LoopHead(GetBooleanValue(detail));
-        break;
-      case kCodeHeadPlaceholder:
-        blk->nest_head_count++;
-        break;
-      case kCodeTailSign:
-        if (blk->nest_head_count > 0) {
-          blk->nest_head_count--;
+        if (code == kCodeReturn) {
           break;
         }
-        blk->End();
-        break;
-      default:break;
+
+        CallMachineFunction(code, detail, blk);
+
+        if (blk->runtime_error) break;
       }
 
-      if (blk->runtime_error) break;
-
-      ++blk->current;
+      blk->current += 1;
       if (judged) judged = false;
     }
 

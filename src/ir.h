@@ -55,29 +55,29 @@ namespace kagami {
   class Request {
   public:
     int priority;
-    GenericToken head_gen;
-    string head_reg;
+    GenericToken head_command;
+    string head_interface;
     Argument domain;
     RequestType type;
 
     Request(GenericToken token) :
       priority(4),
-      head_gen(token),
-      head_reg(),
+      head_command(token),
+      head_interface(),
       domain(),
       type(kRequestCommand) {}
 
     Request(string token, bool place_holder = false) :
       priority(4),
-      head_gen(kTokenNull),
-      head_reg(token),
+      head_command(kTokenNull),
+      head_interface(token),
       domain(),
       type(place_holder ? kRequestNull : kRequestInterface) {}
 
     Request() :
       priority(4),
-      head_gen(kTokenNull),
-      head_reg(),
+      head_command(kTokenNull),
+      head_interface(),
       domain(),
       type(kRequestNull) {}
   };

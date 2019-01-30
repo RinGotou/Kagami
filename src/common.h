@@ -260,7 +260,7 @@ namespace kagami {
     kStrObject         = "__object";
 
   template <class Tx, class Ty>
-  bool compare(Tx lhs, const std::initializer_list<Ty> &&rhs) {
+  inline bool compare(Tx lhs, const std::initializer_list<Ty> &&rhs) {
     bool result = false;
     for (const auto &unit : rhs) {
       if (lhs == unit) result = true;
@@ -269,7 +269,7 @@ namespace kagami {
   }
 
   template <class T>
-  bool find_in_vector(T t, vector<T> vec) {
+  inline bool find_in_vector(T t, vector<T> vec) {
     for (auto &unit : vec) {
       if (t == unit) {
         return true;

@@ -59,34 +59,34 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\component.cpp">
+    <ClCompile Include="..\..\src\analyzer.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\kagami.cpp">
+    <ClCompile Include="..\..\src\base_type.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\object.cpp">
+    <ClCompile Include="..\..\src\component.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\trace.cpp">
+    <ClCompile Include="..\..\src\kagami.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\base_type.cpp">
+    <ClCompile Include="..\..\src\management.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\window.cpp">
+    <ClCompile Include="..\..\src\module.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\analyzer.cpp">
+    <ClCompile Include="..\..\src\object.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\util.cpp">
+    <ClCompile Include="..\..\src\trace.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\management.cpp">
+    <ClCompile Include="..\..\src\util.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\module.cpp">
+    <ClCompile Include="..\..\src\window.cc">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
