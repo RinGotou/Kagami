@@ -6,7 +6,7 @@
 
 #define OBJECT_ASSERT(MAP,ITEM,TYPE)               \
   if (!MAP.CheckTypeId(ITEM,TYPE))                 \
-    return Message(kCodeIllegalParam,               \
+    return Message(kCodeIllegalParam,              \
     "Expected object type - " + TYPE + ".",        \
     kStateError);
 
@@ -67,9 +67,9 @@ namespace kagami {
 
     void Case();
     void When(bool value);
-    void ConditionRoot(bool value);
-    void ConditionBranch(bool value);
-    bool ConditionLeaf();
+    void ConditionIf(bool value);
+    void ConditionElif(bool value);
+    bool ConditionElse();
     void LoopHead(bool value);
     void End();
     void Continue();
@@ -78,12 +78,6 @@ namespace kagami {
   };
 
   class IRWorker {
-  private:
-    void MakeCode(StateCode code) {
-      deliver = true;
-      msg = Message(code, "");
-    }
-
   public:
     string error_string;
     bool error_returning,
@@ -107,13 +101,29 @@ namespace kagami {
       tail_recursion(false),
       msg() {}
 
+    void MakeCode(StateCode code) {
+      deliver = true;
+      msg = Message(code, "");
+    }
+
     Object MakeObject(Argument &arg, bool checking = false);
     void Assembling_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Assembling_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Assembling(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Reset();
 
-    
+    bool Bind(ArgumentList args);
+    bool ExpList(ArgumentList args);
+    bool InitArray(ArgumentList args);
+    bool ReturnOperator(ArgumentList args);
+    bool GetTypeId(ArgumentList args);
+    bool GetMethods(ArgumentList args);
+    bool Exist(ArgumentList args);
+    bool Fn(ArgumentList args);
+    bool Case(ArgumentList args);
+    bool When(ArgumentList args);
+    bool DomainAssert(ArgumentList args, bool returning);
+    bool ConditionAndLoop(ArgumentList args, StateCode code);
   };
 
   class IRMaker {
@@ -130,6 +140,7 @@ namespace kagami {
     vector<IR> storage_;
     bool health_, is_main_;
 
+  private:
     void ResetContainer(string funcId);
     void MakeFunction(size_t start, size_t end, vector<string> &defHead);
     static bool IsBlankStr(string target);
@@ -139,29 +150,9 @@ namespace kagami {
     bool PredefinedMessage(size_t mode, Token token);
     void TailRecursionActions(MachCtlBlk *blk, string &name);
     void CallMachineFunction(StateCode code, string detail, MachCtlBlk *blk);
-
-    //Command Functions
-    bool Bind(IRWorker *worker, ArgumentList args);
-    void ExpList(IRWorker *worker, ArgumentList args);        
-    void InitArray(IRWorker *worker, ArgumentList args); 
-    void ReturnOperator(IRWorker *worker, ArgumentList args); 
-    bool GetTypeId(IRWorker *worker, ArgumentList args);      
-    bool GetMethods(IRWorker *worker, ArgumentList args);     
-    bool Exist(IRWorker *worker, ArgumentList args);          
-    bool Fn(IRWorker *worker, ArgumentList args);     
-    bool Case(IRWorker *worker, ArgumentList args);
-    bool When(IRWorker *worker, ArgumentList args);
-    bool DomainAssert(IRWorker *worker, ArgumentList args, bool returning);
-    void Quit(IRWorker *worker);
-    void End(IRWorker *worker);
-    void Continue(IRWorker *worker);
-    void Break(IRWorker *worker);
-    void Else(IRWorker *worker);
-    bool ConditionAndLoop(IRWorker *worker, ArgumentList args, StateCode code);
-
-    //Command Management
     bool GenericRequests(IRWorker *worker, Request &Request, ArgumentList &args);
     bool CheckGenericRequests(GenericToken token);
+
   public:
     Module() : 
       health_(false), 
@@ -240,7 +231,7 @@ namespace kagami {
   bool IsStringObject(Object &obj);
   Object GetFunctionObject(string id, string domain);
   shared_ptr<void> FakeCopy(shared_ptr<void> target);
-  string RealString(const string &src);
+  string ParseRawString(const string &src);
   bool IsStringFamily(Object &obj);
   void CopyObject(Object &dest, Object &src);
 }

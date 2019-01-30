@@ -94,7 +94,7 @@ namespace kagami {
       return string().append("'").append(1, target).append("'");
     };
 
-    string data = RealString(p.Cast<string>(kStrObject));
+    string data = ParseRawString(p.Cast<string>(kStrObject));
     size_t size = data.size();
 
     CONDITION_ASSERT(idx < int(size - 1), "Subscript is out of range.");
@@ -103,14 +103,14 @@ namespace kagami {
   }
 
   Message RawStringGetSize(ObjectMap &p) {
-    auto str = RealString(p.Cast<string>(kStrObject));
+    auto str = ParseRawString(p.Cast<string>(kStrObject));
     return Message(to_string(str.size()));
   }
 
   Message RawStringPrint(ObjectMap &p) {
     bool doNotWrap = (p.Search("not_wrap"));
     
-    auto data = RealString(p.Cast<string>(kStrObject));
+    auto data = ParseRawString(p.Cast<string>(kStrObject));
     std::cout << data;
     if (!doNotWrap) std::cout << std::endl;
     
@@ -138,7 +138,7 @@ namespace kagami {
         .SetConstructorFlag();
     }
     else {
-      string output = RealString(obj.Cast<string>());
+      string output = ParseRawString(obj.Cast<string>());
 
       base.ManageContent(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
@@ -152,7 +152,7 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(p["path"]), 
       "Illegal path.");
 
-    string path = RealString(p.Cast<string>("path"));
+    string path = ParseRawString(p.Cast<string>("path"));
 
     shared_ptr<ifstream> ifs = 
       make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
@@ -186,8 +186,8 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(p["mode"]), 
       "Illegal mode option.");
 
-    string path = RealString(p.Cast<string>("path"));
-    string mode = RealString(p.Cast<string>("mode"));
+    string path = ParseRawString(p.Cast<string>("path"));
+    string mode = ParseRawString(p.Cast<string>("mode"));
 
     shared_ptr<ofstream> ofs;
     bool append = (mode == "append");
@@ -212,7 +212,7 @@ namespace kagami {
     ASSERT_RETURN(ofs.good(), kStrFalse);
 
     if (p.CheckTypeId("str",kTypeIdRawString)) {
-      string output = RealString(p.Cast<string>("str"));
+      string output = ParseRawString(p.Cast<string>("str"));
       ofs << output;
     }
     else if (p.CheckTypeId("str",kTypeIdString)) {
@@ -231,7 +231,7 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(p["pattern"]), 
       "Illegal pattern string.");
 
-    string pattern_string = RealString(p.Cast<string>("pattern"));
+    string pattern_string = ParseRawString(p.Cast<string>("pattern"));
     shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
 
     return Message().SetObject(Object(reg, kTypeIdRegex));
@@ -241,7 +241,7 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(p["str"]), 
       "Illegal target string.");
 
-    string str = RealString(p.Cast<string>("str"));
+    string str = ParseRawString(p.Cast<string>("str"));
     auto &pat = p.Cast<regex>(kStrObject);
 
     return Message(util::MakeBoolean(regex_match(str, pat)));
@@ -254,7 +254,7 @@ namespace kagami {
     CONDITION_ASSERT(IsStringObject(obj), 
       "String constructor can't accept this object.");
 
-    string output = RealString(obj.Cast<string>());
+    string output = ParseRawString(obj.Cast<string>());
     wstring wstr = s2ws(output);
 
     return Message()

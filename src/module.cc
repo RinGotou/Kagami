@@ -5,7 +5,7 @@ namespace kagami {
     return target;
   }
 
-  string RealString(const string &src) {
+  string ParseRawString(const string &src) {
     string result = src;
     if (util::IsString(result)) result = util::GetRawString(result);
     return result;
@@ -185,14 +185,14 @@ namespace kagami {
 
   }
 
-  void MachCtlBlk::ConditionRoot(bool value) {
+  void MachCtlBlk::ConditionIf(bool value) {
     mode_stack.push(mode);
     management::CreateContainer();
     mode = value ? kModeCondition : kModeNextCondition;
     condition_stack.push(value);
   }
 
-  void MachCtlBlk::ConditionBranch(bool value) {
+  void MachCtlBlk::ConditionElif(bool value) {
     if (!condition_stack.empty()) {
       if (condition_stack.top() == false && mode == kModeNextCondition) {
         management::CreateContainer();
@@ -205,7 +205,7 @@ namespace kagami {
     }
   }
 
-  bool MachCtlBlk::ConditionLeaf() {
+  bool MachCtlBlk::ConditionElse() {
     bool result = true;
     if (!condition_stack.empty()) {
       if (condition_stack.top() == true) {
@@ -541,6 +541,339 @@ namespace kagami {
     while (!returning_base.empty()) returning_base.pop();
   }
 
+  bool IRWorker::Bind(ArgumentList args) {
+    bool result = true;
+    auto src = MakeObject(args[1]);
+    auto dest = MakeObject(args[0]);
+
+    if (dest.IsRef()) {
+      CopyObject(dest, src);
+    }
+    else {
+      string id = dest.Cast<string>();
+
+      if (util::GetTokenType(id) == kTokenTypeGeneric) {
+        ObjectPointer real_dest = management::FindObject(id);
+
+        if (real_dest != nullptr) {
+          CopyObject(*real_dest, src);
+        }
+        else {
+          Object obj(management::type::GetObjectCopy(src), src.GetTypeId());
+          ObjectPointer result = management::CreateObject(id, obj);
+          if (result == nullptr) {
+            error_string = "Object cration is failed.";
+            result = false;
+          }
+        }
+      }
+      else {
+        error_string = "Invalid object id - " + id;
+        result = false;
+      }
+    }
+
+    return result;
+  }
+
+  bool IRWorker::ExpList(ArgumentList args) {
+    if (!args.empty()) {
+      auto obj = MakeObject(args.back());
+      returning_base.push(obj);
+    }
+
+    return true;
+  }
+
+  bool IRWorker::InitArray(ArgumentList args) {
+    shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+
+    if (!args.empty()) {
+      for (auto it = args.begin(); it != args.end(); ++it) {
+        base->emplace_back(MakeObject(*it));
+      }
+    }
+
+    Object obj(base, kTypeIdArray);
+    obj.SetConstructorFlag();
+    returning_base.push(obj);
+  
+    return true;
+  }
+
+  bool IRWorker::ReturnOperator(ArgumentList args) {
+    auto &container = management::GetCurrentContainer();
+    if (args.size() > 1) {
+      shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+
+      for (auto it = args.begin(); it != args.end(); ++it) {
+        base->emplace_back(MakeObject(*it));
+      }
+
+      Object obj(base, kTypeIdArray);
+      container.Add(kStrRetValue, Object(obj.Get(), obj.GetTypeId()));
+    }
+    else if (args.size() == 1) {
+      auto obj = MakeObject(args[0]);
+
+      container.Add(kStrRetValue, Object(obj.Get(), obj.GetTypeId()));
+    }
+    msg = Message(kCodeReturn, "");
+    deliver = true;
+
+    return true;
+  }
+
+  bool IRWorker::GetTypeId(ArgumentList args) {
+    bool result = true;
+
+    if (args.size() > 1) {
+      shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+
+      for (auto it = args.begin(); it != args.end(); ++it) {
+        auto obj = MakeObject(*it);
+        base->emplace_back(Object(obj.GetTypeId()));
+      }
+
+      Object ret_obj(base, kTypeIdArray);
+      ret_obj.SetConstructorFlag();
+      returning_base.push(ret_obj);
+    }
+    else if (args.size() == 1) {
+      auto obj = MakeObject(args[0]);
+      returning_base.push(Object(obj.GetTypeId()));
+    }
+    else {
+      error_string = "Empty argument list.";
+      result = false;
+    }
+
+    return result;
+  }
+
+  bool IRWorker::GetMethods(ArgumentList args) {
+    bool result = true;
+
+    if (!args.empty()) {
+      Object obj = MakeObject(args[0]);
+      vector<string> methods = management::type::GetMethods(obj.GetTypeId());
+      shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+
+      for (const auto &unit : methods) {
+        base->emplace_back(Object(make_shared<string>(unit), kTypeIdString));
+      }
+
+      Object ret_obj(base, kTypeIdArray);
+      ret_obj.SetConstructorFlag();
+      returning_base.push(ret_obj);
+    }
+    else {
+      error_string = "Empty argument list.";
+      result = false;
+    }
+
+    return result;
+  }
+
+  bool IRWorker::Exist(ArgumentList args) {
+    bool result = true;
+
+    if (args.size() == 2) {
+      Object obj = MakeObject(args[0]);
+      Object str_obj = MakeObject(args[1]);
+      string target = ParseRawString(str_obj.Cast<string>());
+      vector<string> methods = management::type::GetMethods(obj.GetTypeId());
+      Object ret_obj(util::MakeBoolean(find_in_vector<string>(target, methods)));
+
+      returning_base.push(ret_obj);
+    }
+    else if (args.size() > 2) {
+      error_string = "Too many arguments.";
+      result = false;
+    }
+    else if (args.size() < 2) {
+      error_string = "Too few arguments.";
+      result = false;
+    }
+
+    return result;
+  }
+
+  bool IRWorker::Fn(ArgumentList args) {
+    bool result = true;
+
+    if (!args.empty()) {
+      vector<string> def_head;
+
+      for (auto it = args.begin(); it != args.end(); ++it) {
+        def_head.emplace_back(it->data);
+      }
+
+      string def_head_string = util::CombineStringVector(def_head);
+      deliver = true;
+      msg = Message(kCodeDefineSign, def_head_string);
+    }
+    else {
+      error_string = "Empty argument list.";
+      result = false;
+    }
+
+    return result;
+  }
+
+  bool IRWorker::Case(ArgumentList args) {
+    bool result = true;
+
+    if (!args.empty()) {
+      Object obj = MakeObject(args[0]);
+
+      if (!IsStringObject(obj)) {
+        result = false;
+        error_string = "Case-when is not supported for this object.";
+      }
+      else {
+        auto copy = management::type::GetObjectCopy(obj);
+        Object base(copy, obj.GetTypeId());
+        management::CreateObject("__case", base);
+        deliver = true;
+        msg = Message().SetCode(kCodeCase);
+      }
+    }
+    else {
+      result = false;
+      error_string = "Empty argument list.";
+    }
+
+    return result;
+  }
+
+  // TODO: add compare method support
+  bool IRWorker::When(ArgumentList args) {
+    bool result = true;
+
+    if (!args.empty()) {
+      ObjectPointer case_head = management::FindObject("__case");
+      string case_content = case_head->Cast<string>();
+      bool state = true, found = false;
+
+      for (auto it = args.begin(); it != args.end(); ++it) {
+        auto obj = MakeObject(*it);
+
+        if (!IsStringObject(obj)) {
+          state = false;
+          break;
+        }
+
+        if (case_content == obj.Cast<string>()) {
+          found = true;
+          break;
+        }
+      }
+
+      if (state) {
+        deliver = true;
+        msg = found ?
+          Message(kCodeWhen, kStrTrue) :
+          Message(kCodeWhen, kStrFalse);
+      }
+      else {
+        error_string = "Case-when is not supported for non-string object.";
+        result = false;
+      }
+    }
+    else {
+      error_string = "Empty argument list.";
+      result = false;
+    }
+
+    return result;
+  }
+
+  bool IRWorker::DomainAssert(ArgumentList args, bool returning) {
+    Object obj = MakeObject(args[0]);
+    Object id_obj = MakeObject(args[1]);
+    string id = id_obj.Cast<string>();
+    vector<string> methods = management::type::GetMethods(obj.GetTypeId());
+    bool result = find_in_vector<string>(id, methods);
+
+    if (!result) {
+      error_string = "Method/Member is not found. - " + id;
+      return result;
+    }
+
+    ObjectPointer ret_ptr = management::FindObject(id);
+
+    if (ret_ptr != nullptr) {
+      if (returning) returning_base.push(*ret_ptr);
+    }
+    else {
+      Object ent_obj;
+      auto interface = management::Order(id, obj.GetTypeId());
+      if (interface.Good()) {
+        if (returning) {
+          ent_obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
+          returning_base.push(ent_obj);
+        }
+      }
+      else {
+        result = false;
+        error_string = "Method/Member is not found. - " + id;
+      }
+    }
+
+    return result;
+  }
+
+  bool IRWorker::ConditionAndLoop(ArgumentList args, StateCode code) {
+    bool result = true;
+    if (args.size() == 1) {
+      Object obj = MakeObject(args[0]);
+
+      deliver = true;
+
+      if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdNull) {
+        msg = Message(code, kStrTrue);
+      }
+      else {
+        string state_str = obj.Cast<string>();
+
+        if (compare(state_str, { kStrTrue,kStrFalse })) {
+          msg = Message(code, state_str);
+        }
+        else {
+          auto type = util::GetTokenType(state_str);
+
+          bool state = false;
+          switch (type) {
+          case kTokenTypeInt:
+            state = (stoi(state_str) != 0);
+            break;
+          case kTokenTypeFloat:
+            state = (stod(state_str) != 0.0);
+            break;
+          case kTokenTypeString:
+            state = (ParseRawString(state_str).size() > 0);
+            break;
+          default:
+            break;
+          }
+
+          msg = Message(code, state ? kStrTrue : kStrFalse);
+        }
+      }
+    }
+    else if (args.empty()) {
+      error_string = "Too few arguments.";
+      result = false;
+    }
+    else {
+      error_string = "Too many arguments.";
+      result = false;
+    }
+
+    return result;
+  }
+
   IRMaker::IRMaker(const char *path) : health(true) {
     DEBUG_EVENT("IR Generating start");
 
@@ -685,9 +1018,11 @@ namespace kagami {
 
         switch (request.type) {
         case kRequestCommand:
+          DEBUG_EVENT("(Request)Command code:" + to_string(request.head_command));
           interface = management::GetGenericInterface(request.head_command);
           break;
         case kRequestInterface:
+          DEBUG_EVENT("(Request)Interface id:" + request.head_interface);
           if (request.domain.type != kArgumentNull) {
             Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
@@ -902,40 +1237,6 @@ namespace kagami {
     ResetContainer(name);
   }
 
-  bool Module::Bind(IRWorker *worker, ArgumentList args) {
-    bool result = true;
-    auto src = worker->MakeObject(args[1]);
-    auto dest = worker->MakeObject(args[0]);
-
-    if (dest.IsRef()) {
-      CopyObject(dest, src);
-    }
-    else {
-      string id = dest.Cast<string>();
-
-      if (util::GetTokenType(id) == kTokenTypeGeneric) {
-        ObjectPointer real_dest = management::FindObject(id);
-
-        if (real_dest != nullptr) {
-          CopyObject(*real_dest, src);
-        }
-        else {
-          Object obj(management::type::GetObjectCopy(src), src.GetTypeId());
-          ObjectPointer result = management::CreateObject(id, obj);
-          if (result == nullptr) {
-            worker->error_string = "Object cration is failed.";
-            result = false;
-          }
-        }
-      }
-      else {
-        worker->error_string = "Invalid bind operation.";
-        result = false;
-      }
-    }
-
-    return result;
-  }
 
   void Module::CallMachineFunction(StateCode code, string detail, MachCtlBlk *blk) {
     switch (code) {
@@ -945,16 +1246,16 @@ namespace kagami {
     case kCodeBreak:
       blk->Break();
       break;
-    case kCodeConditionRoot:
-      blk->ConditionRoot(GetBooleanValue(detail));
+    case kCodeConditionIf:
+      blk->ConditionIf(GetBooleanValue(detail));
       break;
-    case kCodeConditionBranch:
+    case kCodeConditionElif:
       if (blk->nest_head_count > 0) break;
-      blk->ConditionBranch(GetBooleanValue(detail));
+      blk->ConditionElif(GetBooleanValue(detail));
       break;
-    case kCodeConditionLeaf:
+    case kCodeConditionElse:
       if (blk->nest_head_count > 0) break;
-      health_ = blk->ConditionLeaf();
+      health_ = blk->ConditionElse();
       break;
     case kCodeCase:
       blk->Case();
@@ -962,13 +1263,13 @@ namespace kagami {
     case kCodeWhen:
       blk->When(GetBooleanValue(detail));
       break;
-    case kCodeHeadSign:
+    case kCodeWhile:
       blk->LoopHead(GetBooleanValue(detail));
       break;
     case kCodeHeadPlaceholder:
       blk->nest_head_count++;
       break;
-    case kCodeTailSign:
+    case kCodeEnd:
       if (blk->nest_head_count > 0) {
         blk->nest_head_count--;
         break;
@@ -979,381 +1280,90 @@ namespace kagami {
     }
   }
 
-  void Module::ExpList(IRWorker *worker, ArgumentList args) {
-    if (!args.empty()) {
-      auto obj = worker->MakeObject(args.back());
-      worker->returning_base.push(obj);
-    }
-  }
-
-  void Module::InitArray(IRWorker *worker, ArgumentList args) {
-    shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
-    
-    if (!args.empty()) {
-      for (size_t idx = 0; idx < args.size(); idx += 1) {
-        base->emplace_back(worker->MakeObject(args[idx]));
-      }
-    }
-
-    Object obj(base, kTypeIdArray);
-    obj.SetConstructorFlag();
-    worker->returning_base.push(obj);
-  }
-
-  void Module::ReturnOperator(IRWorker *worker, ArgumentList args) {
-    auto &container = management::GetCurrentContainer();
-    if (args.size() > 1) {
-      shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
-      for (size_t idx = 0; idx < args.size(); idx += 1) {
-        base->emplace_back(worker->MakeObject(args[idx]));
-      }
-
-      Object obj(base, kTypeIdArray);
-      container.Add(kStrRetValue, Object(obj.Get(), obj.GetTypeId()));
-    }
-    else if (args.size() == 1) {
-      auto obj = worker->MakeObject(args[0]);
-
-      container.Add(kStrRetValue, Object(obj.Get(), obj.GetTypeId()));
-    }
-    worker->msg = Message(kCodeReturn, "");
-    worker->deliver = true;
-  }
-
-  bool Module::GetTypeId(IRWorker *worker, ArgumentList args) {
-    bool result = true;
-    
-    if (args.size() > 1) {
-      shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
-      for (size_t idx = 0; idx < args.size(); idx += 1) {
-        auto obj = worker->MakeObject(args[idx]);
-        Object value_obj(obj.GetTypeId());
-        base->emplace_back(value_obj);
-      }
-      Object ret_obj(base, kTypeIdArray);
-      ret_obj.SetConstructorFlag();
-      worker->returning_base.push(ret_obj);
-    }
-    else if (args.size() == 1){
-      auto obj = worker->MakeObject(args[0]);
-      Object value_obj(obj.GetTypeId());
-      worker->returning_base.push(value_obj);
-    }
-    else {
-      worker->error_string = "Empty argument list.";
-      result = false;
-    }
-
-    return result;
-  }
-
-  bool Module::GetMethods(IRWorker *worker, ArgumentList args) {
-    bool result = true;
-
-    if (!args.empty()) {
-      Object obj = worker->MakeObject(args[0]);
-      vector<string> methods = management::type::GetMethods(obj.GetTypeId());
-      shared_ptr<vector<Object>> base = make_shared<vector<Object>>();
-
-      for (const auto &unit : methods) {
-        base->emplace_back(Object(make_shared<string>(unit), kTypeIdString));
-      }
-
-      Object ret_obj(base, kTypeIdArray);
-      ret_obj.SetConstructorFlag();
-      worker->returning_base.push(ret_obj);
-    }
-    else {
-      worker->error_string = "Empty argument list.";
-      result = false;
-    }
-
-    return result;
-  }
-
-  bool Module::Exist(IRWorker *worker, ArgumentList args) {
-    bool result = true;
-
-    if (args.size() == 2) {
-      Object obj = worker->MakeObject(args[0]);
-      Object str_obj = worker->MakeObject(args[1]);
-      string target = RealString(str_obj.Cast<string>());
-      vector<string> methods = management::type::GetMethods(obj.GetTypeId());
-      Object ret_obj(util::MakeBoolean(find_in_vector<string>(target, methods)));
-
-      worker->returning_base.push(ret_obj);
-    }
-    else if (args.size() > 2) {
-      worker->error_string = "Too many arguments.";
-      result = false;
-    }
-    else if (args.size() < 2) {
-      worker->error_string = "Too few arguments.";
-      result = false;
-    }
-
-    return result;
-  }
-
-  bool Module::Fn(IRWorker *worker, ArgumentList args) {
-    bool result = true;
-
-    if (!args.empty()) {
-      vector<string> def_head;
-
-      for (size_t idx = 0; idx < args.size(); idx += 1) {
-        def_head.emplace_back(args[idx].data);
-      }
-
-      string def_head_string = util::CombineStringVector(def_head);
-      worker->deliver = true;
-      worker->msg = Message(kCodeDefineSign, def_head_string);
-    }
-    else {
-      worker->error_string = "Empty argument list.";
-      result = false;
-    }
-
-    return result;
-  }
-
-  bool Module::Case(IRWorker *worker, ArgumentList args) {
-    bool result = true;
-
-    if (!args.empty()) {
-      Object obj = worker->MakeObject(args[0]);
-
-      if (!IsStringObject(obj)) {
-        result = false;
-        worker->error_string = "Case-when is not supported for this object.";
-      }
-      else {
-        auto copy = management::type::GetObjectCopy(obj);
-        Object base(copy, obj.GetTypeId());
-        management::CreateObject("__case", base);
-        worker->deliver = true;
-        worker->msg = Message().SetCode(kCodeCase);
-      }
-    }
-    else {
-      result = false;
-      worker->error_string = "Empty argument list.";
-    }
-
-    return result;
-  }
-
-  bool Module::When(IRWorker *worker, ArgumentList args) {
-    bool result = true;
-
-    if (!args.empty()) {
-      ObjectPointer case_head = management::FindObject("__case");
-      string case_content = case_head->Cast<string>();
-      bool state = true, found = false;
-
-      for (size_t idx = 0; idx < args.size(); idx += 1) {
-        auto obj = worker->MakeObject(args[idx]);
-        if (!IsStringObject(obj)) {
-          state = false;
-          break;
-        }
-
-        if (case_content == obj.Cast<string>()) {
-          found = true;
-          break;
-        }
-      }
-
-      if (state) {
-        worker->deliver = true;
-        worker->msg = found ? 
-          Message(kCodeWhen, kStrTrue) :
-          Message(kCodeWhen, kStrFalse);
-      }
-      else {
-        worker->error_string = "Case-when is not supported for non-string object.";
-        result = false;
-      }
-    }
-    else {
-      worker->error_string = "Empty argument list.";
-      result = false;
-    }
-
-    return result;
-  }
-
-  bool Module::DomainAssert(IRWorker *worker, ArgumentList args, bool returning) {
-    Object obj = worker->MakeObject(args[0]);
-    Object id_obj = worker->MakeObject(args[1]);
-    string id = id_obj.Cast<string>();
-    vector<string> methods = management::type::GetMethods(obj.GetTypeId());
-    bool result = find_in_vector<string>(id, methods);
-
-    if (!result) {
-      worker->error_string = "Method/Member is not found. - " + id;
-      return result;
-    } 
-    
-    ObjectPointer ret_ptr = management::FindObject(id);
-    
-    if (ret_ptr != nullptr) {
-      if (returning) worker->returning_base.push(*ret_ptr);
-    }
-    else {
-      Object ent_obj;
-      auto interface = management::Order(id, obj.GetTypeId());
-      if (interface.Good()) {
-        if (returning) {
-          ent_obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
-          worker->returning_base.push(ent_obj);
-        }
-      }
-      else {
-        result = false;
-        worker->error_string = "Method/Member is not found. - " + id;
-      }
-    }
-
-    return result;
-  }
-
-  inline void MakeCode(StateCode code, IRWorker *worker) {
-    worker->deliver = true;
-    worker->msg = Message(code, "");
-  }
-
-  void Module::Quit(IRWorker *worker) {
-    MakeCode(kCodeQuit, worker);
-  }
-
-  void Module::End(IRWorker *worker) {
-    MakeCode(kCodeTailSign, worker);
-  }
-
-  void Module::Continue(IRWorker *worker) {
-    MakeCode(kCodeContinue, worker);
-  }
-
-  void Module::Break(IRWorker *worker) {
-    MakeCode(kCodeBreak, worker);
-  }
-
-  void Module::Else(IRWorker *worker) {
-    MakeCode(kCodeConditionLeaf, worker);
-  }
-
-  bool Module::ConditionAndLoop(IRWorker *worker, ArgumentList args, StateCode code) {
-    bool result = true;
-    if (args.size() == 1) {
-      Object obj = worker->MakeObject(args[0]);
-      worker->deliver = true;
-      if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdNull) {
-        worker->msg = Message(code, kStrTrue);
-      }
-      else {
-        string state_str = obj.Cast<string>();
-
-        if (state_str == kStrTrue || state_str == kStrFalse) {
-          worker->msg = Message(code, state_str);
-        }
-        else {
-          auto type = util::GetTokenType(state_str);
-
-          bool state = false;
-          switch (type) {
-          case kTokenTypeInt:
-            state = (stoi(state_str) != 0);
-            break;
-          case kTokenTypeFloat:
-            state = (stod(state_str) != 0.0);
-            break;
-          case kTokenTypeString:
-            state = (RealString(state_str).size() > 0);
-            break;
-          default:
-            break;
-          }
-
-          worker->msg = Message(code, state ? kStrTrue : kStrFalse);
-        }
-      }
-    }
-    else if (args.empty()) {
-      worker->error_string = "Too few arguments.";
-      result = false;
-    }
-    else {
-      worker->error_string = "Too many arguments.";
-      result = false;
-    }
-
-    return result;
-  }
-
   bool Module::GenericRequests(IRWorker *worker, Request &request, ArgumentList &args) {
     auto &token = request.head_command;
     bool result = true;
 
+    DEBUG_EVENT("(Request)Command Code:" + to_string(token));
+
     switch (token) {
     case kTokenBind:
-      result = Bind(worker, args);
+      result = worker->Bind(args);
       break;
+
     case kTokenExpList:
-      ExpList(worker, args);
+      result = worker->ExpList(args);
       break;
+
     case kTokenInitialArray:
-      InitArray(worker, args);
+      result = worker->InitArray(args);
       break;
+
     case kTokenReturn:
-      ReturnOperator(worker, args);
+      result = worker->ReturnOperator(args);
       break;
+
     case kTokenTypeId:
-      GetTypeId(worker, args);
+      result = worker->GetTypeId(args);
       break;
+
     case kTokenDir:
-      result = GetMethods(worker, args);
+      result = worker->GetMethods(args);
       break;
+
     case kTokenExist:
-      result = Exist(worker, args);
+      result = worker->Exist(args);
       break;
+
     case kTokenFn:
-      result = Fn(worker, args);
+      result = worker->Fn(args);
       break;
+
     case kTokenCase:
-      result = Case(worker, args);
+      result = worker->Case(args);
       break;
+
     case kTokenWhen:
-      result = When(worker, args);
+      result = worker->When(args);
       break;
+
     case kTokenAssert:
-      result = DomainAssert(worker, args, false);
-      break;
     case kTokenAssertR:
-      result = DomainAssert(worker, args, true);
+      result = worker->DomainAssert(args, token == kTokenAssertR);
+      break;
+
     case kTokenQuit:
-      Quit(worker);
+      worker->MakeCode(kCodeQuit);
       break;
+
     case kTokenEnd:
-      End(worker);
+      worker->MakeCode(kCodeEnd);
       break;
+
     case kTokenContinue:
-      Continue(worker);
+      worker->MakeCode(kCodeContinue);
       break;
+
     case kTokenBreak:
-      Break(worker);
+      worker->MakeCode(kCodeBreak);
       break;
+
     case kTokenElse:
-      Else(worker);
+      worker->MakeCode(kCodeConditionElse);
+      break;
+
     case kTokenIf:
-      result = ConditionAndLoop(worker, args, kCodeConditionRoot);
+      result = worker->ConditionAndLoop(args, kCodeConditionIf);
       break;
+
     case kTokenElif:
-      result = ConditionAndLoop(worker, args, kCodeConditionBranch);
+      result = worker->ConditionAndLoop(args, kCodeConditionElif);
       break;
+
     case kTokenWhile:
-      result = ConditionAndLoop(worker, args, kCodeHeadSign);
+      result = worker->ConditionAndLoop(args, kCodeWhile);
       break;
+
     default:
       break;
     }

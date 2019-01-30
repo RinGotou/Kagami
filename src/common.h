@@ -23,7 +23,7 @@
 //#define _DISABLE_SDL_
 
 //Switching Debugging Feature
-#define _DEBUG_
+//#define _DEBUG_
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -102,12 +102,12 @@ namespace kagami {
     kCodeNormalParam = 11,
     kCodeHeadPlaceholder = 10,
     kCodeReturn = 9,
-    kCodeConditionLeaf = 8,
-    kCodeConditionBranch = 7,
-    kCodeConditionRoot = 6,
+    kCodeConditionElse = 8,
+    kCodeConditionElif = 7,
+    kCodeConditionIf = 6,
     kCodeObject = 5,
-    kCodeTailSign = 4,
-    kCodeHeadSign = 3,
+    kCodeEnd = 4,
+    kCodeWhile = 3,
     kCodeQuit = 2,
     kCodeSuccess = 0,
     kCodeIllegalParam = -1,

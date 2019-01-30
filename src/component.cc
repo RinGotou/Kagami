@@ -23,7 +23,7 @@ namespace kagami {
     OBJECT_ASSERT(p, "object", kTypeIdRawString);
 
     string result;
-    string str = RealString(p.Cast<string>("object"));
+    string str = ParseRawString(p.Cast<string>("object"));
 
     switch (util::GetTokenType(str)) {
     case kTokenTypeBool:   result = "'boolean'"; break;
@@ -71,13 +71,14 @@ namespace kagami {
 
     string buf;
     std::getline(std::cin, buf);
+    DEBUG_EVENT("(Input Interface)Content:" + buf);
     return Message("'" + buf + "'");
   }
 
   Message Convert(ObjectMap &p) {
     OBJECT_ASSERT(p, "object", kTypeIdRawString);
 
-    string origin = RealString(p.Cast<string>("object"));
+    string origin = ParseRawString(p.Cast<string>("object"));
     auto type = util::GetTokenType(origin);
     string str;
 
