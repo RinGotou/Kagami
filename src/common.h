@@ -16,7 +16,6 @@
 #include <fstream>
 #include <ctime>
 #include <type_traits>
-#include "shio/src/shio.h"
 
 //if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
@@ -75,8 +74,6 @@ namespace kagami {
   using std::stof;
   using std::stod;
   using std::wstring;
-  using shio::any;
-  using shio::any_cast;
   using std::ostream;
 
   const string kInterpreterVersion  = "1.53";

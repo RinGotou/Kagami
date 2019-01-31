@@ -19,7 +19,7 @@ if(DEBUG)
 endif()
 
 file(GLOB PROJECT_SOURCES
-	${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/*.cc
 )
 
 #if(WIN32)
