@@ -129,6 +129,24 @@ namespace kagami {
         pkg.Print("[Script:" + path + "]");
       }
 
+      void InitPackage(unique_ptr<StreamPackage> &pkg, string path) {
+        if (path == "stdout") {
+          pkg = make_unique<StdoutPackage>();
+        }
+        else {
+          pkg = make_unique<FileStreamPackage>();
+        }
+
+        pkg->Init(path);
+
+        if (!pkg->Good()) {
+          PrintFileStreamError();
+          pkg->Destroy();
+          pkg.reset();
+          pkg = make_unique<StdoutPackage>();
+        }
+      }
+
     public:
       virtual void Inject(string, string) = 0;
       virtual void Init() = 0;
@@ -151,22 +169,7 @@ namespace kagami {
       }
 
       void Init() {
-        if (path_ == "stdout") {
-          stream_package_ = make_unique<StdoutPackage>();
-        }
-        else {
-          stream_package_ = make_unique<FileStreamPackage>();
-        }
-
-        stream_package_->Init(path_);
-
-        if (!stream_package_->Good()) {
-          PrintFileStreamError();
-          stream_package_->Destroy();
-          stream_package_.reset();
-          stream_package_ = make_unique<StdoutPackage>();
-        }
-
+        InitPackage(stream_package_, path_);
         PrintLogHeader(*stream_package_, script_path_);
       }
 
@@ -202,22 +205,8 @@ namespace kagami {
 
       void Final() {
         unique_ptr<StreamPackage> stream_package;
-        if (path_ == "stdout") {
-          stream_package = make_unique<StdoutPackage>();
-        }
-        else {
-          stream_package = make_unique<FileStreamPackage>();
-        }
 
-        stream_package->Init(path_);
-
-        if (!stream_package->Good()) {
-          PrintFileStreamError();
-          stream_package->Destroy();
-          stream_package.reset();
-          stream_package = make_unique<StdoutPackage>();
-        }
-
+        InitPackage(stream_package, path_);
         PrintLogHeader(*stream_package, script_path_);
 
         for (auto it = cache_.begin(); it != cache_.end(); ++it) {

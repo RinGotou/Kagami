@@ -181,7 +181,7 @@ namespace kagami {
     kTokenNull
   };
 
-  enum BasicToken {
+  enum Terminator {
     kBasicTokenAssign, 
     kBasicTokenComma, 
     kBasicTokenLeftSqrBracket, 

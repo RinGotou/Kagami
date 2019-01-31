@@ -243,6 +243,8 @@ namespace kagami {
   }
 
   void MachCtlBlk::LoopHead(bool value) {
+    DEBUG_EVENT("(MachCtlBlk)Loop Condition:" + util::MakeBoolean(value));
+
     if (cycle_nest.empty()) {
       mode_stack.push(mode);
       management::CreateContainer();
@@ -262,7 +264,7 @@ namespace kagami {
     }
     else {
       mode = kModeCycleJump;
-      if (cycle_tail.empty()) {
+      if (!cycle_tail.empty()) {
         current = cycle_tail.top();
       }
     }
@@ -402,7 +404,7 @@ namespace kagami {
         obj_domain = GetFunctionObject(arg.domain.data, kTypeIdNull);
         if (obj_domain.Get() == nullptr) {
           error_obj_checking = true;
-          error_string = "Object is not found - " + arg.data;
+          error_string = "(1)Object is not found - " + arg.data;
           state = false;
         }
       }
@@ -426,7 +428,7 @@ namespace kagami {
         obj = GetFunctionObject(arg.data, obj_domain.GetTypeId());
         if (obj.GetTypeId() == kTypeIdNull) {
           error_obj_checking = true;
-          error_string = "Object is not found - " + arg.data;
+          error_string = "(2)Object is not found - " + arg.data;
         }
       }
       break;
@@ -453,8 +455,6 @@ namespace kagami {
     auto ent_params = interface.GetParameters();
     auto va_arg_head = ent_params.back();
 
-    /* TODO:Reconstrction */
-    /* TODO:Make Array */
     deque<Object> temp;
 
     while (args.size() >= ent_params.size() - 1) {
@@ -462,7 +462,7 @@ namespace kagami {
       args.pop_back();
     }
 
-    shared_ptr<vector<Object>> va_base = make_shared<vector<Object>>();
+    shared_ptr<ObjectArray> va_base = make_shared<ObjectArray>();
 
     for (auto it = temp.begin(); it != temp.end(); ++it) {
       va_base->emplace_back(*it);
@@ -551,6 +551,8 @@ namespace kagami {
     }
     else {
       string id = dest.Cast<string>();
+
+      DEBUG_EVENT("(IRWorker)Binding new object:" + id);
 
       if (util::GetTokenType(id) == kTokenTypeGeneric) {
         ObjectPointer real_dest = management::FindObject(id);
@@ -1018,11 +1020,11 @@ namespace kagami {
 
         switch (request.type) {
         case kRequestCommand:
-          DEBUG_EVENT("(Request)Command code:" + to_string(request.head_command));
+          //DEBUG_EVENT("(Request)Command code:" + to_string(request.head_command));
           interface = management::GetGenericInterface(request.head_command);
           break;
         case kRequestInterface:
-          DEBUG_EVENT("(Request)Interface id:" + request.head_interface);
+          //DEBUG_EVENT("(Request)Interface id:" + request.head_interface);
           if (request.domain.type != kArgumentNull) {
             Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
@@ -1188,13 +1190,14 @@ namespace kagami {
     }
   }
 
-  bool Module::PredefinedMessage(size_t mode, Token token) {
+  bool Module::PredefinedMessage(size_t mode, Token token, Message &msg) {
     bool judged = false;
     GenericToken gen_token = util::GetGenericToken(token.first);
 
     switch (mode) {
     case kModeNextCondition:
-      if (management::HasTailTokenRequest(gen_token)) {
+      if (management::NeedEndToken(gen_token)) {
+        msg = Message().SetDetail(kStrTrue);
         judged = true;
       }
       else if (!compare(gen_token, { kTokenElse, kTokenEnd,kTokenElif })) {
@@ -1209,7 +1212,8 @@ namespace kagami {
 
       break;
     case kModeCaseJump:
-      if (management::HasTailTokenRequest(gen_token)) {
+      if (management::NeedEndToken(gen_token)) {
+        msg = Message().SetDetail(kStrTrue);
         judged = true;
       }
       else if (!compare(gen_token, { kTokenWhen,kTokenEnd,kTokenElse })) {
@@ -1284,7 +1288,7 @@ namespace kagami {
     auto &token = request.head_command;
     bool result = true;
 
-    DEBUG_EVENT("(Request)Command Code:" + to_string(token));
+    //DEBUG_EVENT("(Request)Command Code:" + to_string(token));
 
     switch (token) {
     case kTokenBind:
@@ -1422,39 +1426,39 @@ namespace kagami {
       blk->last_index = (blk->current == storage_.size() - 1);
       ir = &storage_[blk->current];
 
-      judged = PredefinedMessage(blk->mode, ir->GetMainToken());
+      judged = PredefinedMessage(blk->mode, ir->GetMainToken(), result);
       
       if (!judged) {
         result = IRProcessing(*ir, name, blk);
-
-        switch (result.GetLevel()) {
-        case kStateError:
-          health_ = false;
-          trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
-          continue;
-          break;
-        case kStateWarning:
-          trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
-          break;
-        default:break;
-        }
-
-        const auto code = result.GetCode();
-        const auto detail = result.GetDetail();
-
-        if (blk->tail_recursion) {
-          TailRecursionActions(blk, name);
-          continue;
-        }
-
-        if (code == kCodeReturn) {
-          break;
-        }
-
-        CallMachineFunction(code, detail, blk);
-
-        if (blk->runtime_error) break;
       }
+
+      switch (result.GetLevel()) {
+      case kStateError:
+        health_ = false;
+        trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
+        continue;
+        break;
+      case kStateWarning:
+        trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
+        break;
+      default:break;
+      }
+
+      const auto code = result.GetCode();
+      const auto detail = result.GetDetail();
+
+      if (blk->tail_recursion) {
+        TailRecursionActions(blk, name);
+        continue;
+      }
+
+      if (code == kCodeReturn) {
+        break;
+      }
+
+      CallMachineFunction(code, detail, blk);
+
+      if (blk->runtime_error) break;
 
       blk->current += 1;
       if (judged) judged = false;

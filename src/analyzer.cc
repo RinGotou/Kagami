@@ -1,7 +1,7 @@
 #include "analyzer.h"
 
 namespace kagami {
-  BasicToken GetBasicToken(string src) {
+  Terminator GetTerminatorCode(string src) {
     if (src == "=")   return kBasicTokenAssign;
     if (src == ",")   return kBasicTokenComma;
     if (src == "[")   return kBasicTokenLeftSqrBracket;
@@ -555,7 +555,7 @@ namespace kagami {
 
       auto token_type = blk->current.second;
       if (token_type == TokenType::kTokenTypeSymbol) {
-        BasicToken value = GetBasicToken(blk->current.first);
+        Terminator value = GetTerminatorCode(blk->current.first);
         switch (value) {
         case kBasicTokenAssign: EqualMark(blk); break;
         case kBasicTokenComma: state = CleanupStack(blk); break;

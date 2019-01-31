@@ -1,32 +1,55 @@
-fn Sort()
-  print('Bubble sorting for 100000 number...')
-  startTime = time()
-  ar = array(100000,0)
-  i = 99999
+fn BubbleSort(array_size)
+  ar = array(array_size, 0)
+  i = 0
+  num = 9999
   
-  while(i >= 0)
-    ar[i] = i
+  while(i < array_size)
+    ar[i] = num
+    num = num - 1
     i = i + 1
   end
   
-  i = 0
-  j = 0
+  print('Sorting.')
   
-  while(i < 100000)
-    while(j < (100000 - i - 1))
-      if (ar[j] < ar[j])
-        k = i
-        i = j
-        j = k
+  startTime = time()
+  i = 0
+  
+  while(i < array_size)
+    j = i + 1
+    
+    while(j < array_size)
+      if(ar[i] > ar[j]) 
+        temp = ar[i]
+        ar[i] = ar[j]
+        ar[j] = temp
       end
+      
       j = j + 1
     end
+    
     i = i + 1
   end
   
-  endTime = time()
-  print('Start=' + startTime)
-  print('End=' + endTime)
+  print('Start Time:' + startTime)
+  print('End Time  :' + time())
 end
 
-Sort()
+fn main()
+  value = 10
+  
+  while(value != 'q')
+    value = convert(input('array size? (q=exit) \n>'))
+    
+    if(type(value) == kStringTypeInteger)
+      BubbleSort(value)
+    end
+    
+    print('\n')
+
+  end
+  
+  print('exit.')
+  
+end
+
+main()

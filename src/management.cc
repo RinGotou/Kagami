@@ -91,7 +91,7 @@ namespace kagami {
       return base.empty();
     }
 
-    bool HasTailTokenRequest(GenericToken token) {
+    bool NeedEndToken(GenericToken token) {
       return (token == kTokenIf || token == kTokenWhile || token == kTokenCase);
     }
 

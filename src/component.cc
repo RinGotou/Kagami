@@ -23,7 +23,7 @@ namespace kagami {
     OBJECT_ASSERT(p, "object", kTypeIdRawString);
 
     string result;
-    string str = ParseRawString(p.Cast<string>("object"));
+    string str = p.Cast<string>("object");
 
     switch (util::GetTokenType(str)) {
     case kTokenTypeBool:   result = "'boolean'"; break;
@@ -82,9 +82,15 @@ namespace kagami {
     auto type = util::GetTokenType(origin);
     string str;
 
-    compare(type, { kTokenTypeNull,kTokenTypeGeneric }) ?
-      str = "" :
+    switch (type) {
+    case kTokenTypeGeneric:
+    case kTokenTypeNull:
+      str = "'" + origin + "'"; 
+      break;
+    default:
       str = origin;
+      break;
+    }
     
     return Message().SetObject(Object(str));
   }
@@ -102,6 +108,14 @@ namespace kagami {
     trace::AddEvent(msg);
 
     return Message();
+  }
+
+  Message Time(ObjectMap &p) {
+    auto now = time(nullptr);
+    string nowtime(ctime(&now));
+    nowtime.pop_back();
+
+    return Message(nowtime);
   }
 
   void Activiate() {
@@ -125,6 +139,7 @@ namespace kagami {
     CreateInterface(Interface(Print, kStrObject, "print"));
     CreateInterface(Interface(GetRawStringType, "object", "type"));
     CreateInterface(Interface(IsNull, "object", "isnull"));
+    CreateInterface(Interface(Time, "", "time"));
 
     auto create_constant = [](string id, string content) {
       management::CreateConstantObject(

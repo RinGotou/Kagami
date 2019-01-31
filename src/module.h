@@ -147,7 +147,7 @@ namespace kagami {
     Message IRProcessing(IR &IL_set, string name, MachCtlBlk *blk);
     Message PreProcessing();
     void InitGlobalObject(bool create_container,string name);
-    bool PredefinedMessage(size_t mode, Token token);
+    bool PredefinedMessage(size_t mode, Token token, Message &msg);
     void TailRecursionActions(MachCtlBlk *blk, string &name);
     void CallMachineFunction(StateCode code, string detail, MachCtlBlk *blk);
     bool GenericRequests(IRWorker *worker, Request &Request, ArgumentList &args);
@@ -193,7 +193,7 @@ namespace kagami {
       }
       else {
         health_ = false;
-        trace::AddEvent(Message(kCodeBadStream, "Invalid script path.", kStateError));
+        trace::AddEvent(Message(kCodeBadStream, "Invalid script.", kStateError));
       }
     }
 

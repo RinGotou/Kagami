@@ -12,7 +12,7 @@ namespace kagami {
     void CreateInterface(Interface temp);
     void CreateGenericInterface(Interface temp);
     bool DisposeManager();
-    bool HasTailTokenRequest(GenericToken token);
+    bool NeedEndToken(GenericToken token);
     Interface Order(string id, string type = kTypeIdNull, int size = -1);
     Interface GetGenericInterface(GenericToken token);
     Object *CreateConstantObject(string id, Object &object);

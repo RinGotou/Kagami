@@ -33,10 +33,11 @@ namespace kagami {
     OBJECT_ASSERT(p, "index", kTypeIdRawString);
 
     ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
+    //DEBUG_EVENT("(ArrayGetElement Interface)Index:" + p.Cast<string>("index"));
     int idx = stoi(p.Cast<string>("index"));
     int size = int(base.size());
 
-    CONDITION_ASSERT(idx < size, "Subscript is out of range.");
+    CONDITION_ASSERT(idx < size, "Subscript is out of range. - " + to_string(idx));
 
     return Message().SetObject(Object().CreateRef(base[idx]));
   }
