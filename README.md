@@ -29,7 +29,7 @@ end
 
 [√] GC based on referenced count(base on C++ STL)
 
-[√] Fully based on C++11
+[√] Based on C++14
 
 ## How to use these codes?
 Strongly recommend to compile them in Visual Studio 2010 or later version.You can also compile by using g++/clang++ with -std=c++11 option.

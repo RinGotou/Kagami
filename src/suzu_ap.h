@@ -191,7 +191,7 @@ namespace suzu {
   template <JoinerFormEnum joiner>
   class JoinerChecker {
   protected:
-    typename JoinerPolicy<joiner> policy_;
+    JoinerPolicy<joiner> policy_;
    
   public:
     Argument value;
