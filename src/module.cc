@@ -562,8 +562,8 @@ namespace kagami {
         }
         else {
           Object obj(management::type::GetObjectCopy(src), src.GetTypeId());
-          ObjectPointer result = management::CreateObject(id, obj);
-          if (result == nullptr) {
+          ObjectPointer result_ptr = management::CreateObject(id, obj);
+          if (result_ptr == nullptr) {
             error_string = "Object cration is failed.";
             result = false;
           }
