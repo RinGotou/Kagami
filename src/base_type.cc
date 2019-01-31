@@ -1,7 +1,7 @@
 #include "base_type.h"
 
 namespace kagami {
-  inline bool IsStringFamily(Object &obj) {
+  bool IsStringFamily(Object &obj) {
     return compare(obj.GetTypeId(), { kTypeIdRawString,kTypeIdString,kTypeIdWideString });
   }
 

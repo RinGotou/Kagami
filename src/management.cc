@@ -1,4 +1,3 @@
-#pragma once
 #include "management.h"
 
 namespace kagami {
