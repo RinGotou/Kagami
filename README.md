@@ -1,42 +1,34 @@
 # Kagami
 
-## Hint
-This project contains many terrible design.
-
 ## What's this?
-It's a simple and tiny script language.The name of this project is from Japanese kanji "鏡".
-
-## What does it looks like?
-
-```
-fn ReadFile()
-    stream = instream('SomeWords.txt')
-    while(stream.eof() != true)
-        print(stream.get())
-    end
-    stream.close()
-end
-
-if(__name__ == '__main__')
-    ReadFile()
-end
-```
+It's a simple and tiny experimental script language. The name of this project is from Japanese kanji "鏡".
 
 ## Feature
 [√] Dynamic and weak typing language with reflection support
 
 [√] Stack-based Backend Machine
 
-[√] GC based on referenced count(base on C++ STL)
-
 [√] Based on C++14
 
+## What does it looks like?
+```
+fn ReadFile()
+    stream = instream('SomeWords.txt')
+    while(stream.eof() != true)
+        println(stream.get())
+    end
+    stream.close()
+end
+
+ReadFile()
+```
+
 ## How to use these codes?
-Strongly recommend to compile them in Visual Studio 2010 or later version.You can also compile by using g++/clang++ with -std=c++11 option.
+Strongly recommend to compile them in Visual Studio 2017 or later version.
 
 If you're using CMake,please turn off all compiling options in common.h to make it happy.
 
-SDL2 stuff is under consideration now,so I don't want you to turn off _DISABLE_SDL_ until I think it's good enough to use.
+SDL2 stuff is under consideration now,so I don't want you to turn off DISABLE_SDL macro until I think it's good enough to use.
 
 You can find other notes in source code. Sorry for lacking of dev log.
 
