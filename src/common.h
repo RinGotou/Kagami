@@ -10,12 +10,12 @@
 #include <locale>
 #include <codecvt>
 #include <cstdlib>
-#include <cctype>
 #include <typeinfo>
 #include <iostream>
 #include <fstream>
 #include <ctime>
 #include <type_traits>
+#include <iterator>
 
 //if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
@@ -76,7 +76,7 @@ namespace kagami {
   using std::wstring;
   using std::ostream;
 
-  const string kInterpreterVersion  = "1.53";
+  const string kInterpreterVersion  = "0001";
   const string kIRFrameworkVersion = "August";
   const string kPatchName = "Kaleidoscope";
 #if defined(_WIN32)
@@ -86,7 +86,7 @@ namespace kagami {
 #endif
   const string kEngineName     = "Kagami Project";
   const string kMaintainer     = "Suzu Nakamura";
-  const string kCopyright      = "Copyright(c) 2017-2018";
+  const string kCopyright      = "Copyright(c) 2019";
 
   enum StateCode {
     kCodeWhen = 18,

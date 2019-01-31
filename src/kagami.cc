@@ -53,7 +53,7 @@ void ApplicationInfo() {
   cout << kEngineName << " " << kInterpreterVersion << "\n";
   cout << "IR Framework Version: " << kIRFrameworkVersion << "\n";
   cout << "Patch: " << kPatchName << "\n";
-  cout << kCopyright << " " << kMaintainer << endl;
+  cout << kCopyright << ", " << kMaintainer << endl;
 }
 
 //Main namespace

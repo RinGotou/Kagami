@@ -19,9 +19,7 @@ fn BubbleSort(array_size)
     
     while(j < array_size)
       if(ar[i] > ar[j]) 
-        temp = ar[i]
-        ar[i] = ar[j]
-        ar[j] = temp
+        swap(ar[i],ar[j])
       end
       
       j = j + 1
@@ -32,10 +30,6 @@ fn BubbleSort(array_size)
   
   print('Start Time:' + startTime)
   print('End Time  :' + time())
-  
-  if(array_size <= 10)
-    print(ar)
-  end
 end
 
 fn InsertionSort(array_size)
@@ -67,9 +61,7 @@ fn InsertionSort(array_size)
     end
     
     if(best_idx != i)
-      temp = ar[i]
-      ar[i] = ar[best_idx]
-      ar[best_idx] = temp
+      swap(ar[i],ar[best_idx])
     end
     
     i = i + 1
@@ -78,7 +70,7 @@ fn InsertionSort(array_size)
   print('Start Time:' + startTime)
   print('End Time  :' + time())
   
-  if(array_size <= 10)
+  if(array_size<=10)
     print(ar)
   end
 end

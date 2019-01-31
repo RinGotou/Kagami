@@ -109,6 +109,11 @@ namespace kagami {
       return ptr_;
     }
 
+    Object &Deref() {
+      if (ref_) return *GetTargetObject();
+      return *this;
+    }
+
     template <class Tx>
     Tx &Cast() {
       if (ref_) return GetTargetObject()->Cast<Tx>();
