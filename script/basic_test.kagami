@@ -1,23 +1,23 @@
 fn Greet(name)
-  print('Hello,' + name + '!')
-  print('Greet end.')
+  println('Hello,' + name)
+  println('Print end.')
 end
 
 fn CalcTest()
   result0 = 1 - 2 - 3
   result1 = 1 - (2 - 3)
-  print(1+2*5)
+  println(1+2*5)
   if (result0 != -4)
-    print('Calc is broken.')
+    println('Calc is broken.')
   else
-    print('1-2-3=' + result0)
+    println('1-2-3=' + result0)
   end
   if (result1 != 2)
-    print('Calc is broken.')
+    println('Calc is broken.')
   else
-    print('1-(2-3)=' + result1)
+    println('1-(2-3)=' + result1)
   end 
-  print('CalcTest end.')
+  println('CalcTest end.')
 end
 
 fn LogicTest()
@@ -25,11 +25,11 @@ fn LogicTest()
   result1 = true && true
   result2 = true || false
   result3 = false|| true
-  print(result0)
-  print(result1)
-  print(result2)
-  print(result3)
-  print('LogicTest end.')
+  println(result0)
+  println(result1)
+  println(result2)
+  println(result3)
+  println('LogicTest end.')
 end
 
 fn TypeTest()
@@ -38,37 +38,37 @@ fn TypeTest()
   str2 = '1.23'
   str3 = 'true'
   ar = array(10,0)
-  print('TypeId of str0:' + typeid(str0))
-  print('TypeId of ar:' + typeid(ar))
-  print('Type of string:')
-  print(type(str0))
-  print(type(str1))
-  print(type(str2))
-  print(type(str3))
-  print('TypeTest end.')
+  println('TypeId of str0:' + typeid(str0))
+  println('TypeId of ar:' + typeid(ar))
+  println('Type of string:')
+  println(type(str0))
+  println(type(str1))
+  println(type(str2))
+  println(type(str3))
+  println('TypeTest end.')
 end
 
 fn ArrayTest()
   ar = array(5,'hello')
-  print('Array size:' + ar.size())
-  print(ar)
+  println('Array size:' + ar.size())
+  println(ar)
   i = 0
   while(i < 5)
     ar[i] = ar[i] + ' Loop x' + i
     i = i + 1
   end
-  print(ar)
-  print('ArrayTest end.')
+  println(ar)
+  println('ArrayTest end.')
 end
 
 fn StringTest()
   origin = input('Input a string (size>10) : ')
   str = string(origin)
-  print('String size:' + str.size())
-  print('String stuff:')
-  print(str)
-  print(str.substr(1,6))
-  print('StringTest end.')
+  println('String size:' + str.size())
+  println('String stuff:')
+  println(str)
+  println(str.substr(1,6))
+  println('StringTest end.')
 end
 
 fn Menu()
@@ -78,8 +78,8 @@ end
 
 fn main()
   flag = 0
-  print('Menu:\n1.Print Test\n2.Calculator Test')
-  print('3.Logic Test\n4.Type Test\n5.Array Test\n6.String Test\n0.Quit')
+  println('Menu:\n1.Print Test\n2.Calculator Test')
+  println('3.Logic Test\n4.Type Test\n5.Array Test\n6.String Test\n0.Quit')
   while(flag != 1)
     choice = Menu()
     case(choice)

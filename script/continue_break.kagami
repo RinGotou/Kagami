@@ -1,22 +1,22 @@
 fn Test()
   i = 0
-  print('Continue')
+  println('Continue')
   while(i < 5)
     if (i == 3) 
       i = i + 1
       continue
     end
-    print(i)
+    println(i)
     i++
   end
   
-  print('Break')
+  println('Break')
   i = 0
   while(i < 5)
     if (i == 3)
       break
     end
-    print(i)
+    println(i)
     i = i + 1
   end
 end

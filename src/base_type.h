@@ -76,7 +76,7 @@ namespace kagami {
   Message StringFamilyPrint(ObjectMap &p) {
     StringType &str = p.Cast<StringType>(kStrObject);
     StreamBase<StringType, StreamType> stream;
-    stream << str << std::endl;
+    stream << str;
     return Message();
   }
 

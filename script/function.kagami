@@ -1,9 +1,9 @@
 fn FuncA()
- print('A!')
+ println('A!')
 end
 
 fn FuncB()
-  print('B!')
+  println('B!')
 end
 
 fn main()

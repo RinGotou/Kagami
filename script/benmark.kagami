@@ -9,7 +9,7 @@ fn BubbleSort(array_size)
     i = i + 1
   end
   
-  print('Sorting.(Bubble)')
+  println('Sorting.(Bubble)')
   
   startTime = time()
   i = 0
@@ -28,8 +28,8 @@ fn BubbleSort(array_size)
     i = i + 1
   end
   
-  print('Start Time:' + startTime)
-  print('End Time  :' + time())
+  println('Start Time:' + startTime)
+  println('End Time  :' + time())
 end
 
 fn InsertionSort(array_size)
@@ -43,7 +43,7 @@ fn InsertionSort(array_size)
     i = i + 1
   end
   
-  print('Sorting.(Insertion)')
+  println('Sorting.(Insertion)')
   
   startTime = time()
   i = 0
@@ -67,11 +67,11 @@ fn InsertionSort(array_size)
     i = i + 1
   end
   
-  print('Start Time:' + startTime)
-  print('End Time  :' + time())
+  println('Start Time:' + startTime)
+  println('End Time  :' + time())
   
-  if(array_size<=10)
-    print(ar)
+  if(array_size <= 10)
+    println(ar)
   end
 end
 
@@ -95,11 +95,11 @@ fn main()
       func.call(value)
     end
     
-    print('-----------------------\n')
+    println('-----------------------\n')
 
   end
   
-  print('exit.')
+  println('exit.')
   
 end
 

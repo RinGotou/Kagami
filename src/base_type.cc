@@ -8,15 +8,12 @@ namespace kagami {
   Message ArrayConstructor(ObjectMap &p) {
     shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
 
-    if (p.Search("size")) {
+    if (!p["size"].Null()) {
       auto size = stoi(p.Cast<string>("size"));
       CONDITION_ASSERT(size > 0, "Illegal array size.");
 
       Object obj;
-      
-      p.Search("init_value") ?
-        obj.CloneFrom(p["init_value"]) :
-        obj = Object();
+      obj.CloneFrom(p["init_value"]);
 
       base->reserve(size);
       auto type_id = obj.GetTypeId();
@@ -109,11 +106,8 @@ namespace kagami {
   }
 
   Message RawStringPrint(ObjectMap &p) {
-    bool doNotWrap = (p.Search("not_wrap"));
-    
-    auto data = ParseRawString(p.Cast<string>(kStrObject));
-    std::cout << data;
-    if (!doNotWrap) std::cout << std::endl;
+    auto str = ParseRawString(p.Cast<string>(kStrObject));
+    std::cout << str;
     
     return Message();
   }

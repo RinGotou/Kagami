@@ -66,13 +66,21 @@ namespace kagami {
     return management::Order(kStrPrint, obj.GetTypeId()).Start(p);
   }
 
+  Message PrintLine(ObjectMap &p) {
+    Message msg = Print(p);
+    if (msg.GetLevel() == kStateNormal) {
+      std::cout << std::endl;
+    }
+
+    return msg;
+  }
+
   Message Input(ObjectMap &p) {
-    if (p.Search("msg")) {
-      CONDITION_ASSERT(IsStringFamily(p["msg"]), 
+    if (!p["msg"].Null()) {
+      CONDITION_ASSERT(IsStringFamily(p["msg"]),
         "Illegal message string.");
-      
+
       ObjectMap obj_map = {
-        NamedObject("not_wrap", Object(kStrTrue)),
         NamedObject(kStrObject, p["msg"])
       };
 
@@ -156,6 +164,7 @@ namespace kagami {
     CreateInterface(Interface(Convert, "object", "convert"));
     CreateInterface(Interface(Input, "msg", "input", kCodeAutoFill));
     CreateInterface(Interface(Print, kStrObject, "print"));
+    CreateInterface(Interface(PrintLine, kStrObject, "println"));
     CreateInterface(Interface(GetRawStringType, "object", "type"));
     CreateInterface(Interface(IsNull, "object", "isnull"));
     CreateInterface(Interface(Time, "", "time"));

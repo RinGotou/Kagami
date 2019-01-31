@@ -144,6 +144,10 @@ namespace kagami {
       return ref_;
     }
 
+    bool Null() const {
+      return ptr_ == nullptr;
+    }
+
     Object &CreateRef(Object &object);
     Object &CloneFrom(Object &object, bool force = false);
   };
@@ -214,11 +218,6 @@ namespace kagami {
         this->insert(unit);
       }
       return *this;
-    }
-
-    bool Search(string id) {
-      auto it = this->find(id);
-      return it != this->end();
     }
 
     template <class T>
