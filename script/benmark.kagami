@@ -1,7 +1,7 @@
 fn BubbleSort(array_size)
   ar = array(array_size, 0)
   i = 0
-  num = 9999
+  num = array_size
   
   while(i < array_size)
     ar[i] = num
@@ -9,7 +9,7 @@ fn BubbleSort(array_size)
     i = i + 1
   end
   
-  print('Sorting.')
+  print('Sorting.(Bubble)')
   
   startTime = time()
   i = 0
@@ -32,19 +32,78 @@ fn BubbleSort(array_size)
   
   print('Start Time:' + startTime)
   print('End Time  :' + time())
+  
+  if(array_size <= 10)
+    print(ar)
+  end
+end
+
+fn InsertionSort(array_size)
+  ar = array(array_size, 0)
+  i = 0
+  num = array_size - 1
+  
+  while(i < array_size)
+    ar[i] = num
+    num = num - 1
+    i = i + 1
+  end
+  
+  print('Sorting.(Insertion)')
+  
+  startTime = time()
+  i = 0
+  
+  while(i < array_size)
+    j = i + 1
+    best_idx = i
+    
+    while(j < array_size)
+      if(ar[j] < ar[best_idx])
+        best_idx = j
+      end
+    
+      j = j + 1
+    end
+    
+    if(best_idx != i)
+      temp = ar[i]
+      ar[i] = ar[best_idx]
+      ar[best_idx] = temp
+    end
+    
+    i = i + 1
+  end
+  
+  print('Start Time:' + startTime)
+  print('End Time  :' + time())
+  
+  if(array_size <= 10)
+    print(ar)
+  end
 end
 
 fn main()
   value = 10
   
+  mode = convert(input('Which algorithm?(1:Bubble 2.Insertion) \n>'))
+  func = 0
+  
+  case(mode)
+  when(1)
+    func = BubbleSort
+  when(2)
+    func = InsertionSort
+  end
+  
   while(value != 'q')
     value = convert(input('array size? (q=exit) \n>'))
     
     if(type(value) == kStringTypeInteger)
-      BubbleSort(value)
+      func.call(value)
     end
     
-    print('\n')
+    print('-----------------------\n')
 
   end
   

@@ -457,15 +457,18 @@ namespace kagami {
 
     deque<Object> temp;
 
-    while (args.size() >= ent_params.size() - 1) {
+    while (args.size() >= ent_params.size() - 1 && !args.empty()) {
       temp.emplace_front(MakeObject(args.back()));
       args.pop_back();
     }
+    
 
     shared_ptr<ObjectArray> va_base = make_shared<ObjectArray>();
 
-    for (auto it = temp.begin(); it != temp.end(); ++it) {
-      va_base->emplace_back(*it);
+    if (!temp.empty()) {
+      for (auto it = temp.begin(); it != temp.end(); ++it) {
+        va_base->emplace_back(*it);
+      }
     }
 
     obj_map.insert(NamedObject(va_arg_head, Object(va_base, kTypeIdArray)));
@@ -475,9 +478,12 @@ namespace kagami {
 
     auto it = ent_params.rbegin()++;
 
-    for (; it != ent_params.rend(); ++it) {
-      obj_map.insert(NamedObject(*it, MakeObject(args.back())));
-      args.pop_back();
+    if (!args.empty()) {
+      for (; it != ent_params.rend(); ++it) {
+        if (args.empty()) break;
+        obj_map.insert(NamedObject(*it, MakeObject(args.back())));
+        args.pop_back();
+      }
     }
   }
 
@@ -1201,12 +1207,14 @@ namespace kagami {
         judged = true;
       }
       else if (!compare(gen_token, { kTokenElse, kTokenEnd,kTokenElif })) {
+        msg = Message();
         judged = true;
       }
 
       break;
     case kModeCycleJump:
       if (!compare(gen_token, { kTokenEnd,kTokenIf,kTokenWhile })) {
+        msg = Message();
         judged = true;
       }
 
@@ -1217,6 +1225,7 @@ namespace kagami {
         judged = true;
       }
       else if (!compare(gen_token, { kTokenWhen,kTokenEnd,kTokenElse })) {
+        msg = Message();
         judged = true;
       }
 

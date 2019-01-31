@@ -1,35 +1,22 @@
-ar0 = array(3,'')
-
-fn Calc(numA,numB)
-  return(numA + numB)
+fn FuncA()
+ print('A!')
 end
 
-fn Loop(count)
-  i = 0
-  while(i < count)
-    print('Loop Count' + i)
-    i = i + 1
+fn FuncB()
+  print('B!')
+end
+
+fn main()
+  value = convert(input('>'))
+  func = 0
+  
+  if (value == 1)
+    func = FuncA
+  else
+    func = FuncB
   end
+  
+  func.call()
 end
 
-fn PrintArray()
-  i = 0
-  while(i < 3)
-    print(ar0[i])
-    i = i + 1
-  end
-end
-
-fn SetArray(idx,str)
-  ar0[idx] = str
-end
-
-result = Calc(3,7)
-Loop(result)
-SetArray(0,'Once we held hands at the ticket wicket The same old noise, the brand new wind')
-SetArray(1,'Even though I was supposed to cheerfully see you off')
-SetArray(2,'I was just watching your back as I wasn\'t able to smile')
-PrintArray()
-
-
-
+main()
