@@ -45,7 +45,7 @@ namespace kagami {
   }
 
   Message SDLDelay(ObjectMap &p) {
-    int time = stoi(p.Cast<string>("time"));
+    long time = stol(p.Cast<string>("time"));
     SDL_Delay(time);
     return Message();
   }

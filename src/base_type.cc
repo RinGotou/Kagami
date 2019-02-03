@@ -9,7 +9,7 @@ namespace kagami {
     shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
 
     if (!p["size"].Null()) {
-      auto size = stoi(p.Cast<string>("size"));
+      size_t size = stol(p.Cast<string>("size"));
       CONDITION_ASSERT(size > 0, "Illegal array size.");
 
       Object obj;
@@ -31,8 +31,8 @@ namespace kagami {
 
     ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
     //DEBUG_EVENT("(ArrayGetElement Interface)Index:" + p.Cast<string>("index"));
-    int idx = stoi(p.Cast<string>("index"));
-    int size = int(base.size());
+    size_t idx = stol(p.Cast<string>("index"));
+    size_t size = base.size();
 
     CONDITION_ASSERT(idx < size, "Subscript is out of range. - " + to_string(idx));
 
@@ -86,7 +86,7 @@ namespace kagami {
   Message RawStringGetElement(ObjectMap &p) {
     OBJECT_ASSERT(p, "index", kTypeIdRawString);
 
-    int idx = stoi(p.Cast<string>("index"));
+    size_t idx = stol(p.Cast<string>("index"));
 
     const auto makeStrToken = [](char target)->string {
       return string().append("'").append(1, target).append("'");

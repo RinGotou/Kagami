@@ -73,6 +73,7 @@ namespace kagami {
   using std::stoi;
   using std::stof;
   using std::stod;
+  using std::stol;
   using std::wstring;
   using std::ostream;
 

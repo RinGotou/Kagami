@@ -148,6 +148,10 @@ namespace kagami {
       return ptr_ == nullptr;
     }
 
+    long Count() const {
+      return ptr_.use_count();
+    }
+
     Object &CreateRef(Object &object);
     Object &CloneFrom(Object &object, bool force = false);
   };

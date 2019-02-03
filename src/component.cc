@@ -79,7 +79,7 @@ namespace kagami {
     if (!p["msg"].Null()) {
       CONDITION_ASSERT(IsStringFamily(p["msg"]),
         "Illegal message string.");
-
+      
       ObjectMap obj_map = {
         NamedObject(kStrObject, p["msg"])
       };

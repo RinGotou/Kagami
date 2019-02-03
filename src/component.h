@@ -23,7 +23,7 @@ namespace kagami {
   template <>
   class StringConvertor<int> {
   public:
-    int Do(const string &str) { return stoi(str); }
+    long Do(const string &str) { return stol(str); }
   };
 
   template <>
@@ -277,7 +277,7 @@ namespace kagami {
 
     switch (policy) {
     case G_INT: action = std::make_unique<PlainStringAction<
-        int, op_code, typename ResultTypeTraits<int, boolean_result>::ResultType>>();
+        int, op_code, typename ResultTypeTraits<long, boolean_result>::ResultType>>();
       break;
     case G_FLOAT: action = std::make_unique<PlainStringAction<
         double, op_code, typename ResultTypeTraits<double, boolean_result>::ResultType>>();

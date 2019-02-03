@@ -854,7 +854,7 @@ namespace kagami {
           bool state = false;
           switch (type) {
           case kTokenTypeInt:
-            state = (stoi(state_str) != 0);
+            state = (stol(state_str) != 0);
             break;
           case kTokenTypeFloat:
             state = (stod(state_str) != 0.0);

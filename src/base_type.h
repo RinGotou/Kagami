@@ -14,8 +14,8 @@ namespace kagami {
 
     string type_id = p[kStrObject].GetTypeId();
 
-    int start = stoi(p.Cast<string>("start"));
-    int size = stoi(p.Cast<string>("size"));
+    size_t start = stol(p.Cast<string>("start"));
+    size_t size = stol(p.Cast<string>("size"));
 
     CONDITION_ASSERT((start >= 0 && size <= int(str.size()) - start),
       "Illegal index or size.");
@@ -30,8 +30,8 @@ namespace kagami {
     StringType &str = p.Cast<StringType>(kStrObject);
     string type_id = p[kStrObject].GetTypeId();
 
-    int size = int(str.size());
-    int idx = stoi(p.Cast<string>("index"));
+    size_t size = str.size();
+    size_t idx = stol(p.Cast<string>("index"));
 
     CONDITION_ASSERT((idx > size && idx >= 0), "Index out of range.");
 
