@@ -1114,6 +1114,7 @@ namespace kagami {
     return msg;
   }
 
+  //TODO: Reconstruction
   Message Module::PreProcessing() {
     IR *ir = nullptr;
     GenericToken token;
@@ -1200,32 +1201,31 @@ namespace kagami {
     bool judged = false;
     GenericToken gen_token = util::GetGenericToken(token.first);
 
+    msg = Message(); //reset
+
     switch (mode) {
     case kModeNextCondition:
       if (management::NeedEndToken(gen_token)) {
-        msg = Message().SetDetail(kStrTrue);
+        msg.SetDetail(kStrTrue);
         judged = true;
       }
       else if (!compare(gen_token, { kTokenElse, kTokenEnd,kTokenElif })) {
-        msg = Message();
         judged = true;
       }
 
       break;
     case kModeCycleJump:
       if (!compare(gen_token, { kTokenEnd,kTokenIf,kTokenWhile })) {
-        msg = Message();
         judged = true;
       }
 
       break;
     case kModeCaseJump:
       if (management::NeedEndToken(gen_token)) {
-        msg = Message().SetDetail(kStrTrue);
+        msg.SetDetail(kStrTrue);
         judged = true;
       }
       else if (!compare(gen_token, { kTokenWhen,kTokenEnd,kTokenElse })) {
-        msg = Message();
         judged = true;
       }
 

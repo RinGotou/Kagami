@@ -95,7 +95,7 @@ namespace kagami {
     string data = ParseRawString(p.Cast<string>(kStrObject));
     size_t size = data.size();
 
-    CONDITION_ASSERT(idx < int(size - 1), "Subscript is out of range.");
+    CONDITION_ASSERT(idx < size - 1, "Subscript is out of range.");
 
     return Message(makeStrToken(data.at(idx)));
   }
@@ -344,7 +344,6 @@ namespace kagami {
   Message FunctionCall(ObjectMap &p) {
     auto &interface = p.Cast<Interface>(kStrObject);
     auto &arg_list = p.Cast<ObjectArray>("arg");
-    int count = 0;
     ObjectMap target_map;
     bool state;
     

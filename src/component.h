@@ -21,7 +21,7 @@ namespace kagami {
   };
 
   template <>
-  class StringConvertor<int> {
+  class StringConvertor<long> {
   public:
     long Do(const string &str) { return stol(str); }
   };
@@ -106,9 +106,9 @@ namespace kagami {
   };
 
   template<>
-  class Operation<int, int, OperatorCode::TIMES> {
+  class Operation<long, long, OperatorCode::TIMES> {
   public:
-    int Do(int A, int B) { return A * B; }
+    long Do(long A, long B) { return A * B; }
   };
 
   template<>
@@ -130,9 +130,9 @@ namespace kagami {
   };
 
   template<>
-  class Operation<int, int, OperatorCode::DIV> {
+  class Operation<long, long, OperatorCode::DIV> {
   public:
-    int Do(int A, int B) { return A / B; }
+    long Do(long A, long B) { return A / B; }
   };
 
   template<>
@@ -277,7 +277,7 @@ namespace kagami {
 
     switch (policy) {
     case G_INT: action = std::make_unique<PlainStringAction<
-        int, op_code, typename ResultTypeTraits<long, boolean_result>::ResultType>>();
+        long, op_code, typename ResultTypeTraits<long, boolean_result>::ResultType>>();
       break;
     case G_FLOAT: action = std::make_unique<PlainStringAction<
         double, op_code, typename ResultTypeTraits<double, boolean_result>::ResultType>>();
