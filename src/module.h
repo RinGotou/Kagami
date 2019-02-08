@@ -226,6 +226,13 @@ namespace kagami {
   void LoadSDLStuff();
 #endif
 
+#if defined(_WIN32)
+  void LoadSocketStuff();
+#else
+  //TODO:Reserved for unix socket wrapper
+  //TODO: delete macros after finish it
+#endif
+
   std::wstring s2ws(const std::string &s);
   std::string ws2s(const std::wstring &s);
   bool IsStringObject(Object &obj);

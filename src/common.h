@@ -26,11 +26,7 @@
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#include <iphlpapi.h>
-#pragma comment(lib, "Ws2_32.lib")
+#include "wstcp_wrapper.h"
 #if defined(_MSC_VER)
 #pragma warning(disable:4996)
 #endif
@@ -76,6 +72,10 @@ namespace kagami {
   using std::stol;
   using std::wstring;
   using std::ostream;
+  using suzu::TCPClient;
+  using suzu::TCPServer;
+  using suzu::TCPConnector;
+  using suzu::WSockInfo;
 
   const string kInterpreterVersion  = "0001";
   const string kIRFrameworkVersion = "August";
@@ -203,15 +203,19 @@ namespace kagami {
     kModeCaseJump
   };
 
-  const string kTypeIdNull       = "null";
-  const string kTypeIdString     = "string";
-  const string kTypeIdWideString = "wstring";
-  const string kTypeIdRawString  = "rawstring";
-  const string kTypeIdArray      = "array";
-  const string kTypeIdInStream   = "instream";
-  const string kTypeIdOutStream  = "outstream";
-  const string kTypeIdRegex      = "regex";
-  const string kTypeIdFunction   = "function";
+  const string kTypeIdNull            = "null";
+  const string kTypeIdString          = "string";
+  const string kTypeIdWideString      = "wstring";
+  const string kTypeIdRawString       = "rawstring";
+  const string kTypeIdArray           = "array";
+  const string kTypeIdInStream        = "instream";
+  const string kTypeIdOutStream       = "outstream";
+  const string kTypeIdRegex           = "regex";
+  const string kTypeIdFunction        = "function";
+  const string kTypeIdTCPClient       = "TCPClient";
+  const string kTypeIdTCPServer       = "TCPServer";
+  const string kTypeIdClientConnector = "ClientConnector";
+  const string kTypeIdTCPConnector    = "TCPConnector";
 
   const string
     kStrIf             = "if",
