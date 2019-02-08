@@ -42,6 +42,7 @@
     <ClCompile Include="..\..\src\management.cc" />
     <ClCompile Include="..\..\src\object.cc" />
     <ClCompile Include="..\..\src\module.cc" />
+    <ClCompile Include="..\..\src\socket_win.cc" />
     <ClCompile Include="..\..\src\trace.cc" />
     <ClCompile Include="..\..\src\util.cc" />
     <ClCompile Include="..\..\src\window.cc" />
