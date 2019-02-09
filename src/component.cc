@@ -30,7 +30,7 @@ namespace kagami {
   }
 
   Message GetRawStringType(ObjectMap &p) {
-    OBJECT_ASSERT(p, "object", kTypeIdRawString);
+    EXPECT_TYPE(p, "object", kTypeIdRawString);
 
     string result;
     string str = p.Cast<string>("object");
@@ -77,7 +77,7 @@ namespace kagami {
 
   Message Input(ObjectMap &p) {
     if (!p["msg"].Null()) {
-      CONDITION_ASSERT(IsStringFamily(p["msg"]),
+      EXPECT(IsStringFamily(p["msg"]),
         "Illegal message string.");
       
       ObjectMap obj_map = {
@@ -94,7 +94,7 @@ namespace kagami {
   }
 
   Message Convert(ObjectMap &p) {
-    OBJECT_ASSERT(p, "object", kTypeIdRawString);
+    EXPECT_TYPE(p, "object", kTypeIdRawString);
 
     string origin = ParseRawString(p.Cast<string>("object"));
     auto type = util::GetTokenType(origin);
@@ -119,7 +119,7 @@ namespace kagami {
   }
 
   Message Log(ObjectMap &p) {
-    OBJECT_ASSERT(p, "msg", kTypeIdRawString);
+    EXPECT_TYPE(p, "msg", kTypeIdRawString);
 
     string msg = p.Cast<string>("msg");
 

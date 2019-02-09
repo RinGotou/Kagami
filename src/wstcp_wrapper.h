@@ -154,7 +154,7 @@ namespace suzu {
       result_code_ = recv(
         connector_,
         recv_buf,
-        buf_size_,
+        static_cast<int>(buf_size_),
         0
       );
 
@@ -198,7 +198,7 @@ namespace suzu {
         result_code_ = send(
           connector_,
           content.c_str(),
-          buf_size_,
+          static_cast<int>(buf_size_),
           0
         );
 
@@ -212,7 +212,7 @@ namespace suzu {
         result_code_ = recv(
           connector_,
           recv_buf,
-          buf_size_,
+          static_cast<int>(buf_size_),
           0
         );
 

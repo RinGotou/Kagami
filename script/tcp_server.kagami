@@ -1,0 +1,37 @@
+fn InitServer()
+  server = TCPServer('27015', 1024)
+  
+  if (server.start())
+    connector = server.accept()
+    
+    println('Waiting for client.')
+    
+    if (connector.good())
+      println('Connected.')
+      
+      msg = ''
+      
+      if (connector.receive(msg))
+        println('From client:')
+        println(msg)
+        
+        connector.send('Yes I found you!')
+      else
+        println('Receive failed.' + WSALastError())
+      end
+      
+    else
+      println('Bad connection.' + WSALastError())
+    end
+    
+  else
+    println('Start failed.' + WSALastError())
+  end
+  
+  server.close()
+end
+
+if (WSAStartup())
+  InitServer()
+  WSACleanup()
+end

@@ -1,10 +1,10 @@
-#include "module.h"
+#include "socket_win.h"
 
 namespace kagami {
   Message NewTCPClient(ObjectMap &p) {
-    CONDITION_ASSERT(IsStringObject(p["port"]), "Invalid port string.");
-    CONDITION_ASSERT(IsStringObject(p["addr"]), "Invalid address string.");
-    CONDITION_ASSERT(IsStringObject(p["buf_size"]), "Invalid buffer size.");
+    EXPECT(IsStringObject(p["port"]), "Invalid port string.");
+    EXPECT(IsStringObject(p["addr"]), "Invalid address string.");
+    EXPECT(IsStringObject(p["buf_size"]), "Invalid buffer size.");
 
     string port = ParseRawString(p["port"].Cast<string>());
     string addr = ParseRawString(p["addr"].Cast<string>());
@@ -24,45 +24,13 @@ namespace kagami {
     return Message(util::MakeBoolean(client.StartClient()));
   }
 
-  Message TCPConnectorSend(ObjectMap &p) {
-    CONDITION_ASSERT(IsStringObject(p["content"]), "Invalid content string.");
-    auto connector = std::dynamic_pointer_cast<TCPConnector>(p[kStrObject].Get());
-    string content = ParseRawString(p["content"].Cast<string>());
-    return Message(util::MakeBoolean(connector->Send(content)));
-  }
-
-  Message TCPConnectorReceive(ObjectMap &p) {
-    auto &dest = p["dest"];
-    auto connector = std::dynamic_pointer_cast<TCPConnector>(p[kStrObject].Get());
-    string dest_buf;
-    string result = util::MakeBoolean(connector->Receive(dest_buf));
-    dest.ManageContent(make_shared<string>(dest_buf), kTypeIdString);
-    return Message(result);
-  }
-
-  Message TCPConnectorClose(ObjectMap &p) {
-    auto connector = std::dynamic_pointer_cast<TCPConnector>(p[kStrObject].Get());
-    connector->Close();
-    return Message();
-  }
-
-  Message TCPConnectorGood(ObjectMap &p) {
-    auto connector = std::dynamic_pointer_cast<TCPConnector>(p[kStrObject].Get());
-    return Message(util::MakeBoolean(connector->Good()));
-  }
-
-  Message WSockInfoResultCode(ObjectMap &p) {
-    auto info = std::dynamic_pointer_cast<WSockInfo>(p[kStrObject].Get());
-    return Message(to_string(info->GetLastResultCode()));
-  }
-
   Message GetWSALastError(ObjectMap &p) {
     return Message(to_string(WSAGetLastError()));
   }
 
   Message NewTCPServer(ObjectMap &p) {
-    CONDITION_ASSERT(IsStringObject(p["port"]), "Invalid port string.");
-    CONDITION_ASSERT(IsStringObject(p["buf_size"]), "Invalid buffer size.");
+    EXPECT(IsStringObject(p["port"]), "Invalid port string.");
+    EXPECT(IsStringObject(p["buf_size"]), "Invalid buffer size.");
     string port = ParseRawString(p["port"].Cast<string>());
     size_t buf_size = stol(p["buf_size"].Cast<string>());
 
@@ -105,11 +73,25 @@ namespace kagami {
     return Message();
   }
 
+  Message WinSockStartup(ObjectMap &p) {
+    WSADATA wsa_data;
+    int result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+    return Message(util::MakeBoolean(result == 0));
+  }
+
+  Message WinSockCleanup(ObjectMap &p) {
+    WSACleanup();
+    return Message();
+  }
+
   void LoadSocketStuff() {
     using management::type::NewTypeSetup;
     using management::CreateInterface;
+    using ClientConnector = TCPServer::ClientConnector;
     
     CreateInterface(Interface(GetWSALastError, "", "WSALastError"));
+    CreateInterface(Interface(WinSockStartup, "", "WSAStartup"));
+    CreateInterface(Interface(WinSockCleanup, "", "WSACleanup"));
 
     NewTypeSetup(kTypeIdTCPClient, SimpleSharedPtrCopy<TCPClient>)
       .InitConstructor(
@@ -118,11 +100,11 @@ namespace kagami {
       .InitMethods(
         {
           Interface(TCPClientStart, "", "start"),
-          Interface(TCPConnectorSend, "content", "send"),
-          Interface(TCPConnectorReceive, "dest", "receive"),
-          Interface(TCPConnectorGood, "", "good"),
-          Interface(TCPConnectorClose, "", "close"),
-          Interface(WSockInfoResultCode, "", "result_code")
+          Interface(TCPConnectorSend<TCPClient>, "content", "send"),
+          Interface(TCPConnectorReceive<TCPClient>, "dest", "receive"),
+          Interface(TCPConnectorGood<TCPClient>, "", "good"),
+          Interface(TCPConnectorClose<TCPClient>, "", "close"),
+          Interface(WSockInfoResultCode<TCPClient>, "", "result_code")
         }
     );
 
@@ -132,21 +114,21 @@ namespace kagami {
       )
       .InitMethods(
         {
-          Interface(TCPServerStart, "backlog", "start"),
+          Interface(TCPServerStart, "backlog", "start", kCodeAutoFill),
           Interface(TCPServerAccept, "", "accept"),
           Interface(TCPServerClose, "", "close"),
-          Interface(WSockInfoResultCode, "", "result_code")
+          Interface(WSockInfoResultCode<TCPServer>, "", "result_code")
         }
     );
 
-    NewTypeSetup(kTypeIdClientConnector, SimpleSharedPtrCopy<TCPServer::ClientConnector>)
+    NewTypeSetup(kTypeIdClientConnector, SimpleSharedPtrCopy<ClientConnector>)
       .InitMethods(
         {
-          Interface(TCPConnectorSend, "content", "send"),
-          Interface(TCPConnectorReceive, "dest", "receive"),
-          Interface(TCPConnectorGood, "", "good"),
-          Interface(TCPConnectorClose, "", "close"),
-          Interface(WSockInfoResultCode, "", "result_code")
+          Interface(TCPConnectorSend<ClientConnector>, "content", "send"),
+          Interface(TCPConnectorReceive<ClientConnector>, "dest", "receive"),
+          Interface(TCPConnectorGood<ClientConnector>, "", "good"),
+          Interface(TCPConnectorClose<ClientConnector>, "", "close"),
+          Interface(WSockInfoResultCode<ClientConnector>, "", "result_code")
         }
     );
   }

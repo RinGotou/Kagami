@@ -5,6 +5,7 @@
 #include <functional>
 #include <initializer_list>
 #include <vector>
+#include <iostream>
 
 namespace suzu {
   struct Option {

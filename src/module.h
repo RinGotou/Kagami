@@ -4,23 +4,21 @@
 #include "trace.h"
 #include "management.h"
 
-#define OBJECT_ASSERT(MAP,ITEM,TYPE)               \
+#define SET_MAP(MAP) auto &obj_map = MAP
+
+#define CONVERT_OBJECT(ID,TYPE) obj_map[ID].Cast<TYPE>()
+
+#define EXPECT_TYPE(MAP,ITEM,TYPE)                 \
   if (!MAP.CheckTypeId(ITEM,TYPE))                 \
     return Message(kCodeIllegalParam,              \
     "Expected object type - " + TYPE + ".",        \
-    kStateError);
+    kStateError)
 
-#define CONDITION_ASSERT(STATE,MESS)               \
-  if(!(STATE)) return Message(kCodeIllegalParam,MESS,kStateError);
+#define CHECK_OBJECT_TYPE(ID,TYPEID)               \
+  EXPECT_TYPE(obj_map, ID, TYPEID)
 
-#define CALL_ASSERT(STATE,MESS)                    \
-  if(!(STATE)) return Message(kCodeIllegalCall,MESS,kStateError);
-
-#define ASSERT_RETURN(STATE,VALUE)                 \
-  if(!(STATE)) return Message(VALUE);
-
-#define CUSTOM_ASSERT(STATE,CODE,MESS)             \
-  if(!(STATE)) return Message(CODE,MESS,kStateError);
+#define EXPECT(STATE,MESS)                         \
+  if (!(STATE)) return Message(kCodeIllegalParam,MESS,kStateError)
 
 
 namespace kagami {

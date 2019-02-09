@@ -36,6 +36,9 @@ void StartInterpreter(string path, string log_path, bool real_time_log) {
   //Initializers
   Activiate();
   InitBaseTypes();
+#if defined(_WIN32)
+  LoadSocketStuff();
+#endif
 #if not defined(_DISABLE_SDL_)
   LoadSDLStuff();
 #endif

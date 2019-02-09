@@ -30,6 +30,7 @@
     <ClInclude Include="..\..\src\message.h" />
     <ClInclude Include="..\..\src\object.h" />
     <ClInclude Include="..\..\src\module.h" />
+    <ClInclude Include="..\..\src\socket_win.h" />
     <ClInclude Include="..\..\src\trace.h" />
     <ClInclude Include="..\..\src\util.h" />
     <ClInclude Include="..\..\src\window.h" />

@@ -257,6 +257,7 @@ namespace kagami {
     kStrQuit           = "quit",
     kStrTrue           = "true",
     kStrFalse          = "false",
+    kStrMember         = "__member",
     kStrObject         = "__object";
 
   template <class Tx, class Ty>

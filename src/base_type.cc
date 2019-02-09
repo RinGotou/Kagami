@@ -10,7 +10,7 @@ namespace kagami {
 
     if (!p["size"].Null()) {
       size_t size = stol(p.Cast<string>("size"));
-      CONDITION_ASSERT(size > 0, "Illegal array size.");
+      EXPECT(size > 0, "Illegal array size.");
 
       Object obj;
       obj.CloneFrom(p["init_value"]);
@@ -27,14 +27,14 @@ namespace kagami {
   }
 
   Message ArrayGetElement(ObjectMap &p) {
-    OBJECT_ASSERT(p, "index", kTypeIdRawString);
+    EXPECT_TYPE(p, "index", kTypeIdRawString);
 
     ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
     //DEBUG_EVENT("(ArrayGetElement Interface)Index:" + p.Cast<string>("index"));
     size_t idx = stol(p.Cast<string>("index"));
     size_t size = base.size();
 
-    CONDITION_ASSERT(idx < size, "Subscript is out of range. - " + to_string(idx));
+    EXPECT(idx < size, "Subscript is out of range. - " + to_string(idx));
 
     return Message().SetObject(Object().CreateRef(base[idx]));
   }
@@ -84,7 +84,7 @@ namespace kagami {
   
   //RawString
   Message RawStringGetElement(ObjectMap &p) {
-    OBJECT_ASSERT(p, "index", kTypeIdRawString);
+    EXPECT_TYPE(p, "index", kTypeIdRawString);
 
     size_t idx = stol(p.Cast<string>("index"));
 
@@ -95,7 +95,7 @@ namespace kagami {
     string data = ParseRawString(p.Cast<string>(kStrObject));
     size_t size = data.size();
 
-    CONDITION_ASSERT(idx < size - 1, "Subscript is out of range.");
+    EXPECT(idx < size - 1, "Subscript is out of range.");
 
     return Message(makeStrToken(data.at(idx)));
   }
@@ -117,7 +117,7 @@ namespace kagami {
     Object &obj = p["raw_string"];
     Object base;
 
-    CONDITION_ASSERT(IsStringFamily(obj),
+    EXPECT(IsStringFamily(obj),
       "String constructor can't accept this object.");
 
     if (obj.GetTypeId() == kTypeIdWideString) {
@@ -144,7 +144,7 @@ namespace kagami {
 
   //InStream
   Message InStreamConsturctor(ObjectMap &p) {
-    CONDITION_ASSERT(IsStringObject(p["path"]), 
+    EXPECT(IsStringObject(p["path"]), 
       "Illegal path.");
 
     string path = ParseRawString(p.Cast<string>("path"));
@@ -159,7 +159,9 @@ namespace kagami {
     ifstream &ifs = p.Cast<ifstream>(kStrObject);
     Message msg;
 
-    CUSTOM_ASSERT(ifs.good(), kCodeBadStream, "InStream is not working.");
+    if (!ifs.good()) {
+      return Message(kCodeBadStream, "Invalid instream.", kStateError);
+    }
 
     if (ifs.eof()) return Message("");
 
@@ -176,9 +178,9 @@ namespace kagami {
 
   //OutStream
   Message OutStreamConstructor(ObjectMap &p) {
-    CONDITION_ASSERT(IsStringObject(p["path"]), 
+    EXPECT(IsStringObject(p["path"]), 
       "Illegal path.");
-    CONDITION_ASSERT(IsStringObject(p["mode"]), 
+    EXPECT(IsStringObject(p["mode"]), 
       "Illegal mode option.");
 
     string path = ParseRawString(p.Cast<string>("path"));
@@ -204,7 +206,9 @@ namespace kagami {
     ofstream &ofs = p.Cast<ofstream>(kStrObject);
     Message msg = Message(kStrTrue);
 
-    ASSERT_RETURN(ofs.good(), kStrFalse);
+    if (!ofs.good()) {
+      return Message(kStrFalse);
+    }
 
     if (p.CheckTypeId("str",kTypeIdRawString)) {
       string output = ParseRawString(p.Cast<string>("str"));
@@ -223,7 +227,7 @@ namespace kagami {
 
   //regex
   Message RegexConstructor(ObjectMap &p) {
-    CONDITION_ASSERT(IsStringObject(p["pattern"]), 
+    EXPECT(IsStringObject(p["pattern"]), 
       "Illegal pattern string.");
 
     string pattern_string = ParseRawString(p.Cast<string>("pattern"));
@@ -233,7 +237,7 @@ namespace kagami {
   }
 
   Message RegexMatch(ObjectMap &p) {
-    CONDITION_ASSERT(IsStringObject(p["str"]), 
+    EXPECT(IsStringObject(p["str"]), 
       "Illegal target string.");
 
     string str = ParseRawString(p.Cast<string>("str"));
@@ -246,7 +250,7 @@ namespace kagami {
   Message WideStringContructor(ObjectMap &p) {
     Object obj = p["raw_string"];
 
-    CONDITION_ASSERT(IsStringObject(obj), 
+    EXPECT(IsStringObject(obj), 
       "String constructor can't accept this object.");
 
     string output = ParseRawString(obj.Cast<string>());
@@ -347,7 +351,9 @@ namespace kagami {
     ObjectMap target_map;
     bool state;
     
-    CALL_ASSERT(interface.Good(), "Bad interface - " + interface.GetId() + ".");
+    if (!interface.Good()) {
+      return Message(kCodeIllegalCall, "Bad interface - " + interface.GetId() + ".", kStateError);
+    }
 
     switch (interface.GetArgumentMode()) {
     case kCodeAutoSize:
@@ -360,7 +366,7 @@ namespace kagami {
       break;
     }
 
-    CONDITION_ASSERT(state, "Argument error.");
+    EXPECT(state, "Argument error.");
 
     return interface.Start(target_map);
   }

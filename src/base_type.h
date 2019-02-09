@@ -17,7 +17,7 @@ namespace kagami {
     size_t start = stol(p.Cast<string>("start"));
     size_t size = stol(p.Cast<string>("size"));
 
-    CONDITION_ASSERT((start >= 0 && size <= int(str.size()) - start),
+    EXPECT((start >= 0 && size <= int(str.size()) - start),
       "Illegal index or size.");
 
     StringType output = str.substr(start, size);
@@ -33,7 +33,7 @@ namespace kagami {
     size_t size = str.size();
     size_t idx = stol(p.Cast<string>("index"));
 
-    CONDITION_ASSERT((idx > size && idx >= 0), "Index out of range.");
+    EXPECT((idx > size && idx >= 0), "Index out of range.");
 
     shared_ptr<StringType> output = make_shared<StringType>();
 
