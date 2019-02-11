@@ -32,7 +32,7 @@ namespace suzu {
 
     SOCKET connector_;
   public:
-    ~WSockTCPFamily() {
+    virtual ~WSockTCPFamily() {
       freeaddrinfo(addr_info_);
     }
 
