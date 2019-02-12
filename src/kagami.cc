@@ -1,15 +1,18 @@
 #include "module.h"
 #include "suzu_ap.h"
 
+//Argument Processor
 using suzu::ArgumentProcessor;
 using suzu::Option;
 using suzu::ArgumentProcessorError;
 using suzu::Pattern;
+//STL
 using std::string;
 using std::cout;
 using std::endl;
 using std::cin;
 using Processor = ArgumentProcessor<suzu::kHeadHorizon, suzu::kJoinerEquals>;
+
 using namespace kagami;
 
 

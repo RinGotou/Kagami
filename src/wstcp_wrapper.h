@@ -2,9 +2,12 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <string>
+#include <memory>
 #pragma comment(lib, "ws2_32.lib")
 
 namespace suzu {
+  using std::shared_ptr;
+
   class WSockInfo {
   protected:
     int result_code_;
@@ -21,37 +24,54 @@ namespace suzu {
     }
   };
 
+  class AddrInfo {
+  public:
+    addrinfo *ptr_;
+
+  public:
+    virtual ~AddrInfo() { freeaddrinfo(ptr_); }
+
+    AddrInfo() : ptr_(nullptr) {}
+
+    AddrInfo(addrinfo *ptr) : ptr_(ptr) {}
+
+    void ManageContent(addrinfo *ptr) { ptr_ = ptr; }
+    addrinfo *Get() { return ptr_; }
+  };
+
+  using AddrContent = shared_ptr<AddrInfo>;
+
   class WSockTCPFamily : public WSockInfo {
   protected:
     std::string port_;
     std::string addr_;
 
-    addrinfo *addr_info_;
+    AddrContent addr_content_;
 
     size_t buf_size_;
 
     SOCKET connector_;
+
   public:
-    virtual ~WSockTCPFamily() {
-      freeaddrinfo(addr_info_);
-    }
+    virtual ~WSockTCPFamily() {}
 
     WSockTCPFamily() = delete;
 
     WSockTCPFamily(const WSockTCPFamily &rhs) :
-      port_(rhs.port_), addr_(rhs.addr_), addr_info_(nullptr), 
+      port_(rhs.port_), addr_(rhs.addr_), addr_content_(rhs.addr_content_), 
       buf_size_(rhs.buf_size_), connector_(INVALID_SOCKET) {}
 
     WSockTCPFamily(const WSockTCPFamily &&rhs) :
       WSockTCPFamily(rhs) {}
 
     WSockTCPFamily(std::string port, std::string addr, size_t buf_size) :
-      port_(port), addr_(addr), addr_info_(nullptr),
+      port_(port), addr_(addr), addr_content_(new AddrInfo()),
       buf_size_(buf_size), connector_(INVALID_SOCKET) {}
 
   protected:
      bool InitSocket(int flags = 0, int addr_family = AF_UNSPEC) {
       addrinfo hints;
+      addrinfo *addr_info_;
       ZeroMemory(&hints, sizeof(hints));
 
       if (flags != 0) {
@@ -74,6 +94,8 @@ namespace suzu {
           addr_info_->ai_socktype,
           addr_info_->ai_protocol
         );
+
+        addr_content_->ManageContent(addr_info_);
       }
 
       return (result_code_ == 0 && connector_ != INVALID_SOCKET);
@@ -98,6 +120,8 @@ namespace suzu {
     public WSockTCPFamily , 
     public TCPConnector {  
   public:
+    TCPClient() = delete;
+
     TCPClient(std::string port, std::string addr, size_t buf_size) :
       WSockTCPFamily(port, addr, buf_size) {}
 
@@ -111,7 +135,7 @@ namespace suzu {
     bool StartClient() {
       if (!InitSocket()) return false;
 
-      addrinfo *node = addr_info_;
+      addrinfo *node = addr_content_->Get();
 
       while (node != nullptr) {
         result_code_ = connect(
@@ -250,7 +274,7 @@ namespace suzu {
     bool StartServer(int backlog = SOMAXCONN) {
       if (!InitSocket()) return false;
 
-      addrinfo *node = addr_info_;
+      addrinfo *node = addr_content_->Get();
       
       while (node != nullptr) {
         result_code_ = bind(

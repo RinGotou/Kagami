@@ -77,9 +77,9 @@ namespace kagami {
   using suzu::TCPConnector;
   using suzu::WSockInfo;
 
-  const string kInterpreterVersion  = "0001";
+  const string kInterpreterVersion = "Revision 5";
   const string kIRFrameworkVersion = "August";
-  const string kPatchName = "Kaleidoscope";
+  const string kPatchName          = "Vanilla";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else
