@@ -57,6 +57,7 @@ namespace kagami {
   using std::shared_ptr;
   using std::unique_ptr;
   using std::static_pointer_cast;
+  using std::dynamic_pointer_cast;
   using std::regex;
   using std::regex_match;
   using std::make_shared;
@@ -216,6 +217,7 @@ namespace kagami {
   const string kTypeIdTCPServer       = "TCPServer";
   const string kTypeIdClientConnector = "ClientConnector";
   const string kTypeIdTCPConnector    = "TCPConnector";
+  const string kTypeIdIterator        = "iterator";
 
   const string
     kStrIf             = "if",
@@ -258,6 +260,9 @@ namespace kagami {
     kStrTrue           = "true",
     kStrFalse          = "false",
     kStrMember         = "__member",
+    kStrCompare        = "__compare",
+    kStrRightHandSide  = "__rhs",
+    kStrLeftHandSide   = "__lhs",
     kStrObject         = "__object";
 
   template <class Tx, class Ty>

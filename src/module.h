@@ -220,6 +220,8 @@ namespace kagami {
 
   void Activiate();
   void InitBaseTypes();
+  void InitContainerComponents();
+
 #if not defined(_DISABLE_SDL_)
   void LoadSDLStuff();
 #endif

@@ -247,8 +247,51 @@ namespace kagami {
   class ObjectAction : public Action {
   public:
     Message Do(Object &A, Object &B) override {
-      //TODO:
-      return Message();
+      return Message(kStrFalse);
+    }
+  };
+
+  template<>
+  class ObjectAction<OperatorCode::EQUALS> : public Action {
+    Message Do(Object &A, Object &B) override {
+      bool result = find_in_vector<string>(kStrCompare,
+        management::type::GetMethods(A.GetTypeId()));
+
+      if (result) {
+        ObjectMap obj_map = {
+          NamedObject(kStrObject, A),
+          NamedObject(kStrRightHandSide, B)
+        };
+
+        auto interface = management::Order(kStrCompare, A.GetTypeId());
+        return interface.Start(obj_map);
+      }
+
+      return Message(kStrFalse);
+    }
+  };
+
+  template<>
+  class ObjectAction<OperatorCode::NOT_EQUAL> : public Action {
+    Message Do(Object &A, Object &B) override {
+      bool result = find_in_vector<string>(kStrCompare,
+        management::type::GetMethods(A.GetTypeId()));
+
+      if (result) {
+        ObjectMap obj_map = {
+          NamedObject(kStrObject, A),
+          NamedObject(kStrRightHandSide, B)
+        };
+
+        auto interface = management::Order(kStrCompare, A.GetTypeId());
+        string str = interface.Start(obj_map).GetObj().Cast<string>();
+        if (str == kStrTrue) str = kStrFalse;
+        else if (str == kStrFalse) str = kStrTrue;
+        
+        return Message(str);
+      }
+
+      return Message(kStrFalse);
     }
   };
 

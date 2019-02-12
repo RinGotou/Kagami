@@ -109,6 +109,12 @@ namespace kagami {
       return ptr_;
     }
 
+    template <class Tx>
+    shared_ptr<Tx> Convert() {
+      if (ref_) return GetTargetObject()->ForceConvert();
+      return static_pointer_cast<Tx>(ptr_);
+    }
+
     Object &Deref() {
       if (ref_) return *GetTargetObject();
       return *this;

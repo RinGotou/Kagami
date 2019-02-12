@@ -4,83 +4,6 @@ namespace kagami {
   bool IsStringFamily(Object &obj) {
     return compare(obj.GetTypeId(), { kTypeIdRawString,kTypeIdString,kTypeIdWideString });
   }
-
-  Message ArrayConstructor(ObjectMap &p) {
-    shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
-
-    if (!p["size"].Null()) {
-      size_t size = stol(p.Cast<string>("size"));
-      EXPECT(size > 0, "Illegal array size.");
-
-      Object obj;
-      obj.CloneFrom(p["init_value"]);
-
-      base->reserve(size);
-      auto type_id = obj.GetTypeId();
-
-      for (auto count = 0; count < size; count++) {
-        base->emplace_back(Object(management::type::GetObjectCopy(obj), type_id));
-      }
-    }
-
-    return Message().SetObject(Object(base, kTypeIdArray).SetConstructorFlag());
-  }
-
-  Message ArrayGetElement(ObjectMap &p) {
-    EXPECT_TYPE(p, "index", kTypeIdRawString);
-
-    ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
-    //DEBUG_EVENT("(ArrayGetElement Interface)Index:" + p.Cast<string>("index"));
-    size_t idx = stol(p.Cast<string>("index"));
-    size_t size = base.size();
-
-    EXPECT(idx < size, "Subscript is out of range. - " + to_string(idx));
-
-    return Message().SetObject(Object().CreateRef(base[idx]));
-  }
-
-  Message ArrayGetSize(ObjectMap &p) {
-    auto &obj = p[kStrObject];
-    return Message(to_string(obj.Cast<ObjectArray>().size()));
-  }
-
-  Message ArrayEmpty(ObjectMap &p) {
-    return Message(
-      util::MakeBoolean(p[kStrObject].Cast<ObjectArray>().empty())
-    );
-  }
-
-  Message ArrayPush(ObjectMap &p) {
-    ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
-
-    base.emplace_back(p["object"]);
-
-    return Message();
-  }
-
-  Message ArrayPop(ObjectMap &p) {
-    ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
-
-    if (!base.empty()) base.pop_back();
-
-    return Message().SetObject(util::MakeBoolean(base.empty()));
-  }
- 
-  Message ArrayPrint(ObjectMap &p) {
-    Message result;
-    ObjectMap obj_map;
-
-    auto &base = p.Cast<ObjectArray>(kStrObject);
-    auto interface = management::Order("print", kTypeIdNull, -1);
-
-    for (auto &unit : base) {
-      obj_map.insert(NamedObject(kStrObject, unit));
-      result = interface.Start(obj_map);
-      obj_map.clear();
-    }
-
-    return result;
-  }
   
   //RawString
   Message RawStringGetElement(ObjectMap &p) {
@@ -140,6 +63,25 @@ namespace kagami {
     }
 
     return Message().SetObject(base);
+  }
+
+  Message StringCompare(ObjectMap &p) {
+    auto &rhs = p[kStrRightHandSide];
+    string lhs = p[kStrObject].Cast<string>();
+
+    string type_id = rhs.GetTypeId();
+    bool result = false;
+
+    if (type_id == kTypeIdRawString) {
+      string rhs_str = ParseRawString(rhs.Cast<string>());
+      result = (lhs == rhs_str);
+    }
+    else if (type_id == kTypeIdString) {
+      string rhs_str = rhs.Cast<string>();
+      result = (lhs == rhs_str);
+    }
+
+    return Message(util::MakeBoolean(result));
   }
 
   //InStream
@@ -278,7 +220,7 @@ namespace kagami {
     return Message().SetObject(Object(dest_base, kTypeIdArray));
   }
 
-  bool Generating_AutoSize(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
+  bool Generating_AutoSize(Interface &interface, ObjectArray arg_list, ObjectMap &target_map) {
     if (arg_list.size() != interface.GetParameters().size()) return false;
     auto ent_params = interface.GetParameters();
     auto va_arg_head = ent_params.back();
@@ -316,7 +258,7 @@ namespace kagami {
     return true;
   }
 
-  bool Generating_AutoFill(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
+  bool Generating_AutoFill(Interface &interface, ObjectArray arg_list, ObjectMap &target_map) {
     if (arg_list.size() > interface.GetParameters().size()) return false;
     auto ent_params = interface.GetParameters();
 
@@ -333,7 +275,7 @@ namespace kagami {
     return true;
   }
 
-  bool Generating(Interface &interface, vector<Object> arg_list, ObjectMap &target_map) {
+  bool Generating(Interface &interface, ObjectArray arg_list, ObjectMap &target_map) {
     if (arg_list.size() != interface.GetParameters().size()) return false;
     auto ent_params = interface.GetParameters();
 
@@ -392,32 +334,6 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdArray, [](shared_ptr<void> source) -> shared_ptr<void> {
-        auto &src_base = *static_pointer_cast<ObjectArray>(source);
-        shared_ptr<ObjectArray> dest_base = make_shared<ObjectArray>();
-
-        dest_base->reserve(src_base.size());
-
-        for (auto &unit : src_base) {
-          dest_base->emplace_back(Object(management::type::GetObjectCopy(unit), unit.GetTypeId()));
-        }
-
-        return dest_base;
-      })
-      .InitConstructor(
-        Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill)
-      )
-      .InitMethods(
-        {
-          Interface(ArrayGetElement, "index", "__at"),
-          Interface(ArrayPrint, "", "__print"),
-          Interface(ArrayGetSize, "", "size"),
-          Interface(ArrayPush, "object", "push"),
-          Interface(ArrayPop, "object", "pop"),
-          Interface(ArrayEmpty, "", "empty")
-        }
-    );
-
     NewTypeSetup(kTypeIdString, SimpleSharedPtrCopy<string>)
       .InitConstructor(
         Interface(StringConstructor, "raw_string", "string")
@@ -428,7 +344,8 @@ namespace kagami {
           Interface(StringFamilyPrint<string, std::ostream>, "", "__print"),
           Interface(StringFamilySubStr<string>, "start|size", "substr"),
           Interface(GetStringFamilySize<string>, "", "size"),
-          Interface(StringFamilyConverting<wstring, string>, "", "to_wide")
+          Interface(StringFamilyConverting<wstring, string>, "", "to_wide"),
+          Interface(StringCompare, kStrRightHandSide, kStrCompare)
         }
     );
 

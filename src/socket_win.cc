@@ -11,7 +11,7 @@ namespace kagami {
     size_t buf_size = stol(p["buf_size"].Cast<string>());
 
     shared_ptr<TCPClient> client_ptr(
-      make_shared<TCPClient>(port, addr, buf_size)
+      new TCPClient(port, addr, buf_size)
     );
 
     return Message().SetObject(
@@ -35,7 +35,7 @@ namespace kagami {
     size_t buf_size = stol(p["buf_size"].Cast<string>());
 
     shared_ptr<TCPServer> server_ptr(
-      make_shared<TCPServer>(port, buf_size)
+      new TCPServer(port, buf_size)
     );
 
     return Message().SetObject(
@@ -60,7 +60,7 @@ namespace kagami {
   Message TCPServerAccept(ObjectMap &p) {
     auto &server = p[kStrObject].Cast<TCPServer>();
     shared_ptr<TCPServer::ClientConnector> connector_ptr(
-      make_shared<TCPServer::ClientConnector>(server.Accept())
+      new TCPServer::ClientConnector(server.Accept())
     );
     return Message().SetObject(
       Object(connector_ptr, kTypeIdClientConnector)

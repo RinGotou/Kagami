@@ -9,11 +9,11 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-path=.\benmark.kagami -log=stdout</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-path=C:\workspace\benmark.kagami -log=stdout</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-path=.\benmark.kagami -log=stdout</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-path=C:\workspace\benmark.kagami -log=stdout</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

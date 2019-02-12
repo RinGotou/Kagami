@@ -1,0 +1,14 @@
+a = array(5, 'hello')
+println(a)
+
+it = a.head()
+tail = a.tail()
+
+while(it != tail)
+  println(it.get())
+  it.step_forward()
+end
+
+it = a.head()
+it.get() = 'world'
+println(it.get())
