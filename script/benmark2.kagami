@@ -9,9 +9,6 @@ fn BubbleSort(array_size)
     i = i + 1
   end
   
-  println('Origin:')
-  println(ar)
-  
   println('Sorting.')
   
   start_time = time()
@@ -19,7 +16,7 @@ fn BubbleSort(array_size)
   tail = ar.tail()
   
   while (it != tail)
-    pos = it.forward(1)
+    pos = it.forward()
     
     while (pos != tail)
       if (it.get() > pos.get())
@@ -34,9 +31,6 @@ fn BubbleSort(array_size)
   
   println('Start time:' + start_time)
   println('End time:' + time())
-  
-  println('Result:')
-  println('ar')
 end
 
-BubbleSort(10)
+BubbleSort(100)
