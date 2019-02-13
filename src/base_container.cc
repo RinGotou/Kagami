@@ -122,6 +122,19 @@ namespace kagami {
     );
   }
 
+  Message ArrayCompare(ObjectMap &p) {
+    auto &rhs = p[kStrRightHandSide];
+    auto &lhs = p[kStrObject].Cast<ObjectArray>();
+    bool result = false;
+
+    if (rhs.GetTypeId() == kTypeIdArray) {
+      auto &rhs_objarray = rhs.Cast<ObjectArray>();
+      result = (lhs == rhs_objarray);
+    }
+
+    return Message(util::MakeBoolean(result));
+  }
+
   void InitContainerComponents() {
     using management::type::NewTypeSetup;
 
