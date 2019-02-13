@@ -21,12 +21,20 @@ namespace kagami {
     ArgumentType type;
   };
 
+  struct ArgumentOption {
+    bool no_feeding;
+
+    ArgumentOption() :
+      no_feeding(false) {}
+  };
+
   class Argument {
   public:
     string data;
     ArgumentType type;
     TokenType token_type;
     Domain domain;
+    ArgumentOption option;
 
     Argument() :
       data(),
@@ -59,27 +67,31 @@ namespace kagami {
     string head_interface;
     Argument domain;
     RequestType type;
+    ArgumentOption option;
 
     Request(GenericToken token) :
       priority(4),
       head_command(token),
       head_interface(),
       domain(),
-      type(kRequestCommand) {}
+      type(kRequestCommand),
+      option() {}
 
     Request(string token, bool place_holder = false) :
       priority(4),
       head_command(kTokenNull),
       head_interface(token),
       domain(),
-      type(place_holder ? kRequestNull : kRequestInterface) {}
+      type(place_holder ? kRequestNull : kRequestInterface),
+      option() {}
 
     Request() :
       priority(4),
       head_command(kTokenNull),
       head_interface(),
       domain(),
-      type(kRequestNull) {}
+      type(kRequestNull),
+      option() {}
   };
 
   using ArgumentList = deque <Argument>;

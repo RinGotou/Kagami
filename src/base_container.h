@@ -84,8 +84,21 @@ namespace kagami {
       it_(dynamic_pointer_cast<IteratorInterface>(make_shared<STLIterator<Tx>>(it))),
       container_type_(type) {}
 
-    void StepForward() { return it_->StepForward(); }
-    void StepBack() { return it_->StepBack(); }
+    void StepForward() { it_->StepForward(); }
+    void StepBack() { it_->StepBack(); }
+
+    void StepForward(size_t step) {
+      for (size_t idx = 0; idx < step; idx += 1) {
+        it_->StepForward();
+      }
+    }
+
+    void StepBack(size_t step) {
+      for (size_t idx = 0; idx < step; idx += 1) {
+        it_->StepBack();
+      }
+    }
+
     Object &Deref() { return it_->Deref(); }
 
     bool Compare(IteratorPackage &rhs) {
@@ -104,6 +117,22 @@ namespace kagami {
       }
       
       return result;
+    }
+
+    IteratorPackage CreateCopy() {
+      IteratorPackage pkg;
+      switch (container_type_) {
+      case kContainerObjectArray:
+        pkg.it_.reset(
+          dynamic_cast<IteratorInterface *>(new ObjectArrayIterator(
+            *dynamic_pointer_cast<ObjectArrayIterator>(it_)
+          )));
+        pkg.container_type_ = container_type_;
+      default:
+        break;
+      }
+
+      return pkg;
     }
   };
 }

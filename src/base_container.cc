@@ -7,6 +7,28 @@ namespace kagami {
     return Message();
   }
 
+  Message IteratorForward(ObjectMap &p) {
+    auto &obj = p[kStrObject];
+    Object ret_obj(
+      make_shared<IteratorPackage>(obj.Cast<IteratorPackage>().CreateCopy()),
+      kTypeIdIterator
+    );
+
+    ret_obj.Cast<IteratorPackage>().StepForward(1);
+    return Message().SetObject(ret_obj);
+  }
+
+  Message IteratorBack(ObjectMap &p) {
+    auto &obj = p[kStrObject];
+    Object ret_obj(
+      make_shared<IteratorPackage>(obj.Cast<IteratorPackage>().CreateCopy()),
+      kTypeIdIterator
+    );
+
+    ret_obj.Cast<IteratorPackage>().StepBack(1);
+    return Message().SetObject(ret_obj);
+  }
+
   Message IteratorStepBack(ObjectMap &p) {
     auto &it = p[kStrObject].Cast<IteratorPackage>();
     it.StepBack();
@@ -122,19 +144,6 @@ namespace kagami {
     );
   }
 
-  Message ArrayCompare(ObjectMap &p) {
-    auto &rhs = p[kStrRightHandSide];
-    auto &lhs = p[kStrObject].Cast<ObjectArray>();
-    bool result = false;
-
-    if (rhs.GetTypeId() == kTypeIdArray) {
-      auto &rhs_objarray = rhs.Cast<ObjectArray>();
-      result = (lhs == rhs_objarray);
-    }
-
-    return Message(util::MakeBoolean(result));
-  }
-
   void InitContainerComponents() {
     using management::type::NewTypeSetup;
 
@@ -162,7 +171,7 @@ namespace kagami {
           Interface(ArrayPop, "object", "pop"),
           Interface(ArrayEmpty, "", "empty"),
           Interface(ArrayBegin, "", "head"),
-          Interface(ArrayEnd, "", "tail")
+          Interface(ArrayEnd, "", "tail"),
         }
     );
 
@@ -170,6 +179,8 @@ namespace kagami {
       .InitMethods(
         {
           Interface(IteratorGet, "", "get"),
+          Interface(IteratorForward, "", "forward"),
+          Interface(IteratorBack, "", "back"),
           Interface(IteratorStepForward, "", "step_forward"),
           Interface(IteratorStepBack, "", "step_back"),
           Interface(IteratorOperatorCompare, kStrRightHandSide, kStrCompare)

@@ -280,6 +280,8 @@ namespace kagami {
     action_base_.emplace_back(Command(Request(token), arguments));
     blk->domain = blk->args.back();
     blk->args.pop_back();
+
+    action_base_.back().first.option.no_feeding = true;
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {

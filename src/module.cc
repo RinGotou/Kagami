@@ -435,7 +435,7 @@ namespace kagami {
     case kArgumentReturningStack:
       if (!returning_base.empty()) {
         obj = returning_base.top();
-        if ((!is_assert && !checking) || is_assert_r)
+        if (!checking)
           returning_base.pop();
       }
       else {
@@ -540,8 +540,6 @@ namespace kagami {
     error_obj_checking = false;
     tail_recursion = false;
     error_assembling = false;
-    is_assert = false;
-    is_assert_r = false;
     deliver = false;
     msg = Message();
     while (!returning_base.empty()) returning_base.pop();
@@ -797,8 +795,8 @@ namespace kagami {
     return result;
   }
 
-  bool IRWorker::DomainAssert(ArgumentList args, bool returning) {
-    Object obj = MakeObject(args[0]);
+  bool IRWorker::DomainAssert(ArgumentList args, bool returning, bool no_feeding) {
+    Object obj = MakeObject(args[0], no_feeding);
     Object id_obj = MakeObject(args[1]);
     string id = id_obj.Cast<string>();
     vector<string> methods = management::type::GetMethods(obj.GetTypeId());
@@ -809,26 +807,19 @@ namespace kagami {
       return result;
     }
 
-    ObjectPointer ret_ptr = management::FindObject(id);
-
-    if (ret_ptr != nullptr) {
-      if (returning) returning_base.push(*ret_ptr);
+    Object ent_obj;
+    auto interface = management::Order(id, obj.GetTypeId());
+    if (interface.Good()) {
+      if (returning) {
+        ent_obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
+        returning_base.push(ent_obj);
+      }
     }
     else {
-      Object ent_obj;
-      auto interface = management::Order(id, obj.GetTypeId());
-      if (interface.Good()) {
-        if (returning) {
-          ent_obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
-          returning_base.push(ent_obj);
-        }
-      }
-      else {
-        result = false;
-        error_string = "Method/Member is not found. - " + id;
-      }
+      result = false;
+      error_string = "Method/Member is not found. - " + id;
     }
-
+    
     return result;
   }
 
@@ -1342,7 +1333,8 @@ namespace kagami {
 
     case kTokenAssert:
     case kTokenAssertR:
-      result = worker->DomainAssert(args, token == kTokenAssertR);
+      result = worker->DomainAssert(args, 
+        token == kTokenAssertR, request.option.no_feeding);
       break;
 
     case kTokenQuit:

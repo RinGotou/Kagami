@@ -1,0 +1,42 @@
+fn BubbleSort(array_size)
+  ar = array(array_size, 0)
+  i = 0
+  num = array_size
+  
+  while (i < array_size)
+    ar[i] = num
+    num = num - 1
+    i = i + 1
+  end
+  
+  println('Origin:')
+  println(ar)
+  
+  println('Sorting.')
+  
+  start_time = time()
+  it = ar.head()
+  tail = ar.tail()
+  
+  while (it != tail)
+    pos = it.forward(1)
+    
+    while (pos != tail)
+      if (it.get() > pos.get())
+        swap(it.get(), pos.get())
+      end
+      
+      pos.step_forward()
+    end
+    
+    it.step_forward()
+  end
+  
+  println('Start time:' + start_time)
+  println('End time:' + time())
+  
+  println('Result:')
+  println('ar')
+end
+
+BubbleSort(10)

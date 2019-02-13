@@ -81,8 +81,6 @@ namespace kagami {
     bool error_returning,
       error_obj_checking,
       error_assembling,
-      is_assert,
-      is_assert_r,
       deliver,
       tail_recursion;
     Message msg;
@@ -93,8 +91,6 @@ namespace kagami {
       error_returning(false),
       error_obj_checking(false),
       error_assembling(false),
-      is_assert(false),
-      is_assert_r(false),
       deliver(false),
       tail_recursion(false),
       msg() {}
@@ -120,7 +116,7 @@ namespace kagami {
     bool Fn(ArgumentList args);
     bool Case(ArgumentList args);
     bool When(ArgumentList args);
-    bool DomainAssert(ArgumentList args, bool returning);
+    bool DomainAssert(ArgumentList args, bool returning, bool no_feeding);
     bool ConditionAndLoop(ArgumentList args, StateCode code);
   };
 
