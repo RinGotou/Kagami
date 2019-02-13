@@ -154,6 +154,9 @@ namespace kagami {
     return output;
   }
 
+  /* 
+     Pack IR vector into a new module and run it.
+  */
   Message FunctionAgentTunnel(ObjectMap &p, vector<IR> storage) {
     return Module(storage).RunAsFunction(p);
   }

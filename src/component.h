@@ -2,8 +2,10 @@
 #include "module.h"
 
 namespace kagami {
+  /* Runtime strategy identifier for binary operator */
   enum PairTypePolicy { G_INT, G_FLOAT, G_STR, G_OTHER_OBJ };
 
+  /* Identifier for binary operator */
   enum OperatorCode {
     PLUS, MINUS, TIMES, DIV, EQUAL, EQUALS,
     GREATER, LESS, NOT_EQUAL, GREATER_OR_EQUAL, LESS_OR_EQUAL,
@@ -38,7 +40,10 @@ namespace kagami {
     string Do(const string &str) { return str; }
   };
 
-  /* Binary Operator Generator */
+  ///////////////////////////////////////////////////////////////////
+  /* 
+    Binary Operator Function Generator for plain data(rawstring type)
+  */
   template <class Type, class DestType, OperatorCode op_code>
   class Operation {
   public:
@@ -195,8 +200,9 @@ namespace kagami {
     }
   };
 
+  /* Result processing policy */
   template <class ResultType>
-  class ResultAction {
+  class ResultPolicy {
   public:
     string Convert(ResultType src) {
       return to_string(src);
@@ -204,7 +210,7 @@ namespace kagami {
   };
 
   template<>
-  class ResultAction<string> {
+  class ResultPolicy<string> {
   public:
     string Convert(string src) {
       return src;
@@ -212,25 +218,27 @@ namespace kagami {
   };
 
   template<>
-  class ResultAction<bool> {
+  class ResultPolicy<bool> {
   public:
     string Convert(bool src) {
       return src ? kStrTrue : kStrFalse;
     }
   };
 
+  /* Binary operator function interface */
   class Action {
   public:
     virtual Message Do(Object &, Object &) = 0;
   };
 
+  /* Unified operator function generator for plain string type(rawstring) */
   template<class ConvertorTargetType, OperatorCode op_code, class ResultType>
   class PlainStringAction : public Action {
   public:
     Message Do(Object &A, Object &B) override {
       StringConvertor<ConvertorTargetType> cvt;
       Operation<ConvertorTargetType, ResultType, op_code> op;
-      ResultAction<ResultType> result_action;
+      ResultPolicy<ResultType> result_action;
 
       string data_A = A.Cast<string>();
       string data_B = B.Cast<string>();
@@ -243,6 +251,10 @@ namespace kagami {
     }
   };
 
+  /*
+    Operator function generator for non-plain type.
+    Base class returns false value for every operator that is not supported.
+  */
   template<OperatorCode op_code>
   class ObjectAction : public Action {
   public:
@@ -254,6 +266,10 @@ namespace kagami {
   template<>
   class ObjectAction<OperatorCode::EQUALS> : public Action {
     Message Do(Object &A, Object &B) override {
+      /*
+        Find "__compare" method in object methods.
+        If it's founded, Code will send objects to destination function.
+      */
       bool result = find_in_vector<string>(kStrCompare,
         management::type::GetMethods(A.GetTypeId()));
 
@@ -273,6 +289,9 @@ namespace kagami {
 
   template<>
   class ObjectAction<OperatorCode::NOT_EQUAL> : public Action {
+    /*
+      Same as above.
+    */
     Message Do(Object &A, Object &B) override {
       bool result = find_in_vector<string>(kStrCompare,
         management::type::GetMethods(A.GetTypeId()));
@@ -284,6 +303,9 @@ namespace kagami {
         };
 
         auto interface = management::Order(kStrCompare, A.GetTypeId());
+        /* 
+          Reverse result.
+        */
         string str = interface.Start(obj_map).GetObj().Cast<string>();
         if (str == kStrTrue) str = kStrFalse;
         else if (str == kStrFalse) str = kStrTrue;
@@ -310,6 +332,7 @@ namespace kagami {
     using ResultType = Type;
   };
 
+  /* Top generator for binary operator */
   template<OperatorCode op_code, bool boolean_result>
   Message OperatorFunction(ObjectMap &p) {
     Message result;

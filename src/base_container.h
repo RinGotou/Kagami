@@ -1,12 +1,16 @@
 #pragma once
 #include "module.h"
-
+/*
+  Base container implementations for Kagami script.
+*/
 namespace kagami {
+  /* Runtime type identifier for IteratorPackage */
   enum BaseContainerCode {
     kContainerObjectArray,
     kContainerNull
   };
 
+  /* Unified iterator wrapper interface */
   class IteratorInterface {
   public:
     virtual ~IteratorInterface() {}
@@ -16,6 +20,11 @@ namespace kagami {
     
   };
 
+  /* 
+    Base wrapper for STL Iterator class.
+    Any class that is inherited from standard iterator interface can
+    be packed safely.
+  */
   template <class IteratorType>
   class STLIterator : public IteratorInterface {
   public:
@@ -55,6 +64,10 @@ namespace kagami {
 
   using ObjectArrayIterator = STLIterator<ObjectArray::iterator>;
 
+  /*
+    Top iterator wrapper.
+    Provide unified methods for iterator type in script.
+  */
   class IteratorPackage : public IteratorInterface {
   private:
     BaseContainerCode container_type_;
@@ -79,6 +92,10 @@ namespace kagami {
     IteratorPackage(const IteratorPackage &&rhs) :
       IteratorPackage(rhs) {}
 
+    /* 
+      Hint: You must add new type identifier code in BaseContainerCode and add 
+      casting actions below(Compare() and CreateCopy()) before add new items!
+    */
     template <class Tx>
     IteratorPackage(Tx it, BaseContainerCode type) :
       it_(dynamic_pointer_cast<IteratorInterface>(make_shared<STLIterator<Tx>>(it))),

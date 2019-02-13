@@ -78,6 +78,7 @@ namespace kagami {
   using suzu::TCPConnector;
   using suzu::WSockInfo;
 
+  /* Application Info */
   const string kInterpreterVersion = "Revision 5";
   const string kIRFrameworkVersion = "August";
   const string kPatchName          = "Vanilla";
@@ -90,6 +91,7 @@ namespace kagami {
   const string kMaintainer     = "Suzu Nakamura";
   const string kCopyright      = "Copyright(c) 2019";
 
+  /* Message state code for Message class */
   enum StateCode {
     kCodeWhen = 18,
     kCodeCase = 17,
@@ -116,6 +118,7 @@ namespace kagami {
     kCodeBadExpression = -5
   };
 
+  /* Message state level for Message class */
   enum StateLevel {
     kStateNormal,
     kStateError,
@@ -141,6 +144,7 @@ namespace kagami {
 
   using Token = pair<string, TokenType>;
 
+  /* Reserved keywords */
   enum GenericToken {
     kTokenExpList, 
     kTokenFn, 
@@ -193,6 +197,7 @@ namespace kagami {
     kBasicTokenOther
   };
 
+  /* IR framework runtime mode code */
   enum MachineMode {
     kModeNormal,
     kModeNextCondition,
@@ -204,6 +209,7 @@ namespace kagami {
     kModeCaseJump
   };
 
+  /* Embedded type identifier strings */
   const string kTypeIdNull            = "null";
   const string kTypeIdString          = "string";
   const string kTypeIdWideString      = "wstring";
@@ -265,6 +271,7 @@ namespace kagami {
     kStrLeftHandSide   = "__lhs",
     kStrObject         = "__object";
 
+  /* Compare multiple objects */
   template <class Tx, class Ty>
   inline bool compare(Tx lhs, const std::initializer_list<Ty> &&rhs) {
     bool result = false;

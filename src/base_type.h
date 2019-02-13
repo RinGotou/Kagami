@@ -41,6 +41,8 @@ namespace kagami {
     return Message().SetObject(Object(output, type_id));
   }
 
+  /* Automatic stream chooser for different string type */
+  /* Base class for stream chooser (DO NOT USE IT) */
   template <class StringType, class StreamType>
   class StreamBase {
     StreamType *stream_;
@@ -49,6 +51,7 @@ namespace kagami {
     StreamBase(){}
   };
 
+  /* Stream chooser (for string) */
   template <>
   class StreamBase<string, std::ostream> {
     std::ostream *stream_;
@@ -61,6 +64,7 @@ namespace kagami {
     StreamBase() { stream_ = &std::cout; }
   };
 
+  /* String chooser (for wstring) */
   template<>
   class StreamBase<wstring, std::wostream> {
     std::wostream *stream_;
@@ -95,6 +99,7 @@ namespace kagami {
     return Message(temp);
   }
 
+  /* Convert string to destination type */
   template <class DestType, class SrcType>
   class StringConvertor {
   public:
@@ -113,6 +118,7 @@ namespace kagami {
     string operator()(const wstring &src) { return ws2s(src); }
   };
 
+  /* Policy for choosing right type identifier string */
   template<bool is_wstring>
   class ConvertingInfoPolicy {};
 
@@ -130,10 +136,15 @@ namespace kagami {
 
   template<class DestType,class SrcType>
   Message StringFamilyConverting(ObjectMap &p) {
-    StringConvertor<DestType, SrcType> convertor;
-    SrcType &str = p.Cast<SrcType>(kStrObject);
-    shared_ptr<DestType> dest = make_shared<DestType>(convertor(str));
-    ConvertingInfoPolicy<std::is_same<DestType, wstring>::value> info_policy;
+    // Init convertor
+    StringConvertor<DestType, SrcType> convertor; 
+    // Get original string
+    SrcType &str = p.Cast<SrcType>(kStrObject); 
+    // Make result
+    shared_ptr<DestType> dest = make_shared<DestType>(convertor(str)); 
+    // Init object type identifier
+    ConvertingInfoPolicy<std::is_same<DestType, wstring>::value> info_policy; 
+    // Return result object
     return Message().SetObject(Object(dest, info_policy.TypeId()));
   }
 }

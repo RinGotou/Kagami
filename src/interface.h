@@ -5,14 +5,20 @@ namespace kagami {
   enum InterfaceType {
     kInterfaceTypePlain, kInterfaceTypeMethod
   };
-
+  
+  /* 
+    Because of sturcture of classes, I place this function pointer here,
+    and you can find that function(FunctionAgentTunnel()) in "module.cc".
+  */
   using AgentActivity = Message(*)(ObjectMap &, vector<IR>);
 
+  
   class InterfacePolicy {
   public:
     virtual Message Start(ObjectMap &p) = 0;
   };
 
+  /* C++ function wrapper */
   class CXXFunctionPolicy : public InterfacePolicy {
   private:
     Activity activity_;
@@ -23,6 +29,7 @@ namespace kagami {
     Message Start(ObjectMap &p) { return activity_(p); }
   };
 
+  /* Delegate IR from user-defined function */
   class IRFunctionPolicy : public InterfacePolicy {
   private:
     vector<IR> storage_;
