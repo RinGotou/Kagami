@@ -202,6 +202,19 @@ namespace kagami {
       .SetObject(Object(make_shared<wstring>(wstr), kTypeIdWideString));
   }
 
+  Message WideStringCompare(ObjectMap &p) {
+    auto &rhs = p[kStrRightHandSide];
+    wstring lhs = p[kStrObject].Cast<wstring>();
+    bool result = false;
+    if (rhs.GetTypeId() == kTypeIdWideString) {
+      wstring rhs_wstr = rhs.Cast<wstring>();
+
+      result = (lhs == rhs_wstr);
+    }
+
+    return Message(util::MakeBoolean(result));
+  }
+
   //Function
   Message FunctionGetId(ObjectMap &p) {
     auto &interface = p.Cast<Interface>(kStrObject);
@@ -313,6 +326,22 @@ namespace kagami {
     return interface.Start(target_map);
   }
 
+  Message FunctionCompare(ObjectMap &p) {
+    auto &rhs = p[kStrRightHandSide];
+    auto &lhs = p[kStrObject].Cast<Interface>();
+
+    string type_id = rhs.GetTypeId();
+    bool result = false;
+
+    if (type_id == kTypeIdFunction) {
+      auto &rhs_interface = rhs.Cast<Interface>();
+
+      result = (lhs == rhs_interface);
+    }
+    
+    return Message(util::MakeBoolean(result));
+  }
+
   void InitBaseTypes() {
     using management::type::NewTypeSetup;
 
@@ -321,7 +350,8 @@ namespace kagami {
         {
           Interface(FunctionGetId, "", "id"),
           Interface(FunctionCall, "arg", "call", kCodeAutoSize),
-          Interface(FunctionGetParameters, "", "params")
+          Interface(FunctionGetParameters, "", "params"),
+          Interface(FunctionCompare, kStrRightHandSide, kStrCompare)
         }
     );
 
@@ -395,7 +425,8 @@ namespace kagami {
           Interface(StringFamilyGetElement<wstring>, "index", "__at"),
           Interface(StringFamilyPrint<wstring, std::wostream>, "", "__print"),
           Interface(StringFamilySubStr<wstring>, "start|size", "substr"),
-          Interface(StringFamilyConverting<string, wstring>, "", "to_byte")
+          Interface(StringFamilyConverting<string, wstring>, "", "to_byte"),
+          Interface(WideStringCompare, kStrRightHandSide, kStrCompare)
         }
     );
 
