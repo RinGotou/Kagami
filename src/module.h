@@ -73,6 +73,7 @@ namespace kagami {
     void Continue();
     void Break();
     void Clear();
+    void Clousure();
   };
 
   class IRWorker {
