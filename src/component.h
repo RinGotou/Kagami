@@ -228,7 +228,7 @@ namespace kagami {
   /* Binary operator function interface */
   class Action {
   public:
-    virtual Action() {}
+    virtual ~Action() {}
     virtual Message Do(Object &, Object &) = 0;
   };
 
