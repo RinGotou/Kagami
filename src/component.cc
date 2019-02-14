@@ -145,6 +145,18 @@ namespace kagami {
     return Message();
   }
 
+  Message UseCount(ObjectMap &p) {
+    return Message(to_string(p["object"].use_count()));
+  }
+
+  Message Destroy(ObjectMap &p) {
+    Object &obj = p["object"].Deref();
+
+    obj.ManageContent(nullptr, kTypeIdNull);
+
+    return Message();
+  }
+
   void Activiate() {
     using management::CreateInterface;
 
@@ -169,6 +181,8 @@ namespace kagami {
     CreateInterface(Interface(IsNull, "object", "isnull"));
     CreateInterface(Interface(Time, "", "time"));
     CreateInterface(Interface(Swap, "left|right", "swap"));
+    CreateInterface(Interface(UseCount, "object", "use_count"));
+    CreateInterface(Interface(Destroy, "object", "destroy"));
 
     auto create_constant = [](string id, string content) {
       management::CreateConstantObject(

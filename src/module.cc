@@ -235,6 +235,8 @@ namespace kagami {
         case kModeCaseJump:
           mode = kModeCase;
           break;
+	default:
+	  break;
         }
       }
     }

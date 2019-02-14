@@ -136,6 +136,11 @@ namespace kagami {
       return *this;
     }
 
+    long use_count() {
+      if (ref_) return GetTargetObject()->use_count();
+      return ptr_.use_count();
+    }
+
     bool GetConstructorFlag() {
       bool result = constructor_;
       constructor_ = false;
