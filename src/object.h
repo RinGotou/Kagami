@@ -199,6 +199,10 @@ namespace kagami {
     void clear() {
       base_.clear();
     }
+
+    map<string, Object> &GetConent() {
+      return base_;
+    }
   };
 
   class ObjectMap : public map<string, Object> {
@@ -219,6 +223,12 @@ namespace kagami {
         this->insert(unit);
       }
     }
+
+    ObjectMap(const map<string, Object> &rhs) :
+      map<string, Object>(rhs) {}
+
+    ObjectMap(const map<string, Object> &&rhs) :
+      map<string, Object>(rhs) {}
 
     ObjectMap &operator=(const std::initializer_list<NamedObject> &&rhs){
       for (const auto &unit : rhs) {

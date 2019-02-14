@@ -136,8 +136,6 @@ end
 
 函数由fn关键字定义，以end作为函数结尾。
 
-当前版本不可以在函数内定义函数。
-
 ```
 fn hello(name)
   print('hello,' + name)
@@ -154,6 +152,25 @@ fn calc(a, b)
 end
 
 result = calc(1, 2)
+```
+
+### 闭包
+
+你可以在函数内创建闭包。
+
+```
+fn Create(numA)
+  fn func(numB)
+    println(numA + numB)
+  end
+  
+  return(func)
+end
+
+a = Create(10)
+a.call(1)
+b = Create(20)
+b.call(2)
 ```
 
 # 待续

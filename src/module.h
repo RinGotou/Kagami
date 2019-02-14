@@ -39,6 +39,7 @@ namespace kagami {
       tail_recursion,
       tail_call,
       runtime_error;
+    size_t fn_idx;
     size_t current;
     size_t def_start;
     MachineMode mode;
@@ -56,6 +57,7 @@ namespace kagami {
       tail_recursion(false),
       tail_call(false),
       runtime_error(false),
+      fn_idx(0),
       current(0),
       def_start(0),
       mode(kModeNormal),
@@ -67,11 +69,12 @@ namespace kagami {
     void ConditionElif(bool value);
     bool ConditionElse();
     void LoopHead(bool value);
-    void End();
+    void End(vector<IR> &storage);
     void Continue();
     void Break();
     void Clear();
-    void Closure();
+    void CreateClosureProc(string func_string);
+    void CatchClosure(vector<IR> &storage);
   };
 
   class IRWorker {

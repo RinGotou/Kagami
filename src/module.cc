@@ -275,7 +275,7 @@ namespace kagami {
     }
   }
   
-  void MachCtlBlk::End() {
+  void MachCtlBlk::End(vector<IR> &storage) {
     if (mode == kModeCondition || mode == kModeNextCondition) {
       condition_stack.pop();
       mode = mode_stack.top();
@@ -320,6 +320,11 @@ namespace kagami {
       mode = mode_stack.top();
       mode_stack.pop();
       management::DisposeManager();
+    }
+    else if (mode == kModeClosureCatching) {
+      CatchClosure(storage);
+      mode = mode_stack.top();
+      mode_stack.pop();
     }
   }
 
@@ -381,8 +386,55 @@ namespace kagami {
     recursion_map.clear();
   }
 
-  void MachCtlBlk::Closure() {
+  void MachCtlBlk::CreateClosureProc(string func_string) {
+    func_string_vec = BuildStringVector(func_string);
+    fn_idx = current;
+    mode_stack.push(mode);
+    mode = kModeClosureCatching;
+  }
 
+  void MachCtlBlk::CatchClosure(vector<IR> &storage) {
+    auto &pool = management::GetContainerPool();
+    vector<string> params;
+    vector<IR> ir;
+
+    for (size_t idx = fn_idx + 1; idx < current; idx += 1) {
+      ir.push_back(storage[idx]);
+    }
+
+    for (size_t idx = 1; idx < func_string_vec.size(); idx += 1) {
+      params.push_back(func_string_vec[idx]);
+    }
+
+    Interface interface(ir, func_string_vec[0], params, FunctionAgentTunnel);
+    ObjectMap record;
+
+    //Because of single-linked list and leaking of iterator,
+    //so we must create record in this way
+    size_t idx = pool.size() - 1;
+    while (pool[idx].Find(kStrUserFunc) == nullptr) {
+      auto &base = pool[idx];
+      for (auto &unit : base.GetConent()) {
+        if (record.find(unit.first) == record.end()) {
+          record.insert(NamedObject(unit.first,
+            Object(management::type::GetObjectCopy(unit.second), unit.second.GetTypeId())));
+        }
+      }
+
+      idx -= 1;
+    }
+
+    for (auto &unit : pool[idx].GetConent()) {
+      if (record.find(unit.first) == record.end()) {
+        record.insert(NamedObject(unit.first,
+          Object(management::type::GetObjectCopy(unit.second), unit.second.GetTypeId())));
+      }
+    }
+
+
+    interface.SetClousureRecord(record);
+    pool.back().Add(func_string_vec[0], 
+      Object(make_shared<Interface>(interface), kTypeIdFunction));
   }
 
   Object IRWorker::MakeObject(Argument &arg, bool checking) {
@@ -1128,7 +1180,7 @@ namespace kagami {
       token = util::GetGenericToken(ir->GetMainToken().first);
 
       if (token == kTokenFn) {
-        if (nest_counter > 0) {
+        if (catching) {
           //skip closure block
           nest_counter += 1;
           continue;
@@ -1223,6 +1275,9 @@ namespace kagami {
 
   void Module::CallMachineFunction(StateCode code, string detail, MachCtlBlk *blk) {
     switch (code) {
+    case kCodeFunctionCatching:
+      blk->CreateClosureProc(detail);
+      break;
     case kCodeContinue:
       blk->Continue();
       break;
@@ -1248,7 +1303,7 @@ namespace kagami {
       blk->LoopHead(GetBooleanValue(detail));
       break;
     case kCodeEnd:
-      blk->End();
+      blk->End(storage_);
       break;
     default:break;
     }

@@ -4,7 +4,7 @@
 It's a simple and tiny experimental script language. The name of this project is from Japanese kanji "鏡".
 
 ## Feature
-[√] Dynamic and weak typing language with reflection support
+[√] Dynamic and weak typing language with reflection and closure support
 
 [√] Stack-based Backend Machine
 
