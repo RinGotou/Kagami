@@ -99,7 +99,7 @@ namespace kagami {
     kCodeBreak = 16,
     kCodeContinue = 15,
     kCodeAutoSize = 14,
-    kCodeDefineSign = 13,
+    kCodeFunctionCatching = 13,
     kCodeAutoFill = 12,
     kCodeNormalParam = 11,
     kCodeHeadPlaceholder = 10,
@@ -185,6 +185,10 @@ namespace kagami {
     kTokenNull
   };
 
+  const vector<GenericToken> nest_flag_collection = {
+    kTokenIf,kTokenWhile,kTokenFn,kTokenCase
+  };
+
   enum Terminator {
     kBasicTokenAssign, 
     kBasicTokenComma, 
@@ -207,7 +211,8 @@ namespace kagami {
     kModeCondition,
     kModeDef,
     kModeCase,
-    kModeCaseJump
+    kModeCaseJump,
+    kModeClosureCatching
   };
 
   /* Embedded type identifier strings */
@@ -274,7 +279,7 @@ namespace kagami {
 
   /* Compare multiple objects */
   template <class Tx, class Ty>
-  inline bool compare(Tx lhs, const std::initializer_list<Ty> &&rhs) {
+  inline bool compare(Tx lhs, const std::initializer_list<Ty> rhs) {
     bool result = false;
     for (const auto &unit : rhs) {
       if (lhs == unit) result = true;

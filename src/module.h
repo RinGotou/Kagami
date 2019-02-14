@@ -42,12 +42,11 @@ namespace kagami {
     size_t current;
     size_t def_start;
     MachineMode mode;
-    int nest_head_count;
     string error_string;
     stack<size_t> cycle_nest, cycle_tail;
     stack<MachineMode> mode_stack;
     stack<bool> condition_stack;
-    vector<string> def_head;
+    vector<string> func_string_vec;
     ObjectMap recursion_map;
 
     MachCtlBlk():
@@ -60,7 +59,6 @@ namespace kagami {
       current(0),
       def_start(0),
       mode(kModeNormal),
-      nest_head_count(0),
       error_string() {}
 
     void Case();
@@ -73,7 +71,7 @@ namespace kagami {
     void Continue();
     void Break();
     void Clear();
-    void Clousure();
+    void Closure();
   };
 
   class IRWorker {
@@ -142,11 +140,28 @@ namespace kagami {
     Message IRProcessing(IR &IL_set, string name, MachCtlBlk *blk);
     Message PreProcessing();
     void InitGlobalObject(bool create_container,string name);
-    bool PredefinedMessage(size_t mode, Token token, Message &msg);
     void TailRecursionActions(MachCtlBlk *blk, string &name);
     void CallMachineFunction(StateCode code, string detail, MachCtlBlk *blk);
     bool GenericRequests(IRWorker *worker, Request &Request, ArgumentList &args);
     bool CheckGenericRequests(GenericToken token);
+
+    bool SkippingWithCondition(MachCtlBlk *blk,
+      std::initializer_list<GenericToken> terminators);
+    bool Skipping(MachCtlBlk *blk);
+    bool SkippingStrategy(MachCtlBlk *blk);
+
+    bool NeedSkipping(MachineMode mode) {
+      switch (mode) {
+      case kModeNextCondition:
+      case kModeCycleJump:
+      case kModeDef:
+      case kModeCaseJump:
+      case kModeClosureCatching:
+        return true;
+        break;
+      }
+      return false;
+    }
 
   public:
     Module() : 
@@ -180,10 +195,13 @@ namespace kagami {
 
       if (maker.health) {
         storage_ = maker.output;
-        msg = PreProcessing();
-        if (msg.GetLevel() == kStateError) {
-          health_ = false;
-          trace::AddEvent(msg);
+        //these need to modify for module feature.
+        if (is_main) {
+          msg = PreProcessing();
+          if (msg.GetLevel() == kStateError) {
+            health_ = false;
+            trace::AddEvent(msg);
+          }
         }
       }
       else {

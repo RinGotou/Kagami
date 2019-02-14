@@ -327,7 +327,6 @@ namespace kagami {
     while (!mode_stack.empty() && mode != kModeCycle) {
       if (mode == kModeCondition || mode == kModeCase) {
         condition_stack.pop();
-        nest_head_count += 1;
       }
       mode = mode_stack.top();
       mode_stack.pop();
@@ -347,7 +346,6 @@ namespace kagami {
     while (!mode_stack.empty() && mode != kModeCycle) {
       if (mode == kModeCondition || mode == kModeCase) {
         condition_stack.pop();
-        nest_head_count += 1;
       }
       mode = mode_stack.top();
       mode_stack.pop();
@@ -373,15 +371,18 @@ namespace kagami {
     current = 0;
     def_start = 0;
     mode = kModeNormal;
-    nest_head_count = 0;
     error_string.clear();
     while (!cycle_nest.empty()) cycle_nest.pop();
     while (!cycle_tail.empty()) cycle_tail.pop();
     while (!mode_stack.empty()) mode_stack.pop();
     while (!condition_stack.empty()) condition_stack.pop();
-    def_head.clear();
-    def_head.shrink_to_fit();
+    func_string_vec.clear();
+    func_string_vec.shrink_to_fit();
     recursion_map.clear();
+  }
+
+  void MachCtlBlk::Closure() {
+
   }
 
   Object IRWorker::MakeObject(Argument &arg, bool checking) {
@@ -714,15 +715,15 @@ namespace kagami {
     bool result = true;
 
     if (!args.empty()) {
-      vector<string> def_head;
+      vector<string> func_string_vec;
 
       for (auto it = args.begin(); it != args.end(); ++it) {
-        def_head.emplace_back(it->data);
+        func_string_vec.emplace_back(it->data);
       }
 
-      string def_head_string = util::CombineStringVector(def_head);
+      string def_head_string = util::CombineStringVector(func_string_vec);
       deliver = true;
-      msg = Message(kCodeDefineSign, def_head_string);
+      msg = Message(kCodeFunctionCatching, def_head_string);
     }
     else {
       error_string = "Empty argument list.";
@@ -949,14 +950,14 @@ namespace kagami {
     }
   }
 
-  void Module::MakeFunction(size_t start, size_t end, vector<string> &def_head) {
+  void Module::MakeFunction(size_t start, size_t end, vector<string> &func_string_vec) {
     if (start > end) return;
-    string id = def_head[0];
+    string id = func_string_vec[0];
     vector<string> params;
     vector<IR> proc;
 
-    for (size_t i = 1; i < def_head.size(); ++i) {
-      params.push_back(def_head[i]);
+    for (size_t i = 1; i < func_string_vec.size(); ++i) {
+      params.push_back(func_string_vec[i]);
     }
     for (size_t j = start; j <= end; ++j) {
       proc.push_back(storage_[j]);
@@ -1110,65 +1111,78 @@ namespace kagami {
     return msg;
   }
 
-  //TODO: Reconstruction
   Message Module::PreProcessing() {
     IR *ir = nullptr;
     GenericToken token;
     Message result;
-    bool flag = false;
-    map<size_t, size_t> skipped_idx;
-    using IndexPair = pair<size_t, size_t>;
-    size_t nest_head_count = 0;
-    size_t def_start;
-    vector<string> def_head;
+    bool catching = false;
+    map<size_t, size_t> catched_block;
+    size_t nest_counter = 0;
+    long fn_idx = -1;
+    vector<string> func_string_vec;
 
-    for (size_t idx = 0; idx < storage_.size(); ++idx) {
+    for (size_t idx = 0; idx < storage_.size(); idx += 1) {
       if (!health_) break;
+
       ir = &storage_[idx];
       token = util::GetGenericToken(ir->GetMainToken().first);
-      if (compare(token, { kTokenWhile,kTokenIf,kTokenCase })) {
-        nest_head_count++;
-      }
-      else if (token == kTokenFn) {
-        if (flag == true) {
-          result = Message(kCodeBadExpression,
-            "Define function in function is not supported.",
-            kStateError).SetIndex(idx);
-          break;
-        }
-        result = IRProcessing(*ir, "", nullptr);
-        def_head = BuildStringVector(result.GetDetail());
-        def_start = idx + 1;
-        flag = true;
-      }
-      else if (token == kTokenEnd) {
-        if (nest_head_count > 0) {
-          nest_head_count--;
+
+      if (token == kTokenFn) {
+        if (nest_counter > 0) {
+          //skip closure block
+          nest_counter += 1;
+          continue;
         }
         else {
-          skipped_idx.insert(IndexPair(def_start - 1, idx));
-          MakeFunction(def_start, idx - 1, def_head);
-          def_head.clear();
-          def_head.shrink_to_fit();
-          def_start = 0;
-          flag = false;
+          result = IRProcessing(*ir, "", nullptr);
+          func_string_vec = BuildStringVector(result.GetDetail());
+          fn_idx = static_cast<long>(idx);
+          //enter catching process
+          catching = true;
+          continue;
+        }
+      }
+      else if (token == kTokenEnd) {
+        if (nest_counter > 0) {
+          nest_counter -= 1;
+          continue;
+        }
+        else {
+          catched_block.insert(std::make_pair(fn_idx, idx));
+          MakeFunction(fn_idx + 1, idx - 1, func_string_vec);
+          func_string_vec.clear();
+          fn_idx = -1;
+          //quit catching process
+          catching = false;
+        }
+      }
+      else {
+        if (find_in_vector(token, nest_flag_collection)) {
+          nest_counter += 1;
         }
       }
     }
 
-    vector<IR> *other_sets = new vector<IR>();
+    if (catching) {
+      result = Message(kCodeIllegalCall,
+        "End token is not found(Fn index:)" + to_string(fn_idx), kStateError);
+      return result;
+    }
+
+    vector<IR> not_catched;
     bool filter = false;
-    for (size_t idx = 0; idx < storage_.size(); ++idx) {
-      auto it = skipped_idx.find(idx);
-      if (it != skipped_idx.end()) {
+
+    for (size_t idx = 0; idx < storage_.size(); idx += 1) {
+      auto it = catched_block.find(idx);
+      if (it != catched_block.end()) {
         idx = it->second;
         continue;
       }
-      other_sets->emplace_back(storage_[idx]);
+
+      not_catched.emplace_back(storage_[idx]);
     }
 
-    storage_.swap(*other_sets);
-    delete other_sets;
+    storage_.swap(not_catched);
 
     return result;
   }
@@ -1191,46 +1205,6 @@ namespace kagami {
         create("__name__", "__null__");
       }
     }
-  }
-
-  bool Module::PredefinedMessage(size_t mode, Token token, Message &msg) {
-    bool judged = false;
-    GenericToken gen_token = util::GetGenericToken(token.first);
-
-    msg = Message(); //reset
-
-    switch (mode) {
-    case kModeNextCondition:
-      if (management::NeedEndToken(gen_token)) {
-        msg.SetDetail(kStrTrue);
-        judged = true;
-      }
-      else if (!compare(gen_token, { kTokenElse, kTokenEnd,kTokenElif })) {
-        judged = true;
-      }
-
-      break;
-    case kModeCycleJump:
-      if (!compare(gen_token, { kTokenEnd,kTokenIf,kTokenWhile })) {
-        judged = true;
-      }
-
-      break;
-    case kModeCaseJump:
-      if (management::NeedEndToken(gen_token)) {
-        msg.SetDetail(kStrTrue);
-        judged = true;
-      }
-      else if (!compare(gen_token, { kTokenWhen,kTokenEnd,kTokenElse })) {
-        judged = true;
-      }
-
-      break;
-    default:
-      break;
-    }
-
-    return judged;
   }
 
   void Module::TailRecursionActions(MachCtlBlk *blk, string &name) {
@@ -1259,11 +1233,9 @@ namespace kagami {
       blk->ConditionIf(GetBooleanValue(detail));
       break;
     case kCodeConditionElif:
-      if (blk->nest_head_count > 0) break;
       blk->ConditionElif(GetBooleanValue(detail));
       break;
     case kCodeConditionElse:
-      if (blk->nest_head_count > 0) break;
       health_ = blk->ConditionElse();
       break;
     case kCodeCase:
@@ -1275,14 +1247,7 @@ namespace kagami {
     case kCodeWhile:
       blk->LoopHead(GetBooleanValue(detail));
       break;
-    case kCodeHeadPlaceholder:
-      blk->nest_head_count++;
-      break;
     case kCodeEnd:
-      if (blk->nest_head_count > 0) {
-        blk->nest_head_count--;
-        break;
-      }
       blk->End();
       break;
     default:break;
@@ -1413,11 +1378,107 @@ namespace kagami {
     return result;
   }
 
+  bool Module::SkippingWithCondition(MachCtlBlk *blk,
+    std::initializer_list<GenericToken> terminators) {
+    GenericToken token;
+    size_t nest_counter = 0;
+    bool flag = false;
+    
+    while (blk->current < storage_.size()) {
+      token = util::GetGenericToken(storage_[blk->current].GetMainToken().first);
+
+      if (find_in_vector(token, nest_flag_collection)) {
+        nest_counter += 1;
+        blk->current += 1;
+        continue;
+      }
+
+      if (compare(token, terminators)) {
+        if (nest_counter == 0) {
+          flag = true;
+          break;
+        }
+        else {
+          blk->current += 1;
+          continue;
+        }
+      }
+
+      if (token == kTokenEnd) {
+        if (nest_counter != 0) {
+          nest_counter -= 1;
+          blk->current += 1;
+          continue;
+        }
+        else {
+          flag = true;
+          break;
+        }
+      }
+
+      blk->current += 1;
+    }
+
+    return flag;
+  }
+
+  bool Module::Skipping(MachCtlBlk *blk) {
+    bool flag = false;
+    size_t nest_counter = 0;
+    GenericToken token;
+
+    while (blk->current < storage_.size()) {
+      token = util::GetGenericToken(storage_[blk->current].GetMainToken().first);
+
+      if (find_in_vector(token, nest_flag_collection)) {
+        nest_counter += 1;
+        blk->current += 1;
+        continue;
+      }
+
+      if (token == kTokenEnd) {
+        if (nest_counter != 0) {
+          nest_counter -= 1;
+          blk->current += 1;
+          continue;
+        }
+        else {
+          flag = true;
+          break;
+        }
+      }
+
+      blk->current += 1;
+    }
+
+    return flag;
+  }
+
+  bool Module::SkippingStrategy(MachCtlBlk *blk) {
+    bool result;
+
+    switch (blk->mode) {
+    case kModeNextCondition:
+      result = SkippingWithCondition(blk, { kTokenElif, kTokenElse });
+      break;
+    case kModeCaseJump:
+      result = SkippingWithCondition(blk, { kTokenWhen,kTokenElse });
+      break;
+    case kModeCycleJump:
+    case kModeClosureCatching:
+      result = Skipping(blk);
+      break;
+    default:
+      break;
+    }
+
+    return result;
+  }
+
   Message Module::Run(bool create_container, string name) {
     Message result;
     MachCtlBlk *blk = new MachCtlBlk();
     IR *ir = nullptr;
-    bool judged = false;
     
     health_ = true;
 
@@ -1430,14 +1491,21 @@ namespace kagami {
       if (!health_) break;
 
       blk->last_index = (blk->current == storage_.size() - 1);
-      ir = &storage_[blk->current];
-
-      judged = PredefinedMessage(blk->mode, ir->GetMainToken(), result);
       
-      if (!judged) {
-        result = IRProcessing(*ir, name, blk);
+      if (NeedSkipping(blk->mode)) {
+        result = Message();
+        if (!SkippingStrategy(blk)) {
+          trace::AddEvent(
+            Message(kCodeIllegalParam, "End token is not found.", kStateError)
+            .SetIndex(blk->current)
+          );
+          break;
+        }
       }
 
+      ir = &storage_[blk->current];
+      result = IRProcessing(*ir, name, blk);
+      
       switch (result.GetLevel()) {
       case kStateError:
         health_ = false;
@@ -1467,7 +1535,6 @@ namespace kagami {
       if (blk->runtime_error) break;
 
       blk->current += 1;
-      if (judged) judged = false;
     }
 
     if (blk->runtime_error) {

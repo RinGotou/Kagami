@@ -124,8 +124,8 @@ namespace kagami {
       Message result;
       ObjectMap combined_scope;
       
-      if (!clousure_record_.empty()) {
-        combined_scope.merge(clousure_record);
+      if (!closure_record_.empty()) {
+        combined_scope.merge(closure_record_);
       }
 
       combined_scope.merge(obj_map);
@@ -135,7 +135,7 @@ namespace kagami {
         result = policy_->Start(combined_scope);
         break;
       case kInterfaceIR:
-        obj_map[kStrUserFunc] = Object(id_);
+        combined_scope[kStrUserFunc] = Object(id_);
         result = policy_->Start(combined_scope);
         break;
       }
@@ -206,7 +206,7 @@ namespace kagami {
     }
 
     Interface &SetClousureRecord(ObjectMap &record) {
-      clousure_record_ = record;
+      closure_record_ = record;
     }
   };
 }

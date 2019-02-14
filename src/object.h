@@ -250,12 +250,13 @@ namespace kagami {
 
     void merge(ObjectMap &source) {
       for (auto &unit : source) {
-        if (find(unit.first) != end()) {
-	  this->at(unit.first).second = unit.second;
-	}
-	else {
-	  this->insert(unit);
-	}
+        auto it = find(unit.first);
+        if (it != end()) {
+          it->second = unit.second;
+	      }
+	      else {
+	        this->insert(unit);
+	      }
       }
     }
   };
