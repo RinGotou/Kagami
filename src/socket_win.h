@@ -1,5 +1,6 @@
 #include "module.h"
 
+#if defined (_WIN32)
 namespace kagami {
   template <class Tx>
   Message TCPConnectorSend(ObjectMap &p) {
@@ -43,3 +44,4 @@ namespace kagami {
     return Message(to_string(info->GetLastResultCode()));
   }
 }
+#endif

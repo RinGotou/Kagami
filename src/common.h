@@ -73,11 +73,12 @@ namespace kagami {
   using std::stol;
   using std::wstring;
   using std::ostream;
+#if defined (_WIN32)
   using suzu::TCPClient;
   using suzu::TCPServer;
   using suzu::TCPConnector;
   using suzu::WSockInfo;
-
+#endif
   /* Application Info */
   const string kInterpreterVersion = "Revision 5";
   const string kIRFrameworkVersion = "August";

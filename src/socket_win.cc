@@ -1,5 +1,6 @@
 #include "socket_win.h"
 
+#if defined (_WIN32)
 namespace kagami {
   Message NewTCPClient(ObjectMap &p) {
     EXPECT(IsStringObject(p["port"]), "Invalid port string.");
@@ -133,3 +134,4 @@ namespace kagami {
     );
   }
 }
+#endif
