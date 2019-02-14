@@ -50,6 +50,7 @@ namespace kagami {
   class Interface {
   private:
     shared_ptr<InterfacePolicy> policy_;
+    ObjectMap closure_record_;
 
   private:
     string id_;
@@ -121,14 +122,21 @@ namespace kagami {
 
     Message Start(ObjectMap &obj_map) {
       Message result;
+      ObjectMap combined_scope;
+      
+      if (!clousure_record_.empty()) {
+        combined_scope.merge(clousure_record);
+      }
+
+      combined_scope.merge(obj_map);
 
       switch (policy_type_) {
       case kInterfaceCXX:
-        result = policy_->Start(obj_map);
+        result = policy_->Start(combined_scope);
         break;
       case kInterfaceIR:
         obj_map[kStrUserFunc] = Object(id_);
-        result = policy_->Start(obj_map);
+        result = policy_->Start(combined_scope);
         break;
       }
 
@@ -195,6 +203,10 @@ namespace kagami {
 
     bool Good() const {
       return (policy_ != nullptr && argument_mode_ != kCodeIllegalParam);
+    }
+
+    Interface &SetClousureRecord(ObjectMap &record) {
+      clousure_record_ = record;
     }
   };
 }
