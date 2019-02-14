@@ -409,7 +409,7 @@ namespace kagami {
     Interface interface(ir, func_string_vec[0], params, FunctionAgentTunnel);
     ObjectMap record;
 
-    //Because of single-linked list and leaking of iterator,
+    //Because of single-linked list and lacking of iterator,
     //so we must create record in this way
     size_t idx = pool.size() - 1;
     while (pool[idx].Find(kStrUserFunc) == nullptr) {
