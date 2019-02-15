@@ -1222,7 +1222,6 @@ namespace kagami {
     }
 
     vector<IR> not_catched;
-    bool filter = false;
 
     for (size_t idx = 0; idx < storage_.size(); idx += 1) {
       auto it = catched_block.find(idx);
