@@ -16,7 +16,7 @@ fn main()
     func = FuncB
   end
   
-  func.call()
+  func()
 end
 
 main()

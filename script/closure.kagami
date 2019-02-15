@@ -1,0 +1,10 @@
+fn Create(a)
+  fn add(b)
+    return(a+b)
+  end
+  
+  return(add)
+end
+
+add10 = Create(10)
+println(add10(1))

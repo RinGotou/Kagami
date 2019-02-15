@@ -411,13 +411,19 @@ namespace kagami {
 
     auto it = pool.rbegin();
 
-    while (it != pool.rend() && it->Find(kStrUserFunc) != nullptr) {
+    while (it != pool.rend()) {
       for (auto &unit : it->GetConent()) {
         if (record.find(unit.first) != record.end()) {
           record.insert(NamedObject(unit.first,
             Object(management::type::GetObjectCopy(unit.second), unit.second.GetTypeId())));
         }
       }
+
+      if (it->Find(kStrUserFunc) != nullptr) {
+        break;
+      }
+
+      ++it;
     }
 
     if (it != pool.rend()) {
