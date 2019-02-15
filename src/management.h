@@ -3,17 +3,20 @@
 
 namespace kagami {
   namespace management {
+    using InterfaceCollection = map<string, Interface>;
+
+    void CreateNewInterface(Interface interface);
+    Interface FindInterface(string id, string domain = kTypeIdNull);
+
     ContainerPool &GetContainerPool();
     ObjectContainer &GetCurrentContainer();
     ObjectContainer &CreateContainer();
     Object *FindObject(string id);
     Object *CreateObject(string id, Object &object);
     Object *CreateObject(string id, Object &&object);
-    void CreateInterface(Interface temp);
     void CreateGenericInterface(Interface temp);
     bool DisposeManager();
     bool NeedEndToken(GenericToken token);
-    Interface Order(string id, string type = kTypeIdNull, int size = -1);
     Interface GetGenericInterface(GenericToken token);
     Object *CreateConstantObject(string id, Object &object);
     Object *CreateConstantObject(string id, Object &&object);
@@ -60,9 +63,9 @@ namespace kagami {
 
         ~NewTypeSetup() {
           NewType(type_name_, ObjectPolicy(policy_, methods_));
-          CreateInterface(constructor_);
+          CreateNewInterface(constructor_);
           for (auto &unit : interfaces_) {
-            CreateInterface(unit);
+            CreateNewInterface(unit);
           }
         }
       };

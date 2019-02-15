@@ -61,13 +61,9 @@ namespace kagami {
     if (base_.empty()) return nullptr;
 
     ObjectPointer ptr = nullptr;
+    auto it = base_.find(id);
 
-    for (auto &unit : base_) {
-      if (unit.first == id) {
-        ptr = &(unit.second);
-        break;
-      }
-    }
+    it != base_.end() ? ptr = &(it->second) : nullptr;
 
     return ptr;
   }

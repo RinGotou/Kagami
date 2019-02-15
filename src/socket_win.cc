@@ -87,12 +87,12 @@ namespace kagami {
 
   void LoadSocketStuff() {
     using management::type::NewTypeSetup;
-    using management::CreateInterface;
+    using management::CreateNewInterface;
     using ClientConnector = TCPServer::ClientConnector;
     
-    CreateInterface(Interface(GetWSALastError, "", "WSALastError"));
-    CreateInterface(Interface(WinSockStartup, "", "WSAStartup"));
-    CreateInterface(Interface(WinSockCleanup, "", "WSACleanup"));
+    CreateNewInterface(Interface(GetWSALastError, "", "WSALastError"));
+    CreateNewInterface(Interface(WinSockStartup, "", "WSAStartup"));
+    CreateNewInterface(Interface(WinSockCleanup, "", "WSACleanup"));
 
     NewTypeSetup(kTypeIdTCPClient, SimpleSharedPtrCopy<TCPClient>)
       .InitConstructor(

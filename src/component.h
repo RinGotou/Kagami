@@ -280,7 +280,7 @@ namespace kagami {
           NamedObject(kStrRightHandSide, B)
         };
 
-        auto interface = management::Order(kStrCompare, A.GetTypeId());
+        auto interface = management::FindInterface(kStrCompare, A.GetTypeId());
         return interface.Start(obj_map);
       }
 
@@ -303,7 +303,7 @@ namespace kagami {
           NamedObject(kStrRightHandSide, B)
         };
 
-        auto interface = management::Order(kStrCompare, A.GetTypeId());
+        auto interface = management::FindInterface(kStrCompare, A.GetTypeId());
         /* 
           Reverse result.
         */

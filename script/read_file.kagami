@@ -6,6 +6,4 @@ fn ReadFile()
   stream.close()
 end
 
-if(__name__ == '__main__')
-  ReadFile()
-end
+ReadFile()

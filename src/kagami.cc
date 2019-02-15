@@ -6,12 +6,13 @@ using suzu::ArgumentProcessor;
 using suzu::Option;
 using suzu::ArgumentProcessorError;
 using suzu::Pattern;
+using Processor = ArgumentProcessor<suzu::kHeadHorizon, suzu::kJoinerEquals>;
+
 //STL
 using std::string;
 using std::cout;
 using std::endl;
 using std::cin;
-using Processor = ArgumentProcessor<suzu::kHeadHorizon, suzu::kJoinerEquals>;
 
 using namespace kagami;
 
@@ -64,7 +65,6 @@ void ApplicationInfo() {
   cout << kCopyright << ", " << kMaintainer << endl;
 }
 
-//Main namespace
 void HelpFile() {
   cout << "Usage:kagami [-OPTION][-OPTION=VALUE]...\n\n";
   cout << "\tpath=PATH         Path of script file.\n";
@@ -82,9 +82,6 @@ void AtExitHandler() {
 
 inline void Patch(string locale) {
   std::ios::sync_with_stdio(false);
-  //solve utf-8 encoding
-  //Although codecvt_utf8 is not available in C++17..
-  //But we're now in C++11,isn't it?
   std::locale::global(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
   std::wcout.imbue(std::locale(locale));
 }

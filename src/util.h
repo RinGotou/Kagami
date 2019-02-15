@@ -14,7 +14,7 @@ namespace kagami {
     bool IsBlank(string target);
     bool IsSymbol(string target);
     bool IsBoolean(string target);
-    TokenType GetTokenType(string target);
+    TokenType GetTokenType(string target, bool ignore_symbol_rule = false);
     
     char GetEscapeChar(char target);
     wchar_t GetEscapeCharW(wchar_t target);

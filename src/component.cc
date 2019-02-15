@@ -17,8 +17,8 @@ namespace kagami {
     if (A.GetTypeId() == kTypeIdRawString && B.GetTypeId() == kTypeIdRawString) {
       string data_A = A.Cast<string>();
       string data_B = B.Cast<string>();
-      TokenType type_A = util::GetTokenType(data_A);
-      TokenType type_B = util::GetTokenType(data_B);
+      TokenType type_A = util::GetTokenType(data_A, true);
+      TokenType type_B = util::GetTokenType(data_B, true);
 
       if (type_A == kTokenTypeFloat || type_B == kTokenTypeFloat) policy = G_FLOAT;
       if (type_A == kTokenTypeInt && type_B == kTokenTypeInt) policy = G_INT;
@@ -34,6 +34,8 @@ namespace kagami {
 
     string result;
     string str = p.Cast<string>("object");
+
+
 
     switch (util::GetTokenType(str)) {
     case kTokenTypeBool:   result = "'boolean'"; break;
@@ -63,7 +65,7 @@ namespace kagami {
       return Message();
     }
 
-    return management::Order(kStrPrint, obj.GetTypeId()).Start(p);
+    return management::FindInterface(kStrPrint, obj.GetTypeId()).Start(p);
   }
 
   Message PrintLine(ObjectMap &p) {
@@ -158,7 +160,7 @@ namespace kagami {
   }
 
   void Activiate() {
-    using management::CreateInterface;
+    using management::CreateNewInterface;
 
     OperatorGenerator<PLUS, kTokenPlus>();
     OperatorGenerator<MINUS, kTokenMinus>();
@@ -173,16 +175,16 @@ namespace kagami {
     OperatorGenerator<AND, kTokenAnd, true>();
     OperatorGenerator<OR, kTokenOr, true>();
 
-    CreateInterface(Interface(Convert, "object", "convert"));
-    CreateInterface(Interface(Input, "msg", "input", kCodeAutoFill));
-    CreateInterface(Interface(Print, kStrObject, "print"));
-    CreateInterface(Interface(PrintLine, kStrObject, "println"));
-    CreateInterface(Interface(GetRawStringType, "object", "type"));
-    CreateInterface(Interface(IsNull, "object", "isnull"));
-    CreateInterface(Interface(Time, "", "time"));
-    CreateInterface(Interface(Swap, "left|right", "swap"));
-    CreateInterface(Interface(UseCount, "object", "use_count"));
-    CreateInterface(Interface(Destroy, "object", "destroy"));
+    CreateNewInterface(Interface(Convert, "object", "convert"));
+    CreateNewInterface(Interface(Input, "msg", "input", kCodeAutoFill));
+    CreateNewInterface(Interface(Print, kStrObject, "print"));
+    CreateNewInterface(Interface(PrintLine, kStrObject, "println"));
+    CreateNewInterface(Interface(GetRawStringType, "object", "type"));
+    CreateNewInterface(Interface(IsNull, "object", "isnull"));
+    CreateNewInterface(Interface(Time, "", "time"));
+    CreateNewInterface(Interface(Swap, "left|right", "swap"));
+    CreateNewInterface(Interface(UseCount, "object", "use_count"));
+    CreateNewInterface(Interface(Destroy, "object", "destroy"));
 
     auto create_constant = [](string id, string content) {
       management::CreateConstantObject(

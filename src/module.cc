@@ -67,7 +67,7 @@ namespace kagami {
   /* Packaging interface into object and act as a object */
   inline Object GetFunctionObject(string id, string domain) {
     Object obj;
-    auto interface = management::Order(id, domain);
+    auto interface = management::FindInterface(id, domain);
     if (interface.Good()) {
       obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
     }
@@ -103,7 +103,7 @@ namespace kagami {
     if (data.front() == '#') return "";
 
     while (!data.empty() &&
-      util::GetTokenType(toString(data.back())) == TokenType::kTokenTypeBlank) {
+      util::GetTokenType(toString(data.back())) == kTokenTypeBlank) {
       data.pop_back();
     }
     return data;
@@ -612,7 +612,7 @@ namespace kagami {
 
       DEBUG_EVENT("(IRWorker)Binding new object:" + id);
 
-      if (util::GetTokenType(id) == kTokenTypeGeneric) {
+      if (util::GetTokenType(id, true) == kTokenTypeGeneric) {
         ObjectPointer real_dest = management::FindObject(id);
 
         if (real_dest != nullptr) {
@@ -861,19 +861,19 @@ namespace kagami {
       return result;
     }
 
-    Object ent_obj;
-    auto interface = management::Order(id, obj.GetTypeId());
-    if (interface.Good()) {
-      if (returning) {
-        ent_obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
-        returning_base.push(ent_obj);
+    if (returning) {
+      auto interface = management::FindInterface(id, obj.GetTypeId());
+
+      if (!interface.Good()) {
+        result = false;
+        error_string = "Method/Member is not found. - " + id;
+        return result;
       }
+
+      Object ent_obj(make_shared<Interface>(interface), kTypeIdFunction);
+      returning_base.push(ent_obj);
     }
-    else {
-      result = false;
-      error_string = "Method/Member is not found. - " + id;
-    }
-    
+
     return result;
   }
 
@@ -894,7 +894,7 @@ namespace kagami {
           msg = Message(code, state_str);
         }
         else {
-          auto type = util::GetTokenType(state_str);
+          auto type = util::GetTokenType(state_str, true);
 
           bool state = false;
           switch (type) {
@@ -1011,7 +1011,7 @@ namespace kagami {
       proc.push_back(storage_[j]);
     }
 
-    management::CreateInterface(
+    management::CreateNewInterface(
       Interface(proc, id, params, FunctionAgentTunnel)
     );
   }
@@ -1079,11 +1079,11 @@ namespace kagami {
           if (request.domain.type != kArgumentNull) {
             Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
-            interface = management::Order(request.head_interface, type_id);
+            interface = management::FindInterface(request.head_interface, type_id);
             obj_map.insert(NamedObject(kStrObject, domain_obj));
           }
           else {
-            interface = management::Order(request.head_interface);
+            interface = management::FindInterface(request.head_interface);
           }
           break;
         default:
@@ -1232,26 +1232,6 @@ namespace kagami {
     storage_.swap(not_catched);
 
     return result;
-  }
-
-  void Module::InitGlobalObject(bool create_container, string name) {
-    if (create_container) management::CreateContainer();
-
-    auto create = [&](string id, string value)->void {
-      management::CreateObject(id, Object("'" + value + "'"));
-    };
-
-    if (is_main_) {
-      create("__name__", "__main__");
-    }
-    else {
-      if (name != "") {
-        create("__name__", name);
-      }
-      else {
-        create("__name__", "__null__");
-      }
-    }
   }
 
   void Module::TailRecursionActions(MachCtlBlk *blk, string &name) {
@@ -1533,8 +1513,6 @@ namespace kagami {
     health_ = true;
 
     if (storage_.empty()) return result;
-
-    InitGlobalObject(create_container, name);
     if (result.GetCode() < kCodeSuccess) return result;
 
     while (blk->current < storage_.size()) {

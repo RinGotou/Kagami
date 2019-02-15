@@ -12,6 +12,38 @@ namespace kagami {
       return base;
     }
 
+    map<string, InterfaceCollection> &GetInterfaceCollections() {
+      static map<string, InterfaceCollection> collection_base;
+      return collection_base;
+    }
+
+    void CreateNewInterface(Interface interface) {
+      string domain = interface.GetTypeDomain();
+      auto &collection_base = GetInterfaceCollections();
+      auto it = collection_base.find(domain);
+
+      if (it != collection_base.end()) {
+        it->second.insert(std::make_pair(interface.GetId(), interface));
+      }
+      else {
+        collection_base.insert(std::make_pair(domain, InterfaceCollection()));
+        collection_base[domain].insert(std::make_pair(interface.GetId(), interface));
+      }
+    }
+
+    Interface FindInterface(string id, string domain) {
+      auto &collection_base = GetInterfaceCollections();
+      auto it = collection_base.find(domain);
+
+      if (it != collection_base.end()) {
+        auto dest_it = it->second.find(id);
+        return Interface(dest_it != it->second.end() ?
+          dest_it->second : Interface());
+      }
+
+      return Interface();
+    }
+
     vector<Interface> &GetInterfaceBase() {
       static vector<Interface> base;
       return base;
@@ -99,10 +131,6 @@ namespace kagami {
       return (token == kTokenIf || token == kTokenWhile || token == kTokenCase);
     }
 
-    void CreateInterface(Interface temp) {
-      GetInterfaceBase().emplace_back(temp);
-    }
-
     void CreateGenericInterface(Interface temp) {
       GetGenericInterfaceBase().insert(pair<GenericToken, Interface>(
         temp.GetToken(), temp));
@@ -113,28 +141,6 @@ namespace kagami {
       map<GenericToken, Interface>::iterator it = base.find(token);
       if (it != base.end()) return it->second;
       return Interface();
-    }
-
-
-    Interface Order(string id, string type, int size) {
-      GenericToken basicOpCode = util::GetGenericToken(id);
-      if (basicOpCode != kTokenNull) {
-        return GetGenericInterface(basicOpCode);
-      }
-
-      vector<Interface> &base = GetInterfaceBase();
-      Interface result;
-      bool ignore_type = (type == kTypeIdNull);
-      //TODO:rewrite here
-      for (auto &unit : base) {
-        bool typeChecking = (ignore_type || type == unit.GetTypeDomain());
-        bool sizeChecking = (size == -1 || size == int(unit.GetParamSize()));
-        if (id == unit.GetId() && typeChecking && sizeChecking) {
-          result = unit;
-          break;
-        }
-      }
-      return result;
     }
 
     namespace type {

@@ -211,16 +211,20 @@ namespace kagami {
       return compare(target, { "true","false" });
     }
 
-    TokenType GetTokenType(string src) {
-      TokenType type = TokenType::kTokenTypeNull;
-      if (src.empty()) type = TokenType::kTokenTypeNull;
-      else if (IsBoolean(src)) type = TokenType::kTokenTypeBool;
-      else if (IsGenericToken(src)) type = TokenType::kTokenTypeGeneric;
-      else if (IsInteger(src)) type = TokenType::kTokenTypeInt;
-      else if (IsFloat(src)) type = TokenType::kTokenTypeFloat;
-      else if (IsSymbol(src)) type = TokenType::kTokenTypeSymbol;
-      else if (IsBlank(src)) type = TokenType::kTokenTypeBlank;
-      else if (IsString(src)) type = TokenType::kTokenTypeString;
+    TokenType GetTokenType(string src, bool ignore_symbol_rule) {
+      TokenType type = kTokenTypeNull;
+      if (src.empty())              type = kTokenTypeNull;
+      else if (IsBoolean(src))      type = kTokenTypeBool;
+      else if (IsGenericToken(src)) type = kTokenTypeGeneric;
+      else if (IsInteger(src))      type = kTokenTypeInt;
+      else if (IsFloat(src))        type = kTokenTypeFloat;
+      else if (IsBlank(src))        type = kTokenTypeBlank;
+      else if (IsString(src))       type = kTokenTypeString;
+
+      //holy xxxx -> std::regex
+      if (!ignore_symbol_rule) {
+        if (IsSymbol(src)) type = kTokenTypeSymbol;
+      }
       return type;
     }
 

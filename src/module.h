@@ -142,7 +142,6 @@ namespace kagami {
     static bool IsBlankStr(string target);
     Message IRProcessing(IR &IL_set, string name, MachCtlBlk *blk);
     Message PreProcessing();
-    void InitGlobalObject(bool create_container,string name);
     void TailRecursionActions(MachCtlBlk *blk, string &name);
     void CallMachineFunction(StateCode code, string detail, MachCtlBlk *blk);
     bool GenericRequests(IRWorker *worker, Request &Request, ArgumentList &args);
@@ -185,10 +184,8 @@ namespace kagami {
 
     Module(vector<IR> storage) :
       health_(true),
-      is_main_(false) {
-
-      storage_ = storage;
-    }
+      is_main_(false),
+      storage_(std::move(storage)) {}
 
     Module(IRMaker &maker, bool is_main) :
       health_(true),

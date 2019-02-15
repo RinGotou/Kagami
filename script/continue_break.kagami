@@ -21,6 +21,4 @@ fn Test()
   end
 end
 
-if (__name__ == '__main__')
-  Test()
-end
+Test()

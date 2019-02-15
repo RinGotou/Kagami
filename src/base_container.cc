@@ -113,7 +113,7 @@ namespace kagami {
     ObjectMap obj_map;
 
     auto &base = p.Cast<ObjectArray>(kStrObject);
-    auto interface = management::Order("print", kTypeIdNull, -1);
+    auto interface = management::FindInterface("print", kTypeIdNull);
 
     for (auto &unit : base) {
       obj_map.insert(NamedObject(kStrObject, unit));
