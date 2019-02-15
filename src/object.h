@@ -1,5 +1,4 @@
 #pragma once
-#include "list.h" 
 #include "common.h"
 
 namespace kagami {
@@ -13,7 +12,7 @@ namespace kagami {
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
   using CopyingPolicy = shared_ptr<void>(*)(shared_ptr<void>);
-  using ContainerPool = kagami::list<ObjectContainer>;
+  using ContainerPool = list<ObjectContainer>;
 
   vector<string> BuildStringVector(string source);
   

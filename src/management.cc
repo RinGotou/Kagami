@@ -28,12 +28,17 @@ namespace kagami {
       list<ObjectContainer> &base = GetContainerPool();
       ObjectContainer &const_base = GetConstantBase();
 
-      while (!base.empty() && count > 0) {
-        object = base[count - 1].Find(id);
-        if (object != nullptr) {
-          break;
+      if (!base.empty()) {
+        auto it = base.rbegin();
+        while (it != base.rend()) {
+          object = it->Find(id);
+
+          if (object != nullptr) {
+            break;
+          }
+
+          ++it;
         }
-        count--;
       }
 
       //TODO:constant write lock

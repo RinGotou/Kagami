@@ -16,6 +16,7 @@
 #include <ctime>
 #include <type_traits>
 #include <iterator>
+#include <list>
 
 //if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
@@ -73,6 +74,7 @@ namespace kagami {
   using std::stol;
   using std::wstring;
   using std::ostream;
+  using std::list;
 #if defined (_WIN32)
   using suzu::TCPClient;
   using suzu::TCPServer;

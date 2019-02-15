@@ -409,29 +409,25 @@ namespace kagami {
     Interface interface(ir, func_string_vec[0], params, FunctionAgentTunnel);
     ObjectMap record;
 
-    //Because of single-linked list and lacking of iterator,
-    //so we must create record in this way
-    size_t idx = pool.size() - 1;
-    while (pool[idx].Find(kStrUserFunc) == nullptr) {
-      auto &base = pool[idx];
-      for (auto &unit : base.GetConent()) {
+    auto it = pool.rbegin();
+
+    while (it != pool.rend() && it->Find(kStrUserFunc) != nullptr) {
+      for (auto &unit : it->GetConent()) {
+        if (record.find(unit.first) != record.end()) {
+          record.insert(NamedObject(unit.first,
+            Object(management::type::GetObjectCopy(unit.second), unit.second.GetTypeId())));
+        }
+      }
+    }
+
+    if (it != pool.rend()) {
+      for (auto &unit : it->GetConent()) {
         if (record.find(unit.first) == record.end()) {
           record.insert(NamedObject(unit.first,
             Object(management::type::GetObjectCopy(unit.second), unit.second.GetTypeId())));
         }
       }
-
-      idx -= 1;
     }
-
-    for (auto &unit : pool[idx].GetConent()) {
-      if (record.find(unit.first) == record.end()) {
-        record.insert(NamedObject(unit.first,
-          Object(management::type::GetObjectCopy(unit.second), unit.second.GetTypeId())));
-      }
-    }
-
-
     interface.SetClousureRecord(record);
     pool.back().Add(func_string_vec[0], 
       Object(make_shared<Interface>(interface), kTypeIdFunction));

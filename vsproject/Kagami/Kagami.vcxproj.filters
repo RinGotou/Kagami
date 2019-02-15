@@ -18,9 +18,6 @@
     <ClInclude Include="..\..\src\common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\list.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\message.h">
       <Filter>Header Files</Filter>
     </ClInclude>
