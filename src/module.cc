@@ -1032,7 +1032,7 @@ namespace kagami {
     vector<Command> &action_base = ir.GetContains();
     bool preprocessing = (blk == nullptr),
       is_operator_token = false;
-    bool state = true;
+
     IRWorker *worker = new IRWorker();
 
     for (size_t idx = 0; idx < action_base.size(); idx += 1) {
@@ -1047,15 +1047,20 @@ namespace kagami {
           worker->tail_recursion = true :
           worker->tail_recursion = false;
 
-        state = GenericRequests(worker, request, args);
+        bool state = GenericRequests(worker, request, args);
 
         if (worker->deliver) {
           msg = worker->msg;
           worker->deliver = false;
           worker->msg = Message();
         }
+
+        if (!state) {
+          break;
+        }
       }
       else if (request.type == kRequestInterface || (request.type == kRequestCommand && !CheckGenericRequests(request.head_command))) {
+        bool state = true;
         Interface interface;
         string type_id, value;
         is_operator_token = util::IsOperatorToken(request.head_command);
@@ -1083,12 +1088,27 @@ namespace kagami {
             obj_map.insert(NamedObject(kStrObject, domain_obj));
           }
           else {
-            interface = management::FindInterface(request.head_interface);
+            Object *func_obj = management::FindObject(request.head_interface);
+            if (func_obj != nullptr) {
+              if (func_obj->GetTypeId() == kTypeIdFunction) {
+                interface = func_obj->Cast<Interface>();
+              }
+              else {
+                worker->error_obj_checking = true;
+                worker->error_string = request.head_interface + " is not a function object.";
+                state = false;
+              }
+            }
+            else {
+              interface = management::FindInterface(request.head_interface);
+            }
           }
           break;
         default:
           break;
         }
+
+        if (!state) break;
 
         if (!interface.Good()) {
           switch (request.type) {
@@ -1512,8 +1532,9 @@ namespace kagami {
     
     health_ = true;
 
+    if (create_container) management::CreateContainer();
+
     if (storage_.empty()) return result;
-    if (result.GetCode() < kCodeSuccess) return result;
 
     while (blk->current < storage_.size()) {
       if (!health_) break;
