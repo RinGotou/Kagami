@@ -165,7 +165,6 @@ namespace kagami {
   private:
     void ResetContainer(string funcId);
     void MakeFunction(size_t start, size_t end, vector<string> &defHead);
-    static bool IsBlankStr(string target);
     Message IRProcessing(IR &IL_set, string name, MachCtlBlk *blk);
     Message PreProcessing();
     void TailRecursionActions(MachCtlBlk *blk, string &name);
