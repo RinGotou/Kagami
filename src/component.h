@@ -9,8 +9,12 @@ namespace kagami {
   enum OperatorCode {
     PLUS, MINUS, TIMES, DIV, EQUAL, EQUALS,
     GREATER, LESS, NOT_EQUAL, GREATER_OR_EQUAL, LESS_OR_EQUAL,
-    AND, OR, NOT, BIT_AND, BIT_OR,
+    AND, OR, BIT_AND, BIT_OR,
     NUL
+  };
+
+  enum MonoOperatorCode {
+    BIT_NOT, NOT
   };
 
   PairTypePolicy GetTypePolicy(Object &A, Object &B);
@@ -367,5 +371,106 @@ namespace kagami {
   void OperatorGenerator() {
     management::CreateGenericInterface(
       Interface(OperatorFunction<op_code, boolean_result>, "first|second", token));
+  }
+
+  template <class Type, MonoOperatorCode code>
+  class MonoAction {
+  public:
+    string Do(Type A) { return string(); }
+  };
+
+  template <>
+  class MonoAction<string, NOT> {
+  public:
+    string Do(string A) {
+      bool result;
+
+      if (util::IsBoolean(A)) {
+        if (A == kStrTrue) result = false;
+        else if (A == kStrFalse) result = true;
+      }
+      else {
+        result = false;
+      }
+
+      return util::MakeBoolean(result);
+    }
+  };
+
+  template <>
+  class MonoAction<long, NOT> {
+  public:
+    string Do(int A) {
+      return util::MakeBoolean(A > 0);
+    }
+  };
+
+  template <>
+  class MonoAction<double, NOT> {
+  public:
+    string Do(double A) {
+      return util::MakeBoolean(A > 0.0);
+    }
+  };
+
+  template <>
+  class MonoAction<long, BIT_NOT> {
+  public:
+    string Do(long A) {
+      return to_string(~A);
+    }
+  };
+
+  template <>
+  class MonoAction<string, BIT_NOT> {
+  public:
+    string Do(string A) {
+      string target = A;
+      for (auto &unit : target) {
+        unit = ~unit;
+      }
+
+      return target;
+    }
+  };
+
+  template <MonoOperatorCode code>
+  Message MonoOperatorFunction(ObjectMap &p) {
+    Message result;
+    Object &obj = p["first"];
+
+    if (obj.GetTypeId() == kTypeIdRawString) {
+      string raw = obj.Cast<string>();
+      string result_str;
+      TokenType type = util::GetTokenType(raw, true);
+
+      switch (type) {
+      case kTokenTypeInt:
+        result_str = MonoAction<long, code>().Do(StringConvertor<long>().Do(raw));
+        break;
+      case kTokenTypeFloat:
+        result_str = MonoAction<double, code>().Do(StringConvertor<double>().Do(raw));
+        break;
+      case kTokenTypeBool:
+      case kTokenTypeString:
+        result_str = MonoAction<string, code>().Do(raw);
+        break;
+      default:
+        break;
+      }
+
+      result = Message(result_str);
+    }
+    else {
+      result = Message(kCodeIllegalParam, "Invaild operation.", kStateError);
+    }
+
+    return result;
+  }
+
+  template<MonoOperatorCode op_code, GenericToken token>
+  void MonoOperatorGenerator() {
+    management::CreateGenericInterface(
+      Interface(MonoOperatorFunction<op_code>, "first", token));
   }
 }

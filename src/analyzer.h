@@ -7,7 +7,9 @@ namespace kagami {
   struct AnalyzerWorkBlock {
     deque<Argument> args;
     deque<Request> symbol;
-    bool insert_between_object, need_reversing, define_line;
+    bool insert_between_object, 
+      need_reversing, 
+      define_line;
     Token current;
     Token next;
     Token next_2;
@@ -30,6 +32,7 @@ namespace kagami {
     bool InstructionFilling(AnalyzerWorkBlock *blk);
     void EqualMark(AnalyzerWorkBlock *blk);
     void Dot(AnalyzerWorkBlock *blk);
+    void MonoOperator(AnalyzerWorkBlock *blk);
     void LeftBracket(AnalyzerWorkBlock *blk);
     bool RightBracket(AnalyzerWorkBlock *blk);
     bool LeftSqrBracket(AnalyzerWorkBlock *blk);

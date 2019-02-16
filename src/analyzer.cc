@@ -11,6 +11,8 @@ namespace kagami {
     if (src == ")")   return kBasicTokenRightBracket;
     if (src == "{")   return kBasicTokenLeftCurBracket;
     if (src == "}")   return kBasicTokenRightCurBracket;
+    if (src == "!")   return kBasicTokenMonoOperator;
+    if (src == "~")   return kBasicTokenMonoOperator;
     return kBasicTokenOther;
   }
 
@@ -229,9 +231,11 @@ namespace kagami {
     size_t idx = 0, limit = 0;
 
     bool is_bin_operator = util::IsOperatorToken(blk->symbol.back().head_command);
+    bool is_mono_operator = util::IsMonoOperator(blk->symbol.back().head_command);
     bool reversed = (is_bin_operator && blk->need_reversing);
 
     if (is_bin_operator) limit = 2;
+    if (is_mono_operator) limit = 1;
     
     while (!blk->args.empty() && !blk->args.back().IsPlaceholder()) {
       if ((is_bin_operator) && idx >= limit) break;
@@ -282,6 +286,11 @@ namespace kagami {
     blk->args.pop_back();
 
     action_base_.back().first.option.no_feeding = true;
+  }
+
+  void Analyzer::MonoOperator(AnalyzerWorkBlock *blk) {
+    auto token = util::GetGenericToken(blk->current.first);
+    blk->symbol.emplace_back(Request(token));
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
@@ -556,18 +565,19 @@ namespace kagami {
         blk->next_2 = Token(string(), TokenType::kTokenTypeNull);
 
       auto token_type = blk->current.second;
-      if (token_type == TokenType::kTokenTypeSymbol) {
+      if (token_type == kTokenTypeSymbol) {
         Terminator value = GetTerminatorCode(blk->current.first);
         switch (value) {
         case kBasicTokenAssign: EqualMark(blk); break;
-        case kBasicTokenComma: state = CleanupStack(blk); break;
+        case kBasicTokenComma:          state = CleanupStack(blk); break;
         case kBasicTokenLeftSqrBracket: state = LeftSqrBracket(blk); break;
-        case kBasicTokenDot:             Dot(blk); break;
+        case kBasicTokenDot:            Dot(blk); break;
         case kBasicTokenLeftBracket:    LeftBracket(blk); break;
         case kBasicTokenRightSqrBracket:state = RightBracket(blk); break;
         case kBasicTokenRightBracket:   state = RightBracket(blk); break;
         case kBasicTokenLeftCurBracket: state = LeftCurBracket(blk); break;
         case kBasicTokenRightCurBracket:state = RightBracket(blk); break;
+        case kBasicTokenMonoOperator:   MonoOperator(blk); break;
         case kBasicTokenOther:          OtherSymbol(blk); break;
         default:break;
         }

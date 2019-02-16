@@ -29,6 +29,21 @@ namespace kagami {
       return result;
     }
 
+    bool IsMonoOperator(GenericToken token) {
+      bool result;
+      switch (token) {
+      case kTokenNot:
+      case kTokenBitNot:
+        result = true;
+        break;
+      default:
+        result = false;
+        break;
+      }
+
+      return result;
+    }
+
     int GetTokenPriority(GenericToken token) {
       int result;
       switch (token) {
@@ -80,6 +95,7 @@ namespace kagami {
         T(kStrNot            ,kTokenNot),
         T(kStrBitAnd         ,kTokenBitAnd),
         T(kStrBitOr          ,kTokenBitOr),
+        T(kStrBitNot         ,kTokenBitNot),
         T(kStrLessOrEqual    ,kTokenLessOrEqual),
         T(kStrGreaterOrEqual ,kTokenGreaterOrEqual),
         T(kStrNotEqual       ,kTokenNotEqual),

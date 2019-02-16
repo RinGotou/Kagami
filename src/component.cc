@@ -174,6 +174,8 @@ namespace kagami {
     OperatorGenerator<LESS, kTokenLess, true>();
     OperatorGenerator<AND, kTokenAnd, true>();
     OperatorGenerator<OR, kTokenOr, true>();
+    MonoOperatorGenerator<NOT, kTokenNot>();
+    MonoOperatorGenerator<BIT_NOT, kTokenBitNot>();
 
     CreateNewInterface(Interface(Convert, "object", "convert"));
     CreateNewInterface(Interface(Input, "msg", "input", kCodeAutoFill));

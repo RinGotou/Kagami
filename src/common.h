@@ -173,6 +173,7 @@ namespace kagami {
     kTokenNot, 
     kTokenBitAnd, 
     kTokenBitOr, 
+    kTokenBitNot,
     kTokenInitialArray, 
     kTokenAssert, 
     kTokenAssertR,
@@ -201,6 +202,7 @@ namespace kagami {
     kBasicTokenRightBracket,
     kBasicTokenLeftCurBracket, 
     kBasicTokenRightCurBracket, 
+    kBasicTokenMonoOperator,
     kBasicTokenOther
   };
 
@@ -257,6 +259,7 @@ namespace kagami {
     kStrNot            = "!",
     kStrBitAnd         = "&",
     kStrBitOr          = "|",
+    kStrBitNot         = "~",
     kStrLessOrEqual    = "<=",
     kStrGreaterOrEqual = ">=",
     kStrNotEqual       = "!=",
