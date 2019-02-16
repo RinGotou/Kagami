@@ -60,7 +60,7 @@ namespace kagami {
       base->reserve(size);
       auto type_id = obj.GetTypeId();
 
-      for (auto count = 0; count < size; count++) {
+      for (size_t count = 0; count < size; count++) {
         base->emplace_back(Object(management::type::GetObjectCopy(obj), type_id));
       }
     }

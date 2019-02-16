@@ -49,6 +49,8 @@
 #include <SDL_image.h>
 #endif
 
+#define MAX_ERROR_COUNT 20
+
 namespace kagami {
   using std::string;
   using std::pair;

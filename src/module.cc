@@ -943,6 +943,7 @@ namespace kagami {
     vector<StringUnit> string_units;
     Analyzer analyzer;
     Message msg;
+    size_t error_counter = 0;
 
     if (!stream.good()) {
       health = false;
@@ -963,7 +964,15 @@ namespace kagami {
     script_buf.shrink_to_fit();
 
     for (auto it = string_units.begin();it != string_units.end(); it++) {
-      if (!health) break;
+      if (!health) {
+        if (error_counter < MAX_ERROR_COUNT) {
+          error_counter += 1;
+        } 
+        else {
+          trace::AddEvent(Message(kCodeIllegalSymbol, "Too much errors. Analyzing is stopped."));
+          break;
+        }
+      }
 
       msg = analyzer.Make(it->second, it->first).SetIndex(it->first);
 
@@ -1614,7 +1623,11 @@ namespace kagami {
 
     msg = Run(false, func_id);
 
-    if (msg.GetCode() >= kCodeSuccess) {
+    if (msg.GetLevel() == kStateError) {
+      msg = Message(kCodeIllegalCall, "Error occured in " + func_id, kStateError);
+    }
+
+    if (msg.GetLevel() == kStateNormal) {
       msg = Message();
       auto &currentBase = management::GetCurrentContainer();
       Object *ret = currentBase.Find(kStrRetValue);

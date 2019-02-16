@@ -182,7 +182,7 @@ namespace kagami {
     CreateNewInterface(Interface(Print, kStrObject, "print"));
     CreateNewInterface(Interface(PrintLine, kStrObject, "println"));
     CreateNewInterface(Interface(GetRawStringType, "object", "type"));
-    CreateNewInterface(Interface(IsNull, "object", "isnull"));
+    CreateNewInterface(Interface(IsNull, "object", "null"));
     CreateNewInterface(Interface(Time, "", "time"));
     CreateNewInterface(Interface(Swap, "left|right", "swap"));
     CreateNewInterface(Interface(UseCount, "object", "use_count"));
