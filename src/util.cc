@@ -2,7 +2,7 @@
 
 namespace kagami {
   namespace util {
-    bool IsOperatorToken(GenericToken token) {
+    bool IsBinaryOperator(GenericToken token) {
       bool result;
       switch (token) {
       case kTokenPlus:
@@ -42,6 +42,10 @@ namespace kagami {
       }
 
       return result;
+    }
+
+    bool IsOperator(GenericToken token) {
+      return IsBinaryOperator(token) || IsMonoOperator(token);
     }
 
     int GetTokenPriority(GenericToken token) {

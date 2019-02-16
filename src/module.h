@@ -20,8 +20,11 @@
 #define EXPECT(STATE,MESS)                         \
   if (!(STATE)) return Message(kCodeIllegalParam,MESS,kStateError)
 
-#define INVALID_CALL_MSG(MSG) Message(kCodeIllegalCall, MSG, kStateError);
+#define INVALID_CALL_MSG(MSG) Message(kCodeIllegalCall, MSG, kStateError)
 
+#define INVALID_PARAM_MSG(MSG) Message(kCodeIllegalParam, MSG, kStateError)
+
+#define BAD_EXP_MSG(MSG) Message(kCodeBadExpression, MSG, kStateError)
 
 namespace kagami {
   template <class T>
@@ -65,11 +68,16 @@ namespace kagami {
       mode(kModeNormal),
       error_string() {}
 
+    void SetError(string str) {
+      runtime_error = true;
+      error_string = str;
+    }
+
     void Case();
     void When(bool value);
     void ConditionIf(bool value);
     void ConditionElif(bool value);
-    bool ConditionElse();
+    void ConditionElse();
     void LoopHead(bool value);
     void End(vector<IR> &storage);
     void Continue();
@@ -82,9 +90,7 @@ namespace kagami {
   class IRWorker {
   public:
     string error_string;
-    bool error_returning,
-      error_obj_checking,
-      error_assembling,
+    bool error,
       deliver,
       tail_recursion;
     Message msg;
@@ -92,9 +98,7 @@ namespace kagami {
 
     IRWorker() :
       error_string(),
-      error_returning(false),
-      error_obj_checking(false),
-      error_assembling(false),
+      error(false),
       deliver(false),
       tail_recursion(false),
       msg() {}
@@ -104,24 +108,44 @@ namespace kagami {
       msg = Message(code, "");
     }
 
+    void MakeMsg(Message msg) {
+      deliver = true;
+      this->msg = msg;
+    }
+
+    Message GetMsg() {
+      deliver = false;
+      return msg;
+    }
+
+    void MakeError(string str) {
+      error = true;
+      error_string = str;
+    }
+
+    bool Error() {
+      return error;
+    }
+
     Object MakeObject(Argument &arg, bool checking = false);
     void Assembling_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Assembling_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Assembling(Interface &interface, ArgumentList args, ObjectMap &obj_map);
+    void GenerateArgs(StateCode code, Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Reset();
 
-    bool Bind(ArgumentList args);
-    bool ExpList(ArgumentList args);
-    bool InitArray(ArgumentList args);
-    bool ReturnOperator(ArgumentList args);
-    bool GetTypeId(ArgumentList args);
-    bool GetMethods(ArgumentList args);
-    bool Exist(ArgumentList args);
-    bool Fn(ArgumentList args);
-    bool Case(ArgumentList args);
-    bool When(ArgumentList args);
-    bool DomainAssert(ArgumentList args, bool returning, bool no_feeding);
-    bool ConditionAndLoop(ArgumentList args, StateCode code);
+    void Bind(ArgumentList args);
+    void ExpList(ArgumentList args);
+    void InitArray(ArgumentList args);
+    void ReturnOperator(ArgumentList args);
+    void GetTypeId(ArgumentList args);
+    void GetMethods(ArgumentList args);
+    void Exist(ArgumentList args);
+    void Fn(ArgumentList args);
+    void Case(ArgumentList args);
+    void When(ArgumentList args);
+    void DomainAssert(ArgumentList args, bool returning, bool no_feeding);
+    void ConditionAndLoop(ArgumentList args, StateCode code);
   };
 
   class IRMaker {
@@ -136,7 +160,7 @@ namespace kagami {
   class Module {
   private:
     vector<IR> storage_;
-    bool health_, is_main_;
+    bool is_main_;
 
   private:
     void ResetContainer(string funcId);
@@ -146,8 +170,7 @@ namespace kagami {
     Message PreProcessing();
     void TailRecursionActions(MachCtlBlk *blk, string &name);
     void CallMachineFunction(StateCode code, string detail, MachCtlBlk *blk);
-    bool GenericRequests(IRWorker *worker, Request &Request, ArgumentList &args);
-    bool CheckGenericRequests(GenericToken token);
+    void GenericRequests(IRWorker *worker, Request &Request, ArgumentList &args);
 
     bool SkippingWithCondition(MachCtlBlk *blk,
       std::initializer_list<GenericToken> terminators);
@@ -169,11 +192,9 @@ namespace kagami {
 
   public:
     Module() : 
-      health_(false), 
       is_main_(false) {}
 
     Module(const Module &module) :
-      health_(module.health_),
       is_main_(module.is_main_) {
       storage_ = module.storage_;
     }
@@ -185,12 +206,10 @@ namespace kagami {
     }
 
     Module(vector<IR> storage) :
-      health_(true),
       is_main_(false),
       storage_(std::move(storage)) {}
 
     Module(IRMaker &maker, bool is_main) :
-      health_(true),
       is_main_(is_main) {
 
       Message msg;
@@ -201,13 +220,13 @@ namespace kagami {
         if (is_main) {
           msg = PreProcessing();
           if (msg.GetLevel() == kStateError) {
-            health_ = false;
             trace::AddEvent(msg);
+            storage_.clear();
+            storage_.shrink_to_fit();
           }
         }
       }
       else {
-        health_ = false;
         trace::AddEvent(Message(kCodeBadStream, "Invalid script.", kStateError));
       }
     }
@@ -219,15 +238,6 @@ namespace kagami {
 
     void operator=(Module &&module) {
       return this->operator=(module);
-    }
-
-    Module &SetMain() {
-      is_main_ = true;
-      return *this;
-    }
-
-    bool Good() const { 
-      return health_; 
     }
 
     Message Run(bool create_container = true, string name = "");

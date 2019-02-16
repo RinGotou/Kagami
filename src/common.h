@@ -84,9 +84,9 @@ namespace kagami {
   using suzu::WSockInfo;
 #endif
   /* Application Info */
-  const string kInterpreterVersion = "Revision 5";
+  const string kInterpreterVersion = "Revision 6";
   const string kIRFrameworkVersion = "August";
-  const string kPatchName          = "Vanilla";
+  const string kPatchName          = "Shooting-star";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else

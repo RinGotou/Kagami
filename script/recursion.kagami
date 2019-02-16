@@ -1,0 +1,14 @@
+a = 0
+
+fn recur()
+  if (a == 1000)
+    println('stop.')
+    return()
+  end
+  
+  a = a + 1
+  println(a)
+  recur()
+end
+
+recur()

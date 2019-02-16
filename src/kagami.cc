@@ -35,21 +35,18 @@ void StartInterpreter(string path, string log_path, bool real_time_log) {
   DEBUG_EVENT("Your're running a copy of Kagami interpreter with debug flag!");
 
   IRMaker maker(path.c_str());
-  Module main_module(maker, true);
-
-  //Initializers
-  Activiate();
-  InitBaseTypes();
-  InitContainerComponents();
+  if (maker.health) {
+    Activiate();
+    InitBaseTypes();
+    InitContainerComponents();
 
 #if defined(_WIN32)
-  LoadSocketStuff();
+    LoadSocketStuff();
 #endif
 #if not defined(_DISABLE_SDL_)
-  LoadSDLStuff();
+    LoadSDLStuff();
 #endif
-
-  if (main_module.Good()) {
+    Module main_module(maker, true);
     main_module.Run();
   }
 

@@ -227,7 +227,7 @@ namespace kagami {
     deque<Argument> arguments;
     size_t idx = 0, limit = 0;
 
-    bool is_bin_operator = util::IsOperatorToken(blk->symbol.back().head_command);
+    bool is_bin_operator = util::IsBinaryOperator(blk->symbol.back().head_command);
     bool is_mono_operator = util::IsMonoOperator(blk->symbol.back().head_command);
     bool reversed = (is_bin_operator && blk->need_reversing);
 
@@ -247,7 +247,7 @@ namespace kagami {
 
     if (!blk->args.empty()
       && blk->args.back().IsPlaceholder()
-      && !util::IsOperatorToken(blk->symbol.back().head_command)) {
+      && !util::IsBinaryOperator(blk->symbol.back().head_command)) {
       
       blk->args.pop_back();
     }
@@ -443,7 +443,7 @@ namespace kagami {
     request.priority = current_priority;
 
     if (!blk->symbol.empty()) {
-      bool stack_top_operator = util::IsOperatorToken(blk->symbol.back().head_command);
+      bool stack_top_operator = util::IsBinaryOperator(blk->symbol.back().head_command);
       int stack_top_priority = util::GetTokenPriority(blk->symbol.back().head_command);
 
       if (stack_top_operator && stack_top_priority > current_priority) {
@@ -469,8 +469,8 @@ namespace kagami {
       }
 
       auto firstEnum = blk->symbol.back().head_command;
-      if (blk->symbol.size() > 1 && util::IsOperatorToken(firstEnum)) {
-        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_command)) {
+      if (blk->symbol.size() > 1 && util::IsBinaryOperator(firstEnum)) {
+        if (util::IsBinaryOperator(blk->symbol[blk->symbol.size() - 2].head_command)) {
           if (checked) {
             checked = false;
           }
@@ -482,7 +482,7 @@ namespace kagami {
         }
       }
 
-      if (!util::IsOperatorToken(blk->symbol.back().head_command)) {
+      if (!util::IsBinaryOperator(blk->symbol.back().head_command)) {
         blk->need_reversing = false;
       }
 
@@ -501,8 +501,8 @@ namespace kagami {
 
       auto first_token = blk->symbol.back().head_command;
 
-      if (util::IsOperatorToken(first_token)) {
-        if (util::IsOperatorToken(blk->symbol[blk->symbol.size() - 2].head_command)) {
+      if (util::IsBinaryOperator(first_token)) {
+        if (util::IsBinaryOperator(blk->symbol[blk->symbol.size() - 2].head_command)) {
           if (checked) {
             checked = false;
           }

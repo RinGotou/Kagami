@@ -103,5 +103,14 @@ namespace kagami {
       idx_ = index;
       return *this;
     }
+
+    void Clear() {
+      level_ = kStateNormal;
+      detail_.clear();
+      detail_.shrink_to_fit();
+      code_ = kCodeSuccess;
+      object_.reset();
+      idx_ = 0;
+    }
   };
 }

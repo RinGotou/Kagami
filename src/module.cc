@@ -208,8 +208,7 @@ namespace kagami {
     }
   }
 
-  bool MachCtlBlk::ConditionElse() {
-    bool result = true;
+  void MachCtlBlk::ConditionElse() {
     if (!condition_stack.empty()) {
       if (condition_stack.top() == true) {
         switch (mode) {
@@ -235,16 +234,14 @@ namespace kagami {
         case kModeCaseJump:
           mode = kModeCase;
           break;
-	default:
-	  break;
+	      default:
+	        break;
         }
       }
     }
     else {
-      result = false;
+      SetError("Invaild 'Else'.");
     }
-
-    return result;
   }
 
   void MachCtlBlk::LoopHead(bool value) {
@@ -342,8 +339,7 @@ namespace kagami {
       s_continue = true;
     }
     else {
-      runtime_error = true;
-      error_string = "Illegal 'continue' operation.";
+      SetError("Illegal 'continue' operation.");
     }
   }
 
@@ -361,8 +357,7 @@ namespace kagami {
       s_break = true;
     }
     else {
-      runtime_error = true;
-      error_string = "Illegal 'break' operation";
+      SetError("Illegal 'break' operation");
     }
   }
 
@@ -450,8 +445,7 @@ namespace kagami {
         obj_domain = returning_base.top();
       }
       else {
-        error_returning = true;
-        error_string = "Returning base error.";
+        MakeError("Can't get object from stack.");
         state = false;
       }
       break;
@@ -463,8 +457,7 @@ namespace kagami {
       else {
         obj_domain = GetFunctionObject(arg.domain.data, kTypeIdNull);
         if (obj_domain.Get() == nullptr) {
-          error_obj_checking = true;
-          error_string = "(1)Object is not found - " + arg.data;
+          MakeError("(1)Object is not found - " + arg.data);
           state = false;
         }
       }
@@ -487,8 +480,7 @@ namespace kagami {
       else {
         obj = GetFunctionObject(arg.data, obj_domain.GetTypeId());
         if (obj.GetTypeId() == kTypeIdNull) {
-          error_obj_checking = true;
-          error_string = "(2)Object is not found - " + arg.data;
+          MakeError("(2)Object is not found - " + arg.data);
         }
       }
       break;
@@ -499,8 +491,7 @@ namespace kagami {
           returning_base.pop();
       }
       else {
-        error_returning = true;
-        error_string = "Returning base error.";
+        MakeError("Can't get object from stack.");
       }
       break;
     default:
@@ -550,8 +541,7 @@ namespace kagami {
   void IRWorker::Assembling_AutoFill(Interface &interface, 
     ArgumentList args, ObjectMap &obj_map) {
     if (args.size() > interface.GetParameters().size()) {
-      error_assembling = true;
-      error_string = "Too many arguments.";
+      MakeError("Too many arguments");
     }
 
     auto ent_params = interface.GetParameters();
@@ -569,8 +559,7 @@ namespace kagami {
 
   void IRWorker::Assembling(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
     if (args.size() > interface.GetParameters().size()) {
-      error_assembling = true;
-      error_string = "Too many arguments.";
+      MakeError("Too many arguments");
     }
 
     auto ent_params = interface.GetParameters();
@@ -586,27 +575,37 @@ namespace kagami {
     }
 
     if (!state) {
-      error_assembling = true;
-      error_string = "Required argument count is " +
+      MakeError("Required argument count is " +
         to_string(ent_params.size()) +
         ", but provided argument count is " +
-        to_string(args.size()) + ".";
+        to_string(args.size()) + ".");
+    }
+  }
+
+  void IRWorker::GenerateArgs(StateCode code, Interface &interface, ArgumentList args, ObjectMap & obj_map) {
+    switch (code) {
+    case kCodeAutoSize:
+      Assembling_AutoSize(interface, args, obj_map);
+      break;
+    case kCodeAutoFill:
+      Assembling_AutoFill(interface, args, obj_map);
+      break;
+    default:
+      Assembling(interface, args, obj_map);
+      break;
     }
   }
 
   void IRWorker::Reset() {
+    error = false;
     error_string.clear();
-    error_returning = false;
-    error_obj_checking = false;
     tail_recursion = false;
-    error_assembling = false;
     deliver = false;
-    msg = Message();
+    msg.Clear();
     while (!returning_base.empty()) returning_base.pop();
   }
 
-  bool IRWorker::Bind(ArgumentList args) {
-    bool result = true;
+  void IRWorker::Bind(ArgumentList args) {
     auto src = MakeObject(args[1]);
     auto dest = MakeObject(args[0]);
 
@@ -628,30 +627,24 @@ namespace kagami {
           Object obj(management::type::GetObjectCopy(src), src.GetTypeId());
           ObjectPointer result_ptr = management::CreateObject(id, obj);
           if (result_ptr == nullptr) {
-            error_string = "Object cration is failed.";
-            result = false;
+            MakeError("Object cration is failed.");
           }
         }
       }
       else {
-        error_string = "Invalid object id - " + id;
-        result = false;
+        MakeError("Invalid object id - " + id);
       }
     }
-
-    return result;
   }
 
-  bool IRWorker::ExpList(ArgumentList args) {
+  void IRWorker::ExpList(ArgumentList args) {
     if (!args.empty()) {
       auto obj = MakeObject(args.back());
       returning_base.push(obj);
     }
-
-    return true;
   }
 
-  bool IRWorker::InitArray(ArgumentList args) {
+  void IRWorker::InitArray(ArgumentList args) {
     shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
 
     if (!args.empty()) {
@@ -663,11 +656,9 @@ namespace kagami {
     Object obj(base, kTypeIdArray);
     obj.SetConstructorFlag();
     returning_base.push(obj);
-  
-    return true;
   }
 
-  bool IRWorker::ReturnOperator(ArgumentList args) {
+  void IRWorker::ReturnOperator(ArgumentList args) {
     auto &container = management::GetCurrentContainer();
     if (args.size() > 1) {
       shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
@@ -684,15 +675,11 @@ namespace kagami {
 
       container.Add(kStrRetValue, Object(obj.Get(), obj.GetTypeId()));
     }
-    msg = Message(kCodeReturn, "");
-    deliver = true;
 
-    return true;
+    MakeCode(kCodeReturn);
   }
 
-  bool IRWorker::GetTypeId(ArgumentList args) {
-    bool result = true;
-
+  void IRWorker::GetTypeId(ArgumentList args) {
     if (args.size() > 1) {
       shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
 
@@ -710,16 +697,11 @@ namespace kagami {
       returning_base.push(Object(obj.GetTypeId()));
     }
     else {
-      error_string = "Empty argument list.";
-      result = false;
+      MakeError("Empty argument list");
     }
-
-    return result;
   }
 
-  bool IRWorker::GetMethods(ArgumentList args) {
-    bool result = true;
-
+  void IRWorker::GetMethods(ArgumentList args) {
     if (!args.empty()) {
       Object obj = MakeObject(args[0]);
       vector<string> methods = management::type::GetMethods(obj.GetTypeId());
@@ -734,14 +716,11 @@ namespace kagami {
       returning_base.push(ret_obj);
     }
     else {
-      error_string = "Empty argument list.";
-      result = false;
+      MakeError("Empty argument list.");
     }
-
-    return result;
   }
 
-  bool IRWorker::Exist(ArgumentList args) {
+  void IRWorker::Exist(ArgumentList args) {
     bool result = true;
 
     if (args.size() == 2) {
@@ -754,20 +733,14 @@ namespace kagami {
       returning_base.push(ret_obj);
     }
     else if (args.size() > 2) {
-      error_string = "Too many arguments.";
-      result = false;
+      MakeError("Too many arguments");
     }
     else if (args.size() < 2) {
-      error_string = "Too few arguments.";
-      result = false;
+      MakeError("Too few arguments.");
     }
-
-    return result;
   }
 
-  bool IRWorker::Fn(ArgumentList args) {
-    bool result = true;
-
+  void IRWorker::Fn(ArgumentList args) {
     if (!args.empty()) {
       vector<string> func_string_vec;
 
@@ -776,47 +749,36 @@ namespace kagami {
       }
 
       string def_head_string = util::CombineStringVector(func_string_vec);
-      deliver = true;
-      msg = Message(kCodeFunctionCatching, def_head_string);
+      MakeMsg(Message(kCodeFunctionCatching, def_head_string));
     }
     else {
-      error_string = "Empty argument list.";
-      result = false;
+      MakeError("Empty argument list.");
     }
-
-    return result;
   }
 
-  bool IRWorker::Case(ArgumentList args) {
+  void IRWorker::Case(ArgumentList args) {
     bool result = true;
 
     if (!args.empty()) {
       Object obj = MakeObject(args[0]);
 
       if (!IsStringObject(obj)) {
-        result = false;
-        error_string = "Case-when is not supported for this object.";
+        MakeError("Case-when is not supported for non-string object.");
       }
       else {
         auto copy = management::type::GetObjectCopy(obj);
         Object base(copy, obj.GetTypeId());
         management::CreateObject("__case", base);
-        deliver = true;
-        msg = Message().SetCode(kCodeCase);
+        MakeMsg(Message().SetCode(kCodeCase));
       }
     }
     else {
-      result = false;
-      error_string = "Empty argument list.";
+      MakeError("Empty argument list.");
     }
-
-    return result;
   }
 
   // TODO: add compare method support
-  bool IRWorker::When(ArgumentList args) {
-    bool result = true;
-
+  void IRWorker::When(ArgumentList args) {
     if (!args.empty()) {
       ObjectPointer case_head = management::FindObject("__case");
       string case_content = case_head->Cast<string>();
@@ -837,25 +799,18 @@ namespace kagami {
       }
 
       if (state) {
-        deliver = true;
-        msg = found ?
-          Message(kCodeWhen, kStrTrue) :
-          Message(kCodeWhen, kStrFalse);
+        MakeMsg(Message(kCodeWhen, found ? kStrTrue : kStrFalse));
       }
       else {
-        error_string = "Case-when is not supported for non-string object.";
-        result = false;
+        MakeError("Case-when is not supported for non-string object.");
       }
     }
     else {
-      error_string = "Empty argument list.";
-      result = false;
+      MakeError("Empty argument list.");
     }
-
-    return result;
   }
 
-  bool IRWorker::DomainAssert(ArgumentList args, bool returning, bool no_feeding) {
+  void IRWorker::DomainAssert(ArgumentList args, bool returning, bool no_feeding) {
     Object obj = MakeObject(args[0], no_feeding);
     Object id_obj = MakeObject(args[1]);
     string id = id_obj.Cast<string>();
@@ -863,41 +818,35 @@ namespace kagami {
     bool result = find_in_vector<string>(id, methods);
 
     if (!result) {
-      error_string = "Method/Member is not found. - " + id;
-      return result;
+      MakeError("Method/Member is not found. - " + id);
+      return;
     }
 
     if (returning) {
       auto interface = management::FindInterface(id, obj.GetTypeId());
 
       if (!interface.Good()) {
-        result = false;
-        error_string = "Method/Member is not found. - " + id;
-        return result;
+        MakeError("Method/Member is not found. - " + id);
+        return;
       }
 
       Object ent_obj(make_shared<Interface>(interface), kTypeIdFunction);
       returning_base.push(ent_obj);
     }
-
-    return result;
   }
 
-  bool IRWorker::ConditionAndLoop(ArgumentList args, StateCode code) {
-    bool result = true;
+  void IRWorker::ConditionAndLoop(ArgumentList args, StateCode code) {
     if (args.size() == 1) {
       Object obj = MakeObject(args[0]);
 
-      deliver = true;
-
       if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdNull) {
-        msg = Message(code, kStrTrue);
+        MakeMsg(Message(code, kStrTrue));
       }
       else {
         string state_str = obj.Cast<string>();
 
         if (compare(state_str, { kStrTrue,kStrFalse })) {
-          msg = Message(code, state_str);
+          MakeMsg(Message(code, state_str));
         }
         else {
           auto type = util::GetTokenType(state_str, true);
@@ -917,20 +866,16 @@ namespace kagami {
             break;
           }
 
-          msg = Message(code, state ? kStrTrue : kStrFalse);
+          MakeMsg(Message(code, state ? kStrTrue : kStrFalse));
         }
       }
     }
     else if (args.empty()) {
-      error_string = "Too few arguments.";
-      result = false;
+      MakeError("Empty argument list.");
     }
     else {
-      error_string = "Too many arguments.";
-      result = false;
+      MakeError("Too many arguments.");
     }
-
-    return result;
   }
 
   IRMaker::IRMaker(const char *path) : health(true) {
@@ -969,7 +914,7 @@ namespace kagami {
           error_counter += 1;
         } 
         else {
-          trace::AddEvent(Message(kCodeIllegalSymbol, "Too much errors. Analyzing is stopped."));
+          trace::AddEvent(Message(kCodeIllegalSymbol, "Too many errors. Analyzing is stopped."));
           break;
         }
       }
@@ -1031,24 +976,14 @@ namespace kagami {
     );
   }
 
-  bool Module::IsBlankStr(string target) {
-    if (target.empty() || target.size() == 0) return true;
-    for (const auto unit : target) {
-      if (!compare(unit, { '\n',' ','\t','\r' })) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   Message Module::IRProcessing(IR &ir, string name, MachCtlBlk *blk) {
+    bool preprocessing = (blk == nullptr);
+    IRWorker *worker = new IRWorker();
+    string type_id, value;
     Message msg;
     ObjectMap obj_map;
+    Interface interface;
     vector<Command> &action_base = ir.GetContains();
-    bool preprocessing = (blk == nullptr),
-      is_operator_token = false;
-
-    IRWorker *worker = new IRWorker();
     size_t size = action_base.size();
 
     for (size_t idx = 0; idx < size; idx += 1) {
@@ -1057,121 +992,88 @@ namespace kagami {
       auto &request = action_base[idx].first;
       auto &args = action_base[idx].second;
 
-      if (request.type == kRequestCommand && CheckGenericRequests(request.head_command)) {
-        bool state = GenericRequests(worker, request, args);
+      if (request.type == kRequestCommand && !util::IsOperator(request.head_command)) {
+        GenericRequests(worker, request, args);
 
         if (worker->deliver) {
-          msg = worker->msg;
-          worker->deliver = false;
-          worker->msg = Message();
+          msg = worker->GetMsg();
+          worker->msg.Clear();
         }
 
-        if (!state) {
-          break;
-        }
+        if (worker->Error()) break;
+
+        continue;
       }
-      else if (request.type == kRequestInterface || (request.type == kRequestCommand && !CheckGenericRequests(request.head_command))) {
+
+      if (request.type == kRequestCommand) {
+        interface = management::GetGenericInterface(request.head_command);
+      }
+
+      if (request.type == kRequestInterface) {
         bool state = true;
-        Interface interface;
-        string type_id, value;
-        is_operator_token = util::IsOperatorToken(request.head_command);
-
-        switch (request.type) {
-        case kRequestCommand:
-          interface = management::GetGenericInterface(request.head_command);
-          break;
-        case kRequestInterface:
-          //Tail Recursion Detection
-          if (!preprocessing && request.head_interface == name) {
-            if (idx == size - 1) {
-              worker->tail_recursion = blk->last_index && name != "";
-            }
-            else if (idx = size - 2) {
-              worker->tail_recursion = action_base.back().first.head_command == kTokenReturn;
-            }
+        //Tail Recursion Detection
+        if (!preprocessing && request.head_interface == name) {
+          if (idx == size - 1) {
+            worker->tail_recursion = blk->last_index && name != "";
           }
-
-          //Find interface
-          if (request.domain.type != kArgumentNull) {
-            Object domain_obj = worker->MakeObject(request.domain, true);
-            type_id = domain_obj.GetTypeId();
-            interface = management::FindInterface(request.head_interface, type_id);
-            obj_map.insert(NamedObject(kStrObject, domain_obj));
+          else if (idx = size - 2) {
+            worker->tail_recursion = action_base.back().first.head_command == kTokenReturn;
           }
-          else {
-            Object *func_obj = management::FindObject(request.head_interface);
-            if (func_obj != nullptr) {
-              if (func_obj->GetTypeId() == kTypeIdFunction) {
-                interface = func_obj->Cast<Interface>();
-              }
-              else {
-                worker->error_obj_checking = true;
-                worker->error_string = request.head_interface + " is not a function object.";
-                state = false;
-              }
+        }
+
+        //Find interface
+        if (request.domain.type != kArgumentNull) {
+          Object domain_obj = worker->MakeObject(request.domain, true);
+          type_id = domain_obj.GetTypeId();
+          interface = management::FindInterface(request.head_interface, type_id);
+          obj_map.insert(NamedObject(kStrObject, domain_obj));
+        }
+        else {
+          Object *func_obj = management::FindObject(request.head_interface);
+          if (func_obj != nullptr) {
+            if (func_obj->GetTypeId() == kTypeIdFunction) {
+              interface = func_obj->Cast<Interface>();
             }
             else {
-              interface = management::FindInterface(request.head_interface);
+              worker->MakeError(request.head_interface + " is not a function object.");
+              state = false;
             }
           }
-          break;
-        default:
-          break;
+          else {
+            interface = management::FindInterface(request.head_interface);
+          }
         }
 
         if (!state) break;
 
         if (!interface.Good()) {
-          switch (request.type) {
-          case kRequestInterface:
-            msg = INVALID_CALL_MSG("Function is not found - ");
-            break;
-          case kRequestCommand:
-            msg = INVALID_CALL_MSG("IR Framework Panic, please check interpreter version or contact author.");
-            break;
-          default:break;
-          }
-
+          worker->MakeError("Function is not found - " + request.head_interface);
           break;
         }
-
-        switch (interface.GetArgumentMode()) {
-        case kCodeAutoSize:
-          worker->Assembling_AutoSize(interface, args, obj_map);
-          break;
-        case kCodeAutoFill:
-          worker->Assembling_AutoFill(interface, args, obj_map);
-          break;
-        default:
-          worker->Assembling(interface, args, obj_map);
-          break;
-        }
-
-        if (worker->error_returning 
-          || worker->error_obj_checking 
-          || worker->error_assembling) {
-          break;
-        }
-
-        if (worker->tail_recursion) {
-          blk->recursion_map = obj_map;
-          break;
-        }
-
-        msg = interface.Start(obj_map);
-        
-        if (msg.GetLevel() == kStateError) break;
-
-        Object object = msg.GetCode() == kCodeObject ?
-          msg.GetObj() : Object();
-
-        worker->returning_base.push(object);
       }
+
+      worker->GenerateArgs(interface.GetArgumentMode(), interface, args, obj_map);
+
+      if (worker->Error()) {
+        break;
+      }
+
+      if (worker->tail_recursion) {
+        blk->recursion_map = obj_map;
+        break;
+      }
+
+      msg = interface.Start(obj_map);
+
+      if (msg.GetLevel() == kStateError) break;
+
+      Object object = msg.GetCode() == kCodeObject ?
+        msg.GetObj() : Object();
+
+      worker->returning_base.push(object);
     }
 
-    if (worker->error_returning 
-      || worker->error_obj_checking 
-      || worker->error_assembling) {
+    if (worker->Error()) {
       msg = Message(kCodeIllegalSymbol, worker->error_string, kStateError);
     }
 
@@ -1197,8 +1099,6 @@ namespace kagami {
     vector<string> func_string_vec;
 
     for (size_t idx = 0; idx < storage_.size(); idx += 1) {
-      if (!health_) break;
-
       ir = &storage_[idx];
       token = util::GetGenericToken(ir->GetMainToken().first);
 
@@ -1239,8 +1139,7 @@ namespace kagami {
     }
 
     if (catching) {
-      result = Message(kCodeIllegalCall,
-        "End token is not found(Fn index:)" + to_string(fn_idx), kStateError);
+      result = BAD_EXP_MSG("End token is not found(Fn index:)" + to_string(fn_idx));
       return result;
     }
 
@@ -1293,7 +1192,7 @@ namespace kagami {
       blk->ConditionElif(GetBooleanValue(detail));
       break;
     case kCodeConditionElse:
-      health_ = blk->ConditionElse();
+      blk->ConditionElse();
       break;
     case kCodeCase:
       blk->Case();
@@ -1311,7 +1210,7 @@ namespace kagami {
     }
   }
 
-  bool Module::GenericRequests(IRWorker *worker, Request &request, ArgumentList &args) {
+  void Module::GenericRequests(IRWorker *worker, Request &request, ArgumentList &args) {
     auto &token = request.head_command;
     bool result = true;
 
@@ -1319,48 +1218,48 @@ namespace kagami {
 
     switch (token) {
     case kTokenBind:
-      result = worker->Bind(args);
+      worker->Bind(args);
       break;
 
     case kTokenExpList:
-      result = worker->ExpList(args);
+      worker->ExpList(args);
       break;
 
     case kTokenInitialArray:
-      result = worker->InitArray(args);
+      worker->InitArray(args);
       break;
 
     case kTokenReturn:
-      result = worker->ReturnOperator(args);
+      worker->ReturnOperator(args);
       break;
 
     case kTokenTypeId:
-      result = worker->GetTypeId(args);
+      worker->GetTypeId(args);
       break;
 
     case kTokenDir:
-      result = worker->GetMethods(args);
+      worker->GetMethods(args);
       break;
 
     case kTokenExist:
-      result = worker->Exist(args);
+      worker->Exist(args);
       break;
 
     case kTokenFn:
-      result = worker->Fn(args);
+      worker->Fn(args);
       break;
 
     case kTokenCase:
-      result = worker->Case(args);
+      worker->Case(args);
       break;
 
     case kTokenWhen:
-      result = worker->When(args);
+      worker->When(args);
       break;
 
     case kTokenAssert:
     case kTokenAssertR:
-      result = worker->DomainAssert(args, 
+      worker->DomainAssert(args, 
         token == kTokenAssertR, request.option.no_feeding);
       break;
 
@@ -1385,54 +1284,20 @@ namespace kagami {
       break;
 
     case kTokenIf:
-      result = worker->ConditionAndLoop(args, kCodeConditionIf);
+      worker->ConditionAndLoop(args, kCodeConditionIf);
       break;
 
     case kTokenElif:
-      result = worker->ConditionAndLoop(args, kCodeConditionElif);
+      worker->ConditionAndLoop(args, kCodeConditionElif);
       break;
 
     case kTokenWhile:
-      result = worker->ConditionAndLoop(args, kCodeWhile);
+      worker->ConditionAndLoop(args, kCodeWhile);
       break;
 
     default:
       break;
     }
-
-    return result;
-  }
-
-  bool Module::CheckGenericRequests(GenericToken token) {
-    bool result = false;
-
-    switch (token) {
-    case kTokenBind:
-    case kTokenExpList:
-    case kTokenInitialArray:
-    case kTokenReturn:
-    case kTokenTypeId:
-    case kTokenDir:
-    case kTokenExist:
-    case kTokenFn:
-    case kTokenCase:
-    case kTokenWhen:
-    case kTokenAssert:
-    case kTokenAssertR:
-    case kTokenQuit:
-    case kTokenEnd:
-    case kTokenContinue:
-    case kTokenBreak:
-    case kTokenElse:
-    case kTokenIf:
-    case kTokenElif:
-    case kTokenWhile:
-      result = true;
-    default:
-      break;
-    }
-
-    return result;
   }
 
   bool Module::SkippingWithCondition(MachCtlBlk *blk,
@@ -1533,49 +1398,42 @@ namespace kagami {
   }
 
   Message Module::Run(bool create_container, string name) {
-    Message result;
-    MachCtlBlk *blk = new MachCtlBlk();
+    if (storage_.empty()) return Message();
+
+    StateLevel level = kStateNormal;
+    StateCode code = kCodeSuccess;
     IR *ir = nullptr;
-    
-    health_ = true;
+    MachCtlBlk *blk = new MachCtlBlk();
+    string detail;
+    Message result;
 
     if (create_container) management::CreateContainer();
 
     if (storage_.empty()) return result;
 
     while (blk->current < storage_.size()) {
-      if (!health_) break;
-
       blk->last_index = (blk->current == storage_.size() - 1);
       
       if (NeedSkipping(blk->mode)) {
-        result = Message();
+        result.Clear();
         if (!SkippingStrategy(blk)) {
-          trace::AddEvent(
-            Message(kCodeIllegalParam, "End token is not found.", kStateError)
-            .SetIndex(blk->current)
-          );
+          blk->SetError("End token is not found.");
           break;
         }
       }
 
       ir = &storage_[blk->current];
       result = IRProcessing(*ir, name, blk);
-      
-      switch (result.GetLevel()) {
-      case kStateError:
-        health_ = false;
-        trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
-        continue;
-        break;
-      case kStateWarning:
-        trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
-        break;
-      default:break;
-      }
+      level = result.GetLevel();
+      code = result.GetCode();
+      detail = result.GetDetail();
 
-      const auto code = result.GetCode();
-      const auto detail = result.GetDetail();
+      if (level != kStateNormal) {
+        trace::AddEvent(result.SetIndex(storage_[blk->current].GetIndex()));
+        if (level == kStateError) {
+          break;
+        }
+      }
 
       if (blk->tail_recursion) {
         TailRecursionActions(blk, name);
