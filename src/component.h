@@ -473,4 +473,13 @@ namespace kagami {
     management::CreateGenericInterface(
       Interface(MonoOperatorFunction<op_code>, "first", token));
   }
+
+  template <int base>
+  Message DecimalConvert(ObjectMap &p) {
+    EXPECT_TYPE(p, "str", kTypeIdRawString);
+    string str = ParseRawString(p["str"].Cast<string>());
+
+    long dest = stol(str, nullptr, base);
+    return Message(to_string(dest));
+  }
 }

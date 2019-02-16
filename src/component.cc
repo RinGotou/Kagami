@@ -159,18 +159,6 @@ namespace kagami {
     return Message();
   }
 
-  Message Binary(ObjectMap &p) {
-    return Message();
-  }
-
-  Message Octa(ObjectMap &p) {
-    return Message();
-  }
-
-  Message Hex(ObjectMap &p) {
-    return Message();
-  }
-
   void Activiate() {
     using management::CreateNewInterface;
 
@@ -199,6 +187,9 @@ namespace kagami {
     CreateNewInterface(Interface(Swap, "left|right", "swap"));
     CreateNewInterface(Interface(UseCount, "object", "use_count"));
     CreateNewInterface(Interface(Destroy, "object", "destroy"));
+    CreateNewInterface(Interface(DecimalConvert<2>, "str", "bin"));
+    CreateNewInterface(Interface(DecimalConvert<8>, "str", "octa"));
+    CreateNewInterface(Interface(DecimalConvert<16>, "str", "hex"));
 
     auto create_constant = [](string id, string content) {
       management::CreateConstantObject(
