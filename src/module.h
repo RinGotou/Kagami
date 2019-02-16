@@ -20,6 +20,8 @@
 #define EXPECT(STATE,MESS)                         \
   if (!(STATE)) return Message(kCodeIllegalParam,MESS,kStateError)
 
+#define INVALID_CALL_MSG(MSG) Message(kCodeIllegalCall, MSG, kStateError);
+
 
 namespace kagami {
   template <class T>

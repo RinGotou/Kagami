@@ -1049,19 +1049,15 @@ namespace kagami {
       is_operator_token = false;
 
     IRWorker *worker = new IRWorker();
+    size_t size = action_base.size();
 
-    for (size_t idx = 0; idx < action_base.size(); idx += 1) {
+    for (size_t idx = 0; idx < size; idx += 1) {
       obj_map.clear();
 
-      auto &request = action_base.at(idx).first;
-      auto &args = action_base.at(idx).second;
+      auto &request = action_base[idx].first;
+      auto &args = action_base[idx].second;
 
       if (request.type == kRequestCommand && CheckGenericRequests(request.head_command)) {
-        (request.head_interface == name && idx == action_base.size() - 2
-          && action_base.back().first.head_command == kTokenReturn) ?
-          worker->tail_recursion = true :
-          worker->tail_recursion = false;
-
         bool state = GenericRequests(worker, request, args);
 
         if (worker->deliver) {
@@ -1080,22 +1076,22 @@ namespace kagami {
         string type_id, value;
         is_operator_token = util::IsOperatorToken(request.head_command);
 
-        if (!preprocessing && worker->tail_recursion) {
-          worker->tail_recursion = (
-            request.head_interface == name
-            && idx == action_base.size() - 1
-            && blk->last_index
-            && !compare(name, { "", "__null__" })
-            );
-        }
-
         switch (request.type) {
         case kRequestCommand:
-          //DEBUG_EVENT("(Request)Command code:" + to_string(request.head_command));
           interface = management::GetGenericInterface(request.head_command);
           break;
         case kRequestInterface:
-          //DEBUG_EVENT("(Request)Interface id:" + request.head_interface);
+          //Tail Recursion Detection
+          if (!preprocessing && request.head_interface == name) {
+            if (idx == size - 1) {
+              worker->tail_recursion = blk->last_index && name != "";
+            }
+            else if (idx = size - 2) {
+              worker->tail_recursion = action_base.back().first.head_command == kTokenReturn;
+            }
+          }
+
+          //Find interface
           if (request.domain.type != kArgumentNull) {
             Object domain_obj = worker->MakeObject(request.domain, true);
             type_id = domain_obj.GetTypeId();
@@ -1128,14 +1124,10 @@ namespace kagami {
         if (!interface.Good()) {
           switch (request.type) {
           case kRequestInterface:
-            msg = Message(kCodeIllegalCall,
-              "Function is not found - " + request.head_interface,
-              kStateError);
+            msg = INVALID_CALL_MSG("Function is not found - ");
             break;
           case kRequestCommand:
-            msg = Message(kCodeIllegalCall,
-              "IR Framework Panic, please check interpreter version or contact author.",
-              kStateError);
+            msg = INVALID_CALL_MSG("IR Framework Panic, please check interpreter version or contact author.");
             break;
           default:break;
           }
