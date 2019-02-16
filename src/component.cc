@@ -159,6 +159,18 @@ namespace kagami {
     return Message();
   }
 
+  Message Binary(ObjectMap &p) {
+    return Message();
+  }
+
+  Message Octa(ObjectMap &p) {
+    return Message();
+  }
+
+  Message Hex(ObjectMap &p) {
+    return Message();
+  }
+
   void Activiate() {
     using management::CreateNewInterface;
 

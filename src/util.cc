@@ -50,13 +50,9 @@ namespace kagami {
       case kTokenBind:
         result = 0;
         break;
-      case kTokenPlus:
-      case kTokenMinus:
-        result = 2;
-        break;
-      case kTokenTimes:
-      case kTokenDivide:
-        result = 3;
+      case kTokenAnd:
+      case kTokenOr:
+        result = 1;
         break;
       case kTokenEquals:
       case kTokenLessOrEqual:
@@ -64,12 +60,18 @@ namespace kagami {
       case kTokenNotEqual:
       case kTokenGreater:
       case kTokenLess:
-      case kTokenAnd:
-      case kTokenOr:
-        result = 1;
+        result = 2;
+        break;
+      case kTokenPlus:
+      case kTokenMinus:
+        result = 3;
+        break;
+      case kTokenTimes:
+      case kTokenDivide:
+        result = 4;
         break;
       default:
-        result = 4;
+        result = 5;
         break;
       }
 

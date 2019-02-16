@@ -194,36 +194,33 @@ namespace kagami {
   }
 
   void Analyzer::Reversing(AnalyzerWorkBlock *blk) {
-    deque<Request> *temp_symbol = new deque<Request>();
-    deque<Argument> *temp_arg = new deque<Argument>();
+    deque<Request> temp_symbol;
+    deque<Argument> temp_arg;
 
     while (!blk->symbol.empty() && blk->symbol.size() > 1
       && (blk->symbol.back().priority == blk->symbol[blk->symbol.size() - 2].priority)) {
-      temp_symbol->push_back(blk->symbol.back());
+      temp_symbol.push_back(blk->symbol.back());
 
-      temp_arg->push_back(blk->args.back());
+      temp_arg.push_back(blk->args.back());
       blk->symbol.pop_back();
       blk->args.pop_back();
     }
-    temp_symbol->push_back(blk->symbol.back());
+    temp_symbol.push_back(blk->symbol.back());
     blk->symbol.pop_back();
 
     for (int count = 2; count > 0; count -= 1) {
-      temp_arg->push_back(blk->args.back());
+      temp_arg.push_back(blk->args.back());
       blk->args.pop_back();
     }
 
-    while (!temp_symbol->empty()) {
-      blk->symbol.push_back(temp_symbol->front());
-      temp_symbol->pop_front();
+    while (!temp_symbol.empty()) {
+      blk->symbol.push_back(temp_symbol.front());
+      temp_symbol.pop_front();
     }
-    while (!temp_arg->empty()) {
-      blk->args.push_back(temp_arg->front());
-      temp_arg->pop_front();
+    while (!temp_arg.empty()) {
+      blk->args.push_back(temp_arg.front());
+      temp_arg.pop_front();
     }
-    
-    delete temp_symbol;
-    delete temp_arg;
   }
 
   bool Analyzer::InstructionFilling(AnalyzerWorkBlock *blk) {
@@ -238,7 +235,7 @@ namespace kagami {
     if (is_mono_operator) limit = 1;
     
     while (!blk->args.empty() && !blk->args.back().IsPlaceholder()) {
-      if ((is_bin_operator) && idx >= limit) break;
+      if ((is_bin_operator || is_mono_operator) && idx >= limit) break;
 
       reversed ?
         arguments.emplace_back(blk->args.back()) :
@@ -256,8 +253,14 @@ namespace kagami {
     }
 
     action_base_.emplace_back(Command(blk->symbol.back(), arguments));
+    if (blk->symbol.back().option.forward_insertion) {
+      blk->args.emplace_front(Argument("", kArgumentReturningStack, kTokenTypeNull));
+    }
+    else {
+      blk->args.emplace_back(Argument("", kArgumentReturningStack, kTokenTypeNull));
+    }
+
     blk->symbol.pop_back();
-    blk->args.emplace_back(Argument("", kArgumentReturningStack, kTokenTypeNull));
     return health_;
   }
 
@@ -377,13 +380,13 @@ namespace kagami {
             request.domain = blk->domain;
           }
           else {
-            request.domain.type = kArgumentNull;
+          request.domain.type = kArgumentNull;
           }
           blk->symbol.emplace_back(request);
         }
       }
       else {
-        if (compare(blk->current.first, 
+        if (compare(blk->current.first,
           { kStrEnd,kStrElse,kStrContinue,kStrBreak })) {
           Request request(token);
           blk->symbol.emplace_back(request);
@@ -406,19 +409,13 @@ namespace kagami {
               arg.domain.type = blk->domain.type;
             }
             blk->domain = Argument();
-
-            if (blk->insert_between_object) {
-              blk->args.emplace(blk->args.begin() + blk->next_insert_index, arg);
-            }
-            else {
-              blk->args.emplace_back(arg);
-            }
+            blk->args.emplace_back(arg);
           }
         }
       }
     }
 
-    if (function && blk->next.first != "(" && 
+    if (function && blk->next.first != "(" &&
       !compare(blk->current.first, { kStrElse,kStrEnd })) {
       health_ = false;
       result = false;
@@ -435,46 +432,31 @@ namespace kagami {
   }
 
   void Analyzer::OtherToken(AnalyzerWorkBlock *blk) {
-    if (blk->insert_between_object) {
-      blk->args.emplace(blk->args.begin() + blk->next_insert_index,
-        Argument(blk->current.first, kArgumentNormal, blk->current.second));
-      blk->insert_between_object = false;
-    }
-    else {
-      blk->args.emplace_back(
-        Argument(blk->current.first, kArgumentNormal, blk->current.second));
-    }
+    blk->args.emplace_back(
+      Argument(blk->current.first, kArgumentNormal, blk->current.second));
   }
 
   void Analyzer::OtherSymbol(AnalyzerWorkBlock *blk) {
-    GenericToken token = util::GetGenericToken(blk->current.first);
-    int currentPriority = util::GetTokenPriority(token);
+    auto token = util::GetGenericToken(blk->current.first);
+    int current_priority = util::GetTokenPriority(token);
     Request request(token);
-    request.priority = currentPriority;
+    request.priority = current_priority;
 
-    if (blk->symbol.empty()) {
-      blk->symbol.push_back(request);
-    }
-    else if (currentPriority < blk->symbol.back().priority
-      && util::IsOperatorToken(blk->symbol.back().head_command)) {
-      auto j = blk->symbol.size() - 1;
-      auto k = blk->args.size();
+    if (!blk->symbol.empty()) {
+      bool stack_top_operator = util::IsOperatorToken(blk->symbol.back().head_command);
+      int stack_top_priority = util::GetTokenPriority(blk->symbol.back().head_command);
 
-      while (!compare(blk->symbol[j].head_interface, { "(","[","{" })
-        && (currentPriority < blk->symbol[j].priority)) {
-
-        k == blk->args.size() ? k -= 2 : k -= 1;
-        --j;
+      if (stack_top_operator && stack_top_priority > current_priority) {
+        if (!InstructionFilling(blk)) {
+          health_ = false;
+          error_string_ = "Operation error in binary operator.";
+        }
       }
-
-      blk->symbol.insert(blk->symbol.begin() + j + 1, request);
-      blk->next_insert_index = k;
-      blk->insert_between_object = true;
-    }
-    else {
-      blk->symbol.push_back(request);
     }
 
+    blk->symbol.emplace_back(request);
+
+    blk->forward_priority = current_priority;
   }
 
   void Analyzer::FinalProcessing(AnalyzerWorkBlock *blk) {
@@ -546,8 +528,6 @@ namespace kagami {
     Message result;
 
     AnalyzerWorkBlock *blk = new AnalyzerWorkBlock();
-    blk->next_insert_index = 0;
-    blk->insert_between_object = false;
     blk->need_reversing = false;
     blk->define_line = false;
     blk->domain = Argument();

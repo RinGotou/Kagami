@@ -23,9 +23,11 @@ namespace kagami {
 
   struct ArgumentOption {
     bool no_feeding;
+    bool forward_insertion;
 
     ArgumentOption() :
-      no_feeding(false) {}
+      no_feeding(false),
+      forward_insertion(false) {}
   };
 
   class Argument {
@@ -70,7 +72,7 @@ namespace kagami {
     ArgumentOption option;
 
     Request(GenericToken token) :
-      priority(4),
+      priority(5),
       head_command(token),
       head_interface(),
       domain(),
@@ -78,7 +80,7 @@ namespace kagami {
       option() {}
 
     Request(string token, bool place_holder = false) :
-      priority(4),
+      priority(5),
       head_command(kTokenNull),
       head_interface(token),
       domain(),
@@ -86,7 +88,7 @@ namespace kagami {
       option() {}
 
     Request() :
-      priority(4),
+      priority(5),
       head_command(kTokenNull),
       head_interface(),
       domain(),

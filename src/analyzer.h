@@ -2,20 +2,18 @@
 #include "ir.h"
 
 namespace kagami {
-
-
   struct AnalyzerWorkBlock {
     deque<Argument> args;
     deque<Request> symbol;
-    bool insert_between_object, 
-      need_reversing, 
+    bool need_reversing, 
       define_line;
     Token current;
     Token next;
     Token next_2;
     Token last;
-    size_t mode, next_insert_index;
+    size_t mode;
     Argument domain;
+    int forward_priority;
   };
 
   class Analyzer {
