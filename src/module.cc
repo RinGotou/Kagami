@@ -435,68 +435,63 @@ namespace kagami {
   }
 
   Object IRWorker::MakeObject(Argument &arg, bool checking) {
-    Object obj, obj_domain;
+    string domain_type_id = kTypeIdNull;
+    Object obj;
     ObjectPointer ptr;
-    bool state = true;
 
-    switch (arg.domain.type) {
-    case kArgumentReturningStack:
-      if (!returning_base.empty()) {
-        obj_domain = returning_base.top();
-      }
-      else {
-        MakeError("Can't get object from stack.");
-        state = false;
-      }
-      break;
-    case kArgumentObjectPool:
-      ptr = management::FindObject(arg.domain.data);
-      if (ptr != nullptr) {
-        obj_domain.CreateRef(*ptr);
-      }
-      else {
-        obj_domain = GetFunctionObject(arg.domain.data, kTypeIdNull);
-        if (obj_domain.Get() == nullptr) {
-          MakeError("(1)Object is not found - " + arg.data);
-          state = false;
+    auto fetching = [&](ArgumentType type, bool is_domain)->bool {
+      switch (type) {
+      case kArgumentNormal:
+        obj.ManageContent(make_shared<string>(arg.data), kTypeIdRawString);
+        break;
+
+      case kArgumentObjectPool:
+        ptr = management::FindObject(is_domain ? arg.domain.data : arg.data);
+        if (ptr != nullptr) {
+          if (is_domain) {
+            domain_type_id = ptr->GetTypeId();
+          }
+          else {
+            obj.CreateRef(*ptr);
+          }
         }
-      }
-      break;
-    default:
-      break;
-    }
+        else {
+          obj = is_domain ?
+            GetFunctionObject(arg.domain.data, kTypeIdNull) :
+            GetFunctionObject(arg.data, domain_type_id);
 
-    if (!state) return Object();
-
-    switch (arg.type) {
-    case kArgumentNormal:
-      obj.ManageContent(make_shared<string>(arg.data), kTypeIdRawString);
-      break;
-    case kArgumentObjectPool:
-      ptr = management::FindObject(arg.data);
-      if (ptr != nullptr) {
-        obj.CreateRef(*ptr);
-      }
-      else {
-        obj = GetFunctionObject(arg.data, obj_domain.GetTypeId());
-        if (obj.GetTypeId() == kTypeIdNull) {
-          MakeError("(2)Object is not found - " + arg.data);
+          if (obj.Get() == nullptr) {
+            MakeError("Object is not found." 
+              + is_domain ? arg.domain.data : arg.data);
+            return false;
+          }
         }
+        break;
+
+      case kArgumentReturningStack:
+        if (!returning_base.empty()) {
+          if (is_domain) {
+            domain_type_id = returning_base.top().GetTypeId();
+          }
+          else {
+            obj = returning_base.top();
+            if (!checking) returning_base.pop();
+          }
+        }
+        else {
+          MakeError("Can't get object from stack.");
+          return false;
+        }
+        break;
+      default:
+        break;
       }
-      break;
-    case kArgumentReturningStack:
-      if (!returning_base.empty()) {
-        obj = returning_base.top();
-        if (!checking)
-          returning_base.pop();
-      }
-      else {
-        MakeError("Can't get object from stack.");
-      }
-      break;
-    default:
-      break;
-    }
+
+      return true;
+    };
+
+    if (!fetching(arg.domain.type, true)) return Object();
+    if (!fetching(arg.type, false)) return Object();
 
     return obj;
   }
@@ -1000,7 +995,7 @@ namespace kagami {
           worker->msg.Clear();
         }
 
-        if (worker->Error()) break;
+        if (worker->error) break;
 
         continue;
       }
@@ -1054,7 +1049,7 @@ namespace kagami {
 
       worker->GenerateArgs(interface.GetArgumentMode(), interface, args, obj_map);
 
-      if (worker->Error()) {
+      if (worker->error) {
         break;
       }
 
@@ -1073,7 +1068,7 @@ namespace kagami {
       worker->returning_base.push(object);
     }
 
-    if (worker->Error()) {
+    if (worker->error) {
       msg = Message(kCodeIllegalSymbol, worker->error_string, kStateError);
     }
 
@@ -1395,6 +1390,28 @@ namespace kagami {
     }
 
     return result;
+  }
+
+  Module::Module(IRMaker &maker, bool is_main) :
+    is_main_(is_main) {
+
+    Message msg;
+
+    if (maker.health) {
+      storage_ = maker.output;
+      //these need to modify for module feature.
+      if (is_main) {
+        msg = PreProcessing();
+        if (msg.GetLevel() == kStateError) {
+          trace::AddEvent(msg);
+          storage_.clear();
+          storage_.shrink_to_fit();
+        }
+      }
+    }
+    else {
+      trace::AddEvent(Message(kCodeBadStream, "Invalid script.", kStateError));
+    }
   }
 
   Message Module::Run(bool create_container, string name) {

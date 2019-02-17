@@ -123,10 +123,6 @@ namespace kagami {
       error_string = str;
     }
 
-    bool Error() {
-      return error;
-    }
-
     Object MakeObject(Argument &arg, bool checking = false);
     void Assembling_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Assembling_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map);
@@ -208,27 +204,7 @@ namespace kagami {
       is_main_(false),
       storage_(std::move(storage)) {}
 
-    Module(IRMaker &maker, bool is_main) :
-      is_main_(is_main) {
-
-      Message msg;
-
-      if (maker.health) {
-        storage_ = maker.output;
-        //these need to modify for module feature.
-        if (is_main) {
-          msg = PreProcessing();
-          if (msg.GetLevel() == kStateError) {
-            trace::AddEvent(msg);
-            storage_.clear();
-            storage_.shrink_to_fit();
-          }
-        }
-      }
-      else {
-        trace::AddEvent(Message(kCodeBadStream, "Invalid script.", kStateError));
-      }
-    }
+    Module(IRMaker &maker, bool is_main);
 
     void operator=(Module &module) {
       storage_ = module.storage_;
