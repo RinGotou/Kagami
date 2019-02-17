@@ -16,6 +16,9 @@ using std::cin;
 
 using namespace kagami;
 
+namespace runtime {
+  static string binary_name;
+}
 
 void StartInterpreter(string path, string log_path, bool real_time_log) {
   trace::LoggerPolicy *logger = nullptr;
@@ -63,7 +66,7 @@ void ApplicationInfo() {
 }
 
 void HelpFile() {
-  cout << "Usage:kagami [-OPTION][-OPTION=VALUE]...\n\n";
+  cout << "Usage:"+ runtime::binary_name +" [-OPTION][-OPTION=VALUE]...\n\n";
   cout << "\tpath=PATH         Path of script file.\n";
   cout << "\tlog=(PATH|stdout) Output of error log.\n";
   cout << "\trtlog             Enable real-time logger\n";
@@ -107,6 +110,8 @@ void Processing(Processor &processor) {
 }
 
 int main(int argc, char **argv) {
+  runtime::binary_name = argv[0];
+
   Processor processor = {
     Pattern("path"   , Option(true, false, 1)),
     Pattern("help"   , Option(false, false, 1)),
