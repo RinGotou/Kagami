@@ -446,11 +446,15 @@ namespace kagami {
       bool stack_top_operator = util::IsBinaryOperator(blk->symbol.back().head_command);
       int stack_top_priority = util::GetTokenPriority(blk->symbol.back().head_command);
 
-      if (stack_top_operator && stack_top_priority > current_priority) {
+      while (!blk->symbol.empty() && stack_top_operator && stack_top_priority > current_priority) {
         if (!InstructionFilling(blk)) {
           health_ = false;
           error_string_ = "Operation error in binary operator.";
+          break;
         }
+
+        stack_top_operator = util::IsBinaryOperator(blk->symbol.back().head_command);
+        stack_top_priority = util::GetTokenPriority(blk->symbol.back().head_command);
       }
     }
 
