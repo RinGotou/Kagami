@@ -389,19 +389,65 @@ namespace kagami {
   }
 
   void MachCtlBlk::CatchClosure(vector<IR> &storage) {
+    bool optional = false;
+    bool variable = false;
+    size_t counter = 0;
     auto &pool = management::GetContainerPool();
     vector<string> params;
     vector<IR> ir;
-
+    
     for (size_t idx = fn_idx + 1; idx < current; idx += 1) {
       ir.push_back(storage[idx]);
     }
 
-    for (size_t idx = 1; idx < func_string_vec.size(); idx += 1) {
-      params.push_back(func_string_vec[idx]);
+    for (size_t i = 1; i < func_string_vec.size(); ++i) {
+      if (func_string_vec[i] == kStrOptional) {
+        optional = true;
+        counter += 1;
+        continue;
+      }
+
+      if (func_string_vec[i] == kStrVaribale) {
+        if (counter == 1) {
+          SetError("Variable parameter can be defined only once.");
+          break;
+        }
+
+        if (i != func_string_vec.size() - 2) {
+          SetError("Variable parameter must be last one.");
+          break;
+        }
+
+        variable = true;
+        counter += 1;
+        continue;
+      }
+
+      if (optional && func_string_vec[i - 1] != kStrOptional) {
+        SetError("Optional parameter must be defined after normal parameter.");
+        break;
+      }
+
+      params.push_back(func_string_vec[i]);
+    }
+
+    if (optional && variable) {
+      SetError("Variable & Optional parameter can'b be defined at same time.");
+      return;
     }
 
     Interface interface(ir, func_string_vec[0], params, FunctionAgentTunnel);
+
+    if (optional) {
+      interface
+        .SetMinArgSize(params.size() - counter)
+        .SetArgumentMode(kCodeAutoFill);
+    }
+
+    if (variable) {
+      interface.SetArgumentMode(kCodeAutoSize);
+    }
+
     ObjectMap record;
 
     auto it = pool.rbegin();
@@ -535,8 +581,19 @@ namespace kagami {
 
   void IRWorker::Assembling_AutoFill(Interface &interface, 
     ArgumentList args, ObjectMap &obj_map) {
+    size_t min_size = interface.GetMinArgSize();
+
     if (args.size() > interface.GetParameters().size()) {
       MakeError("Too many arguments");
+      return;
+    }
+
+    if (args.size() < min_size) {
+      MakeError("Required minimum argument count is" +
+        to_string(min_size) +
+        ", but provided argument count is" +
+        to_string(args.size()));
+      return;
     }
 
     auto ent_params = interface.GetParameters();
@@ -953,22 +1010,78 @@ namespace kagami {
     }
   }
 
-  void Module::MakeFunction(size_t start, size_t end, vector<string> &func_string_vec) {
-    if (start > end) return;
+  bool Module::MakeFunction(size_t start, size_t end, vector<string> &func_string_vec, 
+    int &event_code) {
+    if (start > end) return false;
+    
+    bool result = true;
+    bool optional = false;
+    bool variable = false;
+    
     string id = func_string_vec[0];
     vector<string> params;
     vector<IR> proc;
+    size_t counter = 0;
 
     for (size_t i = 1; i < func_string_vec.size(); ++i) {
+      if (func_string_vec[i] == kStrOptional) {
+        optional = true;
+        counter += 1;
+        continue;
+      }
+
+      if (func_string_vec[i] == kStrVaribale) {
+        if (counter == 1) {
+          event_code = 1;
+          result = false;
+          break;
+        }
+
+        if (i != func_string_vec.size() - 2) {
+          result = false;
+          event_code = 2;
+          break;
+        }
+
+        variable = true;
+        counter += 1;
+        continue;
+      }
+
+      if (optional && func_string_vec[i - 1] != kStrOptional) {
+        event_code = 3;
+        result = false;
+        break;
+      }
+
       params.push_back(func_string_vec[i]);
     }
+
+    if (optional && variable) {
+      event_code = 4;
+      result = false;
+      return result;
+    }
+
     for (size_t j = start; j <= end; ++j) {
       proc.push_back(storage_[j]);
     }
 
-    management::CreateNewInterface(
-      Interface(proc, id, params, FunctionAgentTunnel)
-    );
+    Interface interface(proc, id, params, FunctionAgentTunnel);
+
+    if (optional) { 
+      interface
+        .SetMinArgSize(params.size() - counter)
+        .SetArgumentMode(kCodeAutoFill);
+    }
+
+    if (variable) {
+      interface.SetArgumentMode(kCodeAutoSize);
+    }
+
+    if (result) management::CreateNewInterface(interface);
+
+    return result;
   }
 
   Message Module::IRProcessing(IR &ir, string name, MachCtlBlk *blk) {
@@ -1119,7 +1232,16 @@ namespace kagami {
         }
         else {
           catched_block.insert(std::make_pair(fn_idx, idx));
-          MakeFunction(fn_idx + 1, idx - 1, func_string_vec);
+          int code;
+          if (!MakeFunction(fn_idx + 1, idx - 1, func_string_vec, code)) {
+            switch (code) {
+            case 1:result = INVALID_PARAM_MSG("Variable parameter can be defined only once."); break;
+            case 2:result = INVALID_PARAM_MSG("Variable parameter must be last one."); break;
+            case 3:result = INVALID_PARAM_MSG("Optional parameter must be defined after normal parameter."); break;
+            case 4:result = INVALID_PARAM_MSG("Variable & Optional parameter can'b be defined at same time."); break;
+            default:break;
+            }
+          }
           func_string_vec.clear();
           fn_idx = -1;
           //quit catching process

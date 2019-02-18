@@ -422,6 +422,14 @@ namespace kagami {
       error_string_ = "Left bracket after function is missing";
     }
 
+    if (function && (blk->current.first == kStrOptional || blk->current.first == kStrVaribale)) {
+      if (blk->next.first == ",") {
+        health_ = false;
+        result = false;
+        error_string_ = "Argument id is missing";
+      }
+    }
+
     if (blk->define_line && blk->last.first == kStrFn && blk->next.first != "(") {
       health_ = false;
       result = false;

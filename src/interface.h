@@ -60,6 +60,7 @@ namespace kagami {
     string domain_;
     InterfaceType interface_type_;
     InterfacePolicyType policy_type_;
+    size_t min_arg_size_;
 
   public:
     Interface() :
@@ -70,7 +71,8 @@ namespace kagami {
       argument_mode_(kCodeIllegalParam),
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
-      policy_type_(kInterfaceCXX) {}
+      policy_type_(kInterfaceCXX),
+      min_arg_size_(0) {}
 
     //Plain Function (CXX Type)
     Interface(
@@ -86,7 +88,8 @@ namespace kagami {
       argument_mode_(argument_mode),
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
-      policy_type_(kInterfaceCXX) {}
+      policy_type_(kInterfaceCXX),
+      min_arg_size_(0) {}
 
     //Generic Token Function
     Interface(
@@ -102,7 +105,8 @@ namespace kagami {
       argument_mode_(argument_mode),
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
-      policy_type_(kInterfaceCXX) {}
+      policy_type_(kInterfaceCXX),
+      min_arg_size_(0) {}
 
     //Plain Function (IR Type)
     Interface(
@@ -118,7 +122,8 @@ namespace kagami {
       argument_mode_(kCodeNormalParam),
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
-      policy_type_(kInterfaceIR) {}
+      policy_type_(kInterfaceIR),
+      min_arg_size_(0) {}
 
     Message Start(ObjectMap &obj_map) {
       Message result;
@@ -207,6 +212,20 @@ namespace kagami {
 
     Interface &SetClousureRecord(ObjectMap record) {
       closure_record_ = record;
+      return *this;
+    }
+
+    Interface &SetMinArgSize(size_t size) {
+      min_arg_size_ = size;
+      return *this;
+    }
+
+    size_t GetMinArgSize() const {
+      return min_arg_size_;
+    }
+
+    Interface &SetArgumentMode(StateCode code) {
+      argument_mode_ = code;
       return *this;
     }
   };

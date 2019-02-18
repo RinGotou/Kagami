@@ -250,6 +250,8 @@ namespace kagami {
     kStrCase           = "case",
     kStrWhen           = "when",
     kStrReturn         = "return",
+    kStrOptional       = "optional",
+    kStrVaribale       = "variable",
     kStrPlus           = "+",
     kStrMinus          = "-",
     kStrTimes          = "*",

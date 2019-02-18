@@ -160,7 +160,7 @@ namespace kagami {
 
   private:
     void ResetContainer(string funcId);
-    void MakeFunction(size_t start, size_t end, vector<string> &defHead);
+    bool MakeFunction(size_t start, size_t end, vector<string> &defHead, int &event_code);
     Message IRProcessing(IR &IL_set, string name, MachCtlBlk *blk);
     Message PreProcessing();
     void TailRecursionActions(MachCtlBlk *blk, string &name);
