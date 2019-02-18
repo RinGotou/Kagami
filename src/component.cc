@@ -159,6 +159,18 @@ namespace kagami {
     return Message();
   }
 
+  Message Version(ObjectMap &p) {
+    return Message().SetObject(
+      Object(make_shared<string>(kInterpreterVersion), kTypeIdRawString)
+    );
+  }
+
+  Message PatchVersion(ObjectMap &p) {
+    return Message().SetObject(
+      Object(make_shared<string>(kPatchName), kTypeIdRawString)
+    );
+  }
+
   void Activiate() {
     using management::CreateNewInterface;
 
@@ -190,6 +202,8 @@ namespace kagami {
     CreateNewInterface(Interface(DecimalConvert<2>, "str", "bin"));
     CreateNewInterface(Interface(DecimalConvert<8>, "str", "octa"));
     CreateNewInterface(Interface(DecimalConvert<16>, "str", "hex"));
+    CreateNewInterface(Interface(Version, "", "_version"));
+    CreateNewInterface(Interface(PatchVersion, "", "_patch"));
 
     auto create_constant = [](string id, string content) {
       management::CreateConstantObject(

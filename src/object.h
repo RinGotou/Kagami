@@ -44,7 +44,7 @@ namespace kagami {
 
   class Object {
     struct TargetObject { 
-      Object *ptr; 
+      ObjectPointer ptr; 
     };
 
     std::shared_ptr<void> ptr_;

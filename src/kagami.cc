@@ -60,8 +60,8 @@ void StartInterpreter(string path, string log_path, bool real_time_log) {
 
 void ApplicationInfo() {
   cout << kEngineName << " " << kInterpreterVersion << "\n";
-  cout << "IR Framework Version: " << kIRFrameworkVersion << "\n";
   cout << "Patch: " << kPatchName << "\n";
+  cout << "Build date:" << __DATE__ << "\n";
   cout << kCopyright << ", " << kMaintainer << endl;
 }
 
@@ -111,6 +111,7 @@ void Processing(Processor &processor) {
 
 int main(int argc, char **argv) {
   runtime::binary_name = argv[0];
+  if (argc == 1) HelpFile();
 
   Processor processor = {
     Pattern("path"   , Option(true, false, 1)),
