@@ -156,7 +156,7 @@ end
 result = calc(1, 2)
 ```
 
-### 闭包
+#### 闭包
 
 你可以在函数内创建闭包。
 
@@ -173,6 +173,28 @@ a = Create(10)
 a.call(1)
 b = Create(20)
 b.call(2)
+```
+
+#### optional关键字
+
+optional关键字指示被修饰的参数可以被忽略。该参数必须在常规参数之后定义。
+
+```
+fn Func(a, optional b)
+  if (null(b))
+
+  end
+end
+```
+
+#### variable关键字
+
+variable关键字指示将从被修饰的参数起的后续参数组装成为数组。
+
+```
+fn Func(variable b)
+  println(b)
+end
 ```
 
 # 待续
