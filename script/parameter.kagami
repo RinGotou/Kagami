@@ -1,0 +1,10 @@
+fn func(a, optional b)
+  if(null(b))
+    println('b is null object')
+  end
+  
+  println(a)
+end
+
+func(1)
+func(1,2)
