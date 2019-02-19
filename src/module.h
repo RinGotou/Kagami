@@ -181,6 +181,8 @@ namespace kagami {
       case kModeClosureCatching:
         return true;
         break;
+      default:
+        break;
       }
       return false;
     }

@@ -508,7 +508,7 @@ namespace kagami {
 
           if (obj.Get() == nullptr) {
             MakeError("Object is not found." 
-              + is_domain ? arg.domain.data : arg.data);
+              + (is_domain ? arg.domain.data : arg.data));
             return false;
           }
         }
@@ -1124,7 +1124,7 @@ namespace kagami {
           if (idx == size - 1) {
             worker->tail_recursion = blk->last_index && name != "";
           }
-          else if (idx = size - 2) {
+          else if (idx == size - 2) {
             worker->tail_recursion = action_base.back().first.head_command == kTokenReturn;
           }
         }
