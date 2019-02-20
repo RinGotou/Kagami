@@ -61,7 +61,7 @@ void StartInterpreter(string path, string log_path, bool real_time_log) {
 void ApplicationInfo() {
   cout << kEngineName << " " << kInterpreterVersion << "\n";
   cout << "Patch: " << kPatchName << "\n";
-  cout << "Build date:" << __DATE__ << "\n";
+  cout << "Build date: " << __DATE__ << "\n";
   cout << kCopyright << ", " << kMaintainer << endl;
 }
 
