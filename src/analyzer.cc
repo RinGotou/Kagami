@@ -249,7 +249,7 @@ namespace kagami {
 
     if (!blk->args.empty()
       && blk->args.back().IsPlaceholder()
-      && !is_bin_operator && !is_mono_operator)) {
+      && !is_bin_operator && !is_mono_operator) {
       
       blk->args.pop_back();
     }
