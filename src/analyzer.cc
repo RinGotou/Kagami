@@ -194,11 +194,13 @@ namespace kagami {
   }
 
   void Analyzer::Reversing(AnalyzerWorkBlock *blk) {
+    if (blk->symbol.empty()) return;
+    if (blk->symbol.size() == 1) return;
+
     deque<Request> temp_symbol;
     deque<Argument> temp_arg;
 
-    while (!blk->symbol.empty() && blk->symbol.size() > 1
-      && (blk->symbol.back().priority == blk->symbol[blk->symbol.size() - 2].priority)) {
+    while (blk->symbol.back().priority == blk->symbol[blk->symbol.size() - 2].priority) {
       temp_symbol.push_back(blk->symbol.back());
 
       temp_arg.push_back(blk->args.back());
@@ -455,6 +457,7 @@ namespace kagami {
       int stack_top_priority = util::GetTokenPriority(blk->symbol.back().head_command);
 
       while (!blk->symbol.empty() && stack_top_operator && stack_top_priority > current_priority) {
+        Reversing(blk);
         if (!InstructionFilling(blk)) {
           health_ = false;
           error_string_ = "Operation error in binary operator.";
