@@ -1,7 +1,6 @@
 #include "object.h"
 
 namespace kagami {
-
   vector<string> BuildStringVector(string source) {
     vector<string> result;
     string temp;
@@ -71,5 +70,31 @@ namespace kagami {
   void ObjectContainer::Dispose(string id) {
     auto it = base_.find(id);
     if (it != base_.end()) base_.erase(it);
+  }
+
+  Object *ObjectStack::Find(string id) {
+    if (base_.empty()) return nullptr;
+    ObjectPointer ptr = nullptr;
+    
+    for (auto it = base_.rbegin(); it != base_.rend(); ++it) {
+      ptr = it->Find(id);
+      if (ptr != nullptr) break;
+    }
+
+    return ptr;
+  }
+
+  bool ObjectStack::CreateObject(string id, Object obj) {
+    if (base_.empty()) return false;
+    auto &top = base_.back();
+
+    if (top.Find(id) == nullptr) {
+      top.Add(id, obj);
+    }
+    else {
+      return false;
+    }
+
+    return true;
   }
 }

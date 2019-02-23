@@ -17,6 +17,7 @@
 #include <type_traits>
 #include <iterator>
 #include <list>
+#include <fstream>
 
 //if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
@@ -74,6 +75,7 @@ namespace kagami {
   using std::stof;
   using std::stod;
   using std::stol;
+  using std::stoul;
   using std::wstring;
   using std::ostream;
   using std::list;
@@ -148,8 +150,9 @@ namespace kagami {
 
   using Token = pair<string, TokenType>;
 
-  /* Reserved keywords */
+  /* Reserved keywords mark/IR framework commands */
   enum GenericToken {
+    kTokenSegment,
     kTokenExpList, 
     kTokenFn, 
     kTokenIf, 

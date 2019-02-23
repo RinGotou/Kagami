@@ -96,8 +96,10 @@ namespace kagami {
       option() {}
   };
 
-  using ArgumentList = deque <Argument>;
+  using ArgumentList = deque<Argument>;
   using Command = pair<Request, ArgumentList>;
+  using KIR = vector<Command>;
+  using KIRPointer = KIR * ;
 
   class IR {
   private:

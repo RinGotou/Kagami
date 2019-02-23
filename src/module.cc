@@ -369,7 +369,7 @@ namespace kagami {
     tail_call = false;
     runtime_error = false;
     current = 0;
-    def_start = 0;
+    fn_idx = 0;
     mode = kModeNormal;
     error_string.clear();
     while (!cycle_nest.empty()) cycle_nest.pop();
@@ -1329,7 +1329,6 @@ namespace kagami {
 
   void Module::GenericRequests(IRWorker *worker, Request &request, ArgumentList &args) {
     auto &token = request.head_command;
-    bool result = true;
 
     //DEBUG_EVENT("(Request)Command Code:" + to_string(token));
 
@@ -1514,21 +1513,16 @@ namespace kagami {
     return result;
   }
 
-  Module::Module(IRMaker &maker, bool is_main) :
-    is_main_(is_main) {
-
+  Module::Module(IRMaker &maker) {
     Message msg;
 
     if (maker.health) {
       storage_ = maker.output;
-      //these need to modify for module feature.
-      if (is_main) {
-        msg = PreProcessing();
-        if (msg.GetLevel() == kStateError) {
-          trace::AddEvent(msg);
-          storage_.clear();
-          storage_.shrink_to_fit();
-        }
+      msg = PreProcessing();
+      if (msg.GetLevel() == kStateError) {
+        trace::AddEvent(msg);
+        storage_.clear();
+        storage_.shrink_to_fit();
       }
     }
     else {

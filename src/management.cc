@@ -2,9 +2,14 @@
 
 namespace kagami {
   namespace management {
-    list<ObjectContainer> &GetContainerPool() {
-      static list<ObjectContainer> base;
+    //for hatuki machine
+    ObjectStack &GetObjectStack() {
+      static ObjectStack base;
       return base;
+    }
+
+    list<ObjectContainer> &GetContainerPool() {
+      return GetObjectStack().GetBase();
     }
 
     ObjectContainer &GetConstantBase() {
@@ -56,22 +61,10 @@ namespace kagami {
 
     Object *FindObject(string id) {
       Object *object = nullptr;
-      size_t count = GetContainerPool().size();
-      list<ObjectContainer> &base = GetContainerPool();
+      ObjectStack &base = GetObjectStack();
       ObjectContainer &const_base = GetConstantBase();
 
-      if (!base.empty()) {
-        auto it = base.rbegin();
-        while (it != base.rend()) {
-          object = it->Find(id);
-
-          if (object != nullptr) {
-            break;
-          }
-
-          ++it;
-        }
-      }
+      object = base.Find(id);
 
       //TODO:constant write lock
       if (object == nullptr) {
@@ -85,20 +78,11 @@ namespace kagami {
       return GetContainerPool().back();
     }
 
-    Object *CreateObject(string id, Object &object) {
-      ObjectContainer &base = GetContainerPool().back();
-      ObjectContainer &const_base = GetConstantBase();
-
-      if (base.Find(id) != nullptr && const_base.Find(id) != nullptr) {
-        return nullptr;
-      }
-      base.Add(id, object);
-      auto result = base.Find(id);
-      return result;
-    }
-
-    Object *CreateObject(string id, Object &&object) {
-      return CreateObject(id, object);
+    Object *CreateObject(string id, Object object) {
+      if (GetConstantBase().Find(id) != nullptr) return nullptr;
+      ObjectStack &base = GetObjectStack();
+      if (base.CreateObject(id, object) == false) return nullptr;
+      return base.Find(id);
     }
 
     Object *CreateConstantObject(string id, Object &object) {
@@ -116,15 +100,15 @@ namespace kagami {
     }
 
     ObjectContainer &CreateContainer() {
-      auto &base = GetContainerPool();
-      base.push_back(std::move(ObjectContainer()));
-      return GetContainerPool().back();
+      auto &base = GetObjectStack();
+      base.Push();
+      return base.GetCurrent();
     }
 
     bool DisposeManager() {
-      auto &base = GetContainerPool();
-      if (!base.empty()) { base.pop_back(); }
-      return base.empty();
+      auto &base = GetObjectStack();
+      base.Pop();
+      return true;
     }
 
     bool NeedEndToken(GenericToken token) {

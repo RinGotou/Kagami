@@ -12,8 +12,7 @@ namespace kagami {
     ObjectContainer &GetCurrentContainer();
     ObjectContainer &CreateContainer();
     Object *FindObject(string id);
-    Object *CreateObject(string id, Object &object);
-    Object *CreateObject(string id, Object &&object);
+    Object *CreateObject(string id, Object object);
     void CreateGenericInterface(Interface temp);
     bool DisposeManager();
     bool NeedEndToken(GenericToken token);

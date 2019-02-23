@@ -20,6 +20,10 @@ namespace runtime {
   static string binary_name;
 }
 
+void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log) {
+
+}
+
 void StartInterpreter(string path, string log_path, bool real_time_log) {
   trace::LoggerPolicy *logger = nullptr;
 
@@ -49,7 +53,7 @@ void StartInterpreter(string path, string log_path, bool real_time_log) {
 #if not defined(_DISABLE_SDL_)
     LoadSDLStuff();
 #endif
-    Module main_module(maker, true);
+    Module main_module(maker);
     main_module.Run();
   }
 

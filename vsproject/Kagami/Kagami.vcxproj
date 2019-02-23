@@ -26,6 +26,7 @@
     <ClInclude Include="..\..\src\component.h" />
     <ClInclude Include="..\..\src\interface.h" />
     <ClInclude Include="..\..\src\ir.h" />
+    <ClInclude Include="..\..\src\machine_kisaragi.h" />
     <ClInclude Include="..\..\src\management.h" />
     <ClInclude Include="..\..\src\message.h" />
     <ClInclude Include="..\..\src\object.h" />
@@ -42,6 +43,7 @@
     <ClCompile Include="..\..\src\base_type.cc" />
     <ClCompile Include="..\..\src\component.cc" />
     <ClCompile Include="..\..\src\kagami.cc" />
+    <ClCompile Include="..\..\src\machine_kisaragi.cc" />
     <ClCompile Include="..\..\src\management.cc" />
     <ClCompile Include="..\..\src\object.cc" />
     <ClCompile Include="..\..\src\module.cc" />

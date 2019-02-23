@@ -182,9 +182,9 @@ namespace kagami {
 
     ObjectContainer() {}
 
-    ObjectContainer(ObjectContainer &&mgr) {}
+    ObjectContainer(const ObjectContainer &&mgr) {}
 
-    ObjectContainer(ObjectContainer &container) :base_(container.base_) {}
+    ObjectContainer(const ObjectContainer &container) :base_(container.base_) {}
 
     bool Empty() const {
       return base_.empty();
@@ -268,5 +268,47 @@ namespace kagami {
 	      }
       }
     }
+  };
+
+  class ObjectStack {
+  private:
+    using DataType = list<ObjectContainer>;
+    DataType base_;
+    ObjectStack *prev_;
+
+  public:
+    ObjectStack() :
+      base_(),
+      prev_(nullptr) {}
+
+    ObjectStack(const ObjectStack &rhs) :
+      base_(rhs.base_),
+      prev_(rhs.prev_) {}
+
+    ObjectStack(const ObjectStack &&rhs) :
+      ObjectStack(rhs) {}
+
+    ObjectStack &SetPreviousStack(ObjectStack &prev) {
+      prev_ = &prev;
+    }
+
+    ObjectContainer &GetCurrent() { return base_.back(); }
+
+    ObjectStack &Push() {
+      base_.push_back(ObjectContainer());
+      return *this;
+    }
+
+    ObjectStack &Pop() {
+      base_.pop_back();
+      return *this;
+    }
+
+    DataType &GetBase() {
+      return base_;
+    }
+
+    Object *Find(string id);
+    bool CreateObject(string id, Object obj);
   };
 }

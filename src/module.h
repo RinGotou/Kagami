@@ -1,6 +1,7 @@
 #pragma once
-
-#include <fstream>
+/*
+   Hatuki(August) - Kagami IR Interpreter Framework
+*/
 #include "trace.h"
 #include "management.h"
 
@@ -46,7 +47,6 @@ namespace kagami {
       runtime_error;
     size_t fn_idx;
     size_t current;
-    size_t def_start;
     MachineMode mode;
     string error_string;
     stack<size_t> cycle_nest, cycle_tail;
@@ -64,7 +64,6 @@ namespace kagami {
       runtime_error(false),
       fn_idx(0),
       current(0),
-      def_start(0),
       mode(kModeNormal),
       error_string() {}
 
@@ -156,7 +155,6 @@ namespace kagami {
   class Module {
   private:
     vector<IR> storage_;
-    bool is_main_;
 
   private:
     void ResetContainer(string funcId);
@@ -188,29 +186,21 @@ namespace kagami {
     }
 
   public:
-    Module() : 
-      is_main_(false) {}
+    Module() {}
 
     Module(const Module &module) :
-      is_main_(module.is_main_) {
-      storage_ = module.storage_;
-    }
+      storage_(module.storage_) {}
 
     Module(Module &&module) :
-      Module(module) {
-
-      is_main_ = false;
-    }
+      Module(module) {}
 
     Module(vector<IR> storage) :
-      is_main_(false),
       storage_(std::move(storage)) {}
 
-    Module(IRMaker &maker, bool is_main);
+    Module(IRMaker &maker);
 
     void operator=(Module &module) {
       storage_ = module.storage_;
-      is_main_ = false;
     }
 
     void operator=(Module &&module) {

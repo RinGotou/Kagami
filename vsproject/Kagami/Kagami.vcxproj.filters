@@ -63,6 +63,9 @@
     <ClInclude Include="..\..\src\base_container.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\machine_kisaragi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\analyzer.cc">
@@ -99,6 +102,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\base_container.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\machine_kisaragi.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
