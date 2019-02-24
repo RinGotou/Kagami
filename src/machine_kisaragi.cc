@@ -147,15 +147,21 @@ namespace kagami {
           }
         }
       }
+      else if (token == kTokenElif) {
+        if (!worker.condition_stack.empty()) {
+          if (worker.condition_stack.top() == false && worker.mode == kModeNextCondition) {
+
+          }
+        }
+        else {
+
+        }
+      }
     }
     else {
       worker.MakeError("Too many arguments.");
       return;
     }
-  }
-
-  void Machine::CommandElif(ArgumentList args) {
-    
   }
 
   void Machine::CommandReturn(ArgumentList args) {

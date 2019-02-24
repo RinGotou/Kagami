@@ -198,7 +198,6 @@ namespace kagami {
   void MachCtlBlk::ConditionElif(bool value) {
     if (!condition_stack.empty()) {
       if (condition_stack.top() == false && mode == kModeNextCondition) {
-        management::CreateContainer();
         mode = kModeCondition;
         condition_stack.top() = true;
       }
@@ -225,7 +224,6 @@ namespace kagami {
         }
       }
       else {
-        management::CreateContainer();
         condition_stack.top() = true;
         switch (mode) {
         case kModeNextCondition:
