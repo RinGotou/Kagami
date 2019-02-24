@@ -291,7 +291,6 @@ namespace kagami {
           }
           current = cycle_nest.top();
           mode = kModeCycle;
-          mode_stack.top() = mode;
           s_continue = false;
           management::GetCurrentContainer().clear();
         }

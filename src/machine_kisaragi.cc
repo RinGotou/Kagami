@@ -226,7 +226,13 @@ namespace kagami {
         }
         worker.idx = worker.loop_head.top();
         worker.mode = kModeCycle;
-
+        worker.activated_continue = false;
+        obj_stack_.GetCurrent().clear();
+      }
+      else {
+        if (worker.activated_break) worker.activated_break = false;
+        worker.GoLastMode();
+        
       }
     }
   }
