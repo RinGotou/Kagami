@@ -251,14 +251,12 @@ namespace kagami {
       mode_stack.push(mode);
       management::CreateContainer();
     }
-    else {
-      if (cycle_nest.top() != current - 1) {
-        mode_stack.push(mode);
-        management::CreateContainer();
-      }
+    else if (cycle_nest.top() != current - 1) {
+      mode_stack.push(mode);
+      management::CreateContainer();
     }
 
-    if (value == true) {
+    if (value) {
       mode = kModeCycle;
       if (cycle_nest.empty() || cycle_nest.top() != current - 1) {
         cycle_nest.push(current - 1);
@@ -545,8 +543,7 @@ namespace kagami {
   void IRWorker::Assembling_AutoSize(Interface &interface,
     ArgumentList args, ObjectMap &obj_map) {
     auto ent_params = interface.GetParameters();
-    auto va_arg_head = ent_params.back();
-
+    shared_ptr<ObjectArray> va_base(new ObjectArray());
     deque<Object> temp;
 
     while (args.size() >= ent_params.size() - 1 && !args.empty()) {
@@ -554,25 +551,22 @@ namespace kagami {
       args.pop_back();
     }
     
-
-    shared_ptr<ObjectArray> va_base = make_shared<ObjectArray>();
-
     if (!temp.empty()) {
       for (auto it = temp.begin(); it != temp.end(); ++it) {
         va_base->emplace_back(*it);
       }
     }
 
-    obj_map.insert(NamedObject(va_arg_head, Object(va_base, kTypeIdArray)));
+    obj_map.insert(NamedObject(ent_params.back(), Object(va_base, kTypeIdArray)));
 
     temp.clear();
     temp.shrink_to_fit();
 
-    auto it = ent_params.rbegin()++;
+    auto it = ++ent_params.rbegin();
 
     if (!args.empty()) {
       for (; it != ent_params.rend(); ++it) {
-        if (args.empty()) break;
+        if (args.empty()) break; // TODO:Remove
         obj_map.insert(NamedObject(*it, MakeObject(args.back())));
         args.pop_back();
       }
@@ -610,32 +604,29 @@ namespace kagami {
   }
 
   void IRWorker::Assembling(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
-    if (args.size() > interface.GetParameters().size()) {
-      MakeError("Too many arguments");
-    }
-
     auto ent_params = interface.GetParameters();
-    bool state = true;
-    
-    for (auto it = ent_params.rbegin(); it != ent_params.rend(); it++) {
-      if (args.empty()) {
-        state = false;
-        break;
-      }
-      obj_map.insert(NamedObject(*it, MakeObject(args.back())));
-      args.pop_back();
+
+    if (args.size() > ent_params.size()) {
+      MakeError("Too many arguments");
+      return;
     }
 
-    if (!state) {
+    if (args.size() < ent_params.size()) {
       MakeError("Required argument count is " +
         to_string(ent_params.size()) +
         ", but provided argument count is " +
         to_string(args.size()) + ".");
+      return;
+    }
+    
+    for (auto it = ent_params.rbegin(); it != ent_params.rend(); it++) {
+      obj_map.insert(NamedObject(*it, MakeObject(args.back())));
+      args.pop_back();
     }
   }
 
-  void IRWorker::GenerateArgs(StateCode code, Interface &interface, ArgumentList args, ObjectMap & obj_map) {
-    switch (code) {
+  void IRWorker::GenerateArgs(Interface &interface, ArgumentList args, ObjectMap & obj_map) {
+    switch (interface.GetArgumentMode()) {
     case kCodeAutoSize:
       Assembling_AutoSize(interface, args, obj_map);
       break;
@@ -894,6 +885,9 @@ namespace kagami {
       if (obj.GetTypeId() != kTypeIdRawString && obj.GetTypeId() != kTypeIdNull) {
         MakeMsg(Message(code, kStrTrue));
       }
+      else if (obj.GetTypeId() == kTypeIdNull) {
+        MakeMsg(Message(code, kStrFalse));
+      }
       else {
         string state_str = obj.Cast<string>();
 
@@ -1118,7 +1112,6 @@ namespace kagami {
       }
 
       if (request.type == kRequestInterface) {
-        bool state = true;
         //Tail Recursion Detection
         if (!preprocessing && request.head_interface == name) {
           if (idx == size - 1) {
@@ -1144,7 +1137,6 @@ namespace kagami {
             }
             else {
               worker->MakeError(request.head_interface + " is not a function object.");
-              state = false;
             }
           }
           else {
@@ -1152,7 +1144,7 @@ namespace kagami {
           }
         }
 
-        if (!state) break;
+        if (worker->error) break;
 
         if (!interface.Good()) {
           worker->MakeError("Function is not found - " + request.head_interface);
@@ -1160,7 +1152,7 @@ namespace kagami {
         }
       }
 
-      worker->GenerateArgs(interface.GetArgumentMode(), interface, args, obj_map);
+      worker->GenerateArgs(interface, args, obj_map);
 
       if (worker->error) {
         break;
@@ -1175,10 +1167,8 @@ namespace kagami {
 
       if (msg.GetLevel() == kStateError) break;
 
-      Object object = msg.GetCode() == kCodeObject ?
-        msg.GetObj() : Object();
-
-      worker->returning_base.push(object);
+      worker->returning_base.push(msg.GetCode() == kCodeObject ?
+        msg.GetObj() : Object());
     }
 
     if (worker->error) {

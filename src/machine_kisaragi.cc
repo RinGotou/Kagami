@@ -1,6 +1,12 @@
 #include "machine_kisaragi.h"
 
 namespace kagami {
+  string ParseString(const string &src) {
+    string result = src;
+    if (util::IsString(result)) result = util::GetRawString(result);
+    return result;
+  }
+
   Object Machine::FetchInterfaceObject(string id, string domain) {
     Object obj;
     auto interface = management::FindInterface(id, domain);
@@ -81,13 +87,196 @@ namespace kagami {
     worker.last_command = static_cast<GenericToken>(stol(args[1].data));
   }
 
-  Message Machine::Run(string name) {
+  void Machine::CommandIfOrWhile(GenericToken token, ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    if (args.size() == 1) {
+      Object obj = FetchObject(args[0]);
+      bool state = false;
+
+      if (obj.GetTypeId() == kTypeIdRawString) {
+        string state_str = obj.Cast<string>();
+
+        if (state_str == kStrTrue) {
+          state = true;
+        }
+        else if (state_str == kStrFalse) {
+          state = false;
+        }
+        else {
+          auto type = util::GetTokenType(state_str, true);
+
+          switch (type) {
+          case kTokenTypeInt:
+            state = (stol(state_str) != 0);
+            break;
+          case kTokenTypeString:
+            state = (ParseString(state_str).size() > 0);
+
+            break;
+          default:
+            break;
+          }
+        }
+      }
+      else if (obj.GetTypeId() != kTypeIdNull) {
+        state = true;
+      }
+
+      if (token == kTokenIf) {
+        worker.SwitchToMode(state ? kModeCondition : kModeNextCondition);
+        worker.condition_stack.push(state);
+      }
+      else if (token == kTokenWhile) {
+        if (worker.loop_head.empty()) {
+          obj_stack_.Push();
+        }
+        else if (worker.loop_head.top() != worker.idx - 1) {
+          obj_stack_.Push();
+        }
+
+        if (state) {
+          worker.SwitchToMode(kModeCycle);
+          if (worker.loop_head.empty() || worker.loop_head.top() != current - 1) {
+            worker.loop_head.push(current - 1);
+          }
+        }
+        else {
+          worker.SwitchToMode(kModeCycleJump);
+          if (!worker.loop_tail.empty()) {
+            worker.idx = worker.loop_tail.top();
+          }
+        }
+      }
+    }
+    else {
+      worker.MakeError("Too many arguments.");
+      return;
+    }
+  }
+
+  void Machine::MachineCommands(GenericToken token, ArgumentList args) {
+    switch (token) {
+    case kTokenSegment:
+      SetSegmentInfo(args);
+      break;
+
+    default:
+      break;
+    }
+  }
+
+  void Machine::GenerateArgs(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
+    switch (interface.GetArgumentMode()) {
+    case kCodeNormalParam:
+      Generate_Normal(interface, args, obj_map);
+      break;
+    case kCodeAutoSize:
+      Generate_AutoSize(interface, args, obj_map);
+      break;
+    case kCodeAutoFill:
+      Generate_AutoFill(interface, args, obj_map);
+      break;
+    default:
+      break;
+    }
+  }
+
+  void Machine::Generate_Normal(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
+    auto &worker = worker_stack_.top();
+    auto params = interface.GetParameters();
+
+    if (args.size() > params.size()) {
+      worker.MakeError("Too many arguments");
+      return;
+    }
+
+    if (args.size() < params.size()) {
+      worker.MakeError("Required argument count is " +
+        to_string(params.size()) +
+        ", but provided argument count is " +
+        to_string(args.size()) + ".");
+      return;
+    }
+
+    for (auto it = params.rbegin(); it != params.rend(); ++it) {
+      obj_map.insert(NamedObject(*it, FetchObject(args.back())));
+      args.pop_back();
+    }
+  }
+
+  void Machine::Generate_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
+    auto &worker = worker_stack_.top();
+    auto params = interface.GetParameters();
+    list<Object> temp_list;
+    shared_ptr<ObjectArray> va_base(new ObjectArray());
+
+    if (args.size() < params.size()) {
+      worker.MakeError("Too few arguments.");
+      return;
+    }
+
+    while (args.size() >= params.size() - 1 && !args.empty()) {
+      temp_list.emplace_front(FetchObject(args.back()));
+      args.pop_back();
+    }
+
+    if (!temp_list.empty()) {
+      for (auto it = temp_list.begin(); it != temp_list.end(); ++it) {
+        va_base->emplace_back(*it);
+      }
+    }
+
+    temp_list.clear();
+    
+    auto it = ++params.rbegin();
+
+    if (!args.empty()) {
+      for (; it != params.rend(); ++it) {
+        obj_map.insert(NamedObject(*it, FetchObject(args.back())));
+        args.pop_back();
+      }
+    }
+  }
+
+  void Machine::Generate_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
+    auto &worker = worker_stack_.top();
+    auto params = interface.GetParameters();
+    size_t min_size = interface.GetMinArgSize();
+
+    if (args.size() > params.size()) {
+      worker.MakeError("Too many arguments");
+      return;
+    }
+
+    if (args.size() < min_size) {
+      worker.MakeError("Required minimum argument count is" +
+        to_string(min_size) +
+        ", but provided argument count is" +
+        to_string(args.size()));
+      return;
+    }
+
+    while (args.size() != params.size()) {
+      obj_map.insert(NamedObject(params.back(), Object()));
+      params.pop_back();
+    }
+
+    for (auto it = params.rbegin(); it != params.rend(); ++it) {
+      obj_map.insert(NamedObject(*it, FetchObject(args.back())));
+      args.pop_back();
+    }
+  }
+
+  Message Machine::Run() {
     if (ir_stack_.empty()) return Message();
     StateLevel level = kStateNormal;
     StateCode code = kCodeSuccess;
     string detail;
+    string type_id = kTypeIdNull;
     Message msg;
     KIR &ir = *ir_stack_.back();
+    Interface interface;
+    ObjectMap obj_map;
 
     worker_stack_.push(MachineWorker());
     obj_stack_.Push();
@@ -96,11 +285,74 @@ namespace kagami {
     size_t size = ir.size();
 
     while (worker.idx < size) {
+      Command &command = ir[worker.idx];
+
       if (worker.NeedSkipping()) {
 
       }
 
+      if (command.first.type == kRequestCommand 
+        && !util::IsOperator(command.first.head_command)) {
+        MachineCommands(command.first.head_command, command.second);
+
+        if (worker.deliver) {
+          msg = worker.GetMsg();
+          worker.msg.Clear();
+        }
+
+        if (worker.error) break;
+
+        continue;
+      }
       
+      if (command.first.type == kRequestCommand) {
+        interface = management::GetGenericInterface(command.first.head_command);
+      }
+
+      if (command.first.type == kRequestInterface) {
+        if (command.first.domain.type != kArgumentNull) {
+          Object domain_obj = FetchObject(command.first.domain, true);
+          type_id = domain_obj.GetTypeId();
+          interface = management::FindInterface(command.first.head_interface, type_id);
+          obj_map.insert(NamedObject(kStrObject, domain_obj));
+        }
+        else {
+          ObjectPointer func_obj_ptr = management::FindObject(command.first.head_interface);
+          if (func_obj_ptr != nullptr) {
+            if (func_obj_ptr->GetTypeId() == kTypeIdFunction) {
+              interface = func_obj_ptr->Cast<Interface>();
+            }
+            else {
+              worker.MakeError(command.first.head_interface + " is not a function object.");
+            }
+          }
+          else {
+            interface = management::FindInterface(command.first.head_interface);
+          }
+        }
+
+        if (worker.error) break;
+
+        if (!interface.Good()) {
+          worker.MakeError("Function is not found - " + command.first.head_interface);
+        }
+
+        GenerateArgs(interface, command.second, obj_map);
+
+        if (worker.error) break;
+
+        msg = interface.Start(obj_map);
+
+        if (msg.GetLevel() == kStateError) break;
+
+        worker.return_stack.push(msg.GetCode() == kCodeObject ?
+          msg.GetObj() : Object());
+
+        obj_map.clear();
+        worker.idx += 1;
+      }
     }
+
+    return msg;
   }
 }

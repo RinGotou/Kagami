@@ -126,7 +126,7 @@ namespace kagami {
     void Assembling_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Assembling_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Assembling(Interface &interface, ArgumentList args, ObjectMap &obj_map);
-    void GenerateArgs(StateCode code, Interface &interface, ArgumentList args, ObjectMap &obj_map);
+    void GenerateArgs(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Reset();
 
     void Bind(ArgumentList args);
