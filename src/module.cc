@@ -254,16 +254,19 @@ namespace kagami {
       management::CreateContainer();
     }
 
+    if (cycle_nest.empty() || cycle_nest.top() != current - 1) {
+      cycle_nest.push(current - 1);
+    }
+
     if (value) {
       mode = kModeCycle;
-      if (cycle_nest.empty() || cycle_nest.top() != current - 1) {
-        cycle_nest.push(current - 1);
-      }
     }
     else {
       mode = kModeCycleJump;
-      if (!cycle_tail.empty()) {
-        current = cycle_tail.top();
+      if (cycle_nest.size() == cycle_tail.size()) {
+        if (!cycle_tail.empty()) {
+          current = cycle_tail.top();
+        }
       }
     }
   }
@@ -298,8 +301,13 @@ namespace kagami {
           if (s_break) s_break = false;
           mode = mode_stack.top();
           mode_stack.pop();
-          if (!cycle_nest.empty()) cycle_nest.pop();
-          if (!cycle_tail.empty()) cycle_tail.pop();
+          if (cycle_nest.size() == cycle_tail.size()) {
+            cycle_nest.pop();
+            cycle_tail.pop();
+          }
+          else {
+            cycle_nest.pop();
+          }
           management::DisposeManager();
         }
         break;
