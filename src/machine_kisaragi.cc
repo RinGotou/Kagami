@@ -134,16 +134,19 @@ namespace kagami {
           obj_stack_.Push();
         }
 
+        if (worker.loop_head.empty() || worker.loop_head.top() != worker.idx - 1) {
+          worker.loop_head.push(worker.idx - 1);
+        }
+
         if (state) {
           worker.SwitchToMode(kModeCycle);
-          if (worker.loop_head.empty() || worker.loop_head.top() != worker.idx - 1) {
-            worker.loop_head.push(worker.idx - 1);
-          }
         }
         else {
           worker.SwitchToMode(kModeCycleJump);
-          if (!worker.loop_tail.empty()) {
-            worker.idx = worker.loop_tail.top();
+          if (worker.loop_head.size() == worker.loop_tail.size()) {
+            if (!worker.loop_tail.empty()) {
+              worker.idx = worker.loop_tail.top();
+            }
           }
         }
       }
@@ -232,7 +235,14 @@ namespace kagami {
       else {
         if (worker.activated_break) worker.activated_break = false;
         worker.GoLastMode();
-        
+        if (worker.loop_head.size() == worker.loop_tail.size()) {
+          worker.loop_head.pop();
+          worker.loop_tail.pop();
+        }
+        else {
+          worker.loop_head.pop();
+        }
+        obj_stack_.Pop();
       }
     }
   }
