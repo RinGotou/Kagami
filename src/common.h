@@ -86,14 +86,14 @@ namespace kagami {
   using suzu::WSockInfo;
 #endif
   /* Application Info */
-  const string kInterpreterVersion = "1.6";
-  const string kPatchName          = "Shooting-star";
+  const string kInterpreterVersion = "1.9";
+  const string kPatchName          = "Light colors";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else
   const string kPlatformType   = "Linux";
 #endif
-  const string kEngineName     = "Kagami Project";
+  const string kEngineName     = "Kagami Project (on Kisaragi IR Framework)";
   const string kMaintainer     = "Suzu Nakamura";
   const string kCopyright      = "Copyright(c) 2019";
 

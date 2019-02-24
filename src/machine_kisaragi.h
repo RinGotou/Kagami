@@ -12,6 +12,8 @@ namespace kagami {
   public:
     bool error;
     bool deliver;
+    bool activated_continue;
+    bool activated_break;
     size_t origin_idx;
     size_t idx;
     GenericToken last_command;
@@ -85,6 +87,9 @@ namespace kagami {
 
     void SetSegmentInfo(ArgumentList args);
     void CommandIfOrWhile(GenericToken token, ArgumentList args);
+    void CommandElse(ArgumentList args);
+    void CommandConditionEnd();
+    void CommandLoopEnd();
 
     void CommandReturn(ArgumentList args);
     void MachineCommands(GenericToken token, ArgumentList args);

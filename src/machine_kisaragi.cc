@@ -20,8 +20,8 @@ namespace kagami {
     ObjectPointer ptr = nullptr;
     string domain_type_id = kTypeIdNull;
     Object obj;
-    MachineWorker &worker = worker_stack_.top();
-    stack<Object> &return_stack = worker_stack_.top().return_stack;
+    auto &worker = worker_stack_.top();
+    auto &return_stack = worker_stack_.top().return_stack;
 
     auto fetching = [&](ArgumentType type, bool is_domain)->bool {
       switch (type) {
@@ -150,17 +150,84 @@ namespace kagami {
       else if (token == kTokenElif) {
         if (!worker.condition_stack.empty()) {
           if (worker.condition_stack.top() == false && worker.mode == kModeNextCondition) {
-
+            worker.mode = kModeCondition;
+            worker.condition_stack.top() = true;
           }
         }
         else {
-
+          worker.MakeError("Unexpected Elif.");
+          return;
         }
       }
     }
     else {
       worker.MakeError("Too many arguments.");
       return;
+    }
+  }
+
+  void Machine::CommandElse(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    if (!worker.condition_stack.empty()) {
+      if (worker.condition_stack.top() == true) {
+        switch (worker.mode) {
+        case kModeCondition:
+        case kModeNextCondition:
+          worker.mode = kModeNextCondition;
+          break;
+        case kModeCase:
+        case kModeCaseJump:
+          worker.mode = kModeCaseJump;
+          break;
+        default:
+          break;
+        }
+      }
+      else {
+        worker.condition_stack.top() = true;
+        switch (worker.mode) {
+        case kModeNextCondition:
+          worker.mode = kModeCondition;
+          break;
+        case kModeCaseJump:
+          worker.mode = kModeCase;
+          break;
+        default:
+          break;
+        }
+      }
+    }
+    else {
+      worker.MakeError("Unexpected Else.");
+      return;
+    }
+  }
+
+  void Machine::CommandConditionEnd() {
+    auto &worker = worker_stack_.top();
+    worker.condition_stack.pop();
+    worker.GoLastMode();
+    obj_stack_.Pop();
+  }
+
+  void Machine::CommandLoopEnd() {
+    auto &worker = worker_stack_.top();
+    if (worker.mode == kModeCycle) {
+      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.idx - 1) {
+        worker.loop_tail.push(worker.idx - 1);
+      }
+      worker.idx = worker.loop_head.top();
+      obj_stack_.GetCurrent().clear();
+    }
+    else if (worker.mode == kModeCycleJump) {
+      if (worker.activated_continue) {
+        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.idx - 1) {
+          worker.loop_tail.push(worker.idx - 1);
+        }
+        worker.idx = worker.loop_head.top();
+        worker.mode = kModeCycle;
+
+      }
     }
   }
 

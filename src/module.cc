@@ -203,7 +203,7 @@ namespace kagami {
       }
     }
     else {
-      mode = kModeNextCondition;
+      //MakeError
     }
   }
 
