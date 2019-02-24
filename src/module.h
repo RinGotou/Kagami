@@ -47,6 +47,7 @@ namespace kagami {
       runtime_error;
     size_t fn_idx;
     size_t current;
+    size_t skipping_count;
     MachineMode mode;
     string error_string;
     stack<size_t> cycle_nest, cycle_tail;
@@ -64,6 +65,7 @@ namespace kagami {
       runtime_error(false),
       fn_idx(0),
       current(0),
+      skipping_count(0),
       mode(kModeNormal),
       error_string() {}
 

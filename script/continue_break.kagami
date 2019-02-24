@@ -7,7 +7,7 @@ fn Test()
       continue
     end
     println(i)
-    i++
+    i = i + 1
   end
   
   println('Break')

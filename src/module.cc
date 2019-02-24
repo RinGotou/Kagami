@@ -325,6 +325,7 @@ namespace kagami {
     while (!mode_stack.empty() && mode != kModeCycle) {
       if (mode == kModeCondition || mode == kModeCase) {
         condition_stack.pop();
+        skipping_count += 1;
       }
       mode = mode_stack.top();
       mode_stack.pop();
@@ -343,6 +344,7 @@ namespace kagami {
     while (!mode_stack.empty() && mode != kModeCycle) {
       if (mode == kModeCondition || mode == kModeCase) {
         condition_stack.pop();
+        skipping_count += 1;
       }
       mode = mode_stack.top();
       mode_stack.pop();
@@ -1436,6 +1438,11 @@ namespace kagami {
           blk->current += 1;
           continue;
         }
+        else if (blk->skipping_count > 0) {
+          blk->skipping_count -= 1;
+          blk->current += 1;
+          continue;
+        }
         else {
           flag = true;
           break;
@@ -1465,6 +1472,11 @@ namespace kagami {
       if (token == kTokenEnd) {
         if (nest_counter != 0) {
           nest_counter -= 1;
+          blk->current += 1;
+          continue;
+        }
+        else if (blk->skipping_count > 0) {
+          blk->skipping_count -= 1;
           blk->current += 1;
           continue;
         }
