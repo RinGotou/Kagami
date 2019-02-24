@@ -85,6 +85,9 @@ namespace kagami {
 
     void SetSegmentInfo(ArgumentList args);
     void CommandIfOrWhile(GenericToken token, ArgumentList args);
+    void CommandElif(ArgumentList args);
+
+    void CommandReturn(ArgumentList args);
     void MachineCommands(GenericToken token, ArgumentList args);
 
     void GenerateArgs(Interface &interface, ArgumentList args, ObjectMap &obj_map);

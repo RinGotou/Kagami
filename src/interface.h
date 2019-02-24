@@ -33,6 +33,7 @@ namespace kagami {
   class IRFunctionPolicy : public InterfacePolicy {
   private:
     vector<IR> storage_;
+    KIR ir_;
     AgentActivity agent_activity_;
   public:
     IRFunctionPolicy(vector<IR> storage, AgentActivity agent) :
@@ -40,6 +41,10 @@ namespace kagami {
 
     Message Start(ObjectMap &p) { 
       return agent_activity_(p, storage_);
+    }
+
+    KIR &GetIR() {
+      return ir_;
     }
   };
 
@@ -195,6 +200,14 @@ namespace kagami {
 
     InterfaceType GetInterfaceType() const {
       return interface_type_;
+    }
+
+    InterfacePolicyType GetPolicyType() const {
+      return policy_type_;
+    }
+
+    KIR &GetIR() {
+      return dynamic_pointer_cast<IRFunctionPolicy>(policy_)->GetIR();
     }
 
     size_t GetParamSize() const {

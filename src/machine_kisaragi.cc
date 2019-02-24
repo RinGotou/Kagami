@@ -136,8 +136,8 @@ namespace kagami {
 
         if (state) {
           worker.SwitchToMode(kModeCycle);
-          if (worker.loop_head.empty() || worker.loop_head.top() != current - 1) {
-            worker.loop_head.push(current - 1);
+          if (worker.loop_head.empty() || worker.loop_head.top() != worker.idx - 1) {
+            worker.loop_head.push(worker.idx - 1);
           }
         }
         else {
@@ -152,6 +152,31 @@ namespace kagami {
       worker.MakeError("Too many arguments.");
       return;
     }
+  }
+
+  void Machine::CommandElif(ArgumentList args) {
+    
+  }
+
+  void Machine::CommandReturn(ArgumentList args) {
+    if (worker_stack_.size() <= 1) {
+      trace::AddEvent(Message(kCodeBadExpression, "Unexpected return.", kStateError));
+    }
+    else if (args.size() == 1) {
+      Object src_obj = FetchObject(args[0]);
+      Object ret_obj(management::type::GetObjectCopy(src_obj), src_obj.GetTypeId());
+      worker_stack_.pop();
+      ir_stack_.pop_back();
+      obj_stack_.Pop();
+      worker_stack_.top().return_stack.push(ret_obj);
+    }
+    else if (args.size() == 0) {
+      worker_stack_.pop();
+      ir_stack_.pop_back();
+      obj_stack_.Pop();
+      worker_stack_.top().return_stack.push(Object());
+    }
+    //TODO:Multiple arg
   }
 
   void Machine::MachineCommands(GenericToken token, ArgumentList args) {
@@ -341,7 +366,16 @@ namespace kagami {
 
         if (worker.error) break;
 
-        msg = interface.Start(obj_map);
+        if (interface.GetInterfaceType() == kInterfaceIR) {
+          //TODO:Processing return value and recovering last worker at CommandReturn
+          ir_stack_.push_back(&interface.GetIR());
+          worker_stack_.push(MachineWorker());
+          obj_stack_.Push();
+          continue;
+        }
+        else {
+          msg = interface.Start(obj_map);
+        }
 
         if (msg.GetLevel() == kStateError) break;
 
