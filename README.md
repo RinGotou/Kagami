@@ -10,14 +10,14 @@ It's a simple and tiny experimental script language. The name of this project is
 
 "testing" is current developing branch.
 
-## Feature
+## Features
 [√] Dynamic and weak typing language with reflection and closure support
 
 [√] Stack-based Backend Machine
 
 [√] Based on C++14
 
-## What does it looks like?
+## What does it look like?
 ```
 fn ReadFile()
     stream = instream('SomeWords.txt')
