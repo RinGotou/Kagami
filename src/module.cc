@@ -437,7 +437,7 @@ namespace kagami {
     }
 
     if (optional && variable) {
-      SetError("Variable & Optional parameter can'b be defined at same time.");
+      SetError("Variable & Optional parameter can't be defined at same time.");
       return;
     }
 

@@ -81,6 +81,72 @@ namespace kagami {
     return obj;
   }
 
+  void Machine::InitFunctionCatching(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    if (!args.empty()) {
+      for (auto it = args.begin(); it != args.end(); ++it) {
+        worker.fn_string_vec.emplace_back(it->data);
+      }
+    }
+    else {
+      worker.MakeError("Empty argument list.");
+    }
+
+    worker.fn_idx = worker.idx;
+  }
+
+  void Machine::FinishFunctionCatching(bool closure) {
+    auto &obj_list = obj_stack_.GetBase();
+    auto &worker = worker_stack_.top();
+    auto &origin_ir = *ir_stack_.back();
+    auto &fn_string_vec = worker.fn_string_vec;
+    bool optional = false;
+    bool variable = false;
+    size_t counter = 0;
+    size_t size = worker.fn_string_vec.size();
+    vector<string> params;
+    KIR ir;
+
+    for (size_t idx = worker.fn_idx + 1; idx < worker.idx; idx += 1) {
+      ir.emplace_back(origin_ir[idx]);
+    }
+
+    for (size_t idx = 1; idx < size; idx += 1) {
+      if (fn_string_vec[idx] == kStrOptional) {
+        optional = true;
+        counter += 1;
+        continue;
+      }
+
+      if (fn_string_vec[idx] == kStrVaribale) {
+        if (counter == 1) {
+          worker.MakeError("Variable parameter can be defined only once.");
+          break;
+        }
+
+        if (idx != size - 2) {
+          worker.MakeError("Variable parameter must be last one.");
+          break;
+        }
+
+        variable = true;
+        counter += 1;
+        continue;
+      }
+
+      if (optional && fn_string_vec[idx - 1] != kStrOptional) {
+        worker.MakeError("Optional parameter must be defined after normal parameters.");
+      }
+
+      params.push_back(fn_string_vec[idx]);
+    }
+
+    if (optional && variable) {
+      worker.MakeError("Variable and optional parameter can't be defined at same time.");
+      return;
+    }
+  }
+
   void Machine::SetSegmentInfo(ArgumentList args) {
     MachineWorker &worker = worker_stack_.top();
     worker.origin_idx = stoul(args[0].data);
@@ -378,6 +444,40 @@ namespace kagami {
     for (auto it = params.rbegin(); it != params.rend(); ++it) {
       obj_map.insert(NamedObject(*it, FetchObject(args.back())));
       args.pop_back();
+    }
+  }
+
+  void Machine::Preprocessor() {
+    if (ir_stack_.empty()) return;
+    KIR &ir = *ir_stack_.back();
+    size_t size = ir.size();
+    size_t nest_counter = 0;
+    size_t fn_idx = 0;
+    bool catching = false;
+    
+    worker_stack_.push(MachineWorker());
+    MachineWorker &worker = worker_stack_.top();
+    //vector<string> fn_string_vec;
+
+    while (worker.idx < size) {
+      Command &command = ir[worker.idx];
+
+      if (command.first.head_command == kTokenFn) {
+        if (catching) {
+          nest_counter += 1; //ignore cloosure block
+          continue;
+        }
+
+        
+      }
+      else if (command.first.head_command == kTokenEnd) {
+
+      }
+      else {
+        if (find_in_vector(command.first.head_command, nest_flag_collection)) {
+          nest_counter += 1;
+        }
+      }
     }
   }
 

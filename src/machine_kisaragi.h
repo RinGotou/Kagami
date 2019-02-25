@@ -16,6 +16,7 @@ namespace kagami {
     bool activated_break;
     size_t origin_idx;
     size_t idx;
+    size_t fn_idx;
     GenericToken last_command;
     MachineMode mode;
     string error_string;
@@ -25,6 +26,7 @@ namespace kagami {
     stack<bool> condition_stack;
     stack<size_t> loop_head;
     stack<size_t> loop_tail;
+    vector<string> fn_string_vec;
 
     MachineWorker() :
       origin_idx(0),
@@ -85,6 +87,9 @@ namespace kagami {
     Object FetchInterfaceObject(string id, string domain);
     Object FetchObject(Argument &arg, bool checking = false);
 
+    void InitFunctionCatching(ArgumentList args);
+    void FinishFunctionCatching(bool closure = false);
+
     void SetSegmentInfo(ArgumentList args);
     void CommandIfOrWhile(GenericToken token, ArgumentList args);
     void CommandElse(ArgumentList args);
@@ -98,6 +103,8 @@ namespace kagami {
     void Generate_Normal(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Generate_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Generate_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map);
+
+    void Preprocessor();
   private:
     deque<KIRPointer> ir_stack_;
     stack<MachineWorker> worker_stack_;
