@@ -15,7 +15,7 @@ namespace kagami {
   
   class InterfacePolicy {
   public:
-    virtual Message Start(ObjectMap &p) = 0;
+    virtual Message Start(ObjectMap &p) = 0; //Deprecated in Kisaragi
   };
 
   /* C++ function wrapper */
@@ -30,10 +30,10 @@ namespace kagami {
   };
 
   /* Delegate IR from user-defined function */
+  /* Deprecated in Kisaragi Framework       */
   class IRFunctionPolicy : public InterfacePolicy {
   private:
     vector<IR> storage_;
-    KIR ir_;
     AgentActivity agent_activity_;
   public:
     IRFunctionPolicy(vector<IR> storage, AgentActivity agent) :
@@ -42,14 +42,23 @@ namespace kagami {
     Message Start(ObjectMap &p) { 
       return agent_activity_(p, storage_);
     }
+  };
 
-    KIR &GetIR() {
-      return ir_;
-    }
+  /* KIR Delegator for Kisaragi framework */
+  class KIRFunctionPolicy : public InterfacePolicy {
+  private:
+    KIR ir_;
+
+  public:
+    KIRFunctionPolicy(KIR ir) : ir_(ir) {}
+
+    Message Start(ObjectMap &p) { return Message(); } //Deprecated method
+
+    KIR &GetIR() { return ir_; }
   };
 
   enum InterfacePolicyType {
-    kInterfaceCXX, kInterfaceIR
+    kInterfaceCXX, kInterfaceIR, kInterfaceKIR
   };
 
   class Interface {
@@ -86,7 +95,7 @@ namespace kagami {
       string id,
       StateCode argument_mode = kCodeNormalParam
     ) :
-      policy_(make_shared<CXXFunctionPolicy>(activity)),
+      policy_(new CXXFunctionPolicy(activity)),
       id_(id),
       token_(kTokenNull),
       params_(BuildStringVector(params)),
@@ -103,7 +112,7 @@ namespace kagami {
       GenericToken token,
       StateCode argument_mode = kCodeNormalParam
     ) :
-      policy_(make_shared<CXXFunctionPolicy>(activity)),
+      policy_(new CXXFunctionPolicy(activity)),
       id_(),
       token_(token),
       params_(BuildStringVector(params)),
@@ -120,7 +129,7 @@ namespace kagami {
       vector<string> params,
       AgentActivity agent
     ) :
-      policy_(make_shared<IRFunctionPolicy>(ir_set, agent)),
+      policy_(new IRFunctionPolicy(ir_set, agent)),
       id_(id),
       token_(kTokenNull),
       params_(params),
@@ -128,6 +137,22 @@ namespace kagami {
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
       policy_type_(kInterfaceIR),
+      min_arg_size_(0) {}
+
+    Interface(
+      KIR ir,
+      string id,
+      vector<string> params,
+      StateCode argument_mode = kCodeNormalParam
+    ) :
+      policy_(new KIRFunctionPolicy(ir)),
+      id_(id),
+      token_(kTokenNull),
+      params_(params),
+      argument_mode_(argument_mode),
+      domain_(kTypeIdNull),
+      interface_type_(kInterfaceTypePlain),
+      policy_type_(kInterfaceKIR),
       min_arg_size_(0) {}
 
     Message Start(ObjectMap &obj_map) {
@@ -147,6 +172,8 @@ namespace kagami {
       case kInterfaceIR:
         combined_scope[kStrUserFunc] = Object(id_);
         result = policy_->Start(combined_scope);
+        break;
+      default:
         break;
       }
 
@@ -207,7 +234,7 @@ namespace kagami {
     }
 
     KIR &GetIR() {
-      return dynamic_pointer_cast<IRFunctionPolicy>(policy_)->GetIR();
+      return dynamic_pointer_cast<KIRFunctionPolicy>(policy_)->GetIR();
     }
 
     size_t GetParamSize() const {

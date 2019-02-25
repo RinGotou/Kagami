@@ -102,6 +102,7 @@ namespace kagami {
     auto &fn_string_vec = worker.fn_string_vec;
     bool optional = false;
     bool variable = false;
+    StateCode argument_mode = kCodeNormalParam;
     size_t counter = 0;
     size_t size = worker.fn_string_vec.size();
     vector<string> params;
@@ -145,6 +146,22 @@ namespace kagami {
       worker.MakeError("Variable and optional parameter can't be defined at same time.");
       return;
     }
+
+    if (optional) argument_mode = kCodeAutoFill;
+    if (variable) argument_mode = kCodeAutoSize;
+
+    Interface interface(ir, fn_string_vec[0], params, argument_mode);
+
+    if (optional) {
+      interface.SetMinArgSize(params.size() - counter);
+    }
+
+    if (closure) {
+
+    }
+
+    obj_stack_.CreateObject(fn_string_vec[0], 
+      Object(make_shared<Interface>(interface), kTypeIdFunction));
   }
 
   void Machine::SetSegmentInfo(ArgumentList args) {
