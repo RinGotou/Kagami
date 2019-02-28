@@ -157,7 +157,15 @@ namespace kagami {
     }
 
     if (closure) {
+      ObjectMap scope_record;
+      auto &base = obj_stack_.GetBase();
+      for (auto it = base.rbegin(); it != base.rend(); ++it) {
+        for (auto &obj : it->GetContent()) {
 
+        }
+      }
+
+      //TODO:Scope catching
     }
 
     obj_stack_.CreateObject(fn_string_vec[0], 

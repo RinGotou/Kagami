@@ -458,7 +458,7 @@ namespace kagami {
     auto it = pool.rbegin();
 
     while (it != pool.rend()) {
-      for (auto &unit : it->GetConent()) {
+      for (auto &unit : it->GetContent()) {
         if (record.find(unit.first) != record.end()) {
           record.insert(NamedObject(unit.first,
             Object(management::type::GetObjectCopy(unit.second), unit.second.GetTypeId())));
@@ -473,7 +473,7 @@ namespace kagami {
     }
 
     if (it != pool.rend()) {
-      for (auto &unit : it->GetConent()) {
+      for (auto &unit : it->GetContent()) {
         if (record.find(unit.first) == record.end()) {
           record.insert(NamedObject(unit.first,
             Object(management::type::GetObjectCopy(unit.second), unit.second.GetTypeId())));

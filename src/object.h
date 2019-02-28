@@ -199,7 +199,7 @@ namespace kagami {
       base_.clear();
     }
 
-    map<string, Object> &GetConent() {
+    map<string, Object> &GetContent() {
       return base_;
     }
   };
