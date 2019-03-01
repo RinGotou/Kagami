@@ -15,6 +15,7 @@ namespace kagami {
     bool activated_continue;
     bool activated_break;
     size_t origin_idx;
+    size_t logic_idx;
     size_t idx;
     size_t fn_idx;
     size_t skipping_count;
@@ -35,6 +36,7 @@ namespace kagami {
       activated_continue(false),
       activated_break(false),
       origin_idx(0),
+      logic_idx(0),
       idx(0),
       fn_idx(0),
       skipping_count(0),
