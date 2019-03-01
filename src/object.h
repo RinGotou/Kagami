@@ -249,6 +249,10 @@ namespace kagami {
       return this->at(id).Cast<T>();
     }
 
+    auto insert_pair(string id, Object obj) {
+      return this->insert(NamedObject(id, obj));
+    }
+
     bool CheckTypeId(string id, string type_id) {
       return this->at(id).GetTypeId() == type_id;
     }

@@ -159,13 +159,24 @@ namespace kagami {
     if (closure) {
       ObjectMap scope_record;
       auto &base = obj_stack_.GetBase();
-      for (auto it = base.rbegin(); it != base.rend(); ++it) {
-        for (auto &obj : it->GetContent()) {
+      auto it = base.rbegin();
+      bool flag = false;
 
+      for (; it != base.rend(); ++it) {
+        if (flag) break;
+
+        if (it->Find(kStrUserFunc) != nullptr) flag = true;
+
+        for (auto &unit : it->GetContent()) {
+          if (scope_record.find(unit.first) != scope_record.end()) {
+            scope_record.insert_pair(unit.first,
+              Object(management::type::GetObjectCopy(unit.second), 
+                unit.second.GetTypeId()));
+          }
         }
       }
 
-      //TODO:Scope catching
+      interface.SetClousureRecord(scope_record);
     }
 
     obj_stack_.CreateObject(fn_string_vec[0], 
