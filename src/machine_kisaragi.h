@@ -17,6 +17,7 @@ namespace kagami {
     size_t origin_idx;
     size_t idx;
     size_t fn_idx;
+    size_t skipping_count;
     GenericToken last_command;
     MachineMode mode;
     string error_string;
@@ -29,8 +30,24 @@ namespace kagami {
     vector<string> fn_string_vec;
 
     MachineWorker() :
+      error(false),
+      deliver(false),
+      activated_continue(false),
+      activated_break(false),
       origin_idx(0),
-      idx(0) {}
+      idx(0),
+      fn_idx(0),
+      skipping_count(0),
+      last_command(kTokenNull),
+      mode(kModeNormal),
+      error_string(),
+      msg(),
+      return_stack(),
+      mode_stack(),
+      condition_stack(),
+      loop_head(),
+      loop_tail(),
+      fn_string_vec() {}
 
     void MakeError(string str) {
       error = true;
@@ -82,6 +99,7 @@ namespace kagami {
     
   };
 
+  //Kisaragi Machine Class
   class Machine {
   private:
     Object FetchInterfaceObject(string id, string domain);
@@ -89,6 +107,9 @@ namespace kagami {
 
     void InitFunctionCatching(ArgumentList args);
     void FinishFunctionCatching(bool closure = false);
+
+    void Skipping(bool enable_terminators, 
+      std::initializer_list<GenericToken> terminators = {});
 
     void SetSegmentInfo(ArgumentList args);
     void CommandIfOrWhile(GenericToken token, ArgumentList args);

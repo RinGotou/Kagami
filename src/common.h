@@ -86,8 +86,8 @@ namespace kagami {
   using suzu::WSockInfo;
 #endif
   /* Application Info */
-  const string kInterpreterVersion = "1.9";
-  const string kPatchName          = "Light colors";
+  const string kInterpreterVersion = "2.0";
+  const string kPatchName          = "Colorless";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else

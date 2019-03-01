@@ -1213,37 +1213,36 @@ namespace kagami {
           nest_counter += 1;
           continue;
         }
-        else {
-          result = IRProcessing(*ir, "", nullptr);
-          func_string_vec = BuildStringVector(result.GetDetail());
-          fn_idx = static_cast<long>(idx);
-          //enter catching process
-          catching = true;
-          continue;
-        }
+
+        result = IRProcessing(*ir, "", nullptr);
+        func_string_vec = BuildStringVector(result.GetDetail());
+        fn_idx = static_cast<long>(idx);
+        //enter catching process
+        catching = true;
+        continue;
+        
       }
       else if (token == kTokenEnd) {
         if (nest_counter > 0) {
           nest_counter -= 1;
           continue;
         }
-        else {
-          catched_block.insert(std::make_pair(fn_idx, idx));
-          int code;
-          if (!MakeFunction(fn_idx + 1, idx - 1, func_string_vec, code)) {
-            switch (code) {
-            case 1:result = INVALID_PARAM_MSG("Variable parameter can be defined only once."); break;
-            case 2:result = INVALID_PARAM_MSG("Variable parameter must be last one."); break;
-            case 3:result = INVALID_PARAM_MSG("Optional parameter must be defined after normal parameter."); break;
-            case 4:result = INVALID_PARAM_MSG("Variable & Optional parameter can'b be defined at same time."); break;
-            default:break;
-            }
+
+        catched_block.insert(std::make_pair(fn_idx, idx));
+        int code;
+        if (!MakeFunction(fn_idx + 1, idx - 1, func_string_vec, code)) {
+          switch (code) {
+          case 1:result = INVALID_PARAM_MSG("Variable parameter can be defined only once."); break;
+          case 2:result = INVALID_PARAM_MSG("Variable parameter must be last one."); break;
+          case 3:result = INVALID_PARAM_MSG("Optional parameter must be defined after normal parameter."); break;
+          case 4:result = INVALID_PARAM_MSG("Variable & Optional parameter can'b be defined at same time."); break;
+          default:break;
           }
-          func_string_vec.clear();
-          fn_idx = -1;
-          //quit catching process
-          catching = false;
         }
+        func_string_vec.clear();
+        fn_idx = -1;
+        //quit catching process
+        catching = false;
       }
       else {
         if (find_in_vector(token, nest_flag_collection)) {

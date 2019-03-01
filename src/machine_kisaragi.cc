@@ -183,6 +183,35 @@ namespace kagami {
       Object(make_shared<Interface>(interface), kTypeIdFunction));
   }
 
+  void Machine::Skipping(bool enable_terminators, 
+    std::initializer_list<GenericToken> terminators) {
+    auto &worker = worker_stack_.top();
+    GenericToken token;
+    size_t nest_counter = 0;
+    size_t size = ir_stack_.back()->size();
+    bool flag = false;
+    auto &ir = *ir_stack_.back();
+
+    while (worker.idx < size) {
+      Command &command = ir[worker.idx];
+      token = command.first.head_command;
+
+      if (find_in_vector(token, nest_flag_collection)) {
+        nest_counter += 1;
+        worker.idx += 1;
+        continue;
+      }
+
+      if (enable_terminators && compare(token, terminators)) {
+        if (nest_counter == 0) {
+          flag = true;
+
+        }
+      }
+    }
+
+  }
+
   void Machine::SetSegmentInfo(ArgumentList args) {
     MachineWorker &worker = worker_stack_.top();
     worker.origin_idx = stoul(args[0].data);
@@ -488,26 +517,35 @@ namespace kagami {
     KIR &ir = *ir_stack_.back();
     size_t size = ir.size();
     size_t nest_counter = 0;
-    size_t fn_idx = 0;
     bool catching = false;
+    bool error = false;
     
     worker_stack_.push(MachineWorker());
     MachineWorker &worker = worker_stack_.top();
-    //vector<string> fn_string_vec;
+    map<size_t, size_t> catched_block;
 
     while (worker.idx < size) {
       Command &command = ir[worker.idx];
 
       if (command.first.head_command == kTokenFn) {
         if (catching) {
-          nest_counter += 1; //ignore cloosure block
+          nest_counter += 1; //ignore closure block
           continue;
         }
 
-        
+        InitFunctionCatching(command.second);
+        catching = true;
+        continue;
       }
       else if (command.first.head_command == kTokenEnd) {
+        if (nest_counter > 0) {
+          nest_counter -= 1;
+          continue;
+        }
 
+        catched_block.insert(std::make_pair(worker.fn_idx, worker.idx));
+        FinishFunctionCatching();
+        catching = false;
       }
       else {
         if (find_in_vector(command.first.head_command, nest_flag_collection)) {
@@ -515,12 +553,38 @@ namespace kagami {
         }
       }
     }
+
+    if (catching) {
+      worker.MakeError("Expect 'end'.");
+    }
+
+    if (worker.error) {
+      trace::AddEvent(Message(kCodeBadExpression, worker.error_string, kStateError));
+    }
+
+    KIR not_catched;
+
+    for (size_t idx = 0; idx < ir.size(); idx += 1) {
+      auto it = catched_block.find(idx);
+
+      if (it != catched_block.end()) {
+        idx = it->second;
+        continue;
+      }
+
+      not_catched.emplace_back(ir[idx]);
+    }
+
+    ir.swap(not_catched);
+
+    worker_stack_.pop();
   }
 
   Message Machine::Run() {
     if (ir_stack_.empty()) return Message();
     StateLevel level = kStateNormal;
     StateCode code = kCodeSuccess;
+    bool interface_error = false;
     string detail;
     string type_id = kTypeIdNull;
     Message msg;
@@ -534,6 +598,7 @@ namespace kagami {
     MachineWorker &worker = worker_stack_.top();
     size_t size = ir.size();
 
+    //Main loop of current thread
     while (worker.idx < size) {
       Command &command = ir[worker.idx];
 
@@ -603,7 +668,10 @@ namespace kagami {
           msg = interface.Start(obj_map);
         }
 
-        if (msg.GetLevel() == kStateError) break;
+        if (msg.GetLevel() == kStateError) {
+          interface_error = true;
+          break;
+        }
 
         worker.return_stack.push(msg.GetCode() == kCodeObject ?
           msg.GetObj() : Object());
@@ -612,6 +680,17 @@ namespace kagami {
         worker.idx += 1;
       }
     }
+
+    if (worker.error) {
+      trace::AddEvent(Message(kCodeBadExpression, worker.error_string, kStateError));
+    }
+
+    if (interface_error) {
+      trace::AddEvent(msg);
+    }
+
+    obj_stack_.Pop();
+    worker_stack_.pop();
 
     return msg;
   }
