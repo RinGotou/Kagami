@@ -585,6 +585,7 @@ namespace kagami {
           ir_stack_.push_back(&interface.GetIR());
           worker_stack_.push(MachineWorker());
           obj_stack_.Push();
+          obj_stack_.CreateObject(kStrUserFunc, Object(command.first.head_interface));
           continue;
         }
         else {
