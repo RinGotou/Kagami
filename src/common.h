@@ -244,7 +244,7 @@ namespace kagami {
     kStrFn             = "fn",
     kStrEnd            = "end",
     kStrPrint          = "__print",
-    kStrCase           = "__case",
+    kStrCaseObj        = "__case",
     kStrFor            = "for",
     kStrElse           = "else",
     kStrElif           = "elif",

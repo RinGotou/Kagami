@@ -20,6 +20,8 @@ namespace kagami {
       std::getline(stream, buf);
       temp = ws2s(buf);
       if (!temp.empty() && temp.back() == '\0') temp.pop_back();
+      temp = IndentationAndCommentProc(temp);
+      if (temp.empty()) continue;
       script_buf.emplace_back(temp);
     }
 
@@ -51,8 +53,9 @@ namespace kagami {
       }
 
       ir = analyzer.GetOutput();
-
+      analyzer.Clear();
       output.insert(output.end(), ir.begin(), ir.end());
+      ir.clear();
     }
   }
 
@@ -136,7 +139,7 @@ namespace kagami {
             FetchInterfaceObject(arg.data, domain_type_id);
 
           if (obj.Get() == nullptr) {
-            worker.MakeError("Object is not found."
+            worker.MakeError("Object is not found - "
               + (is_domain ? arg.domain.data : arg.data));
             return false;
           }
@@ -174,6 +177,7 @@ namespace kagami {
 
   void Machine::InitFunctionCatching(ArgumentList args) {
     auto &worker = worker_stack_.top();
+    worker.fn_string_vec.clear();
     if (!args.empty()) {
       for (auto it = args.begin(); it != args.end(); ++it) {
         worker.fn_string_vec.emplace_back(it->data);
@@ -199,7 +203,7 @@ namespace kagami {
     vector<string> params;
     KIR ir;
 
-    for (size_t idx = worker.fn_idx + 1; idx < worker.idx; idx += 1) {
+    for (size_t idx = worker.fn_idx + 1; idx < worker.idx - 1; idx += 1) {
       ir.emplace_back(origin_ir[idx]);
     }
 
@@ -270,18 +274,25 @@ namespace kagami {
       interface.SetClousureRecord(scope_record);
     }
 
-    obj_stack_.CreateObject(fn_string_vec[0], 
-      Object(make_shared<Interface>(interface), kTypeIdFunction));
+    if (closure) {
+      obj_stack_.CreateObject(fn_string_vec[0],
+        Object(make_shared<Interface>(interface), kTypeIdFunction));
+    }
+    else {
+      management::CreateNewInterface(interface);
+    }
   }
 
   void Machine::Skipping(bool enable_terminators, 
     std::initializer_list<GenericToken> terminators) {
     auto &worker = worker_stack_.top();
-    GenericToken token;
     size_t nest_counter = 0;
     size_t size = ir_stack_.back()->size();
     bool flag = false;
     auto &ir = *ir_stack_.back();
+
+    if (ir[worker.idx].first.head_command == kTokenEnd && worker.skipping_count == 0) 
+      return;
 
     while (worker.idx < size) {
       Command &command = ir[worker.idx];
@@ -336,7 +347,6 @@ namespace kagami {
     worker.origin_idx = stoul(args[0].data);
     worker.logic_idx = worker.idx;
     worker.last_command = static_cast<GenericToken>(stol(args[1].data));
-    
   }
 
   void Machine::CommandIfOrWhile(GenericToken token, ArgumentList args) {
@@ -376,28 +386,31 @@ namespace kagami {
 
       if (token == kTokenIf) {
         worker.SwitchToMode(state ? kModeCondition : kModeNextCondition);
+        obj_stack_.Push();
         worker.condition_stack.push(state);
       }
       else if (token == kTokenWhile) {
         if (worker.loop_head.empty()) {
           obj_stack_.Push();
+          worker.mode_stack.push(worker.mode);
         }
-        else if (worker.loop_head.top() != worker.idx - 1) {
+        else if (worker.loop_head.top() != worker.logic_idx - 1) {
           obj_stack_.Push();
+          worker.mode_stack.push(worker.mode);
         }
 
-        if (worker.loop_head.empty() || worker.loop_head.top() != worker.idx - 1) {
+        if (worker.loop_head.empty() || worker.loop_head.top() != worker.logic_idx - 1) {
           worker.loop_head.push(worker.logic_idx - 1);
         }
 
         if (state) {
-          worker.SwitchToMode(kModeCycle);
+          worker.mode = kModeCycle;
         }
         else {
-          worker.SwitchToMode(kModeCycleJump);
+          worker.mode = kModeCycleJump;
           if (worker.loop_head.size() == worker.loop_tail.size()) {
             if (!worker.loop_tail.empty()) {
-              worker.idx = worker.loop_tail.top() - 1;
+              worker.idx = worker.loop_tail.top();
             }
           }
         }
@@ -470,9 +483,9 @@ namespace kagami {
         return;
       }
 
-      Object sample_obj = (management::type::GetObjectCopy(obj), type_id);
+      Object sample_obj(management::type::GetObjectCopy(obj), type_id);
       obj_stack_.Push();
-      obj_stack_.CreateObject(kStrCase, sample_obj);
+      obj_stack_.CreateObject(kStrCaseObj, sample_obj);
       worker.SwitchToMode(kModeCaseJump);
       worker.condition_stack.push(false);
     }
@@ -506,7 +519,7 @@ namespace kagami {
     }
 
     if (!args.empty()) {
-      ObjectPointer ptr = obj_stack_.Find(kStrCase);
+      ObjectPointer ptr = obj_stack_.Find(kStrCaseObj);
       string content;
       bool found = false;
       bool error = false;
@@ -581,18 +594,18 @@ namespace kagami {
   void Machine::CommandLoopEnd() {
     auto &worker = worker_stack_.top();
     if (worker.mode == kModeCycle) {
-      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.idx - 1) {
+      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx - 1) {
         worker.loop_tail.push(worker.logic_idx - 1);
       }
-      worker.idx = worker.loop_head.top() - 1;
+      worker.idx = worker.loop_head.top();
       obj_stack_.GetCurrent().clear();
     }
     else if (worker.mode == kModeCycleJump) {
       if (worker.activated_continue) {
-        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.idx - 1) {
+        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx - 1) {
           worker.loop_tail.push(worker.logic_idx - 1);
         }
-        worker.idx = worker.loop_head.top() - 1;
+        worker.idx = worker.loop_head.top();
         worker.mode = kModeCycle;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().clear();
@@ -617,15 +630,15 @@ namespace kagami {
     //Do not change the order!
     auto src = FetchObject(args[1]);
     auto dest = FetchObject(args[0]);
-    string id = dest.Cast<string>();
-    
+     
     if (dest.IsRef()) {
       dest.ManageContent(management::type::GetObjectCopy(src), src.GetTypeId());
       return;
     }
 
+    string id = dest.Cast<string>();
     ObjectPointer ptr = obj_stack_.Find(id);
-
+    
     if (ptr != nullptr) {
       ptr->ManageContent(management::type::GetObjectCopy(src), src.GetTypeId());
       return;
@@ -638,7 +651,7 @@ namespace kagami {
 
     Object obj(management::type::GetObjectCopy(src), src.GetTypeId());
 
-    if (obj_stack_.CreateObject(id, obj)) {
+    if (!obj_stack_.CreateObject(id, obj)) {
       worker.MakeError("Object creation failed");
       return;
     }
@@ -789,7 +802,7 @@ namespace kagami {
   }
 
   void Machine::MachineCommands(GenericToken token, ArgumentList args, Request request) {
-    auto worker = worker_stack_.top();
+    auto &worker = worker_stack_.top();
 
     switch (token) {
     case kTokenSegment:
@@ -977,20 +990,23 @@ namespace kagami {
       if (command.first.head_command == kTokenFn) {
         if (catching) {
           nest_counter += 1; //ignore closure block
+          worker.idx += 1;
           continue;
         }
 
         InitFunctionCatching(command.second);
         catching = true;
+        worker.idx += 1;
         continue;
       }
       else if (command.first.head_command == kTokenEnd) {
         if (nest_counter > 0) {
           nest_counter -= 1;
+          worker.idx += 1;
           continue;
         }
 
-        catched_block.insert(std::make_pair(worker.fn_idx, worker.idx));
+        catched_block.insert(std::make_pair(worker.fn_idx - 1, worker.idx));
         FinishFunctionCatching();
         catching = false;
       }
@@ -999,6 +1015,8 @@ namespace kagami {
           nest_counter += 1;
         }
       }
+
+      worker.idx += 1;
     }
 
     if (catching) {
@@ -1035,23 +1053,36 @@ namespace kagami {
     string detail;
     string type_id = kTypeIdNull;
     Message msg;
-    KIR &ir = *ir_stack_.back();
+    KIR *ir = ir_stack_.back();
     Interface interface;
     ObjectMap obj_map;
 
     worker_stack_.push(MachineWorker());
     obj_stack_.Push();
 
-    MachineWorker &worker = worker_stack_.top();
-    size_t size = ir.size();
+    MachineWorker *worker = &worker_stack_.top();
+    size_t size = ir->size();
 
     //Main loop of current thread
-    while (worker.idx < size) {
-      Command &command = ir[worker.idx];
+    while (worker->idx < size || worker_stack_.size() > 1) {
+      if (worker->idx == size) {
+        worker_stack_.pop();
+        ir_stack_.pop_back();
+        obj_stack_.Pop();
+        ir = ir_stack_.back();
+        size = ir->size();
+        worker = &worker_stack_.top();
+        worker->return_stack.push(Object());
+        worker->idx += 1;
+        continue;
+      }
 
-      if (worker.NeedSkipping()) {
+      obj_map.clear();
+      Command *command = &(*ir)[worker->idx];
+
+      if (worker->NeedSkipping()) {
         msg.Clear();
-        switch (worker.mode) {
+        switch (worker->mode) {
         case kModeNextCondition:
           Skipping(true, { kTokenElif,kTokenElse });
           break;
@@ -1066,86 +1097,101 @@ namespace kagami {
           break;
         }
 
-        if (worker.error) break;
+        worker->idx += 1;
+
+        command = &(*ir)[worker->idx];
+
+        if (worker->error) break;
       }
 
-      if (command.first.type == kRequestCommand 
-        && !util::IsOperator(command.first.head_command)) {
-        MachineCommands(command.first.head_command, command.second, command.first);
+      if (command->first.type == kRequestCommand 
+        && !util::IsOperator(command->first.head_command)) {
+        MachineCommands(command->first.head_command, command->second, command->first);
 
-        if (worker.deliver) {
-          msg = worker.GetMsg();
-          worker.msg.Clear();
+        if (command->first.head_command == kTokenReturn) {
+          ir = ir_stack_.back();
+          size = ir->size();
+          worker = &worker_stack_.top();
         }
 
-        if (worker.error) break;
+        if (worker->deliver) {
+          msg = worker->GetMsg();
+          worker->msg.Clear();
+        }
 
+        if (worker->error) break;
+
+        worker->idx += 1;
         continue;
       }
       
-      if (command.first.type == kRequestCommand) {
-        interface = management::GetGenericInterface(command.first.head_command);
+      if (command->first.type == kRequestCommand) {
+        interface = management::GetGenericInterface(command->first.head_command);
       }
 
-      if (command.first.type == kRequestInterface) {
-        if (command.first.domain.type != kArgumentNull) {
-          Object domain_obj = FetchObject(command.first.domain, true);
+      if (command->first.type == kRequestInterface) {
+        if (command->first.domain.type != kArgumentNull) {
+          Object domain_obj = FetchObject(command->first.domain, true);
           type_id = domain_obj.GetTypeId();
-          interface = management::FindInterface(command.first.head_interface, type_id);
+          interface = management::FindInterface(command->first.head_interface, type_id);
           obj_map.insert(NamedObject(kStrObject, domain_obj));
         }
         else {
-          ObjectPointer func_obj_ptr = obj_stack_.Find(command.first.head_interface);
+          ObjectPointer func_obj_ptr = obj_stack_.Find(command->first.head_interface);
           if (func_obj_ptr != nullptr) {
             if (func_obj_ptr->GetTypeId() == kTypeIdFunction) {
               interface = func_obj_ptr->Cast<Interface>();
             }
             else {
-              worker.MakeError(command.first.head_interface + " is not a function object.");
+              worker->MakeError(command->first.head_interface + " is not a function object.");
             }
           }
           else {
-            interface = management::FindInterface(command.first.head_interface);
+            interface = management::FindInterface(command->first.head_interface);
           }
         }
-
-        if (worker.error) break;
-
-        if (!interface.Good()) {
-          worker.MakeError("Function is not found - " + command.first.head_interface);
-        }
-
-        GenerateArgs(interface, command.second, obj_map);
-
-        if (worker.error) break;
-
-        if (interface.GetInterfaceType() == kInterfaceIR) {
-          //TODO:Processing return value and recovering last worker at CommandReturn
-          ir_stack_.push_back(&interface.GetIR());
-          worker_stack_.push(MachineWorker());
-          obj_stack_.Push();
-          obj_stack_.CreateObject(kStrUserFunc, Object(command.first.head_interface));
-          continue;
-        }
-        else {
-          msg = interface.Start(obj_map);
-        }
-
-        if (msg.GetLevel() == kStateError) {
-          interface_error = true;
-          break;
-        }
-
-        worker.return_stack.push(msg.GetCode() == kCodeObject ?
-          msg.GetObj() : Object());
-
-        obj_map.clear();
-        worker.idx += 1;
       }
+
+      if (worker->error) break;
+
+      if (!interface.Good()) {
+        worker->MakeError("Function is not found - " + command->first.head_interface);
+      }
+
+      GenerateArgs(interface, command->second, obj_map);
+
+      if (worker->error) break;
+
+      if (interface.GetPolicyType() == kInterfaceKIR) {
+        ir_stack_.push_back(&interface.GetIR());
+        worker_stack_.push(MachineWorker());
+        obj_stack_.Push();
+        obj_stack_.CreateObject(kStrUserFunc, Object(command->first.head_interface));
+        obj_stack_.MergeMap(obj_map);
+        obj_stack_.MergeMap(interface.GetClosureRecord());
+        ir = ir_stack_.back();
+        size = ir->size();
+        worker = &worker_stack_.top();
+        continue;
+      }
+      else {
+        msg = interface.Start(obj_map);
+      }
+
+      if (msg.GetLevel() == kStateError) {
+        interface_error = true;
+        break;
+      }
+
+      if (msg.GetCode() == kCodeObject) {
+        worker->return_stack.push(msg.GetObj());
+      }
+
+      worker->idx += 1;
     }
 
-    if (worker.error) {
-      trace::AddEvent(Message(kCodeBadExpression, worker.error_string, kStateError));
+    if (worker->error) {
+      trace::AddEvent(Message(kCodeBadExpression, worker->error_string, kStateError));
     }
 
     if (interface_error) {

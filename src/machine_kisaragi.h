@@ -195,6 +195,7 @@ namespace kagami {
 
     Machine(KIR &ir) {
       ir_stack_.push_back(&ir);
+      Preprocessor();
     }
 
     void SetPreviousStack(ObjectStack &prev) {

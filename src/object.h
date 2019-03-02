@@ -308,6 +308,15 @@ namespace kagami {
       return *this;
     }
 
+    void MergeMap(ObjectMap p) {
+      if (p.empty()) return;
+
+      auto &container = base_.back();
+      for (auto &unit : p) {
+        container.Add(unit.first, unit.second);
+      }
+    }
+
     DataType &GetBase() {
       return base_;
     }

@@ -21,10 +21,6 @@ namespace runtime {
 }
 
 void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log) {
-
-}
-
-void StartInterpreter(string path, string log_path, bool real_time_log) {
   trace::LoggerPolicy *logger = nullptr;
 
   if (real_time_log) {
@@ -41,8 +37,9 @@ void StartInterpreter(string path, string log_path, bool real_time_log) {
 
   DEBUG_EVENT("Your're running a copy of Kagami interpreter with debug flag!");
 
-  IRMaker maker(path.c_str());
-  if (maker.health) {
+  IRLoader loader(path.c_str());
+
+  if (loader.health) {
     Activiate();
     InitBaseTypes();
     InitContainerComponents();
@@ -53,8 +50,11 @@ void StartInterpreter(string path, string log_path, bool real_time_log) {
 #if not defined(_DISABLE_SDL_)
     LoadSDLStuff();
 #endif
-    Module main_module(maker);
-    main_module.Run();
+
+    KIR ir = loader.output;
+    Machine main_thread(ir);
+    
+    main_thread.Run();
   }
 
   trace::AddEvent("Interpreter exit");
@@ -103,7 +103,7 @@ void Processing(Processor &processor) {
 
     Patch("");
 
-    StartInterpreter(path, log, processor.Exist("rtlog"));
+    StartInterpreter_Kisaragi(path, log, processor.Exist("rtlog"));
   }
   else if (processor.Exist("help")) {
     HelpFile();

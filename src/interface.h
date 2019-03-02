@@ -29,21 +29,6 @@ namespace kagami {
     Message Start(ObjectMap &p) { return activity_(p); }
   };
 
-  /* Delegate IR from user-defined function */
-  /* Deprecated in Kisaragi Framework       */
-  class IRFunctionPolicy : public InterfacePolicy {
-  private:
-    vector<IR> storage_;
-    AgentActivity agent_activity_;
-  public:
-    IRFunctionPolicy(vector<IR> storage, AgentActivity agent) :
-      storage_(storage), agent_activity_(agent) {}
-
-    Message Start(ObjectMap &p) { 
-      return agent_activity_(p, storage_);
-    }
-  };
-
   /* KIR Delegator for Kisaragi framework */
   class KIRFunctionPolicy : public InterfacePolicy {
   private:
@@ -58,7 +43,7 @@ namespace kagami {
   };
 
   enum InterfacePolicyType {
-    kInterfaceCXX, kInterfaceIR, kInterfaceKIR
+    kInterfaceCXX, kInterfaceKIR
   };
 
   class Interface {
@@ -122,23 +107,6 @@ namespace kagami {
       policy_type_(kInterfaceCXX),
       min_arg_size_(0) {}
 
-    //Plain Function (IR Type)
-    Interface(
-      vector<IR> ir_set,
-      string id,
-      vector<string> params,
-      AgentActivity agent
-    ) :
-      policy_(new IRFunctionPolicy(ir_set, agent)),
-      id_(id),
-      token_(kTokenNull),
-      params_(params),
-      argument_mode_(kCodeNormalParam),
-      domain_(kTypeIdNull),
-      interface_type_(kInterfaceTypePlain),
-      policy_type_(kInterfaceIR),
-      min_arg_size_(0) {}
-
     Interface(
       KIR ir,
       string id,
@@ -165,17 +133,7 @@ namespace kagami {
 
       combined_scope.merge(obj_map);
 
-      switch (policy_type_) {
-      case kInterfaceCXX:
-        result = policy_->Start(combined_scope);
-        break;
-      case kInterfaceIR:
-        combined_scope[kStrUserFunc] = Object(id_);
-        result = policy_->Start(combined_scope);
-        break;
-      default:
-        break;
-      }
+      result = policy_->Start(combined_scope);
 
       return result;
     }
@@ -253,6 +211,10 @@ namespace kagami {
     Interface &SetClousureRecord(ObjectMap record) {
       closure_record_ = record;
       return *this;
+    }
+
+    ObjectMap GetClosureRecord() {
+      return closure_record_;
     }
 
     Interface &SetMinArgSize(size_t size) {
