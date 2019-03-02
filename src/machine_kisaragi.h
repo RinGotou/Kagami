@@ -118,8 +118,11 @@ namespace kagami {
     void CommandElse(ArgumentList args);
     void CommandCase(ArgumentList args);
     void CommandWhen(ArgumentList args);
+    void CommandContinueOrBreak(GenericToken token);
     void CommandConditionEnd();
     void CommandLoopEnd();
+
+    void CommandBind(ArgumentList args);
 
     void CommandReturn(ArgumentList args);
     void MachineCommands(GenericToken token, ArgumentList args);

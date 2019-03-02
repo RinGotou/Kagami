@@ -455,6 +455,30 @@ namespace kagami {
     }
   }
 
+  void Machine::CommandContinueOrBreak(GenericToken token) {
+    auto &worker = worker_stack_.top();
+    while (!worker.mode_stack.empty() && worker.mode != kModeCycle) {
+      if (worker.mode == kModeCondition || worker.mode == kModeCase) {
+        worker.condition_stack.pop();
+        worker.skipping_count += 1;
+      }
+
+      worker.GoLastMode();
+    }
+
+    if (worker.mode == kModeCycle) {
+      worker.mode = kModeCycleJump;
+      switch (token) {
+      case kTokenContinue:worker.activated_continue = true; break;
+      case kTokenBreak:worker.activated_break = true; break;
+      default:break;
+      }
+    }
+    else {
+      worker.MakeError("Invalid 'continue'");
+    }
+  }
+
   void Machine::CommandConditionEnd() {
     auto &worker = worker_stack_.top();
     worker.condition_stack.pop();
@@ -494,6 +518,34 @@ namespace kagami {
         obj_stack_.Pop();
       }
     }
+  }
+
+  void Machine::CommandBind(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    //Do not change the order!
+    auto src = FetchObject(args[1]);
+    auto dest = FetchObject(args[0]);
+    string id = dest.Cast<string>();
+    ObjectPointer ptr = obj_stack_.Find(id);
+
+    if (dest.IsRef()) {
+      dest.ManageContent(management::type::GetObjectCopy(src), src.GetTypeId());
+      return;
+    }
+
+    if (ptr != nullptr) {
+      ptr->ManageContent(management::type::GetObjectCopy(src), src.GetTypeId());
+      return;
+    }
+
+    Object obj(management::type::GetObjectCopy(src), src.GetTypeId());
+
+    if (obj_stack_.CreateObject(id, obj)) {
+      worker.MakeError("Object creation failed");
+      return;
+    }
+
+
   }
 
   void Machine::CommandReturn(ArgumentList args) {
