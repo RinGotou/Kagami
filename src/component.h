@@ -1,5 +1,5 @@
 #pragma once
-#include "module.h"
+#include "machine_kisaragi.h"
 
 namespace kagami {
   /* Runtime strategy identifier for binary operator */
@@ -44,7 +44,6 @@ namespace kagami {
     string Do(const string &str) { return str; }
   };
 
-  ///////////////////////////////////////////////////////////////////
   /* 
     Binary Operator Function Generator for plain data(rawstring type)
   */

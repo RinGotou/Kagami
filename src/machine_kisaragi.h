@@ -5,8 +5,39 @@
 #include "trace.h"
 #include "management.h"
 
+#define SET_MAP(MAP) auto &obj_map = MAP
+
+#define CONVERT_OBJECT(ID,TYPE) obj_map[ID].Cast<TYPE>()
+
+#define EXPECT_TYPE(MAP,ITEM,TYPE)                 \
+  if (!MAP.CheckTypeId(ITEM,TYPE))                 \
+    return Message(kCodeIllegalParam,              \
+    "Expected object type - " + TYPE + ".",        \
+    kStateError)
+
+#define CHECK_OBJECT_TYPE(ID,TYPEID)               \
+  EXPECT_TYPE(obj_map, ID, TYPEID)
+
+#define EXPECT(STATE,MESS)                         \
+  if (!(STATE)) return Message(kCodeIllegalParam,MESS,kStateError)
+
+#define INVALID_CALL_MSG(MSG) Message(kCodeIllegalCall, MSG, kStateError)
+
+#define INVALID_PARAM_MSG(MSG) Message(kCodeIllegalParam, MSG, kStateError)
+
+#define BAD_EXP_MSG(MSG) Message(kCodeBadExpression, MSG, kStateError)
+
 namespace kagami {
-  using CombinedCode = pair<size_t, string>;
+  template <class T>
+  shared_ptr<void> SimpleSharedPtrCopy(shared_ptr<void> target) {
+    T temp(*static_pointer_cast<T>(target));
+    return make_shared<T>(temp);
+  }
+
+  template <class T>
+  shared_ptr<void> FakeCopy(shared_ptr<void> target) {
+    return target;
+  }
 
   class MachineWorker {
   public:
@@ -98,7 +129,14 @@ namespace kagami {
   };
 
   class IRLoader {
-    
+  public:
+    bool health;
+    KIR output;
+
+    IRLoader(const char *src);
+
+  private:
+    string IndentationAndCommentProc(string target);
   };
 
   //Kisaragi Machine Class
@@ -115,7 +153,7 @@ namespace kagami {
 
     void SetSegmentInfo(ArgumentList args);
     void CommandIfOrWhile(GenericToken token, ArgumentList args);
-    void CommandElse(ArgumentList args);
+    void CommandElse();
     void CommandCase(ArgumentList args);
     void CommandWhen(ArgumentList args);
     void CommandContinueOrBreak(GenericToken token);
@@ -131,7 +169,7 @@ namespace kagami {
     void DomainAssert(ArgumentList args, bool returning, bool no_feeding);
 
     void CommandReturn(ArgumentList args);
-    void MachineCommands(GenericToken token, ArgumentList args);
+    void MachineCommands(GenericToken token, ArgumentList args, Request request);
 
     void GenerateArgs(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Generate_Normal(Interface &interface, ArgumentList args, ObjectMap &obj_map);
@@ -165,4 +203,25 @@ namespace kagami {
 
     Message Run();
   };
+
+  void Activiate();
+  void InitBaseTypes();
+  void InitContainerComponents();
+
+#if not defined(_DISABLE_SDL_)
+  void LoadSDLStuff();
+#endif
+
+#if defined(_WIN32)
+  void LoadSocketStuff();
+#else
+  //TODO:Reserved for unix socket wrapper
+  //TODO: delete macros after finish it
+#endif
+
+  std::wstring s2ws(const std::string &s);
+  std::string ws2s(const std::wstring &s);
+  bool IsStringObject(Object &obj);
+  string ParseRawString(const string &src);
+  bool IsStringFamily(Object &obj);
 }

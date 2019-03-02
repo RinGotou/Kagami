@@ -20,7 +20,7 @@ namespace kagami {
     bool health_;
     vector<Token> tokens_;
     size_t index_;
-    vector<Command> action_base_;
+    KIR action_base_;
     string error_string_;
 
     vector<string> Scanning(string target);
@@ -46,15 +46,11 @@ namespace kagami {
     Analyzer() :health_(false), index_(0) {  }
     Analyzer(size_t index) :health_(false), index_(index) {  }
 
-    Token GetMainToken() const { 
-      return tokens_.front(); 
-    }
-
     size_t get_index() const { 
       return index_; 
     }
 
-    vector<Command> GetOutput() const { 
+    KIR GetOutput() const { 
       return action_base_; 
     }
 

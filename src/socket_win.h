@@ -1,4 +1,4 @@
-#include "module.h"
+#include "machine_kisaragi.h"
 
 #if defined (_WIN32)
 namespace kagami {

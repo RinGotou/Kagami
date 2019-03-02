@@ -1,5 +1,5 @@
 #pragma once
-#include "module.h"
+#include "machine_kisaragi.h"
 
 namespace kagami {
   template <class StringType>

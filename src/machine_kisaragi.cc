@@ -1,10 +1,94 @@
 #include "machine_kisaragi.h"
 
 namespace kagami {
-  string ParseString(const string &src) {
-    string result = src;
-    if (util::IsString(result)) result = util::GetRawString(result);
-    return result;
+  IRLoader::IRLoader(const char *src) {
+    wstring buf;
+    string temp;
+    std::wifstream stream(src);
+    Analyzer analyzer;
+    Message msg;
+    size_t error_counter = 0;
+    vector<string> script_buf;
+    KIR ir;
+
+    if (!stream.good()) {
+      health = false;
+      return;
+    }
+
+    while (!stream.eof()) {
+      std::getline(stream, buf);
+      temp = ws2s(buf);
+      if (!temp.empty() && temp.back() == '\0') temp.pop_back();
+      script_buf.emplace_back(temp);
+    }
+
+    size_t size = script_buf.size();
+
+    for (size_t idx = 0; idx < size; idx += 1) {
+      if (!health) {
+        if (error_counter < MAX_ERROR_COUNT) {
+          error_counter += 1;
+        }
+        else {
+          trace::AddEvent(Message(kCodeIllegalSymbol, "Too many errors. Analyzing is stopped."));
+          break;
+        }
+      }
+
+      msg = analyzer.Make(script_buf[idx], idx).SetIndex(idx);
+
+      switch (msg.GetLevel()) {
+      case kStateError:
+        trace::AddEvent(msg);
+        health = false;
+        continue;
+        break;
+      case kStateWarning:
+        trace::AddEvent(msg);
+        break;
+      default:break;
+      }
+
+      ir = analyzer.GetOutput();
+
+      output.insert(output.end(), ir.begin(), ir.end());
+    }
+  }
+
+  /* Disposing all indentation and comments */
+  string IRLoader::IndentationAndCommentProc(string target) {
+    if (target == "") return "";
+    string data;
+    char current = 0, last = 0;
+    size_t head = 0, tail = 0;
+    bool exempt_blank_char = true;
+    bool string_processing = false;
+    auto toString = [](char t) ->string {return string().append(1, t); };
+
+    for (size_t count = 0; count < target.size(); ++count) {
+      current = target[count];
+      auto type = kagami::util::GetTokenType(toString(current));
+      if (type != TokenType::kTokenTypeBlank && exempt_blank_char) {
+        head = count;
+        exempt_blank_char = false;
+      }
+      if (current == '\'' && last != '\\') string_processing = !string_processing;
+      if (!string_processing && current == '#') {
+        tail = count;
+        break;
+      }
+      last = target[count];
+    }
+    if (tail > head) data = target.substr(head, tail - head);
+    else data = target.substr(head, target.size() - head);
+    if (data.front() == '#') return "";
+
+    while (!data.empty() &&
+      util::GetTokenType(toString(data.back())) == kTokenTypeBlank) {
+      data.pop_back();
+    }
+    return data;
   }
 
   Object Machine::FetchInterfaceObject(string id, string domain) {
@@ -40,6 +124,13 @@ namespace kagami {
           }
         }
         else {
+          obj = management::GetConstantObject(is_domain ? arg.domain.data : arg.data);
+
+          if (obj.Get() != nullptr) {
+            if (is_domain) domain_type_id = obj.GetTypeId();
+            return true;
+          }
+
           obj = is_domain ?
             FetchInterfaceObject(arg.domain.data, kTypeIdNull) :
             FetchInterfaceObject(arg.data, domain_type_id);
@@ -245,6 +336,7 @@ namespace kagami {
     worker.origin_idx = stoul(args[0].data);
     worker.logic_idx = worker.idx;
     worker.last_command = static_cast<GenericToken>(stol(args[1].data));
+    
   }
 
   void Machine::CommandIfOrWhile(GenericToken token, ArgumentList args) {
@@ -270,7 +362,7 @@ namespace kagami {
             state = (stol(state_str) != 0);
             break;
           case kTokenTypeString:
-            state = (ParseString(state_str).size() > 0);
+            state = (ParseRawString(state_str).size() > 0);
 
             break;
           default:
@@ -329,7 +421,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandElse(ArgumentList args) {
+  void Machine::CommandElse() {
     auto &worker = worker_stack_.top();
     if (!worker.condition_stack.empty()) {
       if (worker.condition_stack.top() == true) {
@@ -611,7 +703,7 @@ namespace kagami {
       return;
     }
 
-    string str = ParseString(str_obj.Cast<string>());
+    string str = ParseRawString(str_obj.Cast<string>());
     auto methods = management::type::GetMethods(obj.GetTypeId());
     Object ret_obj(util::MakeBoolean(find_in_vector(str, methods)));
 
@@ -696,12 +788,70 @@ namespace kagami {
     }
   }
 
-  void Machine::MachineCommands(GenericToken token, ArgumentList args) {
+  void Machine::MachineCommands(GenericToken token, ArgumentList args, Request request) {
+    auto worker = worker_stack_.top();
+
     switch (token) {
     case kTokenSegment:
       SetSegmentInfo(args);
       break;
-
+    case kTokenBind:
+      CommandBind(args);
+      break;
+    case kTokenExpList:
+      ExpList(args);
+      break;
+    case kTokenInitialArray:
+      InitArray(args);
+      break;
+    case kTokenReturn:
+      CommandReturn(args);
+      break;
+    case kTokenTypeId:
+      CommandTypeId(args);
+      break;
+    case kTokenDir:
+      CommandMethods(args);
+      break;
+    case kTokenExist:
+      CommandExist(args);
+      break;
+    case kTokenFn:
+      InitFunctionCatching(args);
+      break;
+    case kTokenCase:
+      CommandCase(args);
+      break;
+    case kTokenWhen:
+      CommandWhen(args);
+      break;
+    case kTokenAssert:
+    case kTokenAssertR:
+      DomainAssert(args, token == kTokenAssertR, request.option.no_feeding);
+      break;
+    case kTokenEnd:
+      if (worker.mode == kModeCycle || worker.mode == kModeCycleJump) {
+        CommandLoopEnd();
+      }
+      else if (worker.mode == kModeCase || worker.mode == kModeCaseJump) {
+        CommandConditionEnd();
+      }
+      else if (worker.mode == kModeCondition || worker.mode == kModeNextCondition) {
+        CommandConditionEnd();
+      }
+      break;
+    case kTokenContinue:
+    case kTokenBreak:
+      CommandContinueOrBreak(token);
+      break;
+    case kTokenElse:
+      CommandElse();
+      break;
+    case kTokenIf:
+    case kTokenElif:
+    case kTokenWhile:
+      CommandIfOrWhile(token, args);
+      break;
     default:
       break;
     }
@@ -921,7 +1071,7 @@ namespace kagami {
 
       if (command.first.type == kRequestCommand 
         && !util::IsOperator(command.first.head_command)) {
-        MachineCommands(command.first.head_command, command.second);
+        MachineCommands(command.first.head_command, command.second, command.first);
 
         if (worker.deliver) {
           msg = worker.GetMsg();
@@ -945,7 +1095,7 @@ namespace kagami {
           obj_map.insert(NamedObject(kStrObject, domain_obj));
         }
         else {
-          ObjectPointer func_obj_ptr = management::FindObject(command.first.head_interface);
+          ObjectPointer func_obj_ptr = obj_stack_.Find(command.first.head_interface);
           if (func_obj_ptr != nullptr) {
             if (func_obj_ptr->GetTypeId() == kTypeIdFunction) {
               interface = func_obj_ptr->Cast<Interface>();
@@ -1006,5 +1156,60 @@ namespace kagami {
     worker_stack_.pop();
 
     return msg;
+  }
+
+  /* string/wstring convertor */
+#if defined(_WIN32) && defined(_MSC_VER)
+  //from MSDN
+  std::wstring s2ws(const std::string& s) {
+    auto slength = static_cast<int>(s.length()) + 1;
+    auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    auto *buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
+  }
+
+  std::string ws2s(const std::wstring& s) {
+    int len;
+    int slength = (int)s.length() + 1;
+    len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
+    std::string r(len, '\0');
+    WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
+    return r;
+  }
+#else
+  //from https://www.yasuhisay.info/interface/20090722/1248245439
+  std::wstring s2ws(const std::string& s) {
+    if (s.empty()) return wstring();
+    size_t length = s.size();
+    wchar_t *wc = (wchar_t*)malloc(sizeof(wchar_t)* (length + 2));
+    mbstowcs(wc, s.c_str(), s.length() + 1);
+    std::wstring str(wc);
+    free(wc);
+    return str;
+  }
+
+  std::string ws2s(const std::wstring& s) {
+    if (s.empty()) return string();
+    size_t length = s.size();
+    char *c = (char*)malloc(sizeof(char)* length * 2);
+    wcstombs(c, s.c_str(), s.length() + 1);
+    std::string result(c);
+    free(c);
+    return result;
+  }
+#endif
+
+  bool IsStringObject(Object &obj) {
+    auto id = obj.GetTypeId();
+    return (id == kTypeIdRawString || id == kTypeIdString);
+  }
+
+  string ParseRawString(const string &src) {
+    string result = src;
+    if (util::IsString(result)) result = util::GetRawString(result);
+    return result;
   }
 }

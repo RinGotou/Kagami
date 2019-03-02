@@ -2,16 +2,6 @@
 
 namespace kagami {
   namespace management {
-    //for hatuki machine
-    ObjectStack &GetObjectStack() {
-      static ObjectStack base;
-      return base;
-    }
-
-    list<ObjectContainer> &GetContainerPool() {
-      return GetObjectStack().GetBase();
-    }
-
     ObjectContainer &GetConstantBase() {
       static ObjectContainer base;
       return base;
@@ -59,32 +49,6 @@ namespace kagami {
       return base;
     }
 
-    Object *FindObject(string id) {
-      Object *object = nullptr;
-      ObjectStack &base = GetObjectStack();
-      ObjectContainer &const_base = GetConstantBase();
-
-      object = base.Find(id);
-
-      //TODO:constant write lock
-      if (object == nullptr) {
-        object = const_base.Find(id);
-      }
-
-      return object;
-    }
-
-    ObjectContainer &GetCurrentContainer() {
-      return GetContainerPool().back();
-    }
-
-    Object *CreateObject(string id, Object object) {
-      if (GetConstantBase().Find(id) != nullptr) return nullptr;
-      ObjectStack &base = GetObjectStack();
-      if (base.CreateObject(id, object) == false) return nullptr;
-      return base.Find(id);
-    }
-
     Object *CreateConstantObject(string id, Object &object) {
       ObjectContainer &base = GetConstantBase();
 
@@ -99,16 +63,16 @@ namespace kagami {
       return CreateConstantObject(id, object);
     }
 
-    ObjectContainer &CreateContainer() {
-      auto &base = GetObjectStack();
-      base.Push();
-      return base.GetCurrent();
-    }
+    Object GetConstantObject(string id) {
+      ObjectContainer &base = GetConstantBase();
+      auto ptr = base.Find(id);
 
-    bool DisposeManager() {
-      auto &base = GetObjectStack();
-      base.Pop();
-      return true;
+      if (ptr != nullptr) {
+        Object obj(type::GetObjectCopy(*ptr), ptr->GetTypeId());
+        return obj;
+      }
+
+      return Object();
     }
 
     bool NeedEndToken(GenericToken token) {

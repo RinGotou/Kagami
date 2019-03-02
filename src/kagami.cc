@@ -1,4 +1,4 @@
-#include "module.h"
+#include "machine_kisaragi.h"
 #include "suzu_ap.h"
 
 //Argument Processor

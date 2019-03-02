@@ -609,10 +609,29 @@ namespace kagami {
   Message Analyzer::Make(string target, size_t index) {
     vector<string> spilted_string = Scanning(target);
     Message msg = Tokenizer(spilted_string);
+
     this->index_ = index;
     if (msg.GetCode() >= kCodeSuccess) {
       msg = Parser();
     }
+
+    if (!health_) return Message(kCodeBadExpression, error_string_, kStateError);
+
+    Request request(kTokenSegment);
+    ArgumentList args;
+    
+    args.emplace_back(
+      Argument(to_string(index_), kArgumentNormal, kTokenTypeInt)
+    );
+
+    int code = static_cast<int>(util::GetGenericToken(tokens_.front().first));
+
+    args.emplace_back(
+      Argument(to_string(code), kArgumentNormal, kTokenTypeInt)
+    );
+
+    action_base_.emplace_front(std::make_pair(request, args));
+
     return msg;
   }
 }

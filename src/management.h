@@ -8,17 +8,12 @@ namespace kagami {
     void CreateNewInterface(Interface interface);
     Interface FindInterface(string id, string domain = kTypeIdNull);
 
-    ContainerPool &GetContainerPool();
-    ObjectContainer &GetCurrentContainer();
-    ObjectContainer &CreateContainer();
-    Object *FindObject(string id);
-    Object *CreateObject(string id, Object object);
     void CreateGenericInterface(Interface temp);
-    bool DisposeManager();
     bool NeedEndToken(GenericToken token);
     Interface GetGenericInterface(GenericToken token);
     Object *CreateConstantObject(string id, Object &object);
     Object *CreateConstantObject(string id, Object &&object);
+    Object GetConstantObject(string id);
 
     namespace type {
       vector<string> GetMethods(string name);
