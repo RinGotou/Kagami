@@ -116,6 +116,8 @@ namespace kagami {
     void SetSegmentInfo(ArgumentList args);
     void CommandIfOrWhile(GenericToken token, ArgumentList args);
     void CommandElse(ArgumentList args);
+    void CommandCase(ArgumentList args);
+    void CommandWhen(ArgumentList args);
     void CommandConditionEnd();
     void CommandLoopEnd();
 

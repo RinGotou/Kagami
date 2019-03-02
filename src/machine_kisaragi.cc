@@ -366,6 +366,95 @@ namespace kagami {
     }
   }
 
+  void Machine::CommandCase(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+
+    if (!args.empty()) {
+      Object obj = FetchObject(args[0]);
+      string type_id = obj.GetTypeId();
+
+      if (!compare(type_id, { kTypeIdRawString,kTypeIdString })){
+        worker.MakeError("Non-string object is not supported by case");
+        return;
+      }
+
+      Object sample_obj = (management::type::GetObjectCopy(obj), type_id);
+      obj_stack_.Push();
+      obj_stack_.CreateObject(kStrCase, sample_obj);
+      worker.SwitchToMode(kModeCaseJump);
+      worker.condition_stack.push(false);
+    }
+    else {
+      worker.MakeError("Empty argument list");
+      return;
+    }
+  }
+
+  void Machine::CommandWhen(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    bool result = false;
+
+    if (worker.condition_stack.empty()) {
+      worker.MakeError("Unexpected 'when'");
+      return;
+    }
+
+    if (!compare(worker.mode, { kModeCase,kModeCaseJump })) {
+      worker.MakeError("Unexpected 'when'");
+      return;
+    }
+
+    if (worker.mode == kModeCase) {
+      worker.mode = kModeCaseJump;
+      return;
+    }
+    
+    if (worker.condition_stack.top()) {
+      return;
+    }
+
+    if (!args.empty()) {
+      ObjectPointer ptr = obj_stack_.Find(kStrCase);
+      string content;
+      bool found = false;
+      bool error = false;
+
+      if (ptr == nullptr) {
+        worker.MakeError("Unexpected 'when'");
+        return;
+      }
+
+      if (!compare(ptr->GetTypeId(), { kTypeIdRawString,kTypeIdString })) {
+        worker.MakeError("Non-string object is not supported by when");
+        return;
+      }
+
+      content = ptr->Cast<string>();
+
+      for (auto &unit : args) {
+        Object obj = FetchObject(unit);
+
+        if (!compare(obj.GetTypeId(), { kTypeIdRawString,kTypeIdString })) {
+          worker.MakeError("Non-string object is not supported by when");
+          error = true;
+          break;
+        }
+
+        if (obj.Cast<string>() == content) {
+          found = true;
+          break;
+        }
+      }
+
+      if (error) return;
+
+      if (found) {
+        worker.mode = kModeCase;
+        worker.condition_stack.top() = true;
+      }
+    }
+  }
+
   void Machine::CommandConditionEnd() {
     auto &worker = worker_stack_.top();
     worker.condition_stack.pop();
@@ -425,7 +514,17 @@ namespace kagami {
       obj_stack_.Pop();
       worker_stack_.top().return_stack.push(Object());
     }
-    //TODO:Multiple arg
+    else {
+      shared_ptr<ObjectArray> obj_array(make_shared<ObjectArray>());
+      for (auto it = args.begin(); it != args.end(); ++it) {
+        obj_array->emplace_back(FetchObject(*it));
+      }
+      Object ret_obj(obj_array, kTypeIdArray);
+      worker_stack_.pop();
+      ir_stack_.pop_back();
+      obj_stack_.Pop();
+      worker_stack_.top().return_stack.push(ret_obj);
+    }
   }
 
   void Machine::MachineCommands(GenericToken token, ArgumentList args) {
