@@ -29,7 +29,7 @@ namespace kagami {
 
     for (size_t idx = 0; idx < size; idx += 1) {
       if (!health) {
-        if (error_counter < MAX_ERROR_COUNT) {
+        if (error_counter >= MAX_ERROR_COUNT) {
           error_counter += 1;
         }
         else {
@@ -1045,8 +1045,8 @@ namespace kagami {
     worker_stack_.pop();
   }
 
-  Message Machine::Run() {
-    if (ir_stack_.empty()) return Message();
+  void Machine::Run() {
+    if (ir_stack_.empty()) return;
     StateLevel level = kStateNormal;
     StateCode code = kCodeSuccess;
     bool interface_error = false;
@@ -1203,8 +1203,6 @@ namespace kagami {
 
     obj_stack_.Pop();
     worker_stack_.pop();
-
-    return msg;
   }
 
   /* string/wstring convertor */

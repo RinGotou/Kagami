@@ -202,7 +202,7 @@ namespace kagami {
       obj_stack_.SetPreviousStack(prev);
     }
 
-    Message Run();
+    void Run();
   };
 
   void Activiate();
