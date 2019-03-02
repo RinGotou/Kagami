@@ -774,8 +774,9 @@ namespace kagami {
     bool result = true;
 
     if (args.size() == 2) {
-      Object obj = MakeObject(args[0]);
       Object str_obj = MakeObject(args[1]);
+      Object obj = MakeObject(args[0]);
+      
       string target = ParseRawString(str_obj.Cast<string>());
       vector<string> methods = management::type::GetMethods(obj.GetTypeId());
       Object ret_obj(util::MakeBoolean(find_in_vector<string>(target, methods)));

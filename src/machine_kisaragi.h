@@ -128,6 +128,7 @@ namespace kagami {
     void CommandExist(ArgumentList args);
     void ExpList(ArgumentList args);
     void InitArray(ArgumentList args);
+    void DomainAssert(ArgumentList args, bool returning, bool no_feeding);
 
     void CommandReturn(ArgumentList args);
     void MachineCommands(GenericToken token, ArgumentList args);

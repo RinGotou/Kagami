@@ -602,12 +602,20 @@ namespace kagami {
       worker.MakeError("Argument error");
     }
 
+    //Do not change the order
     Object str_obj = FetchObject(args[1]);
     Object obj = FetchObject(args[0]);
     
     if (!compare(str_obj.GetTypeId(), { kTypeIdRawString,kTypeIdString })) {
-
+      worker.MakeError("Invalid method id");
+      return;
     }
+
+    string str = ParseString(str_obj.Cast<string>());
+    auto methods = management::type::GetMethods(obj.GetTypeId());
+    Object ret_obj(util::MakeBoolean(find_in_vector(str, methods)));
+
+    worker.return_stack.push(ret_obj);
   }
 
   void Machine::ExpList(ArgumentList args) {
@@ -632,7 +640,30 @@ namespace kagami {
     worker.return_stack.push(obj);
   }
 
+  void Machine::DomainAssert(ArgumentList args, bool returning, bool no_feeding) {
+    auto &worker = worker_stack_.top();
+    Object obj = FetchObject(args[0], no_feeding);
+    string id = FetchObject(args[1]).Cast<string>();
+    auto methods = management::type::GetMethods(obj.GetTypeId());
+    bool result = find_in_vector(id, methods);
 
+    if (!result) {
+      worker.MakeError("Method/member is not found - " + id);
+      return;
+    }
+
+    if (returning) {
+      auto interface = management::FindInterface(id, obj.GetTypeId());
+
+      if (!interface.Good()) {
+        worker.MakeError("Method is not found - " + id);
+        return;
+      }
+
+      Object ret_obj(make_shared<Interface>(interface), kTypeIdFunction);
+      worker.return_stack.push(ret_obj);
+    }
+  }
 
   void Machine::CommandReturn(ArgumentList args) {
     if (worker_stack_.size() <= 1) {
