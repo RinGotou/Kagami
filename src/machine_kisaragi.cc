@@ -1,7 +1,7 @@
 #include "machine_kisaragi.h"
 
 namespace kagami {
-  IRLoader::IRLoader(const char *src) {
+  IRLoader::IRLoader(const char *src) : health(true) {
     wstring buf;
     string temp;
     std::wifstream stream(src);
@@ -29,7 +29,7 @@ namespace kagami {
 
     for (size_t idx = 0; idx < size; idx += 1) {
       if (!health) {
-        if (error_counter >= MAX_ERROR_COUNT) {
+        if (error_counter < MAX_ERROR_COUNT) {
           error_counter += 1;
         }
         else {
