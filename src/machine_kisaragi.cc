@@ -1191,7 +1191,10 @@ namespace kagami {
     }
 
     if (worker->error) {
-      trace::AddEvent(Message(kCodeBadExpression, worker->error_string, kStateError));
+      trace::AddEvent(
+        Message(kCodeBadExpression, worker->error_string, kStateError)
+          .SetIndex(worker->origin_idx)
+      );
     }
 
     if (interface_error) {
