@@ -93,7 +93,7 @@ namespace kagami {
 #else
   const string kPlatformType   = "Linux";
 #endif
-  const string kEngineName     = "Kagami Project (on Kisaragi IR Framework)";
+  const string kEngineName     = "Kagami Project";
   const string kMaintainer     = "Suzu Nakamura";
   const string kCopyright      = "Copyright(c) 2019";
 
