@@ -526,15 +526,21 @@ namespace kagami {
     auto src = FetchObject(args[1]);
     auto dest = FetchObject(args[0]);
     string id = dest.Cast<string>();
-    ObjectPointer ptr = obj_stack_.Find(id);
-
+    
     if (dest.IsRef()) {
       dest.ManageContent(management::type::GetObjectCopy(src), src.GetTypeId());
       return;
     }
 
+    ObjectPointer ptr = obj_stack_.Find(id);
+
     if (ptr != nullptr) {
       ptr->ManageContent(management::type::GetObjectCopy(src), src.GetTypeId());
+      return;
+    }
+
+    if (util::GetTokenType(id, true) != kTokenTypeGeneric) {
+      worker.MakeError("Invalid object id");
       return;
     }
 
@@ -544,9 +550,89 @@ namespace kagami {
       worker.MakeError("Object creation failed");
       return;
     }
-
-
   }
+
+  void Machine::CommandTypeId(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+
+    if (args.size() > 1) {
+      shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+
+      for (auto &unit : args) {
+        base->emplace_back(Object(FetchObject(unit).GetTypeId()));
+      }
+
+      Object obj(base, kTypeIdArray);
+      obj.SetConstructorFlag();
+      worker.return_stack.push(obj);
+    }
+    else if (args.size() == 1) {
+      worker.return_stack.push(Object(FetchObject(args[0]).GetTypeId()));
+    }
+    else {
+      worker.return_stack.push(Object(kTypeIdNull));
+    }
+  }
+
+  void Machine::CommandMethods(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+
+    if (args.size() != 1) {
+      worker.MakeError("Argument error");
+      return;
+    }
+
+    Object obj = FetchObject(args[0]);
+    auto methods = management::type::GetMethods(obj.GetTypeId());
+    shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+
+    for (auto &unit : methods) {
+      base->emplace_back(Object(make_shared<string>(unit), kTypeIdString));
+    }
+
+    Object ret_obj(base, kTypeIdArray);
+    ret_obj.SetConstructorFlag();
+    worker.return_stack.push(ret_obj);
+  }
+
+  void Machine::CommandExist(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+
+    if (args.size() != 2) {
+      worker.MakeError("Argument error");
+    }
+
+    Object str_obj = FetchObject(args[1]);
+    Object obj = FetchObject(args[0]);
+    
+    if (!compare(str_obj.GetTypeId(), { kTypeIdRawString,kTypeIdString })) {
+
+    }
+  }
+
+  void Machine::ExpList(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    if (!args.empty()) {
+      worker.return_stack.push(FetchObject(args.back()));
+    }
+  }
+
+  void Machine::InitArray(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+
+    if (!args.empty()) {
+      for (auto &unit : args) {
+        base->emplace_back(FetchObject(unit));
+      }
+    }
+
+    Object obj(base, kTypeIdArray);
+    obj.SetConstructorFlag();
+    worker.return_stack.push(obj);
+  }
+
+
 
   void Machine::CommandReturn(ArgumentList args) {
     if (worker_stack_.size() <= 1) {

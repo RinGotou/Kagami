@@ -123,6 +123,11 @@ namespace kagami {
     void CommandLoopEnd();
 
     void CommandBind(ArgumentList args);
+    void CommandTypeId(ArgumentList args);
+    void CommandMethods(ArgumentList args);
+    void CommandExist(ArgumentList args);
+    void ExpList(ArgumentList args);
+    void InitArray(ArgumentList args);
 
     void CommandReturn(ArgumentList args);
     void MachineCommands(GenericToken token, ArgumentList args);
