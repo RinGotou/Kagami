@@ -1,7 +1,9 @@
-# Kagami
+# Kagami Project
 
 ## What's this?
-It's a simple and tiny experimental script language. The name of this project is from Japanese kanji "鏡".
+It's a project of experimental script language. The name of this project is from Japanese kanji "鏡"(かがみ).
+
+This project contains a language interpreter, "如月"(きさらぎ, kisaragi).
 
 ## About repo branch
 "master" is complete version of code in "testing" branch.IT'S NOT REAL STABLE BRANCH!
@@ -9,13 +11,6 @@ It's a simple and tiny experimental script language. The name of this project is
 "x.x-stable" is the stable version of interpreter.
 
 "testing" is current developing branch.
-
-## Features
-[√] Dynamic and weak typing language with reflection and closure support
-
-[√] Stack-based Backend Machine
-
-[√] Based on C++14
 
 ## What does it look like?
 ```

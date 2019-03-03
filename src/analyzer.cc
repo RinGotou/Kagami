@@ -611,7 +611,7 @@ namespace kagami {
     Message msg = Tokenizer(spilted_string);
 
     this->index_ = index;
-    if (msg.GetCode() >= kCodeSuccess) {
+    if (msg.GetLevel() != kStateError) {
       msg = Parser();
     }
 

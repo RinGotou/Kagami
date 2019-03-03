@@ -18,6 +18,7 @@
 #include <iterator>
 #include <list>
 #include <fstream>
+#include <chrono>
 #include <thread>
 #include <mutex>
 
@@ -82,6 +83,7 @@ namespace kagami {
   using std::ostream;
   using std::list;
   using std::thread;
+  using std::mutex;
   using std::lock_guard;
 #if defined (_WIN32)
   using suzu::TCPClient;
@@ -103,23 +105,10 @@ namespace kagami {
 
   /* Message state code for Message class */
   enum StateCode {
-    kCodeWhen = 18,
-    kCodeCase = 17,
-    kCodeBreak = 16,
-    kCodeContinue = 15,
-    kCodeAutoSize = 14,
-    kCodeFunctionCatching = 13,
-    kCodeAutoFill = 12,
-    kCodeNormalParam = 11,
-    kCodeHeadPlaceholder = 10,
-    kCodeReturn = 9,
-    kCodeConditionElse = 8,
-    kCodeConditionElif = 7,
-    kCodeConditionIf = 6,
-    kCodeObject = 5,
-    kCodeEnd = 4,
-    kCodeWhile = 3,
-    kCodeQuit = 2,
+    kCodeAutoSize = 4,
+    kCodeAutoFill = 3,
+    kCodeNormalParam = 2,
+    kCodeObject = 1,
     kCodeSuccess = 0,
     kCodeIllegalParam = -1,
     kCodeIllegalCall = -2,
