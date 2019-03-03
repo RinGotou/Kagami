@@ -294,6 +294,7 @@ namespace kagami {
 
     ObjectStack &SetPreviousStack(ObjectStack &prev) {
       prev_ = &prev;
+      return *this;
     }
 
     ObjectContainer &GetCurrent() { return base_.back(); }
