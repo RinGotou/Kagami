@@ -2,8 +2,10 @@
 
 namespace kagami {
   namespace management {
-    ObjectContainer &GetConstantBase() {
-      static ObjectContainer base;
+    ///////////////////////////////////////////////////////////////
+    //Inteface management
+    map<GenericToken, Interface> &GetGenericInterfaceBase() {
+      static map<GenericToken, Interface> base;
       return base;
     }
 
@@ -39,13 +41,24 @@ namespace kagami {
       return Interface();
     }
 
-    vector<Interface> &GetInterfaceBase() {
-      static vector<Interface> base;
-      return base;
+    void CreateGenericInterface(Interface temp) {
+      GetGenericInterfaceBase().insert(pair<GenericToken, Interface>(
+        temp.GetToken(), temp));
     }
 
-    map<GenericToken, Interface> &GetGenericInterfaceBase() {
-      static map<GenericToken, Interface> base;
+    Interface GetGenericInterface(GenericToken token) {
+      auto &base = GetGenericInterfaceBase();
+      map<GenericToken, Interface>::iterator it = base.find(token);
+      if (it != base.end()) return it->second;
+      return Interface();
+    }
+    ////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////
+    //Constant object management
+
+    ObjectContainer &GetConstantBase() {
+      static ObjectContainer base;
       return base;
     }
 
@@ -75,21 +88,7 @@ namespace kagami {
       return Object();
     }
 
-    bool NeedEndToken(GenericToken token) {
-      return (token == kTokenIf || token == kTokenWhile || token == kTokenCase);
-    }
-
-    void CreateGenericInterface(Interface temp) {
-      GetGenericInterfaceBase().insert(pair<GenericToken, Interface>(
-        temp.GetToken(), temp));
-    }
-
-    Interface GetGenericInterface(GenericToken token) {
-      auto &base = GetGenericInterfaceBase();
-      map<GenericToken, Interface>::iterator it = base.find(token);
-      if (it != base.end()) return it->second;
-      return Interface();
-    }
+    /////////////////////////////////////////////////////////////
 
     namespace type {
       map <string, ObjectPolicy> &GetPlannerBase() {

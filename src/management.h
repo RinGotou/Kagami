@@ -7,10 +7,9 @@ namespace kagami {
 
     void CreateNewInterface(Interface interface);
     Interface FindInterface(string id, string domain = kTypeIdNull);
-
     void CreateGenericInterface(Interface temp);
-    bool NeedEndToken(GenericToken token);
     Interface GetGenericInterface(GenericToken token);
+
     Object *CreateConstantObject(string id, Object &object);
     Object *CreateConstantObject(string id, Object &&object);
     Object GetConstantObject(string id);

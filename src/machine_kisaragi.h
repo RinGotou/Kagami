@@ -187,7 +187,10 @@ namespace kagami {
     ObjectStack obj_stack_;
     
   public:
-    Machine() {}
+    Machine() :
+      ir_stack_(),
+      worker_stack_(),
+      obj_stack_() {}
 
     Machine(const Machine &rhs) :
       ir_stack_(rhs.ir_stack_),
@@ -197,7 +200,10 @@ namespace kagami {
     Machine(const Machine &&rhs) :
       Machine(rhs) {}
 
-    Machine(KIR &ir) {
+    Machine(KIR &ir) :
+      ir_stack_(),
+      worker_stack_(),
+      obj_stack_() {
       ir_stack_.push_back(&ir);
       Preprocessor();
     }
