@@ -20,6 +20,7 @@ namespace kagami {
   private:
     CopyingPolicy copying_policy_;
     vector<string> methods_;
+
   public:
     ObjectPolicy() :
       copying_policy_(nullptr),
@@ -43,6 +44,7 @@ namespace kagami {
   };
 
   class Object {
+  private:
     struct TargetObject { 
       ObjectPointer ptr; 
     };

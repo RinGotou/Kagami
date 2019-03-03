@@ -73,12 +73,16 @@ namespace kagami {
   }
 
   Object *ObjectStack::Find(string id) {
-    if (base_.empty()) return nullptr;
+    if (base_.empty() && prev_ == nullptr) return nullptr;
     ObjectPointer ptr = nullptr;
     
     for (auto it = base_.rbegin(); it != base_.rend(); ++it) {
       ptr = it->Find(id);
       if (ptr != nullptr) break;
+    }
+
+    if (prev_ != nullptr) {
+      ptr = prev_->Find(id);
     }
 
     return ptr;

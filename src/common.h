@@ -18,6 +18,8 @@
 #include <iterator>
 #include <list>
 #include <fstream>
+#include <thread>
+#include <mutex>
 
 //if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
@@ -79,6 +81,8 @@ namespace kagami {
   using std::wstring;
   using std::ostream;
   using std::list;
+  using std::thread;
+  using std::lock_guard;
 #if defined (_WIN32)
   using suzu::TCPClient;
   using suzu::TCPServer;
