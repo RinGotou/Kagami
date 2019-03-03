@@ -28,6 +28,8 @@
 #define BAD_EXP_MSG(MSG) Message(kCodeBadExpression, MSG, kStateError)
 
 namespace kagami {
+  using CombinedCodeline = pair<size_t, string>;
+
   template <class T>
   shared_ptr<void> SimpleSharedPtrCopy(shared_ptr<void> target) {
     T temp(*static_pointer_cast<T>(target));

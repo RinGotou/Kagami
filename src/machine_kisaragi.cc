@@ -2,13 +2,14 @@
 
 namespace kagami {
   IRLoader::IRLoader(const char *src) : health(true) {
+    size_t error_counter = 0;
+    size_t index_counter = 1;
     wstring buf;
     string temp;
     std::wifstream stream(src);
     Analyzer analyzer;
     Message msg;
-    size_t error_counter = 0;
-    vector<string> script_buf;
+    list<CombinedCodeline> script_buf;
     KIR ir;
 
     if (!stream.good()) {
@@ -22,12 +23,11 @@ namespace kagami {
       if (!temp.empty() && temp.back() == '\0') temp.pop_back();
       temp = IndentationAndCommentProc(temp);
       if (temp.empty()) continue;
-      script_buf.emplace_back(temp);
+      script_buf.push_back(CombinedCodeline(index_counter, temp));
+      index_counter += 1;
     }
 
-    size_t size = script_buf.size();
-
-    for (size_t idx = 0; idx < size; idx += 1) {
+    for (auto it = script_buf.begin(); it != script_buf.end(); ++it) {
       if (!health) {
         if (error_counter < MAX_ERROR_COUNT) {
           error_counter += 1;
@@ -38,7 +38,7 @@ namespace kagami {
         }
       }
 
-      msg = analyzer.Make(script_buf[idx], idx).SetIndex(idx);
+      msg = analyzer.Make(it->second, it->first).SetIndex(it->first);
 
       switch (msg.GetLevel()) {
       case kStateError:
@@ -277,7 +277,7 @@ namespace kagami {
         }
       }
 
-      interface.SetClousureRecord(scope_record);
+      interface.SetClosureRecord(scope_record);
     }
 
     if (closure) {
@@ -990,6 +990,13 @@ namespace kagami {
       Command &command = ir[worker.idx];
 
       if (command.first.head_command == kTokenFn) {
+        if (!catching) {
+          if (nest_counter > 0) {
+            worker.MakeError("Invalid function definition");
+            break;
+          }
+        }
+
         if (catching) {
           nest_counter += 1; //ignore closure block
           worker.idx += 1;
@@ -1028,23 +1035,24 @@ namespace kagami {
     if (worker.error) {
       trace::AddEvent(Message(kCodeBadExpression, worker.error_string, kStateError));
     }
+    else {
+      KIR not_catched;
 
-    KIR not_catched;
+      for (size_t idx = 0; idx < ir.size(); idx += 1) {
+        auto it = catched_block.find(idx);
 
-    for (size_t idx = 0; idx < ir.size(); idx += 1) {
-      auto it = catched_block.find(idx);
+        if (it != catched_block.end()) {
+          idx = it->second;
+          continue;
+        }
 
-      if (it != catched_block.end()) {
-        idx = it->second;
-        continue;
+        not_catched.emplace_back(ir[idx]);
       }
 
-      not_catched.emplace_back(ir[idx]);
+      ir.swap(not_catched);
+
+      worker_stack_.pop();
     }
-
-    ir.swap(not_catched);
-
-    worker_stack_.pop();
   }
 
   void Machine::Run() {
