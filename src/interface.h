@@ -208,7 +208,7 @@ namespace kagami {
       return (policy_ != nullptr && argument_mode_ != kCodeIllegalParam);
     }
 
-    Interface &SetClousureRecord(ObjectMap record) {
+    Interface &SetClosureRecord(ObjectMap record) {
       closure_record_ = record;
       return *this;
     }

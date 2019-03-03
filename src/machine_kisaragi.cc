@@ -2,6 +2,7 @@
 
 namespace kagami {
   IRLoader::IRLoader(const char *src) : health(true) {
+    bool comment_block = false;
     size_t error_counter = 0;
     size_t index_counter = 1;
     wstring buf;
@@ -22,7 +23,25 @@ namespace kagami {
       temp = ws2s(buf);
       if (!temp.empty() && temp.back() == '\0') temp.pop_back();
       temp = IndentationAndCommentProc(temp);
-      if (temp.empty()) continue;
+
+      if (temp == kStrCommentBegin) {
+        comment_block = true;
+        index_counter += 1;
+        continue;
+      }
+
+      if (comment_block) {
+        if (temp == kStrCommentEnd) {
+          comment_block = false;
+        }
+
+        index_counter += 1;
+        continue;
+      }
+
+      if (temp.empty()) { 
+        continue; 
+      }
       script_buf.push_back(CombinedCodeline(index_counter, temp));
       index_counter += 1;
     }
