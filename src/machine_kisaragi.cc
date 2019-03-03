@@ -94,6 +94,12 @@ namespace kagami {
     return data;
   }
 
+  void Machine::RecoverLastState() {
+    worker_stack_.pop();
+    ir_stack_.pop_back();
+    obj_stack_.Pop();
+  }
+
   Object Machine::FetchInterfaceObject(string id, string domain) {
     Object obj;
     auto interface = management::FindInterface(id, domain);
@@ -777,15 +783,11 @@ namespace kagami {
     else if (args.size() == 1) {
       Object src_obj = FetchObject(args[0]);
       Object ret_obj(management::type::GetObjectCopy(src_obj), src_obj.GetTypeId());
-      worker_stack_.pop();
-      ir_stack_.pop_back();
-      obj_stack_.Pop();
+      RecoverLastState();
       worker_stack_.top().return_stack.push(ret_obj);
     }
     else if (args.size() == 0) {
-      worker_stack_.pop();
-      ir_stack_.pop_back();
-      obj_stack_.Pop();
+      RecoverLastState();
       worker_stack_.top().return_stack.push(Object());
     }
     else {
@@ -794,9 +796,7 @@ namespace kagami {
         obj_array->emplace_back(FetchObject(*it));
       }
       Object ret_obj(obj_array, kTypeIdArray);
-      worker_stack_.pop();
-      ir_stack_.pop_back();
-      obj_stack_.Pop();
+      RecoverLastState();
       worker_stack_.top().return_stack.push(ret_obj);
     }
   }
@@ -1063,15 +1063,17 @@ namespace kagami {
     MachineWorker *worker = &worker_stack_.top();
     size_t size = ir->size();
 
+    auto refresh_tick = [&]() ->void {
+      ir = ir_stack_.back();
+      size = ir->size();
+      worker = &worker_stack_.top();
+    };
+
     //Main loop of current thread
     while (worker->idx < size || worker_stack_.size() > 1) {
       if (worker->idx == size) {
-        worker_stack_.pop();
-        ir_stack_.pop_back();
-        obj_stack_.Pop();
-        ir = ir_stack_.back();
-        size = ir->size();
-        worker = &worker_stack_.top();
+        RecoverLastState();
+        refresh_tick();
         worker->return_stack.push(Object());
         worker->idx += 1;
         continue;
@@ -1109,9 +1111,7 @@ namespace kagami {
         MachineCommands(command->first.head_command, command->second, command->first);
 
         if (command->first.head_command == kTokenReturn) {
-          ir = ir_stack_.back();
-          size = ir->size();
-          worker = &worker_stack_.top();
+          refresh_tick();
         }
 
         if (worker->deliver) {
@@ -1137,17 +1137,16 @@ namespace kagami {
           obj_map.insert(NamedObject(kStrObject, domain_obj));
         }
         else {
-          ObjectPointer func_obj_ptr = obj_stack_.Find(command->first.head_interface);
-          if (func_obj_ptr != nullptr) {
-            if (func_obj_ptr->GetTypeId() == kTypeIdFunction) {
+          interface = management::FindInterface(command->first.head_interface);
+
+          if (!interface.Good()) {
+            ObjectPointer func_obj_ptr = obj_stack_.Find(command->first.head_interface);
+            if (func_obj_ptr != nullptr && func_obj_ptr->GetTypeId() == kTypeIdFunction) {
               interface = func_obj_ptr->Cast<Interface>();
             }
             else {
               worker->MakeError(command->first.head_interface + " is not a function object.");
             }
-          }
-          else {
-            interface = management::FindInterface(command->first.head_interface);
           }
         }
       }

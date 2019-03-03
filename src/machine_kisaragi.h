@@ -142,6 +142,8 @@ namespace kagami {
   //Kisaragi Machine Class
   class Machine {
   private:
+    void RecoverLastState();
+
     Object FetchInterfaceObject(string id, string domain);
     Object FetchObject(Argument &arg, bool checking = false);
 
