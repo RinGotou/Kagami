@@ -92,7 +92,7 @@ fn main()
     value = convert(input('array size? (q=exit) \n>'))
     
     if(type(value) == kStringTypeInteger)
-      func.call(value)
+      func(value)
     end
     
     println('-----------------------\n')

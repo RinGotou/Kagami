@@ -932,6 +932,8 @@ namespace kagami {
     }
 
     temp_list.clear();
+
+    obj_map.insert(NamedObject(params.back(), Object(va_base, kTypeIdArray)));
     
     auto it = ++params.rbegin();
 

@@ -233,99 +233,6 @@ namespace kagami {
     return Message().SetObject(Object(dest_base, kTypeIdArray));
   }
 
-  bool Generating_AutoSize(Interface &interface, ObjectArray arg_list, ObjectMap &target_map) {
-    if (arg_list.size() != interface.GetParameters().size()) return false;
-    auto ent_params = interface.GetParameters();
-    auto va_arg_head = ent_params.back();
-
-    deque<Object> temp;
-
-    while (arg_list.size() >= ent_params.size() - 1) {
-      temp.emplace_back(arg_list.back());
-      arg_list.pop_back();
-    }
-
-    shared_ptr<ObjectArray> va_base = make_shared<ObjectArray>();
-
-    for (auto it = temp.begin(); it != temp.end(); ++it) {
-      va_base->emplace_back(*it);
-    }
-
-    temp.clear();
-    temp.shrink_to_fit();
-
-    target_map.insert(NamedObject(va_arg_head, Object(va_base, kTypeIdArray)));
-
-    auto it = ent_params.rbegin()++;
-
-    for (; it != ent_params.rend(); ++it) {
-      target_map.insert(NamedObject(*it, arg_list.back()));
-      arg_list.pop_back();
-    }
-
-    if (interface.GetInterfaceType() == kInterfaceTypeMethod) {
-      target_map.insert(NamedObject(kStrObject, arg_list.back()));
-      arg_list.pop_back();
-    }
-
-    return true;
-  }
-
-  bool Generating_AutoFill(Interface &interface, ObjectArray arg_list, ObjectMap &target_map) {
-    if (arg_list.size() > interface.GetParameters().size()) return false;
-    auto ent_params = interface.GetParameters();
-
-    while (ent_params.size() > arg_list.size()) {
-      target_map.insert(NamedObject(ent_params.back(), Object()));
-      ent_params.pop_back();
-    }
-
-    for (auto it = ent_params.rbegin(); it != ent_params.rend(); ++it) {
-      target_map.insert(NamedObject(*it, arg_list.back()));
-      arg_list.pop_back();
-    }
-
-    return true;
-  }
-
-  bool Generating(Interface &interface, ObjectArray arg_list, ObjectMap &target_map) {
-    if (arg_list.size() != interface.GetParameters().size()) return false;
-    auto ent_params = interface.GetParameters();
-
-    for (auto it = ent_params.rbegin(); it != ent_params.rend(); ++it) {
-      target_map.insert(NamedObject(*it, arg_list.back()));
-      arg_list.pop_back();
-    }
-
-    return true;
-  }
-
-  Message FunctionCall(ObjectMap &p) {
-    auto &interface = p.Cast<Interface>(kStrObject);
-    auto &arg_list = p.Cast<ObjectArray>("arg");
-    ObjectMap target_map;
-    bool state;
-    
-    if (!interface.Good()) {
-      return Message(kCodeIllegalCall, "Bad interface - " + interface.GetId() + ".", kStateError);
-    }
-
-    switch (interface.GetArgumentMode()) {
-    case kCodeAutoSize:
-      state = Generating_AutoSize(interface, arg_list, target_map);
-      break;
-    case kCodeAutoFill:
-      state = Generating_AutoFill(interface, arg_list, target_map);
-    default:
-      state = Generating(interface, arg_list, target_map);
-      break;
-    }
-
-    EXPECT(state, "Argument error.");
-
-    return interface.Start(target_map);
-  }
-
   Message FunctionCompare(ObjectMap &p) {
     auto &rhs = p[kStrRightHandSide];
     auto &lhs = p[kStrObject].Cast<Interface>();
@@ -349,7 +256,6 @@ namespace kagami {
       .InitMethods(
         {
           Interface(FunctionGetId, "", "id"),
-          Interface(FunctionCall, "arg", "call", kCodeAutoSize),
           Interface(FunctionGetParameters, "", "params"),
           Interface(FunctionCompare, kStrRightHandSide, kStrCompare)
         }
