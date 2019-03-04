@@ -80,6 +80,38 @@ namespace kagami {
       return *this;
     }
 
+    Message &SetObject(bool value) {
+      object_ = make_shared<Object>(
+        make_shared<bool>(value), kTypeIdBool
+      );
+      code_ = kCodeObject;
+      return *this;
+    }
+
+    Message &SetObject(long value) {
+      object_ = make_shared<Object>(
+        make_shared<long>(value), kTypeIdInt
+        );
+      code_ = kCodeObject;
+      return *this;
+    }
+
+    Message &SetObject(double value) {
+      object_ = make_shared<Object>(
+        make_shared<double>(value), kTypeIdFloat
+        );
+      code_ = kCodeObject;
+      return *this;
+    }
+
+    Message &SetObject(string value) {
+      object_ = make_shared<Object>(
+        make_shared<string>(value), kTypeIdString
+        );
+      code_ = kCodeObject;
+      return *this;
+    }
+
     Message &SetObject(Object &&object) {
       return this->SetObject(object);
     }

@@ -30,6 +30,7 @@
     <ClInclude Include="..\..\src\management.h" />
     <ClInclude Include="..\..\src\message.h" />
     <ClInclude Include="..\..\src\object.h" />
+    <ClInclude Include="..\..\src\plain_type.h" />
     <ClInclude Include="..\..\src\socket_win.h" />
     <ClInclude Include="..\..\src\trace.h" />
     <ClInclude Include="..\..\src\util.h" />
@@ -45,6 +46,7 @@
     <ClCompile Include="..\..\src\machine_kisaragi.cc" />
     <ClCompile Include="..\..\src\management.cc" />
     <ClCompile Include="..\..\src\object.cc" />
+    <ClCompile Include="..\..\src\plain_type.cc" />
     <ClCompile Include="..\..\src\socket_win.cc" />
     <ClCompile Include="..\..\src\trace.cc" />
     <ClCompile Include="..\..\src\util.cc" />

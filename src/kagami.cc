@@ -41,6 +41,7 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
 
   if (loader.health) {
     Activiate();
+    InitPlainTypeComponents();
     InitBaseTypes();
     InitContainerComponents();
 

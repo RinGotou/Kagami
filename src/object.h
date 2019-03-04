@@ -82,7 +82,7 @@ namespace kagami {
 
     Object(string str) :
       ptr_(std::make_shared<string>(str)),
-      type_id_(kTypeIdRawString),
+      type_id_(kTypeIdString),
       ref_(false),
       constructor_(false) {}
 

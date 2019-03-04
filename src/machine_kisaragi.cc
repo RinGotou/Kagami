@@ -119,6 +119,32 @@ namespace kagami {
     obj_stack_.Pop();
   }
 
+  Object Machine::FetchPlainObject(string value) {
+    auto type = util::GetTokenType(value, true);
+    Object obj;
+    switch (type) {
+    case kTokenTypeInt:
+      obj.ManageContent(make_shared<long>(stol(value)), kTypeIdInt); 
+      break;
+    case kTokenTypeFloat:
+      obj.ManageContent(make_shared<double>(stod(value)), kTypeIdFloat);
+      break;
+    case kTokenTypeBool:
+      obj.ManageContent(make_shared<bool>(value == kStrTrue), kTypeIdBool);
+      break;
+    case kTokenTypeString:
+      obj.ManageContent(make_shared<string>(ParseRawString(value)), kTypeIdString);
+      break;
+    case kTokenTypeGeneric:
+      obj.ManageContent(make_shared<string>(value), kTypeIdString);
+      break;
+    default:
+      break;
+    }
+
+    return obj;
+  }
+
   Object Machine::FetchInterfaceObject(string id, string domain) {
     Object obj;
     auto interface = management::FindInterface(id, domain);
@@ -138,7 +164,7 @@ namespace kagami {
     auto fetching = [&](ArgumentType type, bool is_domain)->bool {
       switch (type) {
       case kArgumentNormal:
-        obj.ManageContent(make_shared<string>(arg.data), kTypeIdRawString);
+        obj = FetchPlainObject(arg.data);
         break;
 
       case kArgumentObjectPool:
@@ -386,36 +412,13 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     if (args.size() == 1) {
       Object obj = FetchObject(args[0]);
-      bool state = false;
 
-      if (obj.GetTypeId() == kTypeIdRawString) {
-        string state_str = obj.Cast<string>();
-
-        if (state_str == kStrTrue) {
-          state = true;
-        }
-        else if (state_str == kStrFalse) {
-          state = false;
-        }
-        else {
-          auto type = util::GetTokenType(state_str, true);
-
-          switch (type) {
-          case kTokenTypeInt:
-            state = (stol(state_str) != 0);
-            break;
-          case kTokenTypeString:
-            state = (ParseRawString(state_str).size() > 0);
-
-            break;
-          default:
-            break;
-          }
-        }
+      if (obj.GetTypeId() != kTypeIdBool) {
+        worker.MakeError("Invalid state value.");
+        return;
       }
-      else if (obj.GetTypeId() != kTypeIdNull) {
-        state = true;
-      }
+
+      bool state = obj.Cast<bool>();
 
       if (token == kTokenIf) {
         worker.SwitchToMode(state ? kModeCondition : kModeNextCondition);
@@ -511,8 +514,8 @@ namespace kagami {
       Object obj = FetchObject(args[0]);
       string type_id = obj.GetTypeId();
 
-      if (!compare(type_id, { kTypeIdRawString,kTypeIdString })){
-        worker.MakeError("Non-string object is not supported by case");
+      if (!util::IsPlainType(type_id)) {
+        worker.MakeError("Non-plain object is not supported by case");
         return;
       }
 
@@ -553,38 +556,39 @@ namespace kagami {
 
     if (!args.empty()) {
       ObjectPointer ptr = obj_stack_.Find(kStrCaseObj);
-      string content;
+      string type_id = ptr->GetTypeId();
       bool found = false;
-      bool error = false;
 
       if (ptr == nullptr) {
         worker.MakeError("Unexpected 'when'");
         return;
       }
 
-      if (!compare(ptr->GetTypeId(), { kTypeIdRawString,kTypeIdString })) {
-        worker.MakeError("Non-string object is not supported by when");
+      if (!util::IsPlainType(type_id)) {
+        worker.MakeError("Non-plain object is not supported by when");
         return;
       }
 
-      content = ptr->Cast<string>();
+      for (auto it = args.rbegin(); it != args.rend(); ++it) {
+        Object obj = FetchObject(*it);
 
-      for (auto &unit : args) {
-        Object obj = FetchObject(unit);
+        if (obj.GetTypeId() != type_id) continue;
 
-        if (!compare(obj.GetTypeId(), { kTypeIdRawString,kTypeIdString })) {
-          worker.MakeError("Non-string object is not supported by when");
-          error = true;
-          break;
+        if (type_id == kTypeIdInt) {
+          found = (ptr->Cast<long>() == obj.Cast<long>());
+        }
+        else if (type_id == kTypeIdFloat) {
+          found = (ptr->Cast<double>() == obj.Cast<double>());
+        }
+        else if (type_id == kTypeIdString) {
+          found = (ptr->Cast<string>() == obj.Cast<string>());
+        }
+        else if (type_id == kTypeIdBool) {
+          found = (ptr->Cast<bool>() == obj.Cast<bool>());
         }
 
-        if (obj.Cast<string>() == content) {
-          found = true;
-          break;
-        }
+        if (found) break;
       }
-
-      if (error) return;
 
       if (found) {
         worker.mode = kModeCase;
@@ -744,14 +748,14 @@ namespace kagami {
     Object str_obj = FetchObject(args[1]);
     Object obj = FetchObject(args[0]);
     
-    if (!compare(str_obj.GetTypeId(), { kTypeIdRawString,kTypeIdString })) {
+    if (str_obj.GetTypeId() != kTypeIdString) {
       worker.MakeError("Invalid method id");
       return;
     }
 
-    string str = ParseRawString(str_obj.Cast<string>());
+    string str = str_obj.Cast<string>();
     auto methods = management::type::GetMethods(obj.GetTypeId());
-    Object ret_obj(util::MakeBoolean(find_in_vector(str, methods)));
+    Object ret_obj(make_shared<bool>(find_in_vector(str, methods)), kTypeIdBool);
 
     worker.return_stack.push(ret_obj);
   }
@@ -1237,7 +1241,7 @@ namespace kagami {
     }
 
     if (interface_error) {
-      trace::AddEvent(msg);
+      trace::AddEvent(msg.SetIndex(worker->origin_idx));
     }
 
     obj_stack_.Pop();
@@ -1287,11 +1291,6 @@ namespace kagami {
     return result;
   }
 #endif
-
-  bool IsStringObject(Object &obj) {
-    auto id = obj.GetTypeId();
-    return (id == kTypeIdRawString || id == kTypeIdString);
-  }
 
   string ParseRawString(const string &src) {
     string result = src;

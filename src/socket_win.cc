@@ -3,13 +3,13 @@
 #if defined (_WIN32)
 namespace kagami {
   Message NewTCPClient(ObjectMap &p) {
-    EXPECT(IsStringObject(p["port"]), "Invalid port string.");
-    EXPECT(IsStringObject(p["addr"]), "Invalid address string.");
-    EXPECT(IsStringObject(p["buf_size"]), "Invalid buffer size.");
+    EXPECT_TYPE(p, "port", kTypeIdString);
+    EXPECT_TYPE(p, "addr", kTypeIdString);
+    EXPECT_TYPE(p, "buf_size", kTypeIdInt);
 
-    string port = ParseRawString(p["port"].Cast<string>());
-    string addr = ParseRawString(p["addr"].Cast<string>());
-    size_t buf_size = stol(p["buf_size"].Cast<string>());
+    string port = p["port"].Cast<string>();
+    string addr = p["addr"].Cast<string>();
+    size_t buf_size = p["buf_size"].Cast<long>();
 
     shared_ptr<TCPClient> client_ptr(
       new TCPClient(port, addr, buf_size)
@@ -22,18 +22,22 @@ namespace kagami {
 
   Message TCPClientStart(ObjectMap &p) {
     auto &client = p[kStrObject].Cast<TCPClient>();
-    return Message(util::MakeBoolean(client.StartClient()));
+    bool result = client.StartClient();
+    return Message().SetObject(result);
   }
 
   Message GetWSALastError(ObjectMap &p) {
-    return Message(to_string(WSAGetLastError()));
+    return Message().SetObject(
+      Object(make_shared<long>(WSAGetLastError()), kTypeIdInt)
+    );
   }
 
   Message NewTCPServer(ObjectMap &p) {
-    EXPECT(IsStringObject(p["port"]), "Invalid port string.");
-    EXPECT(IsStringObject(p["buf_size"]), "Invalid buffer size.");
-    string port = ParseRawString(p["port"].Cast<string>());
-    size_t buf_size = stol(p["buf_size"].Cast<string>());
+    EXPECT_TYPE(p, "port", kTypeIdString);
+    EXPECT_TYPE(p, "buf_size", kTypeIdInt);
+
+    string port = p["port"].Cast<string>();
+    size_t buf_size = p["buf_size"].Cast<long>();
 
     shared_ptr<TCPServer> server_ptr(
       new TCPServer(port, buf_size)
@@ -55,7 +59,9 @@ namespace kagami {
       );
     }
 
-    return Message(util::MakeBoolean(server.StartServer(backlog)));
+    bool result = server.StartServer();
+
+    return Message().SetObject(result);
   }
 
   Message TCPServerAccept(ObjectMap &p) {
@@ -77,7 +83,7 @@ namespace kagami {
   Message WinSockStartup(ObjectMap &p) {
     WSADATA wsa_data;
     int result = WSAStartup(MAKEWORD(2, 2), &wsa_data);
-    return Message(util::MakeBoolean(result == 0));
+    return Message().SetObject(result == 0);
   }
 
   Message WinSockCleanup(ObjectMap &p) {

@@ -4,11 +4,11 @@
 namespace kagami {
   template <class Tx>
   Message TCPConnectorSend(ObjectMap &p) {
-    EXPECT(IsStringObject(p["content"]), "Invalid content string.");
+    EXPECT_TYPE(p, "content", kTypeIdString);
     Tx &tx = p[kStrObject].Cast<Tx>();
     TCPConnector *connector = dynamic_cast<TCPConnector *>(&tx);
-    string content = ParseRawString(p["content"].Cast<string>());
-    return Message(util::MakeBoolean(connector->Send(content)));
+    string content = p["content"].Cast<string>();
+    return Message().SetObject(connector->Send(content));
   }
 
   template<class Tx>
@@ -17,9 +17,9 @@ namespace kagami {
     Tx &tx = p[kStrObject].Cast<Tx>();
     TCPConnector *connector = dynamic_cast<TCPConnector *>(&tx);
     string dest_buf;
-    string result = util::MakeBoolean(connector->Receive(dest_buf));
+    bool result = connector->Receive(dest_buf);
     dest.ManageContent(make_shared<string>(dest_buf), kTypeIdString);
-    return Message(result);
+    return Message().SetObject(result);
   }
 
   template <class Tx>
@@ -34,7 +34,7 @@ namespace kagami {
   Message TCPConnectorGood(ObjectMap &p) {
     Tx &tx = p[kStrObject].Cast<Tx>();
     TCPConnector *connector = dynamic_cast<TCPConnector *>(&tx);
-    return Message(util::MakeBoolean(connector->Good()));
+    return Message().SetObject(connector->Good());
   }
 
   template <class Tx>

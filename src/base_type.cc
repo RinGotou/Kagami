@@ -2,37 +2,7 @@
 
 namespace kagami {
   bool IsStringFamily(Object &obj) {
-    return compare(obj.GetTypeId(), { kTypeIdRawString,kTypeIdString,kTypeIdWideString });
-  }
-  
-  //RawString
-  Message RawStringGetElement(ObjectMap &p) {
-    EXPECT_TYPE(p, "index", kTypeIdRawString);
-
-    size_t idx = stol(p.Cast<string>("index"));
-
-    const auto makeStrToken = [](char target)->string {
-      return string().append("'").append(1, target).append("'");
-    };
-
-    string data = ParseRawString(p.Cast<string>(kStrObject));
-    size_t size = data.size();
-
-    EXPECT(idx < size - 1, "Subscript is out of range.");
-
-    return Message(makeStrToken(data.at(idx)));
-  }
-
-  Message RawStringGetSize(ObjectMap &p) {
-    auto str = ParseRawString(p.Cast<string>(kStrObject));
-    return Message(to_string(str.size()));
-  }
-
-  Message RawStringPrint(ObjectMap &p) {
-    auto str = ParseRawString(p.Cast<string>(kStrObject));
-    std::cout << str;
-    
-    return Message();
+    return compare(obj.GetTypeId(), { kTypeIdString,kTypeIdWideString });
   }
 
   //String
@@ -56,7 +26,7 @@ namespace kagami {
         .SetConstructorFlag();
     }
     else {
-      string output = ParseRawString(obj.Cast<string>());
+      string output = obj.Cast<string>();
 
       base.ManageContent(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
@@ -72,24 +42,19 @@ namespace kagami {
     string type_id = rhs.GetTypeId();
     bool result = false;
 
-    if (type_id == kTypeIdRawString) {
-      string rhs_str = ParseRawString(rhs.Cast<string>());
-      result = (lhs == rhs_str);
-    }
-    else if (type_id == kTypeIdString) {
+    if (type_id == kTypeIdString) {
       string rhs_str = rhs.Cast<string>();
       result = (lhs == rhs_str);
     }
 
-    return Message(util::MakeBoolean(result));
+    return Message().SetObject(result);
   }
 
   //InStream
   Message InStreamConsturctor(ObjectMap &p) {
-    EXPECT(IsStringObject(p["path"]), 
-      "Illegal path.");
+    EXPECT_TYPE(p, "path", kTypeIdString);
 
-    string path = ParseRawString(p.Cast<string>("path"));
+    string path = p.Cast<string>("path");
 
     shared_ptr<ifstream> ifs = 
       make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
@@ -115,18 +80,16 @@ namespace kagami {
 
   Message InStreamEOF(ObjectMap &p) {
     ifstream &ifs = p.Cast<ifstream>(kStrObject);
-    return Message(util::MakeBoolean(ifs.eof()));
+    return Message().SetObject(ifs.eof());
   }
 
   //OutStream
   Message OutStreamConstructor(ObjectMap &p) {
-    EXPECT(IsStringObject(p["path"]), 
-      "Illegal path.");
-    EXPECT(IsStringObject(p["mode"]), 
-      "Illegal mode option.");
+    EXPECT_TYPE(p, "path", kTypeIdString);
+    EXPECT_TYPE(p, "mode", kTypeIdString);
 
-    string path = ParseRawString(p.Cast<string>("path"));
-    string mode = ParseRawString(p.Cast<string>("mode"));
+    string path = p.Cast<string>("path");
+    string mode = p.Cast<string>("mode");
 
     shared_ptr<ofstream> ofs;
     bool append = (mode == "append");
@@ -146,56 +109,51 @@ namespace kagami {
 
   Message OutStreamWrite(ObjectMap &p) {
     ofstream &ofs = p.Cast<ofstream>(kStrObject);
-    Message msg = Message(kStrTrue);
+    bool result = true;
 
     if (!ofs.good()) {
-      return Message(kStrFalse);
-    }
-
-    if (p.CheckTypeId("str",kTypeIdRawString)) {
-      string output = ParseRawString(p.Cast<string>("str"));
-      ofs << output;
-    }
-    else if (p.CheckTypeId("str",kTypeIdString)) {
-      string origin = p.Cast<string>("str");
-      ofs << origin;
+      result = false;
     }
     else {
-      msg = Message(kStrFalse);
+      if (p.CheckTypeId("str", kTypeIdString)) {
+        string origin = p.Cast<string>("str");
+        ofs << origin;
+      }
+      else {
+        result = false;
+      }
     }
-
-    return msg;
+    
+    return Message().SetObject(result);
   }
 
   //regex
   Message RegexConstructor(ObjectMap &p) {
-    EXPECT(IsStringObject(p["pattern"]), 
-      "Illegal pattern string.");
+    EXPECT_TYPE(p, "pattern", kTypeIdString);
 
-    string pattern_string = ParseRawString(p.Cast<string>("pattern"));
+    string pattern_string = p.Cast<string>("pattern");
     shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
 
     return Message().SetObject(Object(reg, kTypeIdRegex));
   }
 
   Message RegexMatch(ObjectMap &p) {
-    EXPECT(IsStringObject(p["str"]), 
-      "Illegal target string.");
+    EXPECT_TYPE(p, "str", kTypeIdString);
 
-    string str = ParseRawString(p.Cast<string>("str"));
+    string str = p.Cast<string>("str");
     auto &pat = p.Cast<regex>(kStrObject);
+    bool result = regex_match(str, pat);
 
-    return Message(util::MakeBoolean(regex_match(str, pat)));
+
+    return Message().SetObject(result);
   }
 
   //wstring
   Message WideStringContructor(ObjectMap &p) {
+    EXPECT_TYPE(p, "raw_string", kTypeIdString);
     Object obj = p["raw_string"];
 
-    EXPECT(IsStringObject(obj), 
-      "String constructor can't accept this object.");
-
-    string output = ParseRawString(obj.Cast<string>());
+    string output = obj.Cast<string>();
     wstring wstr = s2ws(output);
 
     return Message()
@@ -212,7 +170,7 @@ namespace kagami {
       result = (lhs == rhs_wstr);
     }
 
-    return Message(util::MakeBoolean(result));
+    return Message().SetObject(result);
   }
 
   //Function
@@ -246,7 +204,7 @@ namespace kagami {
       result = (lhs == rhs_interface);
     }
     
-    return Message(util::MakeBoolean(result));
+    return Message().SetObject(result);
   }
 
   void InitBaseTypes() {
@@ -258,15 +216,6 @@ namespace kagami {
           Interface(FunctionGetId, "", "id"),
           Interface(FunctionGetParameters, "", "params"),
           Interface(FunctionCompare, kStrRightHandSide, kStrCompare)
-        }
-    );
-
-    NewTypeSetup(kTypeIdRawString, SimpleSharedPtrCopy<string>)
-      .InitMethods(
-        {
-          Interface(RawStringPrint, "", "__print"),
-          Interface(RawStringGetElement, "index", "__at"),
-          Interface(RawStringGetSize, "", "size")
         }
     );
 

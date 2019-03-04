@@ -91,6 +91,9 @@ namespace kagami {
   using suzu::TCPConnector;
   using suzu::WSockInfo;
 #endif
+
+  using Byte = unsigned int;
+
   /* Application Info */
   const string kInterpreterVersion = "2.0";
   const string kPatchName          = "Colorless";
@@ -105,6 +108,7 @@ namespace kagami {
 
   /* Message state code for Message class */
   enum StateCode {
+    kCodeInterface = 5,
     kCodeAutoSize = 4,
     kCodeAutoFill = 3,
     kCodeNormalParam = 2,
@@ -223,9 +227,10 @@ namespace kagami {
   const string kTypeIdNull            = "null";
   const string kTypeIdInt             = "int";
   const string kTypeIdFloat           = "float";
+  const string kTypeIdBool            = "bool";
+  const string kTypeIdByte            = "byte";
   const string kTypeIdString          = "string";
   const string kTypeIdWideString      = "wstring";
-  const string kTypeIdRawString       = "rawstring";
   const string kTypeIdArray           = "array";
   const string kTypeIdInStream        = "instream";
   const string kTypeIdOutStream       = "outstream";

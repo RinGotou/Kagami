@@ -12,7 +12,7 @@
 #define EXPECT_TYPE(MAP,ITEM,TYPE)                 \
   if (!MAP.CheckTypeId(ITEM,TYPE))                 \
     return Message(kCodeIllegalParam,              \
-    "Expected object type - " + TYPE + ".",        \
+    "Expect object type - " + TYPE + ".",          \
     kStateError)
 
 #define CHECK_OBJECT_TYPE(ID,TYPEID)               \
@@ -146,6 +146,7 @@ namespace kagami {
   private:
     void RecoverLastState();
 
+    Object FetchPlainObject(string value);
     Object FetchInterfaceObject(string id, string domain);
     Object FetchObject(Argument &arg, bool checking = false);
 
@@ -217,6 +218,7 @@ namespace kagami {
   };
 
   void Activiate();
+  void InitPlainTypeComponents();
   void InitBaseTypes();
   void InitContainerComponents();
 
@@ -233,7 +235,6 @@ namespace kagami {
 
   std::wstring s2ws(const std::string &s);
   std::string ws2s(const std::wstring &s);
-  bool IsStringObject(Object &obj);
   string ParseRawString(const string &src);
   bool IsStringFamily(Object &obj);
 }

@@ -324,5 +324,12 @@ namespace kagami {
     bool IsAlpha(char c) {
       return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
     }
+
+    bool IsPlainType(string type_id) {
+      return type_id == kTypeIdInt ||
+        type_id == kTypeIdFloat ||
+        type_id == kTypeIdString ||
+        type_id == kTypeIdBool;
+    }
   }
 }

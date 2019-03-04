@@ -5,7 +5,8 @@ namespace kagami {
   template <class StringType>
   Message GetStringFamilySize(ObjectMap &p) {
     StringType &str = p.Cast<StringType>(kStrObject);
-    return Message(to_string(str.size()));
+    long size = static_cast<long>(str.size());
+    return Message().SetObject(size);
   }
   
   template <class StringType>
@@ -14,10 +15,10 @@ namespace kagami {
 
     string type_id = p[kStrObject].GetTypeId();
 
-    size_t start = stol(p.Cast<string>("start"));
-    size_t size = stol(p.Cast<string>("size"));
+    size_t start = p.Cast<long>("start");
+    size_t size = p.Cast<long>("size");
 
-    EXPECT((start >= 0 && size <= int(str.size()) - start),
+    EXPECT((start >= 0 && size <= static_cast<long>(str.size() - start)),
       "Illegal index or size.");
 
     StringType output = str.substr(start, size);
@@ -31,7 +32,7 @@ namespace kagami {
     string type_id = p[kStrObject].GetTypeId();
 
     size_t size = str.size();
-    size_t idx = stol(p.Cast<string>("index"));
+    size_t idx = p.Cast<long>("index");
 
     EXPECT((idx > size && idx >= 0), "Index out of range.");
 
@@ -94,9 +95,7 @@ namespace kagami {
   template <class StreamType>
   Message StreamFamilyState(ObjectMap &p) {
     StreamType &stream = p.Cast<StreamType>(kStrObject);
-    string temp;
-    temp = util::MakeBoolean(stream.good());
-    return Message(temp);
+    return Message().SetObject(stream.good());
   }
 
   /* Convert string to destination type */

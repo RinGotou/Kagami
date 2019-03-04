@@ -39,7 +39,7 @@ namespace kagami {
     EXPECT_TYPE(p, kStrRightHandSide, kTypeIdIterator);
     auto &rhs = p[kStrRightHandSide].Cast<IteratorPackage>();
     auto &lhs = p[kStrObject].Cast<IteratorPackage>();
-    return Message(util::MakeBoolean(lhs.Compare(rhs)));
+    return Message().SetObject(lhs.Compare(rhs));
   }
 
   Message IteratorGet(ObjectMap &p) {
@@ -51,7 +51,7 @@ namespace kagami {
     shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
 
     if (!p["size"].Null()) {
-      size_t size = stol(p.Cast<string>("size"));
+      size_t size = p.Cast<long>("size");
       EXPECT(size > 0, "Illegal array size.");
 
       Object obj;
@@ -69,11 +69,10 @@ namespace kagami {
   }
 
   Message ArrayGetElement(ObjectMap &p) {
-    EXPECT_TYPE(p, "index", kTypeIdRawString);
+    EXPECT_TYPE(p, "index", kTypeIdInt);
 
     ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
-    //DEBUG_EVENT("(ArrayGetElement Interface)Index:" + p.Cast<string>("index"));
-    size_t idx = stol(p.Cast<string>("index"));
+    size_t idx = p.Cast<long>("index");
     size_t size = base.size();
 
     EXPECT(idx < size, "Subscript is out of range. - " + to_string(idx));
@@ -83,13 +82,12 @@ namespace kagami {
 
   Message ArrayGetSize(ObjectMap &p) {
     auto &obj = p[kStrObject];
-    return Message(to_string(obj.Cast<ObjectArray>().size()));
+    long size = static_cast<long>(obj.Cast<ObjectArray>().size());
+    return Message().SetObject(Object(make_shared<long>(size), kTypeIdInt));
   }
 
   Message ArrayEmpty(ObjectMap &p) {
-    return Message(
-      util::MakeBoolean(p[kStrObject].Cast<ObjectArray>().empty())
-    );
+    return Message().SetObject(p[kStrObject].Cast<ObjectArray>().empty());
   }
 
   Message ArrayPush(ObjectMap &p) {
@@ -102,10 +100,9 @@ namespace kagami {
 
   Message ArrayPop(ObjectMap &p) {
     ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
-
     if (!base.empty()) base.pop_back();
 
-    return Message().SetObject(util::MakeBoolean(base.empty()));
+    return Message().SetObject(base.empty());
   }
 
   Message ArrayPrint(ObjectMap &p) {

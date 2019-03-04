@@ -25,5 +25,6 @@ namespace kagami {
     string MakeBoolean(bool origin);
     bool IsDigit(char c);
     bool IsAlpha(char c);
+    bool IsPlainType(string type_id);
   };
 }
