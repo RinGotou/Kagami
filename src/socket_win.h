@@ -41,7 +41,9 @@ namespace kagami {
   Message WSockInfoResultCode(ObjectMap &p) {
     Tx &tx = p[kStrObject].Cast<Tx>();
     WSockInfo *info = dynamic_cast<WSockInfo *>(&tx);
-    return Message(to_string(info->GetLastResultCode()));
+    return Message().SetObject(
+      static_cast<long>(info->GetLastResultCode())
+    );
   }
 }
 #endif

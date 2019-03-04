@@ -100,38 +100,4 @@ namespace kagami {
   using Command = pair<Request, ArgumentList>;
   using KIR = deque<Command>;
   using KIRPointer = KIR * ;
-
-  class IR {
-  private:
-    vector<Command> container_;
-    size_t index_;
-    Token main_token_;
-  public:
-    IR() :
-      index_(0) {}
-
-    IR(vector<Command> commands,
-      size_t index = 0,
-      Token main_token = Token()) :
-      index_(index) {
-
-      container_ = commands;
-      this->main_token_ = main_token;
-    }
-
-    vector<Command> &GetContains() {
-      return container_;
-    }
-
-    size_t GetIndex() const {
-      return index_;
-    }
-
-    Token GetMainToken() const {
-      return main_token_;
-    }
-  };
-
-  /* Origin index and string data */
-  using StringUnit = pair<size_t, string>;
 }
