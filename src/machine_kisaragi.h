@@ -156,6 +156,7 @@ namespace kagami {
       std::initializer_list<GenericToken> terminators = {});
 
     void SetSegmentInfo(ArgumentList args);
+    void CommandSwap(ArgumentList args);
     void CommandIfOrWhile(GenericToken token, ArgumentList args);
     void CommandElse();
     void CommandCase(ArgumentList args);

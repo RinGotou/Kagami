@@ -145,6 +145,7 @@ namespace kagami {
 
   /* Reserved keywords mark/IR framework commands */
   enum GenericToken {
+    kTokenSwap,
     kTokenRequire,
     kTokenUsing,
     kTokenSegment,
@@ -220,6 +221,8 @@ namespace kagami {
 
   /* Embedded type identifier strings */
   const string kTypeIdNull            = "null";
+  const string kTypeIdInt             = "int";
+  const string kTypeIdFloat           = "float";
   const string kTypeIdString          = "string";
   const string kTypeIdWideString      = "wstring";
   const string kTypeIdRawString       = "rawstring";
@@ -272,14 +275,11 @@ namespace kagami {
     kStrGreater        = ">",
     kStrLess           = "<",
     kStrUserFunc       = "__func",
-    kStrRetValue       = "__ret",
     kStrArray          = "__array",
-    kStrTypeAssert     = "__type_assert",
-    kStrTypeAssertR    = "__type_assert_r",
     kStrTypeId         = "typeid",
     kStrDir            = "dir",
     kStrExist          = "exist",
-    kStrQuit           = "quit",
+    kStrSwap           = "swap",
     kStrTrue           = "true",
     kStrFalse          = "false",
     kStrMember         = "__member",

@@ -374,6 +374,14 @@ namespace kagami {
     worker.last_command = static_cast<GenericToken>(stol(args[1].data));
   }
 
+  void Machine::CommandSwap(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    auto &right = FetchObject(args[1]).Deref();
+    auto &left = FetchObject(args[0]).Deref();
+
+    left.swap(right);
+  }
+
   void Machine::CommandIfOrWhile(GenericToken token, ArgumentList args) {
     auto &worker = worker_stack_.top();
     if (args.size() == 1) {
@@ -824,6 +832,9 @@ namespace kagami {
     auto &worker = worker_stack_.top();
 
     switch (token) {
+    case kTokenSwap:
+      CommandSwap(args);
+      break;
     case kTokenSegment:
       SetSegmentInfo(args);
       break;

@@ -105,6 +105,18 @@ namespace kagami {
       return *this;
     }
 
+    Object &swap(Object &obj) {
+      ptr_.swap(obj.ptr_);
+      std::swap(type_id_, obj.type_id_);
+      std::swap(ref_, obj.ref_);
+      std::swap(constructor_, obj.constructor_);
+      return *this;
+    }
+
+    Object &swap(Object &&obj) {
+      return swap(obj);
+    }
+
     shared_ptr<void> Get() {
       if (ref_) return GetTargetObject()->Get();
       return ptr_;

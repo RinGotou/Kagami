@@ -1,16 +1,6 @@
 #include "component.h"
 
 namespace kagami {
-  void SwapObject(Object &A, Object &B) {
-    auto left_ptr = A.Get();
-    auto right_ptr = B.Get();
-    auto left_type = A.GetTypeId();
-    auto right_type = B.GetTypeId();
-
-    A = Object(right_ptr, right_type);
-    B = Object(left_ptr, left_type);
-  }
-
   PairTypePolicy GetTypePolicy(Object &A, Object &B) {
     PairTypePolicy policy = PairTypePolicy::G_OTHER_OBJ;
 
@@ -138,15 +128,6 @@ namespace kagami {
     return Message(nowtime);
   }
 
-  Message Swap(ObjectMap &p) {
-    auto &left = p["left"].Deref();
-    auto &right = p["right"].Deref();
-
-    SwapObject(left, right);
-
-    return Message();
-  }
-
   Message UseCount(ObjectMap &p) {
     return Message(to_string(p["object"].use_count()));
   }
@@ -196,7 +177,6 @@ namespace kagami {
     CreateNewInterface(Interface(GetRawStringType, "object", "type"));
     CreateNewInterface(Interface(IsNull, "object", "null"));
     CreateNewInterface(Interface(Time, "", "time"));
-    CreateNewInterface(Interface(Swap, "left|right", "swap"));
     CreateNewInterface(Interface(UseCount, "object", "use_count"));
     CreateNewInterface(Interface(Destroy, "object", "destroy"));
     CreateNewInterface(Interface(DecimalConvert<2>, "str", "bin"));
