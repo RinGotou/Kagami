@@ -1,13 +1,13 @@
 fn InitClient()
   client = TCPClient('27015', 'localhost', 1024)
   
-  if (client.start())
-    if (client.send('Hello! Can you see me?'))
+  if client.start()
+    if client.send('Hello! Can you see me?')
       msg = ''
       
       println('Waiting for server.')
       
-      if (client.receive(msg))
+      if client.receive(msg)
         println('From server:')
         println(msg)
       else
@@ -23,7 +23,7 @@ fn InitClient()
   client.close()
 end
 
-if (WSAStartup())
+if WSAStartup()
   InitClient()
   WSACleanup()
 end

@@ -128,12 +128,6 @@ namespace kagami {
     kStateWarning
   };
 
-  const map<string, string> kBracketPairs = {
-    pair<string,string>(")", "("),
-    pair<string,string>("]", "["),
-    pair<string,string>("}", "{")
-  };
-
   enum TokenType {
     kTokenTypeGeneric, 
     kTokenTypeString, 

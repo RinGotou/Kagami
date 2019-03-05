@@ -1,5 +1,5 @@
 fn func(a, optional b)
-  if(null(b))
+  if null(b)
     println('b is null object')
   end
   

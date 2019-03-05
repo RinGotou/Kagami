@@ -1,8 +1,8 @@
 fn Test()
   i = 0
   println('Continue')
-  while(i < 5)
-    if (i == 3) 
+  while i < 5
+    if i == 3 
       i = i + 1
       continue
     end
@@ -12,8 +12,8 @@ fn Test()
   
   println('Break')
   i = 0
-  while(i < 5)
-    if (i == 3)
+  while i < 5
+    if i == 3
       break
     end
     println(i)

@@ -1,7 +1,7 @@
 fn WriteFile()
   stream = outstream('script-output.txt',kOutstreamModeAppend)
   recv = ''
-  while (recv != 'quit')
+  while recv != 'quit'
     recv = input('Stream> ')
     stream.write(recv)
   end

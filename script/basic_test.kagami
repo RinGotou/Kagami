@@ -7,16 +7,19 @@ fn CalcTest()
   result0 = 1 - 2 - 3
   result1 = 1 - (2 - 3)
   println(1+2*5)
-  if (result0 != -4)
+  
+  if result0 != -4
     println('Calc is broken.')
   else
     println('1-2-3=' + result0)
   end
-  if (result1 != 2)
+  
+  if result1 != 2
     println('Calc is broken.')
   else
     println('1-(2-3)=' + result1)
   end 
+  
   println('CalcTest end.')
 end
 
@@ -45,10 +48,12 @@ fn ArrayTest()
   println('Array size:' + ar.size())
   println(ar)
   i = 0
-  while(i < 5)
+  
+  while i < 5
     ar[i] = ar[i] + ' Loop x' + i
     i = i + 1
   end
+  
   println(ar)
   println('ArrayTest end.')
 end
@@ -65,31 +70,34 @@ end
 
 fn Menu()
   choice = convert(input('> '))
-  return(choice)
+  return choice
 end
 
 fn main()
   flag = 0
   println('Menu:\n1.Print Test\n2.Calculator Test')
   println('3.Logic Test\n4.Type Test\n5.Array Test\n6.String Test\n0.Quit')
-  while(flag != 1)
+  
+  while flag != 1
     choice = Menu()
-    case(choice)
-    when(1)
+    
+    case choice 
+    when 1
       Greet(input('What\'s your name? > '))
-    when(2)
+    when 2
       CalcTest()
-    when(3)
+    when 3
       LogicTest()
-    when(4)
+    when 4
       TypeTest()
-    when(5)
+    when 5
       ArrayTest()
-    when(6)
+    when 6
       StringTest()
-    when(0)
+    when 0
       flag = 1
     end
+    
   end
 
   input('Press enter to exit...')

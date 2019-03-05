@@ -299,7 +299,7 @@ namespace kagami {
   }
 
   void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
-    if (blk->define_line) return;
+    if (blk->fn_line) return;
     if (blk->last.second != TokenType::kTokenTypeGeneric) {
       blk->symbol.emplace_back(Request(kTokenExpList));
     }
@@ -360,85 +360,111 @@ namespace kagami {
   }
 
   bool Analyzer::FunctionAndObject(AnalyzerWorkBlock *blk) {
-    bool function = false;
-    bool result = true;
     GenericToken token = util::GetGenericToken(blk->current.first);
+    auto token_type = util::GetTokenType(blk->current.first);
 
-    if (blk->define_line) {
-      blk->args.emplace_back(Argument(blk->current.first, kArgumentNormal, kTokenTypeGeneric));
-    }
-    else {
-      if (blk->next.first == "=") {
-        blk->args.emplace_back(Argument(blk->current.first, kArgumentNormal, kTokenTypeGeneric));
+    //TODO:Object domain processing
+
+    if (find_in_vector(token, kSingleWordStore)) {
+      if (blk->next.second != kTokenTypeNull) {
+        error_string_ = "Invalid syntax after " + blk->current.first;
+        return false;
       }
-      else if (blk->next.first == "(") {
-        if (token != kTokenNull) {
-          Request request(token);
-          blk->symbol.emplace_back(request);
+
+      Request request(token);
+      blk->symbol.emplace_back(request);
+      return true;
+    }
+
+    if (blk->fn_line) {
+      if (token_type != kTokenTypeGeneric) {
+        error_string_ = "Invalid token in function definition";
+        return false;
+      }
+
+      if (blk->current.first == kStrOptional || blk->current.first == kStrVaribale) {
+        if (util::GetTokenType(blk->next.first) != kTokenTypeGeneric) {
+          error_string_ = "Invalid syntax after " + blk->current.first;
+          return false;
         }
-        else {
-          Request request(blk->current.first);
-          if (blk->last.first == ".") {
-            request.domain = blk->domain;
-          }
-          else {
-          request.domain.type = kArgumentNull;
-          }
-          blk->symbol.emplace_back(request);
+      }
+
+      blk->args.emplace_back(Argument(blk->current.first, kArgumentNormal, kTokenTypeGeneric));
+      return true;
+    }
+
+    if (token == kTokenFn) {
+      if (blk->next_2.first != "(") {
+        error_string_ = "Invalid syntax after fn";
+        return false;
+      }
+
+      blk->fn_line = true;
+      //TODO: lambda function processing
+      blk->symbol.emplace_back(Request(kTokenFn));
+      blk->symbol.emplace_back(Request("(", true));
+      blk->args.emplace_back(Argument());
+
+      return true;
+    }
+
+    if (token != kTokenNull) {
+      if (blk->next.first == "=" || util::IsOperator(token)) {
+        error_string_ = "Trying to operate with reserved keyword";
+        return false;
+      }
+
+      if (find_in_vector(token, kReservedWordStore)) {
+        if (blk->next.first == "(") {
+          error_string_ = "Invalid '(' after " + blk->current.first;
+          return false;
         }
+
+        blk->symbol.emplace_back(Request(token));
+        blk->args.emplace_back(Argument());
+        return true;
+      }
+
+      if (blk->next.first == "(") {
+        error_string_ = "Invalid '(' after " + blk->current.first;
+        return false;
+      }
+
+      Request request(token);
+      blk->symbol.emplace_back(request);
+
+      return true;
+    }
+
+
+    if (blk->next.first == "(") {
+      Request request(blk->current.first);
+      if (blk->last.first == ".") {
+        request.domain = blk->domain;
       }
       else {
-        if (compare(blk->current.first,
-          { kStrEnd,kStrElse,kStrContinue,kStrBreak })) {
-          Request request(token);
-          blk->symbol.emplace_back(request);
-        }
-        else if (blk->current.first == kStrFn) {
-          blk->define_line = true;
-          blk->symbol.emplace_back(Request(kTokenFn));
-          blk->symbol.emplace_back(Request("(", true));
-          blk->args.emplace_back(Argument());
-        }
-        else {
-          if (token != kTokenNull) {
-            result = false;
-            error_string_ = "Generic token can't be a object.";
-          }
-          else {
-            Argument arg(blk->current.first, kArgumentObjectPool, kTokenTypeGeneric);
-            if (blk->domain.type != kArgumentNull) {
-              arg.domain.data = blk->domain.data;
-              arg.domain.type = blk->domain.type;
-            }
-            blk->domain = Argument();
-            blk->args.emplace_back(arg);
-          }
-        }
+        request.domain.type = kArgumentNull;
       }
+      blk->symbol.emplace_back(request);
+
+      return true;
     }
 
-    if (function && blk->next.first != "(" &&
-      !compare(blk->current.first, { kStrElse,kStrEnd })) {
-      health_ = false;
-      result = false;
-      error_string_ = "Left bracket after function is missing";
+    if (blk->next.first == "=") {
+      blk->args.emplace_back(Argument(
+        blk->current.first, kArgumentNormal, kTokenTypeGeneric));
+      return true;
     }
 
-    if (function && (blk->current.first == kStrOptional || blk->current.first == kStrVaribale)) {
-      if (blk->next.first == ",") {
-        health_ = false;
-        result = false;
-        error_string_ = "Argument id is missing";
-      }
+    Argument arg(blk->current.first, kArgumentObjectPool, kTokenTypeGeneric);
+    if (blk->domain.type != kArgumentNull) {
+      arg.domain.data = blk->domain.data;
+      arg.domain.type = blk->domain.type;
     }
-
-    if (blk->define_line && blk->last.first == kStrFn && blk->next.first != "(") {
-      health_ = false;
-      result = false;
-      error_string_ = "Wrong definition pattern";
-    }
-
-    return result;
+    blk->domain = Argument();
+    blk->args.emplace_back(arg);
+    
+    return true;
   }
 
   void Analyzer::OtherToken(AnalyzerWorkBlock *blk) {
@@ -544,7 +570,7 @@ namespace kagami {
 
     AnalyzerWorkBlock *blk = new AnalyzerWorkBlock();
     blk->need_reversing = false;
-    blk->define_line = false;
+    blk->fn_line = false;
     blk->domain = Argument();
 
     for (size_t i = 0; i < size; ++i) {

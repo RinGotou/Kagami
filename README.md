@@ -14,15 +14,35 @@ This project contains a language interpreter, "如月"(きさらぎ, kisaragi).
 
 ## What does it look like?
 ```
-fn ReadFile()
-    stream = instream('SomeWords.txt')
-    while(stream.eof() != true)
-        println(stream.get())
-    end
-    stream.close()
+version = _version()
+patch = _patch()
+
+println('Kagami Project ' + version + '\nPatch:' + patch)
+
+fn func(a, optional b)
+  if null(b)
+    println('b is null object')
+  else
+    println(b)
+  end
+  
+  println(a)
 end
 
-ReadFile()
+func(1)
+func(1,2)
+
+fn Create(a)
+  fn func(b)
+    result = a + b
+    return 'result is ' + result
+  end
+  
+  return func
+end
+
+add = Create(1)
+println(add(200))
 ```
 
 ## How to use these codes?

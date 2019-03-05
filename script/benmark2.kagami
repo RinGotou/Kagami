@@ -3,7 +3,7 @@ fn BubbleSort(array_size)
   i = 0
   num = array_size
   
-  while (i < array_size)
+  while i < array_size
     ar[i] = num
     num = num - 1
     i = i + 1
@@ -15,11 +15,11 @@ fn BubbleSort(array_size)
   it = ar.head()
   tail = ar.tail()
   
-  while (it != tail)
+  while it != tail
     pos = it.forward()
     
-    while (pos != tail)
-      if (it.get() > pos.get())
+    while pos != tail
+      if it.get() > pos.get()
         swap(it.get(), pos.get())
       end
       

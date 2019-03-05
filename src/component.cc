@@ -91,7 +91,7 @@ namespace kagami {
 
   Message IsNull(ObjectMap &p) {
     auto &obj = p["object"];
-    return Message(obj.GetTypeId() == kTypeIdNull ? kStrTrue : kStrFalse);
+    return Message().SetObject(obj.GetTypeId() == kTypeIdNull);
   }
 
   Message Time(ObjectMap &p) {

@@ -5,17 +5,11 @@ namespace kagami {
   enum InterfaceType {
     kInterfaceTypePlain, kInterfaceTypeMethod
   };
-  
-  /* 
-    Because of sturcture of classes, I place this function pointer here,
-    and you can find that function(FunctionAgentTunnel()) in "module.cc".
-  */
-  using AgentActivity = Message(*)(ObjectMap &, vector<IR>);
 
   
   class InterfacePolicy {
   public:
-    virtual Message Start(ObjectMap &p) = 0; //Deprecated in Kisaragi
+    virtual ~InterfacePolicy() {}
   };
 
   /* C++ function wrapper */
@@ -125,15 +119,9 @@ namespace kagami {
 
     Message Start(ObjectMap &obj_map) {
       Message result;
-      ObjectMap combined_scope;
-      
-      if (!closure_record_.empty()) {
-        combined_scope.merge(closure_record_);
-      }
 
-      combined_scope.merge(obj_map);
-
-      result = policy_->Start(combined_scope);
+      result = static_pointer_cast<CXXFunctionPolicy>(policy_)
+        ->Start(obj_map);
 
       return result;
     }

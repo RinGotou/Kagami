@@ -1,17 +1,17 @@
 fn InitServer()
   server = TCPServer('27015', 1024)
   
-  if (server.start())
+  if server.start()
     connector = server.accept()
     
     println('Waiting for client.')
     
-    if (connector.good())
+    if connector.good()
       println('Connected.')
       
       msg = ''
       
-      if (connector.receive(msg))
+      if connector.receive(msg)
         println('From client:')
         println(msg)
         
@@ -31,7 +31,7 @@ fn InitServer()
   server.close()
 end
 
-if (WSAStartup())
+if WSAStartup()
   InitServer()
   WSACleanup()
 end

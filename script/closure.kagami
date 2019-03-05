@@ -1,9 +1,9 @@
 fn Create(a)
   fn add(b)
-    return(a+b)
+    return a + b
   end
   
-  return(add)
+  return add
 end
 
 add10 = Create(10)

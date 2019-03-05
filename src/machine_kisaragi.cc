@@ -239,6 +239,7 @@ namespace kagami {
     }
 
     worker.fn_idx = worker.idx;
+    worker.SwitchToMode(kModeClosureCatching);
   }
 
   void Machine::FinishFunctionCatching(bool closure) {
@@ -314,7 +315,7 @@ namespace kagami {
         if (it->Find(kStrUserFunc) != nullptr) flag = true;
 
         for (auto &unit : it->GetContent()) {
-          if (scope_record.find(unit.first) != scope_record.end()) {
+          if (scope_record.find(unit.first) == scope_record.end()) {
             scope_record.insert_pair(unit.first,
               Object(management::type::GetObjectCopy(unit.second), 
                 unit.second.GetTypeId()));
@@ -332,6 +333,8 @@ namespace kagami {
     else {
       management::CreateNewInterface(interface);
     }
+
+    worker.GoLastMode();
   }
 
   void Machine::Skipping(bool enable_terminators, 
@@ -886,6 +889,9 @@ namespace kagami {
       else if (worker.mode == kModeCondition || worker.mode == kModeNextCondition) {
         CommandConditionEnd();
       }
+      else if (worker.mode == kModeClosureCatching) {
+        FinishFunctionCatching(true);
+      }
       break;
     case kTokenContinue:
     case kTokenBreak:
@@ -1212,9 +1218,7 @@ namespace kagami {
         obj_stack_.CreateObject(kStrUserFunc, Object(command->first.head_interface));
         obj_stack_.MergeMap(obj_map);
         obj_stack_.MergeMap(interface.GetClosureRecord());
-        ir = ir_stack_.back();
-        size = ir->size();
-        worker = &worker_stack_.top();
+        refresh_tick();
         continue;
       }
       else {

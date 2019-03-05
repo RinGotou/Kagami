@@ -1,6 +1,6 @@
 fn ReadFile()
   stream = instream('SomeWords.txt')
-  while(stream.eof() != true)
+  while stream.eof() != true
     println(stream.get())
   end
   stream.close()

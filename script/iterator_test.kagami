@@ -4,7 +4,7 @@ println(a)
 it = a.head()
 tail = a.tail()
 
-while(it != tail)
+while it != tail
   println(it.get())
   it.step_forward()
 end

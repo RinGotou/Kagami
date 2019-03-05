@@ -2,11 +2,27 @@
 #include "ir.h"
 
 namespace kagami {
+  const map<string, string> kBracketPairs = {
+    pair<string,string>(")", "("),
+    pair<string,string>("]", "["),
+    pair<string,string>("}", "{")
+  };
+
+  const vector<GenericToken> kReservedWordStore = {
+    kTokenIf, kTokenElif, kTokenWhile, kTokenReturn,
+    kTokenWhen, kTokenCase
+  };
+
+  const vector<GenericToken> kSingleWordStore = {
+    kTokenEnd, kTokenElse, kTokenContinue, kTokenBreak
+  };
+
   struct AnalyzerWorkBlock {
     deque<Argument> args;
     deque<Request> symbol;
-    bool need_reversing, 
-      define_line;
+    bool need_reversing;
+    bool fn_line;
+    bool foreach_line;
     Token current;
     Token next;
     Token next_2;
