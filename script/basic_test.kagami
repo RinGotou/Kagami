@@ -34,17 +34,9 @@ end
 
 fn TypeTest()
   str0 = '123'
-  str1 = '\'string\''
-  str2 = '1.23'
-  str3 = 'true'
   ar = array(10,0)
   println('TypeId of str0:' + typeid(str0))
   println('TypeId of ar:' + typeid(ar))
-  println('Type of string:')
-  println(type(str0))
-  println(type(str1))
-  println(type(str2))
-  println(type(str3))
   println('TypeTest end.')
 end
 
