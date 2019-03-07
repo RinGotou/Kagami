@@ -813,8 +813,16 @@ namespace kagami {
   void Machine::CommandReturn(ArgumentList args) {
     if (worker_stack_.size() <= 1) {
       trace::AddEvent(Message(kCodeBadExpression, "Unexpected return.", kStateError));
+      return;
     }
-    else if (args.size() == 1) {
+
+    auto *container = &obj_stack_.GetCurrent();
+    while (container->Find(kStrUserFunc) == nullptr) {
+      obj_stack_.Pop();
+      container = &obj_stack_.GetCurrent();
+    }
+
+    if (args.size() == 1) {
       Object src_obj = FetchObject(args[0]);
       Object ret_obj(management::type::GetObjectCopy(src_obj), src_obj.GetTypeId());
       RecoverLastState();
