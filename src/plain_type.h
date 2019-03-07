@@ -14,20 +14,20 @@ namespace kagami {
   PlainType FindTypeCode(string type_id);
 
   using TypeKey = pair<string, PlainType>;
-  static const map<string, PlainType> kTypeStore = {
+  const map<string, PlainType> kTypeStore = {
     TypeKey(kTypeIdInt, kPlainInt),
     TypeKey(kTypeIdFloat, kPlainFloat),
     TypeKey(kTypeIdString, kPlainString),
     TypeKey(kTypeIdBool, kPlainBool)
   };
 
-  static const vector<GenericToken> kStringOpStore = {
+  const vector<GenericToken> kStringOpStore = {
     kTokenPlus, kTokenNotEqual, kTokenEquals
   };
 
   using ResultTraitKey = pair<PlainType, PlainType>;
   using TraitUnit = pair<ResultTraitKey, PlainType>;
-  static const map<ResultTraitKey, PlainType> kResultDynamicTraits = {
+  const map<ResultTraitKey, PlainType> kResultDynamicTraits = {
     TraitUnit(ResultTraitKey(kPlainInt, kPlainInt), kPlainInt),
     TraitUnit(ResultTraitKey(kPlainFloat, kPlainFloat), kPlainFloat),
     TraitUnit(ResultTraitKey(kPlainString, kPlainString), kPlainString),

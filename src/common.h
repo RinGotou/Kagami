@@ -236,12 +236,6 @@ namespace kagami {
   const string kTypeIdTCPConnector    = "TCPConnector";
   const string kTypeIdIterator        = "iterator";
 
-  const int kPlainIdInt = 0;
-  const int kPlainIdFloat = 1;
-  const int kPlainIdString = 2;
-  const int kPlainIdBool = 3;
-  const int kPlainIdArray = 4;
-
   const string
     kStrIf             = "if",
     kStrFn             = "fn",
