@@ -143,6 +143,8 @@ namespace kagami {
 
   /* Reserved keywords mark/IR framework commands */
   enum GenericToken {
+    kTokenFor,
+    kTokenIn,
     kTokenSwap,
     kTokenRequire,
     kTokenUsing,
@@ -256,6 +258,7 @@ namespace kagami {
     kStrRequire        = "require",
     kStrUsing          = "using",
     kStrFor            = "for",
+    kStrIn             = "in",
     kStrElse           = "else",
     kStrElif           = "elif",
     kStrWhile          = "while",

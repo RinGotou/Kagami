@@ -27,9 +27,21 @@ namespace kagami {
     Token next;
     Token next_2;
     Token last;
-    size_t mode;
     Argument domain;
     int forward_priority;
+
+    AnalyzerWorkBlock() :
+      args(),
+      symbol(),
+      need_reversing(false),
+      fn_line(false),
+      foreach_line(false),
+      current(),
+      next(),
+      next_2(),
+      last(),
+      domain(),
+      forward_priority(0) {}
   };
 
   class Analyzer {

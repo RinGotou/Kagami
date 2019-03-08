@@ -362,8 +362,8 @@ namespace kagami {
   bool Analyzer::FunctionAndObject(AnalyzerWorkBlock *blk) {
     GenericToken token = util::GetGenericToken(blk->current.first);
     auto token_type = util::GetTokenType(blk->current.first);
-
-    //TODO:Object domain processing
+    auto type_next = util::GetTokenType(blk->next.first);
+    auto type_next_2 = util::GetTokenType(blk->next_2.first);
 
     if (find_in_vector(token, kSingleWordStore)) {
       if (blk->next.second != kTokenTypeNull) {
@@ -404,6 +404,31 @@ namespace kagami {
       blk->symbol.emplace_back(Request(kTokenFn));
       blk->symbol.emplace_back(Request("(", true));
       blk->args.emplace_back(Argument());
+
+      return true;
+    }
+
+    if (token == kTokenFor) {
+      if (type_next_2 != kTokenIn) {
+        error_string_ = "Invalid syntax after for";
+        return false;
+      }
+
+      if (type_next != kTokenTypeGeneric) {
+        error_string_ = "Invalid unit name after for";
+        return false;
+      }
+
+      blk->foreach_line = true;
+      blk->symbol.emplace_back(Request(kTokenFor));
+      blk->args.emplace_back(Argument());
+    }
+
+    if (token == kTokenIn) {
+      if (!blk->foreach_line) {
+        error_string_ = "Invalid 'in' token";
+        return false;
+      }
 
       return true;
     }
@@ -564,9 +589,6 @@ namespace kagami {
     Message result;
 
     AnalyzerWorkBlock *blk = new AnalyzerWorkBlock();
-    blk->need_reversing = false;
-    blk->fn_line = false;
-    blk->domain = Argument();
 
     for (size_t i = 0; i < size; ++i) {
       if (!health_) break;
@@ -620,9 +642,6 @@ namespace kagami {
     blk->args.shrink_to_fit();
     blk->symbol.clear();
     blk->symbol.shrink_to_fit();
-    blk->next = Token();
-    blk->last = Token();
-    blk->current = Token();
     delete blk;
     return result;
   }
