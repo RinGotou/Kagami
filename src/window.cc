@@ -61,6 +61,9 @@ namespace kagami {
     NewTypeSetup(kTypeIdSDLTexture, FakeCopy<Texture>);
     CreateNewInterface(Interface(SDLCreateTextureFormBMP, "win|path", "LoadBMP"));
 
+    EXPORT_CONSTANT(kTypeIdSDLWindow);
+    EXPORT_CONSTANT(kTypeIdSDLTexture);
+
     CreateNewInterface(Interface(SDLDelay, "time", "SDLDelay"));
     CreateNewInterface(Interface(SDLTestPresent, "texture|win", "Present"));
   }

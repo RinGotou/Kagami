@@ -65,3 +65,5 @@ namespace kagami {
     }
   }
 }
+
+#define EXPORT_CONSTANT(ID) management::CreateConstantObject(#ID, Object(ID))

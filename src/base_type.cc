@@ -288,5 +288,13 @@ namespace kagami {
     NewTypeSetup(kTypeIdNull, [](shared_ptr<void>) -> shared_ptr<void> { 
       return nullptr; 
     });
+
+    EXPORT_CONSTANT(kTypeIdFunction);
+    EXPORT_CONSTANT(kTypeIdString);
+    EXPORT_CONSTANT(kTypeIdInStream);
+    EXPORT_CONSTANT(kTypeIdOutStream);
+    EXPORT_CONSTANT(kTypeIdRegex);
+    EXPORT_CONSTANT(kTypeIdWideString);
+    EXPORT_CONSTANT(kTypeIdNull);
   }
 }

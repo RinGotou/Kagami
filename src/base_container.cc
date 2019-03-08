@@ -183,5 +183,8 @@ namespace kagami {
           Interface(IteratorOperatorCompare, kStrRightHandSide, kStrCompare)
         }
     );
+
+    EXPORT_CONSTANT(kTypeIdArray);
+    EXPORT_CONSTANT(kTypeIdIterator);
   }
 }

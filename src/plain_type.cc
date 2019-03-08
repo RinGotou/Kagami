@@ -94,5 +94,9 @@ namespace kagami {
     BinaryLogicOperatorGenerator<kTokenLess>();
     BinaryLogicOperatorGenerator<kTokenAnd>();
     BinaryLogicOperatorGenerator<kTokenOr>();
+
+    EXPORT_CONSTANT(kTypeIdInt);
+    EXPORT_CONSTANT(kTypeIdFloat);
+    EXPORT_CONSTANT(kTypeIdBool);
   }
 }
