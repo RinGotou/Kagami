@@ -67,3 +67,10 @@ namespace kagami {
 }
 
 #define EXPORT_CONSTANT(ID) management::CreateConstantObject(#ID, Object(ID))
+
+#define SUB_TYPE(ID) EXPORT_CONSTANT(ID); NewTypeSetup(ID,
+#define SET_MEM_POLICY(POLICY) POLICY)
+#define SET_CONSTRUCTOR(CONS) .InitConstructor(CONS)
+#define BLOCK_METHOD .InitMethods({
+#define END_METHOD })
+#define END_SUB ;
