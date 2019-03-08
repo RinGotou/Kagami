@@ -217,6 +217,15 @@ namespace kagami {
     kModeClosureCatching
   };
 
+  /* Plain Type Code */
+  enum PlainType {
+    kPlainInt     = 1, 
+    kPlainFloat   = 2, 
+    kPlainString  = 3, 
+    kPlainBool    = 4, 
+    kNotPlainType = -1
+  };
+
   /* Embedded type identifier strings */
   const string kTypeIdNull            = "null";
   const string kTypeIdInt             = "int";

@@ -7,10 +7,6 @@ namespace kagami {
   string StringProducer(Object &obj);
   bool BoolProducer(Object &obj);
 
-  enum PlainType {
-    kPlainInt, kPlainFloat, kPlainString, kPlainBool, kNotPlainType
-  };
-
   PlainType FindTypeCode(string type_id);
 
   using TypeKey = pair<string, PlainType>;
