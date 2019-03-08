@@ -362,8 +362,8 @@ namespace kagami {
   bool Analyzer::FunctionAndObject(AnalyzerWorkBlock *blk) {
     GenericToken token = util::GetGenericToken(blk->current.first);
     auto token_type = util::GetTokenType(blk->current.first);
-    auto type_next = util::GetTokenType(blk->next.first);
-    auto type_next_2 = util::GetTokenType(blk->next_2.first);
+    auto token_next = util::GetGenericToken(blk->next.first);
+    auto token_next_2 = util::GetGenericToken(blk->next_2.first);
 
     if (find_in_vector(token, kSingleWordStore)) {
       if (blk->next.second != kTokenTypeNull) {
@@ -409,12 +409,12 @@ namespace kagami {
     }
 
     if (token == kTokenFor) {
-      if (type_next_2 != kTokenIn) {
+      if (token_next_2 != kTokenIn) {
         error_string_ = "Invalid syntax after for";
         return false;
       }
 
-      if (type_next != kTokenTypeGeneric) {
+      if (token_next != kTokenTypeGeneric) {
         error_string_ = "Invalid unit name after for";
         return false;
       }
@@ -430,6 +430,12 @@ namespace kagami {
         return false;
       }
 
+      return true;
+    }
+
+    if (blk->foreach_line && token_next == kTokenIn) {
+      blk->args.emplace_back(Argument(
+        blk->current.first, kArgumentNormal, kTokenTypeGeneric));
       return true;
     }
 
