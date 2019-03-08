@@ -155,4 +155,5 @@ namespace kagami {
     EXPORT_CONSTANT(kInterpreterVersion);
     EXPORT_CONSTANT(kPlatformType);
     EXPORT_CONSTANT(kPatchName);
+  }
 }

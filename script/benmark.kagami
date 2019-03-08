@@ -91,7 +91,7 @@ fn main()
   while value != 'q'
     value = convert(input('array size? (q=exit) \n>'))
     
-    if type(value) == kStringTypeInteger
+    if typeid(value) == kTypeIdInt
       func(value)
     end
     
