@@ -425,11 +425,6 @@ namespace kagami {
         return true;
       }
 
-      if (blk->next.first == "(") {
-        error_string_ = "Invalid '(' after " + blk->current.first;
-        return false;
-      }
-
       Request request(token);
       blk->symbol.emplace_back(request);
 

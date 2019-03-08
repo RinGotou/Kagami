@@ -148,14 +148,5 @@ namespace kagami {
 
     create_constant("kVersion", kInterpreterVersion);
     create_constant("kPlatform", kPlatformType);
-    create_constant("kInternalName", kPatchName);
-    create_constant("kStringTypeBool", "boolean");
-    create_constant("kStringTypeGenericId", "generic");
-    create_constant("kStringTypeInteger", "integer");
-    create_constant("kStringTypeFloat", "float");
-    create_constant("kStringTypeSymbol", "symbol");
-    create_constant("kStringTypeBlank", "blank");
-    create_constant("kStringTypeStr", "string");
-    create_constant("kStringTypeNull", "null");
-  }
+    create_constant("kInternalName", kPatchName);}
 }
