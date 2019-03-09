@@ -46,7 +46,6 @@ namespace kagami {
   class MachineWorker {
   public:
     bool error;
-    bool deliver;
     bool activated_continue;
     bool activated_break;
     size_t origin_idx;
@@ -57,7 +56,6 @@ namespace kagami {
     GenericToken last_command;
     MachineMode mode;
     string error_string;
-    Message msg;
     stack<Object> return_stack;
     stack<MachineMode> mode_stack;
     stack<bool> condition_stack;
@@ -68,7 +66,6 @@ namespace kagami {
 
     MachineWorker() :
       error(false),
-      deliver(false),
       activated_continue(false),
       activated_break(false),
       origin_idx(0),
@@ -79,7 +76,6 @@ namespace kagami {
       last_command(kTokenNull),
       mode(kModeNormal),
       error_string(),
-      msg(),
       return_stack(),
       mode_stack(),
       condition_stack(),
@@ -91,16 +87,6 @@ namespace kagami {
     void MakeError(string str) {
       error = true;
       error_string = str;
-    }
-
-    void MakeMsg(Message msg) {
-      deliver = true;
-      this->msg = msg;
-    }
-
-    Message GetMsg() {
-      deliver = false;
-      return msg;
     }
 
     void SwitchToMode(MachineMode mode) {

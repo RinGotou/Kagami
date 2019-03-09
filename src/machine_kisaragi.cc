@@ -1313,11 +1313,6 @@ namespace kagami {
           refresh_tick();
         }
 
-        if (worker->deliver) {
-          msg = worker->GetMsg();
-          worker->msg.Clear();
-        }
-
         if (worker->error) break;
 
         worker->idx += 1;
