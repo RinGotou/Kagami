@@ -72,6 +72,21 @@ namespace kagami {
     if (it != base_.end()) base_.erase(it);
   }
 
+  void ObjectContainer::ClearExcept(string exceptions) {
+    map<string, Object> dest;
+    map<string, Object>::iterator it;
+    auto obj_list = BuildStringVector(exceptions);
+
+    for (auto &unit : obj_list) {
+      it = base_.find(unit);
+      if (it != base_.end()) {
+        dest.insert(*it);
+      }
+    }
+
+    base_.swap(dest);
+  }
+
   Object *ObjectStack::Find(string id) {
     if (base_.empty() && prev_ == nullptr) return nullptr;
     ObjectPointer ptr = nullptr;

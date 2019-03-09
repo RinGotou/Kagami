@@ -473,6 +473,97 @@ namespace kagami {
     }
   }
 
+  void Machine::CommandForEach(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    ObjectMap obj_map;
+
+    if (!worker.loop_head.empty() && worker.loop_head.top() == worker.logic_idx - 1) {
+      ForEachChecking(args);
+      return;
+    }
+
+    auto unit_id = FetchObject(args[0]).Cast<string>();
+    auto container_obj = FetchObject(args[1]);
+
+    auto methods = management::type::GetMethods(container_obj.GetTypeId());
+
+    if (!management::type::CheckBehavior(container_obj, kContainerBehavior)) {
+      worker.MakeError("Invalid object container");
+      return;
+    }
+
+    auto interface = management::FindInterface(kStrHead, container_obj.GetTypeId());
+    obj_map = { NamedObject(kStrObject, container_obj) };
+    auto msg = interface.Start(obj_map);
+
+    if (msg.GetCode() != kCodeObject) {
+      worker.MakeError("Invalid iterator of container");
+      return;
+    }
+
+    auto iterator_obj = msg.GetObj();
+    
+    if (!management::type::CheckBehavior(iterator_obj, kIteratorBehavior)) {
+      worker.MakeError("Invalid iterator behavior");
+      return;
+    }
+
+    auto method_get = management::FindInterface("get", iterator_obj.GetTypeId());
+    obj_map = { NamedObject(kStrObject,iterator_obj) };
+    auto unit = method_get.Start(obj_map).GetObj();
+
+    obj_stack_.Push();
+    obj_stack_.CreateObject("!iterator", iterator_obj);
+    obj_stack_.CreateObject(unit_id, unit);
+    worker.loop_head.push(worker.logic_idx - 1);
+    worker.SwitchToMode(kModeForEach);
+  }
+
+  void Machine::ForEachChecking(ArgumentList args) {
+    using namespace management;
+    auto &worker = worker_stack_.top();
+    auto unit_id = FetchObject(args[0]).Cast<string>();
+    auto iterator = *obj_stack_.GetCurrent().Find("!iterator");
+    auto container = FetchObject(args[1]);
+    auto method_compare = FindInterface(kStrCompare, iterator.GetTypeId());
+    auto method_tail = FindInterface("tail", container.GetTypeId());
+    auto method_step_forward = FindInterface("step_forward", iterator.GetTypeId());
+    ObjectMap obj_map;
+
+    obj_map = { NamedObject(kStrObject, container) };
+    auto tail = method_tail.Start(obj_map).GetObj();
+
+    if (!type::CheckBehavior(tail, kIteratorBehavior)) {
+      worker.MakeError("Invalid container behavior");
+      return;
+    }
+
+    obj_map = { NamedObject(kStrObject, iterator) };
+    method_step_forward.Start(obj_map);
+
+    obj_map = {
+      NamedObject(kStrObject, iterator),
+      NamedObject(kStrRightHandSide, tail)
+    };
+
+    auto result = method_compare.Start(obj_map).GetObj();
+
+    if (result.GetTypeId() != kTypeIdBool) {
+      worker.MakeError("Invalid iterator behavior");
+      return;
+    }
+
+    if (result.Cast<bool>()) {
+      worker.mode = kModeForEachJump;
+    }
+    else {
+      auto method_get = management::FindInterface("get", iterator.GetTypeId());
+      obj_map = { NamedObject(kStrObject,iterator) };
+      auto unit = method_get.Start(obj_map).GetObj();
+      obj_stack_.CreateObject(unit_id, unit);
+    }
+  }
+
   void Machine::CommandElse() {
     auto &worker = worker_stack_.top();
     if (!worker.condition_stack.empty()) {
@@ -602,7 +693,8 @@ namespace kagami {
 
   void Machine::CommandContinueOrBreak(GenericToken token) {
     auto &worker = worker_stack_.top();
-    while (!worker.mode_stack.empty() && worker.mode != kModeCycle) {
+    while (!worker.mode_stack.empty() 
+      && (worker.mode != kModeCycle || worker.mode != kModeForEach)) {
       if (worker.mode == kModeCondition || worker.mode == kModeCase) {
         worker.condition_stack.pop();
         worker.skipping_count += 1;
@@ -611,7 +703,7 @@ namespace kagami {
       worker.GoLastMode();
     }
 
-    if (worker.mode == kModeCycle) {
+    if (worker.mode == kModeCycle || worker.mode == kModeForEach) {
       worker.mode = kModeCycleJump;
       switch (token) {
       case kTokenContinue:worker.activated_continue = true; break;
@@ -620,7 +712,7 @@ namespace kagami {
       }
     }
     else {
-      worker.MakeError("Invalid 'continue'");
+      worker.MakeError("Invalid 'continue'/'break'");
     }
   }
 
@@ -649,6 +741,40 @@ namespace kagami {
         worker.mode = kModeCycle;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().clear();
+      }
+      else {
+        if (worker.activated_break) worker.activated_break = false;
+        worker.GoLastMode();
+        if (worker.loop_head.size() == worker.loop_tail.size()) {
+          worker.loop_head.pop();
+          worker.loop_tail.pop();
+        }
+        else {
+          worker.loop_head.pop();
+        }
+        obj_stack_.Pop();
+      }
+    }
+  }
+
+  void Machine::CommandForEachEnd() {
+    auto &worker = worker_stack_.top();
+    if (worker.mode == kModeForEach) {
+      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx - 1) {
+        worker.loop_tail.push(worker.logic_idx - 1);
+      }
+      worker.idx = worker.loop_head.top();
+      obj_stack_.GetCurrent().ClearExcept("!iterator");
+    }
+    else if (worker.mode == kModeForEachJump) {
+      if (worker.activated_continue) {
+        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx - 1) {
+          worker.loop_tail.push(worker.logic_idx - 1);
+        }
+        worker.idx = worker.loop_head.top();
+        worker.mode = kModeForEach;
+        worker.activated_continue = false;
+        obj_stack_.GetCurrent().ClearExcept("!iterator");
       }
       else {
         if (worker.activated_break) worker.activated_break = false;
@@ -847,6 +973,9 @@ namespace kagami {
     auto &worker = worker_stack_.top();
 
     switch (token) {
+    case kTokenFor:
+      CommandForEach(args);
+      break;
     case kTokenSwap:
       CommandSwap(args);
       break;
@@ -888,17 +1017,28 @@ namespace kagami {
       DomainAssert(args, token == kTokenAssertR, request.option.no_feeding);
       break;
     case kTokenEnd:
-      if (worker.mode == kModeCycle || worker.mode == kModeCycleJump) {
+      switch (worker.mode) {
+      case kModeCycle:
+      case kModeCycleJump:
         CommandLoopEnd();
-      }
-      else if (worker.mode == kModeCase || worker.mode == kModeCaseJump) {
+        break;
+      case kModeCase:
+      case kModeCaseJump:
         CommandConditionEnd();
-      }
-      else if (worker.mode == kModeCondition || worker.mode == kModeNextCondition) {
+        break;
+      case kModeCondition:
+      case kModeNextCondition:
         CommandConditionEnd();
-      }
-      else if (worker.mode == kModeClosureCatching) {
-        FinishFunctionCatching(true);
+        break;
+      case kModeForEach:
+      case kModeForEachJump:
+        CommandForEachEnd();
+        break;
+      case kModeClosureCatching:
+        FinishFunctionCatching();
+        break;
+      default:
+        break;
       }
       break;
     case kTokenContinue:
@@ -1150,6 +1290,7 @@ namespace kagami {
           Skipping(true, { kTokenWhen,kTokenElse });
           break;
         case kModeCycleJump:
+        case kModeForEachJump:
         case kModeClosureCatching:
           Skipping(false);
           break;

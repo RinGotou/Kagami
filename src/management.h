@@ -18,6 +18,7 @@ namespace kagami {
       vector<string> GetMethods(string name);
       void NewType(string name, ObjectPolicy temp);
       shared_ptr<void> GetObjectCopy(Object &object);
+      bool CheckBehavior(Object obj, string method_str);
 
       class NewTypeSetup {
       private:

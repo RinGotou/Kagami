@@ -189,7 +189,7 @@ namespace kagami {
   };
 
   const vector<GenericToken> nest_flag_collection = {
-    kTokenIf,kTokenWhile,kTokenFn,kTokenCase
+    kTokenIf,kTokenWhile,kTokenFn,kTokenCase,kTokenFor
   };
 
   enum Terminator {
@@ -216,6 +216,8 @@ namespace kagami {
     kModeDef,
     kModeCase,
     kModeCaseJump,
+    kModeForEach,
+    kModeForEachJump,
     kModeClosureCatching
   };
 
@@ -269,6 +271,8 @@ namespace kagami {
     kStrReturn         = "return",
     kStrOptional       = "optional",
     kStrVaribale       = "variable",
+    kStrHead           = "head",
+    kStrTail           = "tail",
     kStrPlus           = "+",
     kStrMinus          = "-",
     kStrTimes          = "*",

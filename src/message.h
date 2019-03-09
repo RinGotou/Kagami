@@ -71,6 +71,7 @@ namespace kagami {
     }
 
     Object GetObj() const {
+      if (code_ != kCodeObject) return Object();
       return *static_pointer_cast<Object>(object_);
     }
 

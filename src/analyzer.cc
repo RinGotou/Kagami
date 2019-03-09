@@ -363,6 +363,7 @@ namespace kagami {
     GenericToken token = util::GetGenericToken(blk->current.first);
     auto token_type = util::GetTokenType(blk->current.first);
     auto token_next = util::GetGenericToken(blk->next.first);
+    auto token_type_next = util::GetTokenType(blk->next.first);
     auto token_next_2 = util::GetGenericToken(blk->next_2.first);
 
     if (find_in_vector(token, kSingleWordStore)) {
@@ -414,7 +415,7 @@ namespace kagami {
         return false;
       }
 
-      if (token_next != kTokenTypeGeneric) {
+      if (token_type_next != kTokenTypeGeneric) {
         error_string_ = "Invalid unit name after for";
         return false;
       }
@@ -422,6 +423,7 @@ namespace kagami {
       blk->foreach_line = true;
       blk->symbol.emplace_back(Request(kTokenFor));
       blk->args.emplace_back(Argument());
+      return true;
     }
 
     if (token == kTokenIn) {
@@ -612,7 +614,7 @@ namespace kagami {
       if (token_type == kTokenTypeSymbol) {
         Terminator value = GetTerminatorCode(blk->current.first);
         switch (value) {
-        case kBasicTokenAssign: EqualMark(blk); break;
+        case kBasicTokenAssign:         EqualMark(blk); break;
         case kBasicTokenComma:          state = CleanupStack(blk); break;
         case kBasicTokenLeftSqrBracket: state = LeftSqrBracket(blk); break;
         case kBasicTokenDot:            Dot(blk); break;

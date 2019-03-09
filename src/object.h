@@ -193,6 +193,7 @@ namespace kagami {
     bool Add(string id, Object source);
     Object *Find(string id);
     void Dispose(string id);
+    void ClearExcept(string exceptions);
 
     ObjectContainer() {}
 
@@ -216,6 +217,8 @@ namespace kagami {
     map<string, Object> &GetContent() {
       return base_;
     }
+
+    
   };
 
   class ObjectMap : public map<string, Object> {
@@ -232,6 +235,7 @@ namespace kagami {
       map<string, Object>(rhs) {}
 
     ObjectMap(const std::initializer_list<NamedObject> &&rhs) {
+      this->clear();
       for (const auto &unit : rhs) {
         this->insert(unit);
       }
@@ -243,7 +247,8 @@ namespace kagami {
     ObjectMap(const map<string, Object> &&rhs) :
       map<string, Object>(rhs) {}
 
-    ObjectMap &operator=(const std::initializer_list<NamedObject> &&rhs){
+    ObjectMap &operator=(const std::initializer_list<NamedObject> &&rhs) {
+      this->clear();
       for (const auto &unit : rhs) {
         this->insert(unit);
       }

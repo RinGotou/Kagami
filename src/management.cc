@@ -96,6 +96,20 @@ namespace kagami {
         return base;
       }
 
+      vector<string> GetMethods(string name) {
+        vector<string> result;
+        const auto it = GetPlannerBase().find(name);
+
+        if (it != GetPlannerBase().end()) {
+          result = it->second.GetMethods();
+        }
+        return result;
+      }
+
+      void NewType(string name, ObjectPolicy temp) {
+        GetPlannerBase().insert(pair<string, ObjectPolicy>(name, temp));
+      }
+
       shared_ptr<void> GetObjectCopy(Object &object) {
         //Ignore copying policy
         if (object.GetConstructorFlag()) {
@@ -112,18 +126,18 @@ namespace kagami {
         return result;
       }
 
-      vector<string> GetMethods(string name) {
-        vector<string> result;
-        const auto it = GetPlannerBase().find(name);
-
-        if (it != GetPlannerBase().end()) {
-          result = it->second.GetMethods();
+      bool CheckBehavior(Object obj, string method_str) {
+        auto obj_methods = GetMethods(obj.GetTypeId());
+        auto sample = BuildStringVector(method_str);
+        bool result = true;
+        for (auto &unit : sample) {
+          if (!find_in_vector(unit, obj_methods)) {
+            result = false;
+            break;
+          }
         }
-        return result;
-      }
 
-      void NewType(string name, ObjectPolicy temp) {
-        GetPlannerBase().insert(pair<string, ObjectPolicy>(name, temp));
+        return result;
       }
     }
   }

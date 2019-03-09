@@ -28,6 +28,8 @@
 #define BAD_EXP_MSG(MSG) Message(kCodeBadExpression, MSG, kStateError)
 
 namespace kagami {
+  const string kIteratorBehavior = "get|step_forward|step_back|__compare";
+  const string kContainerBehavior = "head|tail";
   using CombinedCodeline = pair<size_t, string>;
 
   template <class T>
@@ -61,6 +63,7 @@ namespace kagami {
     stack<bool> condition_stack;
     stack<size_t> loop_head;
     stack<size_t> loop_tail;
+    stack<size_t> fe_tracer;
     vector<string> fn_string_vec;
 
     MachineWorker() :
@@ -82,6 +85,7 @@ namespace kagami {
       condition_stack(),
       loop_head(),
       loop_tail(),
+      fe_tracer(),
       fn_string_vec() {}
 
     void MakeError(string str) {
@@ -120,6 +124,7 @@ namespace kagami {
       case kModeCycleJump:
       case kModeDef:
       case kModeCaseJump:
+      case kModeForEachJump:
       case kModeClosureCatching:
         return true;
         break;
@@ -150,6 +155,8 @@ namespace kagami {
     Object FetchInterfaceObject(string id, string domain);
     Object FetchObject(Argument &arg, bool checking = false);
 
+    //Interface FetchInterface(string id, string type_id);
+
     void InitFunctionCatching(ArgumentList args);
     void FinishFunctionCatching(bool closure = false);
 
@@ -159,12 +166,15 @@ namespace kagami {
     void SetSegmentInfo(ArgumentList args);
     void CommandSwap(ArgumentList args);
     void CommandIfOrWhile(GenericToken token, ArgumentList args);
+    void CommandForEach(ArgumentList args);
+    void ForEachChecking(ArgumentList args);
     void CommandElse();
     void CommandCase(ArgumentList args);
     void CommandWhen(ArgumentList args);
     void CommandContinueOrBreak(GenericToken token);
     void CommandConditionEnd();
     void CommandLoopEnd();
+    void CommandForEachEnd();
 
     void CommandBind(ArgumentList args);
     void CommandTypeId(ArgumentList args);
