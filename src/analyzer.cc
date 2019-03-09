@@ -255,14 +255,9 @@ namespace kagami {
     }
 
     action_base_.emplace_back(Command(blk->symbol.back(), arguments));
-    if (blk->symbol.back().option.forward_insertion) {
-      blk->args.emplace_front(Argument("", kArgumentReturningStack, kTokenTypeNull));
-    }
-    else {
-      blk->args.emplace_back(Argument("", kArgumentReturningStack, kTokenTypeNull));
-    }
-
+    blk->args.emplace_back(Argument("", kArgumentReturnStack, kTokenTypeNull));
     blk->symbol.pop_back();
+
     return health_;
   }
 
@@ -363,8 +358,8 @@ namespace kagami {
     GenericToken token = util::GetGenericToken(blk->current.first);
     auto token_type = util::GetTokenType(blk->current.first);
     auto token_next = util::GetGenericToken(blk->next.first);
-    auto token_type_next = util::GetTokenType(blk->next.first);
     auto token_next_2 = util::GetGenericToken(blk->next_2.first);
+    bool lambda_func = false;
 
     if (find_in_vector(token, kSingleWordStore)) {
       if (blk->next.second != kTokenTypeNull) {
@@ -383,7 +378,7 @@ namespace kagami {
         return false;
       }
 
-      if (blk->current.first == kStrOptional || blk->current.first == kStrVaribale) {
+      if (blk->current.first == kStrOptional || blk->current.first == kStrVariable) {
         if (util::GetTokenType(blk->next.first) != kTokenTypeGeneric) {
           error_string_ = "Invalid syntax after " + blk->current.first;
           return false;
@@ -395,17 +390,21 @@ namespace kagami {
     }
 
     if (token == kTokenFn) {
-      if (blk->next_2.first != "(") {
+      if (blk->next.first == "(" && blk->next.second == kTokenTypeGeneric) {
+        lambda_func = true;
+      }
+
+      if (blk->next.first != "(" && blk->next_2.first != "(") {
         error_string_ = "Invalid syntax after fn";
         return false;
       }
 
       blk->fn_line = true;
-      //TODO: lambda function processing
-      blk->symbol.emplace_back(Request(kTokenFn));
+      Request request(kTokenFn);
+      request.option.lambda_fn_obj = lambda_func;
+      blk->symbol.emplace_back(request);
       blk->symbol.emplace_back(Request("(", true));
       blk->args.emplace_back(Argument());
-
       return true;
     }
 
@@ -415,7 +414,7 @@ namespace kagami {
         return false;
       }
 
-      if (token_type_next != kTokenTypeGeneric) {
+      if (blk->next.second != kTokenTypeGeneric) {
         error_string_ = "Invalid unit name after for";
         return false;
       }
@@ -484,7 +483,7 @@ namespace kagami {
       return true;
     }
 
-    Argument arg(blk->current.first, kArgumentObjectPool, kTokenTypeGeneric);
+    Argument arg(blk->current.first, kArgumentObjectStack, kTokenTypeGeneric);
     if (blk->domain.type != kArgumentNull) {
       arg.domain.data = blk->domain.data;
       arg.domain.type = blk->domain.type;

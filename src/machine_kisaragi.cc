@@ -167,7 +167,7 @@ namespace kagami {
         obj = FetchPlainObject(arg.data);
         break;
 
-      case kArgumentObjectPool:
+      case kArgumentObjectStack:
         ptr = obj_stack_.Find(is_domain ? arg.domain.data : arg.data);
         if (ptr != nullptr) {
           if (is_domain) {
@@ -197,7 +197,7 @@ namespace kagami {
         }
         break;
 
-      case kArgumentReturningStack:
+      case kArgumentReturnStack:
         if (!return_stack.empty()) {
           if (is_domain) {
             domain_type_id = return_stack.top().GetTypeId();
@@ -266,7 +266,7 @@ namespace kagami {
         continue;
       }
 
-      if (fn_string_vec[idx] == kStrVaribale) {
+      if (fn_string_vec[idx] == kStrVariable) {
         if (counter == 1) {
           worker.MakeError("Variable parameter can be defined only once.");
           break;
@@ -1307,6 +1307,7 @@ namespace kagami {
 
       if (command->first.type == kRequestCommand 
         && !util::IsOperator(command->first.head_command)) {
+
         MachineCommands(command->first.head_command, command->second, command->first);
 
         if (command->first.head_command == kTokenReturn) {

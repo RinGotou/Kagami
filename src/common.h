@@ -270,7 +270,7 @@ namespace kagami {
     kStrWhen           = "when",
     kStrReturn         = "return",
     kStrOptional       = "optional",
-    kStrVaribale       = "variable",
+    kStrVariable       = "variable",
     kStrHead           = "head",
     kStrTail           = "tail",
     kStrPlus           = "+",

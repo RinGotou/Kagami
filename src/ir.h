@@ -5,8 +5,8 @@
 namespace kagami {
   enum ArgumentType {
     kArgumentNormal, 
-    kArgumentObjectPool, 
-    kArgumentReturningStack, 
+    kArgumentObjectStack, 
+    kArgumentReturnStack, 
     kArgumentNull
   };
 
@@ -23,11 +23,11 @@ namespace kagami {
 
   struct ArgumentOption {
     bool no_feeding;
-    bool forward_insertion;
+    bool lambda_fn_obj;
 
     ArgumentOption() :
       no_feeding(false),
-      forward_insertion(false) {}
+      lambda_fn_obj(false) {}
   };
 
   class Argument {
