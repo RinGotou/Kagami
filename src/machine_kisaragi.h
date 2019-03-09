@@ -63,6 +63,7 @@ namespace kagami {
     stack<size_t> loop_tail;
     stack<size_t> fe_tracer;
     vector<string> fn_string_vec;
+    unique_ptr<Object> lambda_dest_obj;
 
     MachineWorker() :
       error(false),
@@ -82,7 +83,8 @@ namespace kagami {
       loop_head(),
       loop_tail(),
       fe_tracer(),
-      fn_string_vec() {}
+      fn_string_vec(),
+      lambda_dest_obj(nullptr) {}
 
     void MakeError(string str) {
       error = true;

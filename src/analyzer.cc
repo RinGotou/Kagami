@@ -263,9 +263,11 @@ namespace kagami {
 
   void Analyzer::EqualMark(AnalyzerWorkBlock *blk) {
     if (!blk->args.empty()) {
-      Request request(kTokenBind);
-      request.priority = util::GetTokenPriority(kTokenBind);
-      blk->symbol.emplace_back(request);
+      if (blk->next.first != kStrFn) {
+        Request request(kTokenBind);
+        request.priority = util::GetTokenPriority(kTokenBind);
+        blk->symbol.emplace_back(request);
+      }
     }
   }
 
