@@ -177,23 +177,24 @@ namespace kagami {
     void Generate_Normal(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Generate_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Generate_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map);
-
-    void Preprocessor();
   private:
     deque<KIRPointer> ir_stack_;
     stack<MachineWorker> worker_stack_;
     ObjectStack obj_stack_;
-    
+    bool child_;
+
   public:
     Machine() :
       ir_stack_(),
       worker_stack_(),
-      obj_stack_() {}
+      obj_stack_(),
+      child_(false) {}
 
     Machine(const Machine &rhs) :
       ir_stack_(rhs.ir_stack_),
       worker_stack_(rhs.worker_stack_),
-      obj_stack_(rhs.obj_stack_) {}
+      obj_stack_(rhs.obj_stack_),
+      child_(false) {}
 
     Machine(const Machine &&rhs) :
       Machine(rhs) {}
@@ -201,9 +202,9 @@ namespace kagami {
     Machine(KIR &ir) :
       ir_stack_(),
       worker_stack_(),
-      obj_stack_() {
+      obj_stack_(),
+      child_(false) {
       ir_stack_.push_back(&ir);
-      Preprocessor();
     }
 
     void SetPreviousStack(ObjectStack &prev) {

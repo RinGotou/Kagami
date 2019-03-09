@@ -1035,7 +1035,7 @@ namespace kagami {
         CommandForEachEnd();
         break;
       case kModeClosureCatching:
-        FinishFunctionCatching();
+        FinishFunctionCatching(worker_stack_.size() > 1 || child_);
         break;
       default:
         break;
@@ -1159,87 +1159,6 @@ namespace kagami {
     for (auto it = params.rbegin(); it != params.rend(); ++it) {
       obj_map.insert(NamedObject(*it, FetchObject(args.back())));
       args.pop_back();
-    }
-  }
-
-  void Machine::Preprocessor() {
-    if (ir_stack_.empty()) return;
-    KIR &ir = *ir_stack_.back();
-    size_t size = ir.size();
-    size_t nest_counter = 0;
-    bool catching = false;
-    bool error = false;
-    
-    worker_stack_.push(MachineWorker());
-    MachineWorker &worker = worker_stack_.top();
-    map<size_t, size_t> catched_block;
-
-    while (worker.idx < size) {
-      Command &command = ir[worker.idx];
-
-      if (command.first.head_command == kTokenFn) {
-        if (!catching) {
-          if (nest_counter > 0) {
-            worker.MakeError("Invalid function definition");
-            break;
-          }
-        }
-
-        if (catching) {
-          nest_counter += 1; //ignore closure block
-          worker.idx += 1;
-          continue;
-        }
-
-        InitFunctionCatching(command.second);
-        catching = true;
-        worker.idx += 1;
-        continue;
-      }
-      else if (command.first.head_command == kTokenEnd) {
-        if (nest_counter > 0) {
-          nest_counter -= 1;
-          worker.idx += 1;
-          continue;
-        }
-
-        catched_block.insert(std::make_pair(worker.fn_idx - 1, worker.idx));
-        FinishFunctionCatching();
-        catching = false;
-      }
-      else {
-        if (find_in_vector(command.first.head_command, nest_flag_collection)) {
-          nest_counter += 1;
-        }
-      }
-
-      worker.idx += 1;
-    }
-
-    if (catching) {
-      worker.MakeError("Expect 'end'.");
-    }
-
-    if (worker.error) {
-      trace::AddEvent(Message(kCodeBadExpression, worker.error_string, kStateError));
-    }
-    else {
-      KIR not_catched;
-
-      for (size_t idx = 0; idx < ir.size(); idx += 1) {
-        auto it = catched_block.find(idx);
-
-        if (it != catched_block.end()) {
-          idx = it->second;
-          continue;
-        }
-
-        not_catched.emplace_back(ir[idx]);
-      }
-
-      ir.swap(not_catched);
-
-      worker_stack_.pop();
     }
   }
 
