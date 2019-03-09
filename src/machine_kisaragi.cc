@@ -326,13 +326,9 @@ namespace kagami {
       interface.SetClosureRecord(scope_record);
     }
 
-    if (closure) {
-      obj_stack_.CreateObject(fn_string_vec[0],
-        Object(make_shared<Interface>(interface), kTypeIdFunction));
-    }
-    else {
-      management::CreateNewInterface(interface);
-    }
+    obj_stack_.CreateObject(fn_string_vec[0],
+      Object(make_shared<Interface>(interface), kTypeIdFunction));
+
 
     worker.GoLastMode();
   }
