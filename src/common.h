@@ -145,6 +145,7 @@ namespace kagami {
   enum GenericToken {
     kTokenFor,
     kTokenIn,
+    kTokenNullObj,
     kTokenSwap,
     kTokenRequire,
     kTokenUsing,
@@ -252,6 +253,7 @@ namespace kagami {
   const string
     kStrIf             = "if",
     kStrFn             = "fn",
+    kStrNull           = "null_obj",
     kStrEnd            = "end",
     kStrPrint          = "__print",
     kStrCaseObj        = "__case",

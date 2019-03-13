@@ -89,11 +89,6 @@ namespace kagami {
     return msg;
   }
 
-  Message ObjTypeId(ObjectMap &p) {
-    auto &obj = p["object"];
-    return Message().SetObject(obj.GetTypeId());
-  }
-
   Message IsNull(ObjectMap &p) {
     auto &obj = p["object"];
     return Message().SetObject(obj.GetTypeId() == kTypeIdNull);
@@ -144,7 +139,6 @@ namespace kagami {
     CreateNewInterface(Interface(DecimalConvert<16>, "str", "hex"));
     CreateNewInterface(Interface(Version, "", "_version"));
     CreateNewInterface(Interface(PatchVersion, "", "_patch"));
-    CreateNewInterface(Interface(ObjTypeId, "object", "typeid"));
 
     auto create_constant = [](string id, string content) {
       management::CreateConstantObject(

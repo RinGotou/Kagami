@@ -20,8 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\analyzer.h" />
-    <ClInclude Include="..\..\src\base_container.h" />
-    <ClInclude Include="..\..\src\base_type.h" />
+    <ClInclude Include="..\..\src\containers.h" />
+    <ClInclude Include="..\..\src\string_util.h" />
     <ClInclude Include="..\..\src\common.h" />
     <ClInclude Include="..\..\src\component.h" />
     <ClInclude Include="..\..\src\interface.h" />
@@ -39,8 +39,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\analyzer.cc" />
-    <ClCompile Include="..\..\src\base_container.cc" />
-    <ClCompile Include="..\..\src\base_type.cc" />
+    <ClCompile Include="..\..\src\containers.cc" />
+    <ClCompile Include="..\..\src\string_util.cc" />
     <ClCompile Include="..\..\src\component.cc" />
     <ClCompile Include="..\..\src\kagami.cc" />
     <ClCompile Include="..\..\src\machine_kisaragi.cc" />

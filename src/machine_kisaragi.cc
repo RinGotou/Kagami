@@ -885,6 +885,18 @@ namespace kagami {
     worker.return_stack.push(ret_obj);
   }
 
+  void Machine::CommandNullObj(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    if (args.size() != 1) {
+      worker.MakeError("Invalid argument of null()");
+      return;
+    }
+
+    Object obj = FetchObject(args[0]);
+    worker.return_stack.push(
+      Object(make_shared<bool>(obj.GetTypeId() == kTypeIdNull), kTypeIdBool));
+  }
+
   void Machine::ExpList(ArgumentList args) {
     auto &worker = worker_stack_.top();
     if (!args.empty()) {
@@ -971,6 +983,9 @@ namespace kagami {
     switch (token) {
     case kTokenFor:
       CommandForEach(args);
+      break;
+    case kTokenNullObj:
+      CommandNullObj(args);
       break;
     case kTokenSwap:
       CommandSwap(args);

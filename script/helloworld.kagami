@@ -4,7 +4,7 @@ patch = _patch()
 println('Kagami Project ' + version + '\nPatch:' + patch)
 
 fn func(a, optional b)
-  if null(b)
+  if null_obj(b)
     println('b is null object')
   else
     println(b)
