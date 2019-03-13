@@ -1,5 +1,7 @@
 #include "window.h"
-
+/*
+  It's just a demoooooooooooooooooooo
+*/
 namespace kagami {
 #if not defined(_DISABLE_SDL_)
 

@@ -1,4 +1,4 @@
-#include "base_type.h"
+#include "string_util.h"
 
 namespace kagami {
   bool IsStringFamily(Object &obj) {
