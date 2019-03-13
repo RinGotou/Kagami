@@ -81,6 +81,7 @@ namespace kagami {
     NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<long>);
     NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>);
     NewTypeSetup(kTypeIdBool, SimpleSharedPtrCopy<bool>);
+    NewTypeSetup(kTypeIdNull, FakeCopy<void>);
 
     BinaryMathOperatorGenerator<kTokenPlus>();
     BinaryMathOperatorGenerator<kTokenMinus>();
@@ -98,5 +99,6 @@ namespace kagami {
     EXPORT_CONSTANT(kTypeIdInt);
     EXPORT_CONSTANT(kTypeIdFloat);
     EXPORT_CONSTANT(kTypeIdBool);
+    EXPORT_CONSTANT(kTypeIdNull);
   }
 }
