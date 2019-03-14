@@ -192,14 +192,14 @@ namespace kagami {
   public:
     bool Add(string id, Object source);
     Object *Find(string id);
-    void Dispose(string id);
     void ClearExcept(string exceptions);
 
     ObjectContainer() {}
 
     ObjectContainer(const ObjectContainer &&mgr) {}
 
-    ObjectContainer(const ObjectContainer &container) :base_(container.base_) {}
+    ObjectContainer(const ObjectContainer &container) :
+      base_(container.base_) {}
 
     bool Empty() const {
       return base_.empty();

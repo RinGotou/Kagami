@@ -94,6 +94,12 @@ namespace kagami {
       this->mode = mode;
     }
 
+    void LoopHeadTrial() {
+      if (loop_head.empty() || loop_head.top() != logic_idx) {
+        loop_head.push(logic_idx - 1);
+      }
+    }
+
     void GoLastMode() {
       if (!mode_stack.empty()) {
         this->mode = mode_stack.top();
@@ -149,7 +155,8 @@ namespace kagami {
     void Skipping(bool enable_terminators, 
       initializer_list<GenericToken> terminators = {});
 
-    Message Invoke(Object obj, string id, const initializer_list<NamedObject> &&args);
+    Message Invoke(Object obj, string id, 
+      const initializer_list<NamedObject> &&args = {});
 
     void SetSegmentInfo(ArgumentList args);
     void CommandSwap(ArgumentList args);

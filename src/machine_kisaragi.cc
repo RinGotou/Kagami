@@ -398,15 +398,17 @@ namespace kagami {
     auto found = find_in_vector(id, methods);
 
     if (!found) {
-      worker.MakeError("Method is not found - " + id);
+      //Immediately push event to avoid ugly checking block.
+      trace::AddEvent("Method is not found" + id);
       return;
     }
 
     //TODO:user-defined class
     auto interface = management::FindInterface(id, obj.GetTypeId());
     ObjectMap obj_map = args;
+    obj_map.insert(NamedObject(kStrObject, obj));
 
-    
+    return interface.Start(obj_map);
   }
 
   void Machine::SetSegmentInfo(ArgumentList args) {
@@ -505,9 +507,7 @@ namespace kagami {
       return;
     }
 
-    auto interface = management::FindInterface(kStrHead, container_obj.GetTypeId());
-    obj_map = { NamedObject(kStrObject, container_obj) };
-    auto msg = interface.Start(obj_map);
+    auto msg = Invoke(container_obj, kStrHead);
 
     if (msg.GetCode() != kCodeObject) {
       worker.MakeError("Invalid iterator of container");
@@ -543,23 +543,18 @@ namespace kagami {
     auto method_step_forward = FindInterface("step_forward", iterator.GetTypeId());
     ObjectMap obj_map;
 
-    obj_map = { NamedObject(kStrObject, container) };
-    auto tail = method_tail.Start(obj_map).GetObj();
+
+    auto tail = Invoke(container, kStrTail).GetObj();
 
     if (!type::CheckBehavior(tail, kIteratorBehavior)) {
       worker.MakeError("Invalid container behavior");
       return;
     }
 
-    obj_map = { NamedObject(kStrObject, iterator) };
-    method_step_forward.Start(obj_map);
+    Invoke(iterator, "step_forward");
 
-    obj_map = {
-      NamedObject(kStrObject, iterator),
-      NamedObject(kStrRightHandSide, tail)
-    };
-
-    auto result = method_compare.Start(obj_map).GetObj();
+    auto result = Invoke(iterator, kStrCompare,
+      { NamedObject(kStrRightHandSide,tail) }).GetObj();
 
     if (result.GetTypeId() != kTypeIdBool) {
       worker.MakeError("Invalid iterator behavior");
@@ -570,9 +565,7 @@ namespace kagami {
       worker.mode = kModeForEachJump;
     }
     else {
-      auto method_get = management::FindInterface("get", iterator.GetTypeId());
-      obj_map = { NamedObject(kStrObject,iterator) };
-      auto unit = method_get.Start(obj_map).GetObj();
+      auto unit = Invoke(iterator, "get").GetObj();
       obj_stack_.CreateObject(unit_id, unit);
     }
   }
@@ -961,9 +954,7 @@ namespace kagami {
       }
       else {
         if (find_in_vector(kStrGetStr, management::type::GetMethods(type_id))) {
-          auto method_getstr = management::FindInterface(kStrGetStr, type_id);
-          ObjectMap obj_map = { NamedObject(kStrObject,obj) };
-          ret_obj = method_getstr.Start(obj_map).GetObj();
+          auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
         }
         else {
           worker.MakeError("Invalid argument of convert()");

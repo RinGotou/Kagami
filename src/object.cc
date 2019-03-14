@@ -67,11 +67,6 @@ namespace kagami {
     return ptr;
   }
 
-  void ObjectContainer::Dispose(string id) {
-    auto it = base_.find(id);
-    if (it != base_.end()) base_.erase(it);
-  }
-
   void ObjectContainer::ClearExcept(string exceptions) {
     map<string, Object> dest;
     map<string, Object>::iterator it;
