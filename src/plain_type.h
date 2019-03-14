@@ -74,20 +74,6 @@ namespace kagami {
     }
   };
 
-  template <class ResultType, class Tx, class Ty>
-  struct BinaryOpBox<ResultType, Tx, Ty, kTokenBitAnd> {
-    ResultType Do(Tx A, Ty B) {
-      return A & B;
-    }
-  };
-
-  template <class ResultType, class Tx, class Ty>
-  struct BinaryOpBox<ResultType, Tx, Ty, kTokenBitOr> {
-    ResultType Do(Tx A, Ty B) {
-      return A | B;
-    }
-  };
-
   template <class Tx, class Ty>
   struct BinaryOpBox<bool, Tx, Ty, kTokenEquals> {
     bool Do(Tx A, Ty B) {
@@ -164,8 +150,6 @@ namespace kagami {
   DISPOSE_STRING_MATH_OP(kTokenMinus);
   DISPOSE_STRING_MATH_OP(kTokenTimes);
   DISPOSE_STRING_MATH_OP(kTokenDivide);
-  DISPOSE_STRING_MATH_OP(kTokenBitAnd);
-  DISPOSE_STRING_MATH_OP(kTokenBitOr);
   DISPOSE_STRING_LOGIC_OP(kTokenLessOrEqual);
   DISPOSE_STRING_LOGIC_OP(kTokenGreaterOrEqual);
   DISPOSE_STRING_LOGIC_OP(kTokenGreater);

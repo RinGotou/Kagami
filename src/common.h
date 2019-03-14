@@ -174,9 +174,6 @@ namespace kagami {
     kTokenAnd, 
     kTokenOr, 
     kTokenNot, 
-    kTokenBitAnd, 
-    kTokenBitOr, 
-    kTokenBitNot,
     kTokenInitialArray, 
     kTokenAssert, 
     kTokenAssertR,
@@ -237,7 +234,6 @@ namespace kagami {
   const string kTypeIdNull            = "null";
   const string kTypeIdInt             = "int";
   const string kTypeIdFloat           = "float";
-  const string kTypeIdByte            = "byte";
   const string kTypeIdBool            = "bool";
   const string kTypeIdByte            = "byte";
   const string kTypeIdString          = "string";
@@ -288,9 +284,6 @@ namespace kagami {
     kStrAnd            = "&&",
     kStrOr             = "||",
     kStrNot            = "!",
-    kStrBitAnd         = "&",
-    kStrBitOr          = "|",
-    kStrBitNot         = "~",
     kStrLessOrEqual    = "<=",
     kStrGreaterOrEqual = ">=",
     kStrNotEqual       = "!=",

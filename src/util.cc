@@ -18,8 +18,6 @@ namespace kagami {
       case kTokenAnd:
       case kTokenOr:
       case kTokenNot:
-      case kTokenBitAnd:
-      case kTokenBitOr:
         result = true;
         break;
       default:
@@ -33,7 +31,6 @@ namespace kagami {
       bool result;
       switch (token) {
       case kTokenNot:
-      case kTokenBitNot:
         result = true;
         break;
       default:
@@ -107,9 +104,6 @@ namespace kagami {
         T(kStrAnd            ,kTokenAnd),
         T(kStrOr             ,kTokenOr),
         T(kStrNot            ,kTokenNot),
-        T(kStrBitAnd         ,kTokenBitAnd),
-        T(kStrBitOr          ,kTokenBitOr),
-        T(kStrBitNot         ,kTokenBitNot),
         T(kStrLessOrEqual    ,kTokenLessOrEqual),
         T(kStrGreaterOrEqual ,kTokenGreaterOrEqual),
         T(kStrNotEqual       ,kTokenNotEqual),
