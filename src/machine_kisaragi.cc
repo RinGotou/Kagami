@@ -334,7 +334,7 @@ namespace kagami {
   }
 
   void Machine::Skipping(bool enable_terminators, 
-    std::initializer_list<GenericToken> terminators) {
+    initializer_list<GenericToken> terminators) {
     auto &worker = worker_stack_.top();
     size_t nest_counter = 0;
     size_t size = ir_stack_.back()->size();
@@ -390,6 +390,23 @@ namespace kagami {
     if (!flag) {
       worker.MakeError("Expect 'end'");
     }
+  }
+
+  Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
+    auto &worker = worker_stack_.top();
+    auto methods = management::type::GetMethods(obj.GetTypeId());
+    auto found = find_in_vector(id, methods);
+
+    if (!found) {
+      worker.MakeError("Method is not found - " + id);
+      return;
+    }
+
+    //TODO:user-defined class
+    auto interface = management::FindInterface(id, obj.GetTypeId());
+    ObjectMap obj_map = args;
+
+    
   }
 
   void Machine::SetSegmentInfo(ArgumentList args) {
@@ -1113,7 +1130,7 @@ namespace kagami {
         CommandForEachEnd();
         break;
       case kModeClosureCatching:
-        FinishFunctionCatching(worker_stack_.size() > 1 || child_);
+        FinishFunctionCatching(worker_stack_.size() > 1);
         break;
       default:
         break;

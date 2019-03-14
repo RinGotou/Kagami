@@ -147,7 +147,9 @@ namespace kagami {
     void FinishFunctionCatching(bool closure = false);
 
     void Skipping(bool enable_terminators, 
-      std::initializer_list<GenericToken> terminators = {});
+      initializer_list<GenericToken> terminators = {});
+
+    Message Invoke(Object obj, string id, const initializer_list<NamedObject> &&args);
 
     void SetSegmentInfo(ArgumentList args);
     void CommandSwap(ArgumentList args);
@@ -184,20 +186,17 @@ namespace kagami {
     deque<KIRPointer> ir_stack_;
     stack<MachineWorker> worker_stack_;
     ObjectStack obj_stack_;
-    bool child_;
 
   public:
     Machine() :
       ir_stack_(),
       worker_stack_(),
-      obj_stack_(),
-      child_(false) {}
+      obj_stack_() {}
 
     Machine(const Machine &rhs) :
       ir_stack_(rhs.ir_stack_),
       worker_stack_(rhs.worker_stack_),
-      obj_stack_(rhs.obj_stack_),
-      child_(false) {}
+      obj_stack_(rhs.obj_stack_) {}
 
     Machine(const Machine &&rhs) :
       Machine(rhs) {}
@@ -205,8 +204,7 @@ namespace kagami {
     Machine(KIR &ir) :
       ir_stack_(),
       worker_stack_(),
-      obj_stack_(),
-      child_(false) {
+      obj_stack_() {
       ir_stack_.push_back(&ir);
     }
 

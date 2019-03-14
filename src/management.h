@@ -39,7 +39,7 @@ namespace kagami {
           return *this;
         }
 
-        NewTypeSetup &InitMethods(std::initializer_list<Interface> &&rhs) {
+        NewTypeSetup &InitMethods(initializer_list<Interface> &&rhs) {
           interfaces_ = rhs;
           string method_list("");
 

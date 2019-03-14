@@ -96,7 +96,7 @@ namespace kagami {
       if (ptr != nullptr) break;
     }
 
-    if (prev_ != nullptr) {
+    if (prev_ != nullptr && ptr == nullptr) {
       ptr = prev_->Find(id);
     }
 
@@ -104,7 +104,12 @@ namespace kagami {
   }
 
   bool ObjectStack::CreateObject(string id, Object obj) {
-    if (base_.empty()) return false;
+    if (base_.empty()) {
+      if (prev_ == nullptr) {
+        return false;
+      }
+      return prev_->CreateObject(id, obj);
+    }
     auto &top = base_.back();
 
     if (top.Find(id) == nullptr) {

@@ -85,6 +85,7 @@ namespace kagami {
   using std::thread;
   using std::mutex;
   using std::lock_guard;
+  using std::initializer_list;
 #if defined (_WIN32)
   using suzu::TCPClient;
   using suzu::TCPServer;
@@ -306,7 +307,7 @@ namespace kagami {
 
   /* Compare multiple objects */
   template <class Tx, class Ty>
-  inline bool compare(Tx lhs, const std::initializer_list<Ty> rhs) {
+  inline bool compare(Tx lhs, const initializer_list<Ty> rhs) {
     bool result = false;
     for (const auto &unit : rhs) {
       if (lhs == unit) result = true;

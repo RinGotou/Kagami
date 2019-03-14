@@ -234,12 +234,15 @@ namespace kagami {
     ObjectMap(const ObjectMap &&rhs) :
       map<string, Object>(rhs) {}
 
-    ObjectMap(const std::initializer_list<NamedObject> &&rhs) {
+    ObjectMap(const initializer_list<NamedObject> &rhs) {
       this->clear();
       for (const auto &unit : rhs) {
         this->insert(unit);
       }
     }
+
+    ObjectMap(const initializer_list<NamedObject> &&rhs) :
+      ObjectMap(rhs) {}
 
     ObjectMap(const map<string, Object> &rhs) :
       map<string, Object>(rhs) {}
@@ -247,7 +250,7 @@ namespace kagami {
     ObjectMap(const map<string, Object> &&rhs) :
       map<string, Object>(rhs) {}
 
-    ObjectMap &operator=(const std::initializer_list<NamedObject> &&rhs) {
+    ObjectMap &operator=(const initializer_list<NamedObject> &rhs) {
       this->clear();
       for (const auto &unit : rhs) {
         this->insert(unit);
@@ -256,7 +259,12 @@ namespace kagami {
       return *this;
     }
 
+    ObjectMap &operator=(const initializer_list<NamedObject> &&rhs) {
+      return this->operator=(rhs);
+    }
+
     ObjectMap &operator=(const ObjectMap &rhs) {
+      this->clear();
       for (const auto &unit : rhs) {
         this->insert(unit);
       }
