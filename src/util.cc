@@ -87,6 +87,7 @@ namespace kagami {
         T(kStrNullObj        ,kTokenNullObj),
         T(kStrDestroy        ,kTokenDestroy),
         T(kStrConvert        ,kTokenConvert),
+        T(kStrRefCount       ,kTokenRefCount),
         T(kStrSwap           ,kTokenSwap),
         T(kStrRequire        ,kTokenRequire),
         T(kStrUsing          ,kTokenUsing),

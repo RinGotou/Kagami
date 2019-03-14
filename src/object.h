@@ -9,6 +9,7 @@ namespace kagami {
   class Message;
 
   using ObjectPointer = Object * ;
+  using ObjectRef = Object & ;
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
   using CopyingPolicy = shared_ptr<void>(*)(shared_ptr<void>);
@@ -49,6 +50,7 @@ namespace kagami {
       ObjectPointer ptr; 
     };
 
+    long ref_count_;
     std::shared_ptr<void> ptr_;
     string type_id_;
     bool ref_;
@@ -59,28 +61,42 @@ namespace kagami {
     }
 
   public:
+    ~Object() {
+      if (ref_) {
+        GetTargetObject()->ref_count_ -= 1;
+      }
+    }
+
     Object() :
+      ref_count_(0),
       ptr_(nullptr),
       type_id_(kTypeIdNull),
       ref_(false),
       constructor_(false) {}
 
     Object(const Object &obj) :
+      ref_count_(0),
       ptr_(obj.ptr_),
       type_id_(obj.type_id_),
       ref_(obj.ref_),
-      constructor_(obj.constructor_) {}
+      constructor_(obj.constructor_) {
+      if (obj.ref_) {
+        GetTargetObject()->ref_count_ += 1;
+      }
+    }
 
     Object(const Object &&obj) :
       Object(obj) {}
 
     Object(shared_ptr<void> ptr, string type_id) :
+      ref_count_(0),
       ptr_(ptr), 
       type_id_(type_id), 
       ref_(false), 
       constructor_(false) {}
 
     Object(string str) :
+      ref_count_(0),
       ptr_(std::make_shared<string>(str)),
       type_id_(kTypeIdString),
       ref_(false),
@@ -152,6 +168,10 @@ namespace kagami {
     long use_count() {
       if (ref_) return GetTargetObject()->use_count();
       return ptr_.use_count();
+    }
+
+    long ObjRefCount() const {
+      return ref_count_;
     }
 
     bool GetConstructorFlag() {

@@ -94,12 +94,6 @@ namespace kagami {
       this->mode = mode;
     }
 
-    void LoopHeadTrial() {
-      if (loop_head.empty() || loop_head.top() != logic_idx) {
-        loop_head.push(logic_idx - 1);
-      }
-    }
-
     void GoLastMode() {
       if (!mode_stack.empty()) {
         this->mode = mode_stack.top();
@@ -178,6 +172,7 @@ namespace kagami {
     void CommandNullObj(ArgumentList args);
     void CommandDestroy(ArgumentList args);
     void CommandConvert(ArgumentList args);
+    void CommandRefCount(ArgumentList args);
     void ExpList(ArgumentList args);
     void InitArray(ArgumentList args);
     void DomainAssert(ArgumentList args, bool returning, bool no_feeding);

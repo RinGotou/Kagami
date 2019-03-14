@@ -400,7 +400,7 @@ namespace kagami {
     if (!found) {
       //Immediately push event to avoid ugly checking block.
       trace::AddEvent("Method is not found" + id);
-      return;
+      return Message();
     }
 
     //TODO:user-defined class
@@ -966,6 +966,19 @@ namespace kagami {
     }
   }
 
+  void Machine::CommandRefCount(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+
+    if (args.size() != 1) {
+      worker.MakeError("Invalid argument of ref_count()");
+      return;
+    }
+    auto &obj = FetchObject(args[0]).Deref();
+    Object ret_obj(make_shared<long>(obj.ObjRefCount()), kTypeIdInt);
+
+    worker.return_stack.push(ret_obj);
+  }
+
   void Machine::ExpList(ArgumentList args) {
     auto &worker = worker_stack_.top();
     if (!args.empty()) {
@@ -1061,6 +1074,9 @@ namespace kagami {
       break;
     case kTokenConvert:
       CommandConvert(args);
+      break;
+    case kTokenRefCount:
+      CommandRefCount(args);
       break;
     case kTokenSwap:
       CommandSwap(args);

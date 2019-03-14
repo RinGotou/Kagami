@@ -28,6 +28,7 @@ namespace kagami {
       target.ptr = 
         static_pointer_cast<TargetObject>(object.ptr_)->ptr;
     }
+    target.ptr->ref_count_ += 1;
     ptr_ = make_shared<TargetObject>(target);
     return *this;
   }
