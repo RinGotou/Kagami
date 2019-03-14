@@ -919,31 +919,39 @@ namespace kagami {
       FetchPlainObject(arg.data);
     }
     else {
-      //TODO:Support for other object types
       Object obj = FetchObject(args[0]);
+      string type_id = obj.GetTypeId();
       Object ret_obj;
 
-      if (obj.GetTypeId() != kTypeIdString) {
-        worker.MakeError("convert() can't accept this object type");
-        return;
-      }
+      if (type_id == kTypeIdString) {
+        auto str = obj.Cast<string>();
+        auto type = util::GetTokenType(str, true);
 
-      auto str = obj.Cast<string>();
-      auto type = util::GetTokenType(str, true);
-      
-      switch (type) {
-      case kTokenTypeInt:
-        ret_obj.ManageContent(make_shared<long>(stol(str)), kTypeIdInt);
-        break;
-      case kTokenTypeFloat:
-        ret_obj.ManageContent(make_shared<double>(stod(str)), kTypeIdFloat);
-        break;
-      case kTokenTypeBool:
-        ret_obj.ManageContent(make_shared<bool>(str == kStrTrue), kTypeIdBool);
-        break;
-      default:
-        ret_obj = obj;
-        break;
+        switch (type) {
+        case kTokenTypeInt:
+          ret_obj.ManageContent(make_shared<long>(stol(str)), kTypeIdInt);
+          break;
+        case kTokenTypeFloat:
+          ret_obj.ManageContent(make_shared<double>(stod(str)), kTypeIdFloat);
+          break;
+        case kTokenTypeBool:
+          ret_obj.ManageContent(make_shared<bool>(str == kStrTrue), kTypeIdBool);
+          break;
+        default:
+          ret_obj = obj;
+          break;
+        }
+      }
+      else {
+        if (find_in_vector(kStrGetStr, management::type::GetMethods(type_id))) {
+          auto method_getstr = management::FindInterface(kStrGetStr, type_id);
+          ObjectMap obj_map = { NamedObject(kStrObject,obj) };
+          ret_obj = method_getstr.Start(obj_map).GetObj();
+        }
+        else {
+          worker.MakeError("Invalid argument of convert()");
+          return;
+        }
       }
 
       worker.return_stack.push(ret_obj);

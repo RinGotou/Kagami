@@ -255,6 +255,7 @@ namespace kagami {
     kStrNullObj        = "null_obj",
     kStrDestroy        = "destroy",
     kStrConvert        = "convert",
+    kStrGetStr         = "get_str",
     kStrEnd            = "end",
     kStrPrint          = "__print",
     kStrCaseObj        = "__case",
