@@ -82,6 +82,7 @@ namespace kagami {
     NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>);
     NewTypeSetup(kTypeIdBool, SimpleSharedPtrCopy<bool>);
     NewTypeSetup(kTypeIdNull, FakeCopy<void>);
+    //NewTypeSetup(kTypeIdByte, SimpleSharedPtrCopy<Byte>);
 
     BinaryMathOperatorGenerator<kTokenPlus>();
     BinaryMathOperatorGenerator<kTokenMinus>();

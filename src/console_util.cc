@@ -1,4 +1,4 @@
-#include "component.h"
+#include "console_util.h"
 
 namespace kagami {
   Message Print(ObjectMap &p) {

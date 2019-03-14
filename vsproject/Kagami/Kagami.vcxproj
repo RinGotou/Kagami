@@ -23,7 +23,7 @@
     <ClInclude Include="..\..\src\containers.h" />
     <ClInclude Include="..\..\src\string_util.h" />
     <ClInclude Include="..\..\src\common.h" />
-    <ClInclude Include="..\..\src\component.h" />
+    <ClInclude Include="..\..\src\console_util.h" />
     <ClInclude Include="..\..\src\interface.h" />
     <ClInclude Include="..\..\src\ir.h" />
     <ClInclude Include="..\..\src\machine_kisaragi.h" />
@@ -41,7 +41,7 @@
     <ClCompile Include="..\..\src\analyzer.cc" />
     <ClCompile Include="..\..\src\containers.cc" />
     <ClCompile Include="..\..\src\string_util.cc" />
-    <ClCompile Include="..\..\src\component.cc" />
+    <ClCompile Include="..\..\src\console_util.cc" />
     <ClCompile Include="..\..\src\kagami.cc" />
     <ClCompile Include="..\..\src\machine_kisaragi.cc" />
     <ClCompile Include="..\..\src\management.cc" />

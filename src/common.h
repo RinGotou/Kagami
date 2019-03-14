@@ -237,6 +237,7 @@ namespace kagami {
   const string kTypeIdNull            = "null";
   const string kTypeIdInt             = "int";
   const string kTypeIdFloat           = "float";
+  const string kTypeIdByte            = "byte";
   const string kTypeIdBool            = "bool";
   const string kTypeIdByte            = "byte";
   const string kTypeIdString          = "string";
