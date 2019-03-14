@@ -97,6 +97,10 @@ namespace kagami {
     BinaryLogicOperatorGenerator<kTokenAnd>();
     BinaryLogicOperatorGenerator<kTokenOr>();
 
+    management::CreateGenericInterface(
+      Interface(LogicNot, kStrRightHandSide, kTokenNot)
+    );
+
     EXPORT_CONSTANT(kTypeIdInt);
     EXPORT_CONSTANT(kTypeIdFloat);
     EXPORT_CONSTANT(kTypeIdBool);
