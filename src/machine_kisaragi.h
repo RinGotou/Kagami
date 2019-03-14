@@ -167,6 +167,8 @@ namespace kagami {
     void CommandMethods(ArgumentList args);
     void CommandExist(ArgumentList args);
     void CommandNullObj(ArgumentList args);
+    void CommandDestroy(ArgumentList args);
+    void CommandConvert(ArgumentList args);
     void ExpList(ArgumentList args);
     void InitArray(ArgumentList args);
     void DomainAssert(ArgumentList args, bool returning, bool no_feeding);

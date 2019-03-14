@@ -62,33 +62,6 @@ namespace kagami {
     return Message().SetObject(buf);
   }
 
-
-  //TODO:Rewrite
-  Message Convert(ObjectMap &p) {
-    EXPECT_TYPE(p, "object", kTypeIdString);
-
-    string origin = p.Cast<string>("object");
-    auto type = util::GetTokenType(origin);
-    Message msg;
-    string str;
-
-    switch (type) {
-    case kTokenTypeInt:
-      msg.SetObject(stol(origin));
-      break;
-    case kTokenTypeFloat:
-      msg.SetObject(stod(origin));
-      break;
-    case kTokenTypeBool:
-      msg.SetObject(origin == kStrTrue);
-    default:
-      msg.SetObject(origin);
-      break;
-    }
-    
-    return msg;
-  }
-
   Message IsNull(ObjectMap &p) {
     auto &obj = p["object"];
     return Message().SetObject(obj.GetTypeId() == kTypeIdNull);
@@ -102,19 +75,6 @@ namespace kagami {
     return Message(nowtime);
   }
 
-  Message UseCount(ObjectMap &p) {
-    long count = p["object"].use_count();
-    return Message().SetObject(count);
-  }
-
-  Message Destroy(ObjectMap &p) {
-    Object &obj = p["object"].Deref();
-
-    obj.swap(Object());
-
-    return Message();
-  }
-
   Message Version(ObjectMap &p) {
     return Message().SetObject(kInterpreterVersion);
   }
@@ -126,25 +86,15 @@ namespace kagami {
   void Activiate() {
     using management::CreateNewInterface;
 
-    CreateNewInterface(Interface(Convert, "object", "convert"));
     CreateNewInterface(Interface(Input, "msg", "input", kCodeAutoFill));
     CreateNewInterface(Interface(Print, kStrObject, "print"));
     CreateNewInterface(Interface(PrintLine, kStrObject, "println"));
-    CreateNewInterface(Interface(IsNull, "object", "null"));
     CreateNewInterface(Interface(Time, "", "time"));
-    CreateNewInterface(Interface(UseCount, "object", "use_count"));
-    CreateNewInterface(Interface(Destroy, "object", "destroy"));
     CreateNewInterface(Interface(DecimalConvert<2>, "str", "bin"));
     CreateNewInterface(Interface(DecimalConvert<8>, "str", "octa"));
     CreateNewInterface(Interface(DecimalConvert<16>, "str", "hex"));
     CreateNewInterface(Interface(Version, "", "_version"));
     CreateNewInterface(Interface(PatchVersion, "", "_patch"));
-
-    auto create_constant = [](string id, string content) {
-      management::CreateConstantObject(
-        id, Object(content)
-      );
-    };
 
     EXPORT_CONSTANT(kInterpreterVersion);
     EXPORT_CONSTANT(kPlatformType);

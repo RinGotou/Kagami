@@ -87,7 +87,9 @@ namespace kagami {
       static map<string, GenericToken> base = {
         T(kStrFor            ,kTokenFor),
         T(kStrIn             ,kTokenIn),
-        T(kStrNull           ,kTokenNullObj),
+        T(kStrNullObj        ,kTokenNullObj),
+        T(kStrDestroy        ,kTokenDestroy),
+        T(kStrConvert        ,kTokenConvert),
         T(kStrSwap           ,kTokenSwap),
         T(kStrRequire        ,kTokenRequire),
         T(kStrUsing          ,kTokenUsing),

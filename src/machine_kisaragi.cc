@@ -897,6 +897,59 @@ namespace kagami {
       Object(make_shared<bool>(obj.GetTypeId() == kTypeIdNull), kTypeIdBool));
   }
 
+  void Machine::CommandDestroy(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    if (args.size() != 1) {
+      worker.MakeError("Invalid argument of destroy()");
+      return;
+    }
+    Object &obj = FetchObject(args[0]).Deref();
+    obj.swap(Object());
+  }
+
+  void Machine::CommandConvert(ArgumentList args) {
+    auto &worker = worker_stack_.top();
+    if (args.size() != 1) {
+      worker.MakeError("Invalid argument of convert()");
+      return;
+    }
+
+    auto &arg = args[0];
+    if (arg.type == kArgumentNormal) {
+      FetchPlainObject(arg.data);
+    }
+    else {
+      //TODO:Support for other object types
+      Object obj = FetchObject(args[0]);
+      Object ret_obj;
+
+      if (obj.GetTypeId() != kTypeIdString) {
+        worker.MakeError("convert() can't accept this object type");
+        return;
+      }
+
+      auto str = obj.Cast<string>();
+      auto type = util::GetTokenType(str, true);
+      
+      switch (type) {
+      case kTokenTypeInt:
+        ret_obj.ManageContent(make_shared<long>(stol(str)), kTypeIdInt);
+        break;
+      case kTokenTypeFloat:
+        ret_obj.ManageContent(make_shared<double>(stod(str)), kTypeIdFloat);
+        break;
+      case kTokenTypeBool:
+        ret_obj.ManageContent(make_shared<bool>(str == kStrTrue), kTypeIdBool);
+        break;
+      default:
+        ret_obj = obj;
+        break;
+      }
+
+      worker.return_stack.push(ret_obj);
+    }
+  }
+
   void Machine::ExpList(ArgumentList args) {
     auto &worker = worker_stack_.top();
     if (!args.empty()) {
@@ -986,6 +1039,12 @@ namespace kagami {
       break;
     case kTokenNullObj:
       CommandNullObj(args);
+      break;
+    case kTokenDestroy:
+      CommandDestroy(args);
+      break;
+    case kTokenConvert:
+      CommandConvert(args);
       break;
     case kTokenSwap:
       CommandSwap(args);
