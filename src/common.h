@@ -101,7 +101,7 @@ namespace kagami {
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else
-  const string kPlatformType   = "Linux";
+  const string kPlatformType   = "Unix";
 #endif
   const string kEngineName     = "Kagami Project";
   const string kMaintainer     = "Suzu Nakamura";
@@ -109,16 +109,16 @@ namespace kagami {
 
   /* Message state code for Message class */
   enum StateCode {
-    kCodeInterface = 5,
-    kCodeAutoSize = 4,
-    kCodeAutoFill = 3,
-    kCodeNormalParam = 2,
-    kCodeObject = 1,
-    kCodeSuccess = 0,
-    kCodeIllegalParam = -1,
-    kCodeIllegalCall = -2,
+    kCodeInterface     = 5,
+    kCodeAutoSize      = 4,
+    kCodeAutoFill      = 3,
+    kCodeNormalParam   = 2,
+    kCodeObject        = 1,
+    kCodeSuccess       = 0,
+    kCodeIllegalParam  = -1,
+    kCodeIllegalCall   = -2,
     kCodeIllegalSymbol = -3,
-    kCodeBadStream = -4,
+    kCodeBadStream     = -4,
     kCodeBadExpression = -5
   };
 

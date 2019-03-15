@@ -23,7 +23,6 @@
     <ClInclude Include="..\..\src\containers.h" />
     <ClInclude Include="..\..\src\string_util.h" />
     <ClInclude Include="..\..\src\common.h" />
-    <ClInclude Include="..\..\src\console_util.h" />
     <ClInclude Include="..\..\src\interface.h" />
     <ClInclude Include="..\..\src\ir.h" />
     <ClInclude Include="..\..\src\machine_kisaragi.h" />

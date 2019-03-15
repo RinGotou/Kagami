@@ -23,12 +23,8 @@ namespace kagami {
 
     vector<string> methods = management::type::GetMethods(obj.GetTypeId());
 
-    auto errorMsg = []() {
-      std::cout << "You can't print this object." << std::endl;
-    };
-
     if (!find_in_vector<string>(kStrPrint, methods)) {
-      errorMsg();
+      std::cout << "You can't print this object." << std::endl;
       return Message();
     }
 
