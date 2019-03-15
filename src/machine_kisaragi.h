@@ -173,6 +173,9 @@ namespace kagami {
     void CommandDestroy(ArgumentList args);
     void CommandConvert(ArgumentList args);
     void CommandRefCount(ArgumentList args);
+    void CommandTime();
+    void CommandVersion();
+    void CommandPatch();
     void ExpList(ArgumentList args);
     void InitArray(ArgumentList args);
     void DomainAssert(ArgumentList args, bool returning, bool no_feeding);

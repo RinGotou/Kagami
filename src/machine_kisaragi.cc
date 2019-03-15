@@ -979,6 +979,24 @@ namespace kagami {
     worker.return_stack.push(ret_obj);
   }
 
+  void Machine::CommandTime() {
+    auto &worker = worker_stack_.top();
+    time_t now = time(nullptr);
+    string nowtime(ctime(&now));
+    nowtime.pop_back();
+    worker.return_stack.push(Object(nowtime));
+  }
+
+  void Machine::CommandVersion() {
+    auto &worker = worker_stack_.top();
+    worker.return_stack.push(Object(kInterpreterVersion));
+  }
+
+  void Machine::CommandPatch() {
+    auto &worker = worker_stack_.top();
+    worker.return_stack.push(Object(kPatchName));
+  }
+
   void Machine::ExpList(ArgumentList args) {
     auto &worker = worker_stack_.top();
     if (!args.empty()) {
@@ -1077,6 +1095,15 @@ namespace kagami {
       break;
     case kTokenRefCount:
       CommandRefCount(args);
+      break;
+    case kTokenTime:
+      CommandTime();
+      break;
+    case kTokenVersion:
+      CommandVersion();
+      break;
+    case kTokenPatch:
+      CommandPatch();
       break;
     case kTokenSwap:
       CommandSwap(args);

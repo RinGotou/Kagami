@@ -1,8 +1,3 @@
-version = _version()
-patch = _patch()
-
-println('Kagami Project ' + version + '\nPatch:' + patch)
-
 fn func(a, optional b)
   if null_obj(b)
     println('b is null object')
@@ -13,9 +8,6 @@ fn func(a, optional b)
   println(a)
 end
 
-func(1)
-func(1,2)
-
 fn Create(a)
   fn func(b)
     result = a + b
@@ -25,5 +17,10 @@ fn Create(a)
   return func
 end
 
+version = version()
+patch = patch()
+println('Kagami Project ' + version + '\nPatch:' + patch)
+func(1)
+func(1,2)
 add = Create(1)
 println(add(200))

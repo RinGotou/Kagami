@@ -209,6 +209,7 @@ namespace kagami {
 
   void InitBaseTypes() {
     using management::type::NewTypeSetup;
+    using management::CreateNewInterface;
 
     NewTypeSetup(kTypeIdFunction, SimpleSharedPtrCopy<Interface>)
       .InitMethods(
@@ -284,6 +285,10 @@ namespace kagami {
           Interface(WideStringCompare, kStrRightHandSide, kStrCompare)
         }
     );
+
+    CreateNewInterface(Interface(DecimalConvert<2>, "str", "bin"));
+    CreateNewInterface(Interface(DecimalConvert<8>, "str", "octa"));
+    CreateNewInterface(Interface(DecimalConvert<16>, "str", "hex"));
 
     EXPORT_CONSTANT(kTypeIdFunction);
     EXPORT_CONSTANT(kTypeIdString);

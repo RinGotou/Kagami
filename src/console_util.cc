@@ -1,4 +1,4 @@
-#include "console_util.h"
+#include "machine_kisaragi.h"
 
 namespace kagami {
   Message Print(ObjectMap &p) {
@@ -62,42 +62,11 @@ namespace kagami {
     return Message().SetObject(buf);
   }
 
-  Message IsNull(ObjectMap &p) {
-    auto &obj = p["object"];
-    return Message().SetObject(obj.GetTypeId() == kTypeIdNull);
-  }
-
-  Message Time(ObjectMap &p) {
-    auto now = time(nullptr);
-    string nowtime(ctime(&now));
-    nowtime.pop_back();
-
-    return Message(nowtime);
-  }
-
-  Message Version(ObjectMap &p) {
-    return Message().SetObject(kInterpreterVersion);
-  }
-
-  Message PatchVersion(ObjectMap &p) {
-    return Message().SetObject(kPatchName);
-  }
-
   void Activiate() {
     using management::CreateNewInterface;
 
     CreateNewInterface(Interface(Input, "msg", "input", kCodeAutoFill));
     CreateNewInterface(Interface(Print, kStrObject, "print"));
     CreateNewInterface(Interface(PrintLine, kStrObject, "println"));
-    CreateNewInterface(Interface(Time, "", "time"));
-    CreateNewInterface(Interface(DecimalConvert<2>, "str", "bin"));
-    CreateNewInterface(Interface(DecimalConvert<8>, "str", "octa"));
-    CreateNewInterface(Interface(DecimalConvert<16>, "str", "hex"));
-    CreateNewInterface(Interface(Version, "", "_version"));
-    CreateNewInterface(Interface(PatchVersion, "", "_patch"));
-
-    EXPORT_CONSTANT(kInterpreterVersion);
-    EXPORT_CONSTANT(kPlatformType);
-    EXPORT_CONSTANT(kPatchName);
   }
 }
