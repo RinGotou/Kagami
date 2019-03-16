@@ -24,7 +24,7 @@
 
 //if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
-//#define _DISABLE_SDL_
+#define _DISABLE_SDL_
 
 //Switching Debugging Feature
 //#define _DEBUG_
