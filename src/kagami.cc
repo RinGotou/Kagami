@@ -49,7 +49,7 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
     LoadSocketStuff();
 #endif
 #if not defined(_DISABLE_SDL_)
-    LoadSDLStuff();
+    InitSoundComponents();
 #endif
 
     KIR ir = loader.output;
@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
   };
 
 #if not defined(_DISABLE_SDL_)
-  if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+  if (dawn::EnvironmentSetup() != 0) {
     cout << "SDL initialization error!" << endl;
     return 0;
   }
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
   }
   
 #if not defined(_DISABLE_SDL_)
-  SDL_Quit();
+  dawn::EnvironmentCleanup();
 #endif
   return 0;
 }

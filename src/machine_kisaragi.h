@@ -226,7 +226,7 @@ namespace kagami {
   void InitContainerComponents();
 
 #if not defined(_DISABLE_SDL_)
-  void LoadSDLStuff();
+  void InitSoundComponents();
 #endif
 
 #if defined(_WIN32)

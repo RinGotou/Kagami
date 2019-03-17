@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="dawn">
+      <UniqueIdentifier>{63789927-3710-4781-8328-e2d2538bbd4f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common.h">
@@ -60,6 +63,21 @@
     <ClInclude Include="..\..\src\string_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\sound.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dawn\dawn.common.h">
+      <Filter>dawn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dawn\dawn.sound.h">
+      <Filter>dawn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dawn\dawn.ui.h">
+      <Filter>dawn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dawn\dawn.window.h">
+      <Filter>dawn</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\analyzer.cc">
@@ -97,6 +115,15 @@
     </ClCompile>
     <ClCompile Include="..\..\src\console_util.cc">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sound.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dawn\dawn.common.cc">
+      <Filter>dawn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dawn\dawn.window.cc">
+      <Filter>dawn</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

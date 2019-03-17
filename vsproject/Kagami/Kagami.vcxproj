@@ -21,6 +21,11 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\analyzer.h" />
     <ClInclude Include="..\..\src\containers.h" />
+    <ClInclude Include="..\..\src\dawn\dawn.common.h" />
+    <ClInclude Include="..\..\src\dawn\dawn.sound.h" />
+    <ClInclude Include="..\..\src\dawn\dawn.ui.h" />
+    <ClInclude Include="..\..\src\dawn\dawn.window.h" />
+    <ClInclude Include="..\..\src\sound.h" />
     <ClInclude Include="..\..\src\string_util.h" />
     <ClInclude Include="..\..\src\common.h" />
     <ClInclude Include="..\..\src\interface.h" />
@@ -38,6 +43,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\analyzer.cc" />
     <ClCompile Include="..\..\src\containers.cc" />
+    <ClCompile Include="..\..\src\dawn\dawn.common.cc" />
+    <ClCompile Include="..\..\src\dawn\dawn.window.cc" />
+    <ClCompile Include="..\..\src\sound.cc" />
     <ClCompile Include="..\..\src\string_util.cc" />
     <ClCompile Include="..\..\src\console_util.cc" />
     <ClCompile Include="..\..\src\kagami.cc" />

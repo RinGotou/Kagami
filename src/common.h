@@ -24,7 +24,9 @@
 
 //if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
-#define _DISABLE_SDL_
+//#if not defined(_DISABLE_SDL_)
+//#define _DISABLE_SDL_
+//#endif
 
 //Switching Debugging Feature
 //#define _DEBUG_
@@ -41,16 +43,10 @@
 
 #if not defined(_DISABLE_SDL_)
 #if defined(_WIN32)
-#pragma comment(lib,"SDL2.lib")
-#pragma comment(lib,"SDL2main.lib")
-#if defined(_DEBUG)
-#pragma comment(lib,"SDL2test.lib")
-#endif
-#pragma comment(lib,"SDL2_image.lib")
+#include "dawn/dawn.window.h"
+#include "dawn/dawn.sound.h"
 #else
 #endif
-#include <SDL.h>
-#include <SDL_image.h>
 #endif
 
 #define MAX_ERROR_COUNT 20
