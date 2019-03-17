@@ -17,9 +17,9 @@ fn Create(a)
   return func
 end
 
-version = version()
-patch = patch()
-println('Kagami Project ' + version + '\nPatch:' + patch)
+_version = version()
+_patch = patch()
+println('Kagami Project ' + _version + '\nPatch:' + _patch)
 func(1)
 func(1,2)
 add = Create(1)
