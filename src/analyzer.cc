@@ -458,6 +458,12 @@ namespace kagami {
         blk->args.emplace_back(Argument());
         return true;
       }
+      else {
+        if (blk->next.first != "(") {
+          error_string_ = "Invalid syntax after " + blk->current.first;
+          return false;
+        }
+      }
 
       Request request(token);
       blk->symbol.emplace_back(request);

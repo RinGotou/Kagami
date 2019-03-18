@@ -92,8 +92,8 @@ namespace kagami {
 
   Message ArrayPush(ObjectMap &p) {
     ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
-
-    base.emplace_back(p["object"]);
+    Object obj(management::type::GetObjectCopy(p["object"]), p["object"].GetTypeId());
+    base.emplace_back(obj);
 
     return Message();
   }

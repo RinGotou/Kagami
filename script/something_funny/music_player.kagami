@@ -1,0 +1,52 @@
+song_list = array()
+song_path = array()
+
+fn GetSongList()
+  stream = instream('C:\\workspace\\list.m3u')
+  while stream.eof() != true
+    path = stream.get()
+    song_path.push(path)
+    song_list.push(music(path))
+  end
+end
+
+fn main()
+  current = 0
+  size = song_list.size()
+  
+  song = song_list[current]
+  path = song_path[current]
+  song.Play()
+  
+  choice = 0
+  
+  while choice != 'q'
+    print('Now:' + path)
+    choice = input('>')
+  
+    case choice
+    when 'pause'
+      PauseMusic()
+    when 'resume'
+      ResumeMusic()
+    when 'next'
+      if current < size
+        current = current + 1
+        song = song_list[current]
+        path = song_path[current]
+        song.Play()
+      end
+    when 'prev'
+      if current > 0
+        current = current - 1
+        song = song_list[current]
+        path = song_path[current]
+        song.Play()
+      end
+    end
+    
+  end
+end
+
+GetSongList()
+main()

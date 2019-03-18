@@ -19,15 +19,15 @@ namespace kagami {
   }
 
   Message MusicPause(ObjectMap &p) {
-    if (Mix_PlayingMusic() == 0) {
+    if (Mix_PlayingMusic() == 1) {
       Mix_PauseMusic();
     }
-
+    
     return Message();
   }
 
   Message MusicResume(ObjectMap &p) {
-    if (Mix_PausedMusic() == 0) {
+    if (Mix_PausedMusic() == 1) {
       Mix_ResumeMusic();
     }
 

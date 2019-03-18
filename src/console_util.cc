@@ -1,6 +1,12 @@
 #include "machine_kisaragi.h"
 
 namespace kagami {
+  Message SystemCommand(ObjectMap &p) {
+    EXPECT_TYPE(p, "command", kTypeIdString);
+    system(p.Cast<string>("command").c_str());
+    return Message();
+  }
+
   Message Print(ObjectMap &p) {
     Object &obj = p[kStrObject];
     string type_id = obj.GetTypeId();
@@ -64,5 +70,6 @@ namespace kagami {
     CreateNewInterface(Interface(Input, "msg", "input", kCodeAutoFill));
     CreateNewInterface(Interface(Print, kStrObject, "print"));
     CreateNewInterface(Interface(PrintLine, kStrObject, "println"));
+    CreateNewInterface(Interface(SystemCommand, "command", "console"));
   }
 }
