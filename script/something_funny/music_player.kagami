@@ -30,7 +30,7 @@ fn main()
     when 'resume'
       ResumeMusic()
     when 'next'
-      if current < size
+      if current < (size - 1)
         current = current + 1
         song = song_list[current]
         path = song_path[current]
