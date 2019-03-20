@@ -50,6 +50,8 @@
 #endif
 
 #define MAX_ERROR_COUNT 20
+#define DEFAULT_STACK_DEPTH 10000
+#define DEFAULT_GIL_TICK 20
 
 namespace kagami {
   using std::string;

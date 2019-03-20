@@ -5,6 +5,8 @@ namespace kagami {
   namespace management {
     using InterfaceCollection = map<string, Interface>;
 
+    //long GetStackDepthLimit();
+
     void CreateNewInterface(Interface interface);
     Interface FindInterface(string id, string domain = kTypeIdNull);
     void CreateGenericInterface(Interface temp);

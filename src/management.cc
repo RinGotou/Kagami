@@ -3,6 +3,9 @@
 namespace kagami {
   namespace management {
     ///////////////////////////////////////////////////////////////
+    //
+
+    ///////////////////////////////////////////////////////////////
     //Inteface management
     map<GenericToken, Interface> &GetGenericInterfaceBase() {
       static map<GenericToken, Interface> base;
