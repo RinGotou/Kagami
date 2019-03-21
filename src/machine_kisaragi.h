@@ -61,7 +61,6 @@ namespace kagami {
     stack<bool> condition_stack;
     stack<size_t> loop_head;
     stack<size_t> loop_tail;
-    stack<size_t> fe_tracer;
     vector<string> fn_string_vec;
 
     MachineWorker() :
@@ -81,7 +80,6 @@ namespace kagami {
       condition_stack(),
       loop_head(),
       loop_tail(),
-      fe_tracer(),
       fn_string_vec() {}
 
     void MakeError(string str) {
