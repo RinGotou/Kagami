@@ -315,7 +315,7 @@ namespace kagami {
           it->second = unit.second;
         }
         else {
-	        this->insert(unit);
+          this->insert(unit);
         }
       }
     }
