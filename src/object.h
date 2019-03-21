@@ -313,10 +313,10 @@ namespace kagami {
         auto it = find(unit.first);
         if (it != end()) {
           it->second = unit.second;
-	      }
-	      else {
+        }
+        else {
 	        this->insert(unit);
-	      }
+        }
       }
     }
   };
