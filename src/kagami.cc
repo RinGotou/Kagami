@@ -40,7 +40,7 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
   IRLoader loader(path.c_str());
 
   if (loader.health) {
-    Activiate();
+    InitConsoleComponents();
     InitPlainTypeComponents();
     InitBaseTypes();
     InitContainerComponents();
