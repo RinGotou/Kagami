@@ -226,6 +226,50 @@ namespace kagami {
     return obj;
   }
 
+  bool Machine::FetchInterface(Interface &interface, CommandPointer &command, ObjectMap &obj_map) {
+    auto &id = command->first.head_interface;
+    auto &domain = command->first.domain;
+    auto &worker = worker_stack_.top();
+
+    //Object methods.
+    //In current developing processing, machine forced to querying built-in
+    //function. These code need to be rewritten when I work in class feature in
+    //the future.
+    if (command->first.domain.type != kArgumentNull) {
+      Object obj = FetchObject(domain, true);
+
+      if (worker.error) return false;
+
+      if (!find_in_vector(id, management::type::GetMethods(obj.GetTypeId()))) {
+        worker.MakeError("Method is not found - " + id);
+        return false;
+      }
+
+      interface = management::FindInterface(id, obj.GetTypeId());
+      obj_map.insert(NamedObject(kStrObject, obj));
+      return true;
+    }
+    //Plain bulit-in function and user-defined function
+    //At first, Machine will querying in built-in function map,
+    //and then try to fetch function object in heap.
+    else {
+      interface = management::FindInterface(id);
+
+      if (interface.Good()) return true;
+
+      ObjectPointer ptr = obj_stack_.Find(id);
+
+      if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
+        interface = ptr->Cast<Interface>();
+        return true;
+      }
+
+      worker.MakeError("Function is not found - " + id);
+    }
+
+    return false;
+  }
+
   void Machine::InitFunctionCatching(ArgumentList args) {
     auto &worker = worker_stack_.top();
     worker.fn_string_vec.clear();
@@ -521,9 +565,7 @@ namespace kagami {
       return;
     }
 
-    auto method_get = management::FindInterface("get", iterator_obj.GetTypeId());
-    obj_map = { NamedObject(kStrObject,iterator_obj) };
-    auto unit = method_get.Start(obj_map).GetObj();
+    auto unit = Invoke(iterator_obj, "get").GetObj();
 
     obj_stack_.Push();
     obj_stack_.CreateObject("!iterator", iterator_obj);
@@ -1291,6 +1333,11 @@ namespace kagami {
     }
   }
 
+
+  /*
+    Main loop of virtual machine.
+    The kisaragi machine runs single command in every single tick of machine loop.
+  */
   void Machine::Run() {
     if (ir_stack_.empty()) return;
     StateLevel level = kStateNormal;
@@ -1309,14 +1356,43 @@ namespace kagami {
     MachineWorker *worker = &worker_stack_.top();
     size_t size = ir->size();
 
+    //Refreshing loop tick state to make it work correctly.
     auto refresh_tick = [&]() ->void {
       ir = ir_stack_.back();
       size = ir->size();
       worker = &worker_stack_.top();
     };
 
-    //Main loop of current thread
+    //Enabling skipping by checking current mode value in stack frame.
+    auto skipping_checking = [&](CommandPointer &ptr) ->bool {
+      msg.Clear();
+      switch (worker->mode) {
+      case kModeNextCondition:
+        Skipping(true, { kTokenElif,kTokenElse });
+        break;
+      case kModeCaseJump:
+        Skipping(true, { kTokenWhen,kTokenElse });
+        break;
+      case kModeCycleJump:
+      case kModeForEachJump:
+      case kModeClosureCatching:
+        Skipping(false);
+        break;
+      default:
+        break;
+      }
+
+      worker->idx += 1;
+
+      ptr = &(*ir)[worker->idx];
+
+      if (worker->error) return false;
+      return true;
+    };
+
+    //Main loop of virtual machine.
     while (worker->idx < size || worker_stack_.size() > 1) {
+      //switch back to last stack frame
       if (worker->idx == size) {
         RecoverLastState();
         refresh_tick();
@@ -1328,31 +1404,12 @@ namespace kagami {
       obj_map.clear();
       Command *command = &(*ir)[worker->idx];
 
+      //Skip commands by checking current machine mode
       if (worker->NeedSkipping()) {
-        msg.Clear();
-        switch (worker->mode) {
-        case kModeNextCondition:
-          Skipping(true, { kTokenElif,kTokenElse });
-          break;
-        case kModeCaseJump:
-          Skipping(true, { kTokenWhen,kTokenElse });
-          break;
-        case kModeCycleJump:
-        case kModeForEachJump:
-        case kModeClosureCatching:
-          Skipping(false);
-          break;
-        default:
-          break;
-        }
-
-        worker->idx += 1;
-
-        command = &(*ir)[worker->idx];
-
-        if (worker->error) break;
+        if (!skipping_checking(command)) break;
       }
 
+      //Embedded machine commands.
       if (command->first.type == kRequestCommand 
         && !util::IsOperator(command->first.head_command)) {
 
@@ -1368,42 +1425,27 @@ namespace kagami {
         continue;
       }
       
+      //For built-in operator functions.
       if (command->first.type == kRequestCommand) {
         interface = management::GetGenericInterface(command->first.head_command);
       }
 
+      //Querying function(Interpreter built-in or user-defined)
       if (command->first.type == kRequestInterface) {
-        if (command->first.domain.type != kArgumentNull) {
-          Object domain_obj = FetchObject(command->first.domain, true);
-          type_id = domain_obj.GetTypeId();
-          interface = management::FindInterface(command->first.head_interface, type_id);
-          obj_map.insert(NamedObject(kStrObject, domain_obj));
-        }
-        else {
-          interface = management::FindInterface(command->first.head_interface);
-
-          if (!interface.Good()) {
-            ObjectPointer func_obj_ptr = obj_stack_.Find(command->first.head_interface);
-            if (func_obj_ptr != nullptr && func_obj_ptr->GetTypeId() == kTypeIdFunction) {
-              interface = func_obj_ptr->Cast<Interface>();
-            }
-            else {
-              worker->MakeError(command->first.head_interface + " is not a function object.");
-            }
-          }
+        if (!FetchInterface(interface, command, obj_map)) {
+          break;
         }
       }
 
-      if (worker->error) break;
-
-      if (!interface.Good()) {
-        worker->MakeError("Function is not found - " + command->first.head_interface);
-      }
-
+      //Building object map for function call expressed by command
       GenerateArgs(interface, command->second, obj_map);
 
       if (worker->error) break;
 
+      //(For user-defined function)
+      //Machine will create new stack frame and push IR pointer to machine stack,
+      //and start new processing in next tick.
+      //TODO: Push object to object stack directly
       if (interface.GetPolicyType() == kInterfaceKIR) {
         ir_stack_.push_back(&interface.GetIR());
         worker_stack_.push(MachineWorker());

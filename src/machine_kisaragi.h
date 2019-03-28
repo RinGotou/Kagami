@@ -31,6 +31,7 @@ namespace kagami {
   const string kIteratorBehavior = "get|step_forward|step_back|__compare";
   const string kContainerBehavior = "head|tail";
   using CombinedCodeline = pair<size_t, string>;
+  using CommandPointer = Command * ;
 
   template <class T>
   shared_ptr<void> SimpleSharedPtrCopy(shared_ptr<void> target) {
@@ -139,7 +140,8 @@ namespace kagami {
     Object FetchInterfaceObject(string id, string domain);
     Object FetchObject(Argument &arg, bool checking = false);
 
-    //Interface FetchInterface(string id, string type_id);
+    bool FetchInterface(Interface &interface, CommandPointer &command,
+      ObjectMap &obj_map);
 
     void InitFunctionCatching(ArgumentList args);
     void FinishFunctionCatching(bool closure = false);
@@ -218,7 +220,7 @@ namespace kagami {
     void Run();
   };
 
-  void Activiate();
+  void InitConsoleComponents();
   void InitPlainTypeComponents();
   void InitBaseTypes();
   void InitContainerComponents();

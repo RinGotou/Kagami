@@ -63,7 +63,7 @@ namespace kagami {
     return Message().SetObject(buf);
   }
 
-  void Activiate() {
+  void InitConsoleComponents() {
     using management::CreateNewInterface;
 
     CreateNewInterface(Interface(Input, "msg", "input", kCodeAutoFill));
