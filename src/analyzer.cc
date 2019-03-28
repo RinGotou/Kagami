@@ -193,38 +193,6 @@ namespace kagami {
     return msg;
   }
 
-  void Analyzer::Reversing(AnalyzerWorkBlock *blk) {
-    if (blk->symbol.empty()) return;
-    if (blk->symbol.size() == 1) return;
-
-    deque<Request> temp_symbol;
-    deque<Argument> temp_arg;
-
-    while (blk->symbol.back().priority == blk->symbol[blk->symbol.size() - 2].priority) {
-      temp_symbol.push_back(blk->symbol.back());
-
-      temp_arg.push_back(blk->args.back());
-      blk->symbol.pop_back();
-      blk->args.pop_back();
-    }
-    temp_symbol.push_back(blk->symbol.back());
-    blk->symbol.pop_back();
-
-    for (int count = 2; count > 0; count -= 1) {
-      temp_arg.push_back(blk->args.back());
-      blk->args.pop_back();
-    }
-
-    while (!temp_symbol.empty()) {
-      blk->symbol.push_back(temp_symbol.front());
-      temp_symbol.pop_front();
-    }
-    while (!temp_arg.empty()) {
-      blk->args.push_back(temp_arg.front());
-      temp_arg.pop_front();
-    }
-  }
-
   bool Analyzer::InstructionFilling(AnalyzerWorkBlock *blk) {
     deque<Argument> arguments;
     size_t idx = 0, limit = 0;
@@ -513,20 +481,26 @@ namespace kagami {
     Request request(token);
     request.priority = current_priority;
 
+    //TODO:processing for same level
     if (!blk->symbol.empty()) {
       bool stack_top_operator = util::IsBinaryOperator(blk->symbol.back().head_command);
       int stack_top_priority = util::GetTokenPriority(blk->symbol.back().head_command);
 
-      while (!blk->symbol.empty() && stack_top_operator && stack_top_priority > current_priority) {
-        Reversing(blk);
+      auto checking = [&stack_top_priority, &current_priority]()->bool {
+        return (stack_top_priority >= current_priority);
+      };
+
+      while (!blk->symbol.empty() && stack_top_operator && checking()) {
         if (!InstructionFilling(blk)) {
           health_ = false;
           error_string_ = "Operation error in binary operator.";
           break;
         }
 
-        stack_top_operator = util::IsBinaryOperator(blk->symbol.back().head_command);
-        stack_top_priority = util::GetTokenPriority(blk->symbol.back().head_command);
+        stack_top_operator = 
+          (!blk->symbol.empty() && util::IsBinaryOperator(blk->symbol.back().head_command));
+        stack_top_priority = blk->symbol.empty() ? 5 :
+          util::GetTokenPriority(blk->symbol.back().head_command);
       }
     }
 
@@ -544,24 +518,6 @@ namespace kagami {
         break;
       }
 
-      auto firstEnum = blk->symbol.back().head_command;
-      if (blk->symbol.size() > 1 && util::IsBinaryOperator(firstEnum)) {
-        if (util::IsBinaryOperator(blk->symbol[blk->symbol.size() - 2].head_command)) {
-          if (checked) {
-            checked = false;
-          }
-          else {
-            checked = true;
-            blk->need_reversing = true;
-            Reversing(blk);
-          }
-        }
-      }
-
-      if (!util::IsBinaryOperator(blk->symbol.back().head_command)) {
-        blk->need_reversing = false;
-      }
-
       if (!InstructionFilling(blk)) break;
     }
   }
@@ -574,22 +530,6 @@ namespace kagami {
 
     while (!blk->symbol.empty() && !compare(top_token, { "{","[","(" })
       && blk->symbol.back().head_command != kTokenBind) {
-
-      auto first_token = blk->symbol.back().head_command;
-
-      if (util::IsBinaryOperator(first_token)) {
-        if (util::IsBinaryOperator(blk->symbol[blk->symbol.size() - 2].head_command)) {
-          if (checked) {
-            checked = false;
-          }
-          else {
-            checked = true;
-            blk->need_reversing = true;
-            Reversing(blk);
-          }
-        }
-      }
-
       result = InstructionFilling(blk);
       if (!result) break;
       top_token = blk->symbol.back().head_interface;

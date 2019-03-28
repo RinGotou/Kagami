@@ -54,7 +54,6 @@ namespace kagami {
     vector<string> Scanning(string target);
     Message Tokenizer(vector<string> target);
 
-    void Reversing(AnalyzerWorkBlock *blk);
     bool InstructionFilling(AnalyzerWorkBlock *blk);
     void EqualMark(AnalyzerWorkBlock *blk);
     void Dot(AnalyzerWorkBlock *blk);
