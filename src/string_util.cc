@@ -5,6 +5,22 @@ namespace kagami {
     return compare(obj.GetTypeId(), { kTypeIdString,kTypeIdWideString });
   }
 
+  Message CreateStringFromArray(ObjectMap &p) {
+    EXPECT_TYPE(p, "src", kTypeIdArray);
+    auto &base = p.Cast<ObjectArray>("src");
+    shared_ptr<string> dest(make_shared<string>());
+    
+    for (auto it = base.begin(); it != base.end(); ++it) {
+      if (it->GetTypeId() != kTypeIdString) {
+        continue;
+      }
+
+      dest->append(it->Cast<string>());
+    }
+
+    return Message().SetObject(Object(dest, kTypeIdString));
+  }
+
   //String
   Message StringConstructor(ObjectMap &p) {
     Object &obj = p["raw_string"];
@@ -48,6 +64,19 @@ namespace kagami {
     }
 
     return Message().SetObject(result);
+  }
+
+  Message StringToArray(ObjectMap &p) {
+    auto &str = p.Cast<string>(kStrObject);
+    shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+    
+    base->reserve(str.size());
+
+    for (auto &unit : str) {
+      base->emplace_back(string().append(1, unit));
+    }
+
+    return Message().SetObject(Object(base, kTypeIdArray));
   }
 
   //InStream
@@ -231,7 +260,8 @@ namespace kagami {
           Interface(StringFamilySubStr<string>, "start|size", "substr"),
           Interface(GetStringFamilySize<string>, "", "size"),
           Interface(StringFamilyConverting<wstring, string>, "", "to_wide"),
-          Interface(StringCompare, kStrRightHandSide, kStrCompare)
+          Interface(StringCompare, kStrRightHandSide, kStrCompare),
+          Interface(StringToArray, "","to_array")
         }
     );
 
@@ -289,6 +319,7 @@ namespace kagami {
     CreateNewInterface(Interface(DecimalConvert<2>, "str", "bin"));
     CreateNewInterface(Interface(DecimalConvert<8>, "str", "octa"));
     CreateNewInterface(Interface(DecimalConvert<16>, "str", "hex"));
+    CreateNewInterface(Interface(CreateStringFromArray, "src", "ar2string"));
 
     EXPORT_CONSTANT(kTypeIdFunction);
     EXPORT_CONSTANT(kTypeIdString);

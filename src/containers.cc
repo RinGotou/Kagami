@@ -141,6 +141,13 @@ namespace kagami {
     );
   }
 
+  Message ArrayClear(ObjectMap &p) {
+    auto &base = p.Cast<ObjectArray>(kStrObject);
+    base.clear();
+    base.shrink_to_fit();
+    return Message();
+  }
+
   void InitContainerComponents() {
     using management::type::NewTypeSetup;
 
@@ -169,6 +176,7 @@ namespace kagami {
           Interface(ArrayEmpty, "", "empty"),
           Interface(ArrayBegin, "", "head"),
           Interface(ArrayEnd, "", "tail"),
+          Interface(ArrayClear, "", "clear")
         }
     );
 

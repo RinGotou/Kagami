@@ -1,11 +1,27 @@
 song_list = array()
 song_path = array()
 
+fn GetMusicFileName(str)
+  ar = str.to_array()
+  dest = array()
+  
+  for unit in ar
+    if unit != '\\'
+      dest.push(unit)
+    else
+      dest.clear()
+    end
+  end
+  
+  result = ar2string(dest)
+  return result
+end
+
 fn GetSongList()
   stream = instream('C:\\workspace\\list.m3u')
   while stream.eof() != true
     path = stream.get()
-    song_path.push(path)
+    song_path.push(GetMusicFileName(path))
     song_list.push(music(path))
   end
 end
@@ -19,17 +35,21 @@ fn main()
   song.Play()
   
   choice = 0
+  state = 'Playing'
   
   while choice != 'q'
-    print('Now:' + path)
+    print(state + ' - ' + path)
     choice = input('>')
   
     case choice
     when 'pause'
       PauseMusic()
+      state = 'Paused'
     when 'resume'
       ResumeMusic()
+      state = 'Playing'
     when 'next'
+      state = 'Playing'
       if current < (size - 1)
         current = current + 1
         song = song_list[current]
@@ -37,6 +57,7 @@ fn main()
         song.Play()
       end
     when 'prev'
+      state = 'Playing'
       if current > 0
         current = current - 1
         song = song_list[current]
@@ -48,5 +69,7 @@ fn main()
   end
 end
 
+println('Kagami interpreter version:' + version() + '\nCodename:' + patch())
+println('Sample:Simple Music Player')
 GetSongList()
 main()
