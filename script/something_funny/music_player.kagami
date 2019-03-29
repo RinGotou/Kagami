@@ -69,7 +69,8 @@ fn main()
   end
 end
 
-println('Kagami interpreter version:' + version() + '\nCodename:' + patch())
-println('Sample:Simple Music Player')
+println('Kagami Project version:' + version() + '\nCodename:' + patch())
+println('Sample:Simple Music Player\n')
+println('Build playlist info...')
 GetSongList()
 main()
