@@ -63,10 +63,17 @@ namespace kagami {
     return Message().SetObject(buf);
   }
 
+  Message GetChar(ObjectMap &p) {
+    string str;
+    str.append(1, static_cast<char>(getchar()));
+    return Message().SetObject(str);
+  }
+
   void InitConsoleComponents() {
     using management::CreateNewInterface;
 
     CreateNewInterface(Interface(Input, "msg", "input", kCodeAutoFill));
+    CreateNewInterface(Interface(GetChar, "", "getchar"));
     CreateNewInterface(Interface(Print, kStrObject, "print"));
     CreateNewInterface(Interface(PrintLine, kStrObject, "println"));
     CreateNewInterface(Interface(SystemCommand, "command", "console"));

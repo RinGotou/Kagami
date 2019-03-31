@@ -1,9 +1,16 @@
 # Kagami Project
 
+Just another wild flower.
+
 ## What's this?
 It's a project of experimental script language. The name of this project is from Japanese kanji "鏡"(かがみ).
 
-This project contains a language interpreter, "如月"(きさらぎ, kisaragi).
+## Design
+I want to create a simple language for easier simple visual novel developing. Kagami is design for logic 
+implementation, not CPU intensive job.   
+
+This project contains a language interpreter, "如月"(きさらぎ, kisaragi). It's not a pure stack-based IR virtual 
+machine.
 
 ## About repo branch
 "master" is complete version of code in "testing" branch.IT'S NOT REAL STABLE BRANCH!

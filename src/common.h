@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
+#include <cstdio>
 #include <type_traits>
 #include <iterator>
 #include <list>
