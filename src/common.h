@@ -268,6 +268,7 @@ namespace kagami {
     kStrPatch          = "patch",
     kStrEnd            = "end",
     kStrPrint          = "__print",
+    kStrSwitchLine     = "!switch_line",
     kStrCaseObj        = "__case",
     kStrCommentBegin   = "=begin",
     kStrCommentEnd     = "=end",

@@ -5,6 +5,11 @@
 #include "trace.h"
 #include "management.h"
 
+#define CHECK_PRINT_OPT()                          \
+  if (p.find(kStrSwitchLine) != p.end()) {         \
+    std::cout << std::endl;                        \
+  }
+
 #define SET_MAP(MAP) auto &obj_map = MAP
 
 #define CONVERT_OBJECT(ID,TYPE) obj_map[ID].Cast<TYPE>()
@@ -140,6 +145,7 @@ namespace kagami {
     Object FetchInterfaceObject(string id, string domain);
     Object FetchObject(Argument &arg, bool checking = false);
 
+    bool _FetchInterface(Interface &interface, string id, string type_id);
     bool FetchInterface(Interface &interface, CommandPointer &command,
       ObjectMap &obj_map);
 

@@ -319,6 +319,14 @@ namespace kagami {
         }
       }
     }
+
+    void dispose(string id) {
+      auto it = find(id);
+
+      if (it != end()) {
+        erase(it);
+      }
+    }
   };
 
   class ObjectStack {

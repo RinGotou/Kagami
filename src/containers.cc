@@ -105,22 +105,6 @@ namespace kagami {
     return Message().SetObject(base.empty());
   }
 
-  Message ArrayPrint(ObjectMap &p) {
-    Message result;
-    ObjectMap obj_map;
-
-    auto &base = p.Cast<ObjectArray>(kStrObject);
-    auto interface = management::FindInterface("print", kTypeIdNull);
-
-    for (auto &unit : base) {
-      obj_map.insert(NamedObject(kStrObject, unit));
-      result = interface.Start(obj_map);
-      obj_map.clear();
-    }
-
-    return result;
-  }
-
   Message ArrayBegin(ObjectMap &p) {
     auto &base = p[kStrObject].Cast<ObjectArray>();
     shared_ptr<IteratorPackage> pkg(
@@ -169,7 +153,6 @@ namespace kagami {
       .InitMethods(
         {
           Interface(ArrayGetElement, "index", "__at"),
-          Interface(ArrayPrint, "", "__print"),
           Interface(ArrayGetSize, "", "size"),
           Interface(ArrayPush, "object", "push"),
           Interface(ArrayPop, "object", "pop"),

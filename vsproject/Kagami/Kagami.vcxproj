@@ -45,6 +45,7 @@
     <ClCompile Include="..\..\src\containers.cc" />
     <ClCompile Include="..\..\src\dawn\dawn.common.cc" />
     <ClCompile Include="..\..\src\dawn\dawn.window.cc" />
+    <ClCompile Include="..\..\src\interface.cc" />
     <ClCompile Include="..\..\src\sound.cc" />
     <ClCompile Include="..\..\src\string_util.cc" />
     <ClCompile Include="..\..\src\console_util.cc" />

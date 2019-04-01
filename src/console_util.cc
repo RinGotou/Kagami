@@ -7,6 +7,7 @@ namespace kagami {
     return Message();
   }
 
+  //Print single object
   Message Print(ObjectMap &p) {
     Object &obj = p[kStrObject];
     string type_id = obj.GetTypeId();
@@ -24,6 +25,8 @@ namespace kagami {
         std::cout << obj.Cast<bool>() << std::flush;
       }
 
+      CHECK_PRINT_OPT();
+
       return Message();
     }
 
@@ -34,15 +37,13 @@ namespace kagami {
       return Message();
     }
 
-    return management::FindInterface(kStrPrint, obj.GetTypeId()).Start(p);
+    return MakeInvokePoint(kStrPrint, obj.GetTypeId());
   }
 
+  //Print object and switch to next line
   Message PrintLine(ObjectMap &p) {
+    p.insert(NamedObject(kStrSwitchLine, Object()));
     Message msg = Print(p);
-    if (msg.GetLevel() == kStateNormal) {
-      std::cout << std::endl;
-    }
-
     return msg;
   }
 

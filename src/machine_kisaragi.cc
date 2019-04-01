@@ -226,6 +226,37 @@ namespace kagami {
     return obj;
   }
 
+  bool Machine::_FetchInterface(Interface &interface, string id, string type_id) {
+    auto &worker = worker_stack_.top();
+
+    //Modified version for function invoking
+    if (type_id != kTypeIdNull) {
+      if (!find_in_vector(id, management::type::GetMethods(type_id))) {
+        worker.MakeError("Method is not found - " + id);
+        return false;
+      }
+
+      interface = management::FindInterface(id, type_id);
+      return true;
+    }
+    else {
+      interface = management::FindInterface(id);
+
+      if (interface.Good()) return true;
+
+      ObjectPointer ptr = obj_stack_.Find(id);
+
+      if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
+        interface = ptr->Cast<Interface>();
+        return true;
+      }
+
+      worker.MakeError("Function is not found - " + id);
+    }
+
+    return false;
+  }
+
   bool Machine::FetchInterface(Interface &interface, CommandPointer &command, ObjectMap &obj_map) {
     auto &id = command->first.head_interface;
     auto &domain = command->first.domain;
@@ -1390,6 +1421,16 @@ namespace kagami {
       return true;
     };
 
+    auto update_stack_frame = [&](Interface &func)->void {
+      ir_stack_.push_back(&func.GetIR());
+      worker_stack_.push(MachineWorker());
+      obj_stack_.Push();
+      obj_stack_.CreateObject(kStrUserFunc, Object(func.GetId()));
+      obj_stack_.MergeMap(obj_map);
+      obj_stack_.MergeMap(interface.GetClosureRecord());
+      refresh_tick();
+    };
+
     //Main loop of virtual machine.
     while (worker->idx < size || worker_stack_.size() > 1) {
       //switch back to last stack frame
@@ -1445,15 +1486,8 @@ namespace kagami {
       //(For user-defined function)
       //Machine will create new stack frame and push IR pointer to machine stack,
       //and start new processing in next tick.
-      //TODO: Push object to object stack directly
       if (interface.GetPolicyType() == kInterfaceKIR) {
-        ir_stack_.push_back(&interface.GetIR());
-        worker_stack_.push(MachineWorker());
-        obj_stack_.Push();
-        obj_stack_.CreateObject(kStrUserFunc, Object(command->first.head_interface));
-        obj_stack_.MergeMap(obj_map);
-        obj_stack_.MergeMap(interface.GetClosureRecord());
-        refresh_tick();
+        update_stack_frame(interface);
         continue;
       }
       else {
@@ -1463,6 +1497,22 @@ namespace kagami {
       if (msg.GetLevel() == kStateError) {
         interface_error = true;
         break;
+      }
+
+      if (msg.GetCode() == kCodeInterface) {
+        auto arg = BuildStringVector(msg.GetDetail());
+        if (!_FetchInterface(interface, arg[0], arg[1])) {
+          break;
+        }
+
+        if (interface.GetPolicyType() == kInterfaceKIR) {
+          update_stack_frame(interface);
+        }
+        else {
+          msg = interface.Start(obj_map);
+          worker->idx += 1;
+        }
+        continue;
       }
 
       if (msg.GetCode() == kCodeObject) {

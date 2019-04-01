@@ -46,7 +46,11 @@ end
 fn ArrayTest()
   ar = array(5,'hello')
   println('Array size:' + ar.size())
-  println(ar)
+  
+  for unit in ar
+    println(ar)
+  end
+
   i = 0
   
   while i < 5

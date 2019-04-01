@@ -69,10 +69,6 @@ fn InsertionSort(array_size)
   
   println('Start Time:' + startTime)
   println('End Time  :' + time())
-  
-  if array_size <= 10
-    println(ar)
-  end
 end
 
 fn main()

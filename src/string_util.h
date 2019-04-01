@@ -82,6 +82,7 @@ namespace kagami {
     StringType &str = p.Cast<StringType>(kStrObject);
     StreamBase<StringType, StreamType> stream;
     stream << str;
+    CHECK_PRINT_OPT();
     return Message();
   }
 
