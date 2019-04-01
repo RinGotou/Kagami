@@ -19,6 +19,8 @@ namespace dawn {
 
     Music(string path) : ptr_(Mix_LoadMUS(path.c_str())) {}
 
+    Music(SDL_RWops *ops) : ptr_(Mix_LoadMUS_RW(ops,0)) {}
+
     Channel Play(int loop = 0) {
       return Mix_PlayMusic(ptr_, loop);
     }

@@ -5,7 +5,14 @@ namespace kagami {
     EXPECT_TYPE(p, "path", kTypeIdString);
     string path = p.Cast<string>("path");
 
+#if defined(_WIN32) && defined(HAVE_STDIO_H)
+    wstring wpath = s2ws(path);
+    auto *fp = _wfopen(wpath.c_str(), L"r");
+    auto *ops = SDL_RWFromFP(fp, SDL_TRUE);
+    dawn::ManagedMusic music(new dawn::Music(ops));
+#else
     dawn::ManagedMusic music(new dawn::Music(path));
+#endif
 
     if (!music->Good()) return Message().SetObject(false);
 

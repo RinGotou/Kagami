@@ -11,6 +11,11 @@ namespace kagami {
     shared_ptr<string> dest(make_shared<string>());
     
     for (auto it = base.begin(); it != base.end(); ++it) {
+      if (it->GetTypeId() == kTypeIdInt) {
+        dest->append(1, static_cast<char>(it->Cast<long>()));
+        continue;
+      }
+
       if (it->GetTypeId() != kTypeIdString) {
         continue;
       }
@@ -79,36 +84,39 @@ namespace kagami {
     return Message().SetObject(Object(base, kTypeIdArray));
   }
 
-  //InStream
-  Message InStreamConsturctor(ObjectMap &p) {
+  //InStream-new
+  Message NewInStream(ObjectMap &p) {
     EXPECT_TYPE(p, "path", kTypeIdString);
+    wstring path = s2ws(p.Cast<string>("path"));
 
-    string path = p.Cast<string>("path");
-
-    shared_ptr<ifstream> ifs = 
-      make_shared<ifstream>(ifstream(path.c_str(), std::ios::in));
+    shared_ptr<wifstream> ifs(
+      make_shared<wifstream>(path, std::ios::in)
+    );
 
     return Message().SetObject(Object(ifs, kTypeIdInStream));
   }
 
   Message InStreamGet(ObjectMap &p) {
-    ifstream &ifs = p.Cast<ifstream>(kStrObject);
-    Message msg;
+    wifstream &ifs = p.Cast<wifstream>(kStrObject);
 
     if (!ifs.good()) {
       return Message(kCodeBadStream, "Invalid instream.", kStateError);
     }
 
-    if (ifs.eof()) return Message("");
+    if (ifs.eof()) {
+      return Message("");
+    }
 
-    string str;
-    std::getline(ifs, str);
+    wstring wstr;
+    std::getline(ifs, wstr);
+    string str = ws2s(wstr);
+    if (str.back() == '\n') str.pop_back();
 
-    return Message().SetObject(Object(make_shared<string>(str), kTypeIdString));
+    return Message().SetObject(str);
   }
 
   Message InStreamEOF(ObjectMap &p) {
-    ifstream &ifs = p.Cast<ifstream>(kStrObject);
+    wifstream &ifs = p.Cast<wifstream>(kStrObject);
     return Message().SetObject(ifs.eof());
   }
 
@@ -265,15 +273,15 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdInStream, FakeCopy<ifstream>)
+    NewTypeSetup(kTypeIdInStream, FakeCopy<wifstream>)
       .InitConstructor(
-        Interface(InStreamConsturctor, "path", "instream")
+        Interface(NewInStream, "path", "instream")
       )
       .InitMethods(
         {
           Interface(InStreamGet, "", "get"),
           Interface(InStreamEOF, "", "eof"),
-          Interface(StreamFamilyClose<ifstream>, "", "close")
+          Interface(StreamFamilyClose<wifstream>, "", "close")
         }
     );
 

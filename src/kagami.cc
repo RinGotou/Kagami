@@ -89,6 +89,7 @@ inline void Patch(string locale) {
   std::ios::sync_with_stdio(false);
   std::locale::global(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
   std::wcout.imbue(std::locale(locale));
+  std::cout.imbue(std::locale(locale));
 }
 
 void Processing(Processor &processor) {
@@ -102,6 +103,7 @@ void Processing(Processor &processor) {
       atexit(AtExitHandler);
     }
 
+    //Need to place a command argument for this option
     Patch("");
 
     StartInterpreter_Kisaragi(path, log, processor.Exist("rtlog"));

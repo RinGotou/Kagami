@@ -71,6 +71,8 @@ namespace kagami {
   using std::size_t;
   using std::ifstream;
   using std::ofstream;
+  using std::wifstream;
+  using std::wostream;
   using std::stack;
   using std::to_string;
   using std::stoi;
