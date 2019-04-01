@@ -110,7 +110,7 @@ namespace kagami {
     wstring wstr;
     std::getline(ifs, wstr);
     string str = ws2s(wstr);
-    if (str.back() == '\n') str.pop_back();
+    if (str.back() == '\n' || str.back() == '\0') str.pop_back();
 
     return Message().SetObject(str);
   }
@@ -180,7 +180,6 @@ namespace kagami {
     string str = p.Cast<string>("str");
     auto &pat = p.Cast<regex>(kStrObject);
     bool result = regex_match(str, pat);
-
 
     return Message().SetObject(result);
   }
