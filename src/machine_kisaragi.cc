@@ -1469,8 +1469,10 @@ namespace kagami {
         if (worker->invoking_point) {
           (this->*(worker->recover_point))(command->second);
         }
-
-        MachineCommands(command->first.head_command, command->second, command->first);
+        else {
+          MachineCommands(command->first.head_command, 
+            command->second, command->first);
+        }
 
         if (command->first.head_command == kTokenReturn) {
           refresh_tick();
