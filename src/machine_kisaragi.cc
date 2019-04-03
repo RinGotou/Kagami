@@ -467,10 +467,17 @@ namespace kagami {
     }
   }
 
-  Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
+  Message Machine::Invoke(Object obj, string id, 
+    const initializer_list<NamedObject> &&args,
+    InvokingRecoverPoint recover_point) {
     auto &worker = worker_stack_.top();
     auto methods = management::type::GetMethods(obj.GetTypeId());
     auto found = find_in_vector(id, methods);
+    Interface interface;
+
+    if (recover_point != nullptr) {
+      worker.recover_point = recover_point;
+    }
 
     if (!found) {
       //Immediately push event to avoid ugly checking block.
@@ -478,12 +485,20 @@ namespace kagami {
       return Message();
     }
 
-    //TODO:user-defined class
-    auto interface = management::FindInterface(id, obj.GetTypeId());
-    ObjectMap obj_map = args;
-    obj_map.insert(NamedObject(kStrObject, obj));
+    _FetchInterface(interface, id, obj.GetTypeId());
 
-    return interface.Start(obj_map);
+    if (interface.GetPolicyType() == kInterfaceKIR) {
+      worker.invoking_point = true;
+      worker.invoking_dest.reset(new Interface(interface));
+    }
+    else {
+      ObjectMap obj_map = args;
+      obj_map.insert(NamedObject(kStrObject, obj));
+
+      return interface.Start(obj_map);
+    }
+
+    return Message();
   }
 
   void Machine::SetSegmentInfo(ArgumentList args) {
@@ -615,7 +630,6 @@ namespace kagami {
     auto method_tail = FindInterface("tail", container.GetTypeId());
     auto method_step_forward = FindInterface("step_forward", iterator.GetTypeId());
     ObjectMap obj_map;
-
 
     auto tail = Invoke(container, kStrTail).GetObj();
 
@@ -1364,7 +1378,6 @@ namespace kagami {
     }
   }
 
-
   /*
     Main loop of virtual machine.
     The kisaragi machine runs single command in every single tick of machine loop.
@@ -1453,6 +1466,9 @@ namespace kagami {
       //Embedded machine commands.
       if (command->first.type == kRequestCommand 
         && !util::IsOperator(command->first.head_command)) {
+        if (worker->invoking_point) {
+          (this->*(worker->recover_point))(command->second);
+        }
 
         MachineCommands(command->first.head_command, command->second, command->first);
 
@@ -1461,6 +1477,18 @@ namespace kagami {
         }
 
         if (worker->error) break;
+
+        if (worker->invoking_point) {
+          if (worker->recover_point == nullptr) {
+            worker->invoking_point = false;
+            worker->recover_point = nullptr;
+            worker->invoking_dest.reset();
+          }
+          else {
+            update_stack_frame(*worker->invoking_dest);
+            continue;
+          }
+        }
 
         worker->idx += 1;
         continue;
@@ -1499,6 +1527,7 @@ namespace kagami {
         break;
       }
 
+      //Invoking by return value.
       if (msg.GetCode() == kCodeInterface) {
         auto arg = BuildStringVector(msg.GetDetail());
         if (!_FetchInterface(interface, arg[0], arg[1])) {

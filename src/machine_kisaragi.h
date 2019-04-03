@@ -33,6 +33,8 @@
 #define BAD_EXP_MSG(MSG) Message(kCodeBadExpression, MSG, kStateError)
 
 namespace kagami {
+  class Machine;
+
   const string kIteratorBehavior = "get|step_forward|step_back|__compare";
   const string kContainerBehavior = "head|tail";
   using CombinedCodeline = pair<size_t, string>;
@@ -49,9 +51,13 @@ namespace kagami {
     return target;
   }
 
+  using InvokingRecoverPoint = void(Machine::*)(ArgumentList);
+
   class MachineWorker {
   public:
+    InvokingRecoverPoint recover_point;
     bool error;
+    bool invoking_point;
     bool activated_continue;
     bool activated_break;
     size_t origin_idx;
@@ -59,6 +65,7 @@ namespace kagami {
     size_t idx;
     size_t fn_idx;
     size_t skipping_count;
+    unique_ptr<Interface> invoking_dest;
     GenericToken last_command;
     MachineMode mode;
     string error_string;
@@ -70,7 +77,9 @@ namespace kagami {
     vector<string> fn_string_vec;
 
     MachineWorker() :
+      recover_point(nullptr),
       error(false),
+      invoking_point(false),
       activated_continue(false),
       activated_break(false),
       origin_idx(0),
@@ -78,6 +87,7 @@ namespace kagami {
       idx(0),
       fn_idx(0),
       skipping_count(0),
+      invoking_dest(nullptr),
       last_command(kTokenNull),
       mode(kModeNormal),
       error_string(),
@@ -156,7 +166,8 @@ namespace kagami {
       initializer_list<GenericToken> terminators = {});
 
     Message Invoke(Object obj, string id, 
-      const initializer_list<NamedObject> &&args = {});
+      const initializer_list<NamedObject> &&args = {},
+      InvokingRecoverPoint recover_point = nullptr);
 
     void SetSegmentInfo(ArgumentList args);
     void CommandSwap(ArgumentList args);
