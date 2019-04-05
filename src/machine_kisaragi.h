@@ -10,6 +10,9 @@
     std::cout << std::endl;                        \
   }
 
+#define CHECK_INVOKE_OPT()                         \
+  if (worker_stack_.top().invoking_point) return;
+
 #define SET_MAP(MAP) auto &obj_map = MAP
 
 #define CONVERT_OBJECT(ID,TYPE) obj_map[ID].Cast<TYPE>()

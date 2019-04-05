@@ -471,6 +471,13 @@ namespace kagami {
     const initializer_list<NamedObject> &&args,
     InvokingRecoverPoint recover_point) {
     auto &worker = worker_stack_.top();
+
+    if (worker.invoking_point) {
+      Object obj = worker.return_stack.top();
+      worker.return_stack.pop();
+      return Message().SetObject(obj);
+    }
+
     auto methods = management::type::GetMethods(obj.GetTypeId());
     auto found = find_in_vector(id, methods);
     Interface interface;
@@ -598,6 +605,7 @@ namespace kagami {
     }
 
     auto msg = Invoke(container_obj, kStrHead);
+    CHECK_INVOKE_OPT();
 
     if (msg.GetCode() != kCodeObject) {
       worker.MakeError("Invalid iterator of container");
@@ -612,6 +620,7 @@ namespace kagami {
     }
 
     auto unit = Invoke(iterator_obj, "get").GetObj();
+    CHECK_INVOKE_OPT();
 
     obj_stack_.Push();
     obj_stack_.CreateObject("!iterator", iterator_obj);

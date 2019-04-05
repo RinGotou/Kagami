@@ -417,10 +417,10 @@ namespace kagami {
       }
 
       if (find_in_vector(token, kReservedWordStore)) {
-        if (blk->next.first == "(") {
-          error_string_ = "Invalid '(' after " + blk->current.first;
-          return false;
-        }
+        //if (blk->next.first == "(") {
+        //  error_string_ = "Invalid '(' after " + blk->current.first;
+        //  return false;
+        //}
 
         blk->symbol.emplace_back(Request(token));
         blk->args.emplace_back(Argument());
