@@ -496,7 +496,7 @@ namespace kagami {
 
     if (interface.GetPolicyType() == kInterfaceKIR) {
       worker.invoking_point = true;
-      worker.invoking_dest.reset(new Interface(interface));
+      worker.invoking_dest = new Interface(interface);
     }
     else {
       ObjectMap obj_map = args;
@@ -1493,7 +1493,7 @@ namespace kagami {
           if (worker->recover_point == nullptr) {
             worker->invoking_point = false;
             worker->recover_point = nullptr;
-            worker->invoking_dest.reset();
+            delete worker->invoking_dest;
           }
           else {
             update_stack_frame(*worker->invoking_dest);

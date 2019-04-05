@@ -13,6 +13,10 @@
 #define CHECK_INVOKE_OPT()                         \
   if (worker_stack_.top().invoking_point) return;
 
+#define MACH_INVOKE(OBJ,ID,ARG,POINT)              \
+  this->Invoke(OBJ, ID, ARG, POINT);               \
+  CHECK_INVOKE_OPT();
+
 #define SET_MAP(MAP) auto &obj_map = MAP
 
 #define CONVERT_OBJECT(ID,TYPE) obj_map[ID].Cast<TYPE>()
@@ -68,7 +72,7 @@ namespace kagami {
     size_t idx;
     size_t fn_idx;
     size_t skipping_count;
-    unique_ptr<Interface> invoking_dest;
+    Interface *invoking_dest;
     GenericToken last_command;
     MachineMode mode;
     string error_string;
@@ -135,6 +139,10 @@ namespace kagami {
         break;
       }
       return false;
+    }
+
+    ~MachineWorker() {
+      delete invoking_dest;
     }
   };
 
