@@ -21,7 +21,7 @@ fn GetSongList()
   stream = instream('C:\\workspace\\list.m3u')
   while stream.eof() != true
     path = stream.get()
-    song_path.push(GetMusicFileName(path))
+    song_path.push(wstring(GetMusicFileName(path)))
     song_list.push(music(path))
   end
 end
@@ -31,14 +31,15 @@ fn main()
   size = song_list.size()
   
   song = song_list[current]
-  path = song_path[current]
+  filename = song_path[current]
   song.Play()
   
   choice = 0
   state = 'Playing'
   
   while choice != 'q'
-    print(state + ' - ' + path)
+    print(state + ' - ')
+    print(filename)
     choice = input('>')
   
     case choice
@@ -53,7 +54,7 @@ fn main()
       if current < (size - 1)
         current = current + 1
         song = song_list[current]
-        path = song_path[current]
+        filename = song_path[current]
         song.Play()
       end
     when 'prev'
@@ -61,7 +62,7 @@ fn main()
       if current > 0
         current = current - 1
         song = song_list[current]
-        path = song_path[current]
+        filename = song_path[current]
         song.Play()
       end
     end
