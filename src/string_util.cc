@@ -87,7 +87,7 @@ namespace kagami {
   //InStream-new
   Message NewInStream(ObjectMap &p) {
     EXPECT_TYPE(p, "path", kTypeIdString);
-    wstring path = s2ws(p.Cast<string>("path"));
+    string path = p.Cast<string>("path");
 
     shared_ptr<wifstream> ifs(make_shared<wifstream>());
     
