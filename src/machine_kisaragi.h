@@ -10,34 +10,14 @@
     std::cout << std::endl;                        \
   }
 
-#define CHECK_INVOKE_OPT()                         \
-  if (worker_stack_.top().invoking_point) return;
-
-#define MACH_INVOKE(OBJ,ID,ARG,POINT)              \
-  this->Invoke(OBJ, ID, ARG, POINT);               \
-  CHECK_INVOKE_OPT();
-
-#define SET_MAP(MAP) auto &obj_map = MAP
-
-#define CONVERT_OBJECT(ID,TYPE) obj_map[ID].Cast<TYPE>()
-
 #define EXPECT_TYPE(MAP,ITEM,TYPE)                 \
   if (!MAP.CheckTypeId(ITEM,TYPE))                 \
     return Message(kCodeIllegalParam,              \
     "Expect object type - " + TYPE + ".",          \
     kStateError)
 
-#define CHECK_OBJECT_TYPE(ID,TYPEID)               \
-  EXPECT_TYPE(obj_map, ID, TYPEID)
-
 #define EXPECT(STATE,MESS)                         \
   if (!(STATE)) return Message(kCodeIllegalParam,MESS,kStateError)
-
-#define INVALID_CALL_MSG(MSG) Message(kCodeIllegalCall, MSG, kStateError)
-
-#define INVALID_PARAM_MSG(MSG) Message(kCodeIllegalParam, MSG, kStateError)
-
-#define BAD_EXP_MSG(MSG) Message(kCodeBadExpression, MSG, kStateError)
 
 namespace kagami {
   class Machine;

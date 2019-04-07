@@ -1,6 +1,7 @@
 #include "sound.h"
 
 namespace kagami {
+#if not defined(_DISABLE_SDL_)
   Message NewMusicObject(ObjectMap &p) {
     EXPECT_TYPE(p, "path", kTypeIdString);
     string path = p.Cast<string>("path");
@@ -64,4 +65,5 @@ namespace kagami {
     CreateNewInterface(Interface(MusicResume, "", "ResumeMusic"));
     CreateNewInterface(Interface(MusicHalt, "", "HaltMusic"));
   }
+#endif
 }

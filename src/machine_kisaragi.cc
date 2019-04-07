@@ -605,7 +605,7 @@ namespace kagami {
     }
 
     auto msg = Invoke(container_obj, kStrHead);
-    CHECK_INVOKE_OPT();
+    if (worker.invoking_point) return;
 
     if (msg.GetCode() != kCodeObject) {
       worker.MakeError("Invalid iterator of container");
@@ -620,7 +620,7 @@ namespace kagami {
     }
 
     auto unit = Invoke(iterator_obj, "get").GetObj();
-    CHECK_INVOKE_OPT();
+    if (worker.invoking_point) return;
 
     obj_stack_.Push();
     obj_stack_.CreateObject("!iterator", iterator_obj);
@@ -641,6 +641,7 @@ namespace kagami {
     ObjectMap obj_map;
 
     auto tail = Invoke(container, kStrTail).GetObj();
+    if (worker.invoking_point) return;
 
     if (!type::CheckBehavior(tail, kIteratorBehavior)) {
       worker.MakeError("Invalid container behavior");
@@ -648,6 +649,7 @@ namespace kagami {
     }
 
     Invoke(iterator, "step_forward");
+    if (worker.invoking_point) return;
 
     auto result = Invoke(iterator, kStrCompare,
       { NamedObject(kStrRightHandSide,tail) }).GetObj();
@@ -1051,6 +1053,7 @@ namespace kagami {
       else {
         if (find_in_vector(kStrGetStr, management::type::GetMethods(type_id))) {
           auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
+          if (worker.invoking_point) return;
         }
         else {
           worker.MakeError("Invalid argument of convert()");
