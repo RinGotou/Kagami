@@ -89,9 +89,9 @@ namespace kagami {
     EXPECT_TYPE(p, "path", kTypeIdString);
     wstring path = s2ws(p.Cast<string>("path"));
 
-    shared_ptr<wifstream> ifs(
-      make_shared<wifstream>(path, std::ios::in)
-    );
+    shared_ptr<wifstream> ifs(make_shared<wifstream>());
+    
+    ifs->open(path, std::ios::in);
 
     return Message().SetObject(Object(ifs, kTypeIdInStream));
   }
