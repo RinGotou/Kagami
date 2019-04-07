@@ -25,12 +25,10 @@ file(GLOB PROJECT_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/*.cc
 )
 
+if(NOT DEFINED DISABLE_SDL)
 file(GLOB PROJECT_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/dawn/*.cc
 )
+endif()
 
-#if(WIN32)
-	#add_executable(${PROJECT_NAME} WIN32 ${PROJECT_SOURCES})
-#else()
-	add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
-#endif()
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
