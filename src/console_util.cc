@@ -18,7 +18,17 @@ namespace kagami {
     Sleep(p.Cast<long>("milliseconds"));
 #else
     timespec spec;
-    spec.tv_nsec = p.Cast<long>("milliseconds") * 1000000;
+    
+    if (value >= 1000) {
+      spec.tv_sec = value / 1000;
+      spec.tv_nsec = (value - (static_cast<long>(spec.tv_sec) * 1000))
+        * 1000000;
+    }
+    else {
+      spec.tv_sec = 0;
+      spec.tv_nsec = value * 1000000;
+    }
+    
     nanosleep(&spec, nullptr);
 #endif
 
