@@ -40,6 +40,7 @@
 #endif
 #else
 #include <dlfcn.h>
+#include <unistd.h>
 #endif
 
 #if not defined(_DISABLE_SDL_)

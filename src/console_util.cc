@@ -1,9 +1,25 @@
 #include "machine_kisaragi.h"
 
 namespace kagami {
+  inline string MakeObjectString(Object& obj) {
+    return string("<Object Type=") + obj.GetTypeId() + string(">");
+  }
+
   Message SystemCommand(ObjectMap &p) {
     EXPECT_TYPE(p, "command", kTypeIdString);
     system(p.Cast<string>("command").c_str());
+    return Message();
+  }
+
+  Message ThreadSleep(ObjectMap& p) {
+    EXPECT_TYPE(p, "second", kTypeIdInt);
+    auto value = p.Cast<long>("second");
+#if defined (_WIN32)
+    Sleep(value);
+#else
+    usleep(value);
+#endif
+
     return Message();
   }
 
@@ -33,7 +49,7 @@ namespace kagami {
     vector<string> methods = management::type::GetMethods(obj.GetTypeId());
 
     if (!find_in_vector<string>(kStrPrint, methods)) {
-      std::cout << "You can't print this object." << std::endl;
+      std::cout << MakeObjectString(obj) << std::endl;
       return Message();
     }
 
@@ -78,5 +94,6 @@ namespace kagami {
     CreateNewInterface(Interface(Print, kStrObject, "print"));
     CreateNewInterface(Interface(PrintLine, kStrObject, "println"));
     CreateNewInterface(Interface(SystemCommand, "command", "console"));
+    CreateNewInterface(Interface(ThreadSleep, "second", "sleep"));
   }
 }
