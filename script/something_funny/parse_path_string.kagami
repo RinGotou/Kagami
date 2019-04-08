@@ -17,7 +17,7 @@ fn Processing(str)
   
   if !temp.empty()
     sub = ar2string(temp)
-    result.push(temp)
+    result.push(sub)
     temp.clear()
   end
 end
