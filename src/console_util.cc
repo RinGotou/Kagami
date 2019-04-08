@@ -12,12 +12,14 @@ namespace kagami {
   }
 
   Message ThreadSleep(ObjectMap& p) {
-    EXPECT_TYPE(p, "second", kTypeIdInt);
-    auto value = p.Cast<long>("second");
+    EXPECT_TYPE(p, "milliseconds", kTypeIdInt);
+    auto value = p.Cast<long>("milliseconds");
 #if defined (_WIN32)
-    Sleep(value);
+    Sleep(p.Cast<long>("milliseconds"));
 #else
-    usleep(value);
+    timespec spec;
+    spec.tv_nsec = p.Cast<long>("milliseconds") * 1000000;
+    nanosleep(&spec, nullptr);
 #endif
 
     return Message();
@@ -94,6 +96,6 @@ namespace kagami {
     CreateNewInterface(Interface(Print, kStrObject, "print"));
     CreateNewInterface(Interface(PrintLine, kStrObject, "println"));
     CreateNewInterface(Interface(SystemCommand, "command", "console"));
-    CreateNewInterface(Interface(ThreadSleep, "second", "sleep"));
+    CreateNewInterface(Interface(ThreadSleep, "milliseconds", "sleep"));
   }
 }
