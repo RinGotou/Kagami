@@ -1,4 +1,4 @@
-#include "machine_kisaragi.h"
+#include "machine.h"
 
 namespace kagami {
   inline string MakeObjectString(Object& obj) {

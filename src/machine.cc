@@ -939,13 +939,13 @@ namespace kagami {
 
       Object obj(base, kTypeIdArray);
       obj.SetConstructorFlag();
-      worker.return_stack.push(obj);
+      worker.RefreshReturnStack(obj);
     }
     else if (args.size() == 1) {
-      worker.return_stack.push(Object(FetchObject(args[0]).GetTypeId()));
+      worker.RefreshReturnStack(Object(FetchObject(args[0]).GetTypeId()));
     }
     else {
-      worker.return_stack.push(Object(kTypeIdNull));
+      worker.RefreshReturnStack(Object(kTypeIdNull));
     }
   }
 
@@ -967,7 +967,7 @@ namespace kagami {
 
     Object ret_obj(base, kTypeIdArray);
     ret_obj.SetConstructorFlag();
-    worker.return_stack.push(ret_obj);
+    worker.RefreshReturnStack(ret_obj);
   }
 
   void Machine::CommandExist(ArgumentList &args) {
@@ -990,7 +990,7 @@ namespace kagami {
     Object ret_obj(make_shared<bool>(
       management::type::CheckMethod(str, obj.GetTypeId())), kTypeIdBool);
 
-    worker.return_stack.push(ret_obj);
+    worker.RefreshReturnStack(ret_obj);
   }
 
   void Machine::CommandNullObj(ArgumentList &args) {
@@ -1001,7 +1001,7 @@ namespace kagami {
     }
 
     Object obj = FetchObject(args[0]);
-    worker.return_stack.push(
+    worker.RefreshReturnStack(
       Object(make_shared<bool>(obj.GetTypeId() == kTypeIdNull), kTypeIdBool));
   }
 
@@ -1061,7 +1061,7 @@ namespace kagami {
         }
       }
 
-      worker.return_stack.push(ret_obj);
+      worker.RefreshReturnStack(ret_obj);
     }
   }
 
@@ -1075,7 +1075,7 @@ namespace kagami {
     auto &obj = FetchObject(args[0]).Deref();
     Object ret_obj(make_shared<long>(obj.ObjRefCount()), kTypeIdInt);
 
-    worker.return_stack.push(ret_obj);
+    worker.RefreshReturnStack(ret_obj);
   }
 
   void Machine::CommandTime() {
@@ -1083,23 +1083,23 @@ namespace kagami {
     time_t now = time(nullptr);
     string nowtime(ctime(&now));
     nowtime.pop_back();
-    worker.return_stack.push(Object(nowtime));
+    worker.RefreshReturnStack(Object(nowtime));
   }
 
   void Machine::CommandVersion() {
     auto &worker = worker_stack_.top();
-    worker.return_stack.push(Object(kInterpreterVersion));
+    worker.RefreshReturnStack(Object(kInterpreterVersion));
   }
 
   void Machine::CommandPatch() {
     auto &worker = worker_stack_.top();
-    worker.return_stack.push(Object(kPatchName));
+    worker.RefreshReturnStack(Object(kPatchName));
   }
 
   void Machine::ExpList(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     if (!args.empty()) {
-      worker.return_stack.push(FetchObject(args.back()));
+      worker.RefreshReturnStack(FetchObject(args.back()));
     }
   }
 
@@ -1115,12 +1115,12 @@ namespace kagami {
 
     Object obj(base, kTypeIdArray);
     obj.SetConstructorFlag();
-    worker.return_stack.push(obj);
+    worker.RefreshReturnStack(obj);
   }
 
-  void Machine::DomainAssert(ArgumentList &args,  bool no_feeding) {
+  void Machine::DomainAssert(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    Object obj = FetchObject(args[0], no_feeding);
+    Object obj = FetchObject(args[0], true);
     string id = FetchObject(args[1]).Cast<string>();
 
     auto interface = management::FindInterface(id, obj.GetTypeId());
@@ -1131,7 +1131,7 @@ namespace kagami {
     }
 
     Object ret_obj(make_shared<Interface>(*interface), kTypeIdFunction);
-    worker.return_stack.push(ret_obj);
+    worker.RefreshReturnStack(ret_obj);
   }
 
   void Machine::CommandReturn(ArgumentList &args) {
@@ -1150,11 +1150,11 @@ namespace kagami {
       Object src_obj = FetchObject(args[0]);
       Object ret_obj(management::type::GetObjectCopy(src_obj), src_obj.GetTypeId());
       RecoverLastState();
-      worker_stack_.top().return_stack.push(ret_obj);
+      worker_stack_.top().RefreshReturnStack(ret_obj);
     }
     else if (args.size() == 0) {
       RecoverLastState();
-      worker_stack_.top().return_stack.push(Object());
+      worker_stack_.top().RefreshReturnStack(Object());
     }
     else {
       shared_ptr<ObjectArray> obj_array(make_shared<ObjectArray>());
@@ -1163,7 +1163,7 @@ namespace kagami {
       }
       Object ret_obj(obj_array, kTypeIdArray);
       RecoverLastState();
-      worker_stack_.top().return_stack.push(ret_obj);
+      worker_stack_.top().RefreshReturnStack(ret_obj);
     }
   }
 
@@ -1232,7 +1232,7 @@ namespace kagami {
       CommandWhen(args);
       break;
     case kTokenAssertR:
-      DomainAssert(args, request.option.no_feeding);
+      DomainAssert(args);
       break;
     case kTokenEnd:
       switch (worker.mode) {
@@ -1431,6 +1431,7 @@ namespace kagami {
       worker->idx += 1;
 
       ptr = &(*ir)[worker->idx];
+      worker->void_call = ptr->first.option.void_call;
 
       if (worker->error) return false;
       return true;
@@ -1452,13 +1453,14 @@ namespace kagami {
       if (worker->idx == size) {
         RecoverLastState();
         refresh_tick();
-        worker->return_stack.push(Object());
+        worker->RefreshReturnStack(Object());
         worker->idx += 1;
         continue;
       }
 
       obj_map.clear();
       Command *command = &(*ir)[worker->idx];
+      worker->void_call = command->first.option.void_call;
 
       //Skip commands by checking current machine mode
       if (worker->NeedSkipping()) {
@@ -1548,10 +1550,7 @@ namespace kagami {
         continue;
       }
 
-      if (msg.GetCode() == kCodeObject) {
-        worker->return_stack.push(msg.GetObj());
-      }
-
+      worker->RefreshReturnStack(msg.GetObj());
       worker->idx += 1;
     }
 

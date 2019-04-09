@@ -1,5 +1,5 @@
 #pragma once
-#include "machine_kisaragi.h"
+#include "machine.h"
 /*
   Base container implementations for Kagami script.
 */

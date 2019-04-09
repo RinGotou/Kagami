@@ -22,12 +22,9 @@ namespace kagami {
   };
 
   struct ArgumentOption {
-    bool no_feeding;
-    bool lambda_fn_obj;
+    bool void_call;
 
-    ArgumentOption() :
-      no_feeding(false),
-      lambda_fn_obj(false) {}
+    ArgumentOption() : void_call(false) {}
   };
 
   class Argument {

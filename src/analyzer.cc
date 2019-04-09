@@ -223,8 +223,11 @@ namespace kagami {
     }
 
     action_base_.emplace_back(Command(blk->symbol.back(), arguments));
-    blk->args.emplace_back(Argument("", kArgumentReturnStack, kTokenTypeNull));
     blk->symbol.pop_back();
+    blk->args.emplace_back(Argument("", kArgumentReturnStack, kTokenTypeNull));
+    if (blk->symbol.empty()) {
+      action_base_.back().first.option.void_call = true;
+    }
 
     return health_;
   }
@@ -250,7 +253,7 @@ namespace kagami {
       blk->domain = blk->args.back();
       blk->args.pop_back();
 
-      action_base_.back().first.option.no_feeding = true;
+      //action_base_.back().first.option.no_feeding = true;
     }
   }
 
@@ -365,7 +368,7 @@ namespace kagami {
 
       blk->fn_line = true;
       Request request(kTokenFn);
-      request.option.lambda_fn_obj = lambda_func;
+      //request.option.lambda_fn_obj = lambda_func;
       blk->symbol.emplace_back(request);
       blk->symbol.emplace_back(Request("(", true));
       blk->args.emplace_back(Argument());

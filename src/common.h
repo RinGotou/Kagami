@@ -146,6 +146,7 @@ namespace kagami {
 
   /* Reserved keywords mark/IR framework commands */
   enum GenericToken {
+    kTokenEat,
     kTokenFor,
     kTokenIn,
     kTokenNullObj,

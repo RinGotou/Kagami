@@ -47,6 +47,7 @@ namespace kagami {
     bool invoking_point;
     bool activated_continue;
     bool activated_break;
+    bool void_call;
     size_t origin_idx;
     size_t logic_idx;
     size_t idx;
@@ -69,6 +70,7 @@ namespace kagami {
       invoking_point(false),
       activated_continue(false),
       activated_break(false),
+      void_call(false),
       origin_idx(0),
       logic_idx(0),
       idx(0),
@@ -93,6 +95,12 @@ namespace kagami {
     void SwitchToMode(MachineMode mode) {
       mode_stack.push(this->mode);
       this->mode = mode;
+    }
+
+    void RefreshReturnStack(Object obj) {
+      if (!void_call) {
+        return_stack.push(std::move(obj));
+      }
     }
 
     void GoLastMode() {
@@ -182,7 +190,7 @@ namespace kagami {
     void CommandPatch();
     void ExpList(ArgumentList &args);
     void InitArray(ArgumentList &args);
-    void DomainAssert(ArgumentList &args, bool no_feeding);
+    void DomainAssert(ArgumentList &args);
 
     void CommandReturn(ArgumentList &args);
     void MachineCommands(GenericToken token, ArgumentList &args, Request &request);
