@@ -182,7 +182,6 @@ namespace kagami {
     kTokenOr, 
     kTokenNot, 
     kTokenInitialArray, 
-    kTokenAssert, 
     kTokenAssertR,
     kTokenContinue, 
     kTokenBreak, 

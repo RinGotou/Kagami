@@ -240,22 +240,18 @@ namespace kagami {
   }
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
-    GenericToken token;
+    if (blk->next_2.first != "(" && blk->next_2.first != "[") {
+      deque<Argument> arguments = {
+        blk->args.back(),
+        Argument(blk->next.first,kArgumentNormal,blk->next.second)
+      };
 
-    (blk->next_2.first != "(" && blk->next_2.first != "[") ?
-      token = kTokenAssertR :
-      token = kTokenAssert;
-    
-    deque<Argument> arguments = {
-      blk->args.back(),
-      Argument(blk->next.first,kArgumentNormal,blk->next.second)
-    };
+      action_base_.emplace_back(Command(Request(kTokenAssertR), arguments));
+      blk->domain = blk->args.back();
+      blk->args.pop_back();
 
-    action_base_.emplace_back(Command(Request(token), arguments));
-    blk->domain = blk->args.back();
-    blk->args.pop_back();
-
-    action_base_.back().first.option.no_feeding = true;
+      action_base_.back().first.option.no_feeding = true;
+    }
   }
 
   void Analyzer::MonoOperator(AnalyzerWorkBlock *blk) {
@@ -296,8 +292,6 @@ namespace kagami {
       blk->args.back(),
       Argument("__at", kArgumentNormal, kTokenTypeGeneric)
     };
-
-    action_base_.emplace_back(Command(Request(kTokenAssert), arguments));
 
     Request request("__at");
     request.domain = blk->args.back();

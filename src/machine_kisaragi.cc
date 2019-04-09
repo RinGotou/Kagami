@@ -1115,28 +1115,20 @@ namespace kagami {
     worker.return_stack.push(obj);
   }
 
-  void Machine::DomainAssert(ArgumentList &args, bool returning, bool no_feeding) {
+  void Machine::DomainAssert(ArgumentList &args,  bool no_feeding) {
     auto &worker = worker_stack_.top();
     Object obj = FetchObject(args[0], no_feeding);
     string id = FetchObject(args[1]).Cast<string>();
-    bool result = management::type::CheckMethod(id, obj.GetTypeId());
 
-    if (!result) {
-      worker.MakeError("Method/member is not found - " + id);
+    auto interface = management::FindInterface(id, obj.GetTypeId());
+
+    if (interface != nullptr) {
+      worker.MakeError("Method is not found - " + id);
       return;
     }
 
-    if (returning) {
-      auto interface = management::FindInterface(id, obj.GetTypeId());
-
-      if (interface != nullptr) {
-        worker.MakeError("Method is not found - " + id);
-        return;
-      }
-
-      Object ret_obj(make_shared<Interface>(*interface), kTypeIdFunction);
-      worker.return_stack.push(ret_obj);
-    }
+    Object ret_obj(make_shared<Interface>(*interface), kTypeIdFunction);
+    worker.return_stack.push(ret_obj);
   }
 
   void Machine::CommandReturn(ArgumentList &args) {
@@ -1236,9 +1228,8 @@ namespace kagami {
     case kTokenWhen:
       CommandWhen(args);
       break;
-    //case kTokenAssert:
     case kTokenAssertR:
-      DomainAssert(args, token == kTokenAssertR, request.option.no_feeding);
+      DomainAssert(args, request.option.no_feeding);
       break;
     case kTokenEnd:
       switch (worker.mode) {

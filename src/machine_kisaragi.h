@@ -182,7 +182,7 @@ namespace kagami {
     void CommandPatch();
     void ExpList(ArgumentList &args);
     void InitArray(ArgumentList &args);
-    void DomainAssert(ArgumentList &args, bool returning, bool no_feeding);
+    void DomainAssert(ArgumentList &args, bool no_feeding);
 
     void CommandReturn(ArgumentList &args);
     void MachineCommands(GenericToken token, ArgumentList &args, Request &request);
