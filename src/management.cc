@@ -99,9 +99,9 @@ namespace kagami {
         return base;
       }
 
-      vector<string> GetMethods(string name) {
+      vector<string> GetMethods(string id) {
         vector<string> result;
-        const auto it = GetPlannerBase().find(name);
+        const auto it = GetPlannerBase().find(id);
 
         if (it != GetPlannerBase().end()) {
           result = it->second.GetMethods();
@@ -109,8 +109,19 @@ namespace kagami {
         return result;
       }
 
-      void NewType(string name, ObjectPolicy temp) {
-        GetPlannerBase().insert(pair<string, ObjectPolicy>(name, temp));
+      bool CheckMethod(string func_id, string domain) {
+        bool result = false;
+        const auto it = GetPlannerBase().find(domain);
+
+        if (it != GetPlannerBase().end()) {
+          result = find_in_vector(func_id, it->second.GetMethods());
+        }
+
+        return result;
+      }
+
+      void NewType(string id, ObjectPolicy temp) {
+        GetPlannerBase().insert(pair<string, ObjectPolicy>(id, temp));
       }
 
       shared_ptr<void> GetObjectCopy(Object &object) {

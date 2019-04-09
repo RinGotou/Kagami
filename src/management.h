@@ -39,13 +39,14 @@ namespace kagami {
           return result;
         }
 
-        vector<string> GetMethods() const {
+        vector<string> &GetMethods() {
           return methods_;
         }
       };
 
-      vector<string> GetMethods(string name);
-      void NewType(string name, ObjectPolicy temp);
+      vector<string> GetMethods(string id);
+      bool CheckMethod(string func_id, string domain);
+      void NewType(string id, ObjectPolicy temp);
       shared_ptr<void> GetObjectCopy(Object &object);
       bool CheckBehavior(Object obj, string method_str);
 

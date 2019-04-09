@@ -60,7 +60,7 @@ namespace kagami {
 
     vector<string> methods = management::type::GetMethods(obj.GetTypeId());
 
-    if (!find_in_vector<string>(kStrPrint, methods)) {
+    if (!management::type::CheckMethod(kStrPrint, obj.GetTypeId())) {
       std::cout << MakeObjectString(obj) << std::endl;
       return Message();
     }

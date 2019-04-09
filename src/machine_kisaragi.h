@@ -138,7 +138,7 @@ namespace kagami {
   private:
     void RecoverLastState();
 
-    Object FetchPlainObject(string value);
+    Object FetchPlainObject(Argument &arg);
     Object FetchInterfaceObject(string id, string domain);
     Object FetchObject(Argument &arg, bool checking = false);
 

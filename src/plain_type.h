@@ -228,9 +228,7 @@ namespace kagami {
         return Message().SetObject(Object());
       }
 
-      auto methods = management::type::GetMethods(lhs.GetTypeId());
-
-      if (!find_in_vector(kStrCompare, methods)) {
+      if (!management::type::CheckMethod(kStrCompare, lhs.GetTypeId())) {
         return Message(kCodeBadExpression, "Invalid operation", kStateError);
       }
 

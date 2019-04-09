@@ -119,8 +119,9 @@ namespace kagami {
     obj_stack_.Pop();
   }
 
-  Object Machine::FetchPlainObject(string value) {
-    auto type = util::GetTokenType(value, true);
+  Object Machine::FetchPlainObject(Argument &arg) {
+    auto type = arg.token_type;
+    auto &value = arg.data;
     Object obj;
     switch (type) {
     case kTokenTypeInt:
@@ -164,7 +165,7 @@ namespace kagami {
     auto fetching = [&](ArgumentType type, bool is_domain)->bool {
       switch (type) {
       case kArgumentNormal:
-        obj = FetchPlainObject(arg.data);
+        obj = FetchPlainObject(arg);
         break;
 
       case kArgumentObjectStack:
@@ -231,7 +232,7 @@ namespace kagami {
 
     //Modified version for function invoking
     if (type_id != kTypeIdNull) {
-      if (!find_in_vector(id, management::type::GetMethods(type_id))) {
+      if (!management::type::CheckMethod(id, type_id)) {
         worker.MakeError("Method is not found - " + id);
         return false;
       }
@@ -271,13 +272,13 @@ namespace kagami {
 
       if (worker.error) return false;
 
-      if (!find_in_vector(id, management::type::GetMethods(obj.GetTypeId()))) {
+      if (!management::type::CheckMethod(id, obj.GetTypeId())) {
         worker.MakeError("Method is not found - " + id);
-        return false;
+          return false;
       }
 
       interface = management::FindInterface(id, obj.GetTypeId());
-      obj_map.insert(NamedObject(kStrObject, obj));
+      obj_map.insert(NamedObject(kStrObject, std::move(obj)));
       return true;
     }
     //Plain bulit-in function and user-defined function
@@ -478,8 +479,7 @@ namespace kagami {
       return Message().SetObject(obj);
     }
 
-    auto methods = management::type::GetMethods(obj.GetTypeId());
-    auto found = find_in_vector(id, methods);
+    bool found = management::type::CheckMethod(id, obj.GetTypeId());
     InterfacePointer interface;
 
     if (recover_point != nullptr) {
@@ -596,8 +596,6 @@ namespace kagami {
 
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto container_obj = FetchObject(args[1]);
-
-    auto methods = management::type::GetMethods(container_obj.GetTypeId());
 
     if (!management::type::CheckBehavior(container_obj, kContainerBehavior)) {
       worker.MakeError("Invalid object container");
@@ -986,8 +984,8 @@ namespace kagami {
     }
 
     string str = str_obj.Cast<string>();
-    auto methods = management::type::GetMethods(obj.GetTypeId());
-    Object ret_obj(make_shared<bool>(find_in_vector(str, methods)), kTypeIdBool);
+    Object ret_obj(make_shared<bool>(
+      management::type::CheckMethod(str, obj.GetTypeId())), kTypeIdBool);
 
     worker.return_stack.push(ret_obj);
   }
@@ -1023,7 +1021,7 @@ namespace kagami {
 
     auto &arg = args[0];
     if (arg.type == kArgumentNormal) {
-      FetchPlainObject(arg.data);
+      FetchPlainObject(arg);
     }
     else {
       Object obj = FetchObject(args[0]);
@@ -1050,7 +1048,7 @@ namespace kagami {
         }
       }
       else {
-        if (find_in_vector(kStrGetStr, management::type::GetMethods(type_id))) {
+        if (management::type::CheckMethod(kStrGetStr, type_id)) {
           auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
           if (worker.invoking_point) return;
         }
@@ -1121,8 +1119,7 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     Object obj = FetchObject(args[0], no_feeding);
     string id = FetchObject(args[1]).Cast<string>();
-    auto methods = management::type::GetMethods(obj.GetTypeId());
-    bool result = find_in_vector(id, methods);
+    bool result = management::type::CheckMethod(id, obj.GetTypeId());
 
     if (!result) {
       worker.MakeError("Method/member is not found - " + id);
@@ -1239,7 +1236,7 @@ namespace kagami {
     case kTokenWhen:
       CommandWhen(args);
       break;
-    case kTokenAssert:
+    //case kTokenAssert:
     case kTokenAssertR:
       DomainAssert(args, token == kTokenAssertR, request.option.no_feeding);
       break;
