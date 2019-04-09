@@ -3,7 +3,6 @@
 
 namespace kagami {
   class Object;
-  class ObjectPolicy;
   class ObjectContainer;
   class ObjectMap;
   class Message;
@@ -17,31 +16,10 @@ namespace kagami {
 
   vector<string> BuildStringVector(string source);
   
-  class ObjectPolicy {
-  private:
-    CopyingPolicy copying_policy_;
-    vector<string> methods_;
-
-  public:
-    ObjectPolicy() :
-      copying_policy_(nullptr),
-      methods_() {}
-
-    ObjectPolicy(CopyingPolicy copying_policy, string methods) :
-      copying_policy_(copying_policy),
-      methods_(BuildStringVector(methods)) {}
-
-    shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
-      shared_ptr<void> result = nullptr;
-      if (target != nullptr) {
-        result = copying_policy_(target);
-      }
-      return result;
-    }
-
-    vector<string> GetMethods() const {
-      return methods_;
-    }
+  enum ObjectMode {
+    kObjectNormal    = 0,
+    kObjectRef       = 1,
+    kObjectMemberRef = 2
   };
 
   struct TargetObject {
@@ -65,85 +43,78 @@ namespace kagami {
     Type &Cast() { return *dest_; }
   };
 
-
   class Object {
   private:
-    long ref_count_;
-    std::shared_ptr<void> ptr_;
-    string type_id_;
-    bool ref_;
-    bool mem_ref_;
+    ObjectMode mode_;
     bool constructor_;
+    long ref_count_;
+    shared_ptr<void> ptr_;
+    string type_id_;
 
     ObjectPointer GetTargetObject() { 
       return static_pointer_cast<TargetObject>(ptr_)->ptr; 
     }
 
+    void MakeRef(const Object &obj) {
+      TargetObject target = *static_pointer_cast<TargetObject>(obj.ptr_);
+      target.ptr->ref_count_ += 1;
+      ptr_ = make_shared<TargetObject>(target);
+    }
+
   public:
     ~Object() {
-      if (ref_) {
+      if (mode_ == kObjectRef) {
         GetTargetObject()->ref_count_ -= 1;
       }
     }
 
     Object() :
+      mode_(kObjectNormal),
+      constructor_(false),
       ref_count_(0),
       ptr_(nullptr),
-      type_id_(kTypeIdNull),
-      ref_(false),
-      mem_ref_(false),
-      constructor_(false) {}
+      type_id_(kTypeIdNull) {}
 
     Object(const Object &obj) :
+      mode_(obj.mode_),
+      constructor_(obj.constructor_),
       ref_count_(0),
       ptr_(obj.ptr_),
-      type_id_(obj.type_id_),
-      ref_(obj.ref_),
-      mem_ref_(false),
-      constructor_(obj.constructor_) {
-      if (obj.ref_) {
-        GetTargetObject()->ref_count_ += 1;
-      }
+      type_id_(obj.type_id_) {
+      if (obj.mode_ == kObjectRef) MakeRef(obj);
     }
 
     Object(const Object &&obj) :
       Object(obj) {}
 
     Object(shared_ptr<void> ptr, string type_id) :
+      mode_(kObjectNormal),
+      constructor_(false),
       ref_count_(0),
       ptr_(ptr), 
-      type_id_(type_id), 
-      ref_(false), 
-      mem_ref_(false),
-      constructor_(false) {}
+      type_id_(type_id) {}
 
     Object(string str) :
+      mode_(kObjectNormal),
+      constructor_(false),
       ref_count_(0),
       ptr_(std::make_shared<string>(str)),
-      type_id_(kTypeIdString),
-      ref_(false),
-      mem_ref_(false),
-      constructor_(false) {}
+      type_id_(kTypeIdString) {}
 
     Object &operator=(const Object &object);
     Object &ManageContent(shared_ptr<void> ptr, string type_id);
     Object &swap(Object &obj);
     Object &CreateRef(Object &object);
-    Object &CloneFrom(Object &object, bool force = false);
-
-    Object &operator=(const Object &&object) { return operator=(object); }
-
-    Object &swap(Object &&obj) { return swap(obj); }
 
     shared_ptr<void> Get() {
-      if (ref_) return GetTargetObject()->Get();
+      if (mode_ == kObjectRef) return GetTargetObject()->Get();
       return ptr_;
     }
 
     template <class Tx>
     Object &CreateMemberRef(Tx &tx, string type_id) {
       type_id_ = type_id;
-      mem_ref_ = true;
+      mode_ = kObjectMemberRef;
 
       TargetMember<Tx> target(tx);
       ptr_ = make_shared<TargetMember<Tx>>(target);
@@ -151,47 +122,30 @@ namespace kagami {
       return *this;
     }
 
-    template <class Tx>
-    shared_ptr<Tx> Convert() {
-      if (ref_) return GetTargetObject()->Convert<Tx>();
-      return static_pointer_cast<Tx>(ptr_);
-    }
-
     Object &Deref() {
-      if (ref_) return *GetTargetObject();
+      if (mode_ == kObjectRef) {
+        return *GetTargetObject();
+      }
+
       return *this;
     }
 
     template <class Tx>
     Tx &Cast() {
-      if (ref_) { 
+      if (mode_ == kObjectRef) { 
         return GetTargetObject()->Cast<Tx>(); 
       }
 
-      if (mem_ref_) {
-        return static_cast<TargetMember<Tx>>(ptr_)->Cast();
+      if (mode_ == kObjectMemberRef) {
+        return static_pointer_cast<TargetMember<Tx>>(ptr_)->Cast();
       }
 
       return *std::static_pointer_cast<Tx>(ptr_);
     }
 
-    string GetTypeId() {
-      if (ref_) return GetTargetObject()->GetTypeId();
-      return type_id_;
-    }
-
     Object &SetConstructorFlag() {
       constructor_ = true;
       return *this;
-    }
-
-    long use_count() {
-      if (ref_) return GetTargetObject()->use_count();
-      return ptr_.use_count();
-    }
-
-    long ObjRefCount() const {
-      return ref_count_;
     }
 
     bool GetConstructorFlag() {
@@ -200,21 +154,19 @@ namespace kagami {
       return result;
     }
 
-    Object &CloneFrom(Object &&object) {
-      return this->CloneFrom(object);
-    }
+    Object &operator=(const Object &&object) { return operator=(object); }
 
-    bool IsRef() const {
-      return ref_;
-    }
+    Object &swap(Object &&obj) { return swap(obj); }
 
-    bool Null() const {
-      return ptr_ == nullptr;
-    }
+    string GetTypeId() const { return type_id_; }
 
-    long Count() const {
-      return ptr_.use_count();
-    }
+    long ObjRefCount() const { return ref_count_; }
+
+    bool IsRef() const { return mode_ == kObjectRef; }
+
+    bool IsMemberRef() const { return mode_ == kObjectMemberRef; }
+
+    bool Null() const { return ptr_ == nullptr; }
   };
 
   using ObjectArray = vector<Object>;

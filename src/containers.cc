@@ -54,8 +54,7 @@ namespace kagami {
       size_t size = p.Cast<long>("size");
       EXPECT(size > 0, "Illegal array size.");
 
-      Object obj;
-      obj.CloneFrom(p["init_value"]);
+      Object obj = p["init_value"];
 
       base->reserve(size);
       auto type_id = obj.GetTypeId();

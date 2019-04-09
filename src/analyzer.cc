@@ -613,7 +613,7 @@ namespace kagami {
     if (!health_) return Message(kCodeBadExpression, error_string_, kStateError);
 
     Request request(kTokenSegment);
-    ArgumentList args;
+    ArgumentList &args;
     
     args.emplace_back(
       Argument(to_string(index_), kArgumentNormal, kTokenTypeInt)

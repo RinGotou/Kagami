@@ -17,6 +17,33 @@ namespace kagami {
     Object GetConstantObject(string id);
 
     namespace type {
+      class ObjectPolicy {
+      private:
+        CopyingPolicy copying_policy_;
+        vector<string> methods_;
+
+      public:
+        ObjectPolicy() :
+          copying_policy_(nullptr),
+          methods_() {}
+
+        ObjectPolicy(CopyingPolicy copying_policy, string methods) :
+          copying_policy_(copying_policy),
+          methods_(BuildStringVector(methods)) {}
+
+        shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const {
+          shared_ptr<void> result = nullptr;
+          if (target != nullptr) {
+            result = copying_policy_(target);
+          }
+          return result;
+        }
+
+        vector<string> GetMethods() const {
+          return methods_;
+        }
+      };
+
       vector<string> GetMethods(string name);
       void NewType(string name, ObjectPolicy temp);
       shared_ptr<void> GetObjectCopy(Object &object);
@@ -41,29 +68,8 @@ namespace kagami {
           return *this;
         }
 
-        NewTypeSetup &InitMethods(initializer_list<Interface> &&rhs) {
-          interfaces_ = rhs;
-          string method_list("");
-
-          for (auto &unit : interfaces_) {
-            unit.SetDomain(type_name_);
-            method_list.append(unit.GetId()).append("|");
-          }
-
-          if (method_list != "") {
-            methods_ = method_list.substr(0, method_list.size() - 1);
-          }
-
-          return *this;
-        }
-
-        ~NewTypeSetup() {
-          NewType(type_name_, ObjectPolicy(policy_, methods_));
-          CreateNewInterface(constructor_);
-          for (auto &unit : interfaces_) {
-            CreateNewInterface(unit);
-          }
-        }
+        NewTypeSetup &InitMethods(initializer_list<Interface> &&rhs);
+        ~NewTypeSetup();
       };
     }
   }

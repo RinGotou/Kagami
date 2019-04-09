@@ -17,15 +17,24 @@ namespace kagami {
   }
 
   Object &Object::operator=(const Object &object) {
-    ptr_ = object.ptr_;
+    if (object.mode_ == kObjectRef) {
+      MakeRef(object);
+    }
+    else {
+      ptr_ = object.ptr_;
+    }
+
     type_id_ = object.type_id_;
-    ref_ = object.ref_;
+    mode_ = object.mode_;
     constructor_ = object.constructor_;
     return *this;
   }
 
   Object &Object::ManageContent(shared_ptr<void> ptr, string type_id) {
-    if (ref_) return GetTargetObject()->ManageContent(ptr, type_id);
+    if (mode_ == kObjectRef) {
+      return GetTargetObject()->ManageContent(ptr, type_id);
+    }
+
     ptr_ = ptr;
     type_id_ = type_id;
     return *this;
@@ -34,14 +43,14 @@ namespace kagami {
   Object &Object::swap(Object &obj) {
     ptr_.swap(obj.ptr_);
     std::swap(type_id_, obj.type_id_);
-    std::swap(ref_, obj.ref_);
+    std::swap(mode_, obj.mode_);
     std::swap(constructor_, obj.constructor_);
     return *this;
   }
 
   Object &Object::CreateRef(Object &object) {
     type_id_ = object.type_id_;
-    ref_ = true;
+    mode_ = kObjectRef;
 
     TargetObject target;
     if (!object.IsRef()) {
@@ -53,24 +62,6 @@ namespace kagami {
     }
     target.ptr->ref_count_ += 1;
     ptr_ = make_shared<TargetObject>(target);
-    return *this;
-  }
-
-  Object &Object::CloneFrom(Object &object, bool force) {
-    auto mod = [&]() {
-      ptr_ = object.ptr_;
-      type_id_ = object.type_id_;
-      ref_ = object.ref_;
-      constructor_ = object.constructor_;
-    };
-
-    if (force) {
-      mod();
-    }
-    else {
-      if (ref_) GetTargetObject()->CloneFrom(object);
-      else mod();
-    }
     return *this;
   }
 

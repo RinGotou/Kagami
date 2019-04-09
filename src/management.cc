@@ -115,7 +115,7 @@ namespace kagami {
 
       shared_ptr<void> GetObjectCopy(Object &object) {
         //Ignore copying policy
-        if (object.GetConstructorFlag()) {
+        if (object.GetConstructorFlag() || object.IsMemberRef()) {
           return object.Get();
         }
 
@@ -141,6 +141,30 @@ namespace kagami {
         }
 
         return result;
+      }
+
+      NewTypeSetup &NewTypeSetup::InitMethods(initializer_list<Interface> &&rhs) {
+        interfaces_ = rhs;
+        string method_list("");
+
+        for (auto &unit : interfaces_) {
+          unit.SetDomain(type_name_);
+          method_list.append(unit.GetId()).append("|");
+        }
+
+        if (method_list != "") {
+          methods_ = method_list.substr(0, method_list.size() - 1);
+        }
+
+        return *this;
+      }
+
+      NewTypeSetup::~NewTypeSetup() {
+        NewType(type_name_, ObjectPolicy(policy_, methods_));
+        CreateNewInterface(constructor_);
+        for (auto &unit : interfaces_) {
+          CreateNewInterface(unit);
+        }
       }
     }
   }
