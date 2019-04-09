@@ -38,7 +38,7 @@ namespace kagami {
     return target;
   }
 
-  using InvokingRecoverPoint = void(Machine::*)(ArgumentList);
+  using InvokingRecoverPoint = void(Machine::*)(ArgumentList &);
 
   class MachineWorker {
   public:
@@ -120,10 +120,6 @@ namespace kagami {
       }
       return false;
     }
-
-    ~MachineWorker() {
-      delete invoking_dest;
-    }
   };
 
   class IRLoader {
@@ -146,11 +142,11 @@ namespace kagami {
     Object FetchInterfaceObject(string id, string domain);
     Object FetchObject(Argument &arg, bool checking = false);
 
-    bool _FetchInterface(Interface &interface, string id, string type_id);
-    bool FetchInterface(Interface &interface, CommandPointer &command,
+    bool _FetchInterface(InterfacePointer &interface, string id, string type_id);
+    bool FetchInterface(InterfacePointer &interface, CommandPointer &command,
       ObjectMap &obj_map);
 
-    void InitFunctionCatching(ArgumentList args);
+    void InitFunctionCatching(ArgumentList &args);
     void FinishFunctionCatching(bool closure = false);
 
     void Skipping(bool enable_terminators, 
@@ -160,38 +156,38 @@ namespace kagami {
       const initializer_list<NamedObject> &&args = {},
       InvokingRecoverPoint recover_point = nullptr);
 
-    void SetSegmentInfo(ArgumentList args);
-    void CommandSwap(ArgumentList args);
-    void CommandIfOrWhile(GenericToken token, ArgumentList args);
-    void CommandForEach(ArgumentList args);
-    void ForEachChecking(ArgumentList args);
+    void SetSegmentInfo(ArgumentList &args);
+    void CommandSwap(ArgumentList &args);
+    void CommandIfOrWhile(GenericToken token, ArgumentList &args);
+    void CommandForEach(ArgumentList &args);
+    void ForEachChecking(ArgumentList &args);
     void CommandElse();
-    void CommandCase(ArgumentList args);
-    void CommandWhen(ArgumentList args);
+    void CommandCase(ArgumentList &args);
+    void CommandWhen(ArgumentList &args);
     void CommandContinueOrBreak(GenericToken token);
     void CommandConditionEnd();
     void CommandLoopEnd();
     void CommandForEachEnd();
 
-    void CommandBind(ArgumentList args);
-    void CommandTypeId(ArgumentList args);
-    void CommandMethods(ArgumentList args);
-    void CommandExist(ArgumentList args);
-    void CommandNullObj(ArgumentList args);
-    void CommandDestroy(ArgumentList args);
-    void CommandConvert(ArgumentList args);
-    void CommandRefCount(ArgumentList args);
+    void CommandBind(ArgumentList &args);
+    void CommandTypeId(ArgumentList &args);
+    void CommandMethods(ArgumentList &args);
+    void CommandExist(ArgumentList &args);
+    void CommandNullObj(ArgumentList &args);
+    void CommandDestroy(ArgumentList &args);
+    void CommandConvert(ArgumentList &args);
+    void CommandRefCount(ArgumentList &args);
     void CommandTime();
     void CommandVersion();
     void CommandPatch();
-    void ExpList(ArgumentList args);
-    void InitArray(ArgumentList args);
-    void DomainAssert(ArgumentList args, bool returning, bool no_feeding);
+    void ExpList(ArgumentList &args);
+    void InitArray(ArgumentList &args);
+    void DomainAssert(ArgumentList &args, bool returning, bool no_feeding);
 
-    void CommandReturn(ArgumentList args);
-    void MachineCommands(GenericToken token, ArgumentList args, Request request);
+    void CommandReturn(ArgumentList &args);
+    void MachineCommands(GenericToken token, ArgumentList &args, Request &request);
 
-    void GenerateArgs(Interface &interface, ArgumentList args, ObjectMap &obj_map);
+    void GenerateArgs(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
     void Generate_Normal(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Generate_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
     void Generate_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map);

@@ -221,4 +221,6 @@ namespace kagami {
   };
 
   Message MakeInvokePoint(string id, string type_id = kTypeIdNull);
+
+  using InterfacePointer = Interface *;
 }

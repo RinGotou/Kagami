@@ -147,7 +147,7 @@ namespace kagami {
 
   Object Machine::FetchInterfaceObject(string id, string domain) {
     Object obj;
-    auto interface = management::FindInterface(id, domain);
+    auto interface = *management::FindInterface(id, domain);
     if (interface.Good()) {
       obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
     }
@@ -226,7 +226,7 @@ namespace kagami {
     return obj;
   }
 
-  bool Machine::_FetchInterface(Interface &interface, string id, string type_id) {
+  bool Machine::_FetchInterface(InterfacePointer &interface, string id, string type_id) {
     auto &worker = worker_stack_.top();
 
     //Modified version for function invoking
@@ -242,12 +242,12 @@ namespace kagami {
     else {
       interface = management::FindInterface(id);
 
-      if (interface.Good()) return true;
+      if (interface != nullptr) return true;
 
       ObjectPointer ptr = obj_stack_.Find(id);
 
       if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
-        interface = ptr->Cast<Interface>();
+        interface = &ptr->Cast<Interface>();
         return true;
       }
 
@@ -257,7 +257,7 @@ namespace kagami {
     return false;
   }
 
-  bool Machine::FetchInterface(Interface &interface, CommandPointer &command, ObjectMap &obj_map) {
+  bool Machine::FetchInterface(InterfacePointer &interface, CommandPointer &command, ObjectMap &obj_map) {
     auto &id = command->first.head_interface;
     auto &domain = command->first.domain;
     auto &worker = worker_stack_.top();
@@ -286,12 +286,12 @@ namespace kagami {
     else {
       interface = management::FindInterface(id);
 
-      if (interface.Good()) return true;
+      if (interface != nullptr) return true;
 
       ObjectPointer ptr = obj_stack_.Find(id);
 
       if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
-        interface = ptr->Cast<Interface>();
+        interface = &ptr->Cast<Interface>();
         return true;
       }
 
@@ -301,7 +301,7 @@ namespace kagami {
     return false;
   }
 
-  void Machine::InitFunctionCatching(ArgumentList args) {
+  void Machine::InitFunctionCatching(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     worker.fn_string_vec.clear();
     if (!args.empty()) {
@@ -480,7 +480,7 @@ namespace kagami {
 
     auto methods = management::type::GetMethods(obj.GetTypeId());
     auto found = find_in_vector(id, methods);
-    Interface interface;
+    InterfacePointer interface;
 
     if (recover_point != nullptr) {
       worker.recover_point = recover_point;
@@ -494,28 +494,28 @@ namespace kagami {
 
     _FetchInterface(interface, id, obj.GetTypeId());
 
-    if (interface.GetPolicyType() == kInterfaceKIR) {
+    if (interface->GetPolicyType() == kInterfaceKIR) {
       worker.invoking_point = true;
-      worker.invoking_dest = new Interface(interface);
+      worker.invoking_dest = interface;
     }
     else {
       ObjectMap obj_map = args;
       obj_map.insert(NamedObject(kStrObject, obj));
 
-      return interface.Start(obj_map);
+      return interface->Start(obj_map);
     }
 
     return Message();
   }
 
-  void Machine::SetSegmentInfo(ArgumentList args) {
+  void Machine::SetSegmentInfo(ArgumentList &args) {
     MachineWorker &worker = worker_stack_.top();
     worker.origin_idx = stoul(args[0].data);
     worker.logic_idx = worker.idx;
     worker.last_command = static_cast<GenericToken>(stol(args[1].data));
   }
 
-  void Machine::CommandSwap(ArgumentList args) {
+  void Machine::CommandSwap(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     auto &right = FetchObject(args[1]).Deref();
     auto &left = FetchObject(args[0]).Deref();
@@ -523,7 +523,7 @@ namespace kagami {
     left.swap(right);
   }
 
-  void Machine::CommandIfOrWhile(GenericToken token, ArgumentList args) {
+  void Machine::CommandIfOrWhile(GenericToken token, ArgumentList &args) {
     auto &worker = worker_stack_.top();
     if (args.size() == 1) {
       Object obj = FetchObject(args[0]);
@@ -585,7 +585,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandForEach(ArgumentList args) {
+  void Machine::CommandForEach(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     ObjectMap obj_map;
 
@@ -629,15 +629,12 @@ namespace kagami {
     worker.SwitchToMode(kModeForEach);
   }
 
-  void Machine::ForEachChecking(ArgumentList args) {
+  void Machine::ForEachChecking(ArgumentList &args) {
     using namespace management;
     auto &worker = worker_stack_.top();
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto iterator = *obj_stack_.GetCurrent().Find("!iterator");
     auto container = FetchObject(args[1]);
-    auto method_compare = FindInterface(kStrCompare, iterator.GetTypeId());
-    auto method_tail = FindInterface("tail", container.GetTypeId());
-    auto method_step_forward = FindInterface("step_forward", iterator.GetTypeId());
     ObjectMap obj_map;
 
     auto tail = Invoke(container, kStrTail).GetObj();
@@ -705,7 +702,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandCase(ArgumentList args) {
+  void Machine::CommandCase(ArgumentList &args) {
     auto &worker = worker_stack_.top();
 
     if (!args.empty()) {
@@ -729,7 +726,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandWhen(ArgumentList args) {
+  void Machine::CommandWhen(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     bool result = false;
 
@@ -834,6 +831,7 @@ namespace kagami {
         worker.loop_tail.push(worker.logic_idx - 1);
       }
       worker.idx = worker.loop_head.top();
+      while (!worker.return_stack.empty()) worker.return_stack.pop();
       obj_stack_.GetCurrent().clear();
     }
     else if (worker.mode == kModeCycleJump) {
@@ -848,6 +846,7 @@ namespace kagami {
       }
       else {
         if (worker.activated_break) worker.activated_break = false;
+        while (!worker.return_stack.empty()) worker.return_stack.pop();
         worker.GoLastMode();
         if (worker.loop_head.size() == worker.loop_tail.size()) {
           worker.loop_head.pop();
@@ -895,7 +894,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandBind(ArgumentList args) {
+  void Machine::CommandBind(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     //Do not change the order!
     auto src = FetchObject(args[1]);
@@ -927,7 +926,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandTypeId(ArgumentList args) {
+  void Machine::CommandTypeId(ArgumentList &args) {
     auto &worker = worker_stack_.top();
 
     if (args.size() > 1) {
@@ -949,7 +948,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandMethods(ArgumentList args) {
+  void Machine::CommandMethods(ArgumentList &args) {
     auto &worker = worker_stack_.top();
 
     if (args.size() != 1) {
@@ -970,7 +969,7 @@ namespace kagami {
     worker.return_stack.push(ret_obj);
   }
 
-  void Machine::CommandExist(ArgumentList args) {
+  void Machine::CommandExist(ArgumentList &args) {
     auto &worker = worker_stack_.top();
 
     if (args.size() != 2) {
@@ -993,7 +992,7 @@ namespace kagami {
     worker.return_stack.push(ret_obj);
   }
 
-  void Machine::CommandNullObj(ArgumentList args) {
+  void Machine::CommandNullObj(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     if (args.size() != 1) {
       worker.MakeError("Invalid argument of null()");
@@ -1005,7 +1004,7 @@ namespace kagami {
       Object(make_shared<bool>(obj.GetTypeId() == kTypeIdNull), kTypeIdBool));
   }
 
-  void Machine::CommandDestroy(ArgumentList args) {
+  void Machine::CommandDestroy(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     if (args.size() != 1) {
       worker.MakeError("Invalid argument of destroy()");
@@ -1015,7 +1014,7 @@ namespace kagami {
     obj.swap(Object());
   }
 
-  void Machine::CommandConvert(ArgumentList args) {
+  void Machine::CommandConvert(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     if (args.size() != 1) {
       worker.MakeError("Invalid argument of convert()");
@@ -1065,7 +1064,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandRefCount(ArgumentList args) {
+  void Machine::CommandRefCount(ArgumentList &args) {
     auto &worker = worker_stack_.top();
 
     if (args.size() != 1) {
@@ -1096,14 +1095,14 @@ namespace kagami {
     worker.return_stack.push(Object(kPatchName));
   }
 
-  void Machine::ExpList(ArgumentList args) {
+  void Machine::ExpList(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     if (!args.empty()) {
       worker.return_stack.push(FetchObject(args.back()));
     }
   }
 
-  void Machine::InitArray(ArgumentList args) {
+  void Machine::InitArray(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
 
@@ -1118,7 +1117,7 @@ namespace kagami {
     worker.return_stack.push(obj);
   }
 
-  void Machine::DomainAssert(ArgumentList args, bool returning, bool no_feeding) {
+  void Machine::DomainAssert(ArgumentList &args, bool returning, bool no_feeding) {
     auto &worker = worker_stack_.top();
     Object obj = FetchObject(args[0], no_feeding);
     string id = FetchObject(args[1]).Cast<string>();
@@ -1133,17 +1132,17 @@ namespace kagami {
     if (returning) {
       auto interface = management::FindInterface(id, obj.GetTypeId());
 
-      if (!interface.Good()) {
+      if (interface != nullptr) {
         worker.MakeError("Method is not found - " + id);
         return;
       }
 
-      Object ret_obj(make_shared<Interface>(interface), kTypeIdFunction);
+      Object ret_obj(make_shared<Interface>(*interface), kTypeIdFunction);
       worker.return_stack.push(ret_obj);
     }
   }
 
-  void Machine::CommandReturn(ArgumentList args) {
+  void Machine::CommandReturn(ArgumentList &args) {
     if (worker_stack_.size() <= 1) {
       trace::AddEvent(Message(kCodeBadExpression, "Unexpected return.", kStateError));
       return;
@@ -1176,7 +1175,7 @@ namespace kagami {
     }
   }
 
-  void Machine::MachineCommands(GenericToken token, ArgumentList args, Request request) {
+  void Machine::MachineCommands(GenericToken token, ArgumentList &args, Request &request) {
     auto &worker = worker_stack_.top();
 
     switch (token) {
@@ -1286,7 +1285,7 @@ namespace kagami {
     }
   }
 
-  void Machine::GenerateArgs(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
+  void Machine::GenerateArgs(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
     switch (interface.GetArgumentMode()) {
     case kCodeNormalParam:
       Generate_Normal(interface, args, obj_map);
@@ -1403,7 +1402,7 @@ namespace kagami {
     string type_id = kTypeIdNull;
     Message msg;
     KIR *ir = ir_stack_.back();
-    Interface interface;
+    InterfacePointer interface;
     ObjectMap obj_map;
 
     worker_stack_.push(MachineWorker());
@@ -1452,7 +1451,7 @@ namespace kagami {
       obj_stack_.Push();
       obj_stack_.CreateObject(kStrUserFunc, Object(func.GetId()));
       obj_stack_.MergeMap(obj_map);
-      obj_stack_.MergeMap(interface.GetClosureRecord());
+      obj_stack_.MergeMap(interface->GetClosureRecord());
       refresh_tick();
     };
 
@@ -1521,19 +1520,19 @@ namespace kagami {
       }
 
       //Building object map for function call expressed by command
-      GenerateArgs(interface, command->second, obj_map);
+      GenerateArgs(*interface, command->second, obj_map);
 
       if (worker->error) break;
 
       //(For user-defined function)
       //Machine will create new stack frame and push IR pointer to machine stack,
       //and start new processing in next tick.
-      if (interface.GetPolicyType() == kInterfaceKIR) {
-        update_stack_frame(interface);
+      if (interface->GetPolicyType() == kInterfaceKIR) {
+        update_stack_frame(*interface);
         continue;
       }
       else {
-        msg = interface.Start(obj_map);
+        msg = interface->Start(obj_map);
       }
 
       if (msg.GetLevel() == kStateError) {
@@ -1548,11 +1547,11 @@ namespace kagami {
           break;
         }
 
-        if (interface.GetPolicyType() == kInterfaceKIR) {
-          update_stack_frame(interface);
+        if (interface->GetPolicyType() == kInterfaceKIR) {
+          update_stack_frame(*interface);
         }
         else {
-          msg = interface.Start(obj_map);
+          msg = interface->Start(obj_map);
           worker->idx += 1;
         }
         continue;

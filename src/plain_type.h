@@ -239,8 +239,9 @@ namespace kagami {
         NamedObject(kStrObject, lhs)
       };
 
+      //TODO:modify for invoking feature
       auto interface = management::FindInterface(kStrCompare, lhs.GetTypeId());
-      auto result = interface.Start(obj_map);
+      auto result = interface->Start(obj_map);
       auto obj = result.GetObj();
       bool value = obj.Cast<bool>();
       return Message().SetObject(

@@ -327,7 +327,18 @@ namespace kagami {
   }
 
   template <class T>
-  inline bool find_in_vector(T t, vector<T> vec) {
+  inline bool find_in_vector(T t, const vector<T> &&vec) {
+    for (auto &unit : vec) {
+      if (t == unit) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  template <class T>
+  inline bool find_in_vector(T t, const vector<T> &vec) {
     for (auto &unit : vec) {
       if (t == unit) {
         return true;

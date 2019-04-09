@@ -31,17 +31,17 @@ namespace kagami {
       }
     }
 
-    Interface FindInterface(string id, string domain) {
+    Interface *FindInterface(string id, string domain) {
       auto &collection_base = GetInterfaceCollections();
       auto it = collection_base.find(domain);
 
       if (it != collection_base.end()) {
         auto dest_it = it->second.find(id);
-        return Interface(dest_it != it->second.end() ?
-          dest_it->second : Interface());
+        return dest_it != it->second.end() ?
+          &dest_it->second : nullptr;
       }
 
-      return Interface();
+      return nullptr;
     }
 
     void CreateGenericInterface(Interface temp) {
@@ -49,11 +49,11 @@ namespace kagami {
         temp.GetToken(), temp));
     }
 
-    Interface GetGenericInterface(GenericToken token) {
+    Interface *GetGenericInterface(GenericToken token) {
       auto &base = GetGenericInterfaceBase();
       map<GenericToken, Interface>::iterator it = base.find(token);
-      if (it != base.end()) return it->second;
-      return Interface();
+      if (it != base.end()) return &it->second;
+      return nullptr;
     }
     ////////////////////////////////////////////////////////////////
 
