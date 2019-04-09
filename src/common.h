@@ -95,11 +95,11 @@ namespace kagami {
   using suzu::WSockInfo;
 #endif
 
-  using Byte = unsigned int;
+  using Byte = uint64_t;
 
   /* Application Info */
-  const string kInterpreterVersion = "2.0";
-  const string kPatchName          = "Colorless";
+  const string kInterpreterVersion = "2.1";
+  const string kPatchName          = "Little Wing";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else

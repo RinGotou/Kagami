@@ -8,8 +8,8 @@ namespace kagami {
   class ObjectMap;
   class Message;
 
-  using ObjectPointer = Object * ;
-  using ObjectRef = Object & ;
+  using ObjectPointer = Object *;
+  using ObjectRef = Object &;
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
   using CopyingPolicy = shared_ptr<void>(*)(shared_ptr<void>);
@@ -44,16 +44,35 @@ namespace kagami {
     }
   };
 
+  struct TargetObject {
+    ObjectPointer ptr;
+  };
+
+  template <class Type>
+  class TargetMember {
+  private:
+    Type *dest_;
+
+  public:
+    TargetMember() = delete;
+
+    TargetMember(Type &t) : dest_(&t) {}
+
+    TargetMember(const TargetMember &rhs) : dest_(rhs.dest_) {}
+
+    TargetMember(const TargetMember &&rhs) : TargetMember(rhs) {}
+
+    Type &Cast() { return *dest_; }
+  };
+
+
   class Object {
   private:
-    struct TargetObject { 
-      ObjectPointer ptr; 
-    };
-
     long ref_count_;
     std::shared_ptr<void> ptr_;
     string type_id_;
     bool ref_;
+    bool mem_ref_;
     bool constructor_;
 
     ObjectPointer GetTargetObject() { 
@@ -72,6 +91,7 @@ namespace kagami {
       ptr_(nullptr),
       type_id_(kTypeIdNull),
       ref_(false),
+      mem_ref_(false),
       constructor_(false) {}
 
     Object(const Object &obj) :
@@ -79,6 +99,7 @@ namespace kagami {
       ptr_(obj.ptr_),
       type_id_(obj.type_id_),
       ref_(obj.ref_),
+      mem_ref_(false),
       constructor_(obj.constructor_) {
       if (obj.ref_) {
         GetTargetObject()->ref_count_ += 1;
@@ -93,6 +114,7 @@ namespace kagami {
       ptr_(ptr), 
       type_id_(type_id), 
       ref_(false), 
+      mem_ref_(false),
       constructor_(false) {}
 
     Object(string str) :
@@ -100,42 +122,33 @@ namespace kagami {
       ptr_(std::make_shared<string>(str)),
       type_id_(kTypeIdString),
       ref_(false),
+      mem_ref_(false),
       constructor_(false) {}
 
-    Object &operator=(const Object &object) {
-      ptr_ = object.ptr_;
-      type_id_ = object.type_id_;
-      ref_ = object.ref_;
-      constructor_ = object.constructor_;
-      return *this;
-    }
+    Object &operator=(const Object &object);
+    Object &ManageContent(shared_ptr<void> ptr, string type_id);
+    Object &swap(Object &obj);
+    Object &CreateRef(Object &object);
+    Object &CloneFrom(Object &object, bool force = false);
 
-    Object &operator=(const Object &&object) {
-      return this->operator=(object);
-    }
+    Object &operator=(const Object &&object) { return operator=(object); }
 
-    Object &ManageContent(shared_ptr<void> ptr, string type_id) {
-      if (ref_) return GetTargetObject()->ManageContent(ptr, type_id);
-      ptr_ = ptr;
-      type_id_ = type_id;
-      return *this;
-    }
-
-    Object &swap(Object &obj) {
-      ptr_.swap(obj.ptr_);
-      std::swap(type_id_, obj.type_id_);
-      std::swap(ref_, obj.ref_);
-      std::swap(constructor_, obj.constructor_);
-      return *this;
-    }
-
-    Object &swap(Object &&obj) {
-      return swap(obj);
-    }
+    Object &swap(Object &&obj) { return swap(obj); }
 
     shared_ptr<void> Get() {
       if (ref_) return GetTargetObject()->Get();
       return ptr_;
+    }
+
+    template <class Tx>
+    Object &CreateMemberRef(Tx &tx, string type_id) {
+      type_id_ = type_id;
+      mem_ref_ = true;
+
+      TargetMember<Tx> target(tx);
+      ptr_ = make_shared<TargetMember<Tx>>(target);
+
+      return *this;
     }
 
     template <class Tx>
@@ -151,7 +164,14 @@ namespace kagami {
 
     template <class Tx>
     Tx &Cast() {
-      if (ref_) return GetTargetObject()->Cast<Tx>();
+      if (ref_) { 
+        return GetTargetObject()->Cast<Tx>(); 
+      }
+
+      if (mem_ref_) {
+        return static_cast<TargetMember<Tx>>(ptr_)->Cast();
+      }
+
       return *std::static_pointer_cast<Tx>(ptr_);
     }
 
@@ -195,9 +215,6 @@ namespace kagami {
     long Count() const {
       return ptr_.use_count();
     }
-
-    Object &CreateRef(Object &object);
-    Object &CloneFrom(Object &object, bool force = false);
   };
 
   using ObjectArray = vector<Object>;
@@ -237,8 +254,6 @@ namespace kagami {
     map<string, Object> &GetContent() {
       return base_;
     }
-
-    
   };
 
   class ObjectMap : public map<string, Object> {
@@ -270,25 +285,12 @@ namespace kagami {
     ObjectMap(const map<string, Object> &&rhs) :
       map<string, Object>(rhs) {}
 
-    ObjectMap &operator=(const initializer_list<NamedObject> &rhs) {
-      this->clear();
-      for (const auto &unit : rhs) {
-        this->insert(unit);
-      }
-
-      return *this;
-    }
+    ObjectMap &operator=(const initializer_list<NamedObject> &rhs);
+    ObjectMap &operator=(const ObjectMap &rhs);
+    void merge(ObjectMap &source);
 
     ObjectMap &operator=(const initializer_list<NamedObject> &&rhs) {
-      return this->operator=(rhs);
-    }
-
-    ObjectMap &operator=(const ObjectMap &rhs) {
-      this->clear();
-      for (const auto &unit : rhs) {
-        this->insert(unit);
-      }
-      return *this;
+      return operator=(rhs);
     }
 
     template <class T>
@@ -306,18 +308,6 @@ namespace kagami {
 
     bool CheckTypeId(string id, ComparingFunction func) {
       return func(this->at(id));
-    }
-
-    void merge(ObjectMap &source) {
-      for (auto &unit : source) {
-        auto it = find(unit.first);
-        if (it != end()) {
-          it->second = unit.second;
-        }
-        else {
-          this->insert(unit);
-        }
-      }
     }
 
     void dispose(string id) {
@@ -364,19 +354,11 @@ namespace kagami {
       return *this;
     }
 
-    void MergeMap(ObjectMap p) {
-      if (p.empty()) return;
-
-      auto &container = base_.back();
-      for (auto &unit : p) {
-        container.Add(unit.first, unit.second);
-      }
-    }
-
     DataType &GetBase() {
       return base_;
     }
 
+    void MergeMap(ObjectMap p);
     Object *Find(string id);
     bool CreateObject(string id, Object obj);
   };

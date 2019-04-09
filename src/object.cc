@@ -16,6 +16,29 @@ namespace kagami {
     return result;
   }
 
+  Object &Object::operator=(const Object &object) {
+    ptr_ = object.ptr_;
+    type_id_ = object.type_id_;
+    ref_ = object.ref_;
+    constructor_ = object.constructor_;
+    return *this;
+  }
+
+  Object &Object::ManageContent(shared_ptr<void> ptr, string type_id) {
+    if (ref_) return GetTargetObject()->ManageContent(ptr, type_id);
+    ptr_ = ptr;
+    type_id_ = type_id;
+    return *this;
+  }
+
+  Object &Object::swap(Object &obj) {
+    ptr_.swap(obj.ptr_);
+    std::swap(type_id_, obj.type_id_);
+    std::swap(ref_, obj.ref_);
+    std::swap(constructor_, obj.constructor_);
+    return *this;
+  }
+
   Object &Object::CreateRef(Object &object) {
     type_id_ = object.type_id_;
     ref_ = true;
@@ -81,6 +104,44 @@ namespace kagami {
     }
 
     base_.swap(dest);
+  }
+
+  ObjectMap &ObjectMap::operator=(const initializer_list<NamedObject> &rhs) {
+    this->clear();
+    for (const auto &unit : rhs) {
+      this->insert(unit);
+    }
+
+    return *this;
+  }
+
+  ObjectMap &ObjectMap::operator=(const ObjectMap &rhs) {
+    this->clear();
+    for (const auto &unit : rhs) {
+      this->insert(unit);
+    }
+    return *this;
+  }
+
+  void ObjectMap::merge(ObjectMap &source) {
+    for (auto &unit : source) {
+      auto it = find(unit.first);
+      if (it != end()) {
+        it->second = unit.second;
+      }
+      else {
+        this->insert(unit);
+      }
+    }
+  }
+
+  void ObjectStack::MergeMap(ObjectMap p) {
+    if (p.empty()) return;
+
+    auto &container = base_.back();
+    for (auto &unit : p) {
+      container.Add(unit.first, unit.second);
+    }
   }
 
   Object *ObjectStack::Find(string id) {
