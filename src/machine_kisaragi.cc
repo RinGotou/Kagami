@@ -156,6 +156,8 @@ namespace kagami {
   }
 
   Object Machine::FetchObject(Argument &arg, bool checking) {
+    if (arg.type == kArgumentNormal) return FetchPlainObject(arg);
+
     ObjectPointer ptr = nullptr;
     string domain_type_id = kTypeIdNull;
     Object obj;
@@ -164,10 +166,6 @@ namespace kagami {
 
     auto fetching = [&](ArgumentType type, bool is_domain)->bool {
       switch (type) {
-      case kArgumentNormal:
-        obj = FetchPlainObject(arg);
-        break;
-
       case kArgumentObjectStack:
         ptr = obj_stack_.Find(is_domain ? arg.domain.data : arg.data);
         if (ptr != nullptr) {
@@ -222,8 +220,13 @@ namespace kagami {
       return true;
     };
 
-    if (!fetching(arg.domain.type, true)) return Object();
-    if (!fetching(arg.type, false)) return Object();
+    if (!fetching(arg.domain.type, true)) {
+      return Object();
+    }
+
+    if (!fetching(arg.type, false)) {
+      return Object();
+    }
     return obj;
   }
 
@@ -1291,7 +1294,7 @@ namespace kagami {
 
   void Machine::Generate_Normal(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
     auto &worker = worker_stack_.top();
-    auto params = interface.GetParameters();
+    auto &params = interface.GetParameters();
 
     if (args.size() > params.size()) {
       worker.MakeError("Too many arguments");
@@ -1314,7 +1317,7 @@ namespace kagami {
 
   void Machine::Generate_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
     auto &worker = worker_stack_.top();
-    auto params = interface.GetParameters();
+    vector<string> params = interface.GetParameters();
     list<Object> temp_list;
     shared_ptr<ObjectArray> va_base(new ObjectArray());
 
@@ -1350,7 +1353,7 @@ namespace kagami {
 
   void Machine::Generate_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
     auto &worker = worker_stack_.top();
-    auto params = interface.GetParameters();
+    vector<string> params = interface.GetParameters();
     size_t min_size = interface.GetMinArgSize();
 
     if (args.size() > params.size()) {

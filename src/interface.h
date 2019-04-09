@@ -167,7 +167,7 @@ namespace kagami {
       return argument_mode_;
     }
 
-    vector<string> GetParameters() const {
+    vector<string> &GetParameters() {
       return params_;
     }
 
