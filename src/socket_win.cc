@@ -9,7 +9,7 @@ namespace kagami {
 
     string port = p["port"].Cast<string>();
     string addr = p["addr"].Cast<string>();
-    size_t buf_size = p["buf_size"].Cast<long>();
+    size_t buf_size = p["buf_size"].Cast<int64_t>();
 
     shared_ptr<TCPClient> client_ptr(
       new TCPClient(port, addr, buf_size)
@@ -28,7 +28,7 @@ namespace kagami {
 
   Message GetWSALastError(ObjectMap &p) {
     return Message().SetObject(
-      Object(make_shared<long>(WSAGetLastError()), kTypeIdInt)
+      Object(make_shared<int64_t>(WSAGetLastError()), kTypeIdInt)
     );
   }
 
@@ -37,7 +37,7 @@ namespace kagami {
     EXPECT_TYPE(p, "buf_size", kTypeIdInt);
 
     string port = p["port"].Cast<string>();
-    size_t buf_size = p["buf_size"].Cast<long>();
+    size_t buf_size = p["buf_size"].Cast<int64_t>();
 
     shared_ptr<TCPServer> server_ptr(
       new TCPServer(port, buf_size)

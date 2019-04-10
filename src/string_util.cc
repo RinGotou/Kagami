@@ -12,7 +12,7 @@ namespace kagami {
     
     for (auto it = base.begin(); it != base.end(); ++it) {
       if (it->GetTypeId() == kTypeIdInt) {
-        dest->append(1, static_cast<char>(it->Cast<long>()));
+        dest->append(1, static_cast<char>(it->Cast<int64_t>()));
         continue;
       }
 

@@ -13,15 +13,15 @@ namespace kagami {
 
   Message ThreadSleep(ObjectMap& p) {
     EXPECT_TYPE(p, "milliseconds", kTypeIdInt);
-    auto value = p.Cast<long>("milliseconds");
+    auto value = p.Cast<int64_t>("milliseconds");
 #if defined (_WIN32)
-    Sleep(p.Cast<long>("milliseconds"));
+    Sleep(p.Cast<int64_t>("milliseconds"));
 #else
     timespec spec;
     
     if (value >= 1000) {
       spec.tv_sec = value / 1000;
-      spec.tv_nsec = (value - (static_cast<long>(spec.tv_sec) * 1000))
+      spec.tv_nsec = (value - (static_cast<int64_t>(spec.tv_sec) * 1000))
         * 1000000;
     }
     else {
@@ -41,7 +41,7 @@ namespace kagami {
     string type_id = obj.GetTypeId();
     if (util::IsPlainType(type_id)) {
       if (type_id == kTypeIdInt) {
-        std::cout << obj.Cast<long>() << std::flush;
+        std::cout << obj.Cast<int64_t>() << std::flush;
       }
       else if (type_id == kTypeIdFloat) {
         std::cout << obj.Cast<double>() << std::flush;

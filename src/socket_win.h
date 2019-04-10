@@ -42,7 +42,7 @@ namespace kagami {
     Tx &tx = p[kStrObject].Cast<Tx>();
     WSockInfo *info = dynamic_cast<WSockInfo *>(&tx);
     return Message().SetObject(
-      static_cast<long>(info->GetLastResultCode())
+      static_cast<int64_t>(info->GetLastResultCode())
     );
   }
 }

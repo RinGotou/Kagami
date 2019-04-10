@@ -5,7 +5,7 @@ namespace kagami {
   template <class StringType>
   Message GetStringFamilySize(ObjectMap &p) {
     StringType &str = p.Cast<StringType>(kStrObject);
-    long size = static_cast<long>(str.size());
+    int64_t size = static_cast<int64_t>(str.size());
     return Message().SetObject(size);
   }
   
@@ -15,10 +15,10 @@ namespace kagami {
 
     string type_id = p[kStrObject].GetTypeId();
 
-    size_t start = p.Cast<long>("start");
-    size_t size = p.Cast<long>("size");
+    size_t start = p.Cast<int64_t>("start");
+    size_t size = p.Cast<int64_t>("size");
 
-    EXPECT((start >= 0 && size <= static_cast<long>(str.size() - start)),
+    EXPECT((start >= 0 && size <= static_cast<int64_t>(str.size() - start)),
       "Illegal index or size.");
 
     StringType output = str.substr(start, size);
@@ -32,7 +32,7 @@ namespace kagami {
     string type_id = p[kStrObject].GetTypeId();
 
     size_t size = str.size();
-    size_t idx = p.Cast<long>("index");
+    size_t idx = p.Cast<int64_t>("index");
 
     EXPECT((idx > size && idx >= 0), "Index out of range.");
 
@@ -153,9 +153,9 @@ namespace kagami {
     EXPECT_TYPE(p, "str", kTypeIdString);
     string str = ParseRawString(p["str"].Cast<string>());
 
-    long dest = stol(str, nullptr, base);
+    int64_t dest = stol(str, nullptr, base);
     return Message().SetObject(Object(
-      make_shared<long>(dest), kTypeIdInt
+      make_shared<int64_t>(dest), kTypeIdInt
     ));
   }
 }

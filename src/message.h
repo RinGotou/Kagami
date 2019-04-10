@@ -89,9 +89,9 @@ namespace kagami {
       return *this;
     }
 
-    Message &SetObject(long value) {
+    Message &SetObject(int64_t value) {
       object_ = make_shared<Object>(
-        make_shared<long>(value), kTypeIdInt
+        make_shared<int64_t>(value), kTypeIdInt
         );
       code_ = kCodeObject;
       return *this;

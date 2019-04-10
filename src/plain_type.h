@@ -2,7 +2,7 @@
 #include "machine.h"
 
 namespace kagami {
-  long IntProducer(Object& obj);
+  int64_t IntProducer(Object& obj);
   double FloatProducer(Object& obj);
   string StringProducer(Object &obj);
   bool BoolProducer(Object &obj);
@@ -192,10 +192,10 @@ namespace kagami {
       obj.ManageContent(make_shared<string>(result), kTypeIdString);
     }
     else if (type == kPlainInt) {
-      long result = MathBox<long, op>()
+      int64_t result = MathBox<int64_t, op>()
         .Do(IntProducer(lhs), IntProducer(rhs));
 
-      obj.ManageContent(make_shared<long>(result), kTypeIdInt);
+      obj.ManageContent(make_shared<int64_t>(result), kTypeIdInt);
     }
     else if (type == kPlainFloat) {
       double result = MathBox<double, op>()
@@ -204,7 +204,7 @@ namespace kagami {
       obj.ManageContent(make_shared<double>(result), kTypeIdFloat);
     }
     else if (type == kPlainBool) {
-      long result = MathBox<long, op>()
+      int64_t result = MathBox<int64_t, op>()
         .Do(IntProducer(lhs), IntProducer(rhs));
     }
 
@@ -260,7 +260,7 @@ namespace kagami {
         .Do(StringProducer(lhs), StringProducer(rhs));
     }
     else if (type == kPlainInt) {
-      result = LogicBox<long, op>()
+      result = LogicBox<int64_t, op>()
         .Do(IntProducer(lhs), IntProducer(rhs));
     }
     else if (type == kPlainFloat) {

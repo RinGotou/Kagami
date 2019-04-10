@@ -1,12 +1,12 @@
 #include "plain_type.h"
 
 namespace kagami {
-  long IntProducer(Object &obj) {
+  int64_t IntProducer(Object &obj) {
     auto type = FindTypeCode(obj.GetTypeId());
-    long result = 0;
+    int64_t result = 0;
     switch (type) {
-    case kPlainInt:result = obj.Cast<long>(); break;
-    case kPlainFloat:result = static_cast<long>(obj.Cast<double>()); break;
+    case kPlainInt:result = obj.Cast<int64_t>(); break;
+    case kPlainFloat:result = static_cast<int64_t>(obj.Cast<double>()); break;
     case kPlainBool:result = obj.Cast<bool>() ? 1 : 0; break;
     default:break;
     }
@@ -19,7 +19,7 @@ namespace kagami {
     double result = 0;
     switch (type) {
     case kPlainFloat:result = obj.Cast<double>(); break;
-    case kPlainInt:result = static_cast<double>(obj.Cast<long>()); break;
+    case kPlainInt:result = static_cast<double>(obj.Cast<int64_t>()); break;
     case kPlainBool:result = obj.Cast<bool>() ? 1.0 : 0.0; break;
     default:break;
     }
@@ -31,7 +31,7 @@ namespace kagami {
     auto type = FindTypeCode(obj.GetTypeId());
     string result;
     switch (type) {
-    case kPlainInt:result = to_string(obj.Cast<long>()); break;
+    case kPlainInt:result = to_string(obj.Cast<int64_t>()); break;
     case kPlainFloat:result = to_string(obj.Cast<double>()); break;
     case kPlainBool:result = obj.Cast<bool>() ? kStrTrue : kStrFalse; break;
     case kPlainString:result = obj.Cast<string>(); break;
@@ -51,7 +51,7 @@ namespace kagami {
     auto type = it != kTypeStore.end() ? it->second : kNotPlainType;
     bool result = false;
     if (type == kPlainInt) {
-      long value = obj.Cast<long>();
+      int64_t value = obj.Cast<int64_t>();
       if (value > 0) result = true;
     }
     else if (type == kPlainFloat) {
@@ -76,15 +76,15 @@ namespace kagami {
   }
 
   size_t IntHasher(shared_ptr<void> ptr) {
-    auto hasher = std::hash<long>();
-    return hasher(*static_pointer_cast<long>(ptr));
+    auto hasher = std::hash<int64_t>();
+    return hasher(*static_pointer_cast<int64_t>(ptr));
   }
 
   void InitPlainTypeComponents() {
     using management::type::NewTypeSetup;
     using management::type::PlainHasher;
 
-    NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<long>, PlainHasher<long>());
+    NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<int64_t>, PlainHasher<int64_t>());
     NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>, PlainHasher<double>());
     NewTypeSetup(kTypeIdBool, SimpleSharedPtrCopy<bool>, PlainHasher<bool>());
     NewTypeSetup(kTypeIdNull, FakeCopy<void>);

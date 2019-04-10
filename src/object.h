@@ -52,7 +52,7 @@ namespace kagami {
   private:
     ObjectMode mode_;
     bool constructor_;
-    long ref_count_;
+    int64_t ref_count_;
     shared_ptr<void> ptr_;
     string type_id_;
 
@@ -172,7 +172,7 @@ namespace kagami {
 
     string GetTypeId() const { return type_id_; }
 
-    long ObjRefCount() const { return ref_count_; }
+    int64_t ObjRefCount() const { return ref_count_; }
 
     bool IsRef() const { return mode_ == kObjectRef; }
 

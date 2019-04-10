@@ -125,7 +125,7 @@ namespace kagami {
     Object obj;
     switch (type) {
     case kTokenTypeInt:
-      obj.ManageContent(make_shared<long>(stol(value)), kTypeIdInt); 
+      obj.ManageContent(make_shared<int64_t>(stol(value)), kTypeIdInt); 
       break;
     case kTokenTypeFloat:
       obj.ManageContent(make_shared<double>(stod(value)), kTypeIdFloat);
@@ -523,7 +523,8 @@ namespace kagami {
     auto &obj = FetchObject(args[0]).Deref();
 
     if (management::type::IsHashable(obj)) {
-
+      int64_t hash = management::type::GetHash(obj);
+      worker.RefreshReturnStack(Object(make_shared<int64_t>(hash), kTypeIdInt));
     }
     else {
       worker.RefreshReturnStack(Object());
@@ -783,7 +784,7 @@ namespace kagami {
         if (obj.GetTypeId() != type_id) continue;
 
         if (type_id == kTypeIdInt) {
-          found = (ptr->Cast<long>() == obj.Cast<long>());
+          found = (ptr->Cast<int64_t>() == obj.Cast<int64_t>());
         }
         else if (type_id == kTypeIdFloat) {
           found = (ptr->Cast<double>() == obj.Cast<double>());
@@ -1049,7 +1050,7 @@ namespace kagami {
 
         switch (type) {
         case kTokenTypeInt:
-          ret_obj.ManageContent(make_shared<long>(stol(str)), kTypeIdInt);
+          ret_obj.ManageContent(make_shared<int64_t>(stol(str)), kTypeIdInt);
           break;
         case kTokenTypeFloat:
           ret_obj.ManageContent(make_shared<double>(stod(str)), kTypeIdFloat);
@@ -1085,7 +1086,7 @@ namespace kagami {
       return;
     }
     auto &obj = FetchObject(args[0]).Deref();
-    Object ret_obj(make_shared<long>(obj.ObjRefCount()), kTypeIdInt);
+    Object ret_obj(make_shared<int64_t>(obj.ObjRefCount()), kTypeIdInt);
 
     worker.RefreshReturnStack(ret_obj);
   }
@@ -1183,6 +1184,9 @@ namespace kagami {
     auto &worker = worker_stack_.top();
 
     switch (token) {
+    case kTokenHash:
+      CommandHash(args);
+      break;
     case kTokenFor:
       CommandForEach(args);
       break;

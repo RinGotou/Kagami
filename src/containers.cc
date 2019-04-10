@@ -51,7 +51,7 @@ namespace kagami {
     shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
 
     if (!p["size"].Null()) {
-      size_t size = p.Cast<long>("size");
+      size_t size = p.Cast<int64_t>("size");
       EXPECT(size > 0, "Illegal array size.");
 
       Object obj = p["init_value"];
@@ -71,7 +71,7 @@ namespace kagami {
     EXPECT_TYPE(p, "index", kTypeIdInt);
 
     ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
-    size_t idx = p.Cast<long>("index");
+    size_t idx = p.Cast<int64_t>("index");
     size_t size = base.size();
 
     EXPECT(idx < size, "Subscript is out of range. - " + to_string(idx));
@@ -81,8 +81,8 @@ namespace kagami {
 
   Message ArrayGetSize(ObjectMap &p) {
     auto &obj = p[kStrObject];
-    long size = static_cast<long>(obj.Cast<ObjectArray>().size());
-    return Message().SetObject(Object(make_shared<long>(size), kTypeIdInt));
+    int64_t size = static_cast<int64_t>(obj.Cast<ObjectArray>().size());
+    return Message().SetObject(Object(make_shared<int64_t>(size), kTypeIdInt));
   }
 
   Message ArrayEmpty(ObjectMap &p) {
