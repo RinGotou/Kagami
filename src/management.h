@@ -35,6 +35,14 @@ namespace kagami {
         }
       };
 
+      /* Hasher for object using FakeCopy() */
+      struct PointerHasher : public HasherInterface {
+        size_t Get(shared_ptr<void> ptr) const override {
+          auto hasher = std::hash<shared_ptr<void>>();
+          return hasher(ptr);
+        }
+      };
+
       class ObjectPolicy {
       private:
         CopyingPolicy copying_policy_;

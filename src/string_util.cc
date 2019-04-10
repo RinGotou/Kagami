@@ -272,7 +272,7 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdInStream, FakeCopy<wifstream>)
+    NewTypeSetup(kTypeIdInStream, FakeCopy<wifstream>, PointerHasher())
       .InitConstructor(
         Interface(NewInStream, "path", "instream")
       )
@@ -284,7 +284,7 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdOutStream, FakeCopy<ofstream>)
+    NewTypeSetup(kTypeIdOutStream, FakeCopy<ofstream>, PointerHasher())
       .InitConstructor(
         Interface(OutStreamConstructor, "path|mode", "outstream")
       )
@@ -298,7 +298,7 @@ namespace kagami {
     management::CreateConstantObject("kOutstreamModeAppend", Object("'append'"));
     management::CreateConstantObject("kOutstreamModeTruncate", Object("'truncate'"));
 
-    NewTypeSetup(kTypeIdRegex, FakeCopy<regex>)
+    NewTypeSetup(kTypeIdRegex, FakeCopy<regex>, PointerHasher())
       .InitConstructor(
         Interface(RegexConstructor, "pattern", "regex")
       )

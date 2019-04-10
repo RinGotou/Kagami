@@ -15,7 +15,7 @@ namespace kagami {
     EXPECT_TYPE(p, "milliseconds", kTypeIdInt);
     auto value = p.Cast<int64_t>("milliseconds");
 #if defined (_WIN32)
-    Sleep(p.Cast<int64_t>("milliseconds"));
+    Sleep(DWORD(p.Cast<int64_t>("milliseconds")));
 #else
     timespec spec;
     

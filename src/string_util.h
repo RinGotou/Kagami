@@ -15,8 +15,8 @@ namespace kagami {
 
     string type_id = p[kStrObject].GetTypeId();
 
-    size_t start = p.Cast<int64_t>("start");
-    size_t size = p.Cast<int64_t>("size");
+    int64_t start = p.Cast<int64_t>("start");
+    int64_t size = p.Cast<int64_t>("size");
 
     EXPECT((start >= 0 && size <= static_cast<int64_t>(str.size() - start)),
       "Illegal index or size.");

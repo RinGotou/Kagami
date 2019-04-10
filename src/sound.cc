@@ -50,8 +50,9 @@ namespace kagami {
   void InitSoundComponents() {
     using management::type::NewTypeSetup;
     using management::CreateNewInterface;
+    using management::type::PointerHasher;
 
-    NewTypeSetup(kTypeIdMusic,FakeCopy<dawn::Music>)
+    NewTypeSetup(kTypeIdMusic,FakeCopy<dawn::Music>, PointerHasher())
       .InitConstructor(
        Interface(NewMusicObject,"path",kTypeIdMusic)
       )
