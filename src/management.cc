@@ -94,16 +94,24 @@ namespace kagami {
     /////////////////////////////////////////////////////////////
 
     namespace type {
-      map <string, ObjectPolicy> &GetPlannerBase() {
+      shared_ptr<void> ObjectPolicy::CreateObjectCopy(shared_ptr<void> target) const {
+        shared_ptr<void> result = nullptr;
+        if (target != nullptr) {
+          result = copying_policy_(target);
+        }
+        return result;
+      }
+
+      map <string, ObjectPolicy> &GetObjPolicyCollection() {
         static map<string, ObjectPolicy> base;
         return base;
       }
 
       vector<string> GetMethods(string id) {
         vector<string> result;
-        const auto it = GetPlannerBase().find(id);
+        const auto it = GetObjPolicyCollection().find(id);
 
-        if (it != GetPlannerBase().end()) {
+        if (it != GetObjPolicyCollection().end()) {
           result = it->second.GetMethods();
         }
         return result;
@@ -111,17 +119,36 @@ namespace kagami {
 
       bool CheckMethod(string func_id, string domain) {
         bool result = false;
-        const auto it = GetPlannerBase().find(domain);
+        const auto it = GetObjPolicyCollection().find(domain);
 
-        if (it != GetPlannerBase().end()) {
+        if (it != GetObjPolicyCollection().end()) {
           result = find_in_vector(func_id, it->second.GetMethods());
         }
 
         return result;
       }
 
+      size_t GetHash(Object &obj) {
+        auto &base = GetObjPolicyCollection();
+        const auto it = base.find(obj.GetTypeId());
+        auto hasher = it->second.GetHasher();
+        return hasher->Get(obj.Get());
+      }
+
+      bool IsHashable(Object &obj) {
+        bool result = false;
+        auto &base = GetObjPolicyCollection();
+        const auto it = base.find(obj.GetTypeId());
+
+        if (it != base.end()) {
+          result = (it->second.GetHasher() != nullptr);
+        }
+
+        return result;
+      }
+
       void NewType(string id, ObjectPolicy temp) {
-        GetPlannerBase().insert(pair<string, ObjectPolicy>(id, temp));
+        GetObjPolicyCollection().insert(pair<string, ObjectPolicy>(id, temp));
       }
 
       shared_ptr<void> GetObjectCopy(Object &object) {
@@ -132,9 +159,9 @@ namespace kagami {
 
         shared_ptr<void> result = nullptr;
         const auto option = object.GetTypeId();
-        const auto it = GetPlannerBase().find(option);
+        const auto it = GetObjPolicyCollection().find(option);
 
-        if (it != GetPlannerBase().end()) {
+        if (it != GetObjPolicyCollection().end()) {
           result = it->second.CreateObjectCopy(object.Get());
         }
         return result;
@@ -171,7 +198,7 @@ namespace kagami {
       }
 
       NewTypeSetup::~NewTypeSetup() {
-        NewType(type_name_, ObjectPolicy(policy_, methods_));
+        NewType(type_name_, ObjectPolicy(policy_, methods_, hasher_));
         CreateNewInterface(constructor_);
         for (auto &unit : interfaces_) {
           CreateNewInterface(unit);

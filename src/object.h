@@ -15,11 +15,16 @@ namespace kagami {
   using ContainerPool = list<ObjectContainer>;
 
   vector<string> BuildStringVector(string source);
-  
+
   enum ObjectMode {
     kObjectNormal    = 0,
     kObjectRef       = 1,
     kObjectMemberRef = 2
+  };
+
+  struct HasherInterface {
+    virtual size_t Get(shared_ptr<void>) const = 0;
+    virtual ~HasherInterface() {}
   };
 
   struct TargetObject {
@@ -153,6 +158,13 @@ namespace kagami {
       constructor_ = false;
       return result;
     }
+
+    bool operator==(const Object &obj) const { 
+      if (&obj == this) return true;
+      return ptr_ == obj.ptr_; 
+    }
+
+    bool operator==(const Object &&obj) const { return operator==(obj); }
 
     Object &operator=(const Object &&object) { return operator=(object); }
 

@@ -165,6 +165,7 @@ namespace kagami {
       InvokingRecoverPoint recover_point = nullptr);
 
     void SetSegmentInfo(ArgumentList &args);
+    void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);
     void CommandIfOrWhile(GenericToken token, ArgumentList &args);
     void CommandForEach(ArgumentList &args);

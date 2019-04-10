@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <unordered_map>
 #include <deque>
 #include <regex>
 #include <stack>
@@ -60,6 +61,7 @@ namespace kagami {
   using std::pair;
   using std::vector;
   using std::map;
+  using std::unordered_map;
   using std::deque;
   using std::shared_ptr;
   using std::unique_ptr;
@@ -88,6 +90,7 @@ namespace kagami {
   using std::mutex;
   using std::lock_guard;
   using std::initializer_list;
+  using std::is_base_of;
 #if defined (_WIN32)
   using suzu::TCPClient;
   using suzu::TCPServer;
@@ -146,7 +149,7 @@ namespace kagami {
 
   /* Reserved keywords mark/IR framework commands */
   enum GenericToken {
-    kTokenEat,
+    kTokenHash,
     kTokenFor,
     kTokenIn,
     kTokenNullObj,
@@ -257,6 +260,7 @@ namespace kagami {
   const string kTypeIdIterator        = "iterator";
 
   const string
+    kStrHash           = "hash",
     kStrIf             = "if",
     kStrFn             = "fn",
     kStrNullObj        = "null_obj",

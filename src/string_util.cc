@@ -244,8 +244,8 @@ namespace kagami {
   }
 
   void InitBaseTypes() {
-    using management::type::NewTypeSetup;
     using management::CreateNewInterface;
+    using namespace management::type;
 
     NewTypeSetup(kTypeIdFunction, SimpleSharedPtrCopy<Interface>)
       .InitMethods(
@@ -256,7 +256,7 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdString, SimpleSharedPtrCopy<string>)
+    NewTypeSetup(kTypeIdString, SimpleSharedPtrCopy<string>, PlainHasher<string>())
       .InitConstructor(
         Interface(StringConstructor, "raw_string", "string")
       )
@@ -308,7 +308,7 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdWideString, SimpleSharedPtrCopy<wstring>)
+    NewTypeSetup(kTypeIdWideString, SimpleSharedPtrCopy<wstring>, PlainHasher<wstring>())
       .InitConstructor(
         Interface(WideStringContructor, "raw_string", "wstring")
       )

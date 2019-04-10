@@ -518,6 +518,18 @@ namespace kagami {
     worker.last_command = static_cast<GenericToken>(stol(args[1].data));
   }
 
+  void Machine::CommandHash(ArgumentList &args) {
+    auto &worker = worker_stack_.top();
+    auto &obj = FetchObject(args[0]).Deref();
+
+    if (management::type::IsHashable(obj)) {
+
+    }
+    else {
+      worker.RefreshReturnStack(Object());
+    }
+  }
+
   void Machine::CommandSwap(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     auto &right = FetchObject(args[1]).Deref();

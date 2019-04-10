@@ -75,12 +75,18 @@ namespace kagami {
     return Message().SetObject(value);
   }
 
+  size_t IntHasher(shared_ptr<void> ptr) {
+    auto hasher = std::hash<long>();
+    return hasher(*static_pointer_cast<long>(ptr));
+  }
+
   void InitPlainTypeComponents() {
     using management::type::NewTypeSetup;
+    using management::type::PlainHasher;
 
-    NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<long>);
-    NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>);
-    NewTypeSetup(kTypeIdBool, SimpleSharedPtrCopy<bool>);
+    NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<long>, PlainHasher<long>());
+    NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>, PlainHasher<double>());
+    NewTypeSetup(kTypeIdBool, SimpleSharedPtrCopy<bool>, PlainHasher<bool>());
     NewTypeSetup(kTypeIdNull, FakeCopy<void>);
 
     BinaryMathOperatorGenerator<kTokenPlus>();

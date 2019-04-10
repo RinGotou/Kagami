@@ -127,6 +127,7 @@ namespace kagami {
     }
 
     bool operator==(Interface &rhs) const {
+      if (&rhs == this) return true;
       return (
         policy_ == rhs.policy_ &&
         id_ == rhs.id_ &&
@@ -144,6 +145,7 @@ namespace kagami {
     }
 
     bool operator!=(Interface &rhs) const {
+      if (&rhs == this) return false;
       return !this->operator==(rhs);
     }
 
