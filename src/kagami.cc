@@ -1,5 +1,5 @@
 #include "machine.h"
-#include "suzu_ap.h"
+#include "argument.h"
 
 //Argument Processor
 using suzu::ArgumentProcessor;

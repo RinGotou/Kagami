@@ -2,7 +2,7 @@
 
 namespace kagami {
   Message IteratorStepForward(ObjectMap &p) {
-    auto &it = p[kStrObject].Cast<IteratorPackage>();
+    auto &it = p[kStrObject].Cast<UnifiedIterator>();
     it.StepForward();
     return Message();
   }
@@ -10,44 +10,44 @@ namespace kagami {
   Message IteratorForward(ObjectMap &p) {
     auto &obj = p[kStrObject];
     Object ret_obj(
-      make_shared<IteratorPackage>(obj.Cast<IteratorPackage>().CreateCopy()),
+      make_shared<UnifiedIterator>(obj.Cast<UnifiedIterator>().CreateCopy()),
       kTypeIdIterator
     );
 
-    ret_obj.Cast<IteratorPackage>().StepForward(1);
+    ret_obj.Cast<UnifiedIterator>().StepForward(1);
     return Message().SetObject(ret_obj);
   }
 
   Message IteratorBack(ObjectMap &p) {
     auto &obj = p[kStrObject];
     Object ret_obj(
-      make_shared<IteratorPackage>(obj.Cast<IteratorPackage>().CreateCopy()),
+      make_shared<UnifiedIterator>(obj.Cast<UnifiedIterator>().CreateCopy()),
       kTypeIdIterator
     );
 
-    ret_obj.Cast<IteratorPackage>().StepBack(1);
+    ret_obj.Cast<UnifiedIterator>().StepBack(1);
     return Message().SetObject(ret_obj);
   }
 
   Message IteratorStepBack(ObjectMap &p) {
-    auto &it = p[kStrObject].Cast<IteratorPackage>();
+    auto &it = p[kStrObject].Cast<UnifiedIterator>();
     it.StepBack();
     return Message();
   }
 
   Message IteratorOperatorCompare(ObjectMap &p) {
     EXPECT_TYPE(p, kStrRightHandSide, kTypeIdIterator);
-    auto &rhs = p[kStrRightHandSide].Cast<IteratorPackage>();
-    auto &lhs = p[kStrObject].Cast<IteratorPackage>();
+    auto &rhs = p[kStrRightHandSide].Cast<UnifiedIterator>();
+    auto &lhs = p[kStrObject].Cast<UnifiedIterator>();
     return Message().SetObject(lhs.Compare(rhs));
   }
 
   Message IteratorGet(ObjectMap &p) {
-    auto &it = p[kStrObject].Cast<IteratorPackage>();
+    auto &it = p[kStrObject].Cast<UnifiedIterator>();
     return Message().SetObject(Object().CreateRef(it.Deref()));
   }
 
-  Message ArrayConstructor(ObjectMap &p) {
+  Message NewArray(ObjectMap &p) {
     shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
 
     if (!p["size"].Null()) {
@@ -106,8 +106,8 @@ namespace kagami {
 
   Message ArrayBegin(ObjectMap &p) {
     auto &base = p[kStrObject].Cast<ObjectArray>();
-    shared_ptr<IteratorPackage> pkg(
-      new IteratorPackage(base.begin(), kContainerObjectArray)
+    shared_ptr<UnifiedIterator> pkg(
+      new UnifiedIterator(base.begin(), kContainerObjectArray)
     );
     return Message().SetObject(
       Object(pkg, kTypeIdIterator)
@@ -116,8 +116,8 @@ namespace kagami {
 
   Message ArrayEnd(ObjectMap &p) {
     auto &base = p[kStrObject].Cast<ObjectArray>();
-    shared_ptr<IteratorPackage> pkg(
-      new IteratorPackage(base.end(), kContainerObjectArray)
+    shared_ptr<UnifiedIterator> pkg(
+      new UnifiedIterator(base.end(), kContainerObjectArray)
     );
     return Message().SetObject(
       Object(pkg, kTypeIdIterator)
@@ -164,7 +164,7 @@ namespace kagami {
 
     NewTypeSetup(kTypeIdArray, ArrayCopyingPolicy, CustomHasher<ObjectArray, ArrayHasher>())
       .InitConstructor(
-        Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill)
+        Interface(NewArray, "size|init_value", "array", kCodeAutoFill)
       )
       .InitMethods(
         {
@@ -179,7 +179,7 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdIterator, SimpleSharedPtrCopy<IteratorPackage>)
+    NewTypeSetup(kTypeIdIterator, SimpleSharedPtrCopy<UnifiedIterator>)
       .InitMethods(
         {
           Interface(IteratorGet, "", "get"),

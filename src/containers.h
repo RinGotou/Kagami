@@ -4,7 +4,7 @@
   Base container implementations for Kagami script.
 */
 namespace kagami {
-  /* Runtime type identifier for IteratorPackage */
+  /* Runtime type identifier for UnifiedIterator */
   enum BaseContainerCode {
     kContainerObjectArray,
     kContainerNull
@@ -68,7 +68,7 @@ namespace kagami {
     Top iterator wrapper.
     Provide unified methods for iterator type in script.
   */
-  class IteratorPackage : public IteratorInterface {
+  class UnifiedIterator : public IteratorInterface {
   private:
     BaseContainerCode container_type_;
     shared_ptr<IteratorInterface> it_;
@@ -82,22 +82,22 @@ namespace kagami {
     }
 
   public:
-    IteratorPackage() : container_type_(kContainerNull),
+    UnifiedIterator() : container_type_(kContainerNull),
       it_(nullptr) {}
 
-    IteratorPackage(const IteratorPackage &rhs) :
+    UnifiedIterator(const UnifiedIterator &rhs) :
       container_type_(rhs.container_type_),
       it_(rhs.it_) {}
 
-    IteratorPackage(const IteratorPackage &&rhs) :
-      IteratorPackage(rhs) {}
+    UnifiedIterator(const UnifiedIterator &&rhs) :
+      UnifiedIterator(rhs) {}
 
     /* 
       Hint: You must add new type identifier code in BaseContainerCode and add 
       casting actions below(Compare() and CreateCopy()) before add new items!
     */
     template <class Tx>
-    IteratorPackage(Tx it, BaseContainerCode type) :
+    UnifiedIterator(Tx it, BaseContainerCode type) :
       it_(dynamic_pointer_cast<IteratorInterface>(make_shared<STLIterator<Tx>>(it))),
       container_type_(type) {}
 
@@ -118,7 +118,7 @@ namespace kagami {
 
     Object &Deref() { return it_->Deref(); }
 
-    bool Compare(IteratorPackage &rhs) {
+    bool Compare(UnifiedIterator &rhs) {
       bool result = false;
 
       if (rhs.container_type_ == container_type_ 
@@ -136,8 +136,8 @@ namespace kagami {
       return result;
     }
 
-    IteratorPackage CreateCopy() {
-      IteratorPackage pkg;
+    UnifiedIterator CreateCopy() {
+      UnifiedIterator pkg;
       switch (container_type_) {
       case kContainerObjectArray:
         pkg.it_.reset(

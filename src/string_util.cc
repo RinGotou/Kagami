@@ -27,7 +27,7 @@ namespace kagami {
   }
 
   //String
-  Message StringConstructor(ObjectMap &p) {
+  Message NewString(ObjectMap &p) {
     Object &obj = p["raw_string"];
     Object base;
 
@@ -121,7 +121,7 @@ namespace kagami {
   }
 
   //OutStream
-  Message OutStreamConstructor(ObjectMap &p) {
+  Message NewOutStream(ObjectMap &p) {
     EXPECT_TYPE(p, "path", kTypeIdString);
     EXPECT_TYPE(p, "mode", kTypeIdString);
 
@@ -165,7 +165,7 @@ namespace kagami {
   }
 
   //regex
-  Message RegexConstructor(ObjectMap &p) {
+  Message NewRegex(ObjectMap &p) {
     EXPECT_TYPE(p, "pattern", kTypeIdString);
 
     string pattern_string = p.Cast<string>("pattern");
@@ -185,7 +185,7 @@ namespace kagami {
   }
 
   //wstring
-  Message WideStringContructor(ObjectMap &p) {
+  Message NewWideString(ObjectMap &p) {
     EXPECT_TYPE(p, "raw_string", kTypeIdString);
     Object obj = p["raw_string"];
 
@@ -258,7 +258,7 @@ namespace kagami {
 
     NewTypeSetup(kTypeIdString, SimpleSharedPtrCopy<string>, PlainHasher<string>())
       .InitConstructor(
-        Interface(StringConstructor, "raw_string", "string")
+        Interface(NewString, "raw_string", "string")
       )
       .InitMethods(
         {
@@ -286,7 +286,7 @@ namespace kagami {
 
     NewTypeSetup(kTypeIdOutStream, FakeCopy<ofstream>, PointerHasher())
       .InitConstructor(
-        Interface(OutStreamConstructor, "path|mode", "outstream")
+        Interface(NewOutStream, "path|mode", "outstream")
       )
       .InitMethods(
         {
@@ -300,7 +300,7 @@ namespace kagami {
 
     NewTypeSetup(kTypeIdRegex, FakeCopy<regex>, PointerHasher())
       .InitConstructor(
-        Interface(RegexConstructor, "pattern", "regex")
+        Interface(NewRegex, "pattern", "regex")
       )
       .InitMethods(
         {
@@ -310,7 +310,7 @@ namespace kagami {
 
     NewTypeSetup(kTypeIdWideString, SimpleSharedPtrCopy<wstring>, PlainHasher<wstring>())
       .InitConstructor(
-        Interface(WideStringContructor, "raw_string", "wstring")
+        Interface(NewWideString, "raw_string", "wstring")
       )
       .InitMethods(
         {
