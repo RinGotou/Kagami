@@ -234,7 +234,7 @@ namespace kagami {
 
       ObjectMap obj_map = {
         NamedObject(kStrRightHandSide, rhs),
-        NamedObject(kStrObject, lhs)
+        NamedObject(kStrMe, lhs)
       };
 
       //TODO:modify for invoking feature

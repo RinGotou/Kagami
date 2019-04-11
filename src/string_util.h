@@ -4,16 +4,16 @@
 namespace kagami {
   template <class StringType>
   Message GetStringFamilySize(ObjectMap &p) {
-    StringType &str = p.Cast<StringType>(kStrObject);
+    StringType &str = p.Cast<StringType>(kStrMe);
     int64_t size = static_cast<int64_t>(str.size());
     return Message().SetObject(size);
   }
   
   template <class StringType>
   Message StringFamilySubStr(ObjectMap &p) {
-    StringType &str = p.Cast<StringType>(kStrObject);
+    StringType &str = p.Cast<StringType>(kStrMe);
 
-    string type_id = p[kStrObject].GetTypeId();
+    string type_id = p[kStrMe].GetTypeId();
 
     int64_t start = p.Cast<int64_t>("start");
     int64_t size = p.Cast<int64_t>("size");
@@ -28,8 +28,8 @@ namespace kagami {
 
   template <class StringType>
   Message StringFamilyGetElement(ObjectMap &p) {
-    StringType &str = p.Cast<StringType>(kStrObject);
-    string type_id = p[kStrObject].GetTypeId();
+    StringType &str = p.Cast<StringType>(kStrMe);
+    string type_id = p[kStrMe].GetTypeId();
 
     size_t size = str.size();
     size_t idx = p.Cast<int64_t>("index");
@@ -79,7 +79,7 @@ namespace kagami {
 
   template <class StringType, class StreamType>
   Message StringFamilyPrint(ObjectMap &p) {
-    StringType &str = p.Cast<StringType>(kStrObject);
+    StringType &str = p.Cast<StringType>(kStrMe);
     StreamBase<StringType, StreamType> stream;
     stream << str;
     CHECK_PRINT_OPT();
@@ -88,14 +88,14 @@ namespace kagami {
 
   template <class StreamType>
   Message StreamFamilyClose(ObjectMap &p) {
-    StreamType &stream = p.Cast<StreamType>(kStrObject);
+    StreamType &stream = p.Cast<StreamType>(kStrMe);
     stream.close();
     return Message();
   }
 
   template <class StreamType>
   Message StreamFamilyState(ObjectMap &p) {
-    StreamType &stream = p.Cast<StreamType>(kStrObject);
+    StreamType &stream = p.Cast<StreamType>(kStrMe);
     return Message().SetObject(stream.good());
   }
 
@@ -139,7 +139,7 @@ namespace kagami {
     // Init convertor
     StringConvertor<DestType, SrcType> convertor; 
     // Get original string
-    SrcType &str = p.Cast<SrcType>(kStrObject); 
+    SrcType &str = p.Cast<SrcType>(kStrMe); 
     // Make result
     shared_ptr<DestType> dest = make_shared<DestType>(convertor(str)); 
     // Init object type identifier

@@ -21,7 +21,7 @@ namespace kagami {
   }
 
   Message TCPClientStart(ObjectMap &p) {
-    auto &client = p[kStrObject].Cast<TCPClient>();
+    auto &client = p[kStrMe].Cast<TCPClient>();
     bool result = client.StartClient();
     return Message().SetObject(result);
   }
@@ -49,7 +49,7 @@ namespace kagami {
   }
 
   Message TCPServerStart(ObjectMap &p) {
-    auto &server = p[kStrObject].Cast<TCPServer>();
+    auto &server = p[kStrMe].Cast<TCPServer>();
     auto &backlog_obj = p["backlog"];
     int backlog = SOMAXCONN;
 
@@ -65,7 +65,7 @@ namespace kagami {
   }
 
   Message TCPServerAccept(ObjectMap &p) {
-    auto &server = p[kStrObject].Cast<TCPServer>();
+    auto &server = p[kStrMe].Cast<TCPServer>();
     shared_ptr<TCPServer::ClientConnector> connector_ptr(
       new TCPServer::ClientConnector(server.Accept())
     );
@@ -75,7 +75,7 @@ namespace kagami {
   }
 
   Message TCPServerClose(ObjectMap &p) {
-    auto &server = p[kStrObject].Cast<TCPServer>();
+    auto &server = p[kStrMe].Cast<TCPServer>();
     server.Close();
     return Message();
   }

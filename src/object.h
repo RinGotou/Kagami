@@ -92,12 +92,25 @@ namespace kagami {
     Object(const Object &&obj) :
       Object(obj) {}
 
-    Object(shared_ptr<void> ptr, string type_id) :
+    template <class T>
+    Object(shared_ptr<T> ptr, string type_id) :
       mode_(kObjectNormal),
       constructor_(false),
       ref_count_(0),
       ptr_(ptr), 
       type_id_(type_id) {}
+
+    template <class T>
+    Object(T &t, string type_id) :
+      mode_(kObjectNormal),
+      constructor_(false),
+      ref_count_(0),
+      ptr_(make_shared<T>(t)),
+      type_id_(type_id) {}
+
+    template <class T>
+    Object(T &&t, string type_id) :
+      Object(t, type_id) {}
 
     Object(string str) :
       mode_(kObjectNormal),
@@ -182,6 +195,7 @@ namespace kagami {
   };
 
   using ObjectArray = vector<Object>;
+  using ManagedArray = shared_ptr<ObjectArray>;
 
   class ObjectContainer {
   private:
@@ -260,10 +274,6 @@ namespace kagami {
     template <class T>
     T &Cast(string id) {
       return this->at(id).Cast<T>();
-    }
-
-    auto insert_pair(string id, Object obj) {
-      return this->insert(NamedObject(id, obj));
     }
 
     bool CheckTypeId(string id, string type_id) {

@@ -21,6 +21,11 @@ namespace kagami {
       logger->Add(msg);
     }
 
+    void AddEvent(StateCode code, string detail, StateLevel level) {
+      auto *logger = ContactLogger();
+      logger->Add(Message(code, detail, level));
+    }
+
     void AddEvent(string info) {
       Message msg(kCodeSuccess, info);
       

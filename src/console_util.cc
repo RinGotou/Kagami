@@ -37,7 +37,7 @@ namespace kagami {
 
   //Print single object
   Message Print(ObjectMap &p) {
-    Object &obj = p[kStrObject];
+    Object &obj = p[kStrMe];
     string type_id = obj.GetTypeId();
     if (util::IsPlainType(type_id)) {
       if (type_id == kTypeIdInt) {
@@ -80,7 +80,7 @@ namespace kagami {
       EXPECT(IsStringFamily(p["msg"]), "Illegal message string.");
       
       ObjectMap obj_map = {
-        NamedObject(kStrObject, p["msg"])
+        NamedObject(kStrMe, p["msg"])
       };
 
       Print(obj_map);
@@ -103,8 +103,8 @@ namespace kagami {
 
     CreateNewInterface(Interface(Input, "msg", "input", kCodeAutoFill));
     CreateNewInterface(Interface(GetChar, "", "getchar"));
-    CreateNewInterface(Interface(Print, kStrObject, "print"));
-    CreateNewInterface(Interface(PrintLine, kStrObject, "println"));
+    CreateNewInterface(Interface(Print, kStrMe, "print"));
+    CreateNewInterface(Interface(PrintLine, kStrMe, "println"));
     CreateNewInterface(Interface(SystemCommand, "command", "console"));
     CreateNewInterface(Interface(ThreadSleep, "milliseconds", "sleep"));
   }

@@ -84,7 +84,7 @@ namespace kagami {
       auto ptr = base.Find(id);
 
       if (ptr != nullptr) {
-        Object obj(type::GetObjectCopy(*ptr), ptr->GetTypeId());
+        Object obj = type::CreateObjectCopy(*ptr);
         return obj;
       }
 
@@ -151,19 +151,18 @@ namespace kagami {
         GetObjPolicyCollection().insert(pair<string, ObjectPolicy>(id, temp));
       }
 
-      shared_ptr<void> GetObjectCopy(Object &object) {
-        //Ignore copying policy
+      Object CreateObjectCopy(Object &object) {
         if (object.GetConstructorFlag() || object.IsMemberRef()) {
-          return object.Get();
+          return object;
         }
 
-        shared_ptr<void> result = nullptr;
-        const auto option = object.GetTypeId();
-        const auto it = GetObjPolicyCollection().find(option);
-
+        Object result;
+        const auto it = GetObjPolicyCollection().find(object.GetTypeId());
         if (it != GetObjPolicyCollection().end()) {
-          result = it->second.CreateObjectCopy(object.Get());
+          result.ManageContent(it->second.CreateObjectCopy(object.Get()),
+            object.GetTypeId());
         }
+
         return result;
       }
 

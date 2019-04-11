@@ -74,7 +74,7 @@ namespace kagami {
       size_t GetHash(Object &obj);
       bool IsHashable(Object &obj);
       void NewType(string id, ObjectPolicy temp);
-      shared_ptr<void> GetObjectCopy(Object &object);
+      Object CreateObjectCopy(Object &object);
       bool CheckBehavior(Object obj, string method_str);
 
       class NewTypeSetup {

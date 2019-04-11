@@ -21,7 +21,7 @@ namespace kagami {
   }
 
   Message MusicPlay(ObjectMap &p) {
-    dawn::Music &music = p.Cast<dawn::Music>(kStrObject);
+    dawn::Music &music = p.Cast<dawn::Music>(kStrMe);
     return Message().SetObject(static_cast<int64_t>(music.Play()));
     
   }

@@ -272,9 +272,10 @@ namespace kagami {
     kStrVersion        = "version",
     kStrPatch          = "patch",
     kStrEnd            = "end",
-    kStrPrint          = "__print",
+    kStrPrint          = "print",
     kStrSwitchLine     = "!switch_line",
-    kStrCaseObj        = "__case",
+    kStrCaseObj        = "!case",
+    kStrIteratorObj    = "!iterator",
     kStrCommentBegin   = "=begin",
     kStrCommentEnd     = "=end",
     kStrRequire        = "require",
@@ -318,7 +319,7 @@ namespace kagami {
     kStrCompare        = "__compare",
     kStrRightHandSide  = "__rhs",
     kStrLeftHandSide   = "__lhs",
-    kStrObject         = "__object";
+    kStrMe             = "me";
 
   /* Compare multiple objects */
   template <class Tx, class Ty>

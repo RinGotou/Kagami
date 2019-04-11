@@ -7,7 +7,7 @@ namespace kagami {
     size_t index_counter = 1;
     wstring buf;
     string temp;
-    std::wifstream stream(src);
+    wifstream stream(src);
     Analyzer analyzer;
     Message msg;
     list<CombinedCodeline> script_buf;
@@ -53,7 +53,8 @@ namespace kagami {
           error_counter += 1;
         }
         else {
-          trace::AddEvent(Message(kCodeIllegalSymbol, "Too many errors. Analyzing is stopped."));
+          trace::AddEvent(kCodeIllegalSymbol, 
+            "Too many errors. Analyzing is stopped.");
           break;
         }
       }
@@ -160,6 +161,7 @@ namespace kagami {
     return obj;
   }
 
+  //TODO:Rewrite
   Object Machine::FetchObject(Argument &arg, bool checking) {
     if (arg.type == kArgumentNormal) return FetchPlainObject(arg);
 
@@ -286,7 +288,7 @@ namespace kagami {
       }
 
       interface = management::FindInterface(id, obj.GetTypeId());
-      obj_map.insert(NamedObject(kStrObject, std::move(obj)));
+      obj_map.insert(NamedObject(kStrMe, std::move(obj)));
       return true;
     }
     //Plain bulit-in function and user-defined function
@@ -400,9 +402,8 @@ namespace kagami {
 
         for (auto &unit : it->GetContent()) {
           if (scope_record.find(unit.first) == scope_record.end()) {
-            scope_record.insert_pair(unit.first,
-              Object(management::type::GetObjectCopy(unit.second), 
-                unit.second.GetTypeId()));
+            scope_record.insert(NamedObject(unit.first,
+              management::type::CreateObjectCopy(unit.second)));
           }
         }
       }
@@ -508,7 +509,7 @@ namespace kagami {
     }
     else {
       ObjectMap obj_map = args;
-      obj_map.insert(NamedObject(kStrObject, obj));
+      obj_map.insert(NamedObject(kStrMe, obj));
 
       return interface->Start(obj_map);
     }
@@ -642,7 +643,7 @@ namespace kagami {
     if (worker.invoking_point) return;
 
     obj_stack_.Push();
-    obj_stack_.CreateObject("!iterator", iterator_obj);
+    obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
     obj_stack_.CreateObject(unit_id, unit);
     worker.loop_head.push(worker.logic_idx - 1);
     worker.SwitchToMode(kModeForEach);
@@ -652,7 +653,7 @@ namespace kagami {
     using namespace management;
     auto &worker = worker_stack_.top();
     auto unit_id = FetchObject(args[0]).Cast<string>();
-    auto iterator = *obj_stack_.GetCurrent().Find("!iterator");
+    auto iterator = *obj_stack_.GetCurrent().Find(kStrIteratorObj);
     auto container = FetchObject(args[1]);
     ObjectMap obj_map;
 
@@ -733,7 +734,7 @@ namespace kagami {
         return;
       }
 
-      Object sample_obj(management::type::GetObjectCopy(obj), type_id);
+      Object sample_obj = management::type::CreateObjectCopy(obj);
       obj_stack_.Push();
       obj_stack_.CreateObject(kStrCaseObj, sample_obj);
       worker.SwitchToMode(kModeCaseJump);
@@ -886,7 +887,7 @@ namespace kagami {
         worker.loop_tail.push(worker.logic_idx - 1);
       }
       worker.idx = worker.loop_head.top();
-      obj_stack_.GetCurrent().ClearExcept("!iterator");
+      obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
     }
     else if (worker.mode == kModeForEachJump) {
       if (worker.activated_continue) {
@@ -896,7 +897,7 @@ namespace kagami {
         worker.idx = worker.loop_head.top();
         worker.mode = kModeForEach;
         worker.activated_continue = false;
-        obj_stack_.GetCurrent().ClearExcept("!iterator");
+        obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
       }
       else {
         if (worker.activated_break) worker.activated_break = false;
@@ -914,34 +915,37 @@ namespace kagami {
   }
 
   void Machine::CommandBind(ArgumentList &args) {
+    using namespace management::type;
     auto &worker = worker_stack_.top();
     //Do not change the order!
-    auto src = FetchObject(args[1]);
-    auto dest = FetchObject(args[0]);
-     
-    if (dest.IsRef()) {
-      dest.ManageContent(management::type::GetObjectCopy(src), src.GetTypeId());
+    auto rhs = FetchObject(args[1]);
+    auto lhs = FetchObject(args[0]);
+
+    if (lhs.IsRef()) {
+      auto &real_lhs = lhs.Deref();
+      real_lhs = CreateObjectCopy(rhs);
       return;
     }
+    else {
+      string id = lhs.Cast<string>();
+      ObjectPointer ptr = obj_stack_.Find(id);
 
-    string id = dest.Cast<string>();
-    ObjectPointer ptr = obj_stack_.Find(id);
-    
-    if (ptr != nullptr) {
-      ptr->ManageContent(management::type::GetObjectCopy(src), src.GetTypeId());
-      return;
-    }
+      if (ptr != nullptr) {
+        *ptr = CreateObjectCopy(rhs);
+      }
+      else {
+        Object obj = CreateObjectCopy(rhs);
 
-    if (util::GetTokenType(id, true) != kTokenTypeGeneric) {
-      worker.MakeError("Invalid object id");
-      return;
-    }
+        if (util::GetTokenType(id) != kTokenTypeGeneric) {
+          worker.MakeError("Invalid object id.");
+          return;
+        }
 
-    Object obj(management::type::GetObjectCopy(src), src.GetTypeId());
-
-    if (!obj_stack_.CreateObject(id, obj)) {
-      worker.MakeError("Object creation failed");
-      return;
+        if (!obj_stack_.CreateObject(id, obj)) {
+          worker.MakeError("Object binding failed.");
+        }
+        
+      }
     }
   }
 
@@ -949,7 +953,7 @@ namespace kagami {
     auto &worker = worker_stack_.top();
 
     if (args.size() > 1) {
-      shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+      ManagedArray base = make_shared<ObjectArray>();
 
       for (auto &unit : args) {
         base->emplace_back(Object(FetchObject(unit).GetTypeId()));
@@ -977,10 +981,10 @@ namespace kagami {
 
     Object obj = FetchObject(args[0]);
     auto methods = management::type::GetMethods(obj.GetTypeId());
-    shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+    ManagedArray base = make_shared<ObjectArray>();
 
     for (auto &unit : methods) {
-      base->emplace_back(Object(make_shared<string>(unit), kTypeIdString));
+      base->emplace_back(Object(unit, kTypeIdString));
     }
 
     Object ret_obj(base, kTypeIdArray);
@@ -1123,7 +1127,7 @@ namespace kagami {
 
   void Machine::InitArray(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+    ManagedArray base = make_shared<ObjectArray>();
 
     if (!args.empty()) {
       for (auto &unit : args) {
@@ -1148,13 +1152,13 @@ namespace kagami {
       return;
     }
 
-    Object ret_obj(make_shared<Interface>(*interface), kTypeIdFunction);
+    Object ret_obj(*interface, kTypeIdFunction);
     worker.RefreshReturnStack(ret_obj);
   }
 
   void Machine::CommandReturn(ArgumentList &args) {
     if (worker_stack_.size() <= 1) {
-      trace::AddEvent(Message(kCodeBadExpression, "Unexpected return.", kStateError));
+      trace::AddEvent(kCodeBadExpression, "Unexpected return.", kStateError);
       return;
     }
 
@@ -1166,7 +1170,7 @@ namespace kagami {
 
     if (args.size() == 1) {
       Object src_obj = FetchObject(args[0]);
-      Object ret_obj(management::type::GetObjectCopy(src_obj), src_obj.GetTypeId());
+      Object ret_obj = management::type::CreateObjectCopy(src_obj);
       RecoverLastState();
       worker_stack_.top().RefreshReturnStack(ret_obj);
     }
@@ -1175,7 +1179,7 @@ namespace kagami {
       worker_stack_.top().RefreshReturnStack(Object());
     }
     else {
-      shared_ptr<ObjectArray> obj_array(make_shared<ObjectArray>());
+      ManagedArray obj_array = make_shared<ObjectArray>();
       for (auto it = args.begin(); it != args.end(); ++it) {
         obj_array->emplace_back(FetchObject(*it));
       }
@@ -1340,7 +1344,7 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     vector<string> params = interface.GetParameters();
     list<Object> temp_list;
-    shared_ptr<ObjectArray> va_base(new ObjectArray());
+    ManagedArray va_base = make_shared<ObjectArray>();
 
     if (args.size() < params.size()) {
       worker.MakeError("Too few arguments.");
@@ -1407,11 +1411,8 @@ namespace kagami {
   */
   void Machine::Run() {
     if (ir_stack_.empty()) return;
-    StateLevel level = kStateNormal;
-    StateCode code = kCodeSuccess;
+
     bool interface_error = false;
-    string detail;
-    string type_id = kTypeIdNull;
     Message msg;
     KIR *ir = ir_stack_.back();
     InterfacePointer interface;

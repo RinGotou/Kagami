@@ -220,6 +220,7 @@ namespace kagami {
 
     void InitLogger(LoggerPolicy *policy);
     void AddEvent(Message msg);
+    void AddEvent(StateCode code, string detail, StateLevel level = kStateNormal);
     void AddEvent(string info);
   }
 }

@@ -2,13 +2,13 @@
 
 namespace kagami {
   Message IteratorStepForward(ObjectMap &p) {
-    auto &it = p[kStrObject].Cast<UnifiedIterator>();
+    auto &it = p[kStrMe].Cast<UnifiedIterator>();
     it.StepForward();
     return Message();
   }
 
   Message IteratorForward(ObjectMap &p) {
-    auto &obj = p[kStrObject];
+    auto &obj = p[kStrMe];
     Object ret_obj(
       make_shared<UnifiedIterator>(obj.Cast<UnifiedIterator>().CreateCopy()),
       kTypeIdIterator
@@ -19,7 +19,7 @@ namespace kagami {
   }
 
   Message IteratorBack(ObjectMap &p) {
-    auto &obj = p[kStrObject];
+    auto &obj = p[kStrMe];
     Object ret_obj(
       make_shared<UnifiedIterator>(obj.Cast<UnifiedIterator>().CreateCopy()),
       kTypeIdIterator
@@ -30,7 +30,7 @@ namespace kagami {
   }
 
   Message IteratorStepBack(ObjectMap &p) {
-    auto &it = p[kStrObject].Cast<UnifiedIterator>();
+    auto &it = p[kStrMe].Cast<UnifiedIterator>();
     it.StepBack();
     return Message();
   }
@@ -38,17 +38,17 @@ namespace kagami {
   Message IteratorOperatorCompare(ObjectMap &p) {
     EXPECT_TYPE(p, kStrRightHandSide, kTypeIdIterator);
     auto &rhs = p[kStrRightHandSide].Cast<UnifiedIterator>();
-    auto &lhs = p[kStrObject].Cast<UnifiedIterator>();
+    auto &lhs = p[kStrMe].Cast<UnifiedIterator>();
     return Message().SetObject(lhs.Compare(rhs));
   }
 
   Message IteratorGet(ObjectMap &p) {
-    auto &it = p[kStrObject].Cast<UnifiedIterator>();
+    auto &it = p[kStrMe].Cast<UnifiedIterator>();
     return Message().SetObject(Object().CreateRef(it.Deref()));
   }
 
   Message NewArray(ObjectMap &p) {
-    shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
+    ManagedArray base = make_shared<ObjectArray>();
 
     if (!p["size"].Null()) {
       size_t size = p.Cast<int64_t>("size");
@@ -60,7 +60,7 @@ namespace kagami {
       auto type_id = obj.GetTypeId();
 
       for (size_t count = 0; count < size; count++) {
-        base->emplace_back(Object(management::type::GetObjectCopy(obj), type_id));
+        base->emplace_back(management::type::CreateObjectCopy(obj));
       }
     }
 
@@ -70,7 +70,7 @@ namespace kagami {
   Message ArrayGetElement(ObjectMap &p) {
     EXPECT_TYPE(p, "index", kTypeIdInt);
 
-    ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
+    ObjectArray &base = p.Cast<ObjectArray>(kStrMe);
     size_t idx = p.Cast<int64_t>("index");
     size_t size = base.size();
 
@@ -80,32 +80,32 @@ namespace kagami {
   }
 
   Message ArrayGetSize(ObjectMap &p) {
-    auto &obj = p[kStrObject];
+    auto &obj = p[kStrMe];
     int64_t size = static_cast<int64_t>(obj.Cast<ObjectArray>().size());
     return Message().SetObject(Object(make_shared<int64_t>(size), kTypeIdInt));
   }
 
   Message ArrayEmpty(ObjectMap &p) {
-    return Message().SetObject(p[kStrObject].Cast<ObjectArray>().empty());
+    return Message().SetObject(p[kStrMe].Cast<ObjectArray>().empty());
   }
 
   Message ArrayPush(ObjectMap &p) {
-    ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
-    Object obj(management::type::GetObjectCopy(p["object"]), p["object"].GetTypeId());
+    ObjectArray &base = p.Cast<ObjectArray>(kStrMe);
+    Object obj = management::type::CreateObjectCopy(p["object"]);
     base.emplace_back(obj);
 
     return Message();
   }
 
   Message ArrayPop(ObjectMap &p) {
-    ObjectArray &base = p.Cast<ObjectArray>(kStrObject);
+    ObjectArray &base = p.Cast<ObjectArray>(kStrMe);
     if (!base.empty()) base.pop_back();
 
     return Message().SetObject(base.empty());
   }
 
   Message ArrayBegin(ObjectMap &p) {
-    auto &base = p[kStrObject].Cast<ObjectArray>();
+    auto &base = p[kStrMe].Cast<ObjectArray>();
     shared_ptr<UnifiedIterator> pkg(
       new UnifiedIterator(base.begin(), kContainerObjectArray)
     );
@@ -115,7 +115,7 @@ namespace kagami {
   }
 
   Message ArrayEnd(ObjectMap &p) {
-    auto &base = p[kStrObject].Cast<ObjectArray>();
+    auto &base = p[kStrMe].Cast<ObjectArray>();
     shared_ptr<UnifiedIterator> pkg(
       new UnifiedIterator(base.end(), kContainerObjectArray)
     );
@@ -125,7 +125,7 @@ namespace kagami {
   }
 
   Message ArrayClear(ObjectMap &p) {
-    auto &base = p.Cast<ObjectArray>(kStrObject);
+    auto &base = p.Cast<ObjectArray>(kStrMe);
     base.clear();
     base.shrink_to_fit();
     return Message();
@@ -147,12 +147,12 @@ namespace kagami {
 
   shared_ptr<void> ArrayCopyingPolicy(shared_ptr<void> ptr) {
     auto &src_base = *static_pointer_cast<ObjectArray>(ptr);
-    shared_ptr<ObjectArray> dest_base = make_shared<ObjectArray>();
+    ManagedArray dest_base = make_shared<ObjectArray>();
 
     dest_base->reserve(src_base.size());
 
     for (auto &unit : src_base) {
-      dest_base->emplace_back(Object(management::type::GetObjectCopy(unit), unit.GetTypeId()));
+      dest_base->emplace_back(management::type::CreateObjectCopy(unit));
     }
 
     return dest_base;

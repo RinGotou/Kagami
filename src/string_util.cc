@@ -58,7 +58,7 @@ namespace kagami {
 
   Message StringCompare(ObjectMap &p) {
     auto &rhs = p[kStrRightHandSide];
-    string lhs = p[kStrObject].Cast<string>();
+    string lhs = p[kStrMe].Cast<string>();
 
     string type_id = rhs.GetTypeId();
     bool result = false;
@@ -72,7 +72,7 @@ namespace kagami {
   }
 
   Message StringToArray(ObjectMap &p) {
-    auto &str = p.Cast<string>(kStrObject);
+    auto &str = p.Cast<string>(kStrMe);
     shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
     
     base->reserve(str.size());
@@ -97,7 +97,7 @@ namespace kagami {
   }
 
   Message InStreamGet(ObjectMap &p) {
-    wifstream &ifs = p.Cast<wifstream>(kStrObject);
+    wifstream &ifs = p.Cast<wifstream>(kStrMe);
 
     if (!ifs.good()) {
       return Message(kCodeBadStream, "Invalid instream.", kStateError);
@@ -116,7 +116,7 @@ namespace kagami {
   }
 
   Message InStreamEOF(ObjectMap &p) {
-    wifstream &ifs = p.Cast<wifstream>(kStrObject);
+    wifstream &ifs = p.Cast<wifstream>(kStrMe);
     return Message().SetObject(ifs.eof());
   }
 
@@ -145,7 +145,7 @@ namespace kagami {
   }
 
   Message OutStreamWrite(ObjectMap &p) {
-    ofstream &ofs = p.Cast<ofstream>(kStrObject);
+    ofstream &ofs = p.Cast<ofstream>(kStrMe);
     bool result = true;
 
     if (!ofs.good()) {
@@ -178,7 +178,7 @@ namespace kagami {
     EXPECT_TYPE(p, "str", kTypeIdString);
 
     string str = p.Cast<string>("str");
-    auto &pat = p.Cast<regex>(kStrObject);
+    auto &pat = p.Cast<regex>(kStrMe);
     bool result = regex_match(str, pat);
 
     return Message().SetObject(result);
@@ -198,7 +198,7 @@ namespace kagami {
 
   Message WideStringCompare(ObjectMap &p) {
     auto &rhs = p[kStrRightHandSide];
-    wstring lhs = p[kStrObject].Cast<wstring>();
+    wstring lhs = p[kStrMe].Cast<wstring>();
     bool result = false;
     if (rhs.GetTypeId() == kTypeIdWideString) {
       wstring rhs_wstr = rhs.Cast<wstring>();
@@ -211,12 +211,12 @@ namespace kagami {
 
   //Function
   Message FunctionGetId(ObjectMap &p) {
-    auto &interface = p.Cast<Interface>(kStrObject);
+    auto &interface = p.Cast<Interface>(kStrMe);
     return Message(interface.GetId());
   }
 
   Message FunctionGetParameters(ObjectMap &p) {
-    auto &interface = p.Cast<Interface>(kStrObject);
+    auto &interface = p.Cast<Interface>(kStrMe);
     shared_ptr<ObjectArray> dest_base = make_shared<ObjectArray>();
     auto origin_vector = interface.GetParameters();
 
@@ -229,7 +229,7 @@ namespace kagami {
 
   Message FunctionCompare(ObjectMap &p) {
     auto &rhs = p[kStrRightHandSide];
-    auto &lhs = p[kStrObject].Cast<Interface>();
+    auto &lhs = p[kStrMe].Cast<Interface>();
 
     string type_id = rhs.GetTypeId();
     bool result = false;
@@ -263,7 +263,7 @@ namespace kagami {
       .InitMethods(
         {
           Interface(StringFamilyGetElement<string>, "index", "__at"),
-          Interface(StringFamilyPrint<string, std::ostream>, "", "__print"),
+          Interface(StringFamilyPrint<string, std::ostream>, "", "print"),
           Interface(StringFamilySubStr<string>, "start|size", "substr"),
           Interface(GetStringFamilySize<string>, "", "size"),
           Interface(StringFamilyConverting<wstring, string>, "", "to_wide"),
@@ -316,7 +316,7 @@ namespace kagami {
         {
           Interface(GetStringFamilySize<wstring>,  "", "size"),
           Interface(StringFamilyGetElement<wstring>, "index", "__at"),
-          Interface(StringFamilyPrint<wstring, std::wostream>, "", "__print"),
+          Interface(StringFamilyPrint<wstring, std::wostream>, "", "print"),
           Interface(StringFamilySubStr<wstring>, "start|size", "substr"),
           Interface(StringFamilyConverting<string, wstring>, "", "to_byte"),
           Interface(WideStringCompare, kStrRightHandSide, kStrCompare)
