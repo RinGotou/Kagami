@@ -133,11 +133,12 @@ namespace kagami {
 
   size_t ArrayHasher(shared_ptr<void> ptr) {
     auto &base = *static_pointer_cast<ObjectArray>(ptr);
-    size_t result = std::hash<shared_ptr<void>>().operator()(ptr);
+    size_t result = 0;
 
     for (auto it = base.begin(); it != base.end(); ++it) {
       if (management::type::IsHashable(*it)) {
         result ^= management::type::GetHash(*it);
+        result = result << 1;
       }
     }
 
