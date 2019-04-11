@@ -94,13 +94,14 @@ namespace kagami {
   void LoadSocketStuff() {
     using management::type::NewTypeSetup;
     using management::CreateNewInterface;
+    using management::type::PointerHasher;
     using ClientConnector = TCPServer::ClientConnector;
     
     CreateNewInterface(Interface(GetWSALastError, "", "WSALastError"));
     CreateNewInterface(Interface(WinSockStartup, "", "WSAStartup"));
     CreateNewInterface(Interface(WinSockCleanup, "", "WSACleanup"));
 
-    NewTypeSetup(kTypeIdTCPClient, SimpleSharedPtrCopy<TCPClient>)
+    NewTypeSetup(kTypeIdTCPClient, FakeCopy<TCPClient>, PointerHasher())
       .InitConstructor(
         Interface(NewTCPClient, "port|addr|buf_size", "TCPClient")
       )
@@ -115,7 +116,7 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdTCPServer, SimpleSharedPtrCopy<TCPServer>)
+    NewTypeSetup(kTypeIdTCPServer, FakeCopy<TCPServer>, PointerHasher())
       .InitConstructor(
         Interface(NewTCPServer, "port|buf_size", "TCPServer")
       )
@@ -128,7 +129,7 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdClientConnector, SimpleSharedPtrCopy<ClientConnector>)
+    NewTypeSetup(kTypeIdClientConnector, FakeCopy<ClientConnector>, PointerHasher())
       .InitMethods(
         {
           Interface(TCPConnectorSend<ClientConnector>, "content", "send"),

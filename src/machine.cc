@@ -148,10 +148,14 @@ namespace kagami {
 
   Object Machine::FetchInterfaceObject(string id, string domain) {
     Object obj;
-    auto interface = *management::FindInterface(id, domain);
-    if (interface.Good()) {
+    auto &worker = worker_stack_.top();
+    auto ptr = management::FindInterface(id, domain);
+
+    if (ptr != nullptr) {
+      auto interface = *management::FindInterface(id, domain);
       obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
     }
+
     return obj;
   }
 

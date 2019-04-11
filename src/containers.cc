@@ -131,8 +131,22 @@ namespace kagami {
     return Message();
   }
 
+  size_t ArrayHasher(shared_ptr<void> ptr) {
+    auto &base = *static_pointer_cast<ObjectArray>(ptr);
+    size_t result = std::hash<shared_ptr<void>>().operator()(ptr);
+
+    for (auto it = base.begin(); it != base.end(); ++it) {
+      if (management::type::IsHashable(*it)) {
+        result ^= management::type::GetHash(*it);
+      }
+    }
+
+    return result;
+  }
+
   void InitContainerComponents() {
     using management::type::NewTypeSetup;
+    using management::type::CustomHasher;
 
     NewTypeSetup(kTypeIdArray, [](shared_ptr<void> source) -> shared_ptr<void> {
       auto &src_base = *static_pointer_cast<ObjectArray>(source);
@@ -145,7 +159,7 @@ namespace kagami {
       }
 
       return dest_base;
-    })
+    }, CustomHasher<ObjectArray, ArrayHasher>())
       .InitConstructor(
         Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill)
       )

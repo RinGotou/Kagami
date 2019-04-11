@@ -132,7 +132,7 @@ namespace kagami {
         auto &base = GetObjPolicyCollection();
         const auto it = base.find(obj.GetTypeId());
         auto hasher = it->second.GetHasher();
-        return hasher->Get(obj.Get());
+        return hasher->Get(obj.Deref().Get());
       }
 
       bool IsHashable(Object &obj) {
