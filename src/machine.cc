@@ -1009,8 +1009,7 @@ namespace kagami {
     }
 
     string str = str_obj.Cast<string>();
-    Object ret_obj(make_shared<bool>(
-      management::type::CheckMethod(str, obj.GetTypeId())), kTypeIdBool);
+    Object ret_obj(management::type::CheckMethod(str, obj.GetTypeId()), kTypeIdBool);
 
     worker.RefreshReturnStack(ret_obj);
   }
@@ -1023,8 +1022,7 @@ namespace kagami {
     }
 
     Object obj = FetchObject(args[0]);
-    worker.RefreshReturnStack(
-      Object(make_shared<bool>(obj.GetTypeId() == kTypeIdNull), kTypeIdBool));
+    worker.RefreshReturnStack(Object(obj.GetTypeId() == kTypeIdNull, kTypeIdBool));
   }
 
   void Machine::CommandDestroy(ArgumentList &args) {
