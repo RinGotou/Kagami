@@ -40,6 +40,7 @@ namespace kagami {
       }
 
       if (temp.empty()) { 
+        index_counter += 1;
         continue; 
       }
       script_buf.push_back(CombinedCodeline(index_counter, temp));

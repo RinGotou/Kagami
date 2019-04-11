@@ -105,7 +105,7 @@ namespace kagami {
         string str = "[" + time + "]";
 
         if (msg.GetLevel() != kStateNormal) {
-          str.append("(Line:" + to_string(msg.GetIndex() + 1) + ")");
+          str.append("(Line:" + to_string(msg.GetIndex()) + ")");
         }
         
         switch (msg.GetLevel()) {
