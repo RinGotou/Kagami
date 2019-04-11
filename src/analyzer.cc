@@ -250,11 +250,11 @@ namespace kagami {
       };
 
       action_base_.emplace_back(Command(Request(kTokenAssertR), arguments));
-      blk->domain = blk->args.back();
-      blk->args.pop_back();
-
       //action_base_.back().first.option.no_feeding = true;
     }
+
+    blk->domain = blk->args.back();
+    blk->args.pop_back();
   }
 
   void Analyzer::MonoOperator(AnalyzerWorkBlock *blk) {

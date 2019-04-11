@@ -145,22 +145,24 @@ namespace kagami {
     return result;
   }
 
+  shared_ptr<void> ArrayCopyingPolicy(shared_ptr<void> ptr) {
+    auto &src_base = *static_pointer_cast<ObjectArray>(ptr);
+    shared_ptr<ObjectArray> dest_base = make_shared<ObjectArray>();
+
+    dest_base->reserve(src_base.size());
+
+    for (auto &unit : src_base) {
+      dest_base->emplace_back(Object(management::type::GetObjectCopy(unit), unit.GetTypeId()));
+    }
+
+    return dest_base;
+  }
+
   void InitContainerComponents() {
     using management::type::NewTypeSetup;
     using management::type::CustomHasher;
 
-    NewTypeSetup(kTypeIdArray, [](shared_ptr<void> source) -> shared_ptr<void> {
-      auto &src_base = *static_pointer_cast<ObjectArray>(source);
-      shared_ptr<ObjectArray> dest_base = make_shared<ObjectArray>();
-
-      dest_base->reserve(src_base.size());
-
-      for (auto &unit : src_base) {
-        dest_base->emplace_back(Object(management::type::GetObjectCopy(unit), unit.GetTypeId()));
-      }
-
-      return dest_base;
-    }, CustomHasher<ObjectArray, ArrayHasher>())
+    NewTypeSetup(kTypeIdArray, ArrayCopyingPolicy, CustomHasher<ObjectArray, ArrayHasher>())
       .InitConstructor(
         Interface(ArrayConstructor, "size|init_value", "array", kCodeAutoFill)
       )
