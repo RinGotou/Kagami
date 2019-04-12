@@ -40,11 +40,10 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
   IRLoader loader(path.c_str());
 
   if (loader.health) {
+    InitPlainTypes();
     InitConsoleComponents();
-    InitPlainTypeComponents();
     InitBaseTypes();
     InitContainerComponents();
-
 #if defined(_WIN32)
     LoadSocketStuff();
 #endif
@@ -53,6 +52,8 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
 #endif
 
     KIR ir = loader.output;
+    loader.output.clear();
+    loader.output.shrink_to_fit();
     Machine main_thread(ir);
     
     main_thread.Run();

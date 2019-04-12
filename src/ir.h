@@ -61,6 +61,7 @@ namespace kagami {
 
   class Request {
   public:
+    size_t idx;
     int priority;
     GenericToken head_command;
     string head_interface;
@@ -69,6 +70,7 @@ namespace kagami {
     ArgumentOption option;
 
     Request(GenericToken token) :
+      idx(0),
       priority(5),
       head_command(token),
       head_interface(),
@@ -77,6 +79,7 @@ namespace kagami {
       option() {}
 
     Request(string token, bool place_holder = false) :
+      idx(0),
       priority(5),
       head_command(kTokenNull),
       head_interface(token),
@@ -85,6 +88,7 @@ namespace kagami {
       option() {}
 
     Request() :
+      idx(0),
       priority(5),
       head_command(kTokenNull),
       head_interface(),

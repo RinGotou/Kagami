@@ -1,6 +1,6 @@
 #pragma once
 /*
-   Kisaragi(February) - Next Kagami IR Interpreter Framework
+   Main virtual machine implementation of Kagami Project
 */
 #include "trace.h"
 #include "management.h"
@@ -10,16 +10,196 @@
     std::cout << std::endl;                        \
   }
 
-#define EXPECT_TYPE(MAP,ITEM,TYPE)                 \
-  if (!MAP.CheckTypeId(ITEM,TYPE))                 \
+#define EXPECT_TYPE(_Map, _Item, _Type)            \
+  if (!_Map.CheckTypeId(_Item, _Type))             \
     return Message(kCodeIllegalParam,              \
-    "Expect object type - " + TYPE + ".",          \
+    "Expect object type - " + _Type + ".",         \
     kStateError)
 
-#define EXPECT(STATE,MESS)                         \
-  if (!(STATE)) return Message(kCodeIllegalParam,MESS,kStateError)
+#define EXPECT(_State, _Mess)                      \
+  if (!(_State)) return Message(kCodeIllegalParam, _Mess, kStateError)
+
+#define CHECK_ARG_COUNT(_Size)                  \
+  if (args.size() != _Size) {                   \
+    worker.MakeError("Argument is missing.");   \
+    return;                                     \
+  }
 
 namespace kagami {
+  PlainType FindTypeCode(string type_id);
+  int64_t IntProducer(Object &obj);
+  double FloatProducer(Object &obj);
+  string StringProducer(Object &obj);
+  bool BoolProducer(Object &obj);
+  std::wstring s2ws(const std::string &s);
+  std::string ws2s(const std::wstring &s);
+  string ParseRawString(const string &src);
+  void InitPlainTypes();
+
+  using TypeKey = pair<string, PlainType>;
+  const map<string, PlainType> kTypeStore = {
+    TypeKey(kTypeIdInt, kPlainInt),
+    TypeKey(kTypeIdFloat, kPlainFloat),
+    TypeKey(kTypeIdString, kPlainString),
+    TypeKey(kTypeIdBool, kPlainBool)
+  };
+
+  const vector<GenericToken> kStringOpStore = {
+    kTokenPlus, kTokenNotEqual, kTokenEquals
+  };
+
+  using ResultTraitKey = pair<PlainType, PlainType>;
+  using TraitUnit = pair<ResultTraitKey, PlainType>;
+  const map<ResultTraitKey, PlainType> kResultDynamicTraits = {
+    TraitUnit(ResultTraitKey(kPlainInt, kPlainInt), kPlainInt),
+    TraitUnit(ResultTraitKey(kPlainFloat, kPlainFloat), kPlainFloat),
+    TraitUnit(ResultTraitKey(kPlainString, kPlainString), kPlainString),
+    TraitUnit(ResultTraitKey(kPlainBool, kPlainBool), kPlainBool),
+    TraitUnit(ResultTraitKey(kPlainInt, kPlainFloat), kPlainFloat),
+    TraitUnit(ResultTraitKey(kPlainInt, kPlainString), kPlainString),
+    TraitUnit(ResultTraitKey(kPlainInt, kPlainBool), kPlainInt),
+    TraitUnit(ResultTraitKey(kPlainFloat, kPlainInt), kPlainFloat),
+    TraitUnit(ResultTraitKey(kPlainFloat, kPlainString), kPlainString),
+    TraitUnit(ResultTraitKey(kPlainFloat, kPlainBool), kPlainFloat),
+    TraitUnit(ResultTraitKey(kPlainString, kPlainInt), kPlainString),
+    TraitUnit(ResultTraitKey(kPlainString, kPlainFloat), kPlainString),
+    TraitUnit(ResultTraitKey(kPlainString, kPlainBool), kPlainString)
+  };
+
+  template <class ResultType, class Tx, class Ty, GenericToken op>
+  struct BinaryOpBox {
+    ResultType Do(Tx A, Ty B) {
+      return Tx();
+    }
+  };
+
+  template <class ResultType, class Tx, class Ty>
+  struct BinaryOpBox<ResultType, Tx, Ty, kTokenPlus> {
+    ResultType Do(Tx A, Ty B) {
+      return A + B;
+    }
+  };
+
+  template <class ResultType, class Tx, class Ty>
+  struct BinaryOpBox<ResultType, Tx, Ty, kTokenMinus> {
+    ResultType Do(Tx A, Ty B) {
+      return A - B;
+    }
+  };
+
+  template <class ResultType, class Tx, class Ty>
+  struct BinaryOpBox<ResultType, Tx, Ty, kTokenTimes> {
+    ResultType Do(Tx A, Ty B) {
+      return A * B;
+    }
+  };
+
+  template <class ResultType, class Tx, class Ty>
+  struct BinaryOpBox<ResultType, Tx, Ty, kTokenDivide> {
+    ResultType Do(Tx A, Ty B) {
+      return A / B;
+    }
+  };
+
+  template <class Tx, class Ty>
+  struct BinaryOpBox<bool, Tx, Ty, kTokenEquals> {
+    bool Do(Tx A, Ty B) {
+      return A == B;
+    }
+  };
+
+  template <class Tx, class Ty>
+  struct BinaryOpBox<bool, Tx, Ty, kTokenLessOrEqual> {
+    bool Do(Tx A, Ty B) {
+      return A <= B;
+    }
+  };
+
+  template <class Tx, class Ty>
+  struct BinaryOpBox<bool, Tx, Ty, kTokenGreaterOrEqual> {
+    bool Do(Tx A, Ty B) {
+      return A >= B;
+    }
+  };
+
+  template <class Tx, class Ty>
+  struct BinaryOpBox<bool, Tx, Ty, kTokenNotEqual> {
+    bool Do(Tx A, Ty B) {
+      return A != B;
+    }
+  };
+
+  template <class Tx, class Ty>
+  struct BinaryOpBox<bool, Tx, Ty, kTokenGreater> {
+    bool Do(Tx A, Ty B) {
+      return A > B;
+    }
+  };
+
+  template <class Tx, class Ty>
+  struct BinaryOpBox<bool, Tx, Ty, kTokenLess> {
+    bool Do(Tx A, Ty B) {
+      return A < B;
+    }
+  };
+
+  template <class Tx, class Ty>
+  struct BinaryOpBox<bool, Tx, Ty, kTokenAnd> {
+    bool Do(Tx A, Ty B) {
+      return A && B;
+    }
+  };
+
+  template <class Tx, class Ty>
+  struct BinaryOpBox<bool, Tx, Ty, kTokenOr> {
+    bool Do(Tx A, Ty B) {
+      return A || B;
+    }
+  };
+
+  //Dispose divide operation for bool type
+  template <>
+  struct BinaryOpBox<bool, bool, bool, kTokenDivide> {
+    bool Do(bool A, bool B) {
+      return true;
+    }
+  };
+
+#define DISPOSE_STRING_MATH_OP(_OP)                 \
+  template <>                                       \
+  struct BinaryOpBox<string, string, string, _OP> { \
+    string Do(string A, string B) {                 \
+      return string();                              \
+    }                                               \
+  }                                                 \
+
+#define DISPOSE_STRING_LOGIC_OP(_OP)                \
+  template <>                                       \
+  struct BinaryOpBox<bool, string, string, _OP> {   \
+    bool Do(string A, string B) {                   \
+      return false;                                 \
+    }                                               \
+  }                                                 \
+
+  DISPOSE_STRING_MATH_OP(kTokenMinus);
+  DISPOSE_STRING_MATH_OP(kTokenTimes);
+  DISPOSE_STRING_MATH_OP(kTokenDivide);
+  DISPOSE_STRING_LOGIC_OP(kTokenLessOrEqual);
+  DISPOSE_STRING_LOGIC_OP(kTokenGreaterOrEqual);
+  DISPOSE_STRING_LOGIC_OP(kTokenGreater);
+  DISPOSE_STRING_LOGIC_OP(kTokenLess);
+  DISPOSE_STRING_LOGIC_OP(kTokenAnd);
+  DISPOSE_STRING_LOGIC_OP(kTokenOr);
+
+#undef DISPOSE_STRING_MATH_OP
+#undef DISPOSE_STRING_LOGIC_OP
+
+  template <class ResultType, GenericToken op>
+  using MathBox = BinaryOpBox<ResultType, ResultType, ResultType, op>;
+
+  template <class Tx, GenericToken op>
+  using LogicBox = BinaryOpBox<bool, Tx, Tx, op>;
+
   class Machine;
 
   const string kIteratorBehavior = "get|step_forward|step_back|__compare";
@@ -97,7 +277,7 @@ namespace kagami {
       this->mode = mode;
     }
 
-    void RefreshReturnStack(Object obj) {
+    void RefreshReturnStack(Object obj = Object()) {
       if (!void_call) {
         return_stack.push(std::move(obj));
       }
@@ -165,7 +345,7 @@ namespace kagami {
       const initializer_list<NamedObject> &&args = {},
       InvokingRecoverPoint recover_point = nullptr);
 
-    void SetSegmentInfo(ArgumentList &args);
+    void SetSegmentInfo(ArgumentList &args, bool cmd_info = false);
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);
     void CommandIfOrWhile(GenericToken token, ArgumentList &args);
@@ -190,6 +370,15 @@ namespace kagami {
     void CommandTime();
     void CommandVersion();
     void CommandPatch();
+
+    template <GenericToken op_code>
+    void BinaryMathOperatorImpl(ArgumentList &args);
+
+    template <GenericToken op_code>
+    void BinaryLogicOperatorImpl(ArgumentList &args);
+
+    void OperatorLogicNot(ArgumentList &args);
+
     void ExpList(ArgumentList &args);
     void InitArray(ArgumentList &args);
     void DomainAssert(ArgumentList &args);
@@ -200,7 +389,7 @@ namespace kagami {
     void GenerateArgs(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
     void Generate_Normal(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
-    void Generate_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map);
+    void Generate_AutoFill(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
   private:
     deque<KIRPointer> ir_stack_;
     stack<MachineWorker> worker_stack_;
@@ -235,7 +424,6 @@ namespace kagami {
   };
 
   void InitConsoleComponents();
-  void InitPlainTypeComponents();
   void InitBaseTypes();
   void InitContainerComponents();
 
@@ -250,8 +438,5 @@ namespace kagami {
   //TODO: delete macros after finish it
 #endif
 
-  std::wstring s2ws(const std::string &s);
-  std::string ws2s(const std::wstring &s);
-  string ParseRawString(const string &src);
   bool IsStringFamily(Object &obj);
 }

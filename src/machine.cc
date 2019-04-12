@@ -1,6 +1,140 @@
 #include "machine.h"
 
 namespace kagami {
+  PlainType FindTypeCode(string type_id) {
+    auto it = kTypeStore.find(type_id);
+    return it != kTypeStore.end() ? it->second : kNotPlainType;
+  }
+
+  int64_t IntProducer(Object &obj) {
+    auto type = FindTypeCode(obj.GetTypeId());
+    int64_t result = 0;
+    switch (type) {
+    case kPlainInt:result = obj.Cast<int64_t>(); break;
+    case kPlainFloat:result = static_cast<int64_t>(obj.Cast<double>()); break;
+    case kPlainBool:result = obj.Cast<bool>() ? 1 : 0; break;
+    default:break;
+    }
+
+    return result;
+  }
+
+  double FloatProducer(Object &obj) {
+    auto type = FindTypeCode(obj.GetTypeId());
+    double result = 0;
+    switch (type) {
+    case kPlainFloat:result = obj.Cast<double>(); break;
+    case kPlainInt:result = static_cast<double>(obj.Cast<int64_t>()); break;
+    case kPlainBool:result = obj.Cast<bool>() ? 1.0 : 0.0; break;
+    default:break;
+    }
+
+    return result;
+  }
+
+  string StringProducer(Object &obj) {
+    auto type = FindTypeCode(obj.GetTypeId());
+    string result;
+    switch (type) {
+    case kPlainInt:result = to_string(obj.Cast<int64_t>()); break;
+    case kPlainFloat:result = to_string(obj.Cast<double>()); break;
+    case kPlainBool:result = obj.Cast<bool>() ? kStrTrue : kStrFalse; break;
+    case kPlainString:result = obj.Cast<string>(); break;
+    default:break;
+    }
+
+    return result;
+  }
+
+  bool BoolProducer(Object &obj) {
+    auto it = kTypeStore.find(obj.GetTypeId());
+    auto type = it != kTypeStore.end() ? it->second : kNotPlainType;
+    bool result = false;
+
+    if (type == kPlainInt) {
+      int64_t value = obj.Cast<int64_t>();
+      if (value > 0) result = true;
+    }
+    else if (type == kPlainFloat) {
+      double value = obj.Cast<double>();
+      if (value > 0.0) result = true;
+    }
+    else if (type == kPlainBool) {
+      result = obj.Cast<bool>();
+    }
+    else if (type == kPlainString) {
+      string &value = obj.Cast<string>();
+      result = !value.empty();
+    }
+
+    return result;
+  }
+
+  /* string/wstring convertor */
+#if defined(_WIN32) && defined(_MSC_VER)
+  //from MSDN
+  std::wstring s2ws(const std::string &s) {
+    auto slength = static_cast<int>(s.length()) + 1;
+    auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    auto *buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
+  }
+
+  std::string ws2s(const std::wstring &s) {
+    int len;
+    int slength = (int)s.length() + 1;
+    len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
+    std::string r(len, '\0');
+    WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
+    return r;
+  }
+#else
+  //from https://www.yasuhisay.info/interface/20090722/1248245439
+  std::wstring s2ws(const std::string &s) {
+    if (s.empty()) return wstring();
+    size_t length = s.size();
+    wchar_t *wc = (wchar_t *)malloc(sizeof(wchar_t) * (length + 2));
+    mbstowcs(wc, s.c_str(), s.length() + 1);
+    std::wstring str(wc);
+    free(wc);
+    return str;
+  }
+
+  std::string ws2s(const std::wstring & s) {
+    if (s.empty()) return string();
+    size_t length = s.size();
+    char *c = (char *)malloc(sizeof(char) * length * 2);
+    wcstombs(c, s.c_str(), s.length() + 1);
+    std::string result(c);
+    free(c);
+    return result;
+  }
+#endif
+
+  string ParseRawString(const string & src) {
+    string result = src;
+    if (util::IsString(result)) result = util::GetRawString(result);
+    return result;
+  }
+
+  void InitPlainTypes() {
+    using management::type::NewTypeSetup;
+    using management::type::PlainHasher;
+
+    NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<int64_t>, PlainHasher<int64_t>());
+    NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>, PlainHasher<double>());
+    NewTypeSetup(kTypeIdBool, SimpleSharedPtrCopy<bool>, PlainHasher<bool>());
+    NewTypeSetup(kTypeIdNull, FakeCopy<void>);
+
+    EXPORT_CONSTANT(kTypeIdInt);
+    EXPORT_CONSTANT(kTypeIdFloat);
+    EXPORT_CONSTANT(kTypeIdBool);
+    EXPORT_CONSTANT(kTypeIdNull);
+  }
+
   IRLoader::IRLoader(const char *src) : health(true) {
     bool comment_block = false;
     size_t error_counter = 0;
@@ -449,7 +583,7 @@ namespace kagami {
       Command &command = ir[worker.idx];
 
       if (command.first.head_command == kTokenSegment) {
-        SetSegmentInfo(command.second);
+        SetSegmentInfo(command.second, true);
 
         if (find_in_vector(worker.last_command, nest_flag_collection)) {
           nest_counter += 1;
@@ -533,11 +667,13 @@ namespace kagami {
     return Message();
   }
 
-  void Machine::SetSegmentInfo(ArgumentList &args) {
+  void Machine::SetSegmentInfo(ArgumentList &args, bool cmd_info) {
     MachineWorker &worker = worker_stack_.top();
-    worker.origin_idx = stoul(args[0].data);
+    //worker.origin_idx = stoul(args[0].data);
     worker.logic_idx = worker.idx;
-    worker.last_command = static_cast<GenericToken>(stol(args[1].data));
+    if (cmd_info) {
+      worker.last_command = static_cast<GenericToken>(stol(args[0].data));
+    }
   }
 
   void Machine::CommandHash(ArgumentList &args) {
@@ -1132,6 +1268,132 @@ namespace kagami {
     worker.RefreshReturnStack(Object(kPatchName));
   }
 
+  template <GenericToken op_code>
+  void Machine::BinaryMathOperatorImpl(ArgumentList &args) {
+    auto &worker = worker_stack_.top();
+    CHECK_ARG_COUNT(2);
+    auto rhs = FetchObject(args[1]);
+    auto lhs = FetchObject(args[0]);
+    auto type_rhs = FindTypeCode(rhs.GetTypeId());
+    auto type_lhs = FindTypeCode(lhs.GetTypeId());
+
+    if (type_rhs == kNotPlainType || type_rhs == kNotPlainType) {
+      worker.RefreshReturnStack();
+      return;
+    }
+
+    auto result_type = kResultDynamicTraits.at(ResultTraitKey(type_lhs, type_rhs));
+
+#define RESULT_PROCESSING(_Type, _Func, _TypeId)                       \
+  _Type result = MathBox<_Type, op_code>().Do(_Func(lhs), _Func(rhs)); \
+  worker.RefreshReturnStack(Object(result, _TypeId));
+
+    if (result_type == kPlainString) {
+      if (!find_in_vector(op_code, kStringOpStore)) {
+        worker.RefreshReturnStack();
+        return;
+      }
+
+      RESULT_PROCESSING(string, StringProducer, kTypeIdString);
+    }
+    else if (result_type == kPlainInt) {
+      RESULT_PROCESSING(int64_t, IntProducer, kTypeIdInt);
+    }
+    else if (result_type == kPlainFloat) {
+      RESULT_PROCESSING(double, FloatProducer, kTypeIdFloat);
+    }
+    else if (result_type == kPlainBool) {
+      RESULT_PROCESSING(bool, BoolProducer, kTypeIdBool);
+    }
+#undef RESULT_PROCESSING
+  }
+
+  template <GenericToken op_code>
+  void Machine::BinaryLogicOperatorImpl(ArgumentList &args) {
+    using namespace management::type;
+    auto &worker = worker_stack_.top();
+
+    CHECK_ARG_COUNT(2);
+
+    auto rhs = FetchObject(args[1]);
+    auto lhs = FetchObject(args[0]);
+    auto type_rhs = FindTypeCode(rhs.GetTypeId());
+    auto type_lhs = FindTypeCode(lhs.GetTypeId());
+    bool result = false;
+
+    if (!util::IsPlainType(lhs.GetTypeId())) {
+      if (op_code != kTokenEquals && op_code != kTokenNotEqual) {
+        worker.RefreshReturnStack();
+        return;
+      }
+
+      if (!CheckMethod(kStrCompare, lhs.GetTypeId())) {
+        worker.MakeError("Can't operate with this operator.");
+        return;
+      }
+
+      Object obj = Invoke(lhs, kStrCompare,
+        { NamedObject(kStrRightHandSide, rhs) }).GetObj();
+
+      if (obj.GetTypeId() != kTypeIdBool) {
+        worker.MakeError("Invalid behavior of compare().");
+        return;
+      }
+
+      if (op_code == kTokenNotEqual) {
+        bool value = !obj.Cast<bool>();
+        worker.RefreshReturnStack(Object(value, kTypeIdBool));
+      }
+      else {
+        worker.RefreshReturnStack(obj);
+      }
+
+    }
+
+    auto result_type = kResultDynamicTraits.at(ResultTraitKey(type_lhs, type_rhs));
+#define RESULT_PROCESSING(_Type, _Func)\
+  result = LogicBox<_Type, op_code>().Do(_Func(lhs), _Func(rhs));
+
+    if (result_type == kPlainString) {
+      if (!find_in_vector(op_code, kStringOpStore)) {
+        worker.RefreshReturnStack();
+        return;
+      }
+
+      RESULT_PROCESSING(string, StringProducer);
+    }
+    else if (result_type == kPlainInt) {
+      RESULT_PROCESSING(int64_t, IntProducer);
+    }
+    else if (result_type == kPlainFloat) {
+      RESULT_PROCESSING(double, FloatProducer);
+    }
+    else if (result_type == kPlainBool) {
+      RESULT_PROCESSING(bool, BoolProducer);
+    }
+
+    worker.RefreshReturnStack(Object(result, kTypeIdBool));
+#undef RESULT_PROCESSING
+  }
+
+  void Machine::OperatorLogicNot(ArgumentList &args) {
+    auto &worker = worker_stack_.top();
+
+    CHECK_ARG_COUNT(1);
+
+    auto rhs = FetchObject(args[0]);
+
+    if (rhs.GetTypeId() != kTypeIdBool) {
+      worker.MakeError("Can't operate with this operator");
+      return;
+    }
+
+    bool result = !rhs.Cast<bool>();
+
+    worker.RefreshReturnStack(Object(result, kTypeIdBool));
+  }
+
+
   void Machine::ExpList(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     if (!args.empty()) {
@@ -1207,6 +1469,45 @@ namespace kagami {
     auto &worker = worker_stack_.top();
 
     switch (token) {
+    case kTokenPlus:
+      BinaryMathOperatorImpl<kTokenPlus>(args);
+      break;
+    case kTokenMinus:
+      BinaryMathOperatorImpl<kTokenMinus>(args);
+      break;
+    case kTokenTimes:
+      BinaryMathOperatorImpl<kTokenTimes>(args);
+      break;
+    case kTokenDivide:
+      BinaryMathOperatorImpl<kTokenDivide>(args);
+      break;
+    case kTokenEquals:
+      BinaryLogicOperatorImpl<kTokenEquals>(args);
+      break;
+    case kTokenLessOrEqual:
+      BinaryLogicOperatorImpl<kTokenLessOrEqual>(args);
+      break;
+    case kTokenGreaterOrEqual:
+      BinaryLogicOperatorImpl<kTokenGreaterOrEqual>(args);
+      break;
+    case kTokenNotEqual:
+      BinaryLogicOperatorImpl<kTokenNotEqual>(args);
+      break;
+    case kTokenGreater:
+      BinaryLogicOperatorImpl<kTokenGreater>(args);
+      break;
+    case kTokenLess:
+      BinaryLogicOperatorImpl<kTokenLess>(args);
+      break;
+    case kTokenAnd:
+      BinaryLogicOperatorImpl<kTokenAnd>(args);
+      break;
+    case kTokenOr:
+      BinaryLogicOperatorImpl<kTokenOr>(args);
+      break;
+    case kTokenNot:
+      OperatorLogicNot(args);
+      break;
     case kTokenHash:
       CommandHash(args);
       break;
@@ -1391,10 +1692,11 @@ namespace kagami {
     }
   }
 
-  void Machine::Generate_AutoFill(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
+  void Machine::Generate_AutoFill(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
     auto &worker = worker_stack_.top();
-    vector<string> params = interface.GetParameters();
+    auto &params = interface.GetParameters();
     size_t min_size = interface.GetMinArgSize();
+    size_t pos = args.size() - 1, param_pos = params.size() - 1;
 
     if (args.size() > params.size()) {
       worker.MakeError("Too many arguments");
@@ -1409,14 +1711,15 @@ namespace kagami {
       return;
     }
 
-    while (args.size() != params.size()) {
-      obj_map.insert(NamedObject(params.back(), Object()));
-      params.pop_back();
-    }
-
-    for (auto it = params.rbegin(); it != params.rend(); ++it) {
-      obj_map.insert(NamedObject(*it, FetchObject(args.back())));
-      args.pop_back();
+    for (auto it = params.crbegin(); it != params.crend(); ++it) {
+      if (param_pos != pos) {
+        obj_map.emplace(NamedObject(*it, Object()));
+      }
+      else {
+        obj_map.emplace(NamedObject(*it, FetchObject(args[pos])));
+        pos -= 1;
+      }
+      param_pos -= 1;
     }
   }
 
@@ -1428,6 +1731,7 @@ namespace kagami {
     if (ir_stack_.empty()) return;
 
     bool interface_error = false;
+    size_t stop_idx = 0;
     Message msg;
     KIR *ir = ir_stack_.back();
     InterfacePointer interface;
@@ -1470,7 +1774,9 @@ namespace kagami {
       ptr = &(*ir)[worker->idx];
       worker->void_call = ptr->first.option.void_call;
 
-      if (worker->error) return false;
+      if (worker->error) {
+        worker->origin_idx = ptr->first.idx;
+      }
       return true;
     };
 
@@ -1505,8 +1811,7 @@ namespace kagami {
       }
 
       //Embedded machine commands.
-      if (command->first.type == kRequestCommand 
-        && !util::IsOperator(command->first.head_command)) {
+      if (command->first.type == kRequestCommand) {
         if (worker->invoking_point) {
           (this->*(worker->recover_point))(command->second);
         }
@@ -1519,7 +1824,10 @@ namespace kagami {
           refresh_tick();
         }
 
-        if (worker->error) break;
+        if (worker->error) {
+          worker->origin_idx = command->first.idx;
+          break;
+        }
 
         if (worker->invoking_point) {
           if (worker->recover_point == nullptr) {
@@ -1537,10 +1845,10 @@ namespace kagami {
         continue;
       }
       
-      //For built-in operator functions.
-      if (command->first.type == kRequestCommand) {
-        interface = management::GetGenericInterface(command->first.head_command);
-      }
+      ////For built-in operator functions.
+      //if (command->first.type == kRequestCommand) {
+      //  interface = management::GetGenericInterface(command->first.head_command);
+      //}
 
       //Querying function(Interpreter built-in or user-defined)
       if (command->first.type == kRequestInterface) {
@@ -1552,7 +1860,10 @@ namespace kagami {
       //Building object map for function call expressed by command
       GenerateArgs(*interface, command->second, obj_map);
 
-      if (worker->error) break;
+      if (worker->error) {
+        worker->origin_idx = command->first.idx;
+        break;
+      }
 
       //(For user-defined function)
       //Machine will create new stack frame and push IR pointer to machine stack,
@@ -1594,8 +1905,7 @@ namespace kagami {
     if (worker->error) {
       trace::AddEvent(
         Message(kCodeBadExpression, worker->error_string, kStateError)
-          .SetIndex(worker->origin_idx)
-      );
+          .SetIndex(worker->origin_idx));
     }
 
     if (interface_error) {
@@ -1606,53 +1916,5 @@ namespace kagami {
     worker_stack_.pop();
   }
 
-  /* string/wstring convertor */
-#if defined(_WIN32) && defined(_MSC_VER)
-  //from MSDN
-  std::wstring s2ws(const std::string& s) {
-    auto slength = static_cast<int>(s.length()) + 1;
-    auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-    auto *buf = new wchar_t[len];
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-    std::wstring r(buf);
-    delete[] buf;
-    return r;
-  }
 
-  std::string ws2s(const std::wstring& s) {
-    int len;
-    int slength = (int)s.length() + 1;
-    len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
-    std::string r(len, '\0');
-    WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
-    return r;
-  }
-#else
-  //from https://www.yasuhisay.info/interface/20090722/1248245439
-  std::wstring s2ws(const std::string& s) {
-    if (s.empty()) return wstring();
-    size_t length = s.size();
-    wchar_t *wc = (wchar_t*)malloc(sizeof(wchar_t)* (length + 2));
-    mbstowcs(wc, s.c_str(), s.length() + 1);
-    std::wstring str(wc);
-    free(wc);
-    return str;
-  }
-
-  std::string ws2s(const std::wstring& s) {
-    if (s.empty()) return string();
-    size_t length = s.size();
-    char *c = (char*)malloc(sizeof(char)* length * 2);
-    wcstombs(c, s.c_str(), s.length() + 1);
-    std::string result(c);
-    free(c);
-    return result;
-  }
-#endif
-
-  string ParseRawString(const string &src) {
-    string result = src;
-    if (util::IsString(result)) result = util::GetRawString(result);
-    return result;
-  }
 }

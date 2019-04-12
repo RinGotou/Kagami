@@ -4,6 +4,7 @@
 namespace kagami {
   namespace management {
     using InterfaceCollection = map<string, Interface>;
+    using InterfaceHashMap = unordered_map<string, Interface *>;
 
     //int64_t GetStackDepthLimit();
 

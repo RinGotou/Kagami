@@ -7,14 +7,28 @@ namespace kagami {
 
     ///////////////////////////////////////////////////////////////
     //Inteface management
-    map<GenericToken, Interface> &GetGenericInterfaceBase() {
-      static map<GenericToken, Interface> base;
+    unordered_map<GenericToken, Interface> &GetGenericInterfaceBase() {
+      static unordered_map<GenericToken, Interface> base;
       return base;
     }
 
     map<string, InterfaceCollection> &GetInterfaceCollections() {
       static map<string, InterfaceCollection> collection_base;
       return collection_base;
+    }
+
+    unordered_map<string, InterfaceHashMap> &GetInterfaceCache() {
+      static unordered_map<string, InterfaceHashMap> cache;
+      return cache;
+    }
+
+    void BuildInterfaceCache(string domain) {
+      auto &base = GetInterfaceCache();
+      auto &col = GetInterfaceCollections().at(domain);
+
+      for (auto &unit : col) {
+        base[domain].insert(make_pair(unit.first, &unit.second));
+      }
     }
 
     void CreateNewInterface(Interface interface) {
@@ -26,19 +40,22 @@ namespace kagami {
         it->second.insert(std::make_pair(interface.GetId(), interface));
       }
       else {
-        collection_base.insert(std::make_pair(domain, InterfaceCollection()));
+        collection_base.insert(make_pair(domain, InterfaceCollection()));
         collection_base[domain].insert(std::make_pair(interface.GetId(), interface));
       }
+
+      BuildInterfaceCache(domain);
     }
 
     Interface *FindInterface(string id, string domain) {
-      auto &collection_base = GetInterfaceCollections();
-      auto it = collection_base.find(domain);
+      auto &cache = GetInterfaceCache();
+      auto it = cache.find(domain);
 
-      if (it != collection_base.end()) {
-        auto dest_it = it->second.find(id);
-        return dest_it != it->second.end() ?
-          &dest_it->second : nullptr;
+      if (it != cache.end()) {
+        auto dest = it->second.find(id);
+        if (dest != it->second.end()) {
+          return dest->second;
+        }
       }
 
       return nullptr;
@@ -51,7 +68,7 @@ namespace kagami {
 
     Interface *GetGenericInterface(GenericToken token) {
       auto &base = GetGenericInterfaceBase();
-      map<GenericToken, Interface>::iterator it = base.find(token);
+      auto it = base.find(token);
       if (it != base.end()) return &it->second;
       return nullptr;
     }

@@ -591,6 +591,10 @@ namespace kagami {
       result = Message(kCodeBadExpression, error_string_, kStateError);
     }
 
+    for (auto &unit : action_base_) {
+      unit.first.idx = index_;
+    }
+
     blk->args.clear();
     blk->args.shrink_to_fit();
     blk->symbol.clear();
@@ -612,10 +616,6 @@ namespace kagami {
 
     Request request(kTokenSegment);
     ArgumentList args;
-    
-    args.emplace_back(
-      Argument(to_string(index_), kArgumentNormal, kTokenTypeInt)
-    );
 
     int code = static_cast<int>(util::GetGenericToken(tokens_.front().first));
 
