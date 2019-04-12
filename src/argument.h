@@ -242,6 +242,52 @@ namespace suzu {
     JoinerChecker<joiner> joiner_checker_;
     AnalyzedArgument analyzed_;
     
+    bool CheckingAfterGenerating() {
+      bool result = true;
+      std::map<int, bool> tracker;
+      std::map<int, bool> optional_tracker;
+
+      for (const auto &unit : params_) {
+        if (unit.second.group != 0) {
+          optional_tracker[unit.second.group] = unit.second.optional;
+          bool found = (analyzed_.find(unit.first) != analyzed_.end());
+
+          auto it = tracker.find(unit.second.group);
+
+          if (it != tracker.end()) {
+            if (it->second && found) {
+              error_ = kErrorRedundantArgument;
+              bad_arg_ = unit.first;
+              break;
+            }
+            else if (!it->second && found) {
+              it->second = true;
+            }
+          }
+          else {
+            tracker[unit.second.group] = found;
+          }
+        }
+        else {
+          if (!unit.second.optional && analyzed_.find(unit.first) == analyzed_.end()) {
+            bad_arg_ = unit.first;
+            error_ = kErrorMisssingRequired;
+            result = false;
+            break;
+          }
+        }
+      }
+
+      for (const auto &unit : tracker) {
+        if (!unit.second && !optional_tracker[unit.first]) {
+          error_ = kErrorMisssingRequired;
+          bad_arg_ = "Group " + std::to_string(unit.first);
+          break;
+        }
+      }
+      return result;
+    }
+
   public:
     virtual ~ArgumentProcessor() {}
 
@@ -273,90 +319,45 @@ namespace suzu {
       bool result = true;
       analyzed_.clear();
 
+#define ERROR_CHECKING(_Cond, _Code)  \
+      if (_Cond) {                    \
+          error_ = _Code;             \
+          bad_arg_ = unit;            \
+          result = false;             \
+          break;                      \
+      }
+
       for (const auto &unit : generator.output) {
-        if (head_checker_.Do(unit)) {
-          bool has_joiner = joiner_checker_.Do(head_checker_.output);
-          Parameters::iterator it = params_.find(joiner_checker_.value.first);
+        ERROR_CHECKING(!head_checker_.Do(unit), kErrorUnknownArgument);
 
-          if (it != params_.end()) {
-            if (it->second.has_value && has_joiner) {
-              analyzed_.insert(joiner_checker_.value);
-            }
-            else if (!it->second.has_value && !has_joiner) {
-              analyzed_.insert(AnalyzedArgument::value_type(head_checker_.output, ""));
-            }
-            else if (it->second.has_value && 
-              (!has_joiner || (has_joiner && joiner_checker_.value.second.empty()))) {
-              error_ = kErrorMissingValue;
-            }
-            else if (!it->second.has_value && has_joiner) {
-              error_ = kErrorRedundantValue;
-            }
-          }
-          else {
-            error_ = kErrorUnknownArgument;
-          }
-          
-        }
-        else {
-          error_ = kErrorUnknownArgument;
-        }
+        bool has_joiner = joiner_checker_.Do(head_checker_.output);
+        auto it = params_.find(joiner_checker_.value.first);
 
-        if (error_ != kErrorNone) {
-          bad_arg_ = unit;
-          result = false;
-          break;
+        ERROR_CHECKING(it == params_.end(), kErrorUnknownArgument);
+
+        ERROR_CHECKING(it->second.has_value &&
+          (!has_joiner || (has_joiner && joiner_checker_.value.second.empty())),
+          kErrorMissingValue);
+
+        ERROR_CHECKING(!it->second.has_value && has_joiner, kErrorRedundantValue);
+
+        if (it->second.has_value && has_joiner) {
+          analyzed_.insert(joiner_checker_.value);
         }
+        else if (!it->second.has_value && !has_joiner) {
+          analyzed_.insert(AnalyzedArgument::value_type(head_checker_.output, ""));
+        }          
       }
 
       if (!result) {
         analyzed_.clear();
       }
       else {
-        std::map<int, bool> tracker;
-        std::map<int, bool> optional_tracker;
-
-        for (const auto &unit : params_) {
-          if (unit.second.group != 0) {
-            optional_tracker[unit.second.group] = unit.second.optional;
-            bool found = (analyzed_.find(unit.first) != analyzed_.end());
-
-            auto it = tracker.find(unit.second.group);
-
-            if (it != tracker.end()) {
-              if (it->second && found) {
-                error_ = kErrorRedundantArgument;
-                bad_arg_ = unit.first;
-                break;
-              }
-              else if (!it->second && found) {
-                it->second = true;
-              }
-            }
-            else {
-              tracker[unit.second.group] = found;
-            }
-          }
-          else {
-            if (!unit.second.optional && analyzed_.find(unit.first) == analyzed_.end()) {
-              bad_arg_ = unit.first;
-              error_ = kErrorMisssingRequired;
-              result = false;
-              break;
-            }
-          }
-        }
-
-        for (const auto &unit : tracker) {
-          if (!unit.second && !optional_tracker[unit.first]) {
-            error_ = kErrorMisssingRequired;
-            bad_arg_ = "Group " + std::to_string(unit.first);
-            break;
-          }
-        }
+        result = CheckingAfterGenerating();
       }
 
       return result;
+#undef ERROR
     }
 
     bool Exist(std::string str) const {
