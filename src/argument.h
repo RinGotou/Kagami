@@ -244,48 +244,48 @@ namespace suzu {
     
     bool CheckingAfterGenerating() {
       bool result = true;
-      std::map<int, bool> tracker;
-      std::map<int, bool> optional_tracker;
+      std::map<int, bool> has_value_checker;
+      std::map<int, bool> optional_tracker; 
+
+#define ERROR_CHECKING(_Cond, _Code) \
+      if (_Cond){                    \
+        error_ = _Code;              \
+        bad_arg_ = unit.first;       \
+        result = false;              \
+        break;                       \
+      }
 
       for (const auto &unit : params_) {
-        if (unit.second.group != 0) {
-          optional_tracker[unit.second.group] = unit.second.optional;
-          bool found = (analyzed_.find(unit.first) != analyzed_.end());
+        if (unit.second.group == 0) {
+          ERROR_CHECKING(!unit.second.optional
+            && analyzed_.find(unit.first) == analyzed_.end(),
+            kErrorMisssingRequired);
+          continue;
+        }
 
-          auto it = tracker.find(unit.second.group);
+        optional_tracker[unit.second.group] = unit.second.optional;
+        bool found = (analyzed_.find(unit.first) != analyzed_.end());
 
-          if (it != tracker.end()) {
-            if (it->second && found) {
-              error_ = kErrorRedundantArgument;
-              bad_arg_ = unit.first;
-              break;
-            }
-            else if (!it->second && found) {
-              it->second = true;
-            }
-          }
-          else {
-            tracker[unit.second.group] = found;
+        auto it = has_value_checker.find(unit.second.group);
+
+        if (it != has_value_checker.end()) {
+          ERROR_CHECKING(it->second && found, kErrorRedundantArgument);
+
+          if (!it->second && found) {
+            it->second = true;
           }
         }
         else {
-          if (!unit.second.optional && analyzed_.find(unit.first) == analyzed_.end()) {
-            bad_arg_ = unit.first;
-            error_ = kErrorMisssingRequired;
-            result = false;
-            break;
-          }
+          has_value_checker[unit.second.group] = found;
         }
       }
 
-      for (const auto &unit : tracker) {
-        if (!unit.second && !optional_tracker[unit.first]) {
-          error_ = kErrorMisssingRequired;
-          bad_arg_ = "Group " + std::to_string(unit.first);
-          break;
-        }
+      for (const auto &unit : has_value_checker) {
+        ERROR_CHECKING(!unit.second && !optional_tracker[unit.first],
+          kErrorMisssingRequired);
       }
       return result;
+#undef ERROR_CHECKING
     }
 
   public:
@@ -357,7 +357,7 @@ namespace suzu {
       }
 
       return result;
-#undef ERROR
+#undef ERROR_CHECKING
     }
 
     bool Exist(std::string str) const {
