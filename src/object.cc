@@ -30,9 +30,9 @@ namespace kagami {
     return *this;
   }
 
-  Object &Object::ManageContent(shared_ptr<void> ptr, string type_id) {
+  Object &Object::Manage(shared_ptr<void> ptr, string type_id) {
     if (mode_ == kObjectRef) {
-      return GetTargetObject()->ManageContent(ptr, type_id);
+      return GetTargetObject()->Manage(ptr, type_id);
     }
 
     ptr_ = ptr;
@@ -52,22 +52,33 @@ namespace kagami {
     type_id_ = object.type_id_;
     mode_ = kObjectRef;
 
-    TargetObject target;
     if (!object.IsRef()) {
+      TargetObject target;
       target.ptr = &object;
+      ptr_ = make_shared<TargetObject>(target);
     }
     else {
-      target.ptr = 
-        static_pointer_cast<TargetObject>(object.ptr_)->ptr;
+      ptr_ = object.ptr_;
+      //target.ptr = static_pointer_cast<TargetObject>(object.ptr_)->ptr;
     }
-    target.ptr->ref_count_ += 1;
-    ptr_ = make_shared<TargetObject>(target);
+    static_pointer_cast<TargetObject>(ptr_)->ptr->ref_count_ += 1;
+    //target.ptr->ref_count_ += 1;
+    //ptr_ = make_shared<TargetObject>(target);
     return *this;
+  }
+
+  void ObjectContainer::BuildCache() {
+    dest_map_.clear();
+    const auto begin = base_.begin(), end = base_.end();
+    for (auto it = begin; it != end; ++it) {
+      dest_map_.insert(make_pair(it->first, &it->second));
+    }
   }
 
   bool ObjectContainer::Add(string id, Object source) {
     if (CheckObject(id)) return false;
     base_.insert(NamedObject(id, source));
+    BuildCache();
     return true;
   }
 
@@ -75,9 +86,11 @@ namespace kagami {
     if (base_.empty()) return nullptr;
 
     ObjectPointer ptr = nullptr;
-    auto it = base_.find(id);
 
-    it != base_.end() ? ptr = &(it->second) : nullptr;
+    auto it = dest_map_.find(id);
+    ptr = it != dest_map_.end() ? it->second : nullptr;
+    //auto it = base_.find(id);
+    //it != base_.end() ? ptr = &(it->second) : nullptr;
 
     return ptr;
   }
@@ -95,6 +108,7 @@ namespace kagami {
     }
 
     base_.swap(dest);
+    BuildCache();
   }
 
   ObjectMap &ObjectMap::operator=(const initializer_list<NamedObject> &rhs) {
@@ -138,8 +152,8 @@ namespace kagami {
   Object *ObjectStack::Find(string id) {
     if (base_.empty() && prev_ == nullptr) return nullptr;
     ObjectPointer ptr = nullptr;
-    
-    for (auto it = base_.rbegin(); it != base_.rend(); ++it) {
+    const auto begin = base_.rbegin(), end = base_.rend();
+    for (auto it = begin; it != end; ++it) {
       ptr = it->Find(id);
       if (ptr != nullptr) break;
     }

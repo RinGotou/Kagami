@@ -38,18 +38,18 @@ namespace kagami {
       wstring wstr = obj.Cast<wstring>();
       string output = ws2s(wstr);
 
-      base.ManageContent(make_shared<string>(output), kTypeIdString)
+      base.Manage(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
     }
     else if (obj.GetTypeId() == kTypeIdString) {
       string copy = obj.Cast<string>();
-      base.ManageContent(make_shared<string>(copy), kTypeIdString)
+      base.Manage(make_shared<string>(copy), kTypeIdString)
         .SetConstructorFlag();
     }
     else {
       string output = obj.Cast<string>();
 
-      base.ManageContent(make_shared<string>(output), kTypeIdString)
+      base.Manage(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
     }
 

@@ -61,9 +61,11 @@ namespace kagami {
     }
 
     void MakeRef(const Object &obj) {
-      TargetObject target = *static_pointer_cast<TargetObject>(obj.ptr_);
-      target.ptr->ref_count_ += 1;
-      ptr_ = make_shared<TargetObject>(target);
+      ptr_ = obj.ptr_;
+      static_pointer_cast<TargetObject>(ptr_)->ptr->ref_count_ += 1;
+      //TargetObject target = *static_pointer_cast<TargetObject>(obj.ptr_);
+      //target.ptr->ref_count_ += 1;
+      //ptr_ = make_shared<TargetObject>(target);
     }
 
   public:
@@ -120,7 +122,7 @@ namespace kagami {
       type_id_(kTypeIdString) {}
 
     Object &operator=(const Object &object);
-    Object &ManageContent(shared_ptr<void> ptr, string type_id);
+    Object &Manage(shared_ptr<void> ptr, string type_id);
     Object &swap(Object &obj);
     Object &CreateRef(Object &object);
 
@@ -177,7 +179,9 @@ namespace kagami {
       return ptr_ == obj.ptr_; 
     }
 
-    bool operator==(const Object &&obj) const { return operator==(obj); }
+    bool operator==(const Object &&obj) const { 
+      return ptr_ == obj.ptr_;
+    }
 
     Object &operator=(const Object &&object) { return operator=(object); }
 
@@ -200,10 +204,13 @@ namespace kagami {
   class ObjectContainer {
   private:
     map<string, Object> base_;
+    unordered_map<string, Object *>dest_map_;
 
     bool CheckObject(string id) {
       return (base_.find(id) != base_.end());
     }
+
+    void BuildCache();
   public:
     bool Add(string id, Object source);
     Object *Find(string id);

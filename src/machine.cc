@@ -92,12 +92,14 @@ namespace kagami {
 
     for (size_t count = 0; count < target.size(); ++count) {
       current = target[count];
-      auto type = kagami::util::GetTokenType(toString(current));
+      auto type = util::GetTokenType(toString(current));
       if (type != TokenType::kTokenTypeBlank && exempt_blank_char) {
         head = count;
         exempt_blank_char = false;
       }
-      if (current == '\'' && last != '\\') string_processing = !string_processing;
+      if (current == '\'' && last != '\\') {
+        string_processing = !string_processing;
+      }
       if (!string_processing && current == '#') {
         tail = count;
         break;
@@ -127,19 +129,19 @@ namespace kagami {
     Object obj;
     switch (type) {
     case kTokenTypeInt:
-      obj.ManageContent(make_shared<int64_t>(stol(value)), kTypeIdInt); 
+      obj.Manage(make_shared<int64_t>(stol(value)), kTypeIdInt); 
       break;
     case kTokenTypeFloat:
-      obj.ManageContent(make_shared<double>(stod(value)), kTypeIdFloat);
+      obj.Manage(make_shared<double>(stod(value)), kTypeIdFloat);
       break;
     case kTokenTypeBool:
-      obj.ManageContent(make_shared<bool>(value == kStrTrue), kTypeIdBool);
+      obj.Manage(make_shared<bool>(value == kStrTrue), kTypeIdBool);
       break;
     case kTokenTypeString:
-      obj.ManageContent(make_shared<string>(ParseRawString(value)), kTypeIdString);
+      obj.Manage(make_shared<string>(ParseRawString(value)), kTypeIdString);
       break;
     case kTokenTypeGeneric:
-      obj.ManageContent(make_shared<string>(value), kTypeIdString);
+      obj.Manage(make_shared<string>(value), kTypeIdString);
       break;
     default:
       break;
@@ -155,7 +157,7 @@ namespace kagami {
 
     if (ptr != nullptr) {
       auto interface = *management::FindInterface(id, domain);
-      obj.ManageContent(make_shared<Interface>(interface), kTypeIdFunction);
+      obj.Manage(make_shared<Interface>(interface), kTypeIdFunction);
     }
 
     return obj;
@@ -1057,13 +1059,13 @@ namespace kagami {
 
         switch (type) {
         case kTokenTypeInt:
-          ret_obj.ManageContent(make_shared<int64_t>(stol(str)), kTypeIdInt);
+          ret_obj.Manage(make_shared<int64_t>(stol(str)), kTypeIdInt);
           break;
         case kTokenTypeFloat:
-          ret_obj.ManageContent(make_shared<double>(stod(str)), kTypeIdFloat);
+          ret_obj.Manage(make_shared<double>(stod(str)), kTypeIdFloat);
           break;
         case kTokenTypeBool:
-          ret_obj.ManageContent(make_shared<bool>(str == kStrTrue), kTypeIdBool);
+          ret_obj.Manage(make_shared<bool>(str == kStrTrue), kTypeIdBool);
           break;
         default:
           ret_obj = obj;
@@ -1333,7 +1335,7 @@ namespace kagami {
     }
 
     for (auto it = params.rbegin(); it != params.rend(); ++it) {
-      obj_map.insert(NamedObject(*it, FetchObject(args.back())));
+      obj_map.emplace(NamedObject(*it, FetchObject(args.back())));
       args.pop_back();
     }
   }

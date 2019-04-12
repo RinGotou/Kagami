@@ -159,7 +159,7 @@ namespace kagami {
         Object result;
         const auto it = GetObjPolicyCollection().find(object.GetTypeId());
         if (it != GetObjPolicyCollection().end()) {
-          result.ManageContent(it->second.CreateObjectCopy(object.Get()),
+          result.Manage(it->second.CreateObjectCopy(object.Get()),
             object.GetTypeId());
         }
 

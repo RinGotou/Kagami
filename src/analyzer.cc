@@ -225,7 +225,8 @@ namespace kagami {
     action_base_.emplace_back(Command(blk->symbol.back(), arguments));
     blk->symbol.pop_back();
     blk->args.emplace_back(Argument("", kArgumentReturnStack, kTokenTypeNull));
-    if (blk->symbol.empty()) {
+    if (blk->symbol.empty() && (blk->next.first == "," 
+      || blk->next.second == kTokenTypeNull)) {
       action_base_.back().first.option.void_call = true;
     }
 

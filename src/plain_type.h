@@ -189,19 +189,19 @@ namespace kagami {
       string result = MathBox<string, op>()
         .Do(StringProducer(lhs), StringProducer(rhs));
 
-      obj.ManageContent(make_shared<string>(result), kTypeIdString);
+      obj.Manage(make_shared<string>(result), kTypeIdString);
     }
     else if (type == kPlainInt) {
       int64_t result = MathBox<int64_t, op>()
         .Do(IntProducer(lhs), IntProducer(rhs));
 
-      obj.ManageContent(make_shared<int64_t>(result), kTypeIdInt);
+      obj.Manage(make_shared<int64_t>(result), kTypeIdInt);
     }
     else if (type == kPlainFloat) {
       double result = MathBox<double, op>()
         .Do(FloatProducer(lhs), FloatProducer(rhs));
 
-      obj.ManageContent(make_shared<double>(result), kTypeIdFloat);
+      obj.Manage(make_shared<double>(result), kTypeIdFloat);
     }
     else if (type == kPlainBool) {
       int64_t result = MathBox<int64_t, op>()
