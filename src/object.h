@@ -27,10 +27,6 @@ namespace kagami {
     virtual ~HasherInterface() {}
   };
 
-  struct TargetObject {
-    ObjectPointer ptr;
-  };
-
   template <class Type>
   class TargetMember {
   private:
@@ -50,32 +46,22 @@ namespace kagami {
 
   class Object {
   private:
+    ObjectPointer real_dest_;
     ObjectMode mode_;
     bool constructor_;
     int64_t ref_count_;
     shared_ptr<void> ptr_;
     string type_id_;
 
-    ObjectPointer GetTargetObject() { 
-      return static_pointer_cast<TargetObject>(ptr_)->ptr; 
-    }
-
-    void MakeRef(const Object &obj) {
-      ptr_ = obj.ptr_;
-      static_pointer_cast<TargetObject>(ptr_)->ptr->ref_count_ += 1;
-      //TargetObject target = *static_pointer_cast<TargetObject>(obj.ptr_);
-      //target.ptr->ref_count_ += 1;
-      //ptr_ = make_shared<TargetObject>(target);
-    }
-
   public:
     ~Object() {
-      if (mode_ == kObjectRef) {
-        GetTargetObject()->ref_count_ -= 1;
+      if (mode_ == kObjectRef && real_dest_ != nullptr) {
+        real_dest_->ref_count_ -= 1;
       }
     }
 
     Object() :
+      real_dest_(nullptr),
       mode_(kObjectNormal),
       constructor_(false),
       ref_count_(0),
@@ -83,12 +69,15 @@ namespace kagami {
       type_id_(kTypeIdNull) {}
 
     Object(const Object &obj) :
+      real_dest_(obj.real_dest_),
       mode_(obj.mode_),
       constructor_(obj.constructor_),
       ref_count_(0),
       ptr_(obj.ptr_),
       type_id_(obj.type_id_) {
-      if (obj.mode_ == kObjectRef) MakeRef(obj);
+      if (obj.mode_ == kObjectRef) {
+        real_dest_->ref_count_ += 1;
+      }
     }
 
     Object(const Object &&obj) :
@@ -96,6 +85,7 @@ namespace kagami {
 
     template <class T>
     Object(shared_ptr<T> ptr, string type_id) :
+      real_dest_(nullptr),
       mode_(kObjectNormal),
       constructor_(false),
       ref_count_(0),
@@ -104,6 +94,7 @@ namespace kagami {
 
     template <class T>
     Object(T &t, string type_id) :
+      real_dest_(nullptr),
       mode_(kObjectNormal),
       constructor_(false),
       ref_count_(0),
@@ -115,6 +106,7 @@ namespace kagami {
       Object(t, type_id) {}
 
     Object(string str) :
+      real_dest_(nullptr),
       mode_(kObjectNormal),
       constructor_(false),
       ref_count_(0),
@@ -127,7 +119,7 @@ namespace kagami {
     Object &CreateRef(Object &object);
 
     shared_ptr<void> Get() {
-      if (mode_ == kObjectRef) return GetTargetObject()->Get();
+      if (mode_ == kObjectRef) return real_dest_->Get();
       return ptr_;
     }
 
@@ -144,7 +136,7 @@ namespace kagami {
 
     Object &Deref() {
       if (mode_ == kObjectRef) {
-        return *GetTargetObject();
+        return *real_dest_;
       }
 
       return *this;
@@ -153,7 +145,7 @@ namespace kagami {
     template <class Tx>
     Tx &Cast() {
       if (mode_ == kObjectRef) { 
-        return GetTargetObject()->Cast<Tx>(); 
+        return real_dest_->Cast<Tx>(); 
       }
 
       if (mode_ == kObjectMemberRef) {
@@ -195,7 +187,7 @@ namespace kagami {
 
     bool IsMemberRef() const { return mode_ == kObjectMemberRef; }
 
-    bool Null() const { return ptr_ == nullptr; }
+    bool Null() const { return ptr_ == nullptr && real_dest_ == nullptr; }
   };
 
   using ObjectArray = vector<Object>;
@@ -203,6 +195,7 @@ namespace kagami {
 
   class ObjectContainer {
   private:
+    ObjectContainer *prev_;
     map<string, Object> base_;
     unordered_map<string, Object *>dest_map_;
 
@@ -214,14 +207,16 @@ namespace kagami {
   public:
     bool Add(string id, Object source);
     Object *Find(string id);
+    string FindDomain(string id);
     void ClearExcept(string exceptions);
 
-    ObjectContainer() {}
+    ObjectContainer() : prev_(nullptr), base_(), dest_map_() {}
 
     ObjectContainer(const ObjectContainer &&mgr) {}
 
     ObjectContainer(const ObjectContainer &container) :
-      base_(container.base_) {}
+      prev_(container.prev_), base_(container.base_),
+      dest_map_(container.dest_map_) {}
 
     bool Empty() const {
       return base_.empty();
@@ -238,6 +233,11 @@ namespace kagami {
 
     map<string, Object> &GetContent() {
       return base_;
+    }
+
+    ObjectContainer &SetPreviousContainer(ObjectContainer &prev) {
+      prev_ = &prev;
+      return *this;
     }
   };
 
@@ -326,7 +326,11 @@ namespace kagami {
     ObjectContainer &GetCurrent() { return base_.back(); }
 
     ObjectStack &Push() {
-      base_.push_back(ObjectContainer());
+      ObjectContainer container;
+      if (!base_.empty()) {
+        container.SetPreviousContainer(base_.back());
+      }
+      base_.push_back(container);
       return *this;
     }
 

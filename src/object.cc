@@ -18,12 +18,13 @@ namespace kagami {
 
   Object &Object::operator=(const Object &object) {
     if (object.mode_ == kObjectRef) {
-      MakeRef(object);
+      real_dest_ = object.real_dest_;
     }
     else {
       ptr_ = object.ptr_;
     }
 
+    //real_dest_ = object.real_dest_;
     type_id_ = object.type_id_;
     mode_ = object.mode_;
     constructor_ = object.constructor_;
@@ -32,7 +33,7 @@ namespace kagami {
 
   Object &Object::Manage(shared_ptr<void> ptr, string type_id) {
     if (mode_ == kObjectRef) {
-      return GetTargetObject()->Manage(ptr, type_id);
+      return real_dest_->Manage(ptr, type_id);
     }
 
     ptr_ = ptr;
@@ -45,6 +46,7 @@ namespace kagami {
     std::swap(type_id_, obj.type_id_);
     std::swap(mode_, obj.mode_);
     std::swap(constructor_, obj.constructor_);
+    std::swap(real_dest_, obj.real_dest_);
     return *this;
   }
 
@@ -53,17 +55,13 @@ namespace kagami {
     mode_ = kObjectRef;
 
     if (!object.IsRef()) {
-      TargetObject target;
-      target.ptr = &object;
-      ptr_ = make_shared<TargetObject>(target);
+      real_dest_ = &object;
     }
     else {
-      ptr_ = object.ptr_;
-      //target.ptr = static_pointer_cast<TargetObject>(object.ptr_)->ptr;
+      real_dest_ = object.real_dest_;
     }
-    static_pointer_cast<TargetObject>(ptr_)->ptr->ref_count_ += 1;
-    //target.ptr->ref_count_ += 1;
-    //ptr_ = make_shared<TargetObject>(target);
+
+    real_dest_->ref_count_ += 1;
     return *this;
   }
 
@@ -83,16 +81,52 @@ namespace kagami {
   }
 
   Object *ObjectContainer::Find(string id) {
-    if (base_.empty()) return nullptr;
+    if (base_.empty() && prev_ == nullptr) return nullptr;
 
     ObjectPointer ptr = nullptr;
 
-    auto it = dest_map_.find(id);
-    ptr = it != dest_map_.end() ? it->second : nullptr;
-    //auto it = base_.find(id);
-    //it != base_.end() ? ptr = &(it->second) : nullptr;
+    if (!base_.empty()) {
+      auto it = dest_map_.find(id);
+
+      if (it != dest_map_.end()) {
+        ptr = it->second;
+      }
+      else {
+        if (prev_ != nullptr) {
+          ptr = prev_->Find(id);
+        }
+      }
+    }
+    else if (prev_ != nullptr) {
+      ptr = prev_->Find(id);
+    }
+    //ptr = it != dest_map_.end() ? it->second : nullptr;
 
     return ptr;
+  }
+
+  string ObjectContainer::FindDomain(string id) {
+    if (base_.empty() && prev_ == nullptr) return kTypeIdNull;
+
+    string result;
+
+    if (!base_.empty()) {
+      auto it = dest_map_.find(id);
+
+      if (it != dest_map_.end()) {
+        result = it->second->GetTypeId();
+      }
+      else {
+        if (prev_ != nullptr) {
+          result = prev_->FindDomain(id);
+        }
+      }
+    }
+    else if (prev_ != nullptr) {
+      result = prev_->FindDomain(id); 
+    }
+
+    return result;
   }
 
   void ObjectContainer::ClearExcept(string exceptions) {
@@ -151,12 +185,7 @@ namespace kagami {
 
   Object *ObjectStack::Find(string id) {
     if (base_.empty() && prev_ == nullptr) return nullptr;
-    ObjectPointer ptr = nullptr;
-    const auto begin = base_.rbegin(), end = base_.rend();
-    for (auto it = begin; it != end; ++it) {
-      ptr = it->Find(id);
-      if (ptr != nullptr) break;
-    }
+    ObjectPointer ptr = base_.back().Find(id);
 
     if (prev_ != nullptr && ptr == nullptr) {
       ptr = prev_->Find(id);

@@ -34,7 +34,7 @@ namespace kagami {
     size_t size = str.size();
     size_t idx = p.Cast<int64_t>("index");
 
-    EXPECT((idx > size && idx >= 0), "Index out of range.");
+    EXPECT((idx < size && idx >= 0), "Index out of range.");
 
     shared_ptr<StringType> output = make_shared<StringType>();
 

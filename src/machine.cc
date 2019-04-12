@@ -163,6 +163,43 @@ namespace kagami {
     return obj;
   }
 
+  string Machine::FetchDomain(string id, ArgumentType type) {
+    using namespace management;
+    auto &worker = worker_stack_.top();
+    auto &return_stack = worker.return_stack;
+    ObjectPointer ptr = nullptr;
+    string result;
+
+    if (type == kArgumentObjectStack) {
+      ptr = obj_stack_.Find(id);
+      if (ptr != nullptr) {
+        result = ptr->GetTypeId();
+        return result;
+      }
+
+      Object obj = GetConstantObject(id);
+
+      if (obj.Get() != nullptr) {
+        result = obj.GetTypeId();
+        return result;
+      }
+      
+      //TODO:??
+      obj = FetchInterfaceObject(id, kTypeIdNull);
+      if (obj.Get() != nullptr) {
+        result = obj.GetTypeId();
+        return result;
+      }
+    }
+    else if (type == kArgumentReturnStack) {
+      if (!return_stack.empty()) {
+        result = return_stack.top().GetTypeId();
+      }
+    }
+
+    return result;
+  }
+
   //TODO:Rewrite
   Object Machine::FetchObject(Argument &arg, bool checking) {
     if (arg.type == kArgumentNormal) return FetchPlainObject(arg);
@@ -280,6 +317,7 @@ namespace kagami {
     //function. These code need to be rewritten when I work in class feature in
     //the future.
     if (command->first.domain.type != kArgumentNull) {
+      //string domain = 
       Object obj = FetchObject(domain, true);
 
       if (worker.error) return false;
