@@ -1331,9 +1331,10 @@ namespace kagami {
     }
   }
 
-  void Machine::Generate_Normal(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
+  void Machine::Generate_Normal(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
     auto &worker = worker_stack_.top();
     auto &params = interface.GetParameters();
+    size_t pos = args.size() - 1;
 
     if (args.size() > params.size()) {
       worker.MakeError("Too many arguments");
@@ -1349,8 +1350,8 @@ namespace kagami {
     }
 
     for (auto it = params.rbegin(); it != params.rend(); ++it) {
-      obj_map.emplace(NamedObject(*it, FetchObject(args.back())));
-      args.pop_back();
+      obj_map.emplace(NamedObject(*it, FetchObject(args[pos])));
+      pos -= 1;
     }
   }
 

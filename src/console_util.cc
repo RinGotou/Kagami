@@ -98,6 +98,10 @@ namespace kagami {
     return Message().SetObject(str);
   }
 
+  Message Test(ObjectMap &p) {
+    return Message();
+  }
+
   void InitConsoleComponents() {
     using management::CreateNewInterface;
 
@@ -107,5 +111,6 @@ namespace kagami {
     CreateNewInterface(Interface(PrintLine, kStrMe, "println"));
     CreateNewInterface(Interface(SystemCommand, "command", "console"));
     CreateNewInterface(Interface(ThreadSleep, "milliseconds", "sleep"));
+    CreateNewInterface(Interface(Test, "obj", "InvokeTest"));
   }
 }
