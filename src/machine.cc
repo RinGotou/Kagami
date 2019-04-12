@@ -197,82 +197,59 @@ namespace kagami {
       }
     }
 
+    if (result.empty()) {
+      worker.MakeError("Domain is not found - " + id);
+    }
+
     return result;
   }
 
   //TODO:Rewrite
   Object Machine::FetchObject(Argument &arg, bool checking) {
-    if (arg.type == kArgumentNormal) return FetchPlainObject(arg);
+    using namespace management;
 
-    ObjectPointer ptr = nullptr;
-    string domain_type_id = kTypeIdNull;
-    Object obj;
+    if (arg.type == kArgumentNormal) {
+      return FetchPlainObject(arg);
+    }
+
     auto &worker = worker_stack_.top();
-    auto &return_stack = worker_stack_.top().return_stack;
+    auto &return_stack = worker.return_stack;
+    string domain_type_id = kTypeIdNull;
+    ObjectPointer ptr = nullptr;
+    Object obj;
 
-    auto fetching = [&](ArgumentType type, bool is_domain)->bool {
-      switch (type) {
-      case kArgumentObjectStack:
-        ptr = obj_stack_.Find(is_domain ? arg.domain.data : arg.data);
-        if (ptr != nullptr) {
-          if (is_domain) {
-            domain_type_id = ptr->GetTypeId();
-          }
-          else {
-            obj.CreateRef(*ptr);
-          }
-        }
-        else {
-          obj = management::GetConstantObject(is_domain ? arg.domain.data : arg.data);
+    //TODO: Add object domain support
+    if (arg.domain.type != kArgumentNull) {
+      domain_type_id = FetchDomain(arg.domain.data, arg.domain.type);
+    }
 
-          if (obj.Get() != nullptr) {
-            if (is_domain) domain_type_id = obj.GetTypeId();
-            return true;
-          }
-
-          obj = is_domain ?
-            FetchInterfaceObject(arg.domain.data, kTypeIdNull) :
-            FetchInterfaceObject(arg.data, domain_type_id);
-
-          if (obj.Get() == nullptr) {
-            worker.MakeError("Object is not found - "
-              + (is_domain ? arg.domain.data : arg.data));
-            return false;
-          }
-        }
-        break;
-
-      case kArgumentReturnStack:
-        if (!return_stack.empty()) {
-          if (is_domain) {
-            domain_type_id = return_stack.top().GetTypeId();
-          }
-          else {
-            obj = return_stack.top();
-            if (!checking) return_stack.pop();
-          }
-        }
-        else {
-          worker.MakeError("Can't get object from stack.");
-          return false;
-        }
-
-        break;
-
-      default:
-        break;
+    if (arg.type == kArgumentObjectStack) {
+      ptr = obj_stack_.Find(arg.data);
+      if (ptr != nullptr) {
+        obj.CreateRef(*ptr);
+        return obj;
       }
 
-      return true;
-    };
+      obj = GetConstantObject(arg.data);
 
-    if (!fetching(arg.domain.type, true)) {
-      return Object();
+      if (obj.Get() == nullptr) {
+        obj = FetchInterfaceObject(arg.data, domain_type_id);
+      }
+
+      if (obj.Get() == nullptr) {
+        worker.MakeError("Object is not found - " + arg.data);
+      }
+    }
+    else if (arg.type == kArgumentReturnStack) {
+      if (!return_stack.empty()) {
+        obj = return_stack.top();
+        if(!checking) return_stack.pop(); //For DomainAssertR
+      }
+      else {
+        worker.MakeError("Can't get object from stack.");
+      }
     }
 
-    if (!fetching(arg.type, false)) {
-      return Object();
-    }
     return obj;
   }
 
@@ -317,18 +294,17 @@ namespace kagami {
     //function. These code need to be rewritten when I work in class feature in
     //the future.
     if (command->first.domain.type != kArgumentNull) {
-      //string domain = 
       Object obj = FetchObject(domain, true);
 
       if (worker.error) return false;
 
       if (!management::type::CheckMethod(id, obj.GetTypeId())) {
         worker.MakeError("Method is not found - " + id);
-          return false;
+        return false;
       }
 
       interface = management::FindInterface(id, obj.GetTypeId());
-      obj_map.insert(NamedObject(kStrMe, std::move(obj)));
+      obj_map.emplace(NamedObject(kStrMe, obj));
       return true;
     }
     //Plain bulit-in function and user-defined function
