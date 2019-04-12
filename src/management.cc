@@ -7,10 +7,6 @@ namespace kagami {
 
     ///////////////////////////////////////////////////////////////
     //Inteface management
-    unordered_map<GenericToken, Interface> &GetGenericInterfaceBase() {
-      static unordered_map<GenericToken, Interface> base;
-      return base;
-    }
 
     map<string, InterfaceCollection> &GetInterfaceCollections() {
       static map<string, InterfaceCollection> collection_base;
@@ -58,18 +54,6 @@ namespace kagami {
         }
       }
 
-      return nullptr;
-    }
-
-    void CreateGenericInterface(Interface temp) {
-      GetGenericInterfaceBase().insert(pair<GenericToken, Interface>(
-        temp.GetToken(), temp));
-    }
-
-    Interface *GetGenericInterface(GenericToken token) {
-      auto &base = GetGenericInterfaceBase();
-      auto it = base.find(token);
-      if (it != base.end()) return &it->second;
       return nullptr;
     }
     ////////////////////////////////////////////////////////////////
