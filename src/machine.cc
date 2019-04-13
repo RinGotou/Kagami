@@ -1,6 +1,8 @@
 #include "machine.h"
 
 namespace kagami {
+  using namespace management;
+
   PlainType FindTypeCode(string type_id) {
     auto it = kTypeStore.find(type_id);
     return it != kTypeStore.end() ? it->second : kNotPlainType;
@@ -121,8 +123,8 @@ namespace kagami {
   }
 
   void InitPlainTypes() {
-    using management::type::NewTypeSetup;
-    using management::type::PlainHasher;
+    using type::NewTypeSetup;
+    using type::PlainHasher;
 
     NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<int64_t>, PlainHasher<int64_t>());
     NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>, PlainHasher<double>());
@@ -133,6 +135,48 @@ namespace kagami {
     EXPORT_CONSTANT(kTypeIdFloat);
     EXPORT_CONSTANT(kTypeIdBool);
     EXPORT_CONSTANT(kTypeIdNull);
+  }
+
+  void MachineWorker::MakeError(string str) {
+    error = true;
+    error_string = str;
+  }
+
+  void MachineWorker::SwitchToMode(MachineMode mode) {
+    mode_stack.push(this->mode);
+    this->mode = mode;
+  }
+
+  void MachineWorker::RefreshReturnStack(Object obj) {
+    if (!void_call) {
+      return_stack.push(std::move(obj));
+    }
+  }
+
+  void MachineWorker::GoLastMode() {
+    if (!mode_stack.empty()) {
+      this->mode = mode_stack.top();
+      mode_stack.pop();
+    }
+    else {
+      MakeError("Mode switching error.Kisaragi Kernel Panic.");
+    }
+  }
+
+  bool MachineWorker::NeedSkipping() {
+    switch (mode) {
+    case kModeNextCondition:
+    case kModeCycleJump:
+    case kModeDef:
+    case kModeCaseJump:
+    case kModeForEachJump:
+    case kModeClosureCatching:
+      return true;
+      break;
+    default:
+      break;
+    }
+    return false;
   }
 
   IRLoader::IRLoader(const char *src) : health(true) {
@@ -287,10 +331,10 @@ namespace kagami {
   Object Machine::FetchInterfaceObject(string id, string domain) {
     Object obj;
     auto &worker = worker_stack_.top();
-    auto ptr = management::FindInterface(id, domain);
+    auto ptr = FindInterface(id, domain);
 
     if (ptr != nullptr) {
-      auto interface = *management::FindInterface(id, domain);
+      auto interface = *FindInterface(id, domain);
       obj.Manage(make_shared<Interface>(interface), kTypeIdFunction);
     }
 
@@ -298,7 +342,6 @@ namespace kagami {
   }
 
   string Machine::FetchDomain(string id, ArgumentType type) {
-    using namespace management;
     auto &worker = worker_stack_.top();
     auto &return_stack = worker.return_stack;
     ObjectPointer ptr = nullptr;
@@ -338,10 +381,7 @@ namespace kagami {
     return result;
   }
 
-  //TODO:Rewrite
   Object Machine::FetchObject(Argument &arg, bool checking) {
-    using namespace management;
-
     if (arg.type == kArgumentNormal) {
       return FetchPlainObject(arg);
     }
@@ -392,16 +432,16 @@ namespace kagami {
 
     //Modified version for function invoking
     if (type_id != kTypeIdNull) {
-      if (!management::type::CheckMethod(id, type_id)) {
+      if (!type::CheckMethod(id, type_id)) {
         worker.MakeError("Method is not found - " + id);
         return false;
       }
 
-      interface = management::FindInterface(id, type_id);
+      interface = FindInterface(id, type_id);
       return true;
     }
     else {
-      interface = management::FindInterface(id);
+      interface = FindInterface(id);
 
       if (interface != nullptr) return true;
 
@@ -432,12 +472,12 @@ namespace kagami {
 
       if (worker.error) return false;
 
-      if (!management::type::CheckMethod(id, obj.GetTypeId())) {
+      if (!type::CheckMethod(id, obj.GetTypeId())) {
         worker.MakeError("Method is not found - " + id);
         return false;
       }
 
-      interface = management::FindInterface(id, obj.GetTypeId());
+      interface = FindInterface(id, obj.GetTypeId());
       obj_map.emplace(NamedObject(kStrMe, obj));
       return true;
     }
@@ -445,7 +485,7 @@ namespace kagami {
     //At first, Machine will querying in built-in function map,
     //and then try to fetch function object in heap.
     else {
-      interface = management::FindInterface(id);
+      interface = FindInterface(id);
 
       if (interface != nullptr) return true;
 
@@ -553,7 +593,7 @@ namespace kagami {
         for (auto &unit : it->GetContent()) {
           if (scope_record.find(unit.first) == scope_record.end()) {
             scope_record.insert(NamedObject(unit.first,
-              management::type::CreateObjectCopy(unit.second)));
+              type::CreateObjectCopy(unit.second)));
           }
         }
       }
@@ -627,23 +667,13 @@ namespace kagami {
     }
   }
 
+  //TODO:new user-defined function support
   Message Machine::Invoke(Object obj, string id, 
-    const initializer_list<NamedObject> &&args,
-    InvokingRecoverPoint recover_point) {
+    const initializer_list<NamedObject> &&args) {
     auto &worker = worker_stack_.top();
 
-    if (worker.invoking_point) {
-      Object obj = worker.return_stack.top();
-      worker.return_stack.pop();
-      return Message().SetObject(obj);
-    }
-
-    bool found = management::type::CheckMethod(id, obj.GetTypeId());
+    bool found = type::CheckMethod(id, obj.GetTypeId());
     InterfacePointer interface;
-
-    if (recover_point != nullptr) {
-      worker.recover_point = recover_point;
-    }
 
     if (!found) {
       //Immediately push event to avoid ugly checking block.
@@ -653,23 +683,15 @@ namespace kagami {
 
     _FetchInterface(interface, id, obj.GetTypeId());
 
-    if (interface->GetPolicyType() == kInterfaceKIR) {
-      worker.invoking_point = true;
-      worker.invoking_dest = interface;
-    }
-    else {
-      ObjectMap obj_map = args;
-      obj_map.insert(NamedObject(kStrMe, obj));
 
-      return interface->Start(obj_map);
-    }
+    ObjectMap obj_map = args;
+    obj_map.insert(NamedObject(kStrMe, obj));
 
-    return Message();
+    return interface->Start(obj_map);
   }
 
   void Machine::SetSegmentInfo(ArgumentList &args, bool cmd_info) {
-    MachineWorker &worker = worker_stack_.top();
-    //worker.origin_idx = stoul(args[0].data);
+    auto &worker = worker_stack_.top();
     worker.logic_idx = worker.idx;
     if (cmd_info) {
       worker.last_command = static_cast<GenericToken>(stol(args[0].data));
@@ -680,8 +702,8 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     auto &obj = FetchObject(args[0]).Deref();
 
-    if (management::type::IsHashable(obj)) {
-      int64_t hash = management::type::GetHash(obj);
+    if (type::IsHashable(obj)) {
+      int64_t hash = type::GetHash(obj);
       worker.RefreshReturnStack(Object(make_shared<int64_t>(hash), kTypeIdInt));
     }
     else {
@@ -771,13 +793,12 @@ namespace kagami {
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto container_obj = FetchObject(args[1]);
 
-    if (!management::type::CheckBehavior(container_obj, kContainerBehavior)) {
+    if (!type::CheckBehavior(container_obj, kContainerBehavior)) {
       worker.MakeError("Invalid object container");
       return;
     }
 
     auto msg = Invoke(container_obj, kStrHead);
-    if (worker.invoking_point) return;
 
     if (msg.GetCode() != kCodeObject) {
       worker.MakeError("Invalid iterator of container");
@@ -786,13 +807,12 @@ namespace kagami {
 
     auto iterator_obj = msg.GetObj();
     
-    if (!management::type::CheckBehavior(iterator_obj, kIteratorBehavior)) {
+    if (!type::CheckBehavior(iterator_obj, kIteratorBehavior)) {
       worker.MakeError("Invalid iterator behavior");
       return;
     }
 
     auto unit = Invoke(iterator_obj, "get").GetObj();
-    if (worker.invoking_point) return;
 
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
@@ -802,7 +822,6 @@ namespace kagami {
   }
 
   void Machine::ForEachChecking(ArgumentList &args) {
-    using namespace management;
     auto &worker = worker_stack_.top();
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto iterator = *obj_stack_.GetCurrent().Find(kStrIteratorObj);
@@ -810,7 +829,6 @@ namespace kagami {
     ObjectMap obj_map;
 
     auto tail = Invoke(container, kStrTail).GetObj();
-    if (worker.invoking_point) return;
 
     if (!type::CheckBehavior(tail, kIteratorBehavior)) {
       worker.MakeError("Invalid container behavior");
@@ -818,7 +836,6 @@ namespace kagami {
     }
 
     Invoke(iterator, "step_forward");
-    if (worker.invoking_point) return;
 
     auto result = Invoke(iterator, kStrCompare,
       { NamedObject(kStrRightHandSide,tail) }).GetObj();
@@ -886,7 +903,7 @@ namespace kagami {
         return;
       }
 
-      Object sample_obj = management::type::CreateObjectCopy(obj);
+      Object sample_obj = type::CreateObjectCopy(obj);
       obj_stack_.Push();
       obj_stack_.CreateObject(kStrCaseObj, sample_obj);
       worker.SwitchToMode(kModeCaseJump);
@@ -1067,7 +1084,7 @@ namespace kagami {
   }
 
   void Machine::CommandBind(ArgumentList &args) {
-    using namespace management::type;
+    using namespace type;
     auto &worker = worker_stack_.top();
     //Do not change the order!
     auto rhs = FetchObject(args[1]);
@@ -1132,7 +1149,7 @@ namespace kagami {
     }
 
     Object obj = FetchObject(args[0]);
-    auto methods = management::type::GetMethods(obj.GetTypeId());
+    auto methods = type::GetMethods(obj.GetTypeId());
     ManagedArray base = make_shared<ObjectArray>();
 
     for (auto &unit : methods) {
@@ -1161,7 +1178,7 @@ namespace kagami {
     }
 
     string str = str_obj.Cast<string>();
-    Object ret_obj(management::type::CheckMethod(str, obj.GetTypeId()), kTypeIdBool);
+    Object ret_obj(type::CheckMethod(str, obj.GetTypeId()), kTypeIdBool);
 
     worker.RefreshReturnStack(ret_obj);
   }
@@ -1223,9 +1240,8 @@ namespace kagami {
         }
       }
       else {
-        if (management::type::CheckMethod(kStrGetStr, type_id)) {
+        if (type::CheckMethod(kStrGetStr, type_id)) {
           auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
-          if (worker.invoking_point) return;
         }
         else {
           worker.MakeError("Invalid argument of convert()");
@@ -1310,7 +1326,7 @@ namespace kagami {
 
   template <GenericToken op_code>
   void Machine::BinaryLogicOperatorImpl(ArgumentList &args) {
-    using namespace management::type;
+    using namespace type;
     auto &worker = worker_stack_.top();
 
     CHECK_ARG_COUNT(2);
@@ -1421,7 +1437,7 @@ namespace kagami {
     Object obj = FetchObject(args[0], true);
     string id = FetchObject(args[1]).Cast<string>();
 
-    auto interface = management::FindInterface(id, obj.GetTypeId());
+    auto interface = FindInterface(id, obj.GetTypeId());
 
     if (interface != nullptr) {
       worker.MakeError("Method is not found - " + id);
@@ -1446,7 +1462,7 @@ namespace kagami {
 
     if (args.size() == 1) {
       Object src_obj = FetchObject(args[0]);
-      Object ret_obj = management::type::CreateObjectCopy(src_obj);
+      Object ret_obj = type::CreateObjectCopy(src_obj);
       RecoverLastState();
       worker_stack_.top().RefreshReturnStack(ret_obj);
     }
@@ -1812,14 +1828,8 @@ namespace kagami {
 
       //Embedded machine commands.
       if (command->first.type == kRequestCommand) {
-        if (worker->invoking_point) {
-          (this->*(worker->recover_point))(command->second);
-        }
-        else {
-          MachineCommands(command->first.head_command, 
-            command->second, command->first);
-        }
-
+        MachineCommands(command->first.head_command, command->second, command->first);
+        
         if (command->first.head_command == kTokenReturn) {
           refresh_tick();
         }
@@ -1829,26 +1839,9 @@ namespace kagami {
           break;
         }
 
-        if (worker->invoking_point) {
-          if (worker->recover_point == nullptr) {
-            worker->invoking_point = false;
-            worker->recover_point = nullptr;
-            delete worker->invoking_dest;
-          }
-          else {
-            update_stack_frame(*worker->invoking_dest);
-            continue;
-          }
-        }
-
         worker->idx += 1;
         continue;
       }
-      
-      ////For built-in operator functions.
-      //if (command->first.type == kRequestCommand) {
-      //  interface = management::GetGenericInterface(command->first.head_command);
-      //}
 
       //Querying function(Interpreter built-in or user-defined)
       if (command->first.type == kRequestInterface) {

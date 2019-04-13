@@ -603,6 +603,16 @@ namespace kagami {
     return result;
   }
 
+  void Analyzer::Clear() {
+    tokens_.clear();
+    tokens_.shrink_to_fit();
+    action_base_.clear();
+    action_base_.shrink_to_fit();
+    health_ = false;
+    error_string_.clear();
+    index_ = 0;
+  }
+
   Message Analyzer::Make(string target, size_t index) {
     vector<string> spilted_string = Scanning(target);
     Message msg = Tokenizer(spilted_string);

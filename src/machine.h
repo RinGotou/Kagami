@@ -218,13 +218,9 @@ namespace kagami {
     return target;
   }
 
-  using InvokingRecoverPoint = void(Machine::*)(ArgumentList &);
-
   class MachineWorker {
   public:
-    InvokingRecoverPoint recover_point;
     bool error;
-    bool invoking_point;
     bool activated_continue;
     bool activated_break;
     bool void_call;
@@ -245,9 +241,7 @@ namespace kagami {
     vector<string> fn_string_vec;
 
     MachineWorker() :
-      recover_point(nullptr),
       error(false),
-      invoking_point(false),
       activated_continue(false),
       activated_break(false),
       void_call(false),
@@ -267,47 +261,11 @@ namespace kagami {
       loop_tail(),
       fn_string_vec() {}
 
-    void MakeError(string str) {
-      error = true;
-      error_string = str;
-    }
-
-    void SwitchToMode(MachineMode mode) {
-      mode_stack.push(this->mode);
-      this->mode = mode;
-    }
-
-    void RefreshReturnStack(Object obj = Object()) {
-      if (!void_call) {
-        return_stack.push(std::move(obj));
-      }
-    }
-
-    void GoLastMode() {
-      if (!mode_stack.empty()) {
-        this->mode = mode_stack.top();
-        mode_stack.pop();
-      }
-      else {
-        MakeError("Mode switching error.Kisaragi Kernel Panic.");
-      }
-    }
-
-    bool NeedSkipping() {
-      switch (mode) {
-      case kModeNextCondition:
-      case kModeCycleJump:
-      case kModeDef:
-      case kModeCaseJump:
-      case kModeForEachJump:
-      case kModeClosureCatching:
-        return true;
-        break;
-      default:
-        break;
-      }
-      return false;
-    }
+    void MakeError(string str);
+    void SwitchToMode(MachineMode mode);
+    void RefreshReturnStack(Object obj = Object());
+    void GoLastMode();
+    bool NeedSkipping();
   };
 
   class IRLoader {
@@ -342,8 +300,7 @@ namespace kagami {
       initializer_list<GenericToken> terminators = {});
 
     Message Invoke(Object obj, string id, 
-      const initializer_list<NamedObject> &&args = {},
-      InvokingRecoverPoint recover_point = nullptr);
+      const initializer_list<NamedObject> &&args = {});
 
     void SetSegmentInfo(ArgumentList &args, bool cmd_info = false);
     void CommandHash(ArgumentList &args);

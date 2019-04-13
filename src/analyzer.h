@@ -73,28 +73,13 @@ namespace kagami {
     Analyzer() :health_(false), index_(0) {  }
     Analyzer(size_t index) :health_(false), index_(index) {  }
 
-    size_t get_index() const { 
-      return index_; 
-    }
+    size_t get_index() const { return index_; }
 
-    KIR GetOutput() const { 
-      return action_base_; 
-    }
+    KIR GetOutput() const { return action_base_; }
 
-    bool Good() const { 
-      return health_; 
-    }
+    bool Good() const { return health_; }
 
-    void Clear() {
-      tokens_.clear();
-      tokens_.shrink_to_fit();
-      action_base_.clear();
-      action_base_.shrink_to_fit();
-      health_ = false;
-      error_string_.clear();
-      index_ = 0;
-    }
-
+    void Clear();
     Message Make(string target, size_t index = 0);
   };
 }
