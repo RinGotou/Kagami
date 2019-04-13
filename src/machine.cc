@@ -1,5 +1,7 @@
 #include "machine.h"
 
+#define ERROR_CHECKING(_Cond, _Msg) if (_Cond) { worker.MakeError(_Msg); return; }
+
 namespace kagami {
   using namespace management;
 
@@ -159,7 +161,7 @@ namespace kagami {
       mode_stack.pop();
     }
     else {
-      MakeError("Mode switching error.Kisaragi Kernel Panic.");
+      MakeError("Mode switching error.VM Panic.");
     }
   }
 
@@ -721,63 +723,53 @@ namespace kagami {
 
   void Machine::CommandIfOrWhile(GenericToken token, ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    if (args.size() == 1) {
-      Object obj = FetchObject(args[0]);
+    
+    CHECK_ARG_COUNT(1);
 
-      if (obj.GetTypeId() != kTypeIdBool) {
-        worker.MakeError("Invalid state value.");
-        return;
-      }
+    Object obj = FetchObject(args[0]);
 
-      bool state = obj.Cast<bool>();
+    ERROR_CHECKING(obj.GetTypeId() != kTypeIdBool, "Invalid state value type.");
 
-      if (token == kTokenIf) {
-        worker.SwitchToMode(state ? kModeCondition : kModeNextCondition);
+    bool state = obj.Cast<bool>();
+
+    if (token == kTokenIf) {
+      worker.SwitchToMode(state ? kModeCondition : kModeNextCondition);
+      obj_stack_.Push();
+      worker.condition_stack.push(state);
+    }
+    else if (token == kTokenWhile) {
+      if (worker.loop_head.empty()) {
         obj_stack_.Push();
-        worker.condition_stack.push(state);
+        worker.mode_stack.push(worker.mode);
       }
-      else if (token == kTokenWhile) {
-        if (worker.loop_head.empty()) {
-          obj_stack_.Push();
-          worker.mode_stack.push(worker.mode);
-        }
-        else if (worker.loop_head.top() != worker.logic_idx - 1) {
-          obj_stack_.Push();
-          worker.mode_stack.push(worker.mode);
-        }
-
-        if (worker.loop_head.empty() || worker.loop_head.top() != worker.logic_idx - 1) {
-          worker.loop_head.push(worker.logic_idx - 1);
-        }
-
-        if (state) {
-          worker.mode = kModeCycle;
-        }
-        else {
-          worker.mode = kModeCycleJump;
-          if (worker.loop_head.size() == worker.loop_tail.size()) {
-            if (!worker.loop_tail.empty()) {
-              worker.idx = worker.loop_tail.top();
-            }
-          }
-        }
+      else if (worker.loop_head.top() != worker.logic_idx - 1) {
+        obj_stack_.Push();
+        worker.mode_stack.push(worker.mode);
       }
-      else if (token == kTokenElif) {
-        if (!worker.condition_stack.empty()) {
-          if (worker.condition_stack.top() == false && worker.mode == kModeNextCondition) {
-            worker.mode = kModeCondition;
-            worker.condition_stack.top() = true;
+
+      if (worker.loop_head.empty() || worker.loop_head.top() != worker.logic_idx - 1) {
+        worker.loop_head.push(worker.logic_idx - 1);
+      }
+
+      if (state) {
+        worker.mode = kModeCycle;
+      }
+      else {
+        worker.mode = kModeCycleJump;
+        if (worker.loop_head.size() == worker.loop_tail.size()) {
+          if (!worker.loop_tail.empty()) {
+            worker.idx = worker.loop_tail.top();
           }
-        }
-        else {
-          worker.MakeError("Unexpected Elif.");
-          return;
         }
       }
     }
-    else {
-      worker.MakeError("Too many arguments.");
-      return;
+    else if (token == kTokenElif) {
+      ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Elif.");
+
+      if (worker.condition_stack.top() == false && worker.mode == kModeNextCondition) {
+        worker.mode = kModeCondition;
+        worker.condition_stack.top() = true;
+      }
     }
   }
 
@@ -793,24 +785,19 @@ namespace kagami {
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto container_obj = FetchObject(args[1]);
 
-    if (!type::CheckBehavior(container_obj, kContainerBehavior)) {
-      worker.MakeError("Invalid object container");
-      return;
-    }
+    ERROR_CHECKING(!type::CheckBehavior(container_obj, kContainerBehavior),
+      "Invalid object container");
 
     auto msg = Invoke(container_obj, kStrHead);
 
-    if (msg.GetCode() != kCodeObject) {
-      worker.MakeError("Invalid iterator of container");
-      return;
-    }
+    ERROR_CHECKING(msg.GetCode() != kCodeObject, 
+      "Invalid iterator of container");
 
     auto iterator_obj = msg.GetObj();
     
-    if (!type::CheckBehavior(iterator_obj, kIteratorBehavior)) {
-      worker.MakeError("Invalid iterator behavior");
-      return;
-    }
+
+    ERROR_CHECKING(!type::CheckBehavior(iterator_obj, kIteratorBehavior),
+      "Invalid iterator behavior");
 
     auto unit = Invoke(iterator_obj, "get").GetObj();
 
@@ -830,20 +817,16 @@ namespace kagami {
 
     auto tail = Invoke(container, kStrTail).GetObj();
 
-    if (!type::CheckBehavior(tail, kIteratorBehavior)) {
-      worker.MakeError("Invalid container behavior");
-      return;
-    }
+    ERROR_CHECKING(!type::CheckBehavior(tail, kIteratorBehavior),
+      "Invalid container behavior");
 
     Invoke(iterator, "step_forward");
 
     auto result = Invoke(iterator, kStrCompare,
       { NamedObject(kStrRightHandSide,tail) }).GetObj();
 
-    if (result.GetTypeId() != kTypeIdBool) {
-      worker.MakeError("Invalid iterator behavior");
-      return;
-    }
+    ERROR_CHECKING(result.GetTypeId() != kTypeIdBool,
+      "Invalid iterator behavior");
 
     if (result.Cast<bool>()) {
       worker.mode = kModeForEachJump;
@@ -856,78 +839,65 @@ namespace kagami {
 
   void Machine::CommandElse() {
     auto &worker = worker_stack_.top();
-    if (!worker.condition_stack.empty()) {
-      if (worker.condition_stack.top() == true) {
-        switch (worker.mode) {
-        case kModeCondition:
-        case kModeNextCondition:
-          worker.mode = kModeNextCondition;
-          break;
-        case kModeCase:
-        case kModeCaseJump:
-          worker.mode = kModeCaseJump;
-          break;
-        default:
-          break;
-        }
-      }
-      else {
-        worker.condition_stack.top() = true;
-        switch (worker.mode) {
-        case kModeNextCondition:
-          worker.mode = kModeCondition;
-          break;
-        case kModeCaseJump:
-          worker.mode = kModeCase;
-          break;
-        default:
-          break;
-        }
+
+    ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Else.");
+
+    if (worker.condition_stack.top() == true) {
+      switch (worker.mode) {
+      case kModeCondition:
+      case kModeNextCondition:
+        worker.mode = kModeNextCondition;
+        break;
+      case kModeCase:
+      case kModeCaseJump:
+        worker.mode = kModeCaseJump;
+        break;
+      default:
+        break;
       }
     }
     else {
-      worker.MakeError("Unexpected Else.");
-      return;
+      worker.condition_stack.top() = true;
+      switch (worker.mode) {
+      case kModeNextCondition:
+        worker.mode = kModeCondition;
+        break;
+      case kModeCaseJump:
+        worker.mode = kModeCase;
+        break;
+      default:
+        break;
+      }
     }
   }
 
   void Machine::CommandCase(ArgumentList &args) {
     auto &worker = worker_stack_.top();
 
-    if (!args.empty()) {
-      Object obj = FetchObject(args[0]);
-      string type_id = obj.GetTypeId();
+    ERROR_CHECKING(args.empty(), "Empty argument list");
 
-      if (!util::IsPlainType(type_id)) {
-        worker.MakeError("Non-plain object is not supported by case");
-        return;
-      }
+    Object obj = FetchObject(args[0]);
+    string type_id = obj.GetTypeId();
 
-      Object sample_obj = type::CreateObjectCopy(obj);
-      obj_stack_.Push();
-      obj_stack_.CreateObject(kStrCaseObj, sample_obj);
-      worker.SwitchToMode(kModeCaseJump);
-      worker.condition_stack.push(false);
-    }
-    else {
-      worker.MakeError("Empty argument list");
-      return;
-    }
+    ERROR_CHECKING(!util::IsPlainType(type_id), 
+      "Non-plain object is not supported by case");
+
+    Object sample_obj = type::CreateObjectCopy(obj);
+    obj_stack_.Push();
+    obj_stack_.CreateObject(kStrCaseObj, sample_obj);
+    worker.SwitchToMode(kModeCaseJump);
+    worker.condition_stack.push(false);
+
   }
 
   void Machine::CommandWhen(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     bool result = false;
 
-    if (worker.condition_stack.empty()) {
-      worker.MakeError("Unexpected 'when'");
-      return;
-    }
-
-    if (!compare(worker.mode, { kModeCase,kModeCaseJump })) {
-      worker.MakeError("Unexpected 'when'");
-      return;
-    }
+    ERROR_CHECKING(worker.condition_stack.empty(), 
+      "Unexpected 'when'");
+    ERROR_CHECKING(!compare(worker.mode, { kModeCase,kModeCaseJump }),
+      "Unexpected 'when'");
 
     if (worker.mode == kModeCase) {
       worker.mode = kModeCaseJump;
@@ -943,15 +913,12 @@ namespace kagami {
       string type_id = ptr->GetTypeId();
       bool found = false;
 
-      if (ptr == nullptr) {
-        worker.MakeError("Unexpected 'when'");
-        return;
-      }
+      ERROR_CHECKING(ptr == nullptr, 
+        "Unexpected 'when'");
+      ERROR_CHECKING(!util::IsPlainType(type_id), 
+        "Non-plain object is not supported by when");
 
-      if (!util::IsPlainType(type_id)) {
-        worker.MakeError("Non-plain object is not supported by when");
-        return;
-      }
+#define COMPARE_RESULT(_Type) (ptr->Cast<_Type>() == obj.Cast<_Type>())
 
       for (auto it = args.rbegin(); it != args.rend(); ++it) {
         Object obj = FetchObject(*it);
@@ -959,20 +926,21 @@ namespace kagami {
         if (obj.GetTypeId() != type_id) continue;
 
         if (type_id == kTypeIdInt) {
-          found = (ptr->Cast<int64_t>() == obj.Cast<int64_t>());
+          found = COMPARE_RESULT(int64_t);
         }
         else if (type_id == kTypeIdFloat) {
-          found = (ptr->Cast<double>() == obj.Cast<double>());
+          found = COMPARE_RESULT(double);
         }
         else if (type_id == kTypeIdString) {
-          found = (ptr->Cast<string>() == obj.Cast<string>());
+          found = COMPARE_RESULT(string);
         }
         else if (type_id == kTypeIdBool) {
-          found = (ptr->Cast<bool>() == obj.Cast<bool>());
+          found = COMPARE_RESULT(bool);
         }
 
         if (found) break;
       }
+#undef COMPARE_RESULT
 
       if (found) {
         worker.mode = kModeCase;
@@ -983,8 +951,10 @@ namespace kagami {
 
   void Machine::CommandContinueOrBreak(GenericToken token) {
     auto &worker = worker_stack_.top();
-    while (!worker.mode_stack.empty() 
-      && (worker.mode != kModeCycle || worker.mode != kModeForEach)) {
+    while (!worker.mode_stack.empty()) {
+      if (worker.mode == kModeCycle) break;
+      if (worker.mode == kModeForEach) break;
+
       if (worker.mode == kModeCondition || worker.mode == kModeCase) {
         worker.condition_stack.pop();
         worker.skipping_count += 1;
@@ -993,16 +963,16 @@ namespace kagami {
       worker.GoLastMode();
     }
 
-    if (worker.mode == kModeCycle || worker.mode == kModeForEach) {
-      worker.mode = kModeCycleJump;
-      switch (token) {
-      case kTokenContinue:worker.activated_continue = true; break;
-      case kTokenBreak:worker.activated_break = true; break;
-      default:break;
-      }
-    }
-    else {
-      worker.MakeError("Invalid 'continue'/'break'");
+    ERROR_CHECKING(worker.mode != kModeCycle && worker.mode != kModeForEach,
+      "Invalid 'continue'/'break'");
+
+    if (worker.mode == kModeCycle) worker.mode = kModeCycleJump;
+    if (worker.mode == kModeForEach) worker.mode = kModeForEachJump;
+
+    switch (token) {
+    case kTokenContinue:worker.activated_continue = true; break;
+    case kTokenBreak:worker.activated_break = true; break;
+    default:break;
     }
   }
 
@@ -1911,6 +1881,5 @@ namespace kagami {
     obj_stack_.Pop();
     worker_stack_.pop();
   }
-
-
 }
+#undef ERROR_CHECKING
