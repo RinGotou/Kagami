@@ -1363,7 +1363,7 @@ namespace kagami {
       else {
         worker.RefreshReturnStack(obj);
       }
-
+      return;
     }
 
     auto result_type = kResultDynamicTraits.at(ResultTraitKey(type_lhs, type_rhs));
