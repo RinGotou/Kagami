@@ -1672,38 +1672,41 @@ namespace kagami {
     }
   }
 
-  void Machine::Generate_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map) {
+  void Machine::Generate_AutoSize(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
     auto &worker = worker_stack_.top();
-    vector<string> params = interface.GetParameters();
+    vector<string> &params = interface.GetParameters();
     list<Object> temp_list;
     ManagedArray va_base = make_shared<ObjectArray>();
+    size_t pos = args.size(), diff = args.size() - params.size() + 1;
+
 
     if (args.size() < params.size()) {
       worker.MakeError("Too few arguments.");
       return;
     }
 
-    while (args.size() >= params.size() - 1 && !args.empty()) {
-      temp_list.emplace_front(FetchObject(args.back()));
-      args.pop_back();
+    while (diff != 0) {
+      temp_list.emplace_front(FetchObject(args[pos - 1]));
+      pos -= 1;
+      diff -= 1;
     }
 
     if (!temp_list.empty()) {
+      va_base->reserve(temp_list.size());
+
       for (auto it = temp_list.begin(); it != temp_list.end(); ++it) {
         va_base->emplace_back(*it);
       }
+
+      temp_list.clear();
     }
 
-    temp_list.clear();
-
     obj_map.insert(NamedObject(params.back(), Object(va_base, kTypeIdArray)));
-    
-    auto it = ++params.rbegin();
 
-    if (!args.empty()) {
-      for (; it != params.rend(); ++it) {
-        obj_map.insert(NamedObject(*it, FetchObject(args.back())));
-        args.pop_back();
+    if (pos != 0) {
+      while (pos > 0) {
+        obj_map.emplace(params[pos - 1], FetchObject(args[pos - 1]));
+        pos -= 1;
       }
     }
   }

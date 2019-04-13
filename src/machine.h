@@ -345,7 +345,7 @@ namespace kagami {
 
     void GenerateArgs(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
     void Generate_Normal(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
-    void Generate_AutoSize(Interface &interface, ArgumentList args, ObjectMap &obj_map);
+    void Generate_AutoSize(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoFill(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
   private:
     deque<KIRPointer> ir_stack_;

@@ -103,8 +103,8 @@ namespace kagami {
         return result;
       }
 
-      map <string, ObjectPolicy> &GetObjPolicyCollection() {
-        static map<string, ObjectPolicy> base;
+      unordered_map<string, ObjectPolicy> &GetObjPolicyCollection() {
+        static unordered_map<string, ObjectPolicy> base;
         return base;
       }
 
