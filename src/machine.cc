@@ -624,41 +624,44 @@ namespace kagami {
     while (worker.idx < size) {
       Command &command = ir[worker.idx];
 
-      if (command.first.head_command == kTokenSegment) {
-        SetSegmentInfo(command.second, true);
+      if (command.first.head_command != kTokenSegment) {
+        worker.idx += 1;
+        continue;
+      }
 
-        if (find_in_vector(worker.last_command, nest_flag_collection)) {
-          nest_counter += 1;
-          worker.idx += 1;
-          continue;
-        }
+      SetSegmentInfo(command.second, true);
 
-        if (enable_terminators && compare(worker.last_command, terminators)) {
-          if (nest_counter == 0) {
-            flag = true;
-            break;
-          }
-          
-          worker.idx += 1;
-          continue;
-        }
+      if (find_in_vector(worker.last_command, nest_flag_collection)) {
+        nest_counter += 1;
+        worker.idx += 1;
+        continue;
+      }
 
-        if (worker.last_command == kTokenEnd) {
-          if (nest_counter != 0) {
-            nest_counter -= 1;
-            worker.idx += 1;
-            continue;
-          }
-
-          if (worker.skipping_count > 0) {
-            worker.skipping_count -= 1;
-            worker.idx += 1;
-            continue;
-          }
-
+      if (enable_terminators && compare(worker.last_command, terminators)) {
+        if (nest_counter == 0) {
           flag = true;
           break;
         }
+          
+        worker.idx += 1;
+        continue;
+      }
+
+      if (worker.last_command == kTokenEnd) {
+        if (nest_counter != 0) {
+          nest_counter -= 1;
+          worker.idx += 1;
+          continue;
+        }
+
+        if (worker.skipping_count > 0) {
+          worker.skipping_count -= 1;
+          worker.idx += 1;
+          continue;
+        }
+
+        flag = true;
+        break;
       }
 
       worker.idx += 1;
@@ -670,8 +673,7 @@ namespace kagami {
   }
 
   //TODO:new user-defined function support
-  Message Machine::Invoke(Object obj, string id, 
-    const initializer_list<NamedObject> &&args) {
+  Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
     auto &worker = worker_stack_.top();
 
     bool found = type::CheckMethod(id, obj.GetTypeId());
