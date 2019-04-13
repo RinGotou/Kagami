@@ -723,11 +723,9 @@ namespace kagami {
 
   void Machine::CommandIfOrWhile(GenericToken token, ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    
-    CHECK_ARG_COUNT(1);
+    REQUIRED_ARG_COUNT(1);
 
     Object obj = FetchObject(args[0]);
-
     ERROR_CHECKING(obj.GetTypeId() != kTypeIdBool, "Invalid state value type.");
 
     bool state = obj.Cast<bool>();
@@ -784,18 +782,14 @@ namespace kagami {
 
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto container_obj = FetchObject(args[1]);
-
     ERROR_CHECKING(!type::CheckBehavior(container_obj, kContainerBehavior),
       "Invalid object container");
 
     auto msg = Invoke(container_obj, kStrHead);
-
     ERROR_CHECKING(msg.GetCode() != kCodeObject, 
       "Invalid iterator of container");
 
     auto iterator_obj = msg.GetObj();
-    
-
     ERROR_CHECKING(!type::CheckBehavior(iterator_obj, kIteratorBehavior),
       "Invalid iterator behavior");
 
@@ -816,7 +810,6 @@ namespace kagami {
     ObjectMap obj_map;
 
     auto tail = Invoke(container, kStrTail).GetObj();
-
     ERROR_CHECKING(!type::CheckBehavior(tail, kIteratorBehavior),
       "Invalid container behavior");
 
@@ -824,7 +817,6 @@ namespace kagami {
 
     auto result = Invoke(iterator, kStrCompare,
       { NamedObject(kStrRightHandSide,tail) }).GetObj();
-
     ERROR_CHECKING(result.GetTypeId() != kTypeIdBool,
       "Invalid iterator behavior");
 
@@ -839,7 +831,6 @@ namespace kagami {
 
   void Machine::CommandElse() {
     auto &worker = worker_stack_.top();
-
     ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Else.");
 
     if (worker.condition_stack.top() == true) {
@@ -873,12 +864,10 @@ namespace kagami {
 
   void Machine::CommandCase(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-
     ERROR_CHECKING(args.empty(), "Empty argument list");
 
     Object obj = FetchObject(args[0]);
     string type_id = obj.GetTypeId();
-
     ERROR_CHECKING(!util::IsPlainType(type_id), 
       "Non-plain object is not supported by case");
 
@@ -893,7 +882,6 @@ namespace kagami {
   void Machine::CommandWhen(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     bool result = false;
-
     ERROR_CHECKING(worker.condition_stack.empty(), 
       "Unexpected 'when'");
     ERROR_CHECKING(!compare(worker.mode, { kModeCase,kModeCaseJump }),
@@ -1074,16 +1062,10 @@ namespace kagami {
       }
       else {
         Object obj = CreateObjectCopy(rhs);
-
-        if (util::GetTokenType(id) != kTokenTypeGeneric) {
-          worker.MakeError("Invalid object id.");
-          return;
-        }
-
-        if (!obj_stack_.CreateObject(id, obj)) {
-          worker.MakeError("Object binding failed.");
-        }
-        
+        ERROR_CHECKING(util::GetTokenType(id) != kTokenTypeGeneric,
+          "Invalid object id.");
+        ERROR_CHECKING(!obj_stack_.CreateObject(id, obj),
+          "Object binding failed.");
       }
     }
   }
@@ -1112,11 +1094,7 @@ namespace kagami {
 
   void Machine::CommandMethods(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-
-    if (args.size() != 1) {
-      worker.MakeError("Argument error");
-      return;
-    }
+    REQUIRED_ARG_COUNT(1);
 
     Object obj = FetchObject(args[0]);
     auto methods = type::GetMethods(obj.GetTypeId());
@@ -1133,19 +1111,12 @@ namespace kagami {
 
   void Machine::CommandExist(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-
-    if (args.size() != 2) {
-      worker.MakeError("Argument error");
-    }
+    REQUIRED_ARG_COUNT(2);
 
     //Do not change the order
-    Object str_obj = FetchObject(args[1]);
-    Object obj = FetchObject(args[0]);
-    
-    if (str_obj.GetTypeId() != kTypeIdString) {
-      worker.MakeError("Invalid method id");
-      return;
-    }
+    auto str_obj = FetchObject(args[1]);
+    auto obj = FetchObject(args[0]);
+    ERROR_CHECKING(str_obj.GetTypeId() != kTypeIdString, "Invalid method id");
 
     string str = str_obj.Cast<string>();
     Object ret_obj(type::CheckMethod(str, obj.GetTypeId()), kTypeIdBool);
@@ -1155,10 +1126,7 @@ namespace kagami {
 
   void Machine::CommandNullObj(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    if (args.size() != 1) {
-      worker.MakeError("Invalid argument of null()");
-      return;
-    }
+    REQUIRED_ARG_COUNT(1);
 
     Object obj = FetchObject(args[0]);
     worker.RefreshReturnStack(Object(obj.GetTypeId() == kTypeIdNull, kTypeIdBool));
@@ -1166,20 +1134,15 @@ namespace kagami {
 
   void Machine::CommandDestroy(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    if (args.size() != 1) {
-      worker.MakeError("Invalid argument of destroy()");
-      return;
-    }
+    REQUIRED_ARG_COUNT(1);
+
     Object &obj = FetchObject(args[0]).Deref();
     obj.swap(Object());
   }
 
   void Machine::CommandConvert(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    if (args.size() != 1) {
-      worker.MakeError("Invalid argument of convert()");
-      return;
-    }
+    REQUIRED_ARG_COUNT(1);
 
     auto &arg = args[0];
     if (arg.type == kArgumentNormal) {
@@ -1210,13 +1173,10 @@ namespace kagami {
         }
       }
       else {
-        if (type::CheckMethod(kStrGetStr, type_id)) {
-          auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
-        }
-        else {
-          worker.MakeError("Invalid argument of convert()");
-          return;
-        }
+        ERROR_CHECKING(!type::CheckMethod(kStrGetStr, type_id),
+          "Invalid argument of convert()");
+
+        auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
       }
 
       worker.RefreshReturnStack(ret_obj);
@@ -1225,11 +1185,8 @@ namespace kagami {
 
   void Machine::CommandRefCount(ArgumentList &args) {
     auto &worker = worker_stack_.top();
+    REQUIRED_ARG_COUNT(1);
 
-    if (args.size() != 1) {
-      worker.MakeError("Invalid argument of ref_count()");
-      return;
-    }
     auto &obj = FetchObject(args[0]).Deref();
     Object ret_obj(make_shared<int64_t>(obj.ObjRefCount()), kTypeIdInt);
 
@@ -1257,7 +1214,7 @@ namespace kagami {
   template <GenericToken op_code>
   void Machine::BinaryMathOperatorImpl(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    CHECK_ARG_COUNT(2);
+    REQUIRED_ARG_COUNT(2);
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
     auto type_rhs = FindTypeCode(rhs.GetTypeId());
@@ -1299,7 +1256,7 @@ namespace kagami {
     using namespace type;
     auto &worker = worker_stack_.top();
 
-    CHECK_ARG_COUNT(2);
+    REQUIRED_ARG_COUNT(2);
 
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
@@ -1365,7 +1322,7 @@ namespace kagami {
   void Machine::OperatorLogicNot(ArgumentList &args) {
     auto &worker = worker_stack_.top();
 
-    CHECK_ARG_COUNT(1);
+    REQUIRED_ARG_COUNT(1);
 
     auto rhs = FetchObject(args[0]);
 
@@ -1408,11 +1365,7 @@ namespace kagami {
     string id = FetchObject(args[1]).Cast<string>();
 
     auto interface = FindInterface(id, obj.GetTypeId());
-
-    if (interface != nullptr) {
-      worker.MakeError("Method is not found - " + id);
-      return;
-    }
+    ERROR_CHECKING(interface = nullptr, "Method is not found - " + id);
 
     Object ret_obj(*interface, kTypeIdFunction);
     worker.RefreshReturnStack(ret_obj);
