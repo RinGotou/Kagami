@@ -19,7 +19,7 @@
 #define EXPECT(_State, _Mess)                      \
   if (!(_State)) return Message(kCodeIllegalParam, _Mess, kStateError)
 
-#define CHECK_ARG_COUNT(_Size)                  \
+#define REQUIRED_ARG_COUNT(_Size)                  \
   if (args.size() != _Size) {                   \
     worker.MakeError("Argument is missing.");   \
     return;                                     \

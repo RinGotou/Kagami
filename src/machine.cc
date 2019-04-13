@@ -1576,18 +1576,11 @@ namespace kagami {
     auto &params = interface.GetParameters();
     size_t pos = args.size() - 1;
 
-    if (args.size() > params.size()) {
-      worker.MakeError("Too many arguments");
-      return;
-    }
+    ERROR_CHECKING(args.size() > params.size(), 
+      "Too many arguments");
+    ERROR_CHECKING(args.size() < params.size(), 
+      "Youe need at least " + to_string(params.size()) + "argument(s).");
 
-    if (args.size() < params.size()) {
-      worker.MakeError("Required argument count is " +
-        to_string(params.size()) +
-        ", but provided argument count is " +
-        to_string(args.size()) + ".");
-      return;
-    }
 
     for (auto it = params.rbegin(); it != params.rend(); ++it) {
       obj_map.emplace(NamedObject(*it, FetchObject(args[pos])));
@@ -1602,11 +1595,8 @@ namespace kagami {
     ManagedArray va_base = make_shared<ObjectArray>();
     size_t pos = args.size(), diff = args.size() - params.size() + 1;
 
-
-    if (args.size() < params.size()) {
-      worker.MakeError("Too few arguments.");
-      return;
-    }
+    ERROR_CHECKING(args.size() < params.size(),
+      "Youe need at least " + to_string(params.size()) + "argument(s).");
 
     while (diff != 0) {
       temp_list.emplace_front(FetchObject(args[pos - 1]));
@@ -1640,18 +1630,10 @@ namespace kagami {
     size_t min_size = interface.GetMinArgSize();
     size_t pos = args.size() - 1, param_pos = params.size() - 1;
 
-    if (args.size() > params.size()) {
-      worker.MakeError("Too many arguments");
-      return;
-    }
-
-    if (args.size() < min_size) {
-      worker.MakeError("Required minimum argument count is" +
-        to_string(min_size) +
-        ", but provided argument count is" +
-        to_string(args.size()));
-      return;
-    }
+    ERROR_CHECKING(args.size() > params.size(),
+      "Too many arguments");
+    ERROR_CHECKING(args.size() < min_size, 
+      "You need at least " + to_string(min_size) + "argument(s)");
 
     for (auto it = params.crbegin(); it != params.crend(); ++it) {
       if (param_pos != pos) {
