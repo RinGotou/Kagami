@@ -17,7 +17,22 @@ using std::cin;
 using namespace kagami;
 
 namespace runtime {
+  // Binary name from command line
   static string binary_name;
+
+  // Load add built-in components
+  void InitEmbeddedComponents() {
+    InitPlainTypes();
+    InitConsoleComponents();
+    InitBaseTypes();
+    InitContainerComponents();
+#if defined(_WIN32)
+    LoadSocketStuff();
+#endif
+#if not defined(_DISABLE_SDL_)
+    InitSoundComponents();
+#endif
+  }
 }
 
 void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log) {
@@ -40,17 +55,6 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
   IRLoader loader(path.c_str());
 
   if (loader.health) {
-    InitPlainTypes();
-    InitConsoleComponents();
-    InitBaseTypes();
-    InitContainerComponents();
-#if defined(_WIN32)
-    LoadSocketStuff();
-#endif
-#if not defined(_DISABLE_SDL_)
-    InitSoundComponents();
-#endif
-
     KIR ir = loader.output;
     loader.output.clear();
     loader.output.shrink_to_fit();
@@ -119,6 +123,8 @@ void Processing(Processor &processor) {
 
 int main(int argc, char **argv) {
   runtime::binary_name = argv[0];
+  runtime::InitEmbeddedComponents();
+
   if (argc == 1) HelpFile();
 
   Processor processor = {
