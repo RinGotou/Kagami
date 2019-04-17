@@ -206,8 +206,8 @@ namespace kagami {
     void BuildCache();
   public:
     bool Add(string id, Object source);
-    Object *Find(string id);
-    string FindDomain(string id);
+    Object *Find(string id, bool forward_seeking = true);
+    string FindDomain(string id, bool forward_seeking = true);
     void ClearExcept(string exceptions);
 
     ObjectContainer() : prev_(nullptr), base_(), dest_map_() {}

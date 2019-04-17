@@ -1060,7 +1060,7 @@ namespace kagami {
       ObjectPointer ptr = obj_stack_.Find(id);
 
       if (ptr != nullptr) {
-        *ptr = CreateObjectCopy(rhs);
+        ptr->Deref() = CreateObjectCopy(rhs);
       }
       else {
         Object obj = CreateObjectCopy(rhs);

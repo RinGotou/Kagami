@@ -80,7 +80,7 @@ namespace kagami {
     return true;
   }
 
-  Object *ObjectContainer::Find(string id) {
+  Object *ObjectContainer::Find(string id, bool forward_seeking) {
     if (base_.empty() && prev_ == nullptr) return nullptr;
 
     ObjectPointer ptr = nullptr;
@@ -92,20 +92,19 @@ namespace kagami {
         ptr = it->second;
       }
       else {
-        if (prev_ != nullptr) {
+        if (prev_ != nullptr && forward_seeking) {
           ptr = prev_->Find(id);
         }
       }
     }
-    else if (prev_ != nullptr) {
+    else if (prev_ != nullptr && forward_seeking) {
       ptr = prev_->Find(id);
     }
-    //ptr = it != dest_map_.end() ? it->second : nullptr;
 
     return ptr;
   }
 
-  string ObjectContainer::FindDomain(string id) {
+  string ObjectContainer::FindDomain(string id, bool forward_seeking) {
     if (base_.empty() && prev_ == nullptr) return kTypeIdNull;
 
     string result;
@@ -117,12 +116,12 @@ namespace kagami {
         result = it->second->GetTypeId();
       }
       else {
-        if (prev_ != nullptr) {
+        if (prev_ != nullptr && forward_seeking) {
           result = prev_->FindDomain(id);
         }
       }
     }
-    else if (prev_ != nullptr) {
+    else if (prev_ != nullptr && forward_seeking) {
       result = prev_->FindDomain(id); 
     }
 
@@ -203,7 +202,7 @@ namespace kagami {
     }
     auto &top = base_.back();
 
-    if (top.Find(id) == nullptr) {
+    if (top.Find(id, false) == nullptr) {
       top.Add(id, obj);
     }
     else {
