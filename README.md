@@ -9,8 +9,9 @@ It's a project of experimental script language. The name of this project is from
 I want to create a simple language for easier simple visual novel developing. Kagami is design for logic 
 implementation, not CPU intensive job.   
 
-This project contains a language interpreter, "如月"(きさらぎ, kisaragi). It's not a pure stack-based IR virtual 
-machine.
+This project contains a language interpreter, and, it's a try-catch free implementation.
+
+I'll try migrating to C++17.
 
 ## About repo branch
 "master" is complete version of code in "testing" branch.IT'S NOT REAL STABLE BRANCH!
