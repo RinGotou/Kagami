@@ -7,8 +7,8 @@ namespace kagami {
 
   Message SystemCommand(ObjectMap &p) {
     EXPECT_TYPE(p, "command", kTypeIdString);
-    system(p.Cast<string>("command").c_str());
-    return Message();
+    int64_t result = system(p.Cast<string>("command").c_str());
+    return Message().SetObject(Object(result, kTypeIdInt));
   }
 
   Message ThreadSleep(ObjectMap& p) {
