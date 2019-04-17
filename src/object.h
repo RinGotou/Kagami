@@ -343,7 +343,7 @@ namespace kagami {
       return base_;
     }
 
-    void MergeMap(ObjectMap p);
+    void MergeMap(ObjectMap &p);
     Object *Find(string id);
     bool CreateObject(string id, Object obj);
   };

@@ -173,12 +173,12 @@ namespace kagami {
     }
   }
 
-  void ObjectStack::MergeMap(ObjectMap p) {
+  void ObjectStack::MergeMap(ObjectMap &p) {
     if (p.empty()) return;
 
     auto &container = base_.back();
     for (auto &unit : p) {
-      container.Add(unit.first, unit.second);
+      container.Add(unit.first, Object().CreateRef(unit.second));
     }
   }
 

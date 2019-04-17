@@ -203,7 +203,7 @@ namespace kagami {
       return *this;
     }
 
-    ObjectMap GetClosureRecord() {
+    ObjectMap &GetClosureRecord() {
       return closure_record_;
     }
 
