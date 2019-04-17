@@ -674,8 +674,6 @@ namespace kagami {
 
   //TODO:new user-defined function support
   Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
-    auto &worker = worker_stack_.top();
-
     bool found = type::CheckMethod(id, obj.GetTypeId());
     InterfacePointer interface;
 
@@ -687,9 +685,15 @@ namespace kagami {
 
     _FetchInterface(interface, id, obj.GetTypeId());
 
-
     ObjectMap obj_map = args;
     obj_map.insert(NamedObject(kStrMe, obj));
+
+    if (interface->GetPolicyType() == kInterfaceKIR) {
+      Run(true, id, &interface->GetIR(), &obj_map, &interface->GetClosureRecord());
+      Object obj = worker_stack_.top().return_stack.top();
+      worker_stack_.top().return_stack.pop();
+      return Message().SetObject(obj);
+    }
 
     return interface->Start(obj_map);
   }
@@ -1650,13 +1654,20 @@ namespace kagami {
   }
 
   /*
-    Main loop of virtual machine.
-    The kisaragi machine runs single command in every single tick of machine loop.
+    Main loop and invoking loop of virtual machine.
+    This function contains main logic implementation.
+    VM runs single command in every single tick of machine loop.
   */
-  void Machine::Run(bool invoking) {
+  void Machine::Run(bool invoking, string id, KIRPointer ptr, ObjectMap *p,
+    ObjectMap *closure_record) {
     if (ir_stack_.empty()) return;
 
+    if (invoking) {
+      ir_stack_.push_back(ptr);
+    }
+
     bool interface_error = false;
+    bool invoking_error = false;
     size_t stop_point = invoking ? worker_stack_.size() : 0;
     Message msg;
     KIR *ir = ir_stack_.back();
@@ -1665,6 +1676,12 @@ namespace kagami {
 
     worker_stack_.push(MachineWorker());
     obj_stack_.Push();
+
+    if (invoking) {
+      obj_stack_.CreateObject(kStrUserFunc, Object(id));
+      obj_stack_.MergeMap(*p);
+      obj_stack_.MergeMap(*closure_record);
+    }
 
     MachineWorker *worker = &worker_stack_.top();
     size_t size = ir->size();
@@ -1814,15 +1831,22 @@ namespace kagami {
       trace::AddEvent(
         Message(kCodeBadExpression, worker->error_string, kStateError)
           .SetIndex(worker->origin_idx));
+      if (invoking) invoking_error = true;
     }
 
     if (interface_error) {
       trace::AddEvent(msg.SetIndex(worker->origin_idx));
+      if (invoking) invoking_error = true;
     }
 
     if (!invoking || (invoking && worker_stack_.size() != stop_point)) {
       obj_stack_.Pop();
       worker_stack_.pop();
+      ir_stack_.pop_back();
+    }
+
+    if (invoking && invoking_error) {
+      worker_stack_.top().MakeError("Invoking error is happend.");
     }
   }
 }

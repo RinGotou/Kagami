@@ -377,7 +377,9 @@ namespace kagami {
       obj_stack_.SetPreviousStack(prev);
     }
 
-    void Run(bool invoking = false);
+    void Run(bool invoking = false, string id = "", 
+      KIRPointer ptr = nullptr, ObjectMap *p = nullptr, 
+      ObjectMap *closure_record = nullptr);
   };
 
   void InitConsoleComponents();
