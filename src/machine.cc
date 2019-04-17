@@ -1367,7 +1367,7 @@ namespace kagami {
     string id = FetchObject(args[1]).Cast<string>();
 
     auto interface = FindInterface(id, obj.GetTypeId());
-    ERROR_CHECKING(interface = nullptr, "Method is not found - " + id);
+    ERROR_CHECKING(interface == nullptr, "Method is not found - " + id);
 
     Object ret_obj(*interface, kTypeIdFunction);
     worker.RefreshReturnStack(ret_obj);
