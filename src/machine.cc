@@ -1653,11 +1653,11 @@ namespace kagami {
     Main loop of virtual machine.
     The kisaragi machine runs single command in every single tick of machine loop.
   */
-  void Machine::Run() {
+  void Machine::Run(bool invoking) {
     if (ir_stack_.empty()) return;
 
     bool interface_error = false;
-    size_t stop_idx = 0;
+    size_t stop_point = invoking ? worker_stack_.size() : 0;
     Message msg;
     KIR *ir = ir_stack_.back();
     InterfacePointer interface;
@@ -1716,10 +1716,15 @@ namespace kagami {
       refresh_tick();
     };
 
-    //Main loop of virtual machine.
+    // Main loop of virtual machine.
     while (worker->idx < size || worker_stack_.size() > 1) {
+      //stop at invoking point
+      if (invoking && worker_stack_.size() == stop_point) {
+        break;
+      }
+
       //switch back to last stack frame
-      if (worker->idx == size) {
+      if (worker->idx == size && worker_stack_.size() > 1) {
         RecoverLastState();
         refresh_tick();
         worker->RefreshReturnStack(Object());
@@ -1815,8 +1820,10 @@ namespace kagami {
       trace::AddEvent(msg.SetIndex(worker->origin_idx));
     }
 
-    obj_stack_.Pop();
-    worker_stack_.pop();
+    if (!invoking || (invoking && worker_stack_.size() != stop_point)) {
+      obj_stack_.Pop();
+      worker_stack_.pop();
+    }
   }
 }
 #undef ERROR_CHECKING

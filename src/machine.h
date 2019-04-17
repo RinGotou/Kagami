@@ -377,7 +377,7 @@ namespace kagami {
       obj_stack_.SetPreviousStack(prev);
     }
 
-    void Run();
+    void Run(bool invoking = false);
   };
 
   void InitConsoleComponents();
