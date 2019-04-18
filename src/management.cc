@@ -8,12 +8,12 @@ namespace kagami {
     ///////////////////////////////////////////////////////////////
     //Inteface management
 
-    map<string, InterfaceCollection> &GetInterfaceCollections() {
+    auto &GetInterfaceCollections() {
       static map<string, InterfaceCollection> collection_base;
       return collection_base;
     }
 
-    unordered_map<string, InterfaceHashMap> &GetInterfaceCache() {
+    auto &GetInterfaceCache() {
       static unordered_map<string, InterfaceHashMap> cache;
       return cache;
     }
@@ -61,7 +61,7 @@ namespace kagami {
     ////////////////////////////////////////////////////////////////
     //Constant object management
 
-    ObjectContainer &GetConstantBase() {
+    auto &GetConstantBase() {
       static ObjectContainer base;
       return base;
     }
@@ -103,7 +103,7 @@ namespace kagami {
         return result;
       }
 
-      unordered_map<string, ObjectPolicy> &GetObjPolicyCollection() {
+      auto &GetObjPolicyCollection() {
         static unordered_map<string, ObjectPolicy> base;
         return base;
       }

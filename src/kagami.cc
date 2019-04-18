@@ -125,8 +125,6 @@ int main(int argc, char **argv) {
   runtime::binary_name = argv[0];
   runtime::InitEmbeddedComponents();
 
-  if (argc == 1) HelpFile();
-
   Processor processor = {
     Pattern("path"   , Option(true, false, 1)),
     Pattern("help"   , Option(false, false, 1)),
@@ -143,14 +141,20 @@ int main(int argc, char **argv) {
   }
 #endif
 
-  if (!processor.Generate(argc, argv)) {
-    cout << ArgumentProcessorError(processor.Error()).Report(processor.BadArg()) 
-      << endl;
+  if (argc <= 1) {
     HelpFile();
   }
   else {
-    Processing(processor);
+    if (!processor.Generate(argc, argv)) {
+      cout << ArgumentProcessorError(processor.Error()).Report(processor.BadArg())
+        << endl;
+      HelpFile();
+    }
+    else {
+      Processing(processor);
+    }
   }
+
   
 #if not defined(_DISABLE_SDL_)
   dawn::EnvironmentCleanup();

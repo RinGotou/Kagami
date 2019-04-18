@@ -51,7 +51,9 @@ namespace kagami {
       public:
         ObjectPolicy() = delete;
 
-        ObjectPolicy(CopyingPolicy copying_policy, string methods, 
+        ObjectPolicy(
+          CopyingPolicy copying_policy, 
+          string methods, 
           shared_ptr<HasherInterface> hasher = nullptr) :
           copying_policy_(copying_policy),
           methods_(BuildStringVector(methods)),
@@ -89,9 +91,12 @@ namespace kagami {
         NewTypeSetup() = delete;
 
         template <class HasherType>
-        NewTypeSetup(string type_name, CopyingPolicy policy,
+        NewTypeSetup(
+          string type_name, 
+          CopyingPolicy policy,
           HasherType hasher) :
-          type_name_(type_name), policy_(policy),
+          type_name_(type_name), 
+          policy_(policy),
           hasher_(new HasherType(hasher)) {
           static_assert(is_base_of<HasherInterface, HasherType>::value,
             "Wrong hasher type.");
