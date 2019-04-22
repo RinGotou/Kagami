@@ -248,7 +248,7 @@ namespace kagami {
       .InitMethods(
         {
           Interface(StringFamilyGetElement<string>, "index", "__at"),
-          Interface(StringFamilyPrint<string, std::ostream>, "", "print"),
+          Interface(StringFamilyPrint<string>, "", "print"),
           Interface(StringFamilySubStr<string>, "start|size", "substr"),
           Interface(GetStringFamilySize<string>, "", "size"),
           Interface(StringFamilyConverting<wstring, string>, "", "to_wide"),
@@ -300,7 +300,7 @@ namespace kagami {
         {
           Interface(GetStringFamilySize<wstring>,  "", "size"),
           Interface(StringFamilyGetElement<wstring>, "index", "__at"),
-          Interface(StringFamilyPrint<wstring, std::wostream>, "", "print"),
+          Interface(StringFamilyPrint<wstring>, "", "print"),
           Interface(StringFamilySubStr<wstring>, "start|size", "substr"),
           Interface(StringFamilyConverting<string, wstring>, "", "to_byte"),
           Interface(WideStringCompare, kStrRightHandSide, kStrCompare)

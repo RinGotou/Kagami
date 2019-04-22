@@ -90,6 +90,7 @@ namespace kagami {
   using std::mutex;
   using std::lock_guard;
   using std::initializer_list;
+  using std::is_same;
   using std::is_base_of;
 #if defined (_WIN32)
   using suzu::TCPClient;

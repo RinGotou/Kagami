@@ -42,46 +42,17 @@ namespace kagami {
     return Message().SetObject(Object(output, type_id));
   }
 
-  /* Automatic stream chooser for different string type */
-  /* Base class for stream chooser (DO NOT USE IT) */
-  template <class StringType, class StreamType>
-  class StreamBase {
-    StreamType *stream_;
-  public:
-    StreamType &operator<<(StringType &str) { return *stream_; }
-    StreamBase(){}
-  };
-
-  /* Stream chooser (for string) */
-  template <>
-  class StreamBase<string, std::ostream> {
-    std::ostream *stream_;
-  public:
-    std::ostream &operator<<(string &str) {
-      *stream_ << str;
-      return *stream_;
-    }
-
-    StreamBase() { stream_ = &std::cout; }
-  };
-
-  /* String chooser (for wstring) */
-  template<>
-  class StreamBase<wstring, std::wostream> {
-    std::wostream *stream_;
-  public:
-    std::wostream &operator<<(wstring &str) {
-      *stream_ << str;
-      return *stream_;
-    }
-    StreamBase() { stream_ = &std::wcout; }
-  };
-
-  template <class StringType, class StreamType>
+  template <class StringType>
   Message StringFamilyPrint(ObjectMap &p) {
     StringType &str = p.Cast<StringType>(kStrMe);
-    StreamBase<StringType, StreamType> stream;
-    stream << str;
+
+    if constexpr (is_same<StringType, wstring>::value) {
+      std::wcout << str;
+    }
+    else if constexpr (is_same<StringType, string>::value) {
+      std::cout << str;
+    }
+
     CHECK_PRINT_OPT();
     return Message();
   }
@@ -92,53 +63,24 @@ namespace kagami {
     return Message().SetObject(stream.Good());
   }
 
-  /* Convert string to destination type */
-  template <class DestType, class SrcType>
-  class StringConvertor {
-  public:
-    DestType operator()(const SrcType &src) { return DestType(); }
-  };
-
-  template<>
-  class StringConvertor<wstring, string> {
-  public:
-    wstring operator()(const string &src) { return s2ws(src); }
-  };
-
-  template<>
-  class StringConvertor<string, wstring> {
-  public:
-    string operator()(const wstring &src) { return ws2s(src); }
-  };
-
-  /* Policy for choosing right type identifier string */
-  template<bool is_wstring>
-  class ConvertingInfoPolicy {};
-
-  template<>
-  class ConvertingInfoPolicy<true> {
-  public:
-    string TypeId() { return kTypeIdWideString; }
-  };
-
-  template<>
-  class ConvertingInfoPolicy<false> {
-  public:
-    string TypeId() { return kTypeIdString; }
-  };
-
   template<class DestType,class SrcType>
   Message StringFamilyConverting(ObjectMap &p) {
-    // Init convertor
-    StringConvertor<DestType, SrcType> convertor; 
-    // Get original string
     SrcType &str = p.Cast<SrcType>(kStrMe); 
-    // Make result
-    shared_ptr<DestType> dest = make_shared<DestType>(convertor(str)); 
-    // Init object type identifier
-    ConvertingInfoPolicy<std::is_same<DestType, wstring>::value> info_policy; 
-    // Return result object
-    return Message().SetObject(Object(dest, info_policy.TypeId()));
+    string type_id;
+    Message msg;
+    shared_ptr<DestType> dest;
+
+    if constexpr (is_same<DestType, wstring>::value) {
+      dest = make_shared<wstring>(s2ws(str));
+      type_id = kTypeIdWideString;
+    }
+    else if constexpr (is_same<DestType, string>::value) {
+      dest = make_shared<string>(ws2s(str));
+      type_id = kTypeIdString;
+    }
+
+    msg.SetObject(Object(dest, type_id));
+    return msg;
   }
 
   template <int base>
