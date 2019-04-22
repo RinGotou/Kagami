@@ -76,8 +76,12 @@ namespace kagami {
   }
 
   Message Input(ObjectMap &p) {
-    if (!p["msg"].Null()) {
-      EXPECT(IsStringFamily(p["msg"]), "Illegal message string.");
+    auto &msg = p["msg"];
+    auto type_id = msg.GetTypeId();
+
+    if (!msg.Null()) {
+      EXPECT(type_id == kTypeIdString || type_id == kTypeIdWideString,
+        "Illegal message string.");
       
       ObjectMap obj_map = {
         NamedObject(kStrMe, p["msg"])

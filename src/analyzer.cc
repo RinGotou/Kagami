@@ -140,18 +140,18 @@ namespace kagami {
         break;
       }
 
-      if (compare(current.first, { "+", "-" })) {
-        if (compare(last.second, { kTokenTypeSymbol,kTokenTypeNull })
-          && compare(next.second, { kTokenTypeInt,kTokenTypeFloat })) {
+      if (compare_exp(current.first, "+", "-")) {
+        if (compare_exp(last.second, kTokenTypeSymbol, kTokenTypeNull)
+          && compare_exp(next.second, kTokenTypeInt, kTokenTypeFloat)) {
           negative_flag = true;
         }
       }
 
-      if (compare(current.first, { "(", "[", "{" })) {
+      if (compare_exp(current.first, "(", "[", "{")) {
         bracket_stack.push(current.first);
       }
 
-      if (compare(current.first, { ")", "]", "}" })) {
+      if (compare_exp(current.first, ")", "]", "}")) {
         if (!bracket_stack.empty() && bracket_stack.top() != kBracketPairs.at(current.first)) {
           msg = Message(kCodeBadExpression, "Left bracket is missing.", kStateError);
           break;
@@ -163,13 +163,13 @@ namespace kagami {
 
       if (current.first == ",") {
         if (last.second == kTokenTypeSymbol &&
-          !compare(last.first, { "]", ")", "}", "'" })) {
+          !compare_exp(last.first, "]", ")", "}", "'")) {
           msg = Message(kCodeBadExpression, "Illegal comma position.", kStateError);
           break;
         }
       }
 
-      if (compare(current.first, { "+", "-" }) && !tokens_.empty()) {
+      if (compare_exp(current.first, "+", "-") && !tokens_.empty()) {
         if (tokens_.back().first == current.first) {
           tokens_.back().first.append(current.first);
         }
@@ -280,7 +280,7 @@ namespace kagami {
     if (result) {
       if (blk->need_reversing) blk->need_reversing = false;
 
-      if (compare(symbol.back().head_interface, { "(","[","{" })) {
+      if (compare_exp(symbol.back().head_interface, "(", "[", "{")) {
         symbol.pop_back();
       }
 
@@ -526,7 +526,7 @@ namespace kagami {
     bool checked = false;
     bool result = true;
 
-    while (!blk->symbol.empty() && !compare(top_token, { "{","[","(" })
+    while (!blk->symbol.empty() && !compare_exp(top_token, "{", "[", "(")
       && blk->symbol.back().head_command != kTokenBind) {
       result = InstructionFilling(blk);
       if (!result) break;

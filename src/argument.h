@@ -2,7 +2,6 @@
 #include <string>
 #include <utility>
 #include <map>
-#include <functional>
 #include <initializer_list>
 #include <vector>
 #include <iostream>
@@ -55,13 +54,13 @@ namespace suzu {
   public:
     ArgumentProcessorError(ArgumentProcessorErrorEnum e) {
       switch (e) {
-      case kErrorBadHead:msg = "Argument head symbol is missing"; break;
-      case kErrorMisssingRequired:msg = "Required argument is missing"; break;
-      case kErrorMissingValue:msg = "Value of argument is missing"; break;
-      case kErrorRedundantValue:msg = "Value of argument is redundant"; break;
+      case kErrorBadHead:          msg = "Argument head symbol is missing"; break;
+      case kErrorMisssingRequired: msg = "Required argument is missing"; break;
+      case kErrorMissingValue:     msg = "Value of argument is missing"; break;
+      case kErrorRedundantValue:   msg = "Value of argument is redundant"; break;
       case kErrorRedundantArgument:msg = "Argument is redundant"; break;
-      case kErrorUnknownArgument:msg = "Unknown argument"; break;
-      case kErrorEmptyPattern:msg = "You must provide patterns"; break;
+      case kErrorUnknownArgument:  msg = "Unknown argument"; break;
+      case kErrorEmptyPattern:     msg = "You must provide patterns"; break;
       default:break;
       }
     }
@@ -206,22 +205,20 @@ namespace suzu {
 
       bool found = false;
       for (size_t idx = 0; idx < str.size(); idx += 1) {
-        if (str[idx] == policy_.Joiner()) {
-          if (idx < str.size() - 1) {
-            value = Argument(
-              str.substr(0, idx), 
-              str.substr(idx + 1, str.size() - idx + 1)
-            );
-          }
-          else {
-            value = Argument(
-              str.substr(0, str.size() - 1),
-              std::string()
-            );
-          }
-          found = true;
-          break;
+        if (str[idx] != policy_.Joiner()) continue;
+
+        if (idx < str.size() - 1) {
+          value = 
+            Argument(str.substr(0, idx),
+            str.substr(idx + 1, str.size() - idx + 1));
         }
+        else {
+          value = 
+            Argument(str.substr(0, str.size() - 1),
+            std::string());
+        }
+        found = true;
+        break;
       }
 
       if (!found) {

@@ -93,116 +93,116 @@ namespace kagami {
     }
 
     /////////////////////////////////////////////////////////////
+  }
 
-    namespace type {
-      shared_ptr<void> ObjectPolicy::CreateObjectCopy(shared_ptr<void> target) const {
-        shared_ptr<void> result = nullptr;
-        if (target != nullptr) {
-          result = copying_policy_(target);
-        }
-        return result;
+  namespace management::type {
+    shared_ptr<void> ObjectPolicy::CreateObjectCopy(shared_ptr<void> target) const {
+      shared_ptr<void> result = nullptr;
+      if (target != nullptr) {
+        result = copying_policy_(target);
+      }
+      return result;
+    }
+
+    auto &GetObjPolicyCollection() {
+      static unordered_map<string, ObjectPolicy> base;
+      return base;
+    }
+
+    vector<string> GetMethods(string id) {
+      vector<string> result;
+      const auto it = GetObjPolicyCollection().find(id);
+
+      if (it != GetObjPolicyCollection().end()) {
+        result = it->second.GetMethods();
+      }
+      return result;
+    }
+
+    bool CheckMethod(string func_id, string domain) {
+      bool result = false;
+      const auto it = GetObjPolicyCollection().find(domain);
+
+      if (it != GetObjPolicyCollection().end()) {
+        result = find_in_vector(func_id, it->second.GetMethods());
       }
 
-      auto &GetObjPolicyCollection() {
-        static unordered_map<string, ObjectPolicy> base;
-        return base;
+      return result;
+    }
+
+    size_t GetHash(Object &obj) {
+      auto &base = GetObjPolicyCollection();
+      const auto it = base.find(obj.GetTypeId());
+      auto hasher = it->second.GetHasher();
+      return hasher->Get(obj.Deref().Get());
+    }
+
+    bool IsHashable(Object &obj) {
+      bool result = false;
+      auto &base = GetObjPolicyCollection();
+      const auto it = base.find(obj.GetTypeId());
+
+      if (it != base.end()) {
+        result = (it->second.GetHasher() != nullptr);
       }
 
-      vector<string> GetMethods(string id) {
-        vector<string> result;
-        const auto it = GetObjPolicyCollection().find(id);
+      return result;
+    }
 
-        if (it != GetObjPolicyCollection().end()) {
-          result = it->second.GetMethods();
-        }
-        return result;
+    void NewType(string id, ObjectPolicy temp) {
+      GetObjPolicyCollection().insert(pair<string, ObjectPolicy>(id, temp));
+    }
+
+    Object CreateObjectCopy(Object & object) {
+      if (object.GetConstructorFlag() || object.IsMemberRef()) {
+        return object;
       }
 
-      bool CheckMethod(string func_id, string domain) {
-        bool result = false;
-        const auto it = GetObjPolicyCollection().find(domain);
-
-        if (it != GetObjPolicyCollection().end()) {
-          result = find_in_vector(func_id, it->second.GetMethods());
-        }
-
-        return result;
+      Object result;
+      const auto it = GetObjPolicyCollection().find(object.GetTypeId());
+      if (it != GetObjPolicyCollection().end()) {
+        result.Manage(it->second.CreateObjectCopy(object.Get()),
+          object.GetTypeId());
       }
 
-      size_t GetHash(Object &obj) {
-        auto &base = GetObjPolicyCollection();
-        const auto it = base.find(obj.GetTypeId());
-        auto hasher = it->second.GetHasher();
-        return hasher->Get(obj.Deref().Get());
+      return result;
+    }
+
+    bool CheckBehavior(Object obj, string method_str) {
+      auto obj_methods = GetMethods(obj.GetTypeId());
+      auto sample = BuildStringVector(method_str);
+      bool result = true;
+      for (auto &unit : sample) {
+        if (!find_in_vector(unit, obj_methods)) {
+          result = false;
+          break;
+        }
       }
 
-      bool IsHashable(Object &obj) {
-        bool result = false;
-        auto &base = GetObjPolicyCollection();
-        const auto it = base.find(obj.GetTypeId());
+      return result;
+    }
 
-        if (it != base.end()) {
-          result = (it->second.GetHasher() != nullptr);
-        }
+    NewTypeSetup &NewTypeSetup::InitMethods(initializer_list<Interface> && rhs) {
+      interfaces_ = rhs;
+      string method_list("");
 
-        return result;
+      for (auto &unit : interfaces_) {
+        unit.SetDomain(type_name_);
+        method_list.append(unit.GetId()).append("|");
       }
 
-      void NewType(string id, ObjectPolicy temp) {
-        GetObjPolicyCollection().insert(pair<string, ObjectPolicy>(id, temp));
+      if (method_list != "") {
+        methods_ = method_list.substr(0, method_list.size() - 1);
       }
 
-      Object CreateObjectCopy(Object &object) {
-        if (object.GetConstructorFlag() || object.IsMemberRef()) {
-          return object;
-        }
+      return *this;
+    }
 
-        Object result;
-        const auto it = GetObjPolicyCollection().find(object.GetTypeId());
-        if (it != GetObjPolicyCollection().end()) {
-          result.Manage(it->second.CreateObjectCopy(object.Get()),
-            object.GetTypeId());
-        }
-
-        return result;
-      }
-
-      bool CheckBehavior(Object obj, string method_str) {
-        auto obj_methods = GetMethods(obj.GetTypeId());
-        auto sample = BuildStringVector(method_str);
-        bool result = true;
-        for (auto &unit : sample) {
-          if (!find_in_vector(unit, obj_methods)) {
-            result = false;
-            break;
-          }
-        }
-
-        return result;
-      }
-
-      NewTypeSetup &NewTypeSetup::InitMethods(initializer_list<Interface> &&rhs) {
-        interfaces_ = rhs;
-        string method_list("");
-
-        for (auto &unit : interfaces_) {
-          unit.SetDomain(type_name_);
-          method_list.append(unit.GetId()).append("|");
-        }
-
-        if (method_list != "") {
-          methods_ = method_list.substr(0, method_list.size() - 1);
-        }
-
-        return *this;
-      }
-
-      NewTypeSetup::~NewTypeSetup() {
-        NewType(type_name_, ObjectPolicy(policy_, methods_, hasher_));
-        CreateNewInterface(constructor_);
-        for (auto &unit : interfaces_) {
-          CreateNewInterface(unit);
-        }
+    NewTypeSetup::~NewTypeSetup() {
+      NewType(type_name_, ObjectPolicy(policy_, methods_, hasher_));
+      CreateNewInterface(constructor_);
+      for (auto &unit : interfaces_) {
+        CreateNewInterface(unit);
       }
     }
   }

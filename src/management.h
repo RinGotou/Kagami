@@ -14,108 +14,109 @@ namespace kagami {
     Object *CreateConstantObject(string id, Object &object);
     Object *CreateConstantObject(string id, Object &&object);
     Object GetConstantObject(string id);
+  }
 
-    namespace type {
-      using HasherFunction = size_t(*)(shared_ptr<void>);
+  namespace management::type {
+    using HasherFunction = size_t(*)(shared_ptr<void>);
 
-      template <class T>
-      struct PlainHasher : public HasherInterface {
-        size_t Get(shared_ptr<void> ptr) const override {
-          auto hasher = std::hash<T>();
-          return hasher(*static_pointer_cast<T>(ptr));
-        }
-      };
+    template <class T>
+    struct PlainHasher : public HasherInterface {
+      size_t Get(shared_ptr<void> ptr) const override {
+        auto hasher = std::hash<T>();
+        return hasher(*static_pointer_cast<T>(ptr));
+      }
+    };
 
 
-      template <class T, HasherFunction hash_func>
-      struct CustomHasher : public HasherInterface {
-        size_t Get(shared_ptr<void> ptr) const override {
-          return hash_func(ptr);
-        }
-      };
+    template <class T, HasherFunction hash_func>
+    struct CustomHasher : public HasherInterface {
+      size_t Get(shared_ptr<void> ptr) const override {
+        return hash_func(ptr);
+      }
+    };
 
-      /* Hasher for object using FakeCopy() */
-      struct PointerHasher : public HasherInterface {
-        size_t Get(shared_ptr<void> ptr) const override {
-          auto hasher = std::hash<shared_ptr<void>>();
-          return hasher(ptr);
-        }
-      };
+    /* Hasher for object using FakeCopy() */
+    struct PointerHasher : public HasherInterface {
+      size_t Get(shared_ptr<void> ptr) const override {
+        auto hasher = std::hash<shared_ptr<void>>();
+        return hasher(ptr);
+      }
+    };
 
-      class ObjectPolicy {
-      private:
-        CopyingPolicy copying_policy_;
-        shared_ptr<HasherInterface> hasher_;
-        vector<string> methods_;
+    class ObjectPolicy {
+    private:
+      CopyingPolicy copying_policy_;
+      shared_ptr<HasherInterface> hasher_;
+      vector<string> methods_;
 
-      public:
-        ObjectPolicy() = delete;
+    public:
+      ObjectPolicy() = delete;
 
-        ObjectPolicy(
-          CopyingPolicy copying_policy, 
-          string methods, 
-          shared_ptr<HasherInterface> hasher = nullptr) :
-          copying_policy_(copying_policy),
-          methods_(BuildStringVector(methods)),
-          hasher_(std::move(hasher)) {}
+      ObjectPolicy(
+        CopyingPolicy copying_policy,
+        string methods,
+        shared_ptr<HasherInterface> hasher = nullptr) :
+        copying_policy_(copying_policy),
+        methods_(BuildStringVector(methods)),
+        hasher_(std::move(hasher)) {}
 
-        shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const;
+      shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const;
 
-        vector<string> &GetMethods() {
-          return methods_;
-        }
+      vector<string> &GetMethods() {
+        return methods_;
+      }
 
-        shared_ptr<HasherInterface> &GetHasher() {
-          return hasher_;
-        }
-      };
+      shared_ptr<HasherInterface> &GetHasher() {
+        return hasher_;
+      }
+    };
 
-      vector<string> GetMethods(string id);
-      bool CheckMethod(string func_id, string domain);
-      size_t GetHash(Object &obj);
-      bool IsHashable(Object &obj);
-      void NewType(string id, ObjectPolicy temp);
-      Object CreateObjectCopy(Object &object);
-      bool CheckBehavior(Object obj, string method_str);
+    vector<string> GetMethods(string id);
+    bool CheckMethod(string func_id, string domain);
+    size_t GetHash(Object &obj);
+    bool IsHashable(Object &obj);
+    void NewType(string id, ObjectPolicy temp);
+    Object CreateObjectCopy(Object &object);
+    bool CheckBehavior(Object obj, string method_str);
 
-      class NewTypeSetup {
-      private:
-        string type_name_;
-        string methods_;
-        CopyingPolicy policy_;
-        shared_ptr<HasherInterface> hasher_;
-        vector<Interface> interfaces_;
-        Interface constructor_;
+    class NewTypeSetup {
+    private:
+      string type_name_;
+      string methods_;
+      CopyingPolicy policy_;
+      shared_ptr<HasherInterface> hasher_;
+      vector<Interface> interfaces_;
+      Interface constructor_;
 
-      public:
-        NewTypeSetup() = delete;
+    public:
+      NewTypeSetup() = delete;
 
-        template <class HasherType>
-        NewTypeSetup(
-          string type_name, 
-          CopyingPolicy policy,
-          HasherType hasher) :
-          type_name_(type_name), 
-          policy_(policy),
-          hasher_(new HasherType(hasher)) {
-          static_assert(is_base_of<HasherInterface, HasherType>::value,
-            "Wrong hasher type.");
-        }
+      template <class HasherType>
+      NewTypeSetup(
+        string type_name,
+        CopyingPolicy policy,
+        HasherType hasher) :
+        type_name_(type_name),
+        policy_(policy),
+        hasher_(new HasherType(hasher)) {
+        static_assert(is_base_of<HasherInterface, HasherType>::value,
+          "Wrong hasher type.");
+      }
 
-        NewTypeSetup(string type_name, CopyingPolicy policy) :
-          type_name_(type_name), policy_(policy), hasher_(nullptr) {}
+      NewTypeSetup(string type_name, CopyingPolicy policy) :
+        type_name_(type_name), policy_(policy), hasher_(nullptr) {}
 
-        NewTypeSetup &InitConstructor(Interface interface) {
-          constructor_ = interface;
-          return *this;
-        }
+      NewTypeSetup &InitConstructor(Interface interface) {
+        constructor_ = interface;
+        return *this;
+      }
 
-        NewTypeSetup &InitMethods(initializer_list<Interface> &&rhs);
-        ~NewTypeSetup();
-      };
-    }
+      NewTypeSetup &InitMethods(initializer_list<Interface> &&rhs);
+      ~NewTypeSetup();
+    };
   }
 }
+
 
 #define EXPORT_CONSTANT(ID) management::CreateConstantObject(#ID, Object(ID))
 

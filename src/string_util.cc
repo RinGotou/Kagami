@@ -1,8 +1,8 @@
 #include "string_util.h"
 
 namespace kagami {
-  bool IsStringFamily(Object &obj) {
-    return compare(obj.GetTypeId(), { kTypeIdString,kTypeIdWideString });
+  inline bool IsStringFamily(Object &obj) {
+    return compare_exp(obj.GetTypeId(), kTypeIdString, kTypeIdWideString);
   }
 
   Message CreateStringFromArray(ObjectMap &p) {

@@ -854,7 +854,7 @@ namespace kagami {
     bool result = false;
     ERROR_CHECKING(worker.condition_stack.empty(), 
       "Unexpected 'when'");
-    ERROR_CHECKING(!compare(worker.mode, { kModeCase,kModeCaseJump }),
+    ERROR_CHECKING(!compare_exp(worker.mode, kModeCase, kModeCaseJump),
       "Unexpected 'when'");
 
     if (worker.mode == kModeCase) {

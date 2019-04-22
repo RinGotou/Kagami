@@ -390,12 +390,9 @@ namespace kagami {
   void InitSoundComponents();
 #endif
 
+//TODO:Reserved for unix socket wrapper
+//TODO: delete macros after finish it
 #if defined(_WIN32)
   void LoadSocketStuff();
-#else
-  //TODO:Reserved for unix socket wrapper
-  //TODO: delete macros after finish it
 #endif
-
-  bool IsStringFamily(Object &obj);
 }

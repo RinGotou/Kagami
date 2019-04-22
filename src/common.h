@@ -323,7 +323,11 @@ namespace kagami {
     kStrLeftHandSide   = "__lhs",
     kStrMe             = "me";
 
-  /* Compare multiple objects */
+  template <class _Lhs, class... _Rhs>
+  inline bool compare_exp(_Lhs lhs, _Rhs... rhs) {
+    return ((lhs == rhs) || ...);
+  }
+
   template <class Tx, class Ty>
   inline bool compare(Tx lhs, const initializer_list<Ty> rhs) {
     bool result = false;
