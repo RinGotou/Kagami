@@ -75,27 +75,6 @@ namespace kagami {
   }
 
   /* string/wstring convertor */
-#if defined(_WIN32) && defined(_MSC_VER)
-  //from MSDN
-  std::wstring s2ws(const std::string &s) {
-    auto slength = static_cast<int>(s.length()) + 1;
-    auto len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-    auto *buf = new wchar_t[len];
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
-    std::wstring r(buf);
-    delete[] buf;
-    return r;
-  }
-
-  std::string ws2s(const std::wstring &s) {
-    int len;
-    int slength = (int)s.length() + 1;
-    len = WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, 0, 0, 0, 0);
-    std::string r(len, '\0');
-    WideCharToMultiByte(CP_ACP, 0, s.c_str(), slength, &r[0], len, 0, 0);
-    return r;
-  }
-#else
   //from https://www.yasuhisay.info/interface/20090722/1248245439
   std::wstring s2ws(const std::string &s) {
     if (s.empty()) return wstring();
@@ -116,8 +95,6 @@ namespace kagami {
     free(c);
     return result;
   }
-#endif
-
   string ParseRawString(const string & src) {
     string result = src;
     if (util::IsString(result)) result = util::GetRawString(result);
@@ -218,35 +195,11 @@ namespace kagami {
     return false;
   }
 
-  string ScriptReader::GetLine() {
-    if (fp_ == nullptr || eof_) return string();
-    char buf = 0;
-    string result;
-
-    while (buf != EOF) {
-      buf = fgetc(fp_);
-
-      if (buf == EOF) {
-        eof_ = true;
-        continue;
-      }
-
-      if (buf == '\n') {
-        break;
-      }
-      else {
-        result.append(1, buf);
-      }
-    }
-
-    return result;
-  }
-
   KIRLoader::KIRLoader(string path, KIR &dest) : dest_(&dest), good(true) {
     bool comment_block = false;
     size_t index_counter = 1;
     string buf;
-    ScriptReader reader(path);
+    InStream reader(path);
     Analyzer analyzer;
     Message msg;
     list<CombinedCodeline> script_buf;

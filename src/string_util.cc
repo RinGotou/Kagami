@@ -89,34 +89,25 @@ namespace kagami {
     EXPECT_TYPE(p, "path", kTypeIdString);
     string path = p.Cast<string>("path");
 
-    shared_ptr<wifstream> ifs(make_shared<wifstream>());
-    
-    ifs->open(path, std::ios::in);
+    shared_ptr<InStream> ifs = make_shared<InStream>(path);
 
     return Message().SetObject(Object(ifs, kTypeIdInStream));
   }
 
   Message InStreamGet(ObjectMap &p) {
-    wifstream &ifs = p.Cast<wifstream>(kStrMe);
+    InStream &ifs = p.Cast<InStream>(kStrMe);
 
-    if (!ifs.good()) {
+    if (!ifs.Good()) {
       return Message(kCodeBadStream, "Invalid instream.", kStateError);
     }
 
-    if (ifs.eof()) {
-      return Message("");
-    }
+    string result = ifs.GetLine();
 
-    wstring wstr;
-    std::getline(ifs, wstr);
-    string str = ws2s(wstr);
-    if (str.back() == '\n' || str.back() == '\0') str.pop_back();
-
-    return Message().SetObject(str);
+    return Message().SetObject(result);
   }
 
   Message InStreamEOF(ObjectMap &p) {
-    wifstream &ifs = p.Cast<wifstream>(kStrMe);
+    InStream &ifs = p.Cast<InStream>(kStrMe);
     return Message().SetObject(ifs.eof());
   }
 
@@ -128,37 +119,31 @@ namespace kagami {
     string path = p.Cast<string>("path");
     string mode = p.Cast<string>("mode");
 
-    shared_ptr<ofstream> ofs;
+    shared_ptr<OutStream> ofs;
     bool append = (mode == "append");
     bool truncate = (mode == "truncate");
 
     if (!append && truncate) {
-      ofs = make_shared<ofstream>(ofstream(path.c_str(), 
-        std::ios::out | std::ios::trunc));
+      ofs = make_shared<OutStream>(path, "w");
     }
     else if (append && !truncate) {
-      ofs = make_shared<ofstream>(ofstream(path.c_str(),
-        std::ios::out | std::ios::app));
+      ofs = make_shared<OutStream>(path, "a+");
     }
 
     return Message().SetObject(Object(ofs, kTypeIdOutStream));
   }
 
   Message OutStreamWrite(ObjectMap &p) {
-    ofstream &ofs = p.Cast<ofstream>(kStrMe);
+    OutStream &ofs = p.Cast<OutStream>(kStrMe);
+    auto &obj = p["str"];
     bool result = true;
 
-    if (!ofs.good()) {
-      result = false;
+    if (obj.GetTypeId() == kTypeIdString) {
+      string str = obj.Cast<string>();
+      result = ofs.WriteLine(str);
     }
     else {
-      if (p.CheckTypeId("str", kTypeIdString)) {
-        string origin = p.Cast<string>("str");
-        ofs << origin;
-      }
-      else {
-        result = false;
-      }
+      result = false;
     }
     
     return Message().SetObject(result);
@@ -272,7 +257,7 @@ namespace kagami {
         }
     );
 
-    NewTypeSetup(kTypeIdInStream, FakeCopy<wifstream>, PointerHasher())
+    NewTypeSetup(kTypeIdInStream, FakeCopy<InStream>, PointerHasher())
       .InitConstructor(
         Interface(NewInStream, "path", "instream")
       )
@@ -280,19 +265,18 @@ namespace kagami {
         {
           Interface(InStreamGet, "", "get"),
           Interface(InStreamEOF, "", "eof"),
-          Interface(StreamFamilyClose<wifstream>, "", "close")
+          Interface(StreamFamilyState<InStream>, "", "good"),
         }
     );
 
-    NewTypeSetup(kTypeIdOutStream, FakeCopy<ofstream>, PointerHasher())
+    NewTypeSetup(kTypeIdOutStream, FakeCopy<OutStream>, PointerHasher())
       .InitConstructor(
         Interface(NewOutStream, "path|mode", "outstream")
       )
       .InitMethods(
         {
           Interface(OutStreamWrite, "str", "write"),
-          Interface(StreamFamilyState<ofstream>, "", "good"),
-          Interface(StreamFamilyClose<ofstream>, "", "close")
+          Interface(StreamFamilyState<OutStream>, "", "good"),
         }
     );
     management::CreateConstantObject("kOutstreamModeAppend", Object("'append'"));

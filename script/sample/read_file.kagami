@@ -3,7 +3,6 @@ fn ReadFile()
   while stream.eof() != true
     println(stream.get())
   end
-  stream.close()
 end
 
 ReadFile()

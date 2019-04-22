@@ -4,6 +4,7 @@
 */
 #include "trace.h"
 #include "management.h"
+#include "filestream.h"
 
 #define CHECK_PRINT_OPT()                          \
   if (p.find(kStrSwitchLine) != p.end()) {         \
@@ -266,29 +267,6 @@ namespace kagami {
     void RefreshReturnStack(Object obj = Object());
     void GoLastMode();
     bool NeedSkipping();
-  };
-
-  class ScriptReader {
-  private:
-    bool eof_;
-    FILE *fp_;
-  public:
-    ~ScriptReader() { fclose(fp_); }
-    ScriptReader() = delete;
-    ScriptReader(const char *path) :
-      eof_(false), fp_(fopen(path, "r")) {}
-    ScriptReader(string path) : ScriptReader(path.c_str()) {}
-    ScriptReader(const ScriptReader &) = delete;
-    ScriptReader(const ScriptReader &&) = delete;
-    void operator=(ScriptReader &rhs) { 
-      std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
-    }
-    void operator=(ScriptReader &&rhs) {
-      operator=(rhs);
-    }
-    string GetLine();
-    bool Good() const { return fp_ != nullptr; }
-    bool eof() const { return eof_; }
   };
 
   class KIRLoader {

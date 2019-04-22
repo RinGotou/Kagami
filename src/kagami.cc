@@ -106,7 +106,7 @@ void Processing(Processor &processor) {
     }
 
     //Need to place a command argument for this option
-    Patch("en_US.UTF-8");
+    Patch("zh_CN.UTF-8");
 
     StartInterpreter_Kisaragi(path, log, processor.Exist("rtlog"));
   }

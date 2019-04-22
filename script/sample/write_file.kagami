@@ -5,7 +5,6 @@ fn WriteFile()
     recv = input('Stream> ')
     stream.write(recv)
   end
-  stream.close()
 end
 
 WriteFile()

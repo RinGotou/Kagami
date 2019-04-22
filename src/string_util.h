@@ -87,16 +87,9 @@ namespace kagami {
   }
 
   template <class StreamType>
-  Message StreamFamilyClose(ObjectMap &p) {
-    StreamType &stream = p.Cast<StreamType>(kStrMe);
-    stream.close();
-    return Message();
-  }
-
-  template <class StreamType>
   Message StreamFamilyState(ObjectMap &p) {
     StreamType &stream = p.Cast<StreamType>(kStrMe);
-    return Message().SetObject(stream.good());
+    return Message().SetObject(stream.Good());
   }
 
   /* Convert string to destination type */
