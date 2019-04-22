@@ -4,7 +4,7 @@ namespace kagami {
   string InStream::GetLine() {
     if (fp_ == nullptr || eof_) return string();
 
-    char buf = 0;
+    int buf = 0;
     string result;
 
     while (buf != EOF) {
@@ -19,7 +19,7 @@ namespace kagami {
         break;
       }
       else {
-        result.append(1, buf);
+        result.append(1, static_cast<char>(buf));
       }
     }
 
@@ -30,7 +30,7 @@ namespace kagami {
     if (fp_ == nullptr) return false;
     auto it = str.begin();
     auto end = str.end();
-    char flag = 0;
+    int flag = 0;
     for (; it != end; ++it) {
       flag = fputc(*it, fp_);
       if (flag == EOF) break;
