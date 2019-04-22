@@ -52,14 +52,11 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
 
   DEBUG_EVENT("Your're running a copy of Kagami interpreter with debug flag!");
 
-  IRLoader loader(path.c_str());
+  KIR script_ir;
+  KIRLoader loader(path, script_ir);
 
-  if (loader.health) {
-    KIR ir = loader.output;
-    loader.output.clear();
-    loader.output.shrink_to_fit();
-    Machine main_thread(ir);
-    
+  if (loader.good) {
+    Machine main_thread(script_ir);
     main_thread.Run();
   }
 
@@ -92,7 +89,7 @@ void AtExitHandler() {
 
 inline void Patch(string locale) {
   std::ios::sync_with_stdio(false);
-  std::locale::global(std::locale(std::locale(), new std::codecvt_utf8<wchar_t>));
+  setlocale(LC_ALL, locale.c_str());
   std::wcout.imbue(std::locale(locale));
   std::cout.imbue(std::locale(locale));
 }
@@ -109,7 +106,7 @@ void Processing(Processor &processor) {
     }
 
     //Need to place a command argument for this option
-    Patch("");
+    Patch("en_US.UTF-8");
 
     StartInterpreter_Kisaragi(path, log, processor.Exist("rtlog"));
   }

@@ -268,15 +268,37 @@ namespace kagami {
     bool NeedSkipping();
   };
 
-  class IRLoader {
-  public:
-    bool health;
-    KIR output;
-
-    IRLoader(const char *src);
-
+  class ScriptReader {
   private:
-    string IndentationAndCommentProc(string target);
+    bool eof_;
+    FILE *fp_;
+  public:
+    ~ScriptReader() { fclose(fp_); }
+    ScriptReader() = delete;
+    ScriptReader(const char *path) :
+      eof_(false), fp_(fopen(path, "r")) {}
+    ScriptReader(string path) : ScriptReader(path.c_str()) {}
+    ScriptReader(const ScriptReader &) = delete;
+    ScriptReader(const ScriptReader &&) = delete;
+    void operator=(ScriptReader &rhs) { 
+      std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
+    }
+    void operator=(ScriptReader &&rhs) {
+      operator=(rhs);
+    }
+    string GetLine();
+    bool Good() const { return fp_ != nullptr; }
+    bool eof() const { return eof_; }
+  };
+
+  class KIRLoader {
+  private:
+    KIR *dest_;
+
+  public:
+    bool good;
+    
+    KIRLoader(string path, KIR &dest);
   };
 
   //Kisaragi Machine Class

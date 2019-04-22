@@ -124,6 +124,43 @@ namespace kagami {
     return result;
   }
 
+  /* Disposing all indentation and comments */
+  string IndentationAndCommentProc(string target) {
+    if (target == "") return "";
+    string data;
+    char current = 0, last = 0;
+    size_t head = 0, tail = 0;
+    bool exempt_blank_char = true;
+    bool string_processing = false;
+    auto toString = [](char t) ->string {return string().append(1, t); };
+
+    for (size_t count = 0; count < target.size(); ++count) {
+      current = target[count];
+      auto type = util::GetTokenType(toString(current));
+      if (type != TokenType::kTokenTypeBlank && exempt_blank_char) {
+        head = count;
+        exempt_blank_char = false;
+      }
+      if (current == '\'' && last != '\\') {
+        string_processing = !string_processing;
+      }
+      if (!string_processing && current == '#') {
+        tail = count;
+        break;
+      }
+      last = target[count];
+    }
+    if (tail > head) data = target.substr(head, tail - head);
+    else data = target.substr(head, target.size() - head);
+    if (data.front() == '#') return "";
+
+    while (!data.empty() &&
+      util::GetTokenType(toString(data.back())) == kTokenTypeBlank) {
+      data.pop_back();
+    }
+    return data;
+  }
+
   void InitPlainTypes() {
     using type::NewTypeSetup;
     using type::PlainHasher;
@@ -181,37 +218,58 @@ namespace kagami {
     return false;
   }
 
-  IRLoader::IRLoader(const char *src) : health(true) {
+  string ScriptReader::GetLine() {
+    if (fp_ == nullptr || eof_) return string();
+    char buf = 0;
+    string result;
+
+    while (buf != EOF) {
+      buf = fgetc(fp_);
+
+      if (buf == EOF) {
+        eof_ = true;
+        continue;
+      }
+
+      if (buf == '\n') {
+        break;
+      }
+      else {
+        result.append(1, buf);
+      }
+    }
+
+    return result;
+  }
+
+  KIRLoader::KIRLoader(string path, KIR &dest) : dest_(&dest), good(true) {
     bool comment_block = false;
-    size_t error_counter = 0;
     size_t index_counter = 1;
-    wstring buf;
-    string temp;
-    wifstream stream(src);
+    string buf;
+    ScriptReader reader(path);
     Analyzer analyzer;
     Message msg;
     list<CombinedCodeline> script_buf;
     KIR ir;
 
-    if (!stream.good()) {
-      health = false;
+    if (!reader.Good()) {
+      good = false;
       return;
     }
 
-    while (!stream.eof()) {
-      std::getline(stream, buf);
-      temp = ws2s(buf);
-      if (!temp.empty() && temp.back() == '\0') temp.pop_back();
-      temp = IndentationAndCommentProc(temp);
+    //Read whole file and put into list
+    while (!reader.eof()) {
+      buf = reader.GetLine();
+      buf = IndentationAndCommentProc(buf);
 
-      if (temp == kStrCommentBegin) {
+      if (buf == kStrCommentBegin) {
         comment_block = true;
         index_counter += 1;
         continue;
       }
 
       if (comment_block) {
-        if (temp == kStrCommentEnd) {
+        if (buf == kStrCommentEnd) {
           comment_block = false;
         }
 
@@ -219,32 +277,22 @@ namespace kagami {
         continue;
       }
 
-      if (temp.empty()) { 
+      if (buf.empty()) {
         index_counter += 1;
-        continue; 
+        continue;
       }
-      script_buf.push_back(CombinedCodeline(index_counter, temp));
+
+      script_buf.push_back(CombinedCodeline(index_counter, buf));
       index_counter += 1;
     }
 
+    //analyzing
     for (auto it = script_buf.begin(); it != script_buf.end(); ++it) {
-      if (!health) {
-        if (error_counter < MAX_ERROR_COUNT) {
-          error_counter += 1;
-        }
-        else {
-          trace::AddEvent(kCodeIllegalSymbol, 
-            "Too many errors. Analyzing is stopped.");
-          break;
-        }
-      }
-
       msg = analyzer.Make(it->second, it->first).SetIndex(it->first);
-
       switch (msg.GetLevel()) {
       case kStateError:
         trace::AddEvent(msg);
-        health = false;
+        good = false;
         continue;
         break;
       case kStateWarning:
@@ -255,46 +303,9 @@ namespace kagami {
 
       ir = analyzer.GetOutput();
       analyzer.Clear();
-      output.insert(output.end(), ir.begin(), ir.end());
+      dest_->insert(dest_->end(), ir.begin(), ir.end());
       ir.clear();
     }
-  }
-
-  /* Disposing all indentation and comments */
-  string IRLoader::IndentationAndCommentProc(string target) {
-    if (target == "") return "";
-    string data;
-    char current = 0, last = 0;
-    size_t head = 0, tail = 0;
-    bool exempt_blank_char = true;
-    bool string_processing = false;
-    auto toString = [](char t) ->string {return string().append(1, t); };
-
-    for (size_t count = 0; count < target.size(); ++count) {
-      current = target[count];
-      auto type = util::GetTokenType(toString(current));
-      if (type != TokenType::kTokenTypeBlank && exempt_blank_char) {
-        head = count;
-        exempt_blank_char = false;
-      }
-      if (current == '\'' && last != '\\') {
-        string_processing = !string_processing;
-      }
-      if (!string_processing && current == '#') {
-        tail = count;
-        break;
-      }
-      last = target[count];
-    }
-    if (tail > head) data = target.substr(head, tail - head);
-    else data = target.substr(head, target.size() - head);
-    if (data.front() == '#') return "";
-
-    while (!data.empty() &&
-      util::GetTokenType(toString(data.back())) == kTokenTypeBlank) {
-      data.pop_back();
-    }
-    return data;
   }
 
   void Machine::RecoverLastState() {

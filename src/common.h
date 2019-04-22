@@ -9,7 +9,7 @@
 #include <regex>
 #include <stack>
 #include <locale>
-#include <codecvt>
+#include <clocale>
 #include <cstdlib>
 #include <typeinfo>
 #include <iostream>
