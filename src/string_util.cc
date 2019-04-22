@@ -154,7 +154,7 @@ namespace kagami {
     EXPECT_TYPE(p, "pattern", kTypeIdString);
 
     string pattern_string = p.Cast<string>("pattern");
-    shared_ptr<regex> reg = make_shared<regex>(regex(pattern_string));
+    shared_ptr<regex> reg = make_shared<regex>(pattern_string);
 
     return Message().SetObject(Object(reg, kTypeIdRegex));
   }
@@ -206,7 +206,7 @@ namespace kagami {
     auto origin_vector = interface.GetParameters();
 
     for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
-      dest_base->emplace_back(Object(make_shared<string>(*it), kTypeIdString));
+      dest_base->emplace_back(Object(*it, kTypeIdString));
     }
 
     return Message().SetObject(Object(dest_base, kTypeIdArray));

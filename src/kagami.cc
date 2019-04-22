@@ -6,7 +6,7 @@ using suzu::ArgumentProcessor;
 using suzu::Option;
 using suzu::ArgumentProcessorError;
 using suzu::Pattern;
-using Processor = ArgumentProcessor<suzu::kHeadHorizon, suzu::kJoinerEquals>;
+using Processor = ArgumentProcessor<suzu::kHeadHorizon, suzu::kJoinerEqual>;
 
 //STL
 using std::string;
@@ -88,8 +88,11 @@ void AtExitHandler() {
 }
 
 inline void Patch(string locale) {
+  //Disable buff sync
   std::ios::sync_with_stdio(false);
+  //Set locale for all C-Style API input/output
   setlocale(LC_ALL, locale.c_str());
+  //Init locale for cout/wcout
   std::wcout.imbue(std::locale(locale));
   std::cout.imbue(std::locale(locale));
 }

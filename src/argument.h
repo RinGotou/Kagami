@@ -33,7 +33,7 @@ namespace suzu {
 
   enum JoinerFormEnum {
     kJoinerColon,
-    kJoinerEquals
+    kJoinerEqual
   };
 
   enum ArgumentProcessorErrorEnum {
@@ -169,54 +169,36 @@ namespace suzu {
     }
   };
 
-  template <JoinerFormEnum joiner>
-  class JoinerPolicy {};
-
-  template <>
-  class JoinerPolicy<kJoinerColon> {
-  public:
-    char Joiner() {
-      return ':';
-    }
-  };
-
-  template <>
-  class JoinerPolicy<kJoinerEquals> {
-  public:
-    char Joiner() {
-      return '=';
-    }
-  };
-
-  template <JoinerFormEnum joiner>
+  template <JoinerFormEnum joiner_code>
   class JoinerChecker {
-  protected:
-    JoinerPolicy<joiner> policy_;
-   
   public:
     Argument value;
 
     bool Do(std::string str) {
+      char joiner;
       value = Argument();
 
-      if (str.front() == policy_.Joiner()) {
+      if constexpr (joiner_code == kJoinerColon) {
+        joiner = ':';
+      }
+      else if constexpr (joiner_code == kJoinerEqual) {
+        joiner = '=';
+      }
+
+      if (str.front() == joiner) {
         return false;
       }
 
       bool found = false;
       for (size_t idx = 0; idx < str.size(); idx += 1) {
-        if (str[idx] != policy_.Joiner()) continue;
+        if (str[idx] != joiner) continue;
 
-        if (idx < str.size() - 1) {
-          value = 
-            Argument(str.substr(0, idx),
-            str.substr(idx + 1, str.size() - idx + 1));
-        }
-        else {
-          value = 
-            Argument(str.substr(0, str.size() - 1),
+        value = idx < str.size() - 1 ?
+          Argument(str.substr(0, idx),
+            str.substr(idx + 1, str.size() - idx + 1)) :
+          Argument(str.substr(0, str.size() - 1),
             std::string());
-        }
+
         found = true;
         break;
       }
