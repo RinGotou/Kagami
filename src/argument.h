@@ -18,9 +18,9 @@ namespace suzu {
       group(group) {}
   };
 
-  using Parameters = std::map<std::string, Option>;
-  using Pattern = Parameters::value_type;
-  using Argument = std::pair<std::string, std::string>;
+  using Parameters       = std::map<std::string, Option>;
+  using Pattern          = Parameters::value_type;
+  using Argument         = std::pair<std::string, std::string>;
   using AnalyzedArgument = std::map<std::string, std::string>;
 
   enum HeadFormEnum {
