@@ -1,20 +1,11 @@
 #include "machine.h"
 #include "argument.h"
 
-//Argument Processor
-using suzu::ArgumentProcessor;
-using suzu::Option;
-using suzu::ArgumentProcessorError;
-using suzu::Pattern;
-using Processor = ArgumentProcessor<suzu::kHeadHorizon, suzu::kJoinerEqual>;
-
-//STL
-using std::string;
-using std::cout;
-using std::endl;
-using std::cin;
-
+using namespace std;
+using namespace suzu;
 using namespace kagami;
+using namespace kagami::trace;
+using Processor = ArgumentProcessor<kHeadHorizon, kJoinerEqual>;
 
 namespace runtime {
   // Binary name from command line
@@ -36,14 +27,9 @@ namespace runtime {
 }
 
 void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log) {
-  trace::LoggerPolicy *logger = nullptr;
-
-  if (real_time_log) {
-    logger = new trace::RealTimePolicy();
-  }
-  else {
-    logger = new trace::CachePolicy();
-  }
+  auto *logger = real_time_log ?
+    static_cast<LoggerPolicy *>(new RealTimePolicy()) :
+    static_cast<LoggerPolicy *> (new CachePolicy());
 
   logger->Inject(log_path, path);
 
@@ -87,14 +73,14 @@ void AtExitHandler() {
   cin.get();
 }
 
-inline void Patch(string locale) {
+inline void Patch(string locale_str) {
   //Disable buff sync
-  std::ios::sync_with_stdio(false);
+  ios::sync_with_stdio(false);
   //Set locale for all C-Style API input/output
-  setlocale(LC_ALL, locale.c_str());
+  setlocale(LC_ALL, locale_str.c_str());
   //Init locale for cout/wcout
-  std::wcout.imbue(std::locale(locale));
-  std::cout.imbue(std::locale(locale));
+  wcout.imbue(locale(locale_str));
+  cout.imbue(locale(locale_str));
 }
 
 void Processing(Processor &processor) {
