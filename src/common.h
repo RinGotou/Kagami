@@ -44,8 +44,8 @@
 
 #if not defined(_DISABLE_SDL_)
 #if defined(_WIN32)
-#include "dawn/dawn.window.h"
-#include "dawn/dawn.sound.h"
+#include "dawn/src/dawn.window.h"
+#include "dawn/src/dawn.sound.h"
 #else
 #endif
 #endif

@@ -1,0 +1,6 @@
+[submodule "src/dawn"]
+	path = src/dawn
+	url = https://github.com/suzunakamura/dawn
+[submodule "src/minatsuki.log"]
+	path = src/minatsuki.log
+	url = https://github.com/suzunakamura/minatsuki.log
