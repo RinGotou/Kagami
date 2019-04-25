@@ -49,7 +49,7 @@
 
 #define ENGINE_NAME "Kagami Project"
 #define INTERPRETER_VER "2.2"
-#define CODENAME "Litte Explorer"
+#define CODENAME "Little Explorer"
 #define MAINTAINER "Suzu Nakamura"
 #define COPYRIGHT "Copyright(c) 2019"
 
@@ -79,9 +79,6 @@ namespace kagami {
   using std::stol;
   using std::wstring;
   using std::list;
-  using std::thread;
-  using std::mutex;
-  using std::lock_guard;
   using std::initializer_list;
   using std::is_same;
   using std::is_base_of;
