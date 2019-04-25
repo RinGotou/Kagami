@@ -101,9 +101,9 @@ namespace kagami {
   const string kInterpreterVersion = INTERPRETER_VER;
   const string kPatchName          = CODENAME;
 #if defined(_WIN32)
-  const string kPlatformType   = "Windows";
+  const string kPlatformType   = "Windows Platform";
 #else
-  const string kPlatformType   = "Unix";
+  const string kPlatformType   = "Unix-like Platform";
 #endif
   const string kEngineName     = ENGINE_NAME;
   const string kMaintainer     = MAINTAINER;
