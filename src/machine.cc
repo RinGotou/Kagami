@@ -271,24 +271,31 @@ namespace kagami {
     auto type = arg.token_type;
     auto &value = arg.data;
     Object obj;
-    switch (type) {
-    case kTokenTypeInt:
-      obj.Manage(make_shared<int64_t>(stol(value)), kTypeIdInt); 
-      break;
-    case kTokenTypeFloat:
-      obj.Manage(make_shared<double>(stod(value)), kTypeIdFloat);
-      break;
-    case kTokenTypeBool:
-      obj.Manage(make_shared<bool>(value == kStrTrue), kTypeIdBool);
-      break;
-    case kTokenTypeString:
-      obj.Manage(make_shared<string>(ParseRawString(value)), kTypeIdString);
-      break;
-    case kTokenTypeGeneric:
-      obj.Manage(make_shared<string>(value), kTypeIdString);
-      break;
-    default:
-      break;
+
+    if (type == kTokenTypeInt) {
+      int64_t int_value;
+      from_chars(value.data(), value.data() + value.size(), int_value);
+      obj.Manage(make_shared<int64_t>(int_value), kTypeIdInt);
+    }
+    else if (type == kTokenTypeFloat) {
+      double float_value;
+      from_chars(value.data(), value.data() + value.size(), float_value);
+      obj.Manage(make_shared<double>(float_value), kTypeIdFloat);
+    }
+    else {
+      switch (type) {
+      case kTokenTypeBool:
+        obj.Manage(make_shared<bool>(value == kStrTrue), kTypeIdBool);
+        break;
+      case kTokenTypeString:
+        obj.Manage(make_shared<string>(ParseRawString(value)), kTypeIdString);
+        break;
+      case kTokenTypeGeneric:
+        obj.Manage(make_shared<string>(value), kTypeIdString);
+        break;
+      default:
+        break;
+      }
     }
 
     return obj;

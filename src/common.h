@@ -20,9 +20,7 @@
 #include <iterator>
 #include <list>
 #include <fstream>
-#include <chrono>
-#include <thread>
-#include <mutex>
+#include <charconv>
 
 //if you build this project by cmake,please turn off all switch macro below.
 //Disbale SDL2 componets for non-GUI environment
@@ -92,6 +90,8 @@ namespace kagami {
   using std::initializer_list;
   using std::is_same;
   using std::is_base_of;
+  using std::from_chars;
+  using std::to_chars;
 #if defined (_WIN32)
   using suzu::TCPClient;
   using suzu::TCPServer;
