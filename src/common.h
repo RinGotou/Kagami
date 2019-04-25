@@ -22,15 +22,6 @@
 #include <fstream>
 #include <charconv>
 
-//if you build this project by cmake,please turn off all switch macro below.
-//Disbale SDL2 componets for non-GUI environment
-//#if not defined(_DISABLE_SDL_)
-//#define _DISABLE_SDL_
-//#endif
-
-//Switching Debugging Feature
-//#define _DEBUG_
-
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include "wstcp_wrapper.h"
@@ -49,6 +40,17 @@
 #else
 #endif
 #endif
+
+#include "minatsuki.log/src/minatsuki.log.h"
+
+//if you build this project by cmake,please turn off all switch macro below.
+//Disbale SDL2 componets for non-GUI environment
+//#if not defined(_DISABLE_SDL_)
+//#define _DISABLE_SDL_
+//#endif
+
+//Switching Debugging Feature
+//#define _DEBUG_
 
 #define MAX_ERROR_COUNT 20
 #define DEFAULT_STACK_DEPTH 10000
@@ -98,12 +100,13 @@ namespace kagami {
   using suzu::TCPConnector;
   using suzu::WSockInfo;
 #endif
+  using namespace minatsuki;
 
   using Byte = uint64_t;
 
   /* Application Info */
-  const string kInterpreterVersion = "2.1";
-  const string kPatchName          = "Little Wing";
+  const string kInterpreterVersion = "2.2";
+  const string kPatchName          = "Little Explorer";
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else

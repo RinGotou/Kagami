@@ -2,35 +2,61 @@
 
 namespace kagami {
   namespace trace {
-    LoggerPolicy *ContactLogger(LoggerPolicy *policy = nullptr) {
-      static LoggerPolicy *logger_policy = nullptr;
+    Agent *ContactLogger(Agent *agent = nullptr) {
+      static Agent *local_agent = nullptr;
 
-      if (policy != nullptr) {
-        logger_policy = policy;
-      }
+      if (agent != nullptr) local_agent = agent;
 
-      return logger_policy;
+      return local_agent;
     }
 
-    void InitLogger(LoggerPolicy *policy) {
-      ContactLogger(policy)->Init();
+    void InitLoggerSession(Agent *agent) {
+      ContactLogger(agent);
+      agent->WriteLine("Kagami Project Session - Start");
+    }
+
+    void StopLoggerSession() {
+      ContactLogger()->WriteLine("Kagami Project Session - Stop");
     }
 
     void AddEvent(Message msg) {
-      auto *logger = ContactLogger();
-      logger->Add(msg);
+      auto *agent = ContactLogger();
+      string buf;
+      auto index = msg.GetIndex();
+
+      if (msg.GetLevel() != kStateNormal && index != 0) {
+        buf.append("(Line:" + to_string(index) + ")");
+      }
+
+      switch (msg.GetLevel()) {
+      case kStateError:  buf.append("Error:"); break;
+      case kStateWarning:buf.append("Warning:"); break;
+      case kStateNormal: buf.append("Info:"); break;
+      default:break;
+      }
+
+      buf.append(msg.GetDetail());
+      agent->WriteLine(buf);
     }
 
     void AddEvent(StateCode code, string detail, StateLevel level) {
-      auto *logger = ContactLogger();
-      logger->Add(Message(code, detail, level));
+      auto *agent = ContactLogger();
+      string buf;
+
+      switch (level) {
+      case kStateError:  buf.append("Error:"); break;
+      case kStateWarning:buf.append("Warning:"); break;
+      case kStateNormal: buf.append("Info:"); break;
+      default:break;
+      }
+
+      buf.append(detail);
+      agent->WriteLine(buf);
     }
 
     void AddEvent(string info) {
-      Message msg(kCodeSuccess, info);
-      
-      auto *logger = ContactLogger();
-      logger->Add(msg);
+      auto *agent = ContactLogger();
+      agent->WriteLine(info);
     }
   }
 }

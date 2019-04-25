@@ -5,6 +5,7 @@ using namespace std;
 using namespace suzu;
 using namespace kagami;
 using namespace kagami::trace;
+using namespace minatsuki;
 using Processor = ArgumentProcessor<kHeadHorizon, kJoinerEqual>;
 
 namespace runtime {
@@ -27,14 +28,17 @@ namespace runtime {
 }
 
 void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log) {
-  auto *logger = real_time_log ?
-    static_cast<LoggerPolicy *>(new RealTimePolicy()) :
-    static_cast<LoggerPolicy *> (new CachePolicy());
+  Agent *agent = nullptr;
 
-  logger->Inject(log_path, path);
+  if (real_time_log) {
+    agent = new StandardRealTimeAgent(log_path.data(), "a+");
+  }
+  else {
+    agent = new StandardCacheAgent(log_path.data(), "a+");
+  }
 
-  trace::InitLogger(logger);
-  trace::AddEvent("Interpreter start");
+  trace::InitLoggerSession(agent);
+  trace::AddEvent("Script:" + path);
 
   DEBUG_EVENT("Your're running a copy of Kagami interpreter with debug flag!");
 
@@ -46,9 +50,8 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
     main_thread.Run();
   }
 
-  trace::AddEvent("Interpreter exit");
-  logger->Final();
-  delete logger;
+  trace::StopLoggerSession();
+  delete agent;
 }
 
 void ApplicationInfo() {
