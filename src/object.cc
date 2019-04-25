@@ -178,7 +178,9 @@ namespace kagami {
 
     auto &container = base_.back();
     for (auto &unit : p) {
-      container.Add(unit.first, Object().CreateRef(unit.second));
+      container.Add(unit.first, unit.second.IsRef() ?
+        Object().CreateRef(unit.second) :
+        unit.second);
     }
   }
 
