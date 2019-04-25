@@ -52,11 +52,10 @@ namespace kagami {
     auto &server = p[kStrMe].Cast<TCPServer>();
     auto &backlog_obj = p["backlog"];
     int backlog = SOMAXCONN;
+    auto str = backlog_obj.Cast<string>();
 
     if (!backlog_obj.Null()) {
-      backlog = stoi(
-        ParseRawString(backlog_obj.Cast<string>())
-      );
+      from_chars(str.data(), str.data() + str.size(), backlog);
     }
 
     bool result = server.StartServer();

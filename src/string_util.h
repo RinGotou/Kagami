@@ -42,21 +42,6 @@ namespace kagami {
     return Message().SetObject(Object(output, type_id));
   }
 
-  template <class StringType>
-  Message StringFamilyPrint(ObjectMap &p) {
-    StringType &str = p.Cast<StringType>(kStrMe);
-
-    if constexpr (is_same<StringType, wstring>::value) {
-      std::wcout << str;
-    }
-    else if constexpr (is_same<StringType, string>::value) {
-      std::cout << str;
-    }
-
-    CHECK_PRINT_OPT();
-    return Message();
-  }
-
   template <class StreamType>
   Message StreamFamilyState(ObjectMap &p) {
     StreamType &stream = p.Cast<StreamType>(kStrMe);

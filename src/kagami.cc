@@ -50,35 +50,33 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
 }
 
 void ApplicationInfo() {
-  cout << kEngineName << " " << kInterpreterVersion << "\n";
-  cout << "Patch: " << kPatchName << "\n";
-  cout << "Build date: " << __DATE__ << "\n";
-  cout << kCopyright << ", " << kMaintainer << endl;
+  puts(ENGINE_NAME " " INTERPRETER_VER "\n");
+  puts("Codename:" CODENAME "\n");
+  puts("Build date:" __DATE__ "\n");
+  puts(COPYRIGHT ", " MAINTAINER "\n");
 }
 
 void HelpFile() {
-  cout << "Usage:"+ runtime::binary_name +" [-OPTION][-OPTION=VALUE]...\n\n";
-  cout << "\tpath=PATH         Path of script file.\n";
-  cout << "\tlog=(PATH|stdout) Output of error log.\n";
-  cout << "\trtlog             Enable real-time logger\n";
-  cout << "\twait              Automatically pause at application exit.\n";
-  cout << "\thelp              Show this message.\n";
-  cout << "\tversion           Show version message of interpreter.\n";
+  puts("Usage:");
+  puts(runtime::binary_name.data());
+  puts(" [-OPTION][-OPTION=VALUE]...\n\n");
+  puts(
+    "\tpath=PATH         Path of script file.\n"
+    "\tlog=(PATH|stdout) Output of error log.\n"
+    "\trtlog             Enable real-time logger\n"
+    "\twait              Automatically pause at application exit.\n"
+    "\thelp              Show this message.\n"
+    "\tversion           Show version message of interpreter.\n"
+  );
 }
 
 void AtExitHandler() {
-  cout << "(Application Exit) Press enter to close..." << endl;
-  cin.get();
+  puts("(Application Exit) Press enter to close...");
+  getchar();
 }
 
 inline void Patch(string locale_str) {
-  //Disable buff sync
-  ios::sync_with_stdio(false);
-  //Set locale for all C-Style API input/output
-  setlocale(LC_ALL, locale_str.c_str());
-  //Init locale for cout/wcout
-  wcout.imbue(locale(locale_str));
-  cout.imbue(locale(locale_str));
+  setlocale(LC_ALL, locale_str.data());
 }
 
 void Processing(Processor &processor) {
@@ -120,7 +118,7 @@ int main(int argc, char **argv) {
 
 #if not defined(_DISABLE_SDL_)
   if (dawn::EnvironmentSetup() != 0) {
-    cout << "SDL initialization error!" << endl;
+    puts("SDL initialization error!");
     return 0;
   }
 #endif
@@ -130,8 +128,8 @@ int main(int argc, char **argv) {
   }
   else {
     if (!processor.Generate(argc, argv)) {
-      cout << ArgumentProcessorError(processor.Error()).Report(processor.BadArg())
-        << endl;
+      puts(ArgumentProcessorError(processor.Error())
+        .Report(processor.BadArg()).data());
       HelpFile();
     }
     else {

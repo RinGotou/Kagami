@@ -7,7 +7,7 @@ namespace kagami {
 
   Message SystemCommand(ObjectMap &p) {
     EXPECT_TYPE(p, "command", kTypeIdString);
-    int64_t result = system(p.Cast<string>("command").c_str());
+    int64_t result = system(p.Cast<string>("command").data());
     return Message().SetObject(Object(result, kTypeIdInt));
   }
 
@@ -41,16 +41,16 @@ namespace kagami {
     string type_id = obj.GetTypeId();
     if (util::IsPlainType(type_id)) {
       if (type_id == kTypeIdInt) {
-        std::cout << obj.Cast<int64_t>() << std::flush;
+        printf("%lld", obj.Cast<int64_t>());
       }
       else if (type_id == kTypeIdFloat) {
-        std::cout << obj.Cast<double>() << std::flush;
+        printf("%f", obj.Cast<double>());
       }
       else if (type_id == kTypeIdString) {
-        std::cout << obj.Cast<string>() << std::flush;
+        printf("%s", obj.Cast<string>().data());
       }
       else if (type_id == kTypeIdBool) {
-        std::cout << obj.Cast<bool>() << std::flush;
+        puts(obj.Cast<bool>() ? "true" : "false");
       }
 
       CHECK_PRINT_OPT();
@@ -61,7 +61,7 @@ namespace kagami {
     vector<string> methods = management::type::GetMethods(obj.GetTypeId());
 
     if (!management::type::CheckMethod(kStrPrint, obj.GetTypeId())) {
-      std::cout << MakeObjectString(obj) << std::endl;
+      puts(MakeObjectString(obj).data());
       return Message();
     }
 
@@ -90,8 +90,7 @@ namespace kagami {
       Print(obj_map);
     }
 
-    string buf;
-    std::getline(std::cin, buf);
+    string buf = GetLine();
     DEBUG_EVENT("(Input Interface)Content:" + buf);
     return Message().SetObject(buf);
   }

@@ -80,7 +80,7 @@ namespace kagami {
     if (s.empty()) return wstring();
     size_t length = s.size();
     wchar_t *wc = (wchar_t *)malloc(sizeof(wchar_t) * (length + 2));
-    mbstowcs(wc, s.c_str(), s.length() + 1);
+    mbstowcs(wc, s.data(), s.length() + 1);
     std::wstring str(wc);
     free(wc);
     return str;
@@ -90,7 +90,7 @@ namespace kagami {
     if (s.empty()) return string();
     size_t length = s.size();
     char *c = (char *)malloc(sizeof(char) * length * 2);
-    wcstombs(c, s.c_str(), s.length() + 1);
+    wcstombs(c, s.data(), s.length() + 1);
     std::string result(c);
     free(c);
     return result;
@@ -1350,7 +1350,7 @@ namespace kagami {
 
   void Machine::CommandReturn(ArgumentList &args) {
     if (worker_stack_.size() <= 1) {
-      trace::AddEvent(kCodeBadExpression, "Unexpected return.", kStateError);
+      trace::AddEvent("Unexpected return.", kStateError);
       return;
     }
 

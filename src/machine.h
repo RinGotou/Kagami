@@ -8,7 +8,7 @@
 
 #define CHECK_PRINT_OPT()                          \
   if (p.find(kStrSwitchLine) != p.end()) {         \
-    std::cout << std::endl;                        \
+    putc('\n', stdout);                            \
   }
 
 #define EXPECT_TYPE(_Map, _Item, _Type)            \

@@ -82,8 +82,8 @@ namespace suzu {
       hints.ai_protocol = IPPROTO_TCP;
 
       result_code_ = getaddrinfo(
-        addr_.empty()? nullptr : addr_.c_str(),
-        port_.c_str(),
+        addr_.empty()? nullptr : addr_.data(),
+        port_.data(),
         &hints,
         &addr_info_
       );
@@ -163,7 +163,7 @@ namespace suzu {
 
       result_code_ = send(
         connector_,
-        content.c_str(),
+        content.data(),
         static_cast<int>(content.size()),
         0
       );
@@ -221,7 +221,7 @@ namespace suzu {
         
         result_code_ = send(
           connector_,
-          content.c_str(),
+          content.data(),
           static_cast<int>(buf_size_),
           0
         );

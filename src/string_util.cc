@@ -194,6 +194,13 @@ namespace kagami {
     return Message().SetObject(result);
   }
 
+  Message WideStringPrint(ObjectMap &p) {
+    wstring &str = p.Cast<wstring>(kStrMe);
+    OutStreamW(stdout).WriteLine(str);
+    CHECK_PRINT_OPT();
+    return Message();
+  }
+
   //Function
   Message FunctionGetId(ObjectMap &p) {
     auto &interface = p.Cast<Interface>(kStrMe);
@@ -248,7 +255,6 @@ namespace kagami {
       .InitMethods(
         {
           Interface(StringFamilyGetElement<string>, "index", "__at"),
-          Interface(StringFamilyPrint<string>, "", "print"),
           Interface(StringFamilySubStr<string>, "start|size", "substr"),
           Interface(GetStringFamilySize<string>, "", "size"),
           Interface(StringFamilyConverting<wstring, string>, "", "to_wide"),
@@ -300,7 +306,7 @@ namespace kagami {
         {
           Interface(GetStringFamilySize<wstring>,  "", "size"),
           Interface(StringFamilyGetElement<wstring>, "index", "__at"),
-          Interface(StringFamilyPrint<wstring>, "", "print"),
+          Interface(WideStringPrint, "", "print"),
           Interface(StringFamilySubStr<wstring>, "start|size", "substr"),
           Interface(StringFamilyConverting<string, wstring>, "", "to_byte"),
           Interface(WideStringCompare, kStrRightHandSide, kStrCompare)

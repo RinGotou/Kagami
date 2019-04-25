@@ -1,4 +1,9 @@
 #pragma once
+#include <ctime>
+#include <cstdio>
+#include <clocale>
+#include <cstdlib>
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -9,17 +14,10 @@
 #include <regex>
 #include <stack>
 #include <locale>
-#include <clocale>
-#include <cstdlib>
 #include <typeinfo>
-#include <iostream>
-#include <fstream>
-#include <ctime>
-#include <cstdio>
 #include <type_traits>
 #include <iterator>
 #include <list>
-#include <fstream>
 #include <charconv>
 
 #if defined(_WIN32)
@@ -52,6 +50,12 @@
 //Switching Debugging Feature
 //#define _DEBUG_
 
+#define ENGINE_NAME "Kagami Project"
+#define INTERPRETER_VER "2.2"
+#define CODENAME "Litte Explorer"
+#define MAINTAINER "Suzu Nakamura"
+#define COPYRIGHT "Copyright(c) 2019"
+
 #define MAX_ERROR_COUNT 20
 #define DEFAULT_STACK_DEPTH 10000
 #define DEFAULT_GIL_TICK 20
@@ -72,19 +76,11 @@ namespace kagami {
   using std::make_shared;
   using std::make_unique;
   using std::size_t;
-  using std::ifstream;
-  using std::ofstream;
-  using std::wifstream;
-  using std::wostream;
   using std::stack;
   using std::to_string;
-  using std::stoi;
-  using std::stof;
   using std::stod;
   using std::stol;
-  using std::stoul;
   using std::wstring;
-  using std::ostream;
   using std::list;
   using std::thread;
   using std::mutex;
@@ -105,16 +101,18 @@ namespace kagami {
   using Byte = uint64_t;
 
   /* Application Info */
-  const string kInterpreterVersion = "2.2";
-  const string kPatchName          = "Little Explorer";
+  const string kInterpreterVersion = INTERPRETER_VER;
+  const string kPatchName          = CODENAME;
 #if defined(_WIN32)
   const string kPlatformType   = "Windows";
 #else
   const string kPlatformType   = "Unix";
 #endif
-  const string kEngineName     = "Kagami Project";
-  const string kMaintainer     = "Suzu Nakamura";
-  const string kCopyright      = "Copyright(c) 2019";
+  const string kEngineName     = ENGINE_NAME;
+  const string kMaintainer     = MAINTAINER;
+  const string kCopyright      = COPYRIGHT;
+
+
 
   /* Message state code for Message class */
   enum StateCode {

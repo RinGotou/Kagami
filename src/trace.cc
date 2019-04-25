@@ -39,7 +39,7 @@ namespace kagami {
       agent->WriteLine(buf);
     }
 
-    void AddEvent(StateCode code, string detail, StateLevel level) {
+    void AddEvent(string detail, StateLevel level) {
       auto *agent = ContactLogger();
       string buf;
 

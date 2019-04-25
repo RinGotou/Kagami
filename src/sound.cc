@@ -8,7 +8,7 @@ namespace kagami {
 
 #if defined(_WIN32) && defined(HAVE_STDIO_H)
     wstring wpath = s2ws(path);
-    auto *fp = _wfopen(wpath.c_str(), L"r");
+    auto *fp = _wfopen(wpath.data(), L"r");
     auto *ops = SDL_RWFromFP(fp, SDL_TRUE);
     dawn::ManagedMusic music(new dawn::Music(ops));
 #else
