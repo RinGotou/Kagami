@@ -28,14 +28,9 @@ namespace runtime {
 }
 
 void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log) {
-  Agent *agent = nullptr;
-
-  if (real_time_log) {
-    agent = new StandardRealTimeAgent(log_path.data(), "a+");
-  }
-  else {
-    agent = new StandardCacheAgent(log_path.data(), "a+");
-  }
+  Agent *agent = real_time_log ?
+    static_cast<Agent *>(new StandardRealTimeAgent(log_path.data(), "a+")) :
+    static_cast<Agent *>(new StandardCacheAgent(log_path.data(), "a+"));
 
   trace::InitLoggerSession(agent);
   trace::AddEvent("Script:" + path);
