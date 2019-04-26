@@ -405,12 +405,13 @@ namespace kagami {
 
     //Modified version for function invoking
     if (type_id != kTypeIdNull) {
-      if (!type::CheckMethod(id, type_id)) {
+      interface = FindInterface(id, type_id);
+
+      if (interface == nullptr) {
         worker.MakeError("Method is not found - " + id);
         return false;
       }
 
-      interface = FindInterface(id, type_id);
       return true;
     }
     else {
@@ -445,12 +446,13 @@ namespace kagami {
 
       if (worker.error) return false;
 
-      if (!type::CheckMethod(id, obj.GetTypeId())) {
+      interface = FindInterface(id, obj.GetTypeId());
+
+      if (interface == nullptr) {
         worker.MakeError("Method is not found - " + id);
         return false;
       }
 
-      interface = FindInterface(id, obj.GetTypeId());
       obj_map.emplace(NamedObject(kStrMe, obj));
       return true;
     }
@@ -671,9 +673,13 @@ namespace kagami {
 
   void Machine::SetSegmentInfo(ArgumentList &args, bool cmd_info) {
     auto &worker = worker_stack_.top();
+    auto &data = args[0].data;
+    int code = 0;
     worker.logic_idx = worker.idx;
     if (cmd_info) {
-      worker.last_command = static_cast<GenericToken>(stol(args[0].data));
+      from_chars(data.data(), data.data() + data.size(), code);
+      worker.last_command = static_cast<GenericToken>(code);
+      //worker.last_command = static_cast<GenericToken>(stol(args[0].data));
     }
   }
 

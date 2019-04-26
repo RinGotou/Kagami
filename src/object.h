@@ -215,8 +215,12 @@ namespace kagami {
     ObjectContainer(const ObjectContainer &&mgr) {}
 
     ObjectContainer(const ObjectContainer &container) :
-      prev_(container.prev_), base_(container.base_),
-      dest_map_(container.dest_map_) {}
+      prev_(container.prev_) {
+      if (!container.base_.empty()) {
+        base_ = container.base_;
+        BuildCache();
+      }
+    }
 
     bool Empty() const {
       return base_.empty();
@@ -280,7 +284,7 @@ namespace kagami {
 
     template <class T>
     T &Cast(string id) {
-      return this->at(id).Cast<T>();
+      return this->operator[](id).Cast<T>();
     }
 
     bool CheckTypeId(string id, string type_id) {
