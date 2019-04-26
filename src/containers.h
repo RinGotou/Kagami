@@ -26,7 +26,7 @@ namespace kagami {
     be packed safely.
   */
   template <class IteratorType>
-  class STLIterator : public IteratorInterface {
+  class BasicIterator : public IteratorInterface {
   public:
     using value_type = IteratorType;
 
@@ -34,16 +34,16 @@ namespace kagami {
     IteratorType it_;
 
   public:
-    STLIterator() = delete;
+    BasicIterator() = delete;
 
-    STLIterator(IteratorType it) :
+    BasicIterator(IteratorType it) :
       it_(it) {}
 
-    STLIterator(const STLIterator &rhs) :
+    BasicIterator(const BasicIterator &rhs) :
       it_(rhs.it_) {}
 
-    STLIterator(const STLIterator &&rhs) :
-      STLIterator(rhs) {}
+    BasicIterator(const BasicIterator &&rhs) :
+      BasicIterator(rhs) {}
 
     void StepForward() {
       ++it_;
@@ -62,7 +62,7 @@ namespace kagami {
     }
   };
 
-  using ObjectArrayIterator = STLIterator<ObjectArray::iterator>;
+  using ObjectArrayIterator = BasicIterator<ObjectArray::iterator>;
 
   /*
     Top iterator wrapper.
@@ -98,7 +98,7 @@ namespace kagami {
     */
     template <class Tx>
     UnifiedIterator(Tx it, BaseContainerCode type) :
-      it_(dynamic_pointer_cast<IteratorInterface>(make_shared<STLIterator<Tx>>(it))),
+      it_(dynamic_pointer_cast<IteratorInterface>(make_shared<BasicIterator<Tx>>(it))),
       container_type_(type) {}
 
     void StepForward() { it_->StepForward(); }

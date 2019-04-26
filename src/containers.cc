@@ -158,6 +158,16 @@ namespace kagami {
     return dest_base;
   }
 
+  Message NewPair(ObjectMap &p) {
+    auto &left = p["left"];
+    auto &right = p["right"];
+    ManagedPair pair = make_shared<ObjectPair>(
+      management::type::CreateObjectCopy(left),
+      management::type::CreateObjectCopy(right));
+    return Message().SetObject(Object(pair, kTypeIdPair)
+      .SetConstructorFlag());
+  }
+
   void InitContainerComponents() {
     using management::type::NewTypeSetup;
     using management::type::CustomHasher;

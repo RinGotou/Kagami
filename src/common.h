@@ -255,6 +255,7 @@ namespace kagami {
   const string kTypeIdClientConnector = "ClientConnector";
   const string kTypeIdTCPConnector    = "TCPConnector";
   const string kTypeIdIterator        = "iterator";
+  const string kTypeIdPair            = "pair";
 
   const string
     kStrHash           = "hash",

@@ -192,6 +192,8 @@ namespace kagami {
 
   using ObjectArray = vector<Object>;
   using ManagedArray = shared_ptr<ObjectArray>;
+  using ObjectPair = pair<Object, Object>;
+  using ManagedPair = shared_ptr<ObjectPair>;
 
   class ObjectContainer {
   private:
