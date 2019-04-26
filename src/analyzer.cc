@@ -244,15 +244,15 @@ namespace kagami {
   }
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
-    if (blk->next_2.first != "(" && blk->next_2.first != "[") {
-      deque<Argument> arguments = {
-        blk->args.back(),
-        Argument(blk->next.first,kArgumentNormal,blk->next.second)
-      };
+    //if (blk->next_2.first != "(" && blk->next_2.first != "[") {
+    //  deque<Argument> arguments = {
+    //    blk->args.back(),
+    //    Argument(blk->next.first,kArgumentNormal,blk->next.second)
+    //  };
 
-      action_base_.emplace_back(Command(Request(kTokenAssertR), arguments));
-      //action_base_.back().first.option.no_feeding = true;
-    }
+    //  action_base_.emplace_back(Command(Request(kTokenAssertR), arguments));
+    //  //action_base_.back().first.option.no_feeding = true;
+    //}
 
     blk->domain = blk->args.back();
     blk->args.pop_back();
@@ -415,11 +415,6 @@ namespace kagami {
       }
 
       if (find_in_vector(token, kReservedWordStore)) {
-        //if (blk->next.first == "(") {
-        //  error_string_ = "Invalid '(' after " + blk->current.first;
-        //  return false;
-        //}
-
         blk->symbol.emplace_back(Request(token));
         blk->args.emplace_back(Argument());
         return true;
@@ -459,11 +454,16 @@ namespace kagami {
 
     Argument arg(blk->current.first, kArgumentObjectStack, kTokenTypeGeneric);
     if (blk->domain.type != kArgumentNull) {
-      arg.domain.data = blk->domain.data;
-      arg.domain.type = blk->domain.type;
+      Request request(blk->current.first);
+      request.domain = blk->domain;
+      blk->symbol.emplace_back(request);
+      blk->args.emplace_back(Argument());
+      InstructionFilling(blk);
+      blk->domain = Argument();
     }
-    blk->domain = Argument();
-    blk->args.emplace_back(arg);
+    else {
+      blk->args.emplace_back(arg);
+    }
     
     return true;
   }

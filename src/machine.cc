@@ -390,7 +390,7 @@ namespace kagami {
     else if (arg.type == kArgumentReturnStack) {
       if (!return_stack.empty()) {
         obj = return_stack.top();
-        if(!checking) return_stack.pop(); //For DomainAssertR
+        if(!checking) return_stack.pop(); 
       }
       else {
         worker.MakeError("Can't get object from stack.");
@@ -652,7 +652,7 @@ namespace kagami {
 
     if (!found) {
       //Immediately push event to avoid ugly checking block.
-      trace::AddEvent("Method is not found" + id);
+      trace::AddEvent("Method is not found - " + id);
       return Message();
     }
 
@@ -776,7 +776,7 @@ namespace kagami {
     ERROR_CHECKING(!type::CheckBehavior(iterator_obj, kIteratorBehavior),
       "Invalid iterator behavior");
 
-    auto unit = Invoke(iterator_obj, "get").GetObj();
+    auto unit = Invoke(iterator_obj, "obj").GetObj();
 
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
@@ -807,7 +807,7 @@ namespace kagami {
       worker.mode = kModeForEachJump;
     }
     else {
-      auto unit = Invoke(iterator, "get").GetObj();
+      auto unit = Invoke(iterator, "obj").GetObj();
       obj_stack_.CreateObject(unit_id, unit);
     }
   }
@@ -1342,18 +1342,6 @@ namespace kagami {
     worker.RefreshReturnStack(obj);
   }
 
-  void Machine::DomainAssert(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
-    Object obj = FetchObject(args[0], true);
-    string id = FetchObject(args[1]).Cast<string>();
-
-    auto interface = FindInterface(id, obj.GetTypeId());
-    ERROR_CHECKING(interface == nullptr, "Method is not found - " + id);
-
-    Object ret_obj(*interface, kTypeIdFunction);
-    worker.RefreshReturnStack(ret_obj);
-  }
-
   void Machine::CommandReturn(ArgumentList &args) {
     if (worker_stack_.size() <= 1) {
       trace::AddEvent("Unexpected return.", kStateError);
@@ -1492,9 +1480,6 @@ namespace kagami {
       break;
     case kTokenWhen:
       CommandWhen(args);
-      break;
-    case kTokenAssertR:
-      DomainAssert(args);
       break;
     case kTokenEnd:
       switch (worker.mode) {

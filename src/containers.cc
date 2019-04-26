@@ -208,7 +208,7 @@ namespace kagami {
     NewTypeSetup(kTypeIdIterator, SimpleSharedPtrCopy<UnifiedIterator>)
       .InitMethods(
         {
-          Interface(IteratorGet, "", "get"),
+          Interface(IteratorGet, "", "obj"),
           Interface(IteratorForward, "", "forward"),
           Interface(IteratorBack, "", "back"),
           Interface(IteratorStepForward, "", "step_forward"),

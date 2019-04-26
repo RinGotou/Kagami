@@ -203,7 +203,7 @@ namespace kagami {
 
   class Machine;
 
-  const string kIteratorBehavior = "get|step_forward|step_back|__compare";
+  const string kIteratorBehavior = "obj|step_forward|step_back|__compare";
   const string kContainerBehavior = "head|tail";
   using CombinedCodeline = pair<size_t, string>;
   using CommandPointer = Command * ;
@@ -338,7 +338,6 @@ namespace kagami {
 
     void ExpList(ArgumentList &args);
     void InitArray(ArgumentList &args);
-    void DomainAssert(ArgumentList &args);
 
     void CommandReturn(ArgumentList &args);
     void MachineCommands(GenericToken token, ArgumentList &args, Request &request);
