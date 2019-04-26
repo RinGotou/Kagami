@@ -26,7 +26,7 @@ fn GetSongData()
   end
 end
 
-fn main()
+fn Main()
   pos = 0
   size = song_list.size
   
@@ -39,7 +39,6 @@ fn main()
   while choice != 'exit'
     print(state_hint + ' - ')
     print(song.left)
-    choice = input('>')
     
     case choice
     when 'pause'
@@ -64,10 +63,16 @@ fn main()
       end
     end
   end
+  
+  case choice
+  when 'pause'
+    PauseMusic()
+    state_hint = 'Paused'
+  when
 end
 
 println('Kagami Project version:' + version() + '\nCodename:' + patch())
 println('Sample:Simple Music Player\n')
 println('Build playlist info...')
-GetSongData()
+GetSongList()
 main()
