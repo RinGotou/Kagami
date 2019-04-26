@@ -1,6 +1,12 @@
 #include "common.h"
 
 namespace kagami {
+  string GetLine();
+  wstring GetLineW();
+  FILE *GetVMStdout(FILE *dest = nullptr);
+  FILE *GetVMStdin(FILE *dest = nullptr);
+  void CloseStream();
+
   class BasicStream {
   protected:
     bool eof_;
@@ -102,6 +108,8 @@ namespace kagami {
   //class FileStreamEx : public BasicStream {
 
   //};
-  string GetLine();
-  wstring GetLineW();
+
 }
+
+#define VM_STDOUT GetVMStdout()
+#define VM_STDIN GetVMStdin()

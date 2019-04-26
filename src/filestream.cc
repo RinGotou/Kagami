@@ -1,6 +1,29 @@
 #include "filestream.h"
 
 namespace kagami {
+  FILE *GetVMStdout(FILE *dest) {
+    static FILE *vm_stdout = stdout;
+    if (dest != nullptr) {
+      vm_stdout = dest;
+    }
+
+    return vm_stdout;
+  }
+
+  FILE *GetVMStdin(FILE *dest) {
+    static FILE *vm_stdin = stdin;
+    if (dest != nullptr) {
+      vm_stdin = dest;
+    }
+
+    return vm_stdin;
+  }
+
+  void CloseStream() {
+    if (GetVMStdin() != stdin) fclose(GetVMStdin());
+    if (GetVMStdout() != stdout) fclose(GetVMStdout());
+  }
+
   string InStream::GetLine() {
     if (fp_ == nullptr || eof_) return string();
 
@@ -81,8 +104,8 @@ namespace kagami {
     string result;
     int buf = 0;
     while (buf != EOF) {
-      buf = getchar();
-      if (buf == '\n') break;
+      buf = fgetc(GetVMStdin());
+      if (buf == '\n' || buf == EOF) break;
       result.append(1, buf);
     }
 
@@ -93,8 +116,8 @@ namespace kagami {
     wstring result;
     wint_t buf = 0;
     while (buf != WEOF) {
-      buf = getwchar();
-      if (buf == L'\n') break;
+      buf = fgetwc(GetVMStdin());
+      if (buf == L'\n' || buf == WEOF) break;
       result.append(1, buf);
     }
 

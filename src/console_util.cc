@@ -41,16 +41,16 @@ namespace kagami {
     string type_id = obj.GetTypeId();
     if (util::IsPlainType(type_id)) {
       if (type_id == kTypeIdInt) {
-        printf("%lld", obj.Cast<int64_t>());
+        fprintf(VM_STDOUT, "%lld", obj.Cast<int64_t>());
       }
       else if (type_id == kTypeIdFloat) {
-        printf("%f", obj.Cast<double>());
+        fprintf(VM_STDOUT, "%f", obj.Cast<double>());
       }
       else if (type_id == kTypeIdString) {
-        printf("%s", obj.Cast<string>().data());
+        fputs(obj.Cast<string>().data(), VM_STDOUT);
       }
       else if (type_id == kTypeIdBool) {
-        puts(obj.Cast<bool>() ? "true" : "false");
+        fputs(obj.Cast<bool>() ? "true" : "false", VM_STDOUT);
       }
 
       CHECK_PRINT_OPT();

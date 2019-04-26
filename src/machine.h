@@ -8,7 +8,7 @@
 
 #define CHECK_PRINT_OPT()                          \
   if (p.find(kStrSwitchLine) != p.end()) {         \
-    putc('\n', stdout);                            \
+    putc('\n', VM_STDOUT);                         \
   }
 
 #define EXPECT_TYPE(_Map, _Item, _Type)            \

@@ -75,10 +75,6 @@ void AtExitHandler() {
   getchar();
 }
 
-inline void Patch(string locale_str) {
-  setlocale(LC_ALL, locale_str.data());
-}
-
 void Processing(Processor &processor) {
   if (processor.Exist("path")) {
     string path = processor.ValueOf("path");
@@ -90,10 +86,26 @@ void Processing(Processor &processor) {
       atexit(AtExitHandler);
     }
 
-    //Need to place a command argument for this option
-    Patch("en_US.UTF-8");
+    if (processor.Exist("vm_stdout")) {
+      string vm_stdout = processor.ValueOf("vm_stdout");
+      if (log == vm_stdout) {
+        puts("VM stdout/Log output confliction!");
+        return;
+      }
+
+      GetVMStdout(fopen(vm_stdout.data(), "w"));
+    }
+
+    if (processor.Exist("vm_stdin")) {
+      string vm_stdin = processor.ValueOf("vm_stdin");
+      GetVMStdin(fopen(vm_stdin.data(), "r"));
+    }
+
+    setlocale(LC_ALL, processor.Exist("locale") ?
+      processor.ValueOf("locale").data() : "en_US.UTF8");
 
     StartInterpreter_Kisaragi(path, log, processor.Exist("rtlog"));
+    CloseStream();
   }
   else if (processor.Exist("help")) {
     HelpFile();
@@ -113,7 +125,10 @@ int main(int argc, char **argv) {
     Pattern("version", Option(false, false, 1)),
     Pattern("rtlog"  , Option(false, true)),
     Pattern("log"    , Option(true, true)),
-    Pattern("wait"   , Option(false, true))
+    Pattern("wait"   , Option(false, true)),
+    Pattern("locale" , Option(true, true)),
+    Pattern("vm_stdout" ,Option(true, true)),
+    Pattern("vm_stdin"  ,Option(true, true))
   };
 
 #if not defined(_DISABLE_SDL_)
