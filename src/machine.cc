@@ -279,7 +279,11 @@ namespace kagami {
     }
     else if (type == kTokenTypeFloat) {
       double float_value;
+#if not defined (_MSC_VER)
+      float_value = stod(value);
+#else
       from_chars(value.data(), value.data() + value.size(), float_value);
+#endif
       obj.Manage(make_shared<double>(float_value), kTypeIdFloat);
     }
     else {
