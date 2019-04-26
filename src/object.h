@@ -190,7 +190,7 @@ namespace kagami {
     bool Null() const { return ptr_ == nullptr && real_dest_ == nullptr; }
   };
 
-  using ObjectArray = vector<Object>;
+  using ObjectArray = deque<Object>;
   using ManagedArray = shared_ptr<ObjectArray>;
   using ObjectPair = pair<Object, Object>;
   using ManagedPair = shared_ptr<ObjectPair>;

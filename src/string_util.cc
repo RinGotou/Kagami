@@ -74,8 +74,6 @@ namespace kagami {
   Message StringToArray(ObjectMap &p) {
     auto &str = p.Cast<string>(kStrMe);
     shared_ptr<ObjectArray> base(make_shared<ObjectArray>());
-    
-    base->reserve(str.size());
 
     for (auto &unit : str) {
       base->emplace_back(string().append(1, unit));

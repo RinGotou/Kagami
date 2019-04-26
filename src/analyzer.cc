@@ -447,7 +447,7 @@ namespace kagami {
         request.domain.type = kArgumentNull;
       }
       blk->symbol.emplace_back(request);
-
+      blk->domain = Argument();
       return true;
     }
 

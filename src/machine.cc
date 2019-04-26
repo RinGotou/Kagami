@@ -1588,8 +1588,6 @@ namespace kagami {
     }
 
     if (!temp_list.empty()) {
-      va_base->reserve(temp_list.size());
-
       for (auto it = temp_list.begin(); it != temp_list.end(); ++it) {
         va_base->emplace_back(*it);
       }

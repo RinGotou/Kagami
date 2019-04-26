@@ -56,7 +56,6 @@ namespace kagami {
 
       Object obj = p["init_value"];
 
-      base->reserve(size);
       auto type_id = obj.GetTypeId();
 
       for (size_t count = 0; count < size; count++) {
@@ -149,8 +148,6 @@ namespace kagami {
     auto &src_base = *static_pointer_cast<ObjectArray>(ptr);
     ManagedArray dest_base = make_shared<ObjectArray>();
 
-    dest_base->reserve(src_base.size());
-
     for (auto &unit : src_base) {
       dest_base->emplace_back(management::type::CreateObjectCopy(unit));
     }
@@ -166,6 +163,25 @@ namespace kagami {
       management::type::CreateObjectCopy(right));
     return Message().SetObject(Object(pair, kTypeIdPair)
       .SetConstructorFlag());
+  }
+
+  Message PairLeft(ObjectMap &p) {
+    auto &base = p.Cast<ObjectPair>(kStrMe);
+    return Message().SetObject(Object().CreateRef(base.first));
+  }
+
+  Message PairRight(ObjectMap &p) {
+    auto &base = p.Cast<ObjectPair>(kStrMe);
+    return Message().SetObject(Object().CreateRef(base.second));
+  }
+
+  shared_ptr<void> PairCopyingPolicy(shared_ptr<void> ptr) {
+    auto &src_base = *static_pointer_cast<ObjectPair>(ptr);
+    ManagedPair dest_base = make_shared<ObjectPair>(
+      management::type::CreateObjectCopy(src_base.first),
+      management::type::CreateObjectCopy(src_base.second)
+      );
+    return dest_base;
   }
 
   void InitContainerComponents() {
@@ -198,6 +214,17 @@ namespace kagami {
           Interface(IteratorStepForward, "", "step_forward"),
           Interface(IteratorStepBack, "", "step_back"),
           Interface(IteratorOperatorCompare, kStrRightHandSide, kStrCompare)
+        }
+    );
+
+    NewTypeSetup(kTypeIdPair, PairCopyingPolicy)
+      .InitConstructor(
+        Interface(NewPair, "left|right", "pair")
+      )
+      .InitMethods(
+        {
+          Interface(PairLeft, "", "left"),
+          Interface(PairRight, "", "right")
         }
     );
 
