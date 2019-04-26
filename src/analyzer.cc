@@ -234,26 +234,16 @@ namespace kagami {
   }
 
   void Analyzer::EqualMark(AnalyzerWorkBlock *blk) {
-    if (!blk->args.empty()) {
-      if (blk->next.first != kStrFn) {
-        Request request(kTokenBind);
-        request.priority = util::GetTokenPriority(kTokenBind);
-        blk->symbol.emplace_back(request);
-      }
+    if (!blk->args.empty() && blk->next.first != kStrFn) {
+      Request request(kTokenBind);
+      request.option.local_object = blk->local_object;
+      request.priority = util::GetTokenPriority(kTokenBind);
+      blk->local_object = false;
+      blk->symbol.emplace_back(request);
     }
   }
 
   void Analyzer::Dot(AnalyzerWorkBlock *blk) {
-    //if (blk->next_2.first != "(" && blk->next_2.first != "[") {
-    //  deque<Argument> arguments = {
-    //    blk->args.back(),
-    //    Argument(blk->next.first,kArgumentNormal,blk->next.second)
-    //  };
-
-    //  action_base_.emplace_back(Command(Request(kTokenAssertR), arguments));
-    //  //action_base_.back().first.option.no_feeding = true;
-    //}
-
     blk->domain = blk->args.back();
     blk->args.pop_back();
   }
@@ -390,6 +380,16 @@ namespace kagami {
       blk->foreach_line = true;
       blk->symbol.emplace_back(Request(kTokenFor));
       blk->args.emplace_back(Argument());
+      return true;
+    }
+
+    if (token == kTokenLocal) {
+      if (blk->next_2.first != "=") {
+        error_string_ = "Invalid 'local' token.";
+        return false;
+      }
+
+      blk->local_object = true;
       return true;
     }
 

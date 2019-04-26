@@ -23,8 +23,10 @@ namespace kagami {
 
   struct ArgumentOption {
     bool void_call;
+    bool local_object;
 
-    ArgumentOption() : void_call(false) {}
+    ArgumentOption() : 
+      void_call(false), local_object(false) {}
   };
 
   class Argument {

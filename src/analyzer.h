@@ -23,6 +23,7 @@ namespace kagami {
     bool need_reversing;
     bool fn_line;
     bool foreach_line;
+    bool local_object;
     Token current;
     Token next;
     Token next_2;
@@ -36,6 +37,7 @@ namespace kagami {
       need_reversing(false),
       fn_line(false),
       foreach_line(false),
+      local_object(false),
       current(),
       next(),
       next_2(),

@@ -8,22 +8,22 @@ fn BubbleSort(array_size)
     num = num - 1
     i = i + 1
   end
-  
-  it = ar.head()
-  tail = ar.tail()
+
+  it = ar.head
+  tail = ar.tail
   
   while it != tail
-    pos = it.forward()
+    pos = it.forward
     
     while pos != tail
-      if it.get() > pos.get()
-        swap(it.get(), pos.get())
+      if it.obj > pos.obj
+        swap(it.obj, pos.obj)
       end
       
-      pos.step_forward()
+      pos.step_forward
     end
     
-    it.step_forward()
+    it.step_forward
   end
 end
 

@@ -316,7 +316,7 @@ namespace kagami {
     void CommandLoopEnd();
     void CommandForEachEnd();
 
-    void CommandBind(ArgumentList &args);
+    void CommandBind(ArgumentList &args, bool local_value);
     void CommandTypeId(ArgumentList &args);
     void CommandMethods(ArgumentList &args);
     void CommandExist(ArgumentList &args);

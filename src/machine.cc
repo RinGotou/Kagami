@@ -1024,7 +1024,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandBind(ArgumentList &args) {
+  void Machine::CommandBind(ArgumentList &args, bool local_value) {
     using namespace type;
     auto &worker = worker_stack_.top();
     //Do not change the order!
@@ -1038,18 +1038,21 @@ namespace kagami {
     }
     else {
       string id = lhs.Cast<string>();
-      ObjectPointer ptr = obj_stack_.Find(id);
 
-      if (ptr != nullptr) {
-        ptr->Deref() = CreateObjectCopy(rhs);
+      if (!local_value) {
+        ObjectPointer ptr = obj_stack_.Find(id);
+
+        if (ptr != nullptr) {
+          ptr->Deref() = CreateObjectCopy(rhs);
+          return;
+        }
       }
-      else {
-        Object obj = CreateObjectCopy(rhs);
-        ERROR_CHECKING(util::GetTokenType(id) != kTokenTypeGeneric,
-          "Invalid object id.");
-        ERROR_CHECKING(!obj_stack_.CreateObject(id, obj),
-          "Object binding failed.");
-      }
+
+      Object obj = CreateObjectCopy(rhs);
+      ERROR_CHECKING(util::GetTokenType(id) != kTokenTypeGeneric,
+        "Invalid object id.");
+      ERROR_CHECKING(!obj_stack_.CreateObject(id, obj),
+        "Object binding failed.");
     }
   }
 
@@ -1452,7 +1455,7 @@ namespace kagami {
       SetSegmentInfo(args);
       break;
     case kTokenBind:
-      CommandBind(args);
+      CommandBind(args, request.option.local_object);
       break;
     case kTokenExpList:
       ExpList(args);

@@ -145,6 +145,7 @@ namespace kagami {
 
   /* Reserved keywords mark/IR framework commands */
   enum GenericToken {
+    kTokenLocal,
     kTokenCall,
     kTokenHash,
     kTokenFor,
@@ -257,6 +258,7 @@ namespace kagami {
   const string kTypeIdPair            = "pair";
 
   const string
+    kStrLocal          = "local",
     kStrHash           = "hash",
     kStrIf             = "if",
     kStrFn             = "fn",
