@@ -36,6 +36,7 @@
 # Misc
 script.log
 event.log
+bin
 .vscode
 vsproject
 CMakeFiles
@@ -46,4 +47,3 @@ src/cmake_install.cmake
 Makefile
 kagami
 src/Makefile
-src/Kagami
