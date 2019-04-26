@@ -20,8 +20,8 @@ end
 
 fn GetSongData()
   local stream = instream('C:\\workspace\\list.m3u')
-  while stream.eof() != true
-    local path = stream.get()
+  while stream.eof != true
+    local path = stream.get
     song_list.push(pair(GetMusicFileName(path), music(path)))
   end
 end
