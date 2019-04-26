@@ -58,7 +58,7 @@ void ApplicationInfo() {
 
 void HelpFile() {
   printf("Usage:");
-  printf(runtime::binary_name.data());
+  printf("%s", runtime::binary_name.data());
   printf(" [-OPTION][-OPTION=VALUE]...\n\n");
   printf(
     "\tpath=PATH         Path of script file.\n"
