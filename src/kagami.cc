@@ -50,17 +50,17 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
 }
 
 void ApplicationInfo() {
-  puts(ENGINE_NAME " " INTERPRETER_VER "\n");
-  puts("Codename:" CODENAME "\n");
-  puts("Build date:" __DATE__ "\n");
-  puts(COPYRIGHT ", " MAINTAINER "\n");
+  printf(ENGINE_NAME " " INTERPRETER_VER "\n");
+  printf("Codename:" CODENAME "\n");
+  printf("Build date:" __DATE__ "\n");
+  printf(COPYRIGHT ", " MAINTAINER "\n");
 }
 
 void HelpFile() {
-  puts("Usage:");
-  puts(runtime::binary_name.data());
-  puts(" [-OPTION][-OPTION=VALUE]...\n\n");
-  puts(
+  printf("Usage:");
+  printf(runtime::binary_name.data());
+  printf(" [-OPTION][-OPTION=VALUE]...\n\n");
+  printf(
     "\tpath=PATH         Path of script file.\n"
     "\tlog=(PATH|stdout) Output of error log.\n"
     "\trtlog             Enable real-time logger\n"
