@@ -111,21 +111,21 @@ namespace kagami {
 
   Message ArrayBegin(ObjectMap &p) {
     auto &base = p[kStrMe].Cast<ObjectArray>();
-    shared_ptr<UnifiedIterator> pkg(
+    shared_ptr<UnifiedIterator> it(
       new UnifiedIterator(base.begin(), kContainerObjectArray)
     );
     return Message().SetObject(
-      Object(pkg, kTypeIdIterator)
+      Object(it, kTypeIdIterator)
     );
   }
 
   Message ArrayEnd(ObjectMap &p) {
     auto &base = p[kStrMe].Cast<ObjectArray>();
-    shared_ptr<UnifiedIterator> pkg(
+    shared_ptr<UnifiedIterator> it(
       new UnifiedIterator(base.end(), kContainerObjectArray)
     );
     return Message().SetObject(
-      Object(pkg, kTypeIdIterator)
+      Object(it, kTypeIdIterator)
     );
   }
 

@@ -35,9 +35,9 @@ namespace kagami {
   public:
     void StepForward() { ++it_; }
     void StepBack() { --it_; }
-    Object Unpack() 
-    { return Object().PackObject(*it_); }
+    Object Unpack() { return Object().PackObject(*it_); }
     IteratorType &Get() { return it_; }
+    bool operator==(BasicIterator<IteratorType> &rhs) { return it_ == rhs.it_; }
   };
 
 
@@ -63,6 +63,8 @@ namespace kagami {
         Object(management::type::CreateObjectCopy(it_->second)));
       return Object(base, kTypeIdPair);
     }
+    bool operator==(BasicIterator<ObjectTable::iterator> &rhs) 
+    { return it_ == rhs.it_; }
   };
 
   using ObjectArrayIterator = BasicIterator<ObjectArray::iterator>;
@@ -82,6 +84,12 @@ namespace kagami {
       shared_ptr<IteratorInterface> &rhs) {
       return dynamic_pointer_cast<Tx>(lhs)->Get()
         == dynamic_pointer_cast<Tx>(rhs)->Get();
+    }
+
+    template <class Tx>
+    auto GetPointer() {
+      return dynamic_cast<IteratorInterface *>(new Tx(
+        *dynamic_pointer_cast<Tx>(it_)));
     }
 
   public:
@@ -130,6 +138,9 @@ namespace kagami {
         case kContainerObjectArray:
           result = CastAndCompare<ObjectArrayIterator>(it_, rhs.it_);
           break;
+        case kContainerObjectTable:
+          result = CastAndCompare<ObjectTableIterator>(it_, rhs.it_);
+          break;
         default:
           result = false;
           break;
@@ -140,19 +151,24 @@ namespace kagami {
     }
 
     UnifiedIterator CreateCopy() {
-      UnifiedIterator pkg;
+      UnifiedIterator it;
+      
+#define COPY_ITERATOR(_Type)         \
+  it.it_.reset(GetPointer<_Type>()); \
+  it.container_type_ = container_type_;
+
       switch (container_type_) {
       case kContainerObjectArray:
-        pkg.it_.reset(
-          dynamic_cast<IteratorInterface *>(new ObjectArrayIterator(
-            *dynamic_pointer_cast<ObjectArrayIterator>(it_)
-          )));
-        pkg.container_type_ = container_type_;
+        COPY_ITERATOR(ObjectArrayIterator);
+        break;
+      case kContainerObjectTable:
+        COPY_ITERATOR(ObjectTableIterator);
+        break;
       default:
         break;
       }
-
-      return pkg;
+#undef COPY_ITERATOR
+      return it;
     }
   };
 }
