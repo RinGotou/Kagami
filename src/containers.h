@@ -37,7 +37,8 @@ namespace kagami {
     void StepBack() { --it_; }
     Object Unpack() { return Object().PackObject(*it_); }
     IteratorType &Get() { return it_; }
-    bool operator==(BasicIterator<IteratorType> &rhs) { return it_ == rhs.it_; }
+    bool operator==(BasicIterator<IteratorType> &rhs) const 
+    { return it_ == rhs.it_; }
   };
 
 
@@ -63,7 +64,7 @@ namespace kagami {
         Object(management::type::CreateObjectCopy(it_->second)));
       return Object(base, kTypeIdPair);
     }
-    bool operator==(BasicIterator<ObjectTable::iterator> &rhs) 
+    bool operator==(BasicIterator<ObjectTable::iterator> &rhs) const 
     { return it_ == rhs.it_; }
   };
 

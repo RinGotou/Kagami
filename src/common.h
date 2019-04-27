@@ -257,6 +257,7 @@ namespace kagami {
   const string kTypeIdTCPConnector    = "TCPConnector";
   const string kTypeIdIterator        = "iterator";
   const string kTypeIdPair            = "pair";
+  const string kTypeIdTable           = "table";
 
   const string
     kStrLocal          = "local",

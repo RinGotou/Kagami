@@ -126,7 +126,7 @@ namespace kagami::management::type {
 namespace std {
   template <>
   struct hash<kagami::Object> {
-    size_t operator()(kagami::Object const &rhs) {
+    size_t operator()(kagami::Object const &rhs) const {
       auto copy = rhs; //solve with limitation
       size_t value = 0;
       if (kagami::management::type::IsHashable(copy)) {
@@ -139,17 +139,25 @@ namespace std {
 
   template <>
   struct equal_to<kagami::Object> {
-    bool operator()(const kagami::Object &lhs, const kagami::Object &rhs) {
+    bool operator()(kagami::Object const &lhs, kagami::Object const &rhs) const {
       auto copy_lhs = lhs, copy_rhs = rhs;
       return kagami::management::type::CompareObjects(copy_lhs, copy_rhs);
+    }
+  };
+
+  template <>
+  struct not_equal_to<kagami::Object> {
+    bool operator()(kagami::Object const &lhs, kagami::Object const &rhs) const {
+      auto copy_lhs = lhs, copy_rhs = rhs;
+      return !kagami::management::type::CompareObjects(copy_lhs, copy_rhs);
     }
   };
 }
 
 namespace kagami {
   using ObjectTable = unordered_map<Object, Object>;
+  using ManagedTable = shared_ptr<ObjectTable>;
 }
-
 
 #define EXPORT_CONSTANT(ID) management::CreateConstantObject(#ID, Object(ID))
 

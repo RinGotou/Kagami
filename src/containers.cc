@@ -151,11 +151,12 @@ namespace kagami {
   }
 
   shared_ptr<void> ArrayCopyingPolicy(shared_ptr<void> ptr) {
+    using namespace management::type;
     auto &src_base = *static_pointer_cast<ObjectArray>(ptr);
     ManagedArray dest_base = make_shared<ObjectArray>();
 
     for (auto &unit : src_base) {
-      dest_base->emplace_back(management::type::CreateObjectCopy(unit));
+      dest_base->emplace_back(CreateObjectCopy(unit));
     }
 
     return dest_base;
@@ -188,6 +189,68 @@ namespace kagami {
       management::type::CreateObjectCopy(src_base.second)
       );
     return dest_base;
+  }
+
+  Message NewTable(ObjectMap &p) {
+    ManagedTable table = make_shared<ObjectTable>();
+    return Message().SetObject(Object(table, kTypeIdTable));
+  }
+
+  Message TableInsert(ObjectMap &p) {
+    using namespace management::type;
+    auto &table = p.Cast<ObjectTable>(kStrMe);
+    auto &key = p["key"];
+    auto &value = p["value"];
+    auto result = table.insert(
+      std::make_pair(CreateObjectCopy(key), CreateObjectCopy(value))
+    );
+    return Message();
+  }
+
+  Message TableGetElement(ObjectMap &p) {
+    auto &table = p.Cast<ObjectTable>(kStrMe);
+    auto &dest_key = p["key"];
+    auto &result = table[dest_key];
+    return Message().SetObject(Object().PackObject(result));
+  }
+
+  Message TableEraseElement(ObjectMap &p) {
+    auto &table = p.Cast<ObjectTable>(kStrMe);
+    auto &key = p["key"];
+    auto count = table.erase(key);
+    return Message().SetObject(static_cast<int64_t>(count));
+  }
+
+  Message TableEmpty(ObjectMap &p) {
+    auto &table = p.Cast<ObjectTable>(kStrMe);
+    return Message().SetObject(table.empty());
+  }
+
+  Message TableSize(ObjectMap &p) {
+    auto &table = p.Cast<ObjectTable>(kStrMe);
+    return Message().SetObject(static_cast<int64_t>(table.size()));
+  }
+
+  Message TableClear(ObjectMap &p) {
+    auto &table = p.Cast<ObjectTable>(kStrMe);
+    table.clear();
+    return Message();
+  }
+
+  shared_ptr<void> TableCopyingPolicy(shared_ptr<void> ptr) {
+    using namespace management::type;
+    auto &table = *static_pointer_cast<ObjectTable>(ptr);
+    ManagedTable dest = make_shared<ObjectTable>();
+    Object key_copy;
+
+    for (auto &unit : table) {
+      key_copy = unit.first;
+      dest->insert(
+        std::make_pair(CreateObjectCopy(key_copy), 
+          CreateObjectCopy(unit.second)));
+    }
+
+    return dest;
   }
 
   void InitContainerComponents() {
@@ -235,7 +298,24 @@ namespace kagami {
         }
     );
 
+    NewTypeSetup(kTypeIdTable, TableCopyingPolicy)
+      .InitConstructor(
+        Interface(NewTable, "", "table")
+      )
+      .InitMethods(
+        {
+          Interface(TableInsert, "key|value", "insert"),
+          Interface(TableGetElement, "key", "__at"),
+          Interface(TableEraseElement, "key", "erase"),
+          Interface(TableEmpty, "", "empty"),
+          Interface(TableSize, "", "size"),
+          Interface(TableClear, "", "clear")
+        }
+    );
+
     EXPORT_CONSTANT(kTypeIdArray);
     EXPORT_CONSTANT(kTypeIdIterator);
+    EXPORT_CONSTANT(kTypeIdPair);
+    EXPORT_CONSTANT(kTypeIdTable);
   }
 }
