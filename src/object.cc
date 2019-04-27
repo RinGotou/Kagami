@@ -31,9 +31,9 @@ namespace kagami {
     return *this;
   }
 
-  Object &Object::Manage(shared_ptr<void> ptr, string type_id) {
+  Object &Object::PackContent(shared_ptr<void> ptr, string type_id) {
     if (mode_ == kObjectRef) {
-      return real_dest_->Manage(ptr, type_id);
+      return real_dest_->PackContent(ptr, type_id);
     }
 
     ptr_ = ptr;
@@ -50,7 +50,7 @@ namespace kagami {
     return *this;
   }
 
-  Object &Object::CreateRef(Object &object) {
+  Object &Object::PackObject(Object &object) {
     type_id_ = object.type_id_;
     mode_ = kObjectRef;
 
@@ -179,7 +179,7 @@ namespace kagami {
     auto &container = base_.back();
     for (auto &unit : p) {
       container.Add(unit.first, unit.second.IsRef() ?
-        Object().CreateRef(unit.second) :
+        Object().PackObject(unit.second) :
         unit.second);
     }
   }

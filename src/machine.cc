@@ -142,9 +142,12 @@ namespace kagami {
     using type::NewTypeSetup;
     using type::PlainHasher;
 
-    NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<int64_t>, PlainHasher<int64_t>());
-    NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>, PlainHasher<double>());
-    NewTypeSetup(kTypeIdBool, SimpleSharedPtrCopy<bool>, PlainHasher<bool>());
+    NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<int64_t>, PlainHasher<int64_t>())
+      .InitComparator(PlainComparator<int64_t>);
+    NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>, PlainHasher<double>())
+      .InitComparator(PlainComparator<double>);
+    NewTypeSetup(kTypeIdBool, SimpleSharedPtrCopy<bool>, PlainHasher<bool>())
+      .InitComparator(PlainComparator<bool>);
     NewTypeSetup(kTypeIdNull, FakeCopy<void>);
 
     EXPORT_CONSTANT(kTypeIdInt);
@@ -275,7 +278,7 @@ namespace kagami {
     if (type == kTokenTypeInt) {
       int64_t int_value;
       from_chars(value.data(), value.data() + value.size(), int_value);
-      obj.Manage(make_shared<int64_t>(int_value), kTypeIdInt);
+      obj.PackContent(make_shared<int64_t>(int_value), kTypeIdInt);
     }
     else if (type == kTokenTypeFloat) {
       double float_value;
@@ -284,18 +287,18 @@ namespace kagami {
 #else
       from_chars(value.data(), value.data() + value.size(), float_value);
 #endif
-      obj.Manage(make_shared<double>(float_value), kTypeIdFloat);
+      obj.PackContent(make_shared<double>(float_value), kTypeIdFloat);
     }
     else {
       switch (type) {
       case kTokenTypeBool:
-        obj.Manage(make_shared<bool>(value == kStrTrue), kTypeIdBool);
+        obj.PackContent(make_shared<bool>(value == kStrTrue), kTypeIdBool);
         break;
       case kTokenTypeString:
-        obj.Manage(make_shared<string>(ParseRawString(value)), kTypeIdString);
+        obj.PackContent(make_shared<string>(ParseRawString(value)), kTypeIdString);
         break;
       case kTokenTypeGeneric:
-        obj.Manage(make_shared<string>(value), kTypeIdString);
+        obj.PackContent(make_shared<string>(value), kTypeIdString);
         break;
       default:
         break;
@@ -312,7 +315,7 @@ namespace kagami {
 
     if (ptr != nullptr) {
       auto interface = *FindInterface(id, domain);
-      obj.Manage(make_shared<Interface>(interface), kTypeIdFunction);
+      obj.PackContent(make_shared<Interface>(interface), kTypeIdFunction);
     }
 
     return obj;
@@ -377,7 +380,7 @@ namespace kagami {
     if (arg.type == kArgumentObjectStack) {
       ptr = obj_stack_.Find(arg.data);
       if (ptr != nullptr) {
-        obj.CreateRef(*ptr);
+        obj.PackObject(*ptr);
         return obj;
       }
 
@@ -689,7 +692,7 @@ namespace kagami {
 
   void Machine::CommandHash(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    auto &obj = FetchObject(args[0]).Deref();
+    auto &obj = FetchObject(args[0]).Unpack();
 
     if (type::IsHashable(obj)) {
       int64_t hash = type::GetHash(obj);
@@ -702,8 +705,8 @@ namespace kagami {
 
   void Machine::CommandSwap(ArgumentList &args) {
     auto &worker = worker_stack_.top();
-    auto &right = FetchObject(args[1]).Deref();
-    auto &left = FetchObject(args[0]).Deref();
+    auto &right = FetchObject(args[1]).Unpack();
+    auto &left = FetchObject(args[0]).Unpack();
 
     left.swap(right);
   }
@@ -1036,7 +1039,7 @@ namespace kagami {
     auto lhs = FetchObject(args[0]);
 
     if (lhs.IsRef()) {
-      auto &real_lhs = lhs.Deref();
+      auto &real_lhs = lhs.Unpack();
       real_lhs = CreateObjectCopy(rhs);
       return;
     }
@@ -1047,7 +1050,7 @@ namespace kagami {
         ObjectPointer ptr = obj_stack_.Find(id);
 
         if (ptr != nullptr) {
-          ptr->Deref() = CreateObjectCopy(rhs);
+          ptr->Unpack() = CreateObjectCopy(rhs);
           return;
         }
       }
@@ -1126,7 +1129,7 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
-    Object &obj = FetchObject(args[0]).Deref();
+    Object &obj = FetchObject(args[0]).Unpack();
     obj.swap(Object());
   }
 
@@ -1149,13 +1152,13 @@ namespace kagami {
 
         switch (type) {
         case kTokenTypeInt:
-          ret_obj.Manage(make_shared<int64_t>(stol(str)), kTypeIdInt);
+          ret_obj.PackContent(make_shared<int64_t>(stol(str)), kTypeIdInt);
           break;
         case kTokenTypeFloat:
-          ret_obj.Manage(make_shared<double>(stod(str)), kTypeIdFloat);
+          ret_obj.PackContent(make_shared<double>(stod(str)), kTypeIdFloat);
           break;
         case kTokenTypeBool:
-          ret_obj.Manage(make_shared<bool>(str == kStrTrue), kTypeIdBool);
+          ret_obj.PackContent(make_shared<bool>(str == kStrTrue), kTypeIdBool);
           break;
         default:
           ret_obj = obj;
@@ -1177,7 +1180,7 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
-    auto &obj = FetchObject(args[0]).Deref();
+    auto &obj = FetchObject(args[0]).Unpack();
     Object ret_obj(make_shared<int64_t>(obj.ObjRefCount()), kTypeIdInt);
 
     worker.RefreshReturnStack(ret_obj);
@@ -1683,6 +1686,7 @@ namespace kagami {
 
       ptr = &(*ir)[worker->idx];
       worker->void_call = ptr->first.option.void_call;
+      worker->origin_idx = ptr->first.idx;
 
       if (worker->error) {
         worker->origin_idx = ptr->first.idx;
@@ -1718,6 +1722,7 @@ namespace kagami {
 
       obj_map.clear();
       Command *command = &(*ir)[worker->idx];
+      worker->origin_idx = command->first.idx;
       worker->void_call = command->first.option.void_call;
 
       //Skip commands by checking current machine mode

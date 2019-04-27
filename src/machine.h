@@ -27,6 +27,8 @@
   }
 
 namespace kagami {
+  using management::type::PlainComparator;
+
   PlainType FindTypeCode(string type_id);
   int64_t IntProducer(Object &obj);
   double FloatProducer(Object &obj);
@@ -200,8 +202,6 @@ namespace kagami {
 
   template <class Tx, GenericToken op>
   using LogicBox = BinaryOpBox<bool, Tx, Tx, op>;
-
-  class Machine;
 
   const string kIteratorBehavior = "obj|step_forward|step_back|__compare";
   const string kContainerBehavior = "head|tail";

@@ -7,6 +7,7 @@ namespace kagami {
   /* Runtime type identifier for UnifiedIterator */
   enum BaseContainerCode {
     kContainerObjectArray,
+    kContainerObjectTable,
     kContainerNull
   };
 
@@ -16,54 +17,56 @@ namespace kagami {
     virtual ~IteratorInterface() {}
     virtual void StepForward() = 0;
     virtual void StepBack() = 0;
-    virtual Object &Deref() = 0;
+    virtual Object Unpack() = 0;
     
   };
 
-  /* 
-    Base wrapper for STL Iterator class.
-    Any class that is inherited from standard iterator interface can
-    be packed safely.
-  */
   template <class IteratorType>
   class BasicIterator : public IteratorInterface {
-  public:
-    using value_type = IteratorType;
-
   private:
     IteratorType it_;
 
   public:
     BasicIterator() = delete;
+    BasicIterator(IteratorType it) : it_(it) {}
+    BasicIterator(const BasicIterator &rhs) : it_(rhs.it_) {}
+    BasicIterator(const BasicIterator &&rhs) : BasicIterator(rhs) {}
 
-    BasicIterator(IteratorType it) :
-      it_(it) {}
+  public:
+    void StepForward() { ++it_; }
+    void StepBack() { --it_; }
+    Object Unpack() 
+    { return Object().PackObject(*it_); }
+    IteratorType &Get() { return it_; }
+  };
 
-    BasicIterator(const BasicIterator &rhs) :
-      it_(rhs.it_) {}
 
-    BasicIterator(const BasicIterator &&rhs) :
-      BasicIterator(rhs) {}
+  template <>
+  class BasicIterator<ObjectTable::iterator> : public IteratorInterface {
+  private:
+    ObjectTable::iterator it_;
 
-    void StepForward() {
-      ++it_;
-    }
+  public:
+    BasicIterator() = delete;
+    BasicIterator(ObjectTable::iterator it) : it_(it) {}
+    BasicIterator(const BasicIterator &rhs) : it_(rhs.it_) {}
+    BasicIterator(const BasicIterator &&rhs) : BasicIterator(rhs) {}
 
-    void StepBack() {
-      --it_;
-    }
-
-    Object &Deref() {
-      return *it_;
-    }
-
-    IteratorType &Get() {
-      return it_;
+  public:
+    void StepForward() { ++it_; }
+    void StepBack() { --it_; }
+    ObjectTable::iterator &Get() { return it_; }
+    Object Unpack() {
+      auto copy_left = it_->first;
+      ManagedPair base = make_shared<ObjectPair>(
+        Object(management::type::CreateObjectCopy(copy_left)),
+        Object(management::type::CreateObjectCopy(it_->second)));
+      return Object(base, kTypeIdPair);
     }
   };
 
   using ObjectArrayIterator = BasicIterator<ObjectArray::iterator>;
-
+  using ObjectTableIterator = BasicIterator<ObjectTable::iterator>;
   /*
     Top iterator wrapper.
     Provide unified methods for iterator type in script.
@@ -116,7 +119,7 @@ namespace kagami {
       }
     }
 
-    Object &Deref() { return it_->Deref(); }
+    Object Unpack() { return it_->Unpack(); }
 
     bool Compare(UnifiedIterator &rhs) {
       bool result = false;

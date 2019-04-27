@@ -14,6 +14,7 @@
 #include <regex>
 #include <stack>
 #include <type_traits>
+#include <functional>
 #include <list>
 #include <charconv>
 

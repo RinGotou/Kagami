@@ -38,18 +38,18 @@ namespace kagami {
       wstring wstr = obj.Cast<wstring>();
       string output = ws2s(wstr);
 
-      base.Manage(make_shared<string>(output), kTypeIdString)
+      base.PackContent(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
     }
     else if (obj.GetTypeId() == kTypeIdString) {
       string copy = obj.Cast<string>();
-      base.Manage(make_shared<string>(copy), kTypeIdString)
+      base.PackContent(make_shared<string>(copy), kTypeIdString)
         .SetConstructorFlag();
     }
     else {
       string output = obj.Cast<string>();
 
-      base.Manage(make_shared<string>(output), kTypeIdString)
+      base.PackContent(make_shared<string>(output), kTypeIdString)
         .SetConstructorFlag();
     }
 
@@ -238,6 +238,7 @@ namespace kagami {
     using namespace management::type;
 
     NewTypeSetup(kTypeIdFunction, SimpleSharedPtrCopy<Interface>)
+      .InitComparator(PlainComparator<Interface>)
       .InitMethods(
         {
           Interface(FunctionGetId, "", "id"),
@@ -247,6 +248,7 @@ namespace kagami {
     );
 
     NewTypeSetup(kTypeIdString, SimpleSharedPtrCopy<string>, PlainHasher<string>())
+      .InitComparator(PlainComparator<string>)
       .InitConstructor(
         Interface(NewString, "raw_string", "string")
       )
@@ -297,6 +299,7 @@ namespace kagami {
     );
 
     NewTypeSetup(kTypeIdWideString, SimpleSharedPtrCopy<wstring>, PlainHasher<wstring>())
+      .InitComparator(PlainComparator<wstring>)
       .InitConstructor(
         Interface(NewWideString, "raw_string", "wstring")
       )

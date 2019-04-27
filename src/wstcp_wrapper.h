@@ -35,7 +35,7 @@ namespace suzu {
 
     AddrInfo(addrinfo *ptr) : ptr_(ptr) {}
 
-    void Manage(addrinfo *ptr) { ptr_ = ptr; }
+    void PackContent(addrinfo *ptr) { ptr_ = ptr; }
     addrinfo *Get() { return ptr_; }
   };
 
@@ -95,7 +95,7 @@ namespace suzu {
           addr_info_->ai_protocol
         );
 
-        addr_content_->Manage(addr_info_);
+        addr_content_->PackContent(addr_info_);
       }
 
       return (result_code_ == 0 && connector_ != INVALID_SOCKET);

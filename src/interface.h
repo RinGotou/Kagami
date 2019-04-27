@@ -128,16 +128,7 @@ namespace kagami {
 
     bool operator==(Interface &rhs) const {
       if (&rhs == this) return true;
-      return (
-        policy_ == rhs.policy_ &&
-        id_ == rhs.id_ &&
-        token_ == rhs.token_ &&
-        params_ == rhs.params_&&
-        argument_mode_ == rhs.argument_mode_&&
-        domain_ == rhs.domain_&&
-        interface_type_ == rhs.interface_type_&&
-        policy_type_ == rhs.policy_type_
-        );
+      return policy_ == rhs.policy_;
     }
 
     bool operator==(Interface &&rhs) const {

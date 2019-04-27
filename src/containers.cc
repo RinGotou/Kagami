@@ -44,7 +44,13 @@ namespace kagami {
 
   Message IteratorGet(ObjectMap &p) {
     auto &it = p[kStrMe].Cast<UnifiedIterator>();
-    return Message().SetObject(Object().CreateRef(it.Deref()));
+    return Message().SetObject(it.Unpack());
+  }
+
+  bool IteratorComparator(Object &lhs, Object &rhs) {
+    auto &lhs_value = lhs.Cast<UnifiedIterator>();
+    auto &rhs_value = rhs.Cast<UnifiedIterator>();
+    return lhs_value.Compare(rhs_value);
   }
 
   Message NewArray(ObjectMap &p) {
@@ -75,7 +81,7 @@ namespace kagami {
 
     EXPECT(idx < size, "Subscript is out of range. - " + to_string(idx));
 
-    return Message().SetObject(Object().CreateRef(base[idx]));
+    return Message().SetObject(Object().PackObject(base[idx]));
   }
 
   Message ArrayGetSize(ObjectMap &p) {
@@ -167,12 +173,12 @@ namespace kagami {
 
   Message PairLeft(ObjectMap &p) {
     auto &base = p.Cast<ObjectPair>(kStrMe);
-    return Message().SetObject(Object().CreateRef(base.first));
+    return Message().SetObject(Object().PackObject(base.first));
   }
 
   Message PairRight(ObjectMap &p) {
     auto &base = p.Cast<ObjectPair>(kStrMe);
-    return Message().SetObject(Object().CreateRef(base.second));
+    return Message().SetObject(Object().PackObject(base.second));
   }
 
   shared_ptr<void> PairCopyingPolicy(shared_ptr<void> ptr) {
@@ -206,6 +212,7 @@ namespace kagami {
     );
 
     NewTypeSetup(kTypeIdIterator, SimpleSharedPtrCopy<UnifiedIterator>)
+      .InitComparator(IteratorComparator)
       .InitMethods(
         {
           Interface(IteratorGet, "", "obj"),

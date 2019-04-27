@@ -9,11 +9,12 @@ namespace kagami {
 
   using ObjectPointer = Object *;
   using ObjectRef = Object &;
+  using ObjectComparator = bool(*)(Object &, Object &);
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
   using CopyingPolicy = shared_ptr<void>(*)(shared_ptr<void>);
   using ContainerPool = list<ObjectContainer>;
-
+  
   vector<string> BuildStringVector(string source);
 
   enum ObjectMode {
@@ -114,9 +115,9 @@ namespace kagami {
       type_id_(kTypeIdString) {}
 
     Object &operator=(const Object &object);
-    Object &Manage(shared_ptr<void> ptr, string type_id);
+    Object &PackContent(shared_ptr<void> ptr, string type_id);
     Object &swap(Object &obj);
-    Object &CreateRef(Object &object);
+    Object &PackObject(Object &object);
 
     shared_ptr<void> Get() {
       if (mode_ == kObjectRef) return real_dest_->Get();
@@ -124,7 +125,7 @@ namespace kagami {
     }
 
     template <class Tx>
-    Object &CreateMemberRef(Tx &tx, string type_id) {
+    Object &PackMember(Tx &tx, string type_id) {
       type_id_ = type_id;
       mode_ = kObjectMemberRef;
 
@@ -134,7 +135,7 @@ namespace kagami {
       return *this;
     }
 
-    Object &Deref() {
+    Object &Unpack() {
       if (mode_ == kObjectRef) {
         return *real_dest_;
       }
@@ -166,14 +167,8 @@ namespace kagami {
       return result;
     }
 
-    bool operator==(const Object &obj) const { 
-      if (&obj == this) return true;
-      return ptr_ == obj.ptr_; 
-    }
-
-    bool operator==(const Object &&obj) const { 
-      return ptr_ == obj.ptr_;
-    }
+    bool operator==(const Object &obj) = delete;
+    bool operator==(const Object &&obj) = delete;
 
     Object &operator=(const Object &&object) { return operator=(object); }
 

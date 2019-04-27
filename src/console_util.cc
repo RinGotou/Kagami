@@ -41,7 +41,11 @@ namespace kagami {
     string type_id = obj.GetTypeId();
     if (util::IsPlainType(type_id)) {
       if (type_id == kTypeIdInt) {
+#if not defined (_MSC_VER)
         fprintf(VM_STDOUT, "%ld", obj.Cast<int64_t>());
+#else
+        fprintf(VM_STDOUT, "%lld", obj.Cast<int64_t>());
+#endif
       }
       else if (type_id == kTypeIdFloat) {
         fprintf(VM_STDOUT, "%f", obj.Cast<double>());

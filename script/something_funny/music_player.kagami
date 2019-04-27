@@ -58,7 +58,7 @@ fn main()
     when 'prev'
       state_hint = state_playing
       if pos > 0
-        pos = pos + 1
+        pos = pos - 1
         song = song_list[pos]
         song.right.Play()
       end

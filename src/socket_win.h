@@ -18,7 +18,7 @@ namespace kagami {
     TCPConnector *connector = dynamic_cast<TCPConnector *>(&tx);
     string dest_buf;
     bool result = connector->Receive(dest_buf);
-    dest.Manage(make_shared<string>(dest_buf), kTypeIdString);
+    dest.PackContent(make_shared<string>(dest_buf), kTypeIdString);
     return Message().SetObject(result);
   }
 
