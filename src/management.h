@@ -63,7 +63,7 @@ namespace kagami::management::type {
       copying_policy_(copying_policy),
       comparator_(comparator),
       methods_(BuildStringVector(methods)),
-      hasher_(std::move(hasher)) {}
+      hasher_(hasher) {}
 
     shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const;
 
