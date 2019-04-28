@@ -1,0 +1,10 @@
+tbl = table()
+tbl.insert('hello', 'world')
+tbl.insert('suzu', 'nakamura')
+println(tbl['hello'])
+println(tbl['suzu'])
+
+for unit in tbl
+  println(unit.left())
+  println(unit.right())
+end

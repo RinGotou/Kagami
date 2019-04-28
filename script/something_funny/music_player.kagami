@@ -3,14 +3,14 @@ state_paused = 'Paused'
 state_playing = 'Playing'
 
 fn GetMusicFileName(str)
-  local ar = str.to_array
+  local ar = str.to_array()
   local dest = array()
   
   for unit in ar
     if unit != '\\'
       dest.push(unit)
     else
-      dest.clear
+      dest.clear()
     end
   end
   
@@ -20,15 +20,15 @@ end
 
 fn GetSongData()
   local stream = instream('C:\\workspace\\list.m3u')
-  while stream.eof != true
-    local path = stream.get
+  while stream.eof() != true
+    local path = stream.get()
     song_list.push(pair(GetMusicFileName(path), music(path)))
   end
 end
 
 fn main()
   pos = 0
-  size = song_list.size
+  size = song_list.size()
   
   song = song_list[pos]
   song.right.Play()
@@ -38,7 +38,7 @@ fn main()
   
   while choice != 'exit'
     print(state_hint + ' - ')
-    print(song.left)
+    print(song.left())
     choice = input('>')
     
     case choice

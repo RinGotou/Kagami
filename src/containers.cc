@@ -109,24 +109,18 @@ namespace kagami {
     return Message().SetObject(base.empty());
   }
 
-  Message ArrayBegin(ObjectMap &p) {
+  Message ArrayHead(ObjectMap &p) {
     auto &base = p[kStrMe].Cast<ObjectArray>();
-    shared_ptr<UnifiedIterator> it(
-      new UnifiedIterator(base.begin(), kContainerObjectArray)
-    );
-    return Message().SetObject(
-      Object(it, kTypeIdIterator)
-    );
+    shared_ptr<UnifiedIterator> it = 
+      make_shared<UnifiedIterator>(base.begin(), kContainerObjectArray);
+    return Message().SetObject(Object(it, kTypeIdIterator));
   }
 
-  Message ArrayEnd(ObjectMap &p) {
+  Message ArrayTail(ObjectMap &p) {
     auto &base = p[kStrMe].Cast<ObjectArray>();
-    shared_ptr<UnifiedIterator> it(
-      new UnifiedIterator(base.end(), kContainerObjectArray)
-    );
-    return Message().SetObject(
-      Object(it, kTypeIdIterator)
-    );
+    shared_ptr<UnifiedIterator> it = 
+      make_shared<UnifiedIterator>(base.end(), kContainerObjectArray);
+    return Message().SetObject(Object(it, kTypeIdIterator));
   }
 
   Message ArrayClear(ObjectMap &p) {
@@ -237,6 +231,20 @@ namespace kagami {
     return Message();
   }
 
+  Message TableHead(ObjectMap &p) {
+    auto &table = p.Cast<ObjectTable>(kStrMe);
+    shared_ptr<UnifiedIterator> it =
+      make_shared<UnifiedIterator>(table.begin(), kContainerObjectTable);
+    return Message().SetObject(Object(it, kTypeIdIterator));
+  }
+
+  Message TableTail(ObjectMap &p) {
+    auto &table = p.Cast<ObjectTable>(kStrMe);
+    shared_ptr<UnifiedIterator> it =
+      make_shared<UnifiedIterator>(table.end(), kContainerObjectTable);
+    return Message().SetObject(Object(it, kTypeIdIterator));
+  }
+
   shared_ptr<void> TableCopyingPolicy(shared_ptr<void> ptr) {
     using namespace management::type;
     auto &table = *static_pointer_cast<ObjectTable>(ptr);
@@ -268,8 +276,8 @@ namespace kagami {
           Interface(ArrayPush, "object", "push"),
           Interface(ArrayPop, "object", "pop"),
           Interface(ArrayEmpty, "", "empty"),
-          Interface(ArrayBegin, "", "head"),
-          Interface(ArrayEnd, "", "tail"),
+          Interface(ArrayHead, "", "head"),
+          Interface(ArrayTail, "", "tail"),
           Interface(ArrayClear, "", "clear")
         }
     );
@@ -309,7 +317,9 @@ namespace kagami {
           Interface(TableEraseElement, "key", "erase"),
           Interface(TableEmpty, "", "empty"),
           Interface(TableSize, "", "size"),
-          Interface(TableClear, "", "clear")
+          Interface(TableClear, "", "clear"),
+          Interface(TableHead, "", "head"),
+          Interface(TableTail, "", "tail")
         }
     );
 
