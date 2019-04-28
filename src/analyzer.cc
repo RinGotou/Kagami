@@ -452,7 +452,7 @@ namespace kagami {
       return true;
     }
 
-    Argument arg(blk->current.first, kArgumentObjectStack, kTokenTypeGeneric);
+    
     if (blk->domain.type != kArgumentNull) {
       Request request(blk->current.first);
       request.domain = blk->domain;
@@ -462,6 +462,8 @@ namespace kagami {
       blk->domain = Argument();
     }
     else {
+      Argument arg(
+        blk->current.first, kArgumentObjectStack, kTokenTypeGeneric);
       blk->args.emplace_back(arg);
     }
     
