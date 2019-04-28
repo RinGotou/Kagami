@@ -23,10 +23,6 @@ Compile them in Visual Studio 2017 or later version.(MSVC 14+)
 You need a compiler that supports C++17 standard. If you're using CMake,please turn off all compiling 
 options in "common.h" to make it happy.
 
-### Other things
-SDL2 stuff is under consideration now,so I don't want you to turn off DISABLE_SDL macro until I think it's 
-good enough to use. You can find other notes in source code. Sorry for lacking of dev log.
-
 ## Help me?
 You can post issues or create pull request.
 
