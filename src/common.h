@@ -30,7 +30,7 @@
 #endif
 
 #if not defined(_DISABLE_SDL_)
-#include "dawn/src/dawn.window.h"
+#include "dawn/src/dawn.ui.h"
 #include "dawn/src/dawn.sound.h"
 #endif
 
