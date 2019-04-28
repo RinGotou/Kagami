@@ -203,7 +203,7 @@ namespace kagami {
   template <class Tx, GenericToken op>
   using LogicBox = BinaryOpBox<bool, Tx, Tx, op>;
 
-  const string kIteratorBehavior = "obj|step_forward|step_back|__compare";
+  const string kIteratorBehavior = "obj|step_forward|__compare";
   const string kContainerBehavior = "head|tail";
   using CombinedCodeline = pair<size_t, string>;
   using CommandPointer = Command * ;

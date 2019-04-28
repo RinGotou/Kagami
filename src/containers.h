@@ -55,7 +55,7 @@ namespace kagami {
 
   public:
     void StepForward() { ++it_; }
-    void StepBack() { --it_; }
+    void StepBack() { }
     ObjectTable::iterator &Get() { return it_; }
     Object Unpack() {
       auto copy_left = it_->first;
