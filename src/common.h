@@ -30,20 +30,11 @@
 #endif
 
 #if not defined(_DISABLE_SDL_)
-#if defined(_WIN32)
 #include "dawn/src/dawn.window.h"
 #include "dawn/src/dawn.sound.h"
-#else
-#endif
 #endif
 
 #include "minatsuki.log/src/minatsuki.log.h"
-
-//if you build this project by cmake,please turn off all switch macro below.
-//Disbale SDL2 componets for non-GUI environment
-//#if not defined(_DISABLE_SDL_)
-//#define _DISABLE_SDL_
-//#endif
 
 //Switching Debugging Feature
 //#define _DEBUG_
