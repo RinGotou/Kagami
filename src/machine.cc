@@ -198,7 +198,8 @@ namespace kagami {
     return false;
   }
 
-  KIRLoader::KIRLoader(string path, KIR &dest) : dest_(&dest), good(true) {
+  VMCodeLoader::VMCodeLoader(string path, VMCode &dest) : 
+    dest_(&dest), good(true) {
     bool comment_block = false;
     size_t index_counter = 1;
     string buf;
@@ -206,7 +207,7 @@ namespace kagami {
     Analyzer analyzer;
     Message msg;
     list<CombinedCodeline> script_buf;
-    KIR ir;
+    VMCode code;
 
     if (!reader.Good()) {
       good = false;
@@ -257,16 +258,16 @@ namespace kagami {
       default:break;
       }
 
-      ir = analyzer.GetOutput();
+      code = analyzer.GetOutput();
       analyzer.Clear();
-      dest_->insert(dest_->end(), ir.begin(), ir.end());
-      ir.clear();
+      dest_->insert(dest_->end(), code.begin(), code.end());
+      code.clear();
     }
   }
 
   void Machine::RecoverLastState() {
     worker_stack_.pop();
-    ir_stack_.pop_back();
+    code_stack_.pop_back();
     obj_stack_.Pop();
   }
 
@@ -503,7 +504,7 @@ namespace kagami {
   void Machine::FinishFunctionCatching(bool closure) {
     auto &obj_list = obj_stack_.GetBase();
     auto &worker = worker_stack_.top();
-    auto &origin_ir = *ir_stack_.back();
+    auto &origin_ir = *code_stack_.back();
     auto &fn_string_vec = worker.fn_string_vec;
     bool optional = false;
     bool variable = false;
@@ -511,10 +512,10 @@ namespace kagami {
     size_t counter = 0;
     size_t size = worker.fn_string_vec.size();
     vector<string> params;
-    KIR ir;
+    VMCode code;
 
     for (size_t idx = worker.fn_idx + 1; idx < worker.idx - 1; idx += 1) {
-      ir.emplace_back(origin_ir[idx]);
+      code.emplace_back(origin_ir[idx]);
     }
 
     for (size_t idx = 1; idx < size; idx += 1) {
@@ -555,7 +556,7 @@ namespace kagami {
     if (optional) argument_mode = kCodeAutoFill;
     if (variable) argument_mode = kCodeAutoSize;
 
-    Interface interface(ir, fn_string_vec[0], params, argument_mode);
+    Interface interface(code, fn_string_vec[0], params, argument_mode);
 
     if (optional) {
       interface.SetMinArgSize(params.size() - counter);
@@ -594,15 +595,15 @@ namespace kagami {
     initializer_list<GenericToken> terminators) {
     auto &worker = worker_stack_.top();
     size_t nest_counter = 0;
-    size_t size = ir_stack_.back()->size();
+    size_t size = code_stack_.back()->size();
     bool flag = false;
-    auto &ir = *ir_stack_.back();
+    auto &code = *code_stack_.back();
 
-    if (ir[worker.idx].first.head_command == kTokenEnd && worker.skipping_count == 0) 
+    if (code[worker.idx].first.head_command == kTokenEnd && worker.skipping_count == 0) 
       return;
 
     while (worker.idx < size) {
-      Command &command = ir[worker.idx];
+      Command &command = code[worker.idx];
 
       if (command.first.head_command != kTokenSegment) {
         worker.idx += 1;
@@ -668,8 +669,8 @@ namespace kagami {
     ObjectMap obj_map = args;
     obj_map.insert(NamedObject(kStrMe, obj));
 
-    if (interface->GetPolicyType() == kInterfaceKIR) {
-      Run(true, id, &interface->GetIR(), &obj_map, &interface->GetClosureRecord());
+    if (interface->GetPolicyType() == kInterfaceVMCode) {
+      Run(true, id, &interface->GetCode(), &obj_map, &interface->GetClosureRecord());
       Object obj = worker_stack_.top().return_stack.top();
       worker_stack_.top().return_stack.pop();
       return Message().SetObject(obj);
@@ -1628,19 +1629,19 @@ namespace kagami {
     This function contains main logic implementation.
     VM runs single command in every single tick of machine loop.
   */
-  void Machine::Run(bool invoking, string id, KIRPointer ptr, ObjectMap *p,
+  void Machine::Run(bool invoking, string id, VMCodePointer ptr, ObjectMap *p,
     ObjectMap *closure_record) {
-    if (ir_stack_.empty()) return;
+    if (code_stack_.empty()) return;
 
     if (invoking) {
-      ir_stack_.push_back(ptr);
+      code_stack_.push_back(ptr);
     }
 
     bool interface_error = false;
     bool invoking_error = false;
     size_t stop_point = invoking ? worker_stack_.size() : 0;
     Message msg;
-    KIR *ir = ir_stack_.back();
+    VMCode *code = code_stack_.back();
     InterfacePointer interface;
     ObjectMap obj_map;
 
@@ -1654,12 +1655,12 @@ namespace kagami {
     }
 
     MachineWorker *worker = &worker_stack_.top();
-    size_t size = ir->size();
+    size_t size = code->size();
 
     //Refreshing loop tick state to make it work correctly.
     auto refresh_tick = [&]() ->void {
-      ir = ir_stack_.back();
-      size = ir->size();
+      code = code_stack_.back();
+      size = code->size();
       worker = &worker_stack_.top();
     };
 
@@ -1684,7 +1685,7 @@ namespace kagami {
 
       worker->idx += 1;
 
-      ptr = &(*ir)[worker->idx];
+      ptr = &(*code)[worker->idx];
       worker->void_call = ptr->first.option.void_call;
       worker->origin_idx = ptr->first.idx;
 
@@ -1695,7 +1696,7 @@ namespace kagami {
     };
 
     auto update_stack_frame = [&](Interface &func)->void {
-      ir_stack_.push_back(&func.GetIR());
+      code_stack_.push_back(&func.GetCode());
       worker_stack_.push(MachineWorker());
       obj_stack_.Push();
       obj_stack_.CreateObject(kStrUserFunc, Object(func.GetId()));
@@ -1721,7 +1722,7 @@ namespace kagami {
       }
 
       obj_map.clear();
-      Command *command = &(*ir)[worker->idx];
+      Command *command = &(*code)[worker->idx];
       worker->origin_idx = command->first.idx;
       worker->void_call = command->first.option.void_call;
 
@@ -1765,7 +1766,7 @@ namespace kagami {
       //(For user-defined function)
       //Machine will create new stack frame and push IR pointer to machine stack,
       //and start new processing in next tick.
-      if (interface->GetPolicyType() == kInterfaceKIR) {
+      if (interface->GetPolicyType() == kInterfaceVMCode) {
         update_stack_frame(*interface);
         continue;
       }
@@ -1785,7 +1786,7 @@ namespace kagami {
           break;
         }
 
-        if (interface->GetPolicyType() == kInterfaceKIR) {
+        if (interface->GetPolicyType() == kInterfaceVMCode) {
           update_stack_frame(*interface);
         }
         else {
@@ -1814,7 +1815,7 @@ namespace kagami {
     if (!invoking || (invoking && worker_stack_.size() != stop_point)) {
       obj_stack_.Pop();
       worker_stack_.pop();
-      ir_stack_.pop_back();
+      code_stack_.pop_back();
     }
 
     if (invoking && invoking_error) {

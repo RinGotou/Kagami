@@ -37,8 +37,8 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
 
   DEBUG_EVENT("Your're running a copy of Kagami interpreter with debug flag!");
 
-  KIR script_ir;
-  KIRLoader loader(path, script_ir);
+  VMCode script_ir;
+  VMCodeLoader loader(path, script_ir);
 
   if (loader.good) {
     Machine main_thread(script_ir);

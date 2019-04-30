@@ -1,6 +1,7 @@
 #include "analyzer.h"
 
 #define INVALID_TOKEN Token(string(), kTokenTypeNull)
+#define ERROR_MSG(_Msg) Message(kCodeBadExpression, _Msg, kStateError);
 
 namespace kagami {
   Terminator GetTerminatorCode(string src) {
@@ -94,9 +95,8 @@ namespace kagami {
           }
         }
 
-        enter_string ?
-          enter_string = false :
-          enter_string = enter_string;
+
+        if (enter_string) enter_string = false;
       }
       else {
         if (escape_flag) current = util::GetEscapeChar(current);
@@ -123,7 +123,6 @@ namespace kagami {
     Message msg;
     
     tokens_.clear();
-    health_ = true;
 
     for (size_t idx = 0; idx < target.size(); idx += 1) {
       current = Token(target[idx], util::GetTokenType(target[idx]));
@@ -132,9 +131,7 @@ namespace kagami {
         INVALID_TOKEN;
 
       if (current.second == kTokenTypeNull) {
-        msg = Message(kCodeBadExpression,
-          "Unknown token - " + current.first + ".",
-          kStateError);
+        msg = ERROR_MSG("Unknown token - " + current.first);
         break;
       }
 
@@ -153,19 +150,23 @@ namespace kagami {
       }
 
       if (compare_exp(current.first, ")", "]", "}")) {
-        if (!bracket_stack.empty() && bracket_stack.top() != kBracketPairs.at(current.first)) {
-          msg = Message(kCodeBadExpression, "Left bracket is missing.", kStateError);
+        if (bracket_stack.empty()) {
+          msg = ERROR_MSG("Left bracket is missing - " + current.first);
           break;
         }
-        else {
-          bracket_stack.pop();
+
+        if (bracket_stack.top() != kBracketPairs.at(current.first)) {
+          msg = ERROR_MSG("Left bracket is missing - " + current.first);
+          break;
         }
+
+        bracket_stack.pop();
       }
 
       if (current.first == ",") {
         if (last.second == kTokenTypeSymbol &&
           !compare_exp(last.first, "]", ")", "}", "'")) {
-          msg = Message(kCodeBadExpression, "Illegal comma position.", kStateError);
+          msg = ERROR_MSG("Illegal comma position");
           break;
         }
       }
@@ -187,7 +188,7 @@ namespace kagami {
     return msg;
   }
 
-  bool Analyzer::InstructionFilling(AnalyzerWorkBlock *blk) {
+  void Analyzer::ProduceVMCode(AnalyzerWorkBlock *blk) {
     deque<Argument> arguments;
     size_t idx = 0, limit = 0;
 
@@ -223,8 +224,6 @@ namespace kagami {
       || blk->next.second == kTokenTypeNull)) {
       action_base_.back().first.option.void_call = true;
     }
-
-    return health_;
   }
 
   void Analyzer::Assign(AnalyzerWorkBlock *blk) {
@@ -268,7 +267,7 @@ namespace kagami {
         symbol.pop_back();
       }
 
-      result = InstructionFilling(blk);
+      ProduceVMCode(blk);
     }
     return result;
   }
@@ -452,7 +451,7 @@ namespace kagami {
       request.domain = blk->domain;
       blk->symbol.emplace_back(request);
       blk->args.emplace_back(Argument());
-      InstructionFilling(blk);
+      ProduceVMCode(blk);
       blk->domain = Argument();
     }
     else {
@@ -485,12 +484,7 @@ namespace kagami {
       };
 
       while (!blk->symbol.empty() && stack_top_operator && checking()) {
-        if (!InstructionFilling(blk)) {
-          health_ = false;
-          error_string_ = "Operation error in binary operator.";
-          break;
-        }
-
+        ProduceVMCode(blk);
         stack_top_operator = 
           (!blk->symbol.empty() && util::IsBinaryOperator(blk->symbol.back().head_command));
         stack_top_priority = blk->symbol.empty() ? 5 :
@@ -508,11 +502,10 @@ namespace kagami {
     while (!blk->symbol.empty()) {
       if (blk->symbol.back().head_interface == "(") {
         error_string_ = "Right bracket is missing";
-        health_ = false;
         break;
       }
 
-      if (!InstructionFilling(blk)) break;
+      ProduceVMCode(blk);
     }
   }
 
@@ -524,8 +517,7 @@ namespace kagami {
 
     while (!blk->symbol.empty() && !compare_exp(top_token, "{", "[", "(")
       && blk->symbol.back().head_command != kTokenBind) {
-      result = InstructionFilling(blk);
-      if (!result) break;
+      ProduceVMCode(blk);
       top_token = blk->symbol.back().head_interface;
     }
 
@@ -540,16 +532,13 @@ namespace kagami {
     AnalyzerWorkBlock *blk = new AnalyzerWorkBlock();
 
     for (size_t i = 0; i < size; ++i) {
-      if (!health_) break;
       if (!state)  break;
 
       blk->current = tokens_[i];
-      i + 1 < size ?
-        blk->next = tokens_[i + 1] :
-        blk->next = Token(string(), TokenType::kTokenTypeNull);
-      i + 2 < size ?
-        blk->next_2 = tokens_[i + 2] :
-        blk->next_2 = Token(string(), TokenType::kTokenTypeNull);
+      blk->next = i + 1 < size ?
+        tokens_[i + 1] : INVALID_TOKEN;
+      blk->next_2 = i + 2 < size ?
+        tokens_[i + 2] : INVALID_TOKEN;
 
       auto token_type = blk->current.second;
       if (token_type == kTokenTypeSymbol) {
@@ -573,19 +562,15 @@ namespace kagami {
         state = FunctionAndObject(blk);
       }
       else if (token_type == TokenType::kTokenTypeNull) {
-        result = Message(kCodeIllegalParam, "Illegal token.", kStateError);
+        result = ERROR_MSG("Illegal token - " + blk->current.first);
         state = false;
       }
       else OtherToken(blk);
       blk->last = blk->current;
     }
 
-    if (state) {
-      FinalProcessing(blk);
-    }
-    if (!state || !health_) {
-      result = Message(kCodeBadExpression, error_string_, kStateError);
-    }
+    if (state) FinalProcessing(blk);
+    else result = ERROR_MSG(error_string_);
 
     for (auto &unit : action_base_) {
       unit.first.idx = index_;
@@ -604,7 +589,6 @@ namespace kagami {
     tokens_.shrink_to_fit();
     action_base_.clear();
     action_base_.shrink_to_fit();
-    health_ = false;
     error_string_.clear();
     index_ = 0;
   }
@@ -613,17 +597,18 @@ namespace kagami {
     vector<string> spilted_string = Scanning(target);
     Message msg = Tokenizer(spilted_string);
 
-    this->index_ = index;
-    if (msg.GetLevel() != kStateError) {
-      msg = Parser();
-    }
+    if (msg.GetLevel() == kStateError) return msg;
 
-    if (!health_) return Message(kCodeBadExpression, error_string_, kStateError);
+    index_ = index;
+    msg = Parser();
+
+    if (msg.GetLevel() == kStateError) return msg;
 
     Request request(kTokenSegment);
     ArgumentList args;
 
-    int code = static_cast<int>(util::GetGenericToken(tokens_.front().first));
+    int code = 
+      static_cast<int>(util::GetGenericToken(tokens_.front().first));
 
     args.emplace_back(
       Argument(to_string(code), kArgumentNormal, kTokenTypeInt)

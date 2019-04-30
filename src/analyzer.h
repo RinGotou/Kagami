@@ -47,16 +47,15 @@ namespace kagami {
   };
 
   class Analyzer {
-    bool health_;
     vector<Token> tokens_;
     size_t index_;
-    KIR action_base_;
+    VMCode action_base_;
     string error_string_;
 
     vector<string> Scanning(string target);
     Message Tokenizer(vector<string> target);
 
-    bool InstructionFilling(AnalyzerWorkBlock *blk);
+    void ProduceVMCode(AnalyzerWorkBlock *blk);
     void Assign(AnalyzerWorkBlock *blk);
     void Dot(AnalyzerWorkBlock *blk);
     void MonoOperator(AnalyzerWorkBlock *blk);
@@ -72,16 +71,18 @@ namespace kagami {
     
     Message Parser();
   public:
-    Analyzer() :health_(false), index_(0) {  }
-    Analyzer(size_t index) :health_(false), index_(index) {  }
+    Analyzer() : index_(0) {  }
+    Analyzer(size_t index) : index_(index) {  }
+    VMCode GetOutput() const { return action_base_; }
 
-    size_t get_index() const { return index_; }
-
-    KIR GetOutput() const { return action_base_; }
-
-    bool Good() const { return health_; }
+    GenericToken GetASTRoot() {
+      if (action_base_.empty()) {
+        return kTokenNull;
+      }
+      return action_base_.back().first.head_command;
+    }
 
     void Clear();
-    Message Make(string target, size_t index = 0);
+    Message Make(string target, size_t index);
   };
 }

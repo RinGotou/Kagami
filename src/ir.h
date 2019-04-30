@@ -101,6 +101,6 @@ namespace kagami {
 
   using ArgumentList = deque<Argument>;
   using Command = pair<Request, ArgumentList>;
-  using KIR = deque<Command>;
-  using KIRPointer = KIR * ;
+  using VMCode = deque<Command>;
+  using VMCodePointer = VMCode * ;
 }

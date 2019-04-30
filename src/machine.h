@@ -269,14 +269,14 @@ namespace kagami {
     bool NeedSkipping();
   };
 
-  class KIRLoader {
+  class VMCodeLoader {
   private:
-    KIR *dest_;
+    VMCode *dest_;
 
   public:
     bool good;
     
-    KIRLoader(string path, KIR &dest);
+    VMCodeLoader(string path, VMCode &dest);
   };
 
   //Kisaragi Machine Class
@@ -347,29 +347,29 @@ namespace kagami {
     void Generate_AutoSize(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoFill(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
   private:
-    deque<KIRPointer> ir_stack_;
+    deque<VMCodePointer> code_stack_;
     stack<MachineWorker> worker_stack_;
     ObjectStack obj_stack_;
 
   public:
     Machine() :
-      ir_stack_(),
+      code_stack_(),
       worker_stack_(),
       obj_stack_() {}
 
     Machine(const Machine &rhs) :
-      ir_stack_(rhs.ir_stack_),
+      code_stack_(rhs.code_stack_),
       worker_stack_(rhs.worker_stack_),
       obj_stack_(rhs.obj_stack_) {}
 
     Machine(const Machine &&rhs) :
       Machine(rhs) {}
 
-    Machine(KIR &ir) :
-      ir_stack_(),
+    Machine(VMCode &ir) :
+      code_stack_(),
       worker_stack_(),
       obj_stack_() {
-      ir_stack_.push_back(&ir);
+      code_stack_.push_back(&ir);
     }
 
     void SetPreviousStack(ObjectStack &prev) {
@@ -377,7 +377,7 @@ namespace kagami {
     }
 
     void Run(bool invoking = false, string id = "", 
-      KIRPointer ptr = nullptr, ObjectMap *p = nullptr, 
+      VMCodePointer ptr = nullptr, ObjectMap *p = nullptr, 
       ObjectMap *closure_record = nullptr);
   };
 

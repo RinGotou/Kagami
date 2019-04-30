@@ -23,21 +23,21 @@ namespace kagami {
     Message Start(ObjectMap &p) { return activity_(p); }
   };
 
-  /* KIR Delegator for Kisaragi framework */
-  class KIRFunctionPolicy : public InterfacePolicy {
+  /* VMCode Delegator for Kisaragi framework */
+  class VMCodePolicy : public InterfacePolicy {
   private:
-    KIR ir_;
+    VMCode code_;
 
   public:
-    KIRFunctionPolicy(KIR ir) : ir_(ir) {}
+    VMCodePolicy(VMCode ir) : code_(ir) {}
 
     Message Start(ObjectMap &p) { return Message(); } //Deprecated method
 
-    KIR &GetIR() { return ir_; }
+    VMCode &GetCode() { return code_; }
   };
 
   enum InterfacePolicyType {
-    kInterfaceCXX, kInterfaceKIR
+    kInterfaceCXX, kInterfaceVMCode
   };
 
   class Interface {
@@ -102,19 +102,19 @@ namespace kagami {
       min_arg_size_(0) {}
 
     Interface(
-      KIR ir,
+      VMCode ir,
       string id,
       vector<string> params,
       StateCode argument_mode = kCodeNormalParam
     ) :
-      policy_(new KIRFunctionPolicy(ir)),
+      policy_(new VMCodePolicy(ir)),
       id_(id),
       token_(kTokenNull),
       params_(params),
       argument_mode_(argument_mode),
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
-      policy_type_(kInterfaceKIR),
+      policy_type_(kInterfaceVMCode),
       min_arg_size_(0) {}
 
     Message Start(ObjectMap &obj_map) {
@@ -172,8 +172,8 @@ namespace kagami {
       return policy_type_;
     }
 
-    KIR &GetIR() {
-      return dynamic_pointer_cast<KIRFunctionPolicy>(policy_)->GetIR();
+    VMCode &GetCode() {
+      return dynamic_pointer_cast<VMCodePolicy>(policy_)->GetCode();
     }
 
     size_t GetParamSize() const {
