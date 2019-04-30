@@ -1,5 +1,7 @@
 #include "analyzer.h"
 
+#define INVALID_TOKEN Token(string(), kTokenTypeNull)
+
 namespace kagami {
   Terminator GetTerminatorCode(string src) {
     if (src == "=")   return kBasicTokenAssign;
@@ -18,12 +20,12 @@ namespace kagami {
 
 
   vector<string> Analyzer::Scanning(string target) {
-    string current_string, temp;
-    bool string_processing = false;
-    bool delay_suspending = false;
-    bool delay_switching = false;
+    string current_token, temp;
+    bool inside_string = false;
+    bool leave_string = false;
+    bool enter_string = false;
     bool escape_flag = false;
-    bool disable_escape = false;
+    bool not_escape_char = false;
     char current = 0, next = 0, last = 0;
     vector<string> output;
 
@@ -34,83 +36,79 @@ namespace kagami {
         next = target[idx + 1] :
         next = 0;
 
-      if (delay_suspending) {
-        string_processing = false;
-        delay_suspending = false;
+      if (leave_string) {
+        inside_string = false;
+        leave_string = false;
       }
 
-      (string_processing && last == '\\' && !disable_escape) ?
-        escape_flag = true :
-        escape_flag = false;
+      escape_flag = (inside_string && last == '\\' && !not_escape_char);
 
-      if (disable_escape) disable_escape = false;
+      if (not_escape_char) not_escape_char = false;
 
       if (current == '\'' && !escape_flag) {
-        if (!string_processing && util::GetTokenType(current_string) == kTokenTypeBlank) {
-          current_string.clear();
+        if (!inside_string && util::GetTokenType(current_token) == kTokenTypeBlank) {
+          current_token.clear();
         }
 
-        string_processing ?
-          delay_suspending = true :
-          string_processing = true, delay_switching = true;
+        inside_string ?
+          leave_string = true :
+          inside_string = true, enter_string = true;
       }
 
-      if (!string_processing || delay_switching) {
-        temp = current_string;
+      if (!inside_string || enter_string) {
+        temp = current_token;
         temp.append(1, current);
 
         auto type = util::GetTokenType(temp);
         if (type == kTokenTypeNull) {
-          auto type = util::GetTokenType(current_string);
+          auto type = util::GetTokenType(current_token);
           switch (type) {
           case kTokenTypeBlank:
-            current_string.clear();
-            current_string.append(1, current);
+            current_token.clear();
+            current_token.append(1, current);
             break;
           case kTokenTypeInt:
             if (current == '.' && util::IsDigit(next)) {
-              current_string.append(1, current);
+              current_token.append(1, current);
             }
             else {
-              output.emplace_back(current_string);
-              current_string.clear();
-              current_string.append(1, current);
+              output.emplace_back(current_token);
+              current_token.clear();
+              current_token.append(1, current);
             }
             break;
           default:
-            output.emplace_back(current_string);
-            current_string.clear();
-            current_string.append(1, current);
+            output.emplace_back(current_token);
+            current_token.clear();
+            current_token.append(1, current);
             break;
           }
         }
         else {
           if (type == kTokenTypeInt && (temp[0] == '+' || temp[0] == '-')) {
             output.emplace_back(string().append(1, temp[0]));
-            current_string = temp.substr(1, temp.size() - 1);
+            current_token = temp.substr(1, temp.size() - 1);
           }
           else {
-            current_string = temp;
+            current_token = temp;
           }
         }
 
-        delay_switching ?
-          delay_switching = false :
-          delay_switching = delay_switching;
+        enter_string ?
+          enter_string = false :
+          enter_string = enter_string;
       }
       else {
-        escape_flag ?
-          current = util::GetEscapeChar(current) :
-          current = current;
-        if (current == '\\' && last == '\\') disable_escape = true;
-        current_string.append(1, current);
+        if (escape_flag) current = util::GetEscapeChar(current);
+        if (current == '\\' && last == '\\') not_escape_char = true;
+        current_token.append(1, current);
       }
 
       last = target[idx];
     }
 
-    if (util::GetTokenType(current_string) != kTokenTypeBlank) {
-      output.emplace_back(current_string);
+    if (util::GetTokenType(current_token) != kTokenTypeBlank) {
+      output.emplace_back(current_token);
     }
 
     return output;
@@ -119,9 +117,9 @@ namespace kagami {
   Message Analyzer::Tokenizer(vector<string> target) {
     bool negative_flag = false;
     stack<string> bracket_stack;
-    Token current = Token("", kTokenTypeNull),
-      next = Token("", kTokenTypeNull),
-      last = Token("", kTokenTypeNull);
+    Token current = INVALID_TOKEN;
+    Token next = INVALID_TOKEN;
+    Token last = INVALID_TOKEN;
     Message msg;
     
     tokens_.clear();
@@ -129,9 +127,9 @@ namespace kagami {
 
     for (size_t idx = 0; idx < target.size(); idx += 1) {
       current = Token(target[idx], util::GetTokenType(target[idx]));
-      (idx < target.size() - 1) ?
-        next = Token(target[idx + 1], util::GetTokenType(target[idx + 1])) :
-        next = Token("", kTokenTypeNull);
+      next = (idx < target.size() - 1) ?
+        Token(target[idx + 1], util::GetTokenType(target[idx + 1])) :
+        INVALID_TOKEN;
 
       if (current.second == kTokenTypeNull) {
         msg = Message(kCodeBadExpression,
@@ -141,9 +139,12 @@ namespace kagami {
       }
 
       if (compare_exp(current.first, "+", "-")) {
-        if (compare_exp(last.second, kTokenTypeSymbol, kTokenTypeNull)
-          && compare_exp(next.second, kTokenTypeInt, kTokenTypeFloat)) {
+        if (compare_exp(last.second, kTokenTypeSymbol, kTokenTypeNull) && 
+            compare_exp(next.second, kTokenTypeInt, kTokenTypeFloat)) {
           negative_flag = true;
+          tokens_.push_back(current);
+          last = current;
+          continue;
         }
       }
 
@@ -169,24 +170,17 @@ namespace kagami {
         }
       }
 
-      if (compare_exp(current.first, "+", "-") && !tokens_.empty()) {
-        if (tokens_.back().first == current.first) {
-          tokens_.back().first.append(current.first);
-        }
-        else {
-          tokens_.emplace_back(current);
-        }
-      }
 
-      else if (negative_flag) {
-        Token res = Token(last.first + current.first, current.second);
-        tokens_.back() = res;
+      if (compare_exp(last.first, "+", "-") && negative_flag) {
+        Token combined(last.first + current.first, current.second);
+        tokens_.back() = combined;
         negative_flag = false;
-      }
-      else {
-        tokens_.emplace_back(current);
+        last = combined;
+        continue;
       }
 
+
+      tokens_.emplace_back(current);
       last = current;
     }
 
@@ -233,7 +227,7 @@ namespace kagami {
     return health_;
   }
 
-  void Analyzer::EqualMark(AnalyzerWorkBlock *blk) {
+  void Analyzer::Assign(AnalyzerWorkBlock *blk) {
     if (!blk->args.empty() && blk->next.first != kStrFn) {
       Request request(kTokenBind);
       request.option.local_object = blk->local_object;
@@ -561,7 +555,7 @@ namespace kagami {
       if (token_type == kTokenTypeSymbol) {
         Terminator value = GetTerminatorCode(blk->current.first);
         switch (value) {
-        case kBasicTokenAssign:         EqualMark(blk); break;
+        case kBasicTokenAssign:         Assign(blk); break;
         case kBasicTokenComma:          state = CleanupStack(blk); break;
         case kBasicTokenLeftSqrBracket: state = LeftSqrBracket(blk); break;
         case kBasicTokenDot:            Dot(blk); break;

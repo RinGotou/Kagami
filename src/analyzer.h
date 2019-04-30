@@ -57,7 +57,7 @@ namespace kagami {
     Message Tokenizer(vector<string> target);
 
     bool InstructionFilling(AnalyzerWorkBlock *blk);
-    void EqualMark(AnalyzerWorkBlock *blk);
+    void Assign(AnalyzerWorkBlock *blk);
     void Dot(AnalyzerWorkBlock *blk);
     void MonoOperator(AnalyzerWorkBlock *blk);
     void LeftBracket(AnalyzerWorkBlock *blk);
