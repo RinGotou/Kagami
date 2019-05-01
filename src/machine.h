@@ -243,12 +243,12 @@ namespace kagami {
     size_t jump_offset;
     size_t origin_idx;
     size_t idx;
-    size_t fn_idx;
     size_t skipping_count;
     MachineMode mode;
     string error_string;
     stack<bool> condition_stack;
     stack<size_t> jump_stack;
+    stack<size_t> branch_jump_stack;
     stack<MachineMode> mode_stack;
     stack<Object> return_stack;
     vector<string> fn_string_vec;
@@ -263,12 +263,12 @@ namespace kagami {
       jump_offset(0),
       origin_idx(0),
       idx(0),
-      fn_idx(0),
       skipping_count(0),
       mode(kModeNormal),
       error_string(),
       condition_stack(),
       jump_stack(),
+      branch_jump_stack(),
       mode_stack(),
       return_stack(),
       fn_string_vec() {}
@@ -299,8 +299,8 @@ namespace kagami {
     bool FetchInterface(InterfacePointer &interface, CommandPointer &command,
       ObjectMap &obj_map);
 
-    void InitFunctionCatching(ArgumentList &args);
-    void FinishFunctionCatching(bool closure = false);
+    void InitFunctionCatching(ArgumentList &args, size_t nest_end);
+    void FinishFunctionCatching(size_t nest, bool closure = false);
 
     void Skipping(bool enable_terminators, 
       initializer_list<Keyword> terminators = {});

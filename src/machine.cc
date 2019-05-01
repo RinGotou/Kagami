@@ -398,7 +398,7 @@ namespace kagami {
     return false;
   }
 
-  void Machine::InitFunctionCatching(ArgumentList &args) {
+  void Machine::InitFunctionCatching(ArgumentList &args, size_t nest_end) {
     auto &worker = worker_stack_.top();
     worker.fn_string_vec.clear();
     if (!args.empty()) {
@@ -410,11 +410,11 @@ namespace kagami {
       worker.MakeError("Empty argument list.");
     }
 
-    worker.fn_idx = worker.idx;
     worker.SwitchToMode(kModeClosureCatching);
+    worker.Goto(nest_end);
   }
 
-  void Machine::FinishFunctionCatching(bool closure) {
+  void Machine::FinishFunctionCatching(size_t nest, bool closure) {
     auto &obj_list = obj_stack_.GetBase();
     auto &worker = worker_stack_.top();
     auto &origin_ir = *code_stack_.back();
@@ -427,7 +427,7 @@ namespace kagami {
     vector<string> params;
     VMCode code;
 
-    for (size_t idx = worker.fn_idx + 1; idx < worker.idx; idx += 1) {
+    for (size_t idx = nest + 1; idx < worker.idx; idx += 1) {
       code.emplace_back(origin_ir[idx]);
     }
 
@@ -469,7 +469,7 @@ namespace kagami {
     if (optional) argument_mode = kCodeAutoFill;
     if (variable) argument_mode = kCodeAutoSize;
 
-    Interface interface(worker.fn_idx + 1, code, fn_string_vec[0], params, argument_mode);
+    Interface interface(nest + 1, code, fn_string_vec[0], params, argument_mode);
 
     if (optional) {
       interface.SetMinArgSize(params.size() - counter);
@@ -595,10 +595,14 @@ namespace kagami {
 
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
     auto &worker = worker_stack_.top();
-
+    auto &code = code_stack_.back();
     REQUIRED_ARG_COUNT(1);
 
-    worker.AddJumpRecord(nest_end);
+    if (token == kKeywordIf || token == kKeywordWhile) {
+      worker.AddJumpRecord(nest_end);
+    }
+    
+    bool has_jump_list = code->FindJumpRecord(worker.idx, worker.branch_jump_stack);
 
     Object obj = FetchObject(args[0]);
     ERROR_CHECKING(obj.GetTypeId() != kTypeIdBool, "Invalid state value type.");
@@ -613,7 +617,10 @@ namespace kagami {
     else if (token == kKeywordElif) {
       ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Elif.");
 
-      if (worker.condition_stack.top() == false && worker.mode == kModeNextCondition) {
+      if (worker.condition_stack.top()) {
+        worker.mode = kModeNextCondition;
+      }
+      else if (!worker.condition_stack.top() && worker.mode == kModeNextCondition) {
         worker.mode = kModeCondition;
         worker.condition_stack.top() = true;
       }
@@ -820,6 +827,7 @@ namespace kagami {
     worker.GoLastMode();
     worker.jump_stack.pop();
     obj_stack_.Pop();
+    while (!worker.branch_jump_stack.empty()) worker.branch_jump_stack.pop();
   }
 
   void Machine::CommandLoopEnd(size_t nest) {
@@ -1342,7 +1350,7 @@ namespace kagami {
       CommandExist(args);
       break;
     case kKeywordFn:
-      InitFunctionCatching(args);
+      InitFunctionCatching(args, request.option.nest_end);
       break;
     case kKeywordCase:
       CommandCase(args, request.option.nest_end);
@@ -1369,7 +1377,7 @@ namespace kagami {
         CommandForEachEnd(request.option.nest);
         break;
       case kModeClosureCatching:
-        FinishFunctionCatching(worker_stack_.size() > 1);
+        FinishFunctionCatching(request.option.nest, worker_stack_.size() > 1);
         break;
       default:
         break;
