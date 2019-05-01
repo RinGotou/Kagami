@@ -1,26 +1,49 @@
-#include "analyzer.h"
+#include "frontend.h"
 
-#define INVALID_TOKEN Token(string(), kTokenTypeNull)
-#define ERROR_MSG(_Msg) Message(kCodeBadExpression, _Msg, kStateError);
+#define INVALID_TOKEN Token(string(), kStringTypeNull)
+#define ERROR_MSG(_Msg) Message(kCodeBadExpression, _Msg, kStateError)
 
 namespace kagami {
-  Terminator GetTerminatorCode(string src) {
-    if (src == "=")   return kBasicTokenAssign;
-    if (src == ",")   return kBasicTokenComma;
-    if (src == "[")   return kBasicTokenLeftSqrBracket;
-    if (src == ".")   return kBasicTokenDot;
-    if (src == "(")   return kBasicTokenLeftBracket;
-    if (src == "]")   return kBasicTokenRightSqrBracket;
-    if (src == ")")   return kBasicTokenRightBracket;
-    if (src == "{")   return kBasicTokenLeftCurBracket;
-    if (src == "}")   return kBasicTokenRightCurBracket;
-    if (src == "!")   return kBasicTokenMonoOperator;
-    if (src == "~")   return kBasicTokenMonoOperator;
-    return kBasicTokenOther;
+  /* Disposing all indentation and comments */
+  string IndentationAndCommentProc(string target) {
+    if (target == "") return "";
+    string data;
+    char current = 0, last = 0;
+    size_t head = 0, tail = 0;
+    bool exempt_blank_char = true;
+    bool string_processing = false;
+    auto toString = [](char t) ->string {return string().append(1, t); };
+
+    for (size_t count = 0; count < target.size(); ++count) {
+      current = target[count];
+      auto type = util::GetStringType(toString(current));
+      if (type != StringType::kStringTypeBlank && exempt_blank_char) {
+        head = count;
+        exempt_blank_char = false;
+      }
+      if (current == '\'' && last != '\\') {
+        string_processing = !string_processing;
+      }
+      if (!string_processing && current == '#') {
+        tail = count;
+        break;
+      }
+      last = target[count];
+    }
+    if (tail > head) data = target.substr(head, tail - head);
+    else data = target.substr(head, target.size() - head);
+    if (data.front() == '#') return "";
+
+    while (!data.empty() &&
+      util::GetStringType(toString(data.back())) == kStringTypeBlank) {
+      data.pop_back();
+    }
+    return data;
   }
 
 
-  vector<string> Analyzer::Scanning(string target) {
+
+  vector<string> LineParser::Scanning(string target) {
     string current_token, temp;
     bool inside_string = false;
     bool leave_string = false;
@@ -47,7 +70,7 @@ namespace kagami {
       if (not_escape_char) not_escape_char = false;
 
       if (current == '\'' && !escape_flag) {
-        if (!inside_string && util::GetTokenType(current_token) == kTokenTypeBlank) {
+        if (!inside_string && util::GetStringType(current_token) == kStringTypeBlank) {
           current_token.clear();
         }
 
@@ -60,15 +83,15 @@ namespace kagami {
         temp = current_token;
         temp.append(1, current);
 
-        auto type = util::GetTokenType(temp);
-        if (type == kTokenTypeNull) {
-          auto type = util::GetTokenType(current_token);
+        auto type = util::GetStringType(temp);
+        if (type == kStringTypeNull) {
+          auto type = util::GetStringType(current_token);
           switch (type) {
-          case kTokenTypeBlank:
+          case kStringTypeBlank:
             current_token.clear();
             current_token.append(1, current);
             break;
-          case kTokenTypeInt:
+          case kStringTypeInt:
             if (current == '.' && util::IsDigit(next)) {
               current_token.append(1, current);
             }
@@ -86,7 +109,7 @@ namespace kagami {
           }
         }
         else {
-          if (type == kTokenTypeInt && (temp[0] == '+' || temp[0] == '-')) {
+          if (type == kStringTypeInt && (temp[0] == '+' || temp[0] == '-')) {
             output.emplace_back(string().append(1, temp[0]));
             current_token = temp.substr(1, temp.size() - 1);
           }
@@ -107,14 +130,14 @@ namespace kagami {
       last = target[idx];
     }
 
-    if (util::GetTokenType(current_token) != kTokenTypeBlank) {
+    if (util::GetStringType(current_token) != kStringTypeBlank) {
       output.emplace_back(current_token);
     }
 
     return output;
   }
 
-  Message Analyzer::Tokenizer(vector<string> target) {
+  Message LineParser::Tokenizer(vector<string> target) {
     bool negative_flag = false;
     stack<string> bracket_stack;
     Token current = INVALID_TOKEN;
@@ -125,19 +148,19 @@ namespace kagami {
     tokens_.clear();
 
     for (size_t idx = 0; idx < target.size(); idx += 1) {
-      current = Token(target[idx], util::GetTokenType(target[idx]));
+      current = Token(target[idx], util::GetStringType(target[idx]));
       next = (idx < target.size() - 1) ?
-        Token(target[idx + 1], util::GetTokenType(target[idx + 1])) :
+        Token(target[idx + 1], util::GetStringType(target[idx + 1])) :
         INVALID_TOKEN;
 
-      if (current.second == kTokenTypeNull) {
+      if (current.second == kStringTypeNull) {
         msg = ERROR_MSG("Unknown token - " + current.first);
         break;
       }
 
       if (compare_exp(current.first, "+", "-")) {
-        if (compare_exp(last.second, kTokenTypeSymbol, kTokenTypeNull) && 
-            compare_exp(next.second, kTokenTypeInt, kTokenTypeFloat)) {
+        if (compare_exp(last.second, kStringTypeSymbol, kStringTypeNull) && 
+            compare_exp(next.second, kStringTypeInt, kStringTypeFloat)) {
           negative_flag = true;
           tokens_.push_back(current);
           last = current;
@@ -164,7 +187,7 @@ namespace kagami {
       }
 
       if (current.first == ",") {
-        if (last.second == kTokenTypeSymbol &&
+        if (last.second == kStringTypeSymbol &&
           !compare_exp(last.first, "]", ")", "}", "'")) {
           msg = ERROR_MSG("Illegal comma position");
           break;
@@ -188,13 +211,14 @@ namespace kagami {
     return msg;
   }
 
-  void Analyzer::ProduceVMCode(AnalyzerWorkBlock *blk) {
+  void LineParser::ProduceVMCode(ParserBlock *blk) {
     deque<Argument> arguments;
     size_t idx = 0, limit = 0;
 
-    bool is_bin_operator = util::IsBinaryOperator(blk->symbol.back().head_command);
-    bool is_mono_operator = util::IsMonoOperator(blk->symbol.back().head_command);
-    bool reversed = (is_bin_operator && blk->need_reversing);
+    if (blk->symbol.back().IsPlaceholder()) blk->symbol.pop_back();
+
+    bool is_bin_operator = util::IsBinaryOperator(blk->symbol.back().keyword_value);
+    bool is_mono_operator = util::IsMonoOperator(blk->symbol.back().keyword_value);
 
     if (is_bin_operator) limit = 2;
     if (is_mono_operator) limit = 1;
@@ -202,9 +226,7 @@ namespace kagami {
     while (!blk->args.empty() && !blk->args.back().IsPlaceholder()) {
       if ((is_bin_operator || is_mono_operator) && idx >= limit) break;
 
-      reversed ?
-        arguments.emplace_back(blk->args.back()) :
-        arguments.emplace_front(blk->args.back());
+      arguments.emplace_front(blk->args.back());
       
       blk->args.pop_back();
       (is_bin_operator) ? idx += 1 : idx = idx;
@@ -219,101 +241,85 @@ namespace kagami {
 
     action_base_.emplace_back(Command(blk->symbol.back(), arguments));
     blk->symbol.pop_back();
-    blk->args.emplace_back(Argument("", kArgumentReturnStack, kTokenTypeNull));
+    blk->args.emplace_back(Argument("", kArgumentReturnStack, kStringTypeNull));
     if (blk->symbol.empty() && (blk->next.first == "," 
-      || blk->next.second == kTokenTypeNull)) {
+      || blk->next.second == kStringTypeNull)) {
       action_base_.back().first.option.void_call = true;
     }
   }
 
-  void Analyzer::Assign(AnalyzerWorkBlock *blk) {
+  void LineParser::BindExpr(ParserBlock *blk) {
     if (!blk->args.empty() && blk->next.first != kStrFn) {
-      Request request(kTokenBind);
+      Request request(kKeywordBind);
       request.option.local_object = blk->local_object;
-      request.priority = util::GetTokenPriority(kTokenBind);
+      request.priority = util::GetTokenPriority(kKeywordBind);
       blk->local_object = false;
       blk->symbol.emplace_back(request);
     }
   }
 
-  void Analyzer::Dot(AnalyzerWorkBlock *blk) {
+  void LineParser::DotExpr(ParserBlock *blk) {
     blk->domain = blk->args.back();
     blk->args.pop_back();
   }
 
-  void Analyzer::MonoOperator(AnalyzerWorkBlock *blk) {
-    auto token = util::GetGenericToken(blk->current.first);
+  void LineParser::UnaryExpr(ParserBlock *blk) {
+    auto token = util::GetKeywordCode(blk->current.first);
     blk->symbol.emplace_back(Request(token));
   }
 
-  void Analyzer::LeftBracket(AnalyzerWorkBlock *blk) {
-    if (blk->fn_line) return;
-    if (blk->last.second != TokenType::kTokenTypeGeneric) {
-      blk->symbol.emplace_back(Request(kTokenExpList));
+  void LineParser::FuncInvokingExpr(ParserBlock *blk) {
+    if (blk->fn_expr) return;
+    if (blk->last.second != StringType::kStringTypeIdentifier) {
+      blk->symbol.emplace_back(Request(kKeywordExpList));
     }
     
-    blk->symbol.push_back(Request(blk->current.first));
+    blk->symbol.push_back(Request());
     blk->args.emplace_back(Argument());
   }
 
-  bool Analyzer::RightBracket(AnalyzerWorkBlock *blk) {
-    bool result = CleanupStack(blk);
-    auto &symbol = blk->symbol;
-
-    if (result) {
-      if (blk->need_reversing) blk->need_reversing = false;
-
-      if (compare_exp(symbol.back().head_interface, "(", "[", "{")) {
-        symbol.pop_back();
-      }
-
-      ProduceVMCode(blk);
-    }
-    return result;
-  }
-
-  bool Analyzer::LeftSqrBracket(AnalyzerWorkBlock *blk) {
+  bool LineParser::IndexExpr(ParserBlock *blk) {
     bool result = true;
 
     deque<Argument> arguments = {
       blk->args.back(),
-      Argument("__at", kArgumentNormal, kTokenTypeGeneric)
+      Argument("__at", kArgumentNormal, kStringTypeIdentifier)
     };
 
     Request request("__at");
     request.domain = blk->args.back();
     blk->symbol.emplace_back(request);
-    blk->symbol.emplace_back(Request(blk->current.first, true));
+    blk->symbol.emplace_back(Request());
     blk->args.pop_back();
     blk->args.emplace_back(Argument());
 
     return result;
   }
 
-  bool Analyzer::LeftCurBracket(AnalyzerWorkBlock *blk) {
+  bool LineParser::ArrayExpr(ParserBlock *blk) {
     bool result;
-    if (blk->last.second == TokenType::kTokenTypeSymbol) {
-      blk->symbol.emplace_back(Request(kTokenInitialArray));
-      blk->symbol.emplace_back(Request(blk->current.first, true));
+    if (blk->last.second == StringType::kStringTypeSymbol) {
+      blk->symbol.emplace_back(Request(kKeywordInitialArray));
+      blk->symbol.emplace_back(Request());
       blk->args.emplace_back(Argument());
       result = true;
     }
     else {
       result = false;
-      error_string_ = "Illegal curly bracket location.";
+      error_string_ = "Illegal brace location.";
     }
     return result;
   }
 
-  bool Analyzer::FunctionAndObject(AnalyzerWorkBlock *blk) {
-    GenericToken token = util::GetGenericToken(blk->current.first);
-    auto token_type = util::GetTokenType(blk->current.first);
-    auto token_next = util::GetGenericToken(blk->next.first);
-    auto token_next_2 = util::GetGenericToken(blk->next_2.first);
+  bool LineParser::FunctionAndObject(ParserBlock *blk) {
+    Keyword token = util::GetKeywordCode(blk->current.first);
+    auto token_type = util::GetStringType(blk->current.first);
+    auto token_next = util::GetKeywordCode(blk->next.first);
+    auto token_next_2 = util::GetKeywordCode(blk->next_2.first);
     bool lambda_func = false;
 
     if (find_in_vector(token, kSingleWordStore)) {
-      if (blk->next.second != kTokenTypeNull) {
+      if (blk->next.second != kStringTypeNull) {
         error_string_ = "Invalid syntax after " + blk->current.first;
         return false;
       }
@@ -323,25 +329,25 @@ namespace kagami {
       return true;
     }
 
-    if (blk->fn_line) {
-      if (token_type != kTokenTypeGeneric) {
+    if (blk->fn_expr) {
+      if (token_type != kStringTypeIdentifier) {
         error_string_ = "Invalid token in function definition";
         return false;
       }
 
       if (blk->current.first == kStrOptional || blk->current.first == kStrVariable) {
-        if (util::GetTokenType(blk->next.first) != kTokenTypeGeneric) {
+        if (util::GetStringType(blk->next.first) != kStringTypeIdentifier) {
           error_string_ = "Invalid syntax after " + blk->current.first;
           return false;
         }
       }
 
-      blk->args.emplace_back(Argument(blk->current.first, kArgumentNormal, kTokenTypeGeneric));
+      blk->args.emplace_back(Argument(blk->current.first, kArgumentNormal, kStringTypeIdentifier));
       return true;
     }
 
-    if (token == kTokenFn) {
-      if (blk->next.first == "(" && blk->next.second == kTokenTypeGeneric) {
+    if (token == kKeywordFn) {
+      if (blk->next.first == "(" && blk->next.second == kStringTypeIdentifier) {
         lambda_func = true;
       }
 
@@ -350,33 +356,33 @@ namespace kagami {
         return false;
       }
 
-      blk->fn_line = true;
-      Request request(kTokenFn);
+      blk->fn_expr = true;
+      Request request(kKeywordFn);
       //request.option.lambda_fn_obj = lambda_func;
       blk->symbol.emplace_back(request);
-      blk->symbol.emplace_back(Request("(", true));
+      blk->symbol.emplace_back(Request());
       blk->args.emplace_back(Argument());
       return true;
     }
 
-    if (token == kTokenFor) {
-      if (token_next_2 != kTokenIn) {
+    if (token == kKeywordFor) {
+      if (token_next_2 != kKeywordIn) {
         error_string_ = "Invalid syntax after for";
         return false;
       }
 
-      if (blk->next.second != kTokenTypeGeneric) {
+      if (blk->next.second != kStringTypeIdentifier) {
         error_string_ = "Invalid unit name after for";
         return false;
       }
 
-      blk->foreach_line = true;
-      blk->symbol.emplace_back(Request(kTokenFor));
+      blk->foreach_expr = true;
+      blk->symbol.emplace_back(Request(kKeywordFor));
       blk->args.emplace_back(Argument());
       return true;
     }
 
-    if (token == kTokenLocal) {
+    if (token == kKeywordLocal) {
       if (blk->next_2.first != "=") {
         error_string_ = "Invalid 'local' token.";
         return false;
@@ -386,8 +392,8 @@ namespace kagami {
       return true;
     }
 
-    if (token == kTokenIn) {
-      if (!blk->foreach_line) {
+    if (token == kKeywordIn) {
+      if (!blk->foreach_expr) {
         error_string_ = "Invalid 'in' token";
         return false;
       }
@@ -395,13 +401,13 @@ namespace kagami {
       return true;
     }
 
-    if (blk->foreach_line && token_next == kTokenIn) {
+    if (blk->foreach_expr && token_next == kKeywordIn) {
       blk->args.emplace_back(Argument(
-        blk->current.first, kArgumentNormal, kTokenTypeGeneric));
+        blk->current.first, kArgumentNormal, kStringTypeIdentifier));
       return true;
     }
 
-    if (token != kTokenNull) {
+    if (token != kKeywordNull) {
       if (blk->next.first == "=" || util::IsOperator(token)) {
         error_string_ = "Trying to operate with reserved keyword";
         return false;
@@ -441,7 +447,7 @@ namespace kagami {
 
     if (blk->next.first == "=") {
       blk->args.emplace_back(Argument(
-        blk->current.first, kArgumentNormal, kTokenTypeGeneric));
+        blk->current.first, kArgumentNormal, kStringTypeIdentifier));
       return true;
     }
 
@@ -456,28 +462,28 @@ namespace kagami {
     }
     else {
       Argument arg(
-        blk->current.first, kArgumentObjectStack, kTokenTypeGeneric);
+        blk->current.first, kArgumentObjectStack, kStringTypeIdentifier);
       blk->args.emplace_back(arg);
     }
     
     return true;
   }
 
-  void Analyzer::OtherToken(AnalyzerWorkBlock *blk) {
+  void LineParser::OtherToken(ParserBlock *blk) {
     blk->args.emplace_back(
       Argument(blk->current.first, kArgumentNormal, blk->current.second));
   }
 
-  void Analyzer::OtherSymbol(AnalyzerWorkBlock *blk) {
-    auto token = util::GetGenericToken(blk->current.first);
+  void LineParser::BinaryExpr(ParserBlock *blk) {
+    auto token = util::GetKeywordCode(blk->current.first);
     int current_priority = util::GetTokenPriority(token);
     Request request(token);
     request.priority = current_priority;
 
     //TODO:processing for same level
     if (!blk->symbol.empty()) {
-      bool stack_top_operator = util::IsBinaryOperator(blk->symbol.back().head_command);
-      int stack_top_priority = util::GetTokenPriority(blk->symbol.back().head_command);
+      bool stack_top_operator = util::IsBinaryOperator(blk->symbol.back().keyword_value);
+      int stack_top_priority = util::GetTokenPriority(blk->symbol.back().keyword_value);
 
       auto checking = [&stack_top_priority, &current_priority]()->bool {
         return (stack_top_priority >= current_priority);
@@ -486,9 +492,9 @@ namespace kagami {
       while (!blk->symbol.empty() && stack_top_operator && checking()) {
         ProduceVMCode(blk);
         stack_top_operator = 
-          (!blk->symbol.empty() && util::IsBinaryOperator(blk->symbol.back().head_command));
+          (!blk->symbol.empty() && util::IsBinaryOperator(blk->symbol.back().keyword_value));
         stack_top_priority = blk->symbol.empty() ? 5 :
-          util::GetTokenPriority(blk->symbol.back().head_command);
+          util::GetTokenPriority(blk->symbol.back().keyword_value);
       }
     }
 
@@ -497,39 +503,23 @@ namespace kagami {
     blk->forward_priority = current_priority;
   }
 
-  void Analyzer::FinalProcessing(AnalyzerWorkBlock *blk) {
-    bool checked = false;
-    while (!blk->symbol.empty()) {
-      if (blk->symbol.back().head_interface == "(") {
-        error_string_ = "Right bracket is missing";
-        break;
-      }
-
-      ProduceVMCode(blk);
-    }
-  }
-
-  bool Analyzer::CleanupStack(AnalyzerWorkBlock *blk) {
-    string top_token = blk->symbol.empty()? "(" :
-      blk->symbol.back().head_interface;
-    bool checked = false;
+  bool LineParser::CleanupStack(ParserBlock *blk) {
     bool result = true;
 
-    while (!blk->symbol.empty() && !compare_exp(top_token, "{", "[", "(")
-      && blk->symbol.back().head_command != kTokenBind) {
+    while (!blk->symbol.empty() && !blk->symbol.back().IsPlaceholder()
+      && blk->symbol.back().keyword_value != kKeywordBind) {
       ProduceVMCode(blk);
-      top_token = blk->symbol.back().head_interface;
     }
 
     return result;
   }
 
-  Message Analyzer::Parser() {
+  Message LineParser::Parse() {
     auto state = true;
     const auto size = tokens_.size();
     Message result;
 
-    AnalyzerWorkBlock *blk = new AnalyzerWorkBlock();
+    ParserBlock *blk = new ParserBlock();
 
     for (size_t i = 0; i < size; ++i) {
       if (!state)  break;
@@ -541,36 +531,63 @@ namespace kagami {
         tokens_[i + 2] : INVALID_TOKEN;
 
       auto token_type = blk->current.second;
-      if (token_type == kTokenTypeSymbol) {
-        Terminator value = GetTerminatorCode(blk->current.first);
+      if (token_type == kStringTypeSymbol) {
+        Terminator value = util::GetTerminatorCode(blk->current.first);
         switch (value) {
-        case kBasicTokenAssign:         Assign(blk); break;
-        case kBasicTokenComma:          state = CleanupStack(blk); break;
-        case kBasicTokenLeftSqrBracket: state = LeftSqrBracket(blk); break;
-        case kBasicTokenDot:            Dot(blk); break;
-        case kBasicTokenLeftBracket:    LeftBracket(blk); break;
-        case kBasicTokenRightSqrBracket:state = RightBracket(blk); break;
-        case kBasicTokenRightBracket:   state = RightBracket(blk); break;
-        case kBasicTokenLeftCurBracket: state = LeftCurBracket(blk); break;
-        case kBasicTokenRightCurBracket:state = RightBracket(blk); break;
-        case kBasicTokenMonoOperator:   MonoOperator(blk); break;
-        case kBasicTokenOther:          OtherSymbol(blk); break;
-        default:break;
+        case kTerminatorAssign:         
+          BindExpr(blk); 
+          break;
+        case kTerminatorComma:
+          state = CleanupStack(blk);
+          break;
+        case kTerminatorDot:            
+          DotExpr(blk); 
+          break;
+        case kTerminatorLeftParen:
+          FuncInvokingExpr(blk);
+          break;
+        case kTerminatorLeftBracket:
+          state = IndexExpr(blk);
+          break;
+        case kTerminatorLeftBrace:
+          state = ArrayExpr(blk);
+          break;
+        case kTerminatorMonoOperator:  
+          UnaryExpr(blk); 
+          break;
+        case kTerminatorBinaryOperator:         
+          BinaryExpr(blk); 
+          break;
+        case kTerminatorRightSqrBracket:
+        case kTerminatorRightBracket:
+        case kTerminatorRightCurBracket:
+          state = CleanupStack(blk);
+          if (state) ProduceVMCode(blk);
+          break;
+        default:
+          break;
         }
       }
-      else if (token_type == TokenType::kTokenTypeGeneric) {
+      else if (token_type == kStringTypeIdentifier) {
         state = FunctionAndObject(blk);
       }
-      else if (token_type == TokenType::kTokenTypeNull) {
-        result = ERROR_MSG("Illegal token - " + blk->current.first);
+      else if (token_type == kStringTypeNull) {
+        result = ERROR_MSG("Illegal token - " + blk->current.first)
+          .SetIndex(index_);
         state = false;
       }
       else OtherToken(blk);
       blk->last = blk->current;
     }
 
-    if (state) FinalProcessing(blk);
-    else result = ERROR_MSG(error_string_);
+    if (state) {
+      while (!blk->symbol.empty()) {
+        ProduceVMCode(blk);
+      }
+    }
+    else {
+      result = ERROR_MSG(error_string_).SetIndex(index_);
+    }
 
     for (auto &unit : action_base_) {
       unit.first.idx = index_;
@@ -584,7 +601,7 @@ namespace kagami {
     return result;
   }
 
-  void Analyzer::Clear() {
+  void LineParser::Clear() {
     tokens_.clear();
     tokens_.shrink_to_fit();
     action_base_.clear();
@@ -593,29 +610,130 @@ namespace kagami {
     index_ = 0;
   }
 
-  Message Analyzer::Make(string target, size_t index) {
-    vector<string> spilted_string = Scanning(target);
+  Message LineParser::Make(CombinedCodeline &line) {
+    vector<string> spilted_string = Scanning(line.second);
     Message msg = Tokenizer(spilted_string);
 
     if (msg.GetLevel() == kStateError) return msg;
 
-    index_ = index;
-    msg = Parser();
+    index_ = line.first;
+    msg = Parse();
 
     if (msg.GetLevel() == kStateError) return msg;
 
-    Request request(kTokenSegment);
+    Request request(kKeywordSegment);
     ArgumentList args;
 
     int code = 
-      static_cast<int>(util::GetGenericToken(tokens_.front().first));
+      static_cast<int>(util::GetKeywordCode(tokens_.front().first));
 
     args.emplace_back(
-      Argument(to_string(code), kArgumentNormal, kTokenTypeInt)
+      Argument(to_string(code), kArgumentNormal, kStringTypeInt)
     );
 
     action_base_.emplace_front(std::make_pair(request, args));
 
     return msg;
+  }
+
+  bool VMCodeFactory::ReadScript(list<CombinedCodeline> &dest) {
+    bool inside_comment_block = false;
+    size_t idx = 1;
+    string buf;
+    InStream reader(path_);
+
+    if (!reader.Good()) return false;
+
+    while (!reader.eof()) {
+      buf = reader.GetLine();
+
+      if (buf == kStrCommentBegin) {
+        inside_comment_block = true;
+        idx += 1;
+        continue;
+      }
+
+      if (inside_comment_block) {
+        inside_comment_block = (buf == kStrCommentEnd);
+        idx += 1;
+        continue;
+      }
+
+      buf = IndentationAndCommentProc(buf);
+
+      if (buf.empty()) {
+        idx += 1;
+        continue;
+      }
+
+      dest.push_back(CombinedCodeline(idx, buf));
+      idx += 1;
+    }
+
+    return true;
+  }
+
+  bool VMCodeFactory::Start() {
+    bool good = true;
+    list<CombinedCodeline> script;
+    LineParser line_parser;
+    Message msg;
+    VMCode anchorage;
+    StateLevel level;
+    Keyword ast_root;
+
+    if (!ReadScript(script)) return false;
+
+    auto end = script.end();
+    for (auto it = script.begin(); it != end; ++it) {
+      if (!good) break;
+      msg = line_parser.Make(*it).SetIndex(it->first);
+      level = msg.GetLevel();
+      ast_root = line_parser.GetASTRoot();
+
+      if (level == kStateError) {
+        trace::AddEvent(msg);
+        good = false;
+        continue;
+      }
+      else if (level == kStateWarning) {
+        trace::AddEvent(msg);
+      }
+
+      anchorage.swap(line_parser.GetOutput());
+      line_parser.Clear();
+
+      if (find_in_vector(ast_root, nest_flag_collection)) {
+        nest_.push(dest_->size());
+        nest_origin_.push(it->first);
+        nest_type_.push(ast_root);
+      }
+
+      if (ast_root == kKeywordEnd) {
+        if (nest_type_.empty()) {
+          trace::AddEvent("Invalid 'end' token");
+          good = false;
+          break;
+        }
+        if (compare_exp(nest_type_.top(), kKeywordWhile, kKeywordFor)) {
+          anchorage.back().first.option.nest = nest_.top();
+        }
+
+        nest_.pop();
+        nest_origin_.pop();
+        nest_type_.pop();
+      }
+
+      dest_->insert(dest_->end(), anchorage.begin(), anchorage.end());
+      anchorage.clear();
+    }
+
+    if (!nest_.empty()) {
+      trace::AddEvent("'end' token is not found for line " + 
+        to_string(nest_origin_.top()), kStateError);
+      good = false;
+    }
+
+    return good;
   }
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "analyzer.h"
+#include "ir.h"
  
 namespace kagami {
   namespace trace {

@@ -1,10 +1,10 @@
 #pragma once
 /*
    Main virtual machine implementation of Kagami Project
+   Machine version : kisaragi
 */
-#include "trace.h"
+#include "frontend.h"
 #include "management.h"
-#include "filestream.h"
 
 #define CHECK_PRINT_OPT()                          \
   if (p.find(kStrSwitchLine) != p.end()) {         \
@@ -47,8 +47,8 @@ namespace kagami {
     TypeKey(kTypeIdBool, kPlainBool)
   };
 
-  const vector<GenericToken> kStringOpStore = {
-    kTokenPlus, kTokenNotEqual, kTokenEquals
+  const vector<Keyword> kStringOpStore = {
+    kKeywordPlus, kKeywordNotEqual, kKeywordEquals
   };
 
   using ResultTraitKey = pair<PlainType, PlainType>;
@@ -69,7 +69,7 @@ namespace kagami {
     TraitUnit(ResultTraitKey(kPlainString, kPlainBool), kPlainString)
   };
 
-  template <class ResultType, class Tx, class Ty, GenericToken op>
+  template <class ResultType, class Tx, class Ty, Keyword op>
   struct BinaryOpBox {
     ResultType Do(Tx A, Ty B) {
       return Tx();
@@ -77,84 +77,84 @@ namespace kagami {
   };
 
   template <class ResultType, class Tx, class Ty>
-  struct BinaryOpBox<ResultType, Tx, Ty, kTokenPlus> {
+  struct BinaryOpBox<ResultType, Tx, Ty, kKeywordPlus> {
     ResultType Do(Tx A, Ty B) {
       return A + B;
     }
   };
 
   template <class ResultType, class Tx, class Ty>
-  struct BinaryOpBox<ResultType, Tx, Ty, kTokenMinus> {
+  struct BinaryOpBox<ResultType, Tx, Ty, kKeywordMinus> {
     ResultType Do(Tx A, Ty B) {
       return A - B;
     }
   };
 
   template <class ResultType, class Tx, class Ty>
-  struct BinaryOpBox<ResultType, Tx, Ty, kTokenTimes> {
+  struct BinaryOpBox<ResultType, Tx, Ty, kKeywordTimes> {
     ResultType Do(Tx A, Ty B) {
       return A * B;
     }
   };
 
   template <class ResultType, class Tx, class Ty>
-  struct BinaryOpBox<ResultType, Tx, Ty, kTokenDivide> {
+  struct BinaryOpBox<ResultType, Tx, Ty, kKeywordDivide> {
     ResultType Do(Tx A, Ty B) {
       return A / B;
     }
   };
 
   template <class Tx, class Ty>
-  struct BinaryOpBox<bool, Tx, Ty, kTokenEquals> {
+  struct BinaryOpBox<bool, Tx, Ty, kKeywordEquals> {
     bool Do(Tx A, Ty B) {
       return A == B;
     }
   };
 
   template <class Tx, class Ty>
-  struct BinaryOpBox<bool, Tx, Ty, kTokenLessOrEqual> {
+  struct BinaryOpBox<bool, Tx, Ty, kKeywordLessOrEqual> {
     bool Do(Tx A, Ty B) {
       return A <= B;
     }
   };
 
   template <class Tx, class Ty>
-  struct BinaryOpBox<bool, Tx, Ty, kTokenGreaterOrEqual> {
+  struct BinaryOpBox<bool, Tx, Ty, kKeywordGreaterOrEqual> {
     bool Do(Tx A, Ty B) {
       return A >= B;
     }
   };
 
   template <class Tx, class Ty>
-  struct BinaryOpBox<bool, Tx, Ty, kTokenNotEqual> {
+  struct BinaryOpBox<bool, Tx, Ty, kKeywordNotEqual> {
     bool Do(Tx A, Ty B) {
       return A != B;
     }
   };
 
   template <class Tx, class Ty>
-  struct BinaryOpBox<bool, Tx, Ty, kTokenGreater> {
+  struct BinaryOpBox<bool, Tx, Ty, kKeywordGreater> {
     bool Do(Tx A, Ty B) {
       return A > B;
     }
   };
 
   template <class Tx, class Ty>
-  struct BinaryOpBox<bool, Tx, Ty, kTokenLess> {
+  struct BinaryOpBox<bool, Tx, Ty, kKeywordLess> {
     bool Do(Tx A, Ty B) {
       return A < B;
     }
   };
 
   template <class Tx, class Ty>
-  struct BinaryOpBox<bool, Tx, Ty, kTokenAnd> {
+  struct BinaryOpBox<bool, Tx, Ty, kKeywordAnd> {
     bool Do(Tx A, Ty B) {
       return A && B;
     }
   };
 
   template <class Tx, class Ty>
-  struct BinaryOpBox<bool, Tx, Ty, kTokenOr> {
+  struct BinaryOpBox<bool, Tx, Ty, kKeywordOr> {
     bool Do(Tx A, Ty B) {
       return A || B;
     }
@@ -162,7 +162,7 @@ namespace kagami {
 
   //Dispose divide operation for bool type
   template <>
-  struct BinaryOpBox<bool, bool, bool, kTokenDivide> {
+  struct BinaryOpBox<bool, bool, bool, kKeywordDivide> {
     bool Do(bool A, bool B) {
       return true;
     }
@@ -184,28 +184,28 @@ namespace kagami {
     }                                               \
   }                                                 \
 
-  DISPOSE_STRING_MATH_OP(kTokenMinus);
-  DISPOSE_STRING_MATH_OP(kTokenTimes);
-  DISPOSE_STRING_MATH_OP(kTokenDivide);
-  DISPOSE_STRING_LOGIC_OP(kTokenLessOrEqual);
-  DISPOSE_STRING_LOGIC_OP(kTokenGreaterOrEqual);
-  DISPOSE_STRING_LOGIC_OP(kTokenGreater);
-  DISPOSE_STRING_LOGIC_OP(kTokenLess);
-  DISPOSE_STRING_LOGIC_OP(kTokenAnd);
-  DISPOSE_STRING_LOGIC_OP(kTokenOr);
+  DISPOSE_STRING_MATH_OP(kKeywordMinus);
+  DISPOSE_STRING_MATH_OP(kKeywordTimes);
+  DISPOSE_STRING_MATH_OP(kKeywordDivide);
+  DISPOSE_STRING_LOGIC_OP(kKeywordLessOrEqual);
+  DISPOSE_STRING_LOGIC_OP(kKeywordGreaterOrEqual);
+  DISPOSE_STRING_LOGIC_OP(kKeywordGreater);
+  DISPOSE_STRING_LOGIC_OP(kKeywordLess);
+  DISPOSE_STRING_LOGIC_OP(kKeywordAnd);
+  DISPOSE_STRING_LOGIC_OP(kKeywordOr);
 
 #undef DISPOSE_STRING_MATH_OP
 #undef DISPOSE_STRING_LOGIC_OP
 
-  template <class ResultType, GenericToken op>
+  template <class ResultType, Keyword op>
   using MathBox = BinaryOpBox<ResultType, ResultType, ResultType, op>;
 
-  template <class Tx, GenericToken op>
+  template <class Tx, Keyword op>
   using LogicBox = BinaryOpBox<bool, Tx, Tx, op>;
 
   const string kIteratorBehavior = "obj|step_forward|__compare";
   const string kContainerBehavior = "head|tail";
-  using CombinedCodeline = pair<size_t, string>;
+
   using CommandPointer = Command * ;
 
   template <class T>
@@ -219,19 +219,33 @@ namespace kagami {
     return target;
   }
 
+  enum MachineMode {
+    kModeNormal,
+    kModeNextCondition,
+    kModeCycle,
+    kModeCycleJump,
+    kModeCondition,
+    kModeCase,
+    kModeCaseJump,
+    kModeForEach,
+    kModeForEachJump,
+    kModeClosureCatching
+  };
+
   class MachineWorker {
   public:
     bool error;
     bool activated_continue;
     bool activated_break;
     bool void_call;
+    bool disable_step;
     size_t origin_idx;
     size_t logic_idx;
     size_t idx;
     size_t fn_idx;
     size_t skipping_count;
     Interface *invoking_dest;
-    GenericToken last_command;
+    Keyword last_command;
     MachineMode mode;
     string error_string;
     stack<Object> return_stack;
@@ -246,13 +260,14 @@ namespace kagami {
       activated_continue(false),
       activated_break(false),
       void_call(false),
+      disable_step(false),
       origin_idx(0),
       logic_idx(0),
       idx(0),
       fn_idx(0),
       skipping_count(0),
       invoking_dest(nullptr),
-      last_command(kTokenNull),
+      last_command(kKeywordNull),
       mode(kModeNormal),
       error_string(),
       return_stack(),
@@ -262,6 +277,7 @@ namespace kagami {
       loop_tail(),
       fn_string_vec() {}
 
+    void Steping();
     void MakeError(string str);
     void SwitchToMode(MachineMode mode);
     void RefreshReturnStack(Object obj = Object());
@@ -269,15 +285,7 @@ namespace kagami {
     bool NeedSkipping();
   };
 
-  class VMCodeLoader {
-  private:
-    VMCode *dest_;
 
-  public:
-    bool good;
-    
-    VMCodeLoader(string path, VMCode &dest);
-  };
 
   //Kisaragi Machine Class
   class Machine {
@@ -297,7 +305,7 @@ namespace kagami {
     void FinishFunctionCatching(bool closure = false);
 
     void Skipping(bool enable_terminators, 
-      initializer_list<GenericToken> terminators = {});
+      initializer_list<Keyword> terminators = {});
 
     Message Invoke(Object obj, string id, 
       const initializer_list<NamedObject> &&args = {});
@@ -305,16 +313,16 @@ namespace kagami {
     void SetSegmentInfo(ArgumentList &args, bool cmd_info = false);
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);
-    void CommandIfOrWhile(GenericToken token, ArgumentList &args);
+    void CommandIfOrWhile(Keyword token, ArgumentList &args);
     void CommandForEach(ArgumentList &args);
     void ForEachChecking(ArgumentList &args);
     void CommandElse();
     void CommandCase(ArgumentList &args);
     void CommandWhen(ArgumentList &args);
-    void CommandContinueOrBreak(GenericToken token);
+    void CommandContinueOrBreak(Keyword token);
     void CommandConditionEnd();
-    void CommandLoopEnd();
-    void CommandForEachEnd();
+    void CommandLoopEnd(size_t nest);
+    void CommandForEachEnd(size_t nest);
 
     void CommandBind(ArgumentList &args, bool local_value);
     void CommandTypeId(ArgumentList &args);
@@ -328,10 +336,10 @@ namespace kagami {
     void CommandVersion();
     void CommandPatch();
 
-    template <GenericToken op_code>
+    template <Keyword op_code>
     void BinaryMathOperatorImpl(ArgumentList &args);
 
-    template <GenericToken op_code>
+    template <Keyword op_code>
     void BinaryLogicOperatorImpl(ArgumentList &args);
 
     void OperatorLogicNot(ArgumentList &args);
@@ -340,7 +348,7 @@ namespace kagami {
     void InitArray(ArgumentList &args);
 
     void CommandReturn(ArgumentList &args);
-    void MachineCommands(GenericToken token, ArgumentList &args, Request &request);
+    void MachineCommands(Keyword token, ArgumentList &args, Request &request);
 
     void GenerateArgs(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
     void Generate_Normal(Interface &interface, ArgumentList &args, ObjectMap &obj_map);

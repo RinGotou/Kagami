@@ -24,30 +24,31 @@ namespace kagami {
   struct ArgumentOption {
     bool void_call;
     bool local_object;
+    size_t nest;
 
     ArgumentOption() : 
-      void_call(false), local_object(false) {}
+      void_call(false), local_object(false), nest(0) {}
   };
 
   class Argument {
   public:
     string data;
     ArgumentType type;
-    TokenType token_type;
+    StringType token_type;
     Domain domain;
     ArgumentOption option;
 
     Argument() :
       data(),
       type(kArgumentNull),
-      token_type(kTokenTypeNull) {
+      token_type(kStringTypeNull) {
 
       domain.type = kArgumentNull;
     }
 
     Argument(string data,
       ArgumentType type,
-      TokenType token_type) :
+      StringType token_type) :
       data(data),
       type(type),
       token_type(token_type) {
@@ -65,39 +66,43 @@ namespace kagami {
   public:
     size_t idx;
     int priority;
-    GenericToken head_command;
-    string head_interface;
+    Keyword keyword_value;
+    string interface_id;
     Argument domain;
     RequestType type;
     ArgumentOption option;
 
-    Request(GenericToken token) :
+    Request(Keyword token) :
       idx(0),
       priority(5),
-      head_command(token),
-      head_interface(),
+      keyword_value(token),
+      interface_id(),
       domain(),
       type(kRequestCommand),
       option() {}
 
-    Request(string token, bool place_holder = false) :
+    Request(string token) :
       idx(0),
       priority(5),
-      head_command(kTokenNull),
-      head_interface(token),
+      keyword_value(kKeywordNull),
+      interface_id(token),
       domain(),
-      type(place_holder ? kRequestNull : kRequestInterface),
+      type(kRequestInterface),
       option() {}
 
     Request() :
       idx(0),
       priority(5),
-      head_command(kTokenNull),
-      head_interface(),
+      keyword_value(kKeywordNull),
+      interface_id(),
       domain(),
       type(kRequestNull),
       option() {}
-  };
+
+    bool IsPlaceholder() const {
+      return type == kRequestNull;
+    }
+   };
 
   using ArgumentList = deque<Argument>;
   using Command = pair<Request, ArgumentList>;

@@ -3,6 +3,27 @@
 #include "object.h"
 
 namespace kagami {
+  /* Message state level for Message class */
+  enum StateLevel {
+    kStateNormal,
+    kStateError,
+    kStateWarning
+  };
+
+  enum StateCode {
+    kCodeInterface = 5,
+    kCodeAutoSize = 4,
+    kCodeAutoFill = 3,
+    kCodeNormalParam = 2,
+    kCodeObject = 1,
+    kCodeSuccess = 0,
+    kCodeIllegalParam = -1,
+    kCodeIllegalCall = -2,
+    kCodeIllegalSymbol = -3,
+    kCodeBadStream = -4,
+    kCodeBadExpression = -5
+  };
+
   class Message {
   private:
     StateLevel level_;

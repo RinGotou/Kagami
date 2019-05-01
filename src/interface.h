@@ -47,7 +47,7 @@ namespace kagami {
 
   private:
     string id_;
-    GenericToken token_;
+    Keyword token_;
     vector<string> params_;
     StateCode argument_mode_;
     string domain_;
@@ -59,7 +59,7 @@ namespace kagami {
     Interface() :
       policy_(nullptr),
       id_(),
-      token_(kTokenNull),
+      token_(kKeywordNull),
       params_(),
       argument_mode_(kCodeIllegalParam),
       domain_(kTypeIdNull),
@@ -76,7 +76,7 @@ namespace kagami {
     ) :
       policy_(new CXXFunctionPolicy(activity)),
       id_(id),
-      token_(kTokenNull),
+      token_(kKeywordNull),
       params_(BuildStringVector(params)),
       argument_mode_(argument_mode),
       domain_(kTypeIdNull),
@@ -88,7 +88,7 @@ namespace kagami {
     Interface(
       Activity activity,
       string params,
-      GenericToken token,
+      Keyword token,
       StateCode argument_mode = kCodeNormalParam
     ) :
       policy_(new CXXFunctionPolicy(activity)),
@@ -109,7 +109,7 @@ namespace kagami {
     ) :
       policy_(new VMCodePolicy(ir)),
       id_(id),
-      token_(kTokenNull),
+      token_(kKeywordNull),
       params_(params),
       argument_mode_(argument_mode),
       domain_(kTypeIdNull),
@@ -148,7 +148,7 @@ namespace kagami {
       return domain_;
     }
 
-    GenericToken GetToken() const {
+    Keyword GetToken() const {
       return token_;
     }
 

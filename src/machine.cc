@@ -101,43 +101,6 @@ namespace kagami {
     return result;
   }
 
-  /* Disposing all indentation and comments */
-  string IndentationAndCommentProc(string target) {
-    if (target == "") return "";
-    string data;
-    char current = 0, last = 0;
-    size_t head = 0, tail = 0;
-    bool exempt_blank_char = true;
-    bool string_processing = false;
-    auto toString = [](char t) ->string {return string().append(1, t); };
-
-    for (size_t count = 0; count < target.size(); ++count) {
-      current = target[count];
-      auto type = util::GetTokenType(toString(current));
-      if (type != TokenType::kTokenTypeBlank && exempt_blank_char) {
-        head = count;
-        exempt_blank_char = false;
-      }
-      if (current == '\'' && last != '\\') {
-        string_processing = !string_processing;
-      }
-      if (!string_processing && current == '#') {
-        tail = count;
-        break;
-      }
-      last = target[count];
-    }
-    if (tail > head) data = target.substr(head, tail - head);
-    else data = target.substr(head, target.size() - head);
-    if (data.front() == '#') return "";
-
-    while (!data.empty() &&
-      util::GetTokenType(toString(data.back())) == kTokenTypeBlank) {
-      data.pop_back();
-    }
-    return data;
-  }
-
   void InitPlainTypes() {
     using type::NewTypeSetup;
     using type::PlainHasher;
@@ -154,6 +117,11 @@ namespace kagami {
     EXPORT_CONSTANT(kTypeIdFloat);
     EXPORT_CONSTANT(kTypeIdBool);
     EXPORT_CONSTANT(kTypeIdNull);
+  }
+
+  void MachineWorker::Steping() {
+    if (!disable_step) idx += 1;
+    disable_step = false;
   }
 
   void MachineWorker::MakeError(string str) {
@@ -186,7 +154,6 @@ namespace kagami {
     switch (mode) {
     case kModeNextCondition:
     case kModeCycleJump:
-    case kModeDef:
     case kModeCaseJump:
     case kModeForEachJump:
     case kModeClosureCatching:
@@ -198,72 +165,7 @@ namespace kagami {
     return false;
   }
 
-  VMCodeLoader::VMCodeLoader(string path, VMCode &dest) : 
-    dest_(&dest), good(true) {
-    bool comment_block = false;
-    size_t index_counter = 1;
-    string buf;
-    InStream reader(path);
-    Analyzer analyzer;
-    Message msg;
-    list<CombinedCodeline> script_buf;
-    VMCode code;
 
-    if (!reader.Good()) {
-      good = false;
-      return;
-    }
-
-    //Read whole file and put into list
-    while (!reader.eof()) {
-      buf = reader.GetLine();
-      buf = IndentationAndCommentProc(buf);
-
-      if (buf == kStrCommentBegin) {
-        comment_block = true;
-        index_counter += 1;
-        continue;
-      }
-
-      if (comment_block) {
-        if (buf == kStrCommentEnd) {
-          comment_block = false;
-        }
-
-        index_counter += 1;
-        continue;
-      }
-
-      if (buf.empty()) {
-        index_counter += 1;
-        continue;
-      }
-
-      script_buf.push_back(CombinedCodeline(index_counter, buf));
-      index_counter += 1;
-    }
-
-    //analyzing
-    for (auto it = script_buf.begin(); it != script_buf.end(); ++it) {
-      msg = analyzer.Make(it->second, it->first).SetIndex(it->first);
-      switch (msg.GetLevel()) {
-      case kStateError:
-        trace::AddEvent(msg);
-        good = false;
-        continue;
-        break;
-      case kStateWarning:
-        trace::AddEvent(msg);
-        break;
-      default:break;
-      }
-
-      code = analyzer.GetOutput();
-      analyzer.Clear();
-      dest_->insert(dest_->end(), code.begin(), code.end());
-      code.clear();
-    }
-  }
 
   void Machine::RecoverLastState() {
     worker_stack_.pop();
@@ -276,12 +178,12 @@ namespace kagami {
     auto &value = arg.data;
     Object obj;
 
-    if (type == kTokenTypeInt) {
+    if (type == kStringTypeInt) {
       int64_t int_value;
       from_chars(value.data(), value.data() + value.size(), int_value);
       obj.PackContent(make_shared<int64_t>(int_value), kTypeIdInt);
     }
-    else if (type == kTokenTypeFloat) {
+    else if (type == kStringTypeFloat) {
       double float_value;
 #if not defined (_MSC_VER)
       float_value = stod(value);
@@ -292,13 +194,13 @@ namespace kagami {
     }
     else {
       switch (type) {
-      case kTokenTypeBool:
+      case kStringTypeBool:
         obj.PackContent(make_shared<bool>(value == kStrTrue), kTypeIdBool);
         break;
-      case kTokenTypeString:
+      case kStringTypeString:
         obj.PackContent(make_shared<string>(ParseRawString(value)), kTypeIdString);
         break;
-      case kTokenTypeGeneric:
+      case kStringTypeIdentifier:
         obj.PackContent(make_shared<string>(value), kTypeIdString);
         break;
       default:
@@ -441,7 +343,7 @@ namespace kagami {
   }
 
   bool Machine::FetchInterface(InterfacePointer &interface, CommandPointer &command, ObjectMap &obj_map) {
-    auto &id = command->first.head_interface;
+    auto &id = command->first.interface_id;
     auto &domain = command->first.domain;
     auto &worker = worker_stack_.top();
 
@@ -592,20 +494,20 @@ namespace kagami {
   }
 
   void Machine::Skipping(bool enable_terminators, 
-    initializer_list<GenericToken> terminators) {
+    initializer_list<Keyword> terminators) {
     auto &worker = worker_stack_.top();
     size_t nest_counter = 0;
     size_t size = code_stack_.back()->size();
     bool flag = false;
     auto &code = *code_stack_.back();
 
-    if (code[worker.idx].first.head_command == kTokenEnd && worker.skipping_count == 0) 
+    if (code[worker.idx].first.keyword_value == kKeywordEnd && worker.skipping_count == 0) 
       return;
 
     while (worker.idx < size) {
       Command &command = code[worker.idx];
 
-      if (command.first.head_command != kTokenSegment) {
+      if (command.first.keyword_value != kKeywordSegment) {
         worker.idx += 1;
         continue;
       }
@@ -628,7 +530,7 @@ namespace kagami {
         continue;
       }
 
-      if (worker.last_command == kTokenEnd) {
+      if (worker.last_command == kKeywordEnd) {
         if (nest_counter != 0) {
           nest_counter -= 1;
           worker.idx += 1;
@@ -686,8 +588,8 @@ namespace kagami {
     worker.logic_idx = worker.idx;
     if (cmd_info) {
       from_chars(data.data(), data.data() + data.size(), code);
-      worker.last_command = static_cast<GenericToken>(code);
-      //worker.last_command = static_cast<GenericToken>(stol(args[0].data));
+      worker.last_command = static_cast<Keyword>(code);
+      //worker.last_command = static_cast<Keyword>(stol(args[0].data));
     }
   }
 
@@ -712,7 +614,7 @@ namespace kagami {
     left.swap(right);
   }
 
-  void Machine::CommandIfOrWhile(GenericToken token, ArgumentList &args) {
+  void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args) {
     auto &worker = worker_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
@@ -721,12 +623,12 @@ namespace kagami {
 
     bool state = obj.Cast<bool>();
 
-    if (token == kTokenIf) {
+    if (token == kKeywordIf) {
       worker.SwitchToMode(state ? kModeCondition : kModeNextCondition);
       obj_stack_.Push();
       worker.condition_stack.push(state);
     }
-    else if (token == kTokenWhile) {
+    else if (token == kKeywordWhile) {
       if (worker.loop_head.empty()) {
         obj_stack_.Push();
         worker.mode_stack.push(worker.mode);
@@ -737,7 +639,7 @@ namespace kagami {
       }
 
       if (worker.loop_head.empty() || worker.loop_head.top() != worker.logic_idx - 1) {
-        worker.loop_head.push(worker.logic_idx - 1);
+        worker.loop_head.push(worker.logic_idx);
       }
 
       if (state) {
@@ -752,7 +654,7 @@ namespace kagami {
         }
       }
     }
-    else if (token == kTokenElif) {
+    else if (token == kKeywordElif) {
       ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Elif.");
 
       if (worker.condition_stack.top() == false && worker.mode == kModeNextCondition) {
@@ -766,7 +668,7 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     ObjectMap obj_map;
 
-    if (!worker.loop_head.empty() && worker.loop_head.top() == worker.logic_idx - 1) {
+    if (!worker.loop_head.empty() && worker.loop_head.top() == worker.logic_idx) {
       ForEachChecking(args);
       return;
     }
@@ -789,7 +691,7 @@ namespace kagami {
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
     obj_stack_.CreateObject(unit_id, unit);
-    worker.loop_head.push(worker.logic_idx - 1);
+    worker.loop_head.push(worker.logic_idx);
     worker.SwitchToMode(kModeForEach);
   }
 
@@ -928,7 +830,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandContinueOrBreak(GenericToken token) {
+  void Machine::CommandContinueOrBreak(Keyword token) {
     auto &worker = worker_stack_.top();
     while (!worker.mode_stack.empty()) {
       if (worker.mode == kModeCycle) break;
@@ -949,8 +851,8 @@ namespace kagami {
     if (worker.mode == kModeForEach) worker.mode = kModeForEachJump;
 
     switch (token) {
-    case kTokenContinue:worker.activated_continue = true; break;
-    case kTokenBreak:worker.activated_break = true; break;
+    case kKeywordContinue:worker.activated_continue = true; break;
+    case kKeywordBreak:worker.activated_break = true; break;
     default:break;
     }
   }
@@ -962,22 +864,24 @@ namespace kagami {
     obj_stack_.Pop();
   }
 
-  void Machine::CommandLoopEnd() {
+  void Machine::CommandLoopEnd(size_t nest) {
     auto &worker = worker_stack_.top();
     if (worker.mode == kModeCycle) {
-      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx - 1) {
-        worker.loop_tail.push(worker.logic_idx - 1);
+      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
+        worker.loop_tail.push(worker.logic_idx);
       }
       worker.idx = worker.loop_head.top();
+      worker.disable_step = true;
       while (!worker.return_stack.empty()) worker.return_stack.pop();
       obj_stack_.GetCurrent().clear();
     }
     else if (worker.mode == kModeCycleJump) {
       if (worker.activated_continue) {
-        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx - 1) {
-          worker.loop_tail.push(worker.logic_idx - 1);
+        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
+          worker.loop_tail.push(worker.logic_idx);
         }
         worker.idx = worker.loop_head.top();
+        worker.disable_step = true;
         worker.mode = kModeCycle;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().clear();
@@ -998,21 +902,23 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandForEachEnd() {
+  void Machine::CommandForEachEnd(size_t nest) {
     auto &worker = worker_stack_.top();
     if (worker.mode == kModeForEach) {
-      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx - 1) {
-        worker.loop_tail.push(worker.logic_idx - 1);
+      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
+        worker.loop_tail.push(worker.logic_idx);
       }
       worker.idx = worker.loop_head.top();
+      worker.disable_step = true;
       obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
     }
     else if (worker.mode == kModeForEachJump) {
       if (worker.activated_continue) {
-        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx - 1) {
-          worker.loop_tail.push(worker.logic_idx - 1);
+        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
+          worker.loop_tail.push(worker.logic_idx);
         }
         worker.idx = worker.loop_head.top();
+        worker.disable_step = true;
         worker.mode = kModeForEach;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
@@ -1057,7 +963,7 @@ namespace kagami {
       }
 
       Object obj = CreateObjectCopy(rhs);
-      ERROR_CHECKING(util::GetTokenType(id) != kTokenTypeGeneric,
+      ERROR_CHECKING(util::GetStringType(id) != kStringTypeIdentifier,
         "Invalid object id.");
       ERROR_CHECKING(!obj_stack_.CreateObject(id, obj),
         "Object binding failed.");
@@ -1149,16 +1055,16 @@ namespace kagami {
 
       if (type_id == kTypeIdString) {
         auto str = obj.Cast<string>();
-        auto type = util::GetTokenType(str, true);
+        auto type = util::GetStringType(str, true);
 
         switch (type) {
-        case kTokenTypeInt:
+        case kStringTypeInt:
           ret_obj.PackContent(make_shared<int64_t>(stol(str)), kTypeIdInt);
           break;
-        case kTokenTypeFloat:
+        case kStringTypeFloat:
           ret_obj.PackContent(make_shared<double>(stod(str)), kTypeIdFloat);
           break;
-        case kTokenTypeBool:
+        case kStringTypeBool:
           ret_obj.PackContent(make_shared<bool>(str == kStrTrue), kTypeIdBool);
           break;
         default:
@@ -1205,7 +1111,7 @@ namespace kagami {
     worker.RefreshReturnStack(Object(kPatchName));
   }
 
-  template <GenericToken op_code>
+  template <Keyword op_code>
   void Machine::BinaryMathOperatorImpl(ArgumentList &args) {
     auto &worker = worker_stack_.top();
     REQUIRED_ARG_COUNT(2);
@@ -1245,7 +1151,7 @@ namespace kagami {
 #undef RESULT_PROCESSING
   }
 
-  template <GenericToken op_code>
+  template <Keyword op_code>
   void Machine::BinaryLogicOperatorImpl(ArgumentList &args) {
     using namespace type;
     auto &worker = worker_stack_.top();
@@ -1259,7 +1165,7 @@ namespace kagami {
     bool result = false;
 
     if (!util::IsPlainType(lhs.GetTypeId())) {
-      if (op_code != kTokenEquals && op_code != kTokenNotEqual) {
+      if (op_code != kKeywordEquals && op_code != kKeywordNotEqual) {
         worker.RefreshReturnStack();
         return;
       }
@@ -1277,7 +1183,7 @@ namespace kagami {
         return;
       }
 
-      if (op_code == kTokenNotEqual) {
+      if (op_code == kKeywordNotEqual) {
         bool value = !obj.Cast<bool>();
         worker.RefreshReturnStack(Object(value, kTypeIdBool));
       }
@@ -1386,117 +1292,117 @@ namespace kagami {
     }
   }
 
-  void Machine::MachineCommands(GenericToken token, ArgumentList &args, Request &request) {
+  void Machine::MachineCommands(Keyword token, ArgumentList &args, Request &request) {
     auto &worker = worker_stack_.top();
 
     switch (token) {
-    case kTokenPlus:
-      BinaryMathOperatorImpl<kTokenPlus>(args);
+    case kKeywordPlus:
+      BinaryMathOperatorImpl<kKeywordPlus>(args);
       break;
-    case kTokenMinus:
-      BinaryMathOperatorImpl<kTokenMinus>(args);
+    case kKeywordMinus:
+      BinaryMathOperatorImpl<kKeywordMinus>(args);
       break;
-    case kTokenTimes:
-      BinaryMathOperatorImpl<kTokenTimes>(args);
+    case kKeywordTimes:
+      BinaryMathOperatorImpl<kKeywordTimes>(args);
       break;
-    case kTokenDivide:
-      BinaryMathOperatorImpl<kTokenDivide>(args);
+    case kKeywordDivide:
+      BinaryMathOperatorImpl<kKeywordDivide>(args);
       break;
-    case kTokenEquals:
-      BinaryLogicOperatorImpl<kTokenEquals>(args);
+    case kKeywordEquals:
+      BinaryLogicOperatorImpl<kKeywordEquals>(args);
       break;
-    case kTokenLessOrEqual:
-      BinaryLogicOperatorImpl<kTokenLessOrEqual>(args);
+    case kKeywordLessOrEqual:
+      BinaryLogicOperatorImpl<kKeywordLessOrEqual>(args);
       break;
-    case kTokenGreaterOrEqual:
-      BinaryLogicOperatorImpl<kTokenGreaterOrEqual>(args);
+    case kKeywordGreaterOrEqual:
+      BinaryLogicOperatorImpl<kKeywordGreaterOrEqual>(args);
       break;
-    case kTokenNotEqual:
-      BinaryLogicOperatorImpl<kTokenNotEqual>(args);
+    case kKeywordNotEqual:
+      BinaryLogicOperatorImpl<kKeywordNotEqual>(args);
       break;
-    case kTokenGreater:
-      BinaryLogicOperatorImpl<kTokenGreater>(args);
+    case kKeywordGreater:
+      BinaryLogicOperatorImpl<kKeywordGreater>(args);
       break;
-    case kTokenLess:
-      BinaryLogicOperatorImpl<kTokenLess>(args);
+    case kKeywordLess:
+      BinaryLogicOperatorImpl<kKeywordLess>(args);
       break;
-    case kTokenAnd:
-      BinaryLogicOperatorImpl<kTokenAnd>(args);
+    case kKeywordAnd:
+      BinaryLogicOperatorImpl<kKeywordAnd>(args);
       break;
-    case kTokenOr:
-      BinaryLogicOperatorImpl<kTokenOr>(args);
+    case kKeywordOr:
+      BinaryLogicOperatorImpl<kKeywordOr>(args);
       break;
-    case kTokenNot:
+    case kKeywordNot:
       OperatorLogicNot(args);
       break;
-    case kTokenHash:
+    case kKeywordHash:
       CommandHash(args);
       break;
-    case kTokenFor:
+    case kKeywordFor:
       CommandForEach(args);
       break;
-    case kTokenNullObj:
+    case kKeywordNullObj:
       CommandNullObj(args);
       break;
-    case kTokenDestroy:
+    case kKeywordDestroy:
       CommandDestroy(args);
       break;
-    case kTokenConvert:
+    case kKeywordConvert:
       CommandConvert(args);
       break;
-    case kTokenRefCount:
+    case kKeywordRefCount:
       CommandRefCount(args);
       break;
-    case kTokenTime:
+    case kKeywordTime:
       CommandTime();
       break;
-    case kTokenVersion:
+    case kKeywordVersion:
       CommandVersion();
       break;
-    case kTokenPatch:
+    case kKeywordPatch:
       CommandPatch();
       break;
-    case kTokenSwap:
+    case kKeywordSwap:
       CommandSwap(args);
       break;
-    case kTokenSegment:
+    case kKeywordSegment:
       SetSegmentInfo(args);
       break;
-    case kTokenBind:
+    case kKeywordBind:
       CommandBind(args, request.option.local_object);
       break;
-    case kTokenExpList:
+    case kKeywordExpList:
       ExpList(args);
       break;
-    case kTokenInitialArray:
+    case kKeywordInitialArray:
       InitArray(args);
       break;
-    case kTokenReturn:
+    case kKeywordReturn:
       CommandReturn(args);
       break;
-    case kTokenTypeId:
+    case kKeywordTypeId:
       CommandTypeId(args);
       break;
-    case kTokenDir:
+    case kKeywordDir:
       CommandMethods(args);
       break;
-    case kTokenExist:
+    case kKeywordExist:
       CommandExist(args);
       break;
-    case kTokenFn:
+    case kKeywordFn:
       InitFunctionCatching(args);
       break;
-    case kTokenCase:
+    case kKeywordCase:
       CommandCase(args);
       break;
-    case kTokenWhen:
+    case kKeywordWhen:
       CommandWhen(args);
       break;
-    case kTokenEnd:
+    case kKeywordEnd:
       switch (worker.mode) {
       case kModeCycle:
       case kModeCycleJump:
-        CommandLoopEnd();
+        CommandLoopEnd(request.option.nest);
         break;
       case kModeCase:
       case kModeCaseJump:
@@ -1508,7 +1414,7 @@ namespace kagami {
         break;
       case kModeForEach:
       case kModeForEachJump:
-        CommandForEachEnd();
+        CommandForEachEnd(request.option.nest);
         break;
       case kModeClosureCatching:
         FinishFunctionCatching(worker_stack_.size() > 1);
@@ -1517,16 +1423,16 @@ namespace kagami {
         break;
       }
       break;
-    case kTokenContinue:
-    case kTokenBreak:
+    case kKeywordContinue:
+    case kKeywordBreak:
       CommandContinueOrBreak(token);
       break;
-    case kTokenElse:
+    case kKeywordElse:
       CommandElse();
       break;
-    case kTokenIf:
-    case kTokenElif:
-    case kTokenWhile:
+    case kKeywordIf:
+    case kKeywordElif:
+    case kKeywordWhile:
       CommandIfOrWhile(token, args);
       break;
     default:
@@ -1669,10 +1575,10 @@ namespace kagami {
       msg.Clear();
       switch (worker->mode) {
       case kModeNextCondition:
-        Skipping(true, { kTokenElif,kTokenElse });
+        Skipping(true, { kKeywordElif,kKeywordElse });
         break;
       case kModeCaseJump:
-        Skipping(true, { kTokenWhen,kTokenElse });
+        Skipping(true, { kKeywordWhen,kKeywordElse });
         break;
       case kModeCycleJump:
       case kModeForEachJump:
@@ -1683,7 +1589,7 @@ namespace kagami {
         break;
       }
 
-      worker->idx += 1;
+      worker->Steping();
 
       ptr = &(*code)[worker->idx];
       worker->void_call = ptr->first.option.void_call;
@@ -1717,7 +1623,7 @@ namespace kagami {
         RecoverLastState();
         refresh_tick();
         worker->RefreshReturnStack(Object());
-        worker->idx += 1;
+        worker->Steping();
         continue;
       }
 
@@ -1731,11 +1637,17 @@ namespace kagami {
         if (!skipping_checking(command)) break;
       }
 
+      //frontend panic checking
+      if (command->first.type == kRequestNull) {
+        trace::AddEvent("Frontend Panic.", kStateError);
+        break;
+      }
+
       //Embedded machine commands.
       if (command->first.type == kRequestCommand) {
-        MachineCommands(command->first.head_command, command->second, command->first);
+        MachineCommands(command->first.keyword_value, command->second, command->first);
         
-        if (command->first.head_command == kTokenReturn) {
+        if (command->first.keyword_value == kKeywordReturn) {
           refresh_tick();
         }
 
@@ -1744,7 +1656,7 @@ namespace kagami {
           break;
         }
 
-        worker->idx += 1;
+        worker->Steping();
         continue;
       }
 
@@ -1791,13 +1703,13 @@ namespace kagami {
         }
         else {
           msg = interface->Start(obj_map);
-          worker->idx += 1;
+          worker->Steping();
         }
         continue;
       }
 
       worker->RefreshReturnStack(msg.GetObj());
-      worker->idx += 1;
+      worker->Steping();
     }
 
     if (worker->error) {

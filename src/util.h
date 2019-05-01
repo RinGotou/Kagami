@@ -3,20 +3,21 @@
 
 namespace kagami {
   namespace util {
-    bool IsBinaryOperator(GenericToken token);
-    bool IsMonoOperator(GenericToken token);
-    bool IsOperator(GenericToken token);
-    int GetTokenPriority(GenericToken token);
-    GenericToken GetGenericToken(string src);
+    Terminator GetTerminatorCode(string src);
+    bool IsBinaryOperator(Keyword token);
+    bool IsMonoOperator(Keyword token);
+    bool IsOperator(Keyword token);
+    int GetTokenPriority(Keyword token);
+    Keyword GetKeywordCode(string src);
     string GetRawString(string target);
     bool IsString(string target);
-    bool IsGenericToken(string target);
+    bool IsIdentifier(string target);
     bool IsInteger(string target);
     bool IsFloat(string target);
     bool IsBlank(string target);
     bool IsSymbol(string target);
     bool IsBoolean(string target);
-    TokenType GetTokenType(string target, bool ignore_symbol_rule = false);
+    StringType GetStringType(string target, bool ignore_symbol_rule = false);
     
     char GetEscapeChar(char target);
     wchar_t GetEscapeCharW(wchar_t target);

@@ -98,126 +98,84 @@ namespace kagami {
   const string kMaintainer     = MAINTAINER;
   const string kCopyright      = COPYRIGHT;
 
-
-
-  /* Message state code for Message class */
-  enum StateCode {
-    kCodeInterface     = 5,
-    kCodeAutoSize      = 4,
-    kCodeAutoFill      = 3,
-    kCodeNormalParam   = 2,
-    kCodeObject        = 1,
-    kCodeSuccess       = 0,
-    kCodeIllegalParam  = -1,
-    kCodeIllegalCall   = -2,
-    kCodeIllegalSymbol = -3,
-    kCodeBadStream     = -4,
-    kCodeBadExpression = -5
+  enum StringType {
+    kStringTypeIdentifier, 
+    kStringTypeString, 
+    kStringTypeInt, 
+    kStringTypeFloat,
+    kStringTypeBool, 
+    kStringTypeSymbol, 
+    kStringTypeBlank,
+    kStringTypeNull
   };
 
-  /* Message state level for Message class */
-  enum StateLevel {
-    kStateNormal,
-    kStateError,
-    kStateWarning
-  };
-
-  enum TokenType {
-    kTokenTypeGeneric, 
-    kTokenTypeString, 
-    kTokenTypeInt, 
-    kTokenTypeFloat,
-    kTokenTypeBool, 
-    kTokenTypeSymbol, 
-    kTokenTypeBlank,
-    kTokenTypeNull
-  };
-
-  using Token = pair<string, TokenType>;
+  using Token = pair<string, StringType>;
 
   /* Reserved keywords mark/IR framework commands */
-  enum GenericToken {
-    kTokenLocal,
-    kTokenCall,
-    kTokenHash,
-    kTokenFor,
-    kTokenIn,
-    kTokenNullObj,
-    kTokenDestroy,
-    kTokenConvert,
-    kTokenRefCount,
-    kTokenTime,
-    kTokenVersion,
-    kTokenPatch,
-    kTokenSwap,
-    kTokenRequire,
-    kTokenUsing,
-    kTokenSegment,
-    kTokenExpList, 
-    kTokenFn, 
-    kTokenIf, 
-    kTokenElif, 
-    kTokenEnd, 
-    kTokenElse, 
-    kTokenBind, 
-    kTokenWhile, 
-    kTokenPlus, 
-    kTokenMinus, 
-    kTokenTimes, 
-    kTokenDivide, 
-    kTokenEquals, 
-    kTokenLessOrEqual, 
-    kTokenGreaterOrEqual, 
-    kTokenNotEqual,
-    kTokenGreater, 
-    kTokenLess, 
-    kTokenReturn,
-    kTokenAnd, 
-    kTokenOr, 
-    kTokenNot, 
-    kTokenInitialArray, 
-    kTokenContinue, 
-    kTokenBreak, 
-    kTokenCase, 
-    kTokenWhen, 
-    kTokenTypeId, 
-    kTokenExist,
-    kTokenDir, 
-    kTokenQuit,
-    kTokenNull
-  };
-
-  const vector<GenericToken> nest_flag_collection = {
-    kTokenIf,kTokenWhile,kTokenFn,kTokenCase,kTokenFor
+  enum Keyword {
+    kKeywordLocal,
+    kKeywordCall,
+    kKeywordHash,
+    kKeywordFor,
+    kKeywordIn,
+    kKeywordNullObj,
+    kKeywordDestroy,
+    kKeywordConvert,
+    kKeywordRefCount,
+    kKeywordTime,
+    kKeywordVersion,
+    kKeywordPatch,
+    kKeywordSwap,
+    kKeywordRequire,
+    kKeywordUsing,
+    kKeywordSegment,
+    kKeywordExpList, 
+    kKeywordFn, 
+    kKeywordIf, 
+    kKeywordElif, 
+    kKeywordEnd, 
+    kKeywordElse, 
+    kKeywordBind, 
+    kKeywordWhile, 
+    kKeywordPlus, 
+    kKeywordMinus, 
+    kKeywordTimes, 
+    kKeywordDivide, 
+    kKeywordEquals, 
+    kKeywordLessOrEqual, 
+    kKeywordGreaterOrEqual, 
+    kKeywordNotEqual,
+    kKeywordGreater, 
+    kKeywordLess, 
+    kKeywordReturn,
+    kKeywordAnd, 
+    kKeywordOr, 
+    kKeywordNot, 
+    kKeywordInitialArray, 
+    kKeywordContinue, 
+    kKeywordBreak, 
+    kKeywordCase, 
+    kKeywordWhen, 
+    kKeywordTypeId, 
+    kKeywordExist,
+    kKeywordDir, 
+    kKeywordQuit,
+    kKeywordNull
   };
 
   enum Terminator {
-    kBasicTokenAssign, 
-    kBasicTokenComma, 
-    kBasicTokenLeftSqrBracket, 
-    kBasicTokenDot,
-    kBasicTokenLeftBracket, 
-    kBasicTokenRightSqrBracket, 
-    kBasicTokenRightBracket,
-    kBasicTokenLeftCurBracket, 
-    kBasicTokenRightCurBracket, 
-    kBasicTokenMonoOperator,
-    kBasicTokenOther
-  };
-
-  /* IR framework runtime mode code */
-  enum MachineMode {
-    kModeNormal,
-    kModeNextCondition,
-    kModeCycle,
-    kModeCycleJump,
-    kModeCondition,
-    kModeDef,
-    kModeCase,
-    kModeCaseJump,
-    kModeForEach,
-    kModeForEachJump,
-    kModeClosureCatching
+    kTerminatorAssign, 
+    kTerminatorComma, 
+    kTerminatorLeftBracket, 
+    kTerminatorDot,
+    kTerminatorLeftParen, 
+    kTerminatorRightSqrBracket, 
+    kTerminatorRightBracket,
+    kTerminatorLeftBrace, 
+    kTerminatorRightCurBracket, 
+    kTerminatorMonoOperator,
+    kTerminatorBinaryOperator,
+    kTerminatorNull
   };
 
   /* Plain Type Code */
