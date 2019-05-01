@@ -246,13 +246,13 @@ namespace kagami {
     size_t idx;
     size_t fn_idx;
     size_t skipping_count;
-    Interface *invoking_dest;
     Keyword last_command;
     MachineMode mode;
     string error_string;
-    stack<Object> return_stack;
-    stack<MachineMode> mode_stack;
     stack<bool> condition_stack;
+    stack<size_t> jump_stack;
+    stack<MachineMode> mode_stack;
+    stack<Object> return_stack;
     vector<string> fn_string_vec;
 
     MachineWorker() :
@@ -268,16 +268,18 @@ namespace kagami {
       idx(0),
       fn_idx(0),
       skipping_count(0),
-      invoking_dest(nullptr),
       last_command(kKeywordNull),
       mode(kModeNormal),
       error_string(),
-      return_stack(),
-      mode_stack(),
       condition_stack(),
+      jump_stack(),
+      mode_stack(),
+      return_stack(),
       fn_string_vec() {}
 
     void Steping();
+    void Goto(size_t taget_idx);
+    void AddJumpRecord(size_t target_idx);
     void MakeError(string str);
     void SwitchToMode(MachineMode mode);
     void RefreshReturnStack(Object obj = Object());
@@ -311,19 +313,20 @@ namespace kagami {
       const initializer_list<NamedObject> &&args = {});
 
     void SetSegmentInfo(ArgumentList &args, bool cmd_info = false);
-    void CommandHash(ArgumentList &args);
-    void CommandSwap(ArgumentList &args);
+
     void CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end);
-    void CommandForEach(ArgumentList &args);
-    void ForEachChecking(ArgumentList &args);
+    void CommandForEach(ArgumentList &args, size_t nest_end);
+    void ForEachChecking(ArgumentList &args, size_t nest_end);
+    void CommandCase(ArgumentList &args, size_t nest_end);
     void CommandElse();
-    void CommandCase(ArgumentList &args);
     void CommandWhen(ArgumentList &args);
     void CommandContinueOrBreak(Keyword token);
     void CommandConditionEnd();
     void CommandLoopEnd(size_t nest);
     void CommandForEachEnd(size_t nest);
 
+    void CommandHash(ArgumentList &args);
+    void CommandSwap(ArgumentList &args);
     void CommandBind(ArgumentList &args, bool local_value);
     void CommandTypeId(ArgumentList &args);
     void CommandMethods(ArgumentList &args);

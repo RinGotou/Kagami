@@ -124,6 +124,17 @@ namespace kagami {
     disable_step = false;
   }
 
+  void MachineWorker::Goto(size_t target_idx) {
+    idx = target_idx - jump_offset;
+    disable_step = true;
+  }
+
+  void MachineWorker::AddJumpRecord(size_t target_idx) {
+    if (jump_stack.empty() || jump_stack.top() != target_idx) {
+      jump_stack.push(target_idx);
+    }
+  }
+
   void MachineWorker::MakeError(string str) {
     error = true;
     error_string = str;
@@ -592,30 +603,12 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandHash(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
-    auto &obj = FetchObject(args[0]).Unpack();
-
-    if (type::IsHashable(obj)) {
-      int64_t hash = type::GetHash(obj);
-      worker.RefreshReturnStack(Object(make_shared<int64_t>(hash), kTypeIdInt));
-    }
-    else {
-      worker.RefreshReturnStack(Object());
-    }
-  }
-
-  void Machine::CommandSwap(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
-    auto &right = FetchObject(args[1]).Unpack();
-    auto &left = FetchObject(args[0]).Unpack();
-
-    left.swap(right);
-  }
-
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
     auto &worker = worker_stack_.top();
+
     REQUIRED_ARG_COUNT(1);
+
+    worker.AddJumpRecord(nest_end);
 
     Object obj = FetchObject(args[0]);
     ERROR_CHECKING(obj.GetTypeId() != kTypeIdBool, "Invalid state value type.");
@@ -626,6 +619,14 @@ namespace kagami {
       worker.SwitchToMode(state ? kModeCondition : kModeNextCondition);
       obj_stack_.Push();
       worker.condition_stack.push(state);
+    }
+    else if (token == kKeywordElif) {
+      ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Elif.");
+
+      if (worker.condition_stack.top() == false && worker.mode == kModeNextCondition) {
+        worker.mode = kModeCondition;
+        worker.condition_stack.top() = true;
+      }
     }
     else if (token == kKeywordWhile) {
       if (!worker.jump_from_end) {
@@ -641,26 +642,19 @@ namespace kagami {
       }
       else {
         worker.mode = kModeCycleJump;
-        worker.idx = nest_end - worker.jump_offset;
-        worker.disable_step = true;
-      }
-    }
-    else if (token == kKeywordElif) {
-      ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Elif.");
-
-      if (worker.condition_stack.top() == false && worker.mode == kModeNextCondition) {
-        worker.mode = kModeCondition;
-        worker.condition_stack.top() = true;
+        worker.Goto(nest_end);
       }
     }
   }
 
-  void Machine::CommandForEach(ArgumentList &args) {
+  void Machine::CommandForEach(ArgumentList &args, size_t nest_end) {
     auto &worker = worker_stack_.top();
     ObjectMap obj_map;
 
+    worker.AddJumpRecord(nest_end);
+
     if (worker.jump_from_end) {
-      ForEachChecking(args);
+      ForEachChecking(args, nest_end);
       worker.jump_from_end = false;
       return;
     }
@@ -671,7 +665,7 @@ namespace kagami {
       "Invalid object container");
 
     auto msg = Invoke(container_obj, kStrHead);
-    ERROR_CHECKING(msg.GetCode() != kCodeObject, 
+    ERROR_CHECKING(msg.GetCode() != kCodeObject,
       "Invalid iterator of container");
 
     auto iterator_obj = msg.GetObj();
@@ -686,7 +680,7 @@ namespace kagami {
     worker.SwitchToMode(kModeForEach);
   }
 
-  void Machine::ForEachChecking(ArgumentList &args) {
+  void Machine::ForEachChecking(ArgumentList &args, size_t nest_end) {
     auto &worker = worker_stack_.top();
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto iterator = *obj_stack_.GetCurrent().Find(kStrIteratorObj);
@@ -706,6 +700,7 @@ namespace kagami {
 
     if (result.Cast<bool>()) {
       worker.mode = kModeForEachJump;
+      worker.Goto(nest_end);
     }
     else {
       auto unit = Invoke(iterator, "obj").GetObj();
@@ -713,46 +708,14 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandElse() {
-    auto &worker = worker_stack_.top();
-    ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Else.");
-
-    if (worker.condition_stack.top() == true) {
-      switch (worker.mode) {
-      case kModeCondition:
-      case kModeNextCondition:
-        worker.mode = kModeNextCondition;
-        break;
-      case kModeCase:
-      case kModeCaseJump:
-        worker.mode = kModeCaseJump;
-        break;
-      default:
-        break;
-      }
-    }
-    else {
-      worker.condition_stack.top() = true;
-      switch (worker.mode) {
-      case kModeNextCondition:
-        worker.mode = kModeCondition;
-        break;
-      case kModeCaseJump:
-        worker.mode = kModeCase;
-        break;
-      default:
-        break;
-      }
-    }
-  }
-
-  void Machine::CommandCase(ArgumentList &args) {
+  void Machine::CommandCase(ArgumentList &args, size_t nest_end) {
     auto &worker = worker_stack_.top();
     ERROR_CHECKING(args.empty(), "Empty argument list");
+    worker.AddJumpRecord(nest_end);
 
     Object obj = FetchObject(args[0]);
     string type_id = obj.GetTypeId();
-    ERROR_CHECKING(!util::IsPlainType(type_id), 
+    ERROR_CHECKING(!util::IsPlainType(type_id),
       "Non-plain object is not supported by case");
 
     Object sample_obj = type::CreateObjectCopy(obj);
@@ -761,6 +724,22 @@ namespace kagami {
     worker.SwitchToMode(kModeCaseJump);
     worker.condition_stack.push(false);
 
+  }
+
+  void Machine::CommandElse() {
+    auto &worker = worker_stack_.top();
+    ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Else.");
+
+    if (worker.condition_stack.top() == true) {
+      worker.Goto(worker.jump_stack.top());
+    }
+    else {
+      worker.condition_stack.top() = true;
+      if (worker.mode == kModeNextCondition) 
+        worker.mode = kModeCondition;
+      if (worker.mode == kModeCaseJump) 
+        worker.mode = kModeCase;
+    }
   }
 
   void Machine::CommandWhen(ArgumentList &args) {
@@ -852,22 +831,21 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     worker.condition_stack.pop();
     worker.GoLastMode();
+    worker.jump_stack.pop();
     obj_stack_.Pop();
   }
 
   void Machine::CommandLoopEnd(size_t nest) {
     auto &worker = worker_stack_.top();
     if (worker.mode == kModeCycle) {
-      worker.idx = nest - worker.jump_offset;
-      worker.disable_step = true;
+      worker.Goto(nest);
       while (!worker.return_stack.empty()) worker.return_stack.pop();
       obj_stack_.GetCurrent().clear();
       worker.jump_from_end = true;
     }
     else if (worker.mode == kModeCycleJump) {
       if (worker.activated_continue) {
-        worker.idx = nest - worker.jump_offset;
-        worker.disable_step = true;
+        worker.Goto(nest);
         worker.mode = kModeCycle;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().clear();
@@ -877,6 +855,7 @@ namespace kagami {
         if (worker.activated_break) worker.activated_break = false;
         while (!worker.return_stack.empty()) worker.return_stack.pop();
         worker.GoLastMode();
+        worker.jump_stack.pop();
         obj_stack_.Pop();
       }
     }
@@ -885,15 +864,13 @@ namespace kagami {
   void Machine::CommandForEachEnd(size_t nest) {
     auto &worker = worker_stack_.top();
     if (worker.mode == kModeForEach) {
-      worker.idx = nest - worker.jump_offset;
-      worker.disable_step = true;
+      worker.Goto(nest);
       obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
       worker.jump_from_end = true;
     }
     else if (worker.mode == kModeForEachJump) {
       if (worker.activated_continue) {
-        worker.idx = nest - worker.jump_offset;
-        worker.disable_step = true;
+        worker.Goto(nest);
         worker.mode = kModeForEach;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
@@ -902,9 +879,31 @@ namespace kagami {
       else {
         if (worker.activated_break) worker.activated_break = false;
         worker.GoLastMode();
+        worker.jump_stack.pop();
         obj_stack_.Pop();
       }
     }
+  }
+
+  void Machine::CommandHash(ArgumentList &args) {
+    auto &worker = worker_stack_.top();
+    auto &obj = FetchObject(args[0]).Unpack();
+
+    if (type::IsHashable(obj)) {
+      int64_t hash = type::GetHash(obj);
+      worker.RefreshReturnStack(Object(make_shared<int64_t>(hash), kTypeIdInt));
+    }
+    else {
+      worker.RefreshReturnStack(Object());
+    }
+  }
+
+  void Machine::CommandSwap(ArgumentList &args) {
+    auto &worker = worker_stack_.top();
+    auto &right = FetchObject(args[1]).Unpack();
+    auto &left = FetchObject(args[0]).Unpack();
+
+    left.swap(right);
   }
 
   void Machine::CommandBind(ArgumentList &args, bool local_value) {
@@ -1308,7 +1307,7 @@ namespace kagami {
       CommandHash(args);
       break;
     case kKeywordFor:
-      CommandForEach(args);
+      CommandForEach(args, request.option.nest_end);
       break;
     case kKeywordNullObj:
       CommandNullObj(args);
@@ -1362,7 +1361,7 @@ namespace kagami {
       InitFunctionCatching(args);
       break;
     case kKeywordCase:
-      CommandCase(args);
+      CommandCase(args, request.option.nest_end);
       break;
     case kKeywordWhen:
       CommandWhen(args);

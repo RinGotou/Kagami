@@ -480,7 +480,6 @@ namespace kagami {
     Request request(token);
     request.priority = current_priority;
 
-    //TODO:processing for same level
     if (!blk->symbol.empty()) {
       bool stack_top_operator = util::IsBinaryOperator(blk->symbol.back().keyword_value);
       int stack_top_priority = util::GetTokenPriority(blk->symbol.back().keyword_value);
@@ -716,11 +715,9 @@ namespace kagami {
           good = false;
           break;
         }
-        if (compare_exp(nest_type_.top(), kKeywordWhile, kKeywordFor, kKeywordFn)) {
-          anchorage.back().first.option.nest = nest_.top();
-          (*dest_)[nest_end_.top()].first.option.nest_end = dest_->size();
-        }
 
+        anchorage.back().first.option.nest = nest_.top();
+        (*dest_)[nest_end_.top()].first.option.nest_end = dest_->size();
         nest_.pop();
         nest_end_.pop();
         nest_origin_.pop();
