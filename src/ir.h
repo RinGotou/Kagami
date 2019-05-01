@@ -25,9 +25,13 @@ namespace kagami {
     bool void_call;
     bool local_object;
     size_t nest;
+    size_t nest_end;
 
     ArgumentOption() : 
-      void_call(false), local_object(false), nest(0) {}
+      void_call(false), 
+      local_object(false), 
+      nest(0),
+      nest_end(0) {}
   };
 
   class Argument {

@@ -54,6 +54,7 @@ namespace kagami {
     InterfaceType interface_type_;
     InterfacePolicyType policy_type_;
     size_t min_arg_size_;
+    size_t offset_;
 
   public:
     Interface() :
@@ -65,9 +66,9 @@ namespace kagami {
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
       policy_type_(kInterfaceCXX),
-      min_arg_size_(0) {}
+      min_arg_size_(0),
+      offset_(0) {}
 
-    //Plain Function (CXX Type)
     Interface(
       Activity activity,
       string params,
@@ -82,26 +83,11 @@ namespace kagami {
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
       policy_type_(kInterfaceCXX),
-      min_arg_size_(0) {}
-
-    //Generic Token Function
-    Interface(
-      Activity activity,
-      string params,
-      Keyword token,
-      StateCode argument_mode = kCodeNormalParam
-    ) :
-      policy_(new CXXFunctionPolicy(activity)),
-      id_(),
-      token_(token),
-      params_(BuildStringVector(params)),
-      argument_mode_(argument_mode),
-      domain_(kTypeIdNull),
-      interface_type_(kInterfaceTypePlain),
-      policy_type_(kInterfaceCXX),
-      min_arg_size_(0) {}
+      min_arg_size_(0),
+      offset_(0) {}
 
     Interface(
+      size_t offset,
       VMCode ir,
       string id,
       vector<string> params,
@@ -115,7 +101,8 @@ namespace kagami {
       domain_(kTypeIdNull),
       interface_type_(kInterfaceTypePlain),
       policy_type_(kInterfaceVMCode),
-      min_arg_size_(0) {}
+      min_arg_size_(0),
+      offset_(offset) {}
 
     Message Start(ObjectMap &obj_map) {
       Message result;
@@ -210,6 +197,10 @@ namespace kagami {
     Interface &SetArgumentMode(StateCode code) {
       argument_mode_ = code;
       return *this;
+    }
+
+    size_t GetOffset() const {
+      return offset_;
     }
   };
 

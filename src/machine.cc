@@ -458,7 +458,7 @@ namespace kagami {
     if (optional) argument_mode = kCodeAutoFill;
     if (variable) argument_mode = kCodeAutoSize;
 
-    Interface interface(code, fn_string_vec[0], params, argument_mode);
+    Interface interface(worker.fn_idx + 1, code, fn_string_vec[0], params, argument_mode);
 
     if (optional) {
       interface.SetMinArgSize(params.size() - counter);
@@ -870,7 +870,7 @@ namespace kagami {
       if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
         worker.loop_tail.push(worker.logic_idx);
       }
-      worker.idx = worker.loop_head.top();
+      worker.idx = nest - worker.jump_offset;
       worker.disable_step = true;
       while (!worker.return_stack.empty()) worker.return_stack.pop();
       obj_stack_.GetCurrent().clear();
@@ -880,7 +880,7 @@ namespace kagami {
         if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
           worker.loop_tail.push(worker.logic_idx);
         }
-        worker.idx = worker.loop_head.top();
+        worker.idx = nest - worker.jump_offset;
         worker.disable_step = true;
         worker.mode = kModeCycle;
         worker.activated_continue = false;
@@ -908,7 +908,8 @@ namespace kagami {
       if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
         worker.loop_tail.push(worker.logic_idx);
       }
-      worker.idx = worker.loop_head.top();
+      worker.idx = nest - worker.jump_offset;
+      //worker.idx = worker.loop_head.top();
       worker.disable_step = true;
       obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
     }
@@ -917,7 +918,8 @@ namespace kagami {
         if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
           worker.loop_tail.push(worker.logic_idx);
         }
-        worker.idx = worker.loop_head.top();
+        worker.idx = nest - worker.jump_offset;
+        //worker.idx = worker.loop_head.top();
         worker.disable_step = true;
         worker.mode = kModeForEach;
         worker.activated_continue = false;
@@ -1609,6 +1611,7 @@ namespace kagami {
       obj_stack_.MergeMap(obj_map);
       obj_stack_.MergeMap(interface->GetClosureRecord());
       refresh_tick();
+      worker->jump_offset = func.GetOffset();
     };
 
     // Main loop of virtual machine.

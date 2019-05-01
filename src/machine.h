@@ -239,6 +239,7 @@ namespace kagami {
     bool activated_break;
     bool void_call;
     bool disable_step;
+    size_t jump_offset;
     size_t origin_idx;
     size_t logic_idx;
     size_t idx;
@@ -261,6 +262,7 @@ namespace kagami {
       activated_break(false),
       void_call(false),
       disable_step(false),
+      jump_offset(0),
       origin_idx(0),
       logic_idx(0),
       idx(0),
