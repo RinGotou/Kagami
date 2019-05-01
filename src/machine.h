@@ -315,7 +315,7 @@ namespace kagami {
     void SetSegmentInfo(ArgumentList &args, bool cmd_info = false);
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);
-    void CommandIfOrWhile(Keyword token, ArgumentList &args);
+    void CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end);
     void CommandForEach(ArgumentList &args);
     void ForEachChecking(ArgumentList &args);
     void CommandElse();

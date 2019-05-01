@@ -100,6 +100,7 @@ namespace kagami {
     VMCode *dest_;
     string path_;
     stack<size_t> nest_;
+    stack<size_t> nest_end_;
     stack<size_t> nest_origin_;
     stack<Keyword> nest_type_;
 

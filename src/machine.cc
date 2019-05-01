@@ -614,7 +614,7 @@ namespace kagami {
     left.swap(right);
   }
 
-  void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args) {
+  void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
     auto &worker = worker_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
@@ -1435,7 +1435,7 @@ namespace kagami {
     case kKeywordIf:
     case kKeywordElif:
     case kKeywordWhile:
-      CommandIfOrWhile(token, args);
+      CommandIfOrWhile(token, args, request.option.nest_end);
       break;
     default:
       break;
