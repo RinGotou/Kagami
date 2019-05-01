@@ -219,19 +219,6 @@ namespace kagami {
     return target;
   }
 
-  enum MachineMode {
-    kModeNormal,
-    kModeCondition,
-    kModeNextCondition,
-    kModeCycle,
-    kModeCycleJump,
-    kModeCase,
-    kModeCaseJump,
-    kModeForEach,
-    kModeForEachJump,
-    kModeClosureCatching
-  };
-
   class MachineWorker {
   public:
     bool error;
@@ -239,17 +226,16 @@ namespace kagami {
     bool activated_break;
     bool void_call;
     bool disable_step;
+    bool final_cycle;
     bool jump_from_end;
     size_t jump_offset;
     size_t origin_idx;
     size_t idx;
     size_t skipping_count;
-    MachineMode mode;
     string error_string;
-    stack<bool> condition_stack;
+    stack<bool> condition_stack; //preserved
     stack<size_t> jump_stack;
     stack<size_t> branch_jump_stack;
-    stack<MachineMode> mode_stack;
     stack<Object> return_stack;
     vector<string> fn_string_vec;
 
@@ -259,17 +245,16 @@ namespace kagami {
       activated_break(false),
       void_call(false),
       disable_step(false),
+      final_cycle(false),
       jump_from_end(false),
       jump_offset(0),
       origin_idx(0),
       idx(0),
       skipping_count(0),
-      mode(kModeNormal),
       error_string(),
       condition_stack(),
       jump_stack(),
       branch_jump_stack(),
-      mode_stack(),
       return_stack(),
       fn_string_vec() {}
 
@@ -277,13 +262,10 @@ namespace kagami {
     void Goto(size_t taget_idx);
     void AddJumpRecord(size_t target_idx);
     void MakeError(string str);
-    void SwitchToMode(MachineMode mode);
+    //void SwitchToMode(MachineMode mode);
     void RefreshReturnStack(Object obj = Object());
-    void GoLastMode();
-    bool NeedSkipping();
+    //void GoLastMode();
   };
-
-
 
   //Kisaragi Machine Class
   class Machine {
@@ -302,9 +284,6 @@ namespace kagami {
     void InitFunctionCatching(ArgumentList &args, size_t nest_end);
     void FinishFunctionCatching(size_t nest, bool closure = false);
 
-    void Skipping(bool enable_terminators, 
-      initializer_list<Keyword> terminators = {});
-
     Message Invoke(Object obj, string id, 
       const initializer_list<NamedObject> &&args = {});
 
@@ -314,7 +293,7 @@ namespace kagami {
     void CommandCase(ArgumentList &args, size_t nest_end);
     void CommandElse();
     void CommandWhen(ArgumentList &args);
-    void CommandContinueOrBreak(Keyword token);
+    void CommandContinueOrBreak(Keyword token, size_t escape_depth);
     void CommandConditionEnd();
     void CommandLoopEnd(size_t nest);
     void CommandForEachEnd(size_t nest);

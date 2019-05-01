@@ -714,6 +714,10 @@ namespace kagami {
             dest_->size() + anchorage.size() - 1 });
         }
 
+        if (ast_root == kKeywordWhile || ast_root == kKeywordFor) {
+          cycle_escaper_.push(nest_.size() + 1);
+        }
+
         nest_.push(dest_->size());
         nest_end_.push(dest_->size() + anchorage.size() - 1);
         nest_origin_.push(it->first);
@@ -725,7 +729,7 @@ namespace kagami {
 
       if (IsBranchKeyword(ast_root)) {
         if (jump_stack_.empty()) {
-          trace::AddEvent("Invalid branch keyword at " + to_string(it->first));
+          trace::AddEvent("Invalid branch keyword at " + to_string(it->first), kStateError);
           break;
         }
 
@@ -743,21 +747,35 @@ namespace kagami {
             jump_stack_.top().jump_record.push_back(dest_->size());
           }
           else {
-            trace::AddEvent("Invalid branch keyword at " + to_string(it->first));
+            trace::AddEvent("Invalid branch keyword at " + to_string(it->first), kStateError);
             break;
           }
         }
       }
 
+      if (ast_root == kKeywordContinue || ast_root == kKeywordBreak) {
+        if (cycle_escaper_.empty()) {
+          trace::AddEvent("Invalid cycle escaper at" + to_string(it->first), kStateError);
+          break;
+        }
+
+        anchorage.back().first.option.escape_depth = nest_.size() - cycle_escaper_.top();
+      }
+
       if (ast_root == kKeywordEnd) {
         if (nest_type_.empty()) {
-          trace::AddEvent("Invalid 'end' token at " + to_string(it->first));
+          trace::AddEvent("Invalid 'end' token at " + to_string(it->first), kStateError);
           good = false;
           break;
         }
 
-        anchorage.back().first.option.nest = nest_.top();
+        if (!cycle_escaper_.empty() && nest_.size() == cycle_escaper_.top()) 
+          cycle_escaper_.pop();
+
         (*dest_)[nest_end_.top()].first.option.nest_end = dest_->size();
+        anchorage.back().first.option.nest_root = nest_type_.top();
+        anchorage.back().first.option.nest = nest_.top();
+
 
         if (!jump_stack_.empty()) {
           if (!jump_stack_.top().jump_record.empty()) {

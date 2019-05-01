@@ -27,7 +27,9 @@ namespace kagami {
     bool segment_begin;
     size_t nest;
     size_t nest_end;
+    size_t escape_depth;
     Keyword segment_root;
+    Keyword nest_root;
 
     RequestOption() : 
       void_call(false), 
@@ -35,7 +37,9 @@ namespace kagami {
       segment_begin(false),
       nest(0),
       nest_end(0),
-      segment_root(kKeywordNull) {}
+      escape_depth(0),
+      segment_root(kKeywordNull),
+      nest_root(kKeywordNull) {}
   };
 
   class Argument {

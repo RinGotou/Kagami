@@ -103,9 +103,10 @@ namespace kagami {
     stack<size_t> nest_;
     stack<size_t> nest_end_;
     stack<size_t> nest_origin_;
+    stack<size_t> cycle_escaper_;
     stack<Keyword> nest_type_;
     stack<JumpListFrame> jump_stack_;
-
+    
   private:
     bool ReadScript(list<CombinedCodeline> &dest);
 

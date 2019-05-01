@@ -140,10 +140,10 @@ namespace kagami {
     error_string = str;
   }
 
-  void MachineWorker::SwitchToMode(MachineMode mode) {
-    mode_stack.push(this->mode);
-    this->mode = mode;
-  }
+  //void MachineWorker::SwitchToMode(MachineMode mode) {
+  //  mode_stack.push(this->mode);
+  //  this->mode = mode;
+  //}
 
   void MachineWorker::RefreshReturnStack(Object obj) {
     if (!void_call) {
@@ -151,32 +151,15 @@ namespace kagami {
     }
   }
 
-  void MachineWorker::GoLastMode() {
-    if (!mode_stack.empty()) {
-      this->mode = mode_stack.top();
-      mode_stack.pop();
-    }
-    else {
-      MakeError("Mode switching error.VM Panic.");
-    }
-  }
-
-  bool MachineWorker::NeedSkipping() {
-    switch (mode) {
-    case kModeNextCondition:
-    case kModeCycleJump:
-    case kModeCaseJump:
-    case kModeForEachJump:
-    case kModeClosureCatching:
-      return true;
-      break;
-    default:
-      break;
-    }
-    return false;
-  }
-
-
+  //void MachineWorker::GoLastMode() {
+  //  if (!mode_stack.empty()) {
+  //    this->mode = mode_stack.top();
+  //    mode_stack.pop();
+  //  }
+  //  else {
+  //    MakeError("Mode switching error.VM Panic.");
+  //  }
+  //}
 
   void Machine::RecoverLastState() {
     worker_stack_.pop();
@@ -410,7 +393,6 @@ namespace kagami {
       worker.MakeError("Empty argument list.");
     }
 
-    worker.SwitchToMode(kModeClosureCatching);
     worker.Goto(nest_end);
   }
 
@@ -499,72 +481,6 @@ namespace kagami {
 
     obj_stack_.CreateObject(fn_string_vec[0],
       Object(make_shared<Interface>(interface), kTypeIdFunction));
-
-
-    worker.GoLastMode();
-  }
-
-  void Machine::Skipping(bool enable_terminators, 
-    initializer_list<Keyword> terminators) {
-    auto &worker = worker_stack_.top();
-    size_t nest_counter = 0;
-    size_t size = code_stack_.back()->size();
-    bool flag = false;
-    auto &code = *code_stack_.back();
-
-    if (code[worker.idx].first.keyword_value == kKeywordEnd &&
-      worker.skipping_count == 0) {
-      worker.disable_step = true;
-      return;
-    }
-      
-
-    while (worker.idx < size) {
-      Command &command = code[worker.idx];
-      Keyword word = command.first.option.segment_root;
-
-      if (!command.first.option.segment_begin) {
-        worker.idx += 1;
-        continue;
-      }
-
-      if (find_in_vector(word, nest_flag_collection)) {
-        nest_counter += 1;
-        worker.idx += 1;
-        continue;
-      }
-
-      if (enable_terminators && compare(word, terminators)) {
-        if (nest_counter == 0) {
-          flag = true;
-          break;
-        }
-          
-        worker.idx += 1;
-        continue;
-      }
-
-      if (word == kKeywordEnd) {
-        if (nest_counter != 0) {
-          nest_counter -= 1;
-          worker.idx += 1;
-          continue;
-        }
-
-        if (worker.skipping_count > 0) {
-          worker.skipping_count -= 1;
-          worker.idx += 1;
-          continue;
-        }
-
-        flag = true;
-        break;
-      }
-
-      worker.idx += 1;
-    }
-
-    worker.disable_step = true;
   }
 
   //TODO:new user-defined function support
@@ -595,51 +511,64 @@ namespace kagami {
 
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
     auto &worker = worker_stack_.top();
-    auto &code = code_stack_.back();
+    auto &code = code_stack_.front();
     REQUIRED_ARG_COUNT(1);
 
     if (token == kKeywordIf || token == kKeywordWhile) {
       worker.AddJumpRecord(nest_end);
+      code->FindJumpRecord(worker.idx + worker.jump_offset, worker.branch_jump_stack);
     }
     
-    bool has_jump_list = code->FindJumpRecord(worker.idx, worker.branch_jump_stack);
-
     Object obj = FetchObject(args[0]);
     ERROR_CHECKING(obj.GetTypeId() != kTypeIdBool, "Invalid state value type.");
 
     bool state = obj.Cast<bool>();
 
     if (token == kKeywordIf) {
-      worker.SwitchToMode(state ? kModeCondition : kModeNextCondition);
       obj_stack_.Push();
       worker.condition_stack.push(state);
+      if (!state) {
+        if (worker.branch_jump_stack.empty()) {
+          worker.Goto(worker.jump_stack.top());
+        }
+        else {
+          worker.Goto(worker.branch_jump_stack.top());
+          worker.branch_jump_stack.pop();
+        }
+      }
     }
     else if (token == kKeywordElif) {
       ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Elif.");
 
       if (worker.condition_stack.top()) {
-        worker.mode = kModeNextCondition;
+        worker.Goto(worker.jump_stack.top());
       }
-      else if (!worker.condition_stack.top() && worker.mode == kModeNextCondition) {
-        worker.mode = kModeCondition;
-        worker.condition_stack.top() = true;
+      else {
+        if (state) {
+          worker.condition_stack.top() = true;
+        }
+        else {
+          if (worker.branch_jump_stack.empty()) {
+            worker.Goto(worker.jump_stack.top());
+          }
+          else {
+            worker.Goto(worker.branch_jump_stack.top());
+            worker.branch_jump_stack.pop();
+          }
+        }
       }
     }
     else if (token == kKeywordWhile) {
       if (!worker.jump_from_end) {
         obj_stack_.Push();
-        worker.mode_stack.push(worker.mode);
       }
       else {
         worker.jump_from_end = false;
       }
 
-      if (state) {
-        worker.mode = kModeCycle;
-      }
-      else {
-        worker.mode = kModeCycleJump;
+      if (!state) {
         worker.Goto(nest_end);
+        worker.final_cycle = true;
       }
     }
   }
@@ -674,7 +603,6 @@ namespace kagami {
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
     obj_stack_.CreateObject(unit_id, unit);
-    worker.SwitchToMode(kModeForEach);
   }
 
   void Machine::ForEachChecking(ArgumentList &args, size_t nest_end) {
@@ -696,8 +624,8 @@ namespace kagami {
       "Invalid iterator behavior");
 
     if (result.Cast<bool>()) {
-      worker.mode = kModeForEachJump;
       worker.Goto(nest_end);
+      worker.final_cycle = true;
     }
     else {
       auto unit = Invoke(iterator, "obj").GetObj();
@@ -707,8 +635,12 @@ namespace kagami {
 
   void Machine::CommandCase(ArgumentList &args, size_t nest_end) {
     auto &worker = worker_stack_.top();
+    auto &code = code_stack_.front();
     ERROR_CHECKING(args.empty(), "Empty argument list");
     worker.AddJumpRecord(nest_end);
+
+    bool has_jump_list = 
+      code->FindJumpRecord(worker.idx + worker.jump_offset, worker.branch_jump_stack);
 
     Object obj = FetchObject(args[0]);
     string type_id = obj.GetTypeId();
@@ -718,9 +650,16 @@ namespace kagami {
     Object sample_obj = type::CreateObjectCopy(obj);
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrCaseObj, sample_obj);
-    worker.SwitchToMode(kModeCaseJump);
     worker.condition_stack.push(false);
 
+    if (has_jump_list) {
+      worker.Goto(worker.branch_jump_stack.top());
+      worker.branch_jump_stack.pop();
+    }
+    else {
+      //although I think no one will write case block without condition branch...
+      worker.Goto(worker.jump_stack.top());
+    }
   }
 
   void Machine::CommandElse() {
@@ -732,10 +671,6 @@ namespace kagami {
     }
     else {
       worker.condition_stack.top() = true;
-      if (worker.mode == kModeNextCondition) 
-        worker.mode = kModeCondition;
-      if (worker.mode == kModeCaseJump) 
-        worker.mode = kModeCase;
     }
   }
 
@@ -744,10 +679,8 @@ namespace kagami {
     bool result = false;
     ERROR_CHECKING(worker.condition_stack.empty(), 
       "Unexpected 'when'");
-    ERROR_CHECKING(!compare_exp(worker.mode, kModeCase, kModeCaseJump),
-      "Unexpected 'when'");
 
-    if (worker.mode == kModeCase) {
+    if (worker.condition_stack.top()) {
       worker.Goto(worker.jump_stack.top());
       return;
     }
@@ -787,31 +720,30 @@ namespace kagami {
 #undef COMPARE_RESULT
 
       if (found) {
-        worker.mode = kModeCase;
         worker.condition_stack.top() = true;
+      }
+      else {
+        if (!worker.branch_jump_stack.empty()) {
+          worker.Goto(worker.branch_jump_stack.top());
+          worker.branch_jump_stack.pop();
+        }
+        else {
+          worker.Goto(worker.jump_stack.top());
+        }
       }
     }
   }
 
-  void Machine::CommandContinueOrBreak(Keyword token) {
+  void Machine::CommandContinueOrBreak(Keyword token, size_t escape_depth) {
     auto &worker = worker_stack_.top();
-    while (!worker.mode_stack.empty()) {
-      if (worker.mode == kModeCycle) break;
-      if (worker.mode == kModeForEach) break;
 
-      if (worker.mode == kModeCondition || worker.mode == kModeCase) {
-        worker.condition_stack.pop();
-        worker.skipping_count += 1;
-      }
-
-      worker.GoLastMode();
+    while (escape_depth != 0) {
+      worker.condition_stack.pop();
+      worker.jump_stack.pop();
+      obj_stack_.Pop();
+      escape_depth -= 1;
     }
 
-    ERROR_CHECKING(worker.mode != kModeCycle && worker.mode != kModeForEach,
-      "Invalid 'continue'/'break'");
-
-    if (worker.mode == kModeCycle) worker.mode = kModeCycleJump;
-    if (worker.mode == kModeForEach) worker.mode = kModeForEachJump;
     worker.Goto(worker.jump_stack.top());
 
     switch (token) {
@@ -824,7 +756,6 @@ namespace kagami {
   void Machine::CommandConditionEnd() {
     auto &worker = worker_stack_.top();
     worker.condition_stack.pop();
-    worker.GoLastMode();
     worker.jump_stack.pop();
     obj_stack_.Pop();
     while (!worker.branch_jump_stack.empty()) worker.branch_jump_stack.pop();
@@ -832,16 +763,10 @@ namespace kagami {
 
   void Machine::CommandLoopEnd(size_t nest) {
     auto &worker = worker_stack_.top();
-    if (worker.mode == kModeCycle) {
-      worker.Goto(nest);
-      while (!worker.return_stack.empty()) worker.return_stack.pop();
-      obj_stack_.GetCurrent().clear();
-      worker.jump_from_end = true;
-    }
-    else if (worker.mode == kModeCycleJump) {
+
+    if (worker.final_cycle) {
       if (worker.activated_continue) {
         worker.Goto(nest);
-        worker.mode = kModeCycle;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().clear();
         worker.jump_from_end = true;
@@ -849,34 +774,40 @@ namespace kagami {
       else {
         if (worker.activated_break) worker.activated_break = false;
         while (!worker.return_stack.empty()) worker.return_stack.pop();
-        worker.GoLastMode();
         worker.jump_stack.pop();
         obj_stack_.Pop();
       }
+      worker.final_cycle = false;
+    }
+    else {
+      worker.Goto(nest);
+      while (!worker.return_stack.empty()) worker.return_stack.pop();
+      obj_stack_.GetCurrent().clear();
+      worker.jump_from_end = true;
     }
   }
 
   void Machine::CommandForEachEnd(size_t nest) {
     auto &worker = worker_stack_.top();
-    if (worker.mode == kModeForEach) {
-      worker.Goto(nest);
-      obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
-      worker.jump_from_end = true;
-    }
-    else if (worker.mode == kModeForEachJump) {
+
+    if (worker.final_cycle) {
       if (worker.activated_continue) {
         worker.Goto(nest);
-        worker.mode = kModeForEach;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
         worker.jump_from_end = true;
       }
       else {
         if (worker.activated_break) worker.activated_break = false;
-        worker.GoLastMode();
         worker.jump_stack.pop();
         obj_stack_.Pop();
       }
+      worker.final_cycle = false;
+    }
+    else {
+      worker.Goto(nest);
+      obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
+      worker.jump_from_end = true;
     }
   }
 
@@ -1359,33 +1290,27 @@ namespace kagami {
       CommandWhen(args);
       break;
     case kKeywordEnd:
-      switch (worker.mode) {
-      case kModeCycle:
-      case kModeCycleJump:
+      switch (request.option.nest_root) {
+      case kKeywordWhile:
         CommandLoopEnd(request.option.nest);
         break;
-      case kModeCase:
-      case kModeCaseJump:
-        CommandConditionEnd();
-        break;
-      case kModeCondition:
-      case kModeNextCondition:
-        CommandConditionEnd();
-        break;
-      case kModeForEach:
-      case kModeForEachJump:
+      case kKeywordFor:
         CommandForEachEnd(request.option.nest);
         break;
-      case kModeClosureCatching:
+      case kKeywordIf:
+      case kKeywordCase:
+        CommandConditionEnd();
+        break;
+      case kKeywordFn:
         FinishFunctionCatching(request.option.nest, worker_stack_.size() > 1);
         break;
-      default:
-        break;
+      default:break;
       }
+
       break;
     case kKeywordContinue:
     case kKeywordBreak:
-      CommandContinueOrBreak(token);
+      CommandContinueOrBreak(token, request.option.escape_depth);
       break;
     case kKeywordElse:
       CommandElse();
@@ -1530,37 +1455,6 @@ namespace kagami {
       worker = &worker_stack_.top();
     };
 
-    //Enabling skipping by checking current mode value in stack frame.
-    auto skipping_checking = [&](CommandPointer &ptr) ->bool {
-      msg.Clear();
-      switch (worker->mode) {
-      case kModeNextCondition:
-        Skipping(true, { kKeywordElif,kKeywordElse });
-        break;
-      case kModeCaseJump:
-        Skipping(true, { kKeywordWhen,kKeywordElse });
-        break;
-      case kModeCycleJump:
-      case kModeForEachJump:
-      case kModeClosureCatching:
-        Skipping(false);
-        break;
-      default:
-        break;
-      }
-
-      worker->Steping();
-
-      ptr = &(*code)[worker->idx];
-      worker->void_call = ptr->first.option.void_call;
-      worker->origin_idx = ptr->first.idx;
-
-      if (worker->error) {
-        worker->origin_idx = ptr->first.idx;
-      }
-      return true;
-    };
-
     auto update_stack_frame = [&](Interface &func)->void {
       code_stack_.push_back(&func.GetCode());
       worker_stack_.push(MachineWorker());
@@ -1592,11 +1486,6 @@ namespace kagami {
       Command *command = &(*code)[worker->idx];
       worker->origin_idx = command->first.idx;
       worker->void_call = command->first.option.void_call;
-
-      //Skip commands by checking current machine mode
-      if (worker->NeedSkipping()) {
-        if (!skipping_checking(command)) break;
-      }
 
       //frontend panic checking
       if (command->first.type == kRequestNull) {
