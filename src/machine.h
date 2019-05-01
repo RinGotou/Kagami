@@ -239,6 +239,7 @@ namespace kagami {
     bool activated_break;
     bool void_call;
     bool disable_step;
+    bool jump_from_end;
     size_t jump_offset;
     size_t origin_idx;
     size_t logic_idx;
@@ -252,8 +253,6 @@ namespace kagami {
     stack<Object> return_stack;
     stack<MachineMode> mode_stack;
     stack<bool> condition_stack;
-    stack<size_t> loop_head;
-    stack<size_t> loop_tail;
     vector<string> fn_string_vec;
 
     MachineWorker() :
@@ -262,6 +261,7 @@ namespace kagami {
       activated_break(false),
       void_call(false),
       disable_step(false),
+      jump_from_end(false),
       jump_offset(0),
       origin_idx(0),
       logic_idx(0),
@@ -275,8 +275,6 @@ namespace kagami {
       return_stack(),
       mode_stack(),
       condition_stack(),
-      loop_head(),
-      loop_tail(),
       fn_string_vec() {}
 
     void Steping();

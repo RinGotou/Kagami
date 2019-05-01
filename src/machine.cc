@@ -589,7 +589,6 @@ namespace kagami {
     if (cmd_info) {
       from_chars(data.data(), data.data() + data.size(), code);
       worker.last_command = static_cast<Keyword>(code);
-      //worker.last_command = static_cast<Keyword>(stol(args[0].data));
     }
   }
 
@@ -629,17 +628,12 @@ namespace kagami {
       worker.condition_stack.push(state);
     }
     else if (token == kKeywordWhile) {
-      if (worker.loop_head.empty()) {
+      if (!worker.jump_from_end) {
         obj_stack_.Push();
         worker.mode_stack.push(worker.mode);
       }
-      else if (worker.loop_head.top() != worker.logic_idx - 1) {
-        obj_stack_.Push();
-        worker.mode_stack.push(worker.mode);
-      }
-
-      if (worker.loop_head.empty() || worker.loop_head.top() != worker.logic_idx - 1) {
-        worker.loop_head.push(worker.logic_idx);
+      else {
+        worker.jump_from_end = false;
       }
 
       if (state) {
@@ -647,11 +641,8 @@ namespace kagami {
       }
       else {
         worker.mode = kModeCycleJump;
-        if (worker.loop_head.size() == worker.loop_tail.size()) {
-          if (!worker.loop_tail.empty()) {
-            worker.idx = worker.loop_tail.top();
-          }
-        }
+        worker.idx = nest_end - worker.jump_offset;
+        worker.disable_step = true;
       }
     }
     else if (token == kKeywordElif) {
@@ -668,8 +659,9 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     ObjectMap obj_map;
 
-    if (!worker.loop_head.empty() && worker.loop_head.top() == worker.logic_idx) {
+    if (worker.jump_from_end) {
       ForEachChecking(args);
+      worker.jump_from_end = false;
       return;
     }
 
@@ -691,7 +683,6 @@ namespace kagami {
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
     obj_stack_.CreateObject(unit_id, unit);
-    worker.loop_head.push(worker.logic_idx);
     worker.SwitchToMode(kModeForEach);
   }
 
@@ -867,36 +858,25 @@ namespace kagami {
   void Machine::CommandLoopEnd(size_t nest) {
     auto &worker = worker_stack_.top();
     if (worker.mode == kModeCycle) {
-      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
-        worker.loop_tail.push(worker.logic_idx);
-      }
       worker.idx = nest - worker.jump_offset;
       worker.disable_step = true;
       while (!worker.return_stack.empty()) worker.return_stack.pop();
       obj_stack_.GetCurrent().clear();
+      worker.jump_from_end = true;
     }
     else if (worker.mode == kModeCycleJump) {
       if (worker.activated_continue) {
-        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
-          worker.loop_tail.push(worker.logic_idx);
-        }
         worker.idx = nest - worker.jump_offset;
         worker.disable_step = true;
         worker.mode = kModeCycle;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().clear();
+        worker.jump_from_end = true;
       }
       else {
         if (worker.activated_break) worker.activated_break = false;
         while (!worker.return_stack.empty()) worker.return_stack.pop();
         worker.GoLastMode();
-        if (worker.loop_head.size() == worker.loop_tail.size()) {
-          worker.loop_head.pop();
-          worker.loop_tail.pop();
-        }
-        else {
-          worker.loop_head.pop();
-        }
         obj_stack_.Pop();
       }
     }
@@ -905,36 +885,23 @@ namespace kagami {
   void Machine::CommandForEachEnd(size_t nest) {
     auto &worker = worker_stack_.top();
     if (worker.mode == kModeForEach) {
-      if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
-        worker.loop_tail.push(worker.logic_idx);
-      }
       worker.idx = nest - worker.jump_offset;
-      //worker.idx = worker.loop_head.top();
       worker.disable_step = true;
       obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
+      worker.jump_from_end = true;
     }
     else if (worker.mode == kModeForEachJump) {
       if (worker.activated_continue) {
-        if (worker.loop_tail.empty() || worker.loop_tail.top() != worker.logic_idx) {
-          worker.loop_tail.push(worker.logic_idx);
-        }
         worker.idx = nest - worker.jump_offset;
-        //worker.idx = worker.loop_head.top();
         worker.disable_step = true;
         worker.mode = kModeForEach;
         worker.activated_continue = false;
         obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
+        worker.jump_from_end = true;
       }
       else {
         if (worker.activated_break) worker.activated_break = false;
         worker.GoLastMode();
-        if (worker.loop_head.size() == worker.loop_tail.size()) {
-          worker.loop_head.pop();
-          worker.loop_tail.pop();
-        }
-        else {
-          worker.loop_head.pop();
-        }
         obj_stack_.Pop();
       }
     }
