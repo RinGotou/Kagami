@@ -140,26 +140,11 @@ namespace kagami {
     error_string = str;
   }
 
-  //void MachineWorker::SwitchToMode(MachineMode mode) {
-  //  mode_stack.push(this->mode);
-  //  this->mode = mode;
-  //}
-
   void MachineWorker::RefreshReturnStack(Object obj) {
     if (!void_call) {
       return_stack.push(std::move(obj));
     }
   }
-
-  //void MachineWorker::GoLastMode() {
-  //  if (!mode_stack.empty()) {
-  //    this->mode = mode_stack.top();
-  //    mode_stack.pop();
-  //  }
-  //  else {
-  //    MakeError("Mode switching error.VM Panic.");
-  //  }
-  //}
 
   void Machine::RecoverLastState() {
     worker_stack_.pop();

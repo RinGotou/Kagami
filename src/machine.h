@@ -262,9 +262,7 @@ namespace kagami {
     void Goto(size_t taget_idx);
     void AddJumpRecord(size_t target_idx);
     void MakeError(string str);
-    //void SwitchToMode(MachineMode mode);
     void RefreshReturnStack(Object obj = Object());
-    //void GoLastMode();
   };
 
   //Kisaragi Machine Class
