@@ -13,11 +13,6 @@ namespace kagami {
     pair<string,string>("}", "{")
   };
 
-  const vector<Keyword> kReservedWordStore = {
-    kKeywordIf, kKeywordElif, kKeywordWhile, kKeywordReturn,
-    kKeywordWhen, kKeywordCase
-  };
-
   const vector<Keyword> kSingleWordStore = {
     kKeywordEnd, kKeywordElse, kKeywordContinue, kKeywordBreak
   };
@@ -95,6 +90,12 @@ namespace kagami {
     Message Make(CombinedCodeline &line);
   };
 
+  struct JumpListFrame {
+    Keyword nest_code;
+    size_t nest;
+    list<size_t> jump_record;
+  };
+
   class VMCodeFactory {
   private:
     VMCode *dest_;
@@ -103,6 +104,7 @@ namespace kagami {
     stack<size_t> nest_end_;
     stack<size_t> nest_origin_;
     stack<Keyword> nest_type_;
+    stack<JumpListFrame> jump_stack_;
 
   private:
     bool ReadScript(list<CombinedCodeline> &dest);

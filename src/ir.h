@@ -21,7 +21,7 @@ namespace kagami {
     ArgumentType type;
   };
 
-  struct ArgumentOption {
+  struct RequestOption {
     bool void_call;
     bool local_object;
     bool segment_begin;
@@ -29,7 +29,7 @@ namespace kagami {
     size_t nest_end;
     Keyword segment_root;
 
-    ArgumentOption() : 
+    RequestOption() : 
       void_call(false), 
       local_object(false), 
       segment_begin(false),
@@ -44,7 +44,6 @@ namespace kagami {
     ArgumentType type;
     StringType token_type;
     Domain domain;
-    ArgumentOption option;
 
     Argument() :
       data(),
@@ -78,7 +77,7 @@ namespace kagami {
     string interface_id;
     Argument domain;
     RequestType type;
-    ArgumentOption option;
+    RequestOption option;
 
     Request(Keyword token) :
       idx(0),
@@ -114,6 +113,18 @@ namespace kagami {
 
   using ArgumentList = deque<Argument>;
   using Command = pair<Request, ArgumentList>;
-  using VMCode = deque<Command>;
+
+  class VMCode : public deque<Command> {
+  protected:
+    unordered_map<size_t, list<size_t>> jump_record_;
+
+  public:
+    void AddJumpRecord(size_t index, list<size_t> record) {
+      jump_record_.emplace(std::make_pair(index, record));
+    }
+
+    bool FindJumpRecord(size_t index, stack<size_t> &dest);
+  };
+
   using VMCodePointer = VMCode * ;
 }

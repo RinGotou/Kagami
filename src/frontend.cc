@@ -5,6 +5,19 @@
 
 namespace kagami {
   /* Disposing all indentation and comments */
+  bool IsBranchKeyword(Keyword keyword) {
+    return keyword == kKeywordElif || keyword == kKeywordElse || keyword == kKeywordWhen;
+  }
+
+  bool IsReservedKeyword(Keyword keyword) {
+    return keyword == kKeywordIf ||
+      keyword == kKeywordElif ||
+      keyword == kKeywordWhile ||
+      keyword == kKeywordReturn ||
+      keyword == kKeywordWhen ||
+      keyword == kKeywordCase;
+  }
+
   string IndentationAndCommentProc(string target) {
     if (target == "") return "";
     string data;
@@ -413,7 +426,7 @@ namespace kagami {
         return false;
       }
 
-      if (find_in_vector(token, kReservedWordStore)) {
+      if (IsReservedKeyword(token)) {
         blk->symbol.emplace_back(Request(token));
         blk->args.emplace_back(Argument());
         return true;
@@ -696,21 +709,63 @@ namespace kagami {
       line_parser.Clear();
 
       if (find_in_vector(ast_root, nest_flag_collection)) {
+        if (ast_root == kKeywordIf || ast_root == kKeywordCase) {
+          jump_stack_.push(JumpListFrame{ ast_root,
+            dest_->size() + anchorage.size() - 1 });
+        }
+
         nest_.push(dest_->size());
         nest_end_.push(dest_->size() + anchorage.size() - 1);
         nest_origin_.push(it->first);
         nest_type_.push(ast_root);
+        dest_->insert(dest_->end(), anchorage.begin(), anchorage.end());
+        anchorage.clear();
+        continue;
+      }
+
+      if (IsBranchKeyword(ast_root)) {
+        if (jump_stack_.empty()) {
+          trace::AddEvent("Invalid branch keyword at " + to_string(it->first));
+          break;
+        }
+
+        if (jump_stack_.top().nest_code == kKeywordIf) {
+          if (ast_root == kKeywordElif || ast_root == kKeywordElse) {
+            jump_stack_.top().jump_record.push_back(dest_->size());
+          }
+          else {
+            trace::AddEvent("Invalid branch keyword at " + to_string(it->first));
+            break;
+          }
+        }
+        else if (jump_stack_.top().nest_code == kKeywordCase) {
+          if (ast_root == kKeywordWhen || ast_root == kKeywordElse) {
+            jump_stack_.top().jump_record.push_back(dest_->size());
+          }
+          else {
+            trace::AddEvent("Invalid branch keyword at " + to_string(it->first));
+            break;
+          }
+        }
       }
 
       if (ast_root == kKeywordEnd) {
         if (nest_type_.empty()) {
-          trace::AddEvent("Invalid 'end' token");
+          trace::AddEvent("Invalid 'end' token at " + to_string(it->first));
           good = false;
           break;
         }
 
         anchorage.back().first.option.nest = nest_.top();
         (*dest_)[nest_end_.top()].first.option.nest_end = dest_->size();
+
+        if (!jump_stack_.empty()) {
+          if (!jump_stack_.top().jump_record.empty()) {
+            dest_->AddJumpRecord(jump_stack_.top().nest, jump_stack_.top().jump_record);
+          }
+          jump_stack_.pop();
+        }
+
         nest_.pop();
         nest_end_.pop();
         nest_origin_.pop();
