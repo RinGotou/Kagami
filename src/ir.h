@@ -24,14 +24,18 @@ namespace kagami {
   struct ArgumentOption {
     bool void_call;
     bool local_object;
+    bool segment_begin;
     size_t nest;
     size_t nest_end;
+    Keyword segment_root;
 
     ArgumentOption() : 
       void_call(false), 
       local_object(false), 
+      segment_begin(false),
       nest(0),
-      nest_end(0) {}
+      nest_end(0),
+      segment_root(kKeywordNull) {}
   };
 
   class Argument {

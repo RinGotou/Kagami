@@ -620,18 +620,11 @@ namespace kagami {
 
     if (msg.GetLevel() == kStateError) return msg;
 
-    Request request(kKeywordSegment);
-    ArgumentList args;
-
-    int code = 
-      static_cast<int>(util::GetKeywordCode(tokens_.front().first));
-
-    args.emplace_back(
-      Argument(to_string(code), kArgumentNormal, kStringTypeInt)
-    );
-
-    action_base_.emplace_front(std::make_pair(request, args));
-
+    if (!action_base_.empty()) {
+      auto &option = action_base_.front().first.option;
+      option.segment_begin = true;
+      option.segment_root = GetASTRoot();
+    }
     return msg;
   }
 

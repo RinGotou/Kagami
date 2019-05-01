@@ -128,7 +128,6 @@ namespace kagami {
     kKeywordSwap,
     kKeywordRequire,
     kKeywordUsing,
-    kKeywordSegment,
     kKeywordExpList, 
     kKeywordFn, 
     kKeywordIf, 

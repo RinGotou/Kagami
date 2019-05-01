@@ -221,10 +221,10 @@ namespace kagami {
 
   enum MachineMode {
     kModeNormal,
+    kModeCondition,
     kModeNextCondition,
     kModeCycle,
     kModeCycleJump,
-    kModeCondition,
     kModeCase,
     kModeCaseJump,
     kModeForEach,
@@ -242,11 +242,9 @@ namespace kagami {
     bool jump_from_end;
     size_t jump_offset;
     size_t origin_idx;
-    size_t logic_idx;
     size_t idx;
     size_t fn_idx;
     size_t skipping_count;
-    Keyword last_command;
     MachineMode mode;
     string error_string;
     stack<bool> condition_stack;
@@ -264,11 +262,9 @@ namespace kagami {
       jump_from_end(false),
       jump_offset(0),
       origin_idx(0),
-      logic_idx(0),
       idx(0),
       fn_idx(0),
       skipping_count(0),
-      last_command(kKeywordNull),
       mode(kModeNormal),
       error_string(),
       condition_stack(),
@@ -311,8 +307,6 @@ namespace kagami {
 
     Message Invoke(Object obj, string id, 
       const initializer_list<NamedObject> &&args = {});
-
-    void SetSegmentInfo(ArgumentList &args, bool cmd_info = false);
 
     void CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end);
     void CommandForEach(ArgumentList &args, size_t nest_end);

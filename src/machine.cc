@@ -427,7 +427,7 @@ namespace kagami {
     vector<string> params;
     VMCode code;
 
-    for (size_t idx = worker.fn_idx + 1; idx < worker.idx - 1; idx += 1) {
+    for (size_t idx = worker.fn_idx + 1; idx < worker.idx; idx += 1) {
       code.emplace_back(origin_ir[idx]);
     }
 
@@ -512,26 +512,29 @@ namespace kagami {
     bool flag = false;
     auto &code = *code_stack_.back();
 
-    if (code[worker.idx].first.keyword_value == kKeywordEnd && worker.skipping_count == 0) 
+    if (code[worker.idx].first.keyword_value == kKeywordEnd &&
+      worker.skipping_count == 0) {
+      worker.disable_step = true;
       return;
+    }
+      
 
     while (worker.idx < size) {
       Command &command = code[worker.idx];
+      Keyword word = command.first.option.segment_root;
 
-      if (command.first.keyword_value != kKeywordSegment) {
+      if (!command.first.option.segment_begin) {
         worker.idx += 1;
         continue;
       }
 
-      SetSegmentInfo(command.second, true);
-
-      if (find_in_vector(worker.last_command, nest_flag_collection)) {
+      if (find_in_vector(word, nest_flag_collection)) {
         nest_counter += 1;
         worker.idx += 1;
         continue;
       }
 
-      if (enable_terminators && compare(worker.last_command, terminators)) {
+      if (enable_terminators && compare(word, terminators)) {
         if (nest_counter == 0) {
           flag = true;
           break;
@@ -541,7 +544,7 @@ namespace kagami {
         continue;
       }
 
-      if (worker.last_command == kKeywordEnd) {
+      if (word == kKeywordEnd) {
         if (nest_counter != 0) {
           nest_counter -= 1;
           worker.idx += 1;
@@ -561,9 +564,7 @@ namespace kagami {
       worker.idx += 1;
     }
 
-    if (!flag) {
-      worker.MakeError("Expect 'end'");
-    }
+    worker.disable_step = true;
   }
 
   //TODO:new user-defined function support
@@ -590,17 +591,6 @@ namespace kagami {
     }
 
     return interface->Start(obj_map);
-  }
-
-  void Machine::SetSegmentInfo(ArgumentList &args, bool cmd_info) {
-    auto &worker = worker_stack_.top();
-    auto &data = args[0].data;
-    int code = 0;
-    worker.logic_idx = worker.idx;
-    if (cmd_info) {
-      from_chars(data.data(), data.data() + data.size(), code);
-      worker.last_command = static_cast<Keyword>(code);
-    }
   }
 
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
@@ -751,11 +741,7 @@ namespace kagami {
       "Unexpected 'when'");
 
     if (worker.mode == kModeCase) {
-      worker.mode = kModeCaseJump;
-      return;
-    }
-    
-    if (worker.condition_stack.top()) {
+      worker.Goto(worker.jump_stack.top());
       return;
     }
 
@@ -819,6 +805,7 @@ namespace kagami {
 
     if (worker.mode == kModeCycle) worker.mode = kModeCycleJump;
     if (worker.mode == kModeForEach) worker.mode = kModeForEachJump;
+    worker.Goto(worker.jump_stack.top());
 
     switch (token) {
     case kKeywordContinue:worker.activated_continue = true; break;
@@ -1333,9 +1320,6 @@ namespace kagami {
     case kKeywordSwap:
       CommandSwap(args);
       break;
-    case kKeywordSegment:
-      SetSegmentInfo(args);
-      break;
     case kKeywordBind:
       CommandBind(args, request.option.local_object);
       break;
@@ -1704,4 +1688,3 @@ namespace kagami {
     }
   }
 }
-#undef ERROR_CHECKING
