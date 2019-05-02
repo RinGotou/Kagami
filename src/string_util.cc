@@ -26,6 +26,23 @@ namespace kagami {
     return Message().SetObject(Object(dest, kTypeIdString));
   }
 
+  Message CharFromInt(ObjectMap &p) {
+    EXPECT_TYPE(p, "value", kTypeIdInt);
+    auto value = static_cast<char>(p.Cast<int64_t>("value"));
+    return Message().SetObject(string().append(1, value));
+  }
+
+  Message IntFromChar(ObjectMap &p) {
+    EXPECT_TYPE(p, "value", kTypeIdString);
+    auto &value = p.Cast<string>("value");
+
+    if (value.size() != 1) {
+      return Message(kCodeIllegalParam, "Invalid char", kStateError);
+    }
+
+    return Message().SetObject(static_cast<int64_t>(value[0]));
+  }
+
   //String
   Message NewString(ObjectMap &p) {
     Object &obj = p["raw_string"];
@@ -318,6 +335,8 @@ namespace kagami {
     CreateNewInterface(Interface(DecimalConvert<8>, "str", "octa"));
     CreateNewInterface(Interface(DecimalConvert<16>, "str", "hex"));
     CreateNewInterface(Interface(CreateStringFromArray, "src", "ar2string"));
+    CreateNewInterface(Interface(CharFromInt, "value", "int2str"));
+    CreateNewInterface(Interface(IntFromChar, "value", "str2int"));
 
     EXPORT_CONSTANT(kTypeIdFunction);
     EXPORT_CONSTANT(kTypeIdString);

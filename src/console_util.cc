@@ -100,9 +100,8 @@ namespace kagami {
   }
 
   Message GetChar(ObjectMap &p) {
-    string str;
-    str.append(1, static_cast<char>(getchar()));
-    return Message().SetObject(str);
+    auto value = static_cast<char>(fgetc(VM_STDIN));
+    return Message().SetObject(string().append(1, value));
   }
 
   Message Test(ObjectMap &p) {

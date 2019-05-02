@@ -186,7 +186,7 @@ namespace kagami {
         break;
       }
 
-      if (compare(current.first, "+", "-")) {
+      if (compare(current.first, "+", "-") && !compare(last.first, ")", "]", "}")) {
         if (compare(last.second, kStringTypeSymbol, kStringTypeNull) && 
             compare(next.second, kStringTypeInt, kStringTypeFloat)) {
           negative_flag = true;
@@ -221,7 +221,6 @@ namespace kagami {
           break;
         }
       }
-
 
       if (compare(last.first, "+", "-") && negative_flag) {
         Token combined(last.first + current.first, current.second);
