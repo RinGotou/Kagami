@@ -24,21 +24,17 @@ namespace kagami {
   struct RequestOption {
     bool void_call;
     bool local_object;
-    bool segment_begin;
     size_t nest;
     size_t nest_end;
     size_t escape_depth;
-    Keyword segment_root;
     Keyword nest_root;
 
     RequestOption() : 
       void_call(false), 
       local_object(false), 
-      segment_begin(false),
       nest(0),
       nest_end(0),
       escape_depth(0),
-      segment_root(kKeywordNull),
       nest_root(kKeywordNull) {}
   };
 

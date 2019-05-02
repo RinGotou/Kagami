@@ -2,7 +2,7 @@
 
 namespace kagami {
   inline bool IsStringFamily(Object &obj) {
-    return compare_exp(obj.GetTypeId(), kTypeIdString, kTypeIdWideString);
+    return compare(obj.GetTypeId(), kTypeIdString, kTypeIdWideString);
   }
 
   Message CreateStringFromArray(ObjectMap &p) {

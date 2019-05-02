@@ -271,17 +271,8 @@ namespace kagami {
     kStrMe             = "me";
 
   template <class _Lhs, class... _Rhs>
-  inline bool compare_exp(_Lhs lhs, _Rhs... rhs) {
+  inline bool compare(_Lhs lhs, _Rhs... rhs) {
     return ((lhs == rhs) || ...);
-  }
-
-  template <class Tx, class Ty>
-  inline bool compare(Tx lhs, const initializer_list<Ty> rhs) {
-    bool result = false;
-    for (const auto &unit : rhs) {
-      if (lhs == unit) result = true;
-    }
-    return result;
   }
 
   template <class T>

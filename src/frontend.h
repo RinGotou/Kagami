@@ -7,18 +7,8 @@
 namespace kagami {
   using CombinedCodeline = pair<size_t, string>;
 
-  const map<string, string> kBracketPairs = {
-    pair<string,string>(")", "("),
-    pair<string,string>("]", "["),
-    pair<string,string>("}", "{")
-  };
-
   const vector<Keyword> kSingleWordStore = {
     kKeywordEnd, kKeywordElse, kKeywordContinue, kKeywordBreak
-  };
-
-  const vector<Keyword> nest_flag_collection = {
-    kKeywordIf,kKeywordWhile,kKeywordFn,kKeywordCase,kKeywordFor
   };
 
   struct ParserBlock {

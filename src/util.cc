@@ -182,11 +182,11 @@ namespace kagami::util {
     if (target.empty()) return false;
     const auto head = target.front();
 
-    if (compare_exp(head, '-', '+') && target.size() == 1) {
+    if (compare(head, '-', '+') && target.size() == 1) {
       return false;
     }
 
-    if (!IsDigit(head) && !compare_exp(head, '-', '+')) {
+    if (!IsDigit(head) && !compare(head, '-', '+')) {
       return false;
     }
 
@@ -205,11 +205,11 @@ namespace kagami::util {
     const auto head = target.front();
     bool dot = false;
 
-    if (compare_exp(head, '-', '+') && target.size() == 1) {
+    if (compare(head, '-', '+') && target.size() == 1) {
       return false;
     }
 
-    if (!IsDigit(head) && !compare_exp(head, '-', '+')) {
+    if (!IsDigit(head) && !compare(head, '-', '+')) {
       return false;
     }
 
@@ -241,7 +241,7 @@ namespace kagami::util {
     if (target.empty()) return false;
     bool result = true;
     for (auto &unit : target) {
-      if (!compare_exp(unit, ' ', '\t', '\r', '\n')) {
+      if (!compare(unit, ' ', '\t', '\r', '\n')) {
         result = false;
         break;
       }
@@ -257,7 +257,7 @@ namespace kagami::util {
   }
 
   bool IsBoolean(string target) {
-    return compare_exp(target, "true", "false");
+    return compare(target, "true", "false");
   }
 
   StringType GetStringType(string src, bool ignore_symbol_rule) {

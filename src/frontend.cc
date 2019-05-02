@@ -5,17 +5,32 @@
 
 namespace kagami {
   /* Disposing all indentation and comments */
-  bool IsBranchKeyword(Keyword keyword) {
+  inline bool IsBranchKeyword(Keyword keyword) {
     return keyword == kKeywordElif || keyword == kKeywordElse || keyword == kKeywordWhen;
   }
 
-  bool IsReservedKeyword(Keyword keyword) {
+  inline bool IsReservedKeyword(Keyword keyword) {
     return keyword == kKeywordIf ||
       keyword == kKeywordElif ||
       keyword == kKeywordWhile ||
       keyword == kKeywordReturn ||
       keyword == kKeywordWhen ||
       keyword == kKeywordCase;
+  }
+
+  inline bool IsNestRoot(Keyword keyword) {
+    return keyword == kKeywordIf ||
+      keyword == kKeywordWhile ||
+      keyword == kKeywordFn ||
+      keyword == kKeywordCase ||
+      keyword == kKeywordFor;
+  }
+
+  string GetLeftBracket(string rhs) {
+    if (rhs == ")") return "(";
+    if (rhs == "]") return "[";
+    if (rhs == "}") return "{";
+    return string();
   }
 
   string IndentationAndCommentProc(string target) {
@@ -171,9 +186,9 @@ namespace kagami {
         break;
       }
 
-      if (compare_exp(current.first, "+", "-")) {
-        if (compare_exp(last.second, kStringTypeSymbol, kStringTypeNull) && 
-            compare_exp(next.second, kStringTypeInt, kStringTypeFloat)) {
+      if (compare(current.first, "+", "-")) {
+        if (compare(last.second, kStringTypeSymbol, kStringTypeNull) && 
+            compare(next.second, kStringTypeInt, kStringTypeFloat)) {
           negative_flag = true;
           tokens_.push_back(current);
           last = current;
@@ -181,17 +196,17 @@ namespace kagami {
         }
       }
 
-      if (compare_exp(current.first, "(", "[", "{")) {
+      if (compare(current.first, "(", "[", "{")) {
         bracket_stack.push(current.first);
       }
 
-      if (compare_exp(current.first, ")", "]", "}")) {
+      if (compare(current.first, ")", "]", "}")) {
         if (bracket_stack.empty()) {
           msg = ERROR_MSG("Left bracket is missing - " + current.first);
           break;
         }
 
-        if (bracket_stack.top() != kBracketPairs.at(current.first)) {
+        if (GetLeftBracket(current.first) != bracket_stack.top()) {
           msg = ERROR_MSG("Left bracket is missing - " + current.first);
           break;
         }
@@ -201,14 +216,14 @@ namespace kagami {
 
       if (current.first == ",") {
         if (last.second == kStringTypeSymbol &&
-          !compare_exp(last.first, "]", ")", "}", "'")) {
+          !compare(last.first, "]", ")", "}", "'")) {
           msg = ERROR_MSG("Illegal comma position");
           break;
         }
       }
 
 
-      if (compare_exp(last.first, "+", "-") && negative_flag) {
+      if (compare(last.first, "+", "-") && negative_flag) {
         Token combined(last.first + current.first, current.second);
         tokens_.back() = combined;
         negative_flag = false;
@@ -631,13 +646,6 @@ namespace kagami {
     index_ = line.first;
     msg = Parse();
 
-    if (msg.GetLevel() == kStateError) return msg;
-
-    if (!action_base_.empty()) {
-      auto &option = action_base_.front().first.option;
-      option.segment_begin = true;
-      option.segment_root = GetASTRoot();
-    }
     return msg;
   }
 
@@ -708,7 +716,7 @@ namespace kagami {
       anchorage.swap(line_parser.GetOutput());
       line_parser.Clear();
 
-      if (find_in_vector(ast_root, nest_flag_collection)) {
+      if (IsNestRoot(ast_root)) {
         if (ast_root == kKeywordIf || ast_root == kKeywordCase) {
           jump_stack_.push(JumpListFrame{ ast_root,
             dest_->size() + anchorage.size() - 1 });
