@@ -1,0 +1,15 @@
+#fibonacci(recursive)
+
+fn fib(num)
+  if num == 1 || num == 2
+    return 1
+  end
+  
+  return fib(num - 2) + fib(num - 1)
+end
+
+i = 1
+while(i < 20)
+  println(fib(i))
+  i = i + 1
+end
