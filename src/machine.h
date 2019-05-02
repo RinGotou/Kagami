@@ -22,7 +22,7 @@
 
 #define REQUIRED_ARG_COUNT(_Size)                  \
   if (args.size() != _Size) {                      \
-    worker.MakeError("Argument is missing.");      \
+    frame.MakeError("Argument is missing.");       \
     return;                                        \
   }
 
@@ -219,7 +219,7 @@ namespace kagami {
     return target;
   }
 
-  class MachineWorker {
+  class RuntimeFrame {
   public:
     bool error;
     bool activated_continue;
@@ -229,9 +229,7 @@ namespace kagami {
     bool final_cycle;
     bool jump_from_end;
     size_t jump_offset;
-    size_t origin_idx;
     size_t idx;
-    size_t skipping_count;
     string error_string;
     stack<bool> condition_stack; //preserved
     stack<bool> scope_stack;
@@ -239,7 +237,7 @@ namespace kagami {
     stack<size_t> branch_jump_stack;
     stack<Object> return_stack;
 
-    MachineWorker() :
+    RuntimeFrame() :
       error(false),
       activated_continue(false),
       activated_break(false),
@@ -248,9 +246,7 @@ namespace kagami {
       final_cycle(false),
       jump_from_end(false),
       jump_offset(0),
-      origin_idx(0),
       idx(0),
-      skipping_count(0),
       error_string(),
       condition_stack(),
       jump_stack(),
@@ -328,18 +324,18 @@ namespace kagami {
     void Generate_AutoFill(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
   private:
     deque<VMCodePointer> code_stack_;
-    stack<MachineWorker> worker_stack_;
+    stack<RuntimeFrame> frame_stack_;
     ObjectStack obj_stack_;
 
   public:
     Machine() :
       code_stack_(),
-      worker_stack_(),
+      frame_stack_(),
       obj_stack_() {}
 
     Machine(const Machine &rhs) :
       code_stack_(rhs.code_stack_),
-      worker_stack_(rhs.worker_stack_),
+      frame_stack_(rhs.frame_stack_),
       obj_stack_(rhs.obj_stack_) {}
 
     Machine(const Machine &&rhs) :
@@ -347,7 +343,7 @@ namespace kagami {
 
     Machine(VMCode &ir) :
       code_stack_(),
-      worker_stack_(),
+      frame_stack_(),
       obj_stack_() {
       code_stack_.push_back(&ir);
     }

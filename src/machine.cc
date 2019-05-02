@@ -1,6 +1,6 @@
 #include "machine.h"
 
-#define ERROR_CHECKING(_Cond, _Msg) if (_Cond) { worker.MakeError(_Msg); return; }
+#define ERROR_CHECKING(_Cond, _Msg) if (_Cond) { frame.MakeError(_Msg); return; }
 
 namespace kagami {
   using namespace management;
@@ -119,35 +119,35 @@ namespace kagami {
     EXPORT_CONSTANT(kTypeIdNull);
   }
 
-  void MachineWorker::Steping() {
+  void RuntimeFrame::Steping() {
     if (!disable_step) idx += 1;
     disable_step = false;
   }
 
-  void MachineWorker::Goto(size_t target_idx) {
+  void RuntimeFrame::Goto(size_t target_idx) {
     idx = target_idx - jump_offset;
     disable_step = true;
   }
 
-  void MachineWorker::AddJumpRecord(size_t target_idx) {
+  void RuntimeFrame::AddJumpRecord(size_t target_idx) {
     if (jump_stack.empty() || jump_stack.top() != target_idx) {
       jump_stack.push(target_idx);
     }
   }
 
-  void MachineWorker::MakeError(string str) {
+  void RuntimeFrame::MakeError(string str) {
     error = true;
     error_string = str;
   }
 
-  void MachineWorker::RefreshReturnStack(Object obj) {
+  void RuntimeFrame::RefreshReturnStack(Object obj) {
     if (!void_call) {
       return_stack.push(std::move(obj));
     }
   }
 
   void Machine::RecoverLastState() {
-    worker_stack_.pop();
+    frame_stack_.pop();
     code_stack_.pop_back();
     obj_stack_.Pop();
   }
@@ -192,7 +192,7 @@ namespace kagami {
 
   Object Machine::FetchInterfaceObject(string id, string domain) {
     Object obj;
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     auto ptr = FindInterface(id, domain);
 
     if (ptr != nullptr) {
@@ -204,8 +204,8 @@ namespace kagami {
   }
 
   string Machine::FetchDomain(string id, ArgumentType type) {
-    auto &worker = worker_stack_.top();
-    auto &return_stack = worker.return_stack;
+    auto &frame = frame_stack_.top();
+    auto &return_stack = frame.return_stack;
     ObjectPointer ptr = nullptr;
     string result;
 
@@ -237,7 +237,7 @@ namespace kagami {
     }
 
     if (result.empty()) {
-      worker.MakeError("Domain is not found - " + id);
+      frame.MakeError("Domain is not found - " + id);
     }
 
     return result;
@@ -248,8 +248,8 @@ namespace kagami {
       return FetchPlainObject(arg);
     }
 
-    auto &worker = worker_stack_.top();
-    auto &return_stack = worker.return_stack;
+    auto &frame = frame_stack_.top();
+    auto &return_stack = frame.return_stack;
     string domain_type_id = kTypeIdNull;
     ObjectPointer ptr = nullptr;
     Object obj;
@@ -273,7 +273,7 @@ namespace kagami {
       }
 
       if (obj.Get() == nullptr) {
-        worker.MakeError("Object is not found - " + arg.data);
+        frame.MakeError("Object is not found - " + arg.data);
       }
     }
     else if (arg.type == kArgumentReturnStack) {
@@ -282,7 +282,7 @@ namespace kagami {
         if(!checking) return_stack.pop(); 
       }
       else {
-        worker.MakeError("Can't get object from stack.");
+        frame.MakeError("Can't get object from stack.");
       }
     }
 
@@ -290,14 +290,14 @@ namespace kagami {
   }
 
   bool Machine::_FetchInterface(InterfacePointer &interface, string id, string type_id) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
 
     //Modified version for function invoking
     if (type_id != kTypeIdNull) {
       interface = FindInterface(id, type_id);
 
       if (interface == nullptr) {
-        worker.MakeError("Method is not found - " + id);
+        frame.MakeError("Method is not found - " + id);
         return false;
       }
 
@@ -315,7 +315,7 @@ namespace kagami {
         return true;
       }
 
-      worker.MakeError("Function is not found - " + id);
+      frame.MakeError("Function is not found - " + id);
     }
 
     return false;
@@ -324,7 +324,7 @@ namespace kagami {
   bool Machine::FetchInterface(InterfacePointer &interface, CommandPointer &command, ObjectMap &obj_map) {
     auto &id = command->first.interface_id;
     auto &domain = command->first.domain;
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
 
     //Object methods.
     //In current developing processing, machine forced to querying built-in
@@ -333,12 +333,12 @@ namespace kagami {
     if (command->first.domain.type != kArgumentNull) {
       Object obj = FetchObject(domain, true);
 
-      if (worker.error) return false;
+      if (frame.error) return false;
 
       interface = FindInterface(id, obj.GetTypeId());
 
       if (interface == nullptr) {
-        worker.MakeError("Method is not found - " + id);
+        frame.MakeError("Method is not found - " + id);
         return false;
       }
 
@@ -360,17 +360,17 @@ namespace kagami {
         return true;
       }
 
-      worker.MakeError("Function is not found - " + id);
+      frame.MakeError("Function is not found - " + id);
     }
 
     return false;
   }
 
   void Machine::ClosureCatching(ArgumentList &args, size_t nest_end, bool closure) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     auto &obj_list = obj_stack_.GetBase();
     auto &origin_code = *code_stack_.back();
-    size_t counter = 0, size = args.size(), nest = worker.idx;
+    size_t counter = 0, size = args.size(), nest = frame.idx;
     bool optional = false, variable = false;
     StateCode argument_mode = kCodeNormalParam;
     vector<string> params;
@@ -391,12 +391,12 @@ namespace kagami {
 
       if (id == kStrVariable) {
         if (counter == 1) {
-          worker.MakeError("Variable parameter can be defined only once");
+          frame.MakeError("Variable parameter can be defined only once");
           break;
         }
 
         if (idx != size - 2) {
-          worker.MakeError("Variable parameter must be last one");
+          frame.MakeError("Variable parameter must be last one");
           break;
         }
 
@@ -406,14 +406,14 @@ namespace kagami {
       }
 
       if (optional && args[idx - 1].data != kStrOptional) {
-        worker.MakeError("Optional parameter must be defined after normal parameters");
+        frame.MakeError("Optional parameter must be defined after normal parameters");
       }
 
       params.push_back(id);
     }
 
     if (optional && variable) {
-      worker.MakeError("Variable and optional parameter can't be defined at same time");
+      frame.MakeError("Variable and optional parameter can't be defined at same time");
       return;
     }
 
@@ -451,7 +451,7 @@ namespace kagami {
     obj_stack_.CreateObject(args[0].data,
       Object(make_shared<Interface>(interface), kTypeIdFunction));
 
-    worker.Goto(nest_end + 1);
+    frame.Goto(nest_end + 1);
   }
 
   Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
@@ -471,8 +471,8 @@ namespace kagami {
 
     if (interface->GetPolicyType() == kInterfaceVMCode) {
       Run(true, id, &interface->GetCode(), &obj_map, &interface->GetClosureRecord());
-      Object obj = worker_stack_.top().return_stack.top();
-      worker_stack_.top().return_stack.pop();
+      Object obj = frame_stack_.top().return_stack.top();
+      frame_stack_.top().return_stack.pop();
       return Message().SetObject(obj);
     }
 
@@ -480,13 +480,13 @@ namespace kagami {
   }
 
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     auto &code = code_stack_.front();
     REQUIRED_ARG_COUNT(1);
 
     if (token == kKeywordIf || token == kKeywordWhile) {
-      worker.AddJumpRecord(nest_end);
-      code->FindJumpRecord(worker.idx + worker.jump_offset, worker.branch_jump_stack);
+      frame.AddJumpRecord(nest_end);
+      code->FindJumpRecord(frame.idx + frame.jump_offset, frame.branch_jump_stack);
     }
     
     Object obj = FetchObject(args[0]);
@@ -495,64 +495,64 @@ namespace kagami {
     bool state = obj.Cast<bool>();
 
     if (token == kKeywordIf) {
-      worker.scope_stack.push(false);
-      worker.condition_stack.push(state);
+      frame.scope_stack.push(false);
+      frame.condition_stack.push(state);
       if (!state) {
-        if (worker.branch_jump_stack.empty()) {
-          worker.Goto(worker.jump_stack.top());
+        if (frame.branch_jump_stack.empty()) {
+          frame.Goto(frame.jump_stack.top());
         }
         else {
-          worker.Goto(worker.branch_jump_stack.top());
-          worker.branch_jump_stack.pop();
+          frame.Goto(frame.branch_jump_stack.top());
+          frame.branch_jump_stack.pop();
         }
       }
     }
     else if (token == kKeywordElif) {
-      ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Elif.");
+      ERROR_CHECKING(frame.condition_stack.empty(), "Unexpected Elif.");
 
-      if (worker.condition_stack.top()) {
-        worker.Goto(worker.jump_stack.top());
+      if (frame.condition_stack.top()) {
+        frame.Goto(frame.jump_stack.top());
       }
       else {
         if (state) {
-          worker.condition_stack.top() = true;
+          frame.condition_stack.top() = true;
         }
         else {
-          if (worker.branch_jump_stack.empty()) {
-            worker.Goto(worker.jump_stack.top());
+          if (frame.branch_jump_stack.empty()) {
+            frame.Goto(frame.jump_stack.top());
           }
           else {
-            worker.Goto(worker.branch_jump_stack.top());
-            worker.branch_jump_stack.pop();
+            frame.Goto(frame.branch_jump_stack.top());
+            frame.branch_jump_stack.pop();
           }
         }
       }
     }
     else if (token == kKeywordWhile) {
-      if (!worker.jump_from_end) {
-        worker.scope_stack.push(true);
+      if (!frame.jump_from_end) {
+        frame.scope_stack.push(true);
         obj_stack_.Push();
       }
       else {
-        worker.jump_from_end = false;
+        frame.jump_from_end = false;
       }
 
       if (!state) {
-        worker.Goto(nest_end);
-        worker.final_cycle = true;
+        frame.Goto(nest_end);
+        frame.final_cycle = true;
       }
     }
   }
 
   void Machine::CommandForEach(ArgumentList &args, size_t nest_end) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     ObjectMap obj_map;
 
-    worker.AddJumpRecord(nest_end);
+    frame.AddJumpRecord(nest_end);
 
-    if (worker.jump_from_end) {
+    if (frame.jump_from_end) {
       ForEachChecking(args, nest_end);
-      worker.jump_from_end = false;
+      frame.jump_from_end = false;
       return;
     }
 
@@ -571,14 +571,14 @@ namespace kagami {
 
     auto unit = Invoke(iterator_obj, "obj").GetObj();
 
-    worker.scope_stack.push(true);
+    frame.scope_stack.push(true);
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
     obj_stack_.CreateObject(unit_id, unit);
   }
 
   void Machine::ForEachChecking(ArgumentList &args, size_t nest_end) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto iterator = *obj_stack_.GetCurrent().Find(kStrIteratorObj);
     auto container = FetchObject(args[1]);
@@ -596,8 +596,8 @@ namespace kagami {
       "Invalid iterator behavior");
 
     if (result.Cast<bool>()) {
-      worker.Goto(nest_end);
-      worker.final_cycle = true;
+      frame.Goto(nest_end);
+      frame.final_cycle = true;
     }
     else {
       auto unit = Invoke(iterator, "obj").GetObj();
@@ -606,13 +606,13 @@ namespace kagami {
   }
 
   void Machine::CommandCase(ArgumentList &args, size_t nest_end) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     auto &code = code_stack_.front();
     ERROR_CHECKING(args.empty(), "Empty argument list");
-    worker.AddJumpRecord(nest_end);
+    frame.AddJumpRecord(nest_end);
 
     bool has_jump_list = 
-      code->FindJumpRecord(worker.idx + worker.jump_offset, worker.branch_jump_stack);
+      code->FindJumpRecord(frame.idx + frame.jump_offset, frame.branch_jump_stack);
 
     Object obj = FetchObject(args[0]);
     string type_id = obj.GetTypeId();
@@ -621,41 +621,41 @@ namespace kagami {
 
     Object sample_obj = type::CreateObjectCopy(obj);
 
-    worker.scope_stack.push(true);
+    frame.scope_stack.push(true);
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrCaseObj, sample_obj);
-    worker.condition_stack.push(false);
+    frame.condition_stack.push(false);
 
     if (has_jump_list) {
-      worker.Goto(worker.branch_jump_stack.top());
-      worker.branch_jump_stack.pop();
+      frame.Goto(frame.branch_jump_stack.top());
+      frame.branch_jump_stack.pop();
     }
     else {
       //although I think no one will write case block without condition branch...
-      worker.Goto(worker.jump_stack.top());
+      frame.Goto(frame.jump_stack.top());
     }
   }
 
   void Machine::CommandElse() {
-    auto &worker = worker_stack_.top();
-    ERROR_CHECKING(worker.condition_stack.empty(), "Unexpected Else.");
+    auto &frame = frame_stack_.top();
+    ERROR_CHECKING(frame.condition_stack.empty(), "Unexpected Else.");
 
-    if (worker.condition_stack.top() == true) {
-      worker.Goto(worker.jump_stack.top());
+    if (frame.condition_stack.top() == true) {
+      frame.Goto(frame.jump_stack.top());
     }
     else {
-      worker.condition_stack.top() = true;
+      frame.condition_stack.top() = true;
     }
   }
 
   void Machine::CommandWhen(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     bool result = false;
-    ERROR_CHECKING(worker.condition_stack.empty(), 
+    ERROR_CHECKING(frame.condition_stack.empty(), 
       "Unexpected 'when'");
 
-    if (worker.condition_stack.top()) {
-      worker.Goto(worker.jump_stack.top());
+    if (frame.condition_stack.top()) {
+      frame.Goto(frame.jump_stack.top());
       return;
     }
 
@@ -694,27 +694,27 @@ namespace kagami {
 #undef COMPARE_RESULT
 
       if (found) {
-        worker.condition_stack.top() = true;
+        frame.condition_stack.top() = true;
       }
       else {
-        if (!worker.branch_jump_stack.empty()) {
-          worker.Goto(worker.branch_jump_stack.top());
-          worker.branch_jump_stack.pop();
+        if (!frame.branch_jump_stack.empty()) {
+          frame.Goto(frame.branch_jump_stack.top());
+          frame.branch_jump_stack.pop();
         }
         else {
-          worker.Goto(worker.jump_stack.top());
+          frame.Goto(frame.jump_stack.top());
         }
       }
     }
   }
 
   void Machine::CommandContinueOrBreak(Keyword token, size_t escape_depth) {
-    auto &worker = worker_stack_.top();
-    auto &scope_stack = worker.scope_stack;
+    auto &frame = frame_stack_.top();
+    auto &scope_stack = frame.scope_stack;
 
     while (escape_depth != 0) {
-      worker.condition_stack.pop();
-      worker.jump_stack.pop();
+      frame.condition_stack.pop();
+      frame.jump_stack.pop();
       if (!scope_stack.empty() && scope_stack.top()) {
         obj_stack_.Pop();
       }
@@ -722,90 +722,90 @@ namespace kagami {
       escape_depth -= 1;
     }
 
-    worker.Goto(worker.jump_stack.top());
+    frame.Goto(frame.jump_stack.top());
 
     switch (token) {
-    case kKeywordContinue:worker.activated_continue = true; break;
-    case kKeywordBreak:worker.activated_break = true; break;
+    case kKeywordContinue:frame.activated_continue = true; break;
+    case kKeywordBreak:frame.activated_break = true; break;
     default:break;
     }
   }
 
   void Machine::CommandConditionEnd() {
-    auto &worker = worker_stack_.top();
-    worker.condition_stack.pop();
-    worker.jump_stack.pop();
-    worker.scope_stack.pop();
-    while (!worker.branch_jump_stack.empty()) worker.branch_jump_stack.pop();
+    auto &frame = frame_stack_.top();
+    frame.condition_stack.pop();
+    frame.jump_stack.pop();
+    frame.scope_stack.pop();
+    while (!frame.branch_jump_stack.empty()) frame.branch_jump_stack.pop();
   }
 
   void Machine::CommandLoopEnd(size_t nest) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
 
-    if (worker.final_cycle) {
-      if (worker.activated_continue) {
-        worker.Goto(nest);
-        worker.activated_continue = false;
+    if (frame.final_cycle) {
+      if (frame.activated_continue) {
+        frame.Goto(nest);
+        frame.activated_continue = false;
         obj_stack_.GetCurrent().clear();
-        worker.jump_from_end = true;
+        frame.jump_from_end = true;
       }
       else {
-        if (worker.activated_break) worker.activated_break = false;
-        while (!worker.return_stack.empty()) worker.return_stack.pop();
-        worker.jump_stack.pop();
+        if (frame.activated_break) frame.activated_break = false;
+        while (!frame.return_stack.empty()) frame.return_stack.pop();
+        frame.jump_stack.pop();
         obj_stack_.Pop();
       }
-      worker.scope_stack.pop();
-      worker.final_cycle = false;
+      frame.scope_stack.pop();
+      frame.final_cycle = false;
     }
     else {
-      worker.Goto(nest);
-      while (!worker.return_stack.empty()) worker.return_stack.pop();
+      frame.Goto(nest);
+      while (!frame.return_stack.empty()) frame.return_stack.pop();
       obj_stack_.GetCurrent().clear();
-      worker.jump_from_end = true;
+      frame.jump_from_end = true;
     }
   }
 
   void Machine::CommandForEachEnd(size_t nest) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
 
-    if (worker.final_cycle) {
-      if (worker.activated_continue) {
-        worker.Goto(nest);
-        worker.activated_continue = false;
+    if (frame.final_cycle) {
+      if (frame.activated_continue) {
+        frame.Goto(nest);
+        frame.activated_continue = false;
         obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
-        worker.jump_from_end = true;
+        frame.jump_from_end = true;
       }
       else {
-        if (worker.activated_break) worker.activated_break = false;
-        worker.jump_stack.pop();
+        if (frame.activated_break) frame.activated_break = false;
+        frame.jump_stack.pop();
         obj_stack_.Pop();
       }
-      worker.scope_stack.pop();
-      worker.final_cycle = false;
+      frame.scope_stack.pop();
+      frame.final_cycle = false;
     }
     else {
-      worker.Goto(nest);
+      frame.Goto(nest);
       obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
-      worker.jump_from_end = true;
+      frame.jump_from_end = true;
     }
   }
 
   void Machine::CommandHash(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     auto &obj = FetchObject(args[0]).Unpack();
 
     if (type::IsHashable(obj)) {
       int64_t hash = type::GetHash(obj);
-      worker.RefreshReturnStack(Object(make_shared<int64_t>(hash), kTypeIdInt));
+      frame.RefreshReturnStack(Object(make_shared<int64_t>(hash), kTypeIdInt));
     }
     else {
-      worker.RefreshReturnStack(Object());
+      frame.RefreshReturnStack(Object());
     }
   }
 
   void Machine::CommandSwap(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     auto &right = FetchObject(args[1]).Unpack();
     auto &left = FetchObject(args[0]).Unpack();
 
@@ -814,7 +814,7 @@ namespace kagami {
 
   void Machine::CommandBind(ArgumentList &args, bool local_value) {
     using namespace type;
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     //Do not change the order!
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
@@ -845,7 +845,7 @@ namespace kagami {
   }
 
   void Machine::CommandTypeId(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
 
     if (args.size() > 1) {
       ManagedArray base = make_shared<ObjectArray>();
@@ -856,18 +856,18 @@ namespace kagami {
 
       Object obj(base, kTypeIdArray);
       obj.SetConstructorFlag();
-      worker.RefreshReturnStack(obj);
+      frame.RefreshReturnStack(obj);
     }
     else if (args.size() == 1) {
-      worker.RefreshReturnStack(Object(FetchObject(args[0]).GetTypeId()));
+      frame.RefreshReturnStack(Object(FetchObject(args[0]).GetTypeId()));
     }
     else {
-      worker.RefreshReturnStack(Object(kTypeIdNull));
+      frame.RefreshReturnStack(Object(kTypeIdNull));
     }
   }
 
   void Machine::CommandMethods(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
     Object obj = FetchObject(args[0]);
@@ -880,11 +880,11 @@ namespace kagami {
 
     Object ret_obj(base, kTypeIdArray);
     ret_obj.SetConstructorFlag();
-    worker.RefreshReturnStack(ret_obj);
+    frame.RefreshReturnStack(ret_obj);
   }
 
   void Machine::CommandExist(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     REQUIRED_ARG_COUNT(2);
 
     //Do not change the order
@@ -895,19 +895,19 @@ namespace kagami {
     string str = str_obj.Cast<string>();
     Object ret_obj(type::CheckMethod(str, obj.GetTypeId()), kTypeIdBool);
 
-    worker.RefreshReturnStack(ret_obj);
+    frame.RefreshReturnStack(ret_obj);
   }
 
   void Machine::CommandNullObj(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
     Object obj = FetchObject(args[0]);
-    worker.RefreshReturnStack(Object(obj.GetTypeId() == kTypeIdNull, kTypeIdBool));
+    frame.RefreshReturnStack(Object(obj.GetTypeId() == kTypeIdNull, kTypeIdBool));
   }
 
   void Machine::CommandDestroy(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
     Object &obj = FetchObject(args[0]).Unpack();
@@ -915,7 +915,7 @@ namespace kagami {
   }
 
   void Machine::CommandConvert(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
     auto &arg = args[0];
@@ -953,41 +953,41 @@ namespace kagami {
         auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
       }
 
-      worker.RefreshReturnStack(ret_obj);
+      frame.RefreshReturnStack(ret_obj);
     }
   }
 
   void Machine::CommandRefCount(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
     auto &obj = FetchObject(args[0]).Unpack();
     Object ret_obj(make_shared<int64_t>(obj.ObjRefCount()), kTypeIdInt);
 
-    worker.RefreshReturnStack(ret_obj);
+    frame.RefreshReturnStack(ret_obj);
   }
 
   void Machine::CommandTime() {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     time_t now = time(nullptr);
     string nowtime(ctime(&now));
     nowtime.pop_back();
-    worker.RefreshReturnStack(Object(nowtime));
+    frame.RefreshReturnStack(Object(nowtime));
   }
 
   void Machine::CommandVersion() {
-    auto &worker = worker_stack_.top();
-    worker.RefreshReturnStack(Object(kInterpreterVersion));
+    auto &frame = frame_stack_.top();
+    frame.RefreshReturnStack(Object(kInterpreterVersion));
   }
 
   void Machine::CommandPatch() {
-    auto &worker = worker_stack_.top();
-    worker.RefreshReturnStack(Object(kPatchName));
+    auto &frame = frame_stack_.top();
+    frame.RefreshReturnStack(Object(kPatchName));
   }
 
   template <Keyword op_code>
   void Machine::BinaryMathOperatorImpl(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     REQUIRED_ARG_COUNT(2);
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
@@ -995,7 +995,7 @@ namespace kagami {
     auto type_lhs = FindTypeCode(lhs.GetTypeId());
 
     if (type_rhs == kNotPlainType || type_rhs == kNotPlainType) {
-      worker.RefreshReturnStack();
+      frame.RefreshReturnStack();
       return;
     }
 
@@ -1003,11 +1003,11 @@ namespace kagami {
 
 #define RESULT_PROCESSING(_Type, _Func, _TypeId)                       \
   _Type result = MathBox<_Type, op_code>().Do(_Func(lhs), _Func(rhs)); \
-  worker.RefreshReturnStack(Object(result, _TypeId));
+  frame.RefreshReturnStack(Object(result, _TypeId));
 
     if (result_type == kPlainString) {
       if (!find_in_vector(op_code, kStringOpStore)) {
-        worker.RefreshReturnStack();
+        frame.RefreshReturnStack();
         return;
       }
 
@@ -1028,7 +1028,7 @@ namespace kagami {
   template <Keyword op_code>
   void Machine::BinaryLogicOperatorImpl(ArgumentList &args) {
     using namespace type;
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
 
     REQUIRED_ARG_COUNT(2);
 
@@ -1040,12 +1040,12 @@ namespace kagami {
 
     if (!util::IsPlainType(lhs.GetTypeId())) {
       if (op_code != kKeywordEquals && op_code != kKeywordNotEqual) {
-        worker.RefreshReturnStack();
+        frame.RefreshReturnStack();
         return;
       }
 
       if (!CheckMethod(kStrCompare, lhs.GetTypeId())) {
-        worker.MakeError("Can't operate with this operator.");
+        frame.MakeError("Can't operate with this operator.");
         return;
       }
 
@@ -1053,16 +1053,16 @@ namespace kagami {
         { NamedObject(kStrRightHandSide, rhs) }).GetObj();
 
       if (obj.GetTypeId() != kTypeIdBool) {
-        worker.MakeError("Invalid behavior of compare().");
+        frame.MakeError("Invalid behavior of compare().");
         return;
       }
 
       if (op_code == kKeywordNotEqual) {
         bool value = !obj.Cast<bool>();
-        worker.RefreshReturnStack(Object(value, kTypeIdBool));
+        frame.RefreshReturnStack(Object(value, kTypeIdBool));
       }
       else {
-        worker.RefreshReturnStack(obj);
+        frame.RefreshReturnStack(obj);
       }
       return;
     }
@@ -1073,7 +1073,7 @@ namespace kagami {
 
     if (result_type == kPlainString) {
       if (!find_in_vector(op_code, kStringOpStore)) {
-        worker.RefreshReturnStack();
+        frame.RefreshReturnStack();
         return;
       }
 
@@ -1089,37 +1089,37 @@ namespace kagami {
       RESULT_PROCESSING(bool, BoolProducer);
     }
 
-    worker.RefreshReturnStack(Object(result, kTypeIdBool));
+    frame.RefreshReturnStack(Object(result, kTypeIdBool));
 #undef RESULT_PROCESSING
   }
 
   void Machine::OperatorLogicNot(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
 
     REQUIRED_ARG_COUNT(1);
 
     auto rhs = FetchObject(args[0]);
 
     if (rhs.GetTypeId() != kTypeIdBool) {
-      worker.MakeError("Can't operate with this operator");
+      frame.MakeError("Can't operate with this operator");
       return;
     }
 
     bool result = !rhs.Cast<bool>();
 
-    worker.RefreshReturnStack(Object(result, kTypeIdBool));
+    frame.RefreshReturnStack(Object(result, kTypeIdBool));
   }
 
 
   void Machine::ExpList(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     if (!args.empty()) {
-      worker.RefreshReturnStack(FetchObject(args.back()));
+      frame.RefreshReturnStack(FetchObject(args.back()));
     }
   }
 
   void Machine::InitArray(ArgumentList &args) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     ManagedArray base = make_shared<ObjectArray>();
 
     if (!args.empty()) {
@@ -1130,11 +1130,11 @@ namespace kagami {
 
     Object obj(base, kTypeIdArray);
     obj.SetConstructorFlag();
-    worker.RefreshReturnStack(obj);
+    frame.RefreshReturnStack(obj);
   }
 
   void Machine::CommandReturn(ArgumentList &args) {
-    if (worker_stack_.size() <= 1) {
+    if (frame_stack_.size() <= 1) {
       trace::AddEvent("Unexpected return.", kStateError);
       return;
     }
@@ -1149,11 +1149,11 @@ namespace kagami {
       Object src_obj = FetchObject(args[0]);
       Object ret_obj = type::CreateObjectCopy(src_obj);
       RecoverLastState();
-      worker_stack_.top().RefreshReturnStack(ret_obj);
+      frame_stack_.top().RefreshReturnStack(ret_obj);
     }
     else if (args.size() == 0) {
       RecoverLastState();
-      worker_stack_.top().RefreshReturnStack(Object());
+      frame_stack_.top().RefreshReturnStack(Object());
     }
     else {
       ManagedArray obj_array = make_shared<ObjectArray>();
@@ -1162,12 +1162,12 @@ namespace kagami {
       }
       Object ret_obj(obj_array, kTypeIdArray);
       RecoverLastState();
-      worker_stack_.top().RefreshReturnStack(ret_obj);
+      frame_stack_.top().RefreshReturnStack(ret_obj);
     }
   }
 
   void Machine::MachineCommands(Keyword token, ArgumentList &args, Request &request) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
 
     switch (token) {
     case kKeywordPlus:
@@ -1261,7 +1261,7 @@ namespace kagami {
       CommandExist(args);
       break;
     case kKeywordFn:
-      ClosureCatching(args, request.option.nest_end, worker_stack_.size() > 1);
+      ClosureCatching(args, request.option.nest_end, frame_stack_.size() > 1);
       break;
     case kKeywordCase:
       CommandCase(args, request.option.nest_end);
@@ -1319,7 +1319,7 @@ namespace kagami {
   }
 
   void Machine::Generate_Normal(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     auto &params = interface.GetParameters();
     size_t pos = args.size() - 1;
 
@@ -1336,7 +1336,7 @@ namespace kagami {
   }
 
   void Machine::Generate_AutoSize(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     vector<string> &params = interface.GetParameters();
     list<Object> temp_list;
     ManagedArray va_base = make_shared<ObjectArray>();
@@ -1370,7 +1370,7 @@ namespace kagami {
   }
 
   void Machine::Generate_AutoFill(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
-    auto &worker = worker_stack_.top();
+    auto &frame = frame_stack_.top();
     auto &params = interface.GetParameters();
     size_t min_size = interface.GetMinArgSize();
     size_t pos = args.size() - 1, param_pos = params.size() - 1;
@@ -1407,13 +1407,15 @@ namespace kagami {
 
     bool interface_error = false;
     bool invoking_error = false;
-    size_t stop_point = invoking ? worker_stack_.size() : 0;
+    size_t stop_point = invoking ? frame_stack_.size() : 0;
+    size_t script_idx = 0;
     Message msg;
     VMCode *code = code_stack_.back();
+    Command *command = nullptr;
     InterfacePointer interface;
     ObjectMap obj_map;
 
-    worker_stack_.push(MachineWorker());
+    frame_stack_.push(RuntimeFrame());
     obj_stack_.Push();
 
     if (invoking) {
@@ -1422,47 +1424,47 @@ namespace kagami {
       obj_stack_.MergeMap(*closure_record);
     }
 
-    MachineWorker *worker = &worker_stack_.top();
+    RuntimeFrame *frame = &frame_stack_.top();
     size_t size = code->size();
 
     //Refreshing loop tick state to make it work correctly.
     auto refresh_tick = [&]() ->void {
       code = code_stack_.back();
       size = code->size();
-      worker = &worker_stack_.top();
+      frame = &frame_stack_.top();
     };
 
     auto update_stack_frame = [&](Interface &func)->void {
       code_stack_.push_back(&func.GetCode());
-      worker_stack_.push(MachineWorker());
+      frame_stack_.push(RuntimeFrame());
       obj_stack_.Push();
       obj_stack_.CreateObject(kStrUserFunc, Object(func.GetId()));
       obj_stack_.MergeMap(obj_map);
       obj_stack_.MergeMap(interface->GetClosureRecord());
       refresh_tick();
-      worker->jump_offset = func.GetOffset();
+      frame->jump_offset = func.GetOffset();
     };
 
     // Main loop of virtual machine.
-    while (worker->idx < size || worker_stack_.size() > 1) {
+    while (frame->idx < size || frame_stack_.size() > 1) {
       //stop at invoking point
-      if (invoking && worker_stack_.size() == stop_point) {
+      if (invoking && frame_stack_.size() == stop_point) {
         break;
       }
 
       //switch back to last stack frame
-      if (worker->idx == size && worker_stack_.size() > 1) {
+      if (frame->idx == size && frame_stack_.size() > 1) {
         RecoverLastState();
         refresh_tick();
-        worker->RefreshReturnStack(Object());
-        worker->Steping();
+        frame->RefreshReturnStack(Object());
+        frame->Steping();
         continue;
       }
 
       obj_map.clear();
-      Command *command = &(*code)[worker->idx];
-      worker->origin_idx = command->first.idx;
-      worker->void_call = command->first.option.void_call;
+      command = &(*code)[frame->idx];
+      script_idx = command->first.idx;
+      frame->void_call = command->first.option.void_call;
 
       //frontend panic checking
       if (command->first.type == kRequestNull) {
@@ -1478,12 +1480,12 @@ namespace kagami {
           refresh_tick();
         }
 
-        if (worker->error) {
-          worker->origin_idx = command->first.idx;
+        if (frame->error) {
+          script_idx = command->first.idx;
           break;
         }
 
-        worker->Steping();
+        frame->Steping();
         continue;
       }
 
@@ -1497,8 +1499,8 @@ namespace kagami {
       //Building object map for function call expressed by command
       GenerateArgs(*interface, command->second, obj_map);
 
-      if (worker->error) {
-        worker->origin_idx = command->first.idx;
+      if (frame->error) {
+        script_idx = command->first.idx;
         break;
       }
 
@@ -1530,35 +1532,35 @@ namespace kagami {
         }
         else {
           msg = interface->Start(obj_map);
-          worker->Steping();
+          frame->Steping();
         }
         continue;
       }
 
-      worker->RefreshReturnStack(msg.GetObj());
-      worker->Steping();
+      frame->RefreshReturnStack(msg.GetObj());
+      frame->Steping();
     }
 
-    if (worker->error) {
+    if (frame->error) {
       trace::AddEvent(
-        Message(kCodeBadExpression, worker->error_string, kStateError)
-          .SetIndex(worker->origin_idx));
+        Message(kCodeBadExpression, frame->error_string, kStateError)
+          .SetIndex(script_idx));
       if (invoking) invoking_error = true;
     }
 
     if (interface_error) {
-      trace::AddEvent(msg.SetIndex(worker->origin_idx));
+      trace::AddEvent(msg.SetIndex(script_idx));
       if (invoking) invoking_error = true;
     }
 
-    if (!invoking || (invoking && worker_stack_.size() != stop_point)) {
+    if (!invoking || (invoking && frame_stack_.size() != stop_point)) {
       obj_stack_.Pop();
-      worker_stack_.pop();
+      frame_stack_.pop();
       code_stack_.pop_back();
     }
 
     if (invoking && invoking_error) {
-      worker_stack_.top().MakeError("Invoking error is happend.");
+      frame_stack_.top().MakeError("Invoking error is happend.");
     }
   }
 }
