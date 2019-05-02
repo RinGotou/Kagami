@@ -495,7 +495,7 @@ namespace kagami {
     bool state = obj.Cast<bool>();
 
     if (token == kKeywordIf) {
-      obj_stack_.Push();
+      worker.scope_stack.push(false);
       worker.condition_stack.push(state);
       if (!state) {
         if (worker.branch_jump_stack.empty()) {
@@ -530,6 +530,7 @@ namespace kagami {
     }
     else if (token == kKeywordWhile) {
       if (!worker.jump_from_end) {
+        worker.scope_stack.push(true);
         obj_stack_.Push();
       }
       else {
@@ -570,6 +571,7 @@ namespace kagami {
 
     auto unit = Invoke(iterator_obj, "obj").GetObj();
 
+    worker.scope_stack.push(true);
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
     obj_stack_.CreateObject(unit_id, unit);
@@ -618,6 +620,8 @@ namespace kagami {
       "Non-plain object is not supported by case");
 
     Object sample_obj = type::CreateObjectCopy(obj);
+
+    worker.scope_stack.push(true);
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrCaseObj, sample_obj);
     worker.condition_stack.push(false);
@@ -706,11 +710,15 @@ namespace kagami {
 
   void Machine::CommandContinueOrBreak(Keyword token, size_t escape_depth) {
     auto &worker = worker_stack_.top();
+    auto &scope_stack = worker.scope_stack;
 
     while (escape_depth != 0) {
       worker.condition_stack.pop();
       worker.jump_stack.pop();
-      obj_stack_.Pop();
+      if (!scope_stack.empty() && scope_stack.top()) {
+        obj_stack_.Pop();
+      }
+      scope_stack.pop();
       escape_depth -= 1;
     }
 
@@ -727,7 +735,7 @@ namespace kagami {
     auto &worker = worker_stack_.top();
     worker.condition_stack.pop();
     worker.jump_stack.pop();
-    obj_stack_.Pop();
+    worker.scope_stack.pop();
     while (!worker.branch_jump_stack.empty()) worker.branch_jump_stack.pop();
   }
 
@@ -747,6 +755,7 @@ namespace kagami {
         worker.jump_stack.pop();
         obj_stack_.Pop();
       }
+      worker.scope_stack.pop();
       worker.final_cycle = false;
     }
     else {
@@ -772,6 +781,7 @@ namespace kagami {
         worker.jump_stack.pop();
         obj_stack_.Pop();
       }
+      worker.scope_stack.pop();
       worker.final_cycle = false;
     }
     else {

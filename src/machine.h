@@ -234,6 +234,7 @@ namespace kagami {
     size_t skipping_count;
     string error_string;
     stack<bool> condition_stack; //preserved
+    stack<bool> scope_stack;
     stack<size_t> jump_stack;
     stack<size_t> branch_jump_stack;
     stack<Object> return_stack;
