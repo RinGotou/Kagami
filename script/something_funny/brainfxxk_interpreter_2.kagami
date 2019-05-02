@@ -1,0 +1,114 @@
+program = '++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.'
+mem = array(256, 0)
+size = program.size()
+code = 0
+idx = 0
+ptr = 0
+panic = false
+
+fn OutOfRangeError()
+  println('pointer out of range')
+end
+
+fn LeftBracketError()
+  println('left bracket not found')
+end
+
+fn RightBracketError()
+  println('right bracket not found')
+end
+
+fn RightBound()
+  return idx < size
+end
+
+fn LeftBound()
+  return idx >= 0
+end
+
+fn Forwarding()
+  idx = idx + 1
+end
+
+fn Backwarding()
+  idx = idx - 1
+end
+
+fn NotZero()
+  return mem[ptr] != 0
+end
+
+fn IsZero()
+  return mem[ptr] == 0
+end
+
+fn IsLeftBracket(code)
+  return code == '['
+end
+
+fn IsRightBracket(code)
+  return code == ']'
+end
+
+fn Jump(cond, first_cond, second_cond, major_cond, step, error)
+  local reg = 0
+  local code = 0
+  
+  if cond()
+    step()
+    
+    while major_cond()
+      code = program[idx]
+      
+      if first_cond(code)
+        reg = reg + 1
+      elif second_cond(code)
+        if reg > 0; reg = reg - 1
+        else; break; end
+      end
+      
+      step()
+    end
+
+    if reg > 0
+      error()
+      panic = true
+    end
+  end
+end
+
+println('program size:' + size)
+
+while(idx < size)
+  if panic; break; end
+  
+  code = program[idx]
+  
+  if code == '>'
+    if ptr >= 256
+      OutOfRangeError()
+      panic = true
+    else
+      ptr = ptr + 1
+    end
+  elif code == '<'
+    if ptr == 0
+      OutOfRangeError()
+      panic = true
+    else
+      ptr = ptr - 1
+    end
+  elif code == '+'; mem[ptr] = mem[ptr] + 1
+  elif code == '-'; mem[ptr] = mem[ptr] - 1
+  elif code == '.'; print(int2str(mem[ptr]))
+  elif code == ','; mem[ptr] = str2int(getchar())
+  elif code == '['
+    Jump(IsZero, IsLeftBracket, IsRightBracket, RightBound, Forwarding, RightBracketError)
+  elif code == ']'
+    Jump(NotZero, IsRightBracket, IsLeftBracket, LeftBound, Backwarding, LeftBracketError)
+  end
+  
+  idx = idx + 1
+end
+
+print('\n')
