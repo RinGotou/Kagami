@@ -237,7 +237,6 @@ namespace kagami {
     stack<size_t> jump_stack;
     stack<size_t> branch_jump_stack;
     stack<Object> return_stack;
-    vector<string> fn_string_vec;
 
     MachineWorker() :
       error(false),
@@ -255,8 +254,7 @@ namespace kagami {
       condition_stack(),
       jump_stack(),
       branch_jump_stack(),
-      return_stack(),
-      fn_string_vec() {}
+      return_stack() {}
 
     void Steping();
     void Goto(size_t taget_idx);
@@ -279,8 +277,7 @@ namespace kagami {
     bool FetchInterface(InterfacePointer &interface, CommandPointer &command,
       ObjectMap &obj_map);
 
-    void InitFunctionCatching(ArgumentList &args, size_t nest_end);
-    void FinishFunctionCatching(size_t nest, bool closure = false);
+    void ClosureCatching(ArgumentList &args, size_t nest_end, bool closure);
 
     Message Invoke(Object obj, string id, 
       const initializer_list<NamedObject> &&args = {});

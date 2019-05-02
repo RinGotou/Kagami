@@ -366,53 +366,37 @@ namespace kagami {
     return false;
   }
 
-  void Machine::InitFunctionCatching(ArgumentList &args, size_t nest_end) {
+  void Machine::ClosureCatching(ArgumentList &args, size_t nest_end, bool closure) {
     auto &worker = worker_stack_.top();
-    worker.fn_string_vec.clear();
-    if (!args.empty()) {
-      for (auto it = args.begin(); it != args.end(); ++it) {
-        worker.fn_string_vec.emplace_back(it->data);
-      }
-    }
-    else {
-      worker.MakeError("Empty argument list.");
-    }
-
-    worker.Goto(nest_end);
-  }
-
-  void Machine::FinishFunctionCatching(size_t nest, bool closure) {
     auto &obj_list = obj_stack_.GetBase();
-    auto &worker = worker_stack_.top();
-    auto &origin_ir = *code_stack_.back();
-    auto &fn_string_vec = worker.fn_string_vec;
-    bool optional = false;
-    bool variable = false;
+    auto &origin_code = *code_stack_.back();
+    size_t counter = 0, size = args.size(), nest = worker.idx;
+    bool optional = false, variable = false;
     StateCode argument_mode = kCodeNormalParam;
-    size_t counter = 0;
-    size_t size = worker.fn_string_vec.size();
     vector<string> params;
     VMCode code;
 
-    for (size_t idx = nest + 1; idx < worker.idx; idx += 1) {
-      code.emplace_back(origin_ir[idx]);
+    for (size_t idx = nest + 1; idx < nest_end; ++idx) {
+      code.push_back(origin_code[idx]);
     }
 
     for (size_t idx = 1; idx < size; idx += 1) {
-      if (fn_string_vec[idx] == kStrOptional) {
+      auto &id = args[idx].data;
+
+      if (id == kStrOptional) {
         optional = true;
         counter += 1;
         continue;
       }
 
-      if (fn_string_vec[idx] == kStrVariable) {
+      if (id == kStrVariable) {
         if (counter == 1) {
-          worker.MakeError("Variable parameter can be defined only once.");
+          worker.MakeError("Variable parameter can be defined only once");
           break;
         }
 
         if (idx != size - 2) {
-          worker.MakeError("Variable parameter must be last one.");
+          worker.MakeError("Variable parameter must be last one");
           break;
         }
 
@@ -421,22 +405,22 @@ namespace kagami {
         continue;
       }
 
-      if (optional && fn_string_vec[idx - 1] != kStrOptional) {
-        worker.MakeError("Optional parameter must be defined after normal parameters.");
+      if (optional && args[idx - 1].data != kStrOptional) {
+        worker.MakeError("Optional parameter must be defined after normal parameters");
       }
 
-      params.push_back(fn_string_vec[idx]);
+      params.push_back(id);
     }
 
     if (optional && variable) {
-      worker.MakeError("Variable and optional parameter can't be defined at same time.");
+      worker.MakeError("Variable and optional parameter can't be defined at same time");
       return;
     }
 
     if (optional) argument_mode = kCodeAutoFill;
     if (variable) argument_mode = kCodeAutoSize;
 
-    Interface interface(nest + 1, code, fn_string_vec[0], params, argument_mode);
+    Interface interface(nest + 1, code, args[0].data, params, argument_mode);
 
     if (optional) {
       interface.SetMinArgSize(params.size() - counter);
@@ -464,11 +448,12 @@ namespace kagami {
       interface.SetClosureRecord(scope_record);
     }
 
-    obj_stack_.CreateObject(fn_string_vec[0],
+    obj_stack_.CreateObject(args[0].data,
       Object(make_shared<Interface>(interface), kTypeIdFunction));
+
+    worker.Goto(nest_end + 1);
   }
 
-  //TODO:new user-defined function support
   Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
     bool found = type::CheckMethod(id, obj.GetTypeId());
     InterfacePointer interface;
@@ -1266,7 +1251,7 @@ namespace kagami {
       CommandExist(args);
       break;
     case kKeywordFn:
-      InitFunctionCatching(args, request.option.nest_end);
+      ClosureCatching(args, request.option.nest_end, worker_stack_.size() > 1);
       break;
     case kKeywordCase:
       CommandCase(args, request.option.nest_end);
@@ -1285,9 +1270,6 @@ namespace kagami {
       case kKeywordIf:
       case kKeywordCase:
         CommandConditionEnd();
-        break;
-      case kKeywordFn:
-        FinishFunctionCatching(request.option.nest, worker_stack_.size() > 1);
         break;
       default:break;
       }
