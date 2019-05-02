@@ -27,9 +27,9 @@ fn JumpForward()
     while idx < size
       code = program[idx]
       
-      if code == '['; reg = reg + 1; end
-      
-      if code == ']'
+      if code == '['
+        reg = reg + 1 
+      elif code == ']' 
         if reg > 0; reg = reg - 1
         else; break; end
       end
@@ -54,9 +54,9 @@ fn JumpBackward()
     while idx > 0
       code = program[idx]
       
-      if code == ']'; reg = reg + 1; end
-      
-      if code == '['
+      if code == ']' 
+        reg = reg + 1
+      elif code == '['
         if reg > 0; reg = reg - 1
         else; break; end
       end
