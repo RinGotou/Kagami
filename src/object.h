@@ -203,6 +203,7 @@ namespace kagami {
     void BuildCache();
   public:
     bool Add(string id, Object source);
+    bool Dispose(string id);
     Object *Find(string id, bool forward_seeking = true);
     string FindDomain(string id, bool forward_seeking = true);
     void ClearExcept(string exceptions);
@@ -236,8 +237,8 @@ namespace kagami {
       return base_;
     }
 
-    ObjectContainer &SetPreviousContainer(ObjectContainer &prev) {
-      prev_ = &prev;
+    ObjectContainer &SetPreviousContainer(ObjectContainer *prev) {
+      prev_ = prev;
       return *this;
     }
   };
@@ -327,11 +328,9 @@ namespace kagami {
     ObjectContainer &GetCurrent() { return base_.back(); }
 
     ObjectStack &Push() {
-      ObjectContainer container;
-      if (!base_.empty()) {
-        container.SetPreviousContainer(base_.back());
-      }
-      base_.push_back(container);
+      auto *prev = base_.empty() ? nullptr : &base_.back();
+      base_.emplace_back(ObjectContainer());
+      base_.back().SetPreviousContainer(prev);
       return *this;
     }
 
@@ -347,5 +346,6 @@ namespace kagami {
     void MergeMap(ObjectMap &p);
     Object *Find(string id);
     bool CreateObject(string id, Object obj);
+    bool DisposeObjectInCurrentScope(string id);
   };
 }

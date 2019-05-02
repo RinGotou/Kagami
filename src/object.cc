@@ -80,6 +80,18 @@ namespace kagami {
     return true;
   }
 
+  bool ObjectContainer::Dispose(string id) {
+    auto it = base_.find(id);
+    bool result = it != base_.end();
+
+    if (result) {
+      base_.erase(it);
+      BuildCache();
+    }
+
+    return result;
+  }
+
   Object *ObjectContainer::Find(string id, bool forward_seeking) {
     if (base_.empty() && prev_ == nullptr) return nullptr;
 
@@ -212,5 +224,11 @@ namespace kagami {
     }
 
     return true;
+  }
+
+  bool ObjectStack::DisposeObjectInCurrentScope(string id) {
+    if (base_.empty()) return false;
+    auto &scope = base_.back();
+    return scope.Dispose(id);
   }
 }
