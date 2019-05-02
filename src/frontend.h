@@ -6,9 +6,20 @@
 
 namespace kagami {
   using CombinedCodeline = pair<size_t, string>;
+  using CombinedToken = pair<size_t, deque<Token>>;
 
-  const vector<Keyword> kSingleWordStore = {
-    kKeywordEnd, kKeywordElse, kKeywordContinue, kKeywordBreak
+  class LexicalFactory {
+  private:
+    deque<CombinedToken> *dest_;
+
+    void Scan(deque<string> &output, string target);
+  public:
+    LexicalFactory() = delete;
+    LexicalFactory(deque<CombinedToken> &dest) : dest_(&dest) {}
+
+    bool Feed(CombinedCodeline &src);
+
+    auto &GetOutput() { return dest_; }
   };
 
   struct ParserBlock {
@@ -39,15 +50,10 @@ namespace kagami {
   };
 
   class LineParser {
-    bool do_next_expr_;
     size_t index_;
-    size_t continue_point_;
-    vector<Token> tokens_;
+    deque<Token> tokens_;
     VMCode action_base_;
     string error_string_;
-
-    vector<string> Scanning(string target);
-    Message Tokenizer(vector<string> target);
 
     void ProduceVMCode(ParserBlock *blk);
     void BindExpr(ParserBlock *blk);
@@ -63,10 +69,7 @@ namespace kagami {
     
     Message Parse();
   public:
-    LineParser() : 
-      do_next_expr_(false), 
-      index_(0),
-      continue_point_(0) {}
+    LineParser() : index_(0) {}
     VMCode &GetOutput() { return action_base_; }
 
     Keyword GetASTRoot() {
@@ -77,7 +80,7 @@ namespace kagami {
     }
 
     void Clear();
-    Message Make(CombinedCodeline &line);
+    Message Make(CombinedToken &line);
   };
 
   struct JumpListFrame {
@@ -96,7 +99,9 @@ namespace kagami {
     stack<size_t> cycle_escaper_;
     stack<Keyword> nest_type_;
     stack<JumpListFrame> jump_stack_;
-    
+    list<CombinedCodeline> script_;
+    deque<CombinedToken> tokens_;
+
   private:
     bool ReadScript(list<CombinedCodeline> &dest);
 

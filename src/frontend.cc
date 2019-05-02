@@ -26,6 +26,13 @@ namespace kagami {
       keyword == kKeywordFor;
   }
 
+  inline bool IsSingleKeyword(Keyword keyword) {
+    return keyword == kKeywordEnd ||
+      keyword == kKeywordElse ||
+      keyword == kKeywordContinue ||
+      keyword == kKeywordBreak;
+  }
+
   string GetLeftBracket(string rhs) {
     if (rhs == ")") return "(";
     if (rhs == "]") return "[";
@@ -69,9 +76,7 @@ namespace kagami {
     return data;
   }
 
-
-
-  vector<string> LineParser::Scanning(string target) {
+  void LexicalFactory::Scan(deque<string> &output, string target) {
     string current_token, temp;
     bool inside_string = false;
     bool leave_string = false;
@@ -79,7 +84,6 @@ namespace kagami {
     bool escape_flag = false;
     bool not_escape_char = false;
     char current = 0, next = 0, last = 0;
-    vector<string> output;
 
     for (size_t idx = 0; idx < target.size(); idx += 1) {
       current = target[idx];
@@ -162,18 +166,22 @@ namespace kagami {
       output.emplace_back(current_token);
     }
 
-    return output;
   }
 
-  Message LineParser::Tokenizer(vector<string> target) {
+  bool LexicalFactory::Feed(CombinedCodeline &src) {
+    bool good = true;
     bool negative_flag = false;
     stack<string> bracket_stack;
+    deque<string> target;
     Token current = INVALID_TOKEN;
     Token next = INVALID_TOKEN;
     Token last = INVALID_TOKEN;
-    Message msg;
-    
-    tokens_.clear();
+
+    Scan(target, src.second);
+
+    dest_->emplace_back(CombinedToken(src.first, deque<Token>()));
+
+    auto *tokens = &dest_->back().second;
 
     for (size_t idx = 0; idx < target.size(); idx += 1) {
       current = Token(target[idx], util::GetStringType(target[idx]));
@@ -181,16 +189,38 @@ namespace kagami {
         Token(target[idx + 1], util::GetStringType(target[idx + 1])) :
         INVALID_TOKEN;
 
+      if (current.first == ";") {
+        if (!bracket_stack.empty()) {
+          trace::AddEvent("Invalid end of statment at line " +
+            to_string(src.first), kStateError);
+          good = false;
+          break;
+        }
+
+        if (idx == target.size() - 1) {
+          trace::AddEvent("Unnecessary semicolon at line " +
+            to_string(src.first), kStateWarning);
+        }
+        else {
+          dest_->emplace_back(CombinedToken(src.first, deque<Token>()));
+          tokens = &dest_->back().second;
+        }
+
+        continue;
+      }
+
       if (current.second == kStringTypeNull) {
-        msg = ERROR_MSG("Unknown token - " + current.first);
+        trace::AddEvent("Unknown token - " + current.first +
+          " at line " + to_string(src.first), kStateError);
+        good = false;
         break;
       }
 
       if (compare(current.first, "+", "-") && !compare(last.first, ")", "]", "}")) {
-        if (compare(last.second, kStringTypeSymbol, kStringTypeNull) && 
-            compare(next.second, kStringTypeInt, kStringTypeFloat)) {
+        if (compare(last.second, kStringTypeSymbol, kStringTypeNull) &&
+          compare(next.second, kStringTypeInt, kStringTypeFloat)) {
           negative_flag = true;
-          tokens_.push_back(current);
+          tokens->push_back(current);
           last = current;
           continue;
         }
@@ -202,12 +232,16 @@ namespace kagami {
 
       if (compare(current.first, ")", "]", "}")) {
         if (bracket_stack.empty()) {
-          msg = ERROR_MSG("Left bracket is missing - " + current.first);
+          trace::AddEvent("Left bracket is missing - " + current.first +
+            " at line " + to_string(src.first), kStateError);
+          good = false;
           break;
         }
 
         if (GetLeftBracket(current.first) != bracket_stack.top()) {
-          msg = ERROR_MSG("Left bracket is missing - " + current.first);
+          trace::AddEvent("Left bracket is missing - " + current.first +
+            " at line " + to_string(src.first), kStateError);
+          good = false;
           break;
         }
 
@@ -217,26 +251,28 @@ namespace kagami {
       if (current.first == ",") {
         if (last.second == kStringTypeSymbol &&
           !compare(last.first, "]", ")", "}", "'")) {
-          msg = ERROR_MSG("Illegal comma position");
+          trace::AddEvent("Invalid comma at line " + to_string(src.first), kStateError);
+          good = false;
           break;
         }
       }
 
       if (compare(last.first, "+", "-") && negative_flag) {
         Token combined(last.first + current.first, current.second);
-        tokens_.back() = combined;
+        tokens->back() = combined;
         negative_flag = false;
         last = combined;
         continue;
       }
 
 
-      tokens_.emplace_back(current);
+      tokens->push_back(current);
       last = current;
     }
 
-    return msg;
+    return good;
   }
+
 
   void LineParser::ProduceVMCode(ParserBlock *blk) {
     deque<Argument> arguments;
@@ -345,7 +381,7 @@ namespace kagami {
     auto token_next_2 = util::GetKeywordCode(blk->next_2.first);
     bool lambda_func = false;
 
-    if (find_in_vector(token, kSingleWordStore)) {
+    if (IsSingleKeyword(token)) {
       if (blk->next.second != kStringTypeNull) {
         error_string_ = "Invalid syntax after " + blk->current.first;
         return false;
@@ -636,16 +672,11 @@ namespace kagami {
     index_ = 0;
   }
 
-  Message LineParser::Make(CombinedCodeline &line) {
-    vector<string> spilted_string = Scanning(line.second);
-    Message msg = Tokenizer(spilted_string);
-
-    if (msg.GetLevel() == kStateError) return msg;
-
+  Message LineParser::Make(CombinedToken &line) {
     index_ = line.first;
-    msg = Parse();
-
-    return msg;
+    tokens_.clear();
+    tokens_ = line.second;
+    return Parse().SetIndex(line.first);
   }
 
   bool VMCodeFactory::ReadScript(list<CombinedCodeline> &dest) {
@@ -687,19 +718,27 @@ namespace kagami {
 
   bool VMCodeFactory::Start() {
     bool good = true;
-    list<CombinedCodeline> script;
+    LexicalFactory lexer(tokens_);
     LineParser line_parser;
     Message msg;
     VMCode anchorage;
     StateLevel level;
     Keyword ast_root;
 
-    if (!ReadScript(script)) return false;
+    if (!ReadScript(script_)) return false;
 
-    auto end = script.end();
-    for (auto it = script.begin(); it != end; ++it) {
+    for (auto it = script_.begin(); it != script_.end(); ++it) {
+      good = lexer.Feed(*it);
       if (!good) break;
-      msg = line_parser.Make(*it).SetIndex(it->first);
+    }
+
+    if (!good) return false;
+
+    for (auto it = tokens_.begin(); it != tokens_.end(); ++it) {
+      if (!good) break;
+
+      msg = line_parser.Make(*it);
+
       level = msg.GetLevel();
       ast_root = line_parser.GetASTRoot();
 
@@ -776,7 +815,7 @@ namespace kagami {
           break;
         }
 
-        if (!cycle_escaper_.empty() && nest_.size() == cycle_escaper_.top()) 
+        if (!cycle_escaper_.empty() && nest_.size() == cycle_escaper_.top())
           cycle_escaper_.pop();
 
         (*dest_)[nest_end_.top()].first.option.nest_end = dest_->size();
