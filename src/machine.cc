@@ -725,8 +725,13 @@ namespace kagami {
     frame.Goto(frame.jump_stack.top());
 
     switch (token) {
-    case kKeywordContinue:frame.activated_continue = true; break;
-    case kKeywordBreak:frame.activated_break = true; break;
+    case kKeywordContinue:
+      frame.activated_continue = true; 
+      break;
+    case kKeywordBreak:
+      frame.activated_break = true; 
+      frame.final_cycle = true;
+      break;
     default:break;
     }
   }
