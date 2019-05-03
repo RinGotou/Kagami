@@ -21,7 +21,7 @@
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
-#include "wstcp_wrapper.h"
+//#include "wstcp_wrapper.h"
 #if defined(_MSC_VER)
 #pragma warning(disable:4996)
 #endif
@@ -79,12 +79,6 @@ namespace kagami {
   using std::to_chars;
   using std::any;
   using std::any_cast;
-#if defined (_WIN32)
-  using suzu::TCPClient;
-  using suzu::TCPServer;
-  using suzu::TCPConnector;
-  using suzu::WSockInfo;
-#endif
   using namespace minatsuki;
 
   using Byte = uint64_t;
