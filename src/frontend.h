@@ -76,7 +76,7 @@ namespace kagami {
       if (action_base_.empty()) {
         return kKeywordNull;
       }
-      return action_base_.back().first.keyword_value;
+      return action_base_.back().first.GetKeywordValue();
     }
 
     void Clear();

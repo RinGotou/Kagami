@@ -17,6 +17,7 @@
 #include <functional>
 #include <list>
 #include <charconv>
+#include <any>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -76,6 +77,8 @@ namespace kagami {
   using std::is_base_of;
   using std::from_chars;
   using std::to_chars;
+  using std::any;
+  using std::any_cast;
 #if defined (_WIN32)
   using suzu::TCPClient;
   using suzu::TCPServer;

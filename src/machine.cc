@@ -218,14 +218,13 @@ namespace kagami {
 
       Object obj = GetConstantObject(id);
 
-      if (obj.Get() != nullptr) {
+      if (obj.Null()) {
         result = obj.GetTypeId();
         return result;
       }
       
-      //TODO:??
       obj = FetchInterfaceObject(id, kTypeIdNull);
-      if (obj.Get() != nullptr) {
+      if (obj.Null()) {
         result = obj.GetTypeId();
         return result;
       }
@@ -268,11 +267,11 @@ namespace kagami {
 
       obj = GetConstantObject(arg.data);
 
-      if (obj.Get() == nullptr) {
+      if (obj.Null()) {
         obj = FetchInterfaceObject(arg.data, domain_type_id);
       }
 
-      if (obj.Get() == nullptr) {
+      if (obj.Null()) {
         frame.MakeError("Object is not found - " + arg.data);
       }
     }
@@ -322,15 +321,16 @@ namespace kagami {
   }
 
   bool Machine::FetchInterface(InterfacePointer &interface, CommandPointer &command, ObjectMap &obj_map) {
-    auto &id = command->first.interface_id;
-    auto &domain = command->first.domain;
     auto &frame = frame_stack_.top();
+    auto id = command->first.GetInterfaceId();
+    auto domain = command->first.GetInterfaceDomain();
+    
 
     //Object methods.
     //In current developing processing, machine forced to querying built-in
     //function. These code need to be rewritten when I work in class feature in
     //the future.
-    if (command->first.domain.type != kArgumentNull) {
+    if (domain.type != kArgumentNull) {
       Object obj = FetchObject(domain, true);
 
       if (frame.error) return false;
@@ -1479,9 +1479,9 @@ namespace kagami {
 
       //Embedded machine commands.
       if (command->first.type == kRequestCommand) {
-        MachineCommands(command->first.keyword_value, command->second, command->first);
+        MachineCommands(command->first.GetKeywordValue(), command->second, command->first);
         
-        if (command->first.keyword_value == kKeywordReturn) {
+        if (command->first.GetKeywordValue() == kKeywordReturn) {
           refresh_tick();
         }
 

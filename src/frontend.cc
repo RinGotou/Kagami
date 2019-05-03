@@ -280,8 +280,10 @@ namespace kagami {
 
     if (blk->symbol.back().IsPlaceholder()) blk->symbol.pop_back();
 
-    bool is_bin_operator = util::IsBinaryOperator(blk->symbol.back().keyword_value);
-    bool is_mono_operator = util::IsMonoOperator(blk->symbol.back().keyword_value);
+    bool is_bin_operator = 
+      util::IsBinaryOperator(blk->symbol.back().GetKeywordValue());
+    bool is_mono_operator = 
+      util::IsMonoOperator(blk->symbol.back().GetKeywordValue());
 
     if (is_bin_operator) limit = 2;
     if (is_mono_operator) limit = 1;
@@ -349,8 +351,7 @@ namespace kagami {
       Argument("__at", kArgumentNormal, kStringTypeIdentifier)
     };
 
-    Request request("__at");
-    request.domain = blk->args.back();
+    Request request("__at", blk->args.back());
     blk->symbol.emplace_back(request);
     blk->symbol.emplace_back(Request());
     blk->args.pop_back();
@@ -496,13 +497,10 @@ namespace kagami {
 
 
     if (blk->next.first == "(") {
-      Request request(blk->current.first);
-      if (blk->last.first == ".") {
-        request.domain = blk->domain;
-      }
-      else {
-        request.domain.type = kArgumentNull;
-      }
+      Request request(blk->current.first,
+        blk->last.first == "." ?
+        blk->domain : Argument()
+      );
       blk->symbol.emplace_back(request);
       blk->domain = Argument();
       return true;
@@ -516,8 +514,7 @@ namespace kagami {
 
     
     if (blk->domain.type != kArgumentNull) {
-      Request request(blk->current.first);
-      request.domain = blk->domain;
+      Request request(blk->current.first, blk->domain);
       blk->symbol.emplace_back(request);
       blk->args.emplace_back(Argument());
       ProduceVMCode(blk);
@@ -544,8 +541,10 @@ namespace kagami {
     request.priority = current_priority;
 
     if (!blk->symbol.empty()) {
-      bool stack_top_operator = util::IsBinaryOperator(blk->symbol.back().keyword_value);
-      int stack_top_priority = util::GetTokenPriority(blk->symbol.back().keyword_value);
+      bool stack_top_operator = 
+        util::IsBinaryOperator(blk->symbol.back().GetKeywordValue());
+      int stack_top_priority = 
+        util::GetTokenPriority(blk->symbol.back().GetKeywordValue());
 
       auto checking = [&stack_top_priority, &current_priority]()->bool {
         return (stack_top_priority >= current_priority);
@@ -554,9 +553,9 @@ namespace kagami {
       while (!blk->symbol.empty() && stack_top_operator && checking()) {
         ProduceVMCode(blk);
         stack_top_operator = 
-          (!blk->symbol.empty() && util::IsBinaryOperator(blk->symbol.back().keyword_value));
+          (!blk->symbol.empty() && util::IsBinaryOperator(blk->symbol.back().GetKeywordValue()));
         stack_top_priority = blk->symbol.empty() ? 5 :
-          util::GetTokenPriority(blk->symbol.back().keyword_value);
+          util::GetTokenPriority(blk->symbol.back().GetKeywordValue());
       }
     }
 
@@ -569,7 +568,7 @@ namespace kagami {
     bool result = true;
 
     while (!blk->symbol.empty() && !blk->symbol.back().IsPlaceholder()
-      && blk->symbol.back().keyword_value != kKeywordBind) {
+      && blk->symbol.back().GetKeywordValue() != kKeywordBind) {
       ProduceVMCode(blk);
     }
 

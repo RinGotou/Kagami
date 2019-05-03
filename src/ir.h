@@ -69,42 +69,65 @@ namespace kagami {
     }
   };
 
+  struct InterfaceInfo {
+    string id;
+    Argument domain;
+  };
+
   class Request {
+  private:
+    any data;
+
   public:
     size_t idx;
     int priority;
-    Keyword keyword_value;
-    string interface_id;
-    Argument domain;
     RequestType type;
     RequestOption option;
 
     Request(Keyword token) :
+      data(token),
       idx(0),
       priority(5),
-      keyword_value(token),
-      interface_id(),
-      domain(),
       type(kRequestCommand),
       option() {}
 
-    Request(string token) :
+    Request(string token, Argument domain = Argument()) :
+      data(InterfaceInfo{ token, domain }),
       idx(0),
       priority(5),
-      keyword_value(kKeywordNull),
-      interface_id(token),
-      domain(),
       type(kRequestInterface),
       option() {}
 
     Request() :
+      data(),
       idx(0),
       priority(5),
-      keyword_value(kKeywordNull),
-      interface_id(),
-      domain(),
       type(kRequestNull),
       option() {}
+
+    string GetInterfaceId() {
+      if (type == kRequestInterface) {
+        return any_cast<InterfaceInfo>(data).id;
+      }
+
+      return string();
+    }
+
+    Argument GetInterfaceDomain() {
+      if (type == kRequestInterface) {
+        return any_cast<InterfaceInfo>(data).domain;
+      }
+
+      return Argument();
+    }
+
+    Keyword GetKeywordValue() {
+      if (type == kRequestCommand) {
+        return any_cast<Keyword>(data);
+      }
+
+      return kKeywordNull;
+    }
 
     bool IsPlaceholder() const {
       return type == kRequestNull;
