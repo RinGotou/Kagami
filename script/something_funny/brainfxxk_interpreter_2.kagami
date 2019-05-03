@@ -85,18 +85,18 @@ while idx < size
   code = program[idx]
   
   if code == '>'
-    if ptr >= 256
+    if ptr < 255
+    ptr = ptr + 1
+    else
       OutOfRangeError()
       panic = true
-    else
-      ptr = ptr + 1
     end
   elif code == '<'
-    if ptr == 0
+    if ptr > 0
+      ptr = ptr - 1
+    else
       OutOfRangeError()
       panic = true
-    else
-      ptr = ptr - 1
     end
   elif code == '+'; mem[ptr] = mem[ptr] + 1
   elif code == '-'; mem[ptr] = mem[ptr] - 1
