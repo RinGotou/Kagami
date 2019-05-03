@@ -55,9 +55,7 @@ fn Jump(cond, first_cond, second_cond, major_cond, step, error)
   local code = 0
   
   if cond()
-    step()
-    
-    while major_cond()
+    while (step(), major_cond())
       code = program[idx]
       
       if first_cond(code)
@@ -66,8 +64,6 @@ fn Jump(cond, first_cond, second_cond, major_cond, step, error)
         if reg > 0; reg = reg - 1
         else; break; end
       end
-      
-      step()
     end
 
     if reg > 0
@@ -86,7 +82,7 @@ while idx < size
   
   if code == '>'
     if ptr < 255
-    ptr = ptr + 1
+      ptr = ptr + 1
     else
       OutOfRangeError()
       panic = true

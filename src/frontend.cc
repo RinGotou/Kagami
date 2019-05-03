@@ -335,7 +335,13 @@ namespace kagami {
 
   void LineParser::FuncInvokingExpr(ParserBlock *blk) {
     if (blk->fn_expr) return;
-    if (blk->last.second != StringType::kStringTypeIdentifier) {
+    if (blk->last.second != kStringTypeIdentifier) {
+      blk->symbol.emplace_back(Request(kKeywordExpList));
+    }
+
+    if (compare(util::GetKeywordCode(blk->last.first),
+      kKeywordIf, kKeywordElif, kKeywordWhile,
+      kKeywordCase, kKeywordWhen, kKeywordReturn)) {
       blk->symbol.emplace_back(Request(kKeywordExpList));
     }
     
