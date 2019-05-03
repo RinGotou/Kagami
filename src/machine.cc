@@ -190,56 +190,17 @@ namespace kagami {
     return obj;
   }
 
-  Object Machine::FetchInterfaceObject(string id, string domain) {
+  Object Machine::FetchInterfaceObject(string id) {
     Object obj;
     auto &frame = frame_stack_.top();
-    auto ptr = FindInterface(id, domain);
+    auto ptr = FindInterface(id);
 
     if (ptr != nullptr) {
-      auto interface = *FindInterface(id, domain);
+      auto interface = *ptr;
       obj.PackContent(make_shared<Interface>(interface), kTypeIdFunction);
     }
 
     return obj;
-  }
-
-  string Machine::FetchDomain(string id, ArgumentType type) {
-    auto &frame = frame_stack_.top();
-    auto &return_stack = frame.return_stack;
-    ObjectPointer ptr = nullptr;
-    string result;
-
-    if (type == kArgumentObjectStack) {
-      ptr = obj_stack_.Find(id);
-      if (ptr != nullptr) {
-        result = ptr->GetTypeId();
-        return result;
-      }
-
-      Object obj = GetConstantObject(id);
-
-      if (obj.Null()) {
-        result = obj.GetTypeId();
-        return result;
-      }
-      
-      obj = FetchInterfaceObject(id, kTypeIdNull);
-      if (obj.Null()) {
-        result = obj.GetTypeId();
-        return result;
-      }
-    }
-    else if (type == kArgumentReturnStack) {
-      if (!return_stack.empty()) {
-        result = return_stack.top().GetTypeId();
-      }
-    }
-
-    if (result.empty()) {
-      frame.MakeError("Domain is not found - " + id);
-    }
-
-    return result;
   }
 
   Object Machine::FetchObject(Argument &arg, bool checking) {
@@ -249,14 +210,8 @@ namespace kagami {
 
     auto &frame = frame_stack_.top();
     auto &return_stack = frame.return_stack;
-    string domain_type_id = kTypeIdNull;
     ObjectPointer ptr = nullptr;
     Object obj;
-
-    //TODO: Add object domain support
-    if (arg.domain.type != kArgumentNull) {
-      domain_type_id = FetchDomain(arg.domain.data, arg.domain.type);
-    }
 
     if (arg.type == kArgumentObjectStack) {
       ptr = obj_stack_.Find(arg.data);
@@ -268,7 +223,7 @@ namespace kagami {
       obj = GetConstantObject(arg.data);
 
       if (obj.Null()) {
-        obj = FetchInterfaceObject(arg.data, domain_type_id);
+        obj = FetchInterfaceObject(arg.data);
       }
 
       if (obj.Null()) {

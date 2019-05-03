@@ -266,8 +266,7 @@ namespace kagami {
     void RecoverLastState();
 
     Object FetchPlainObject(Argument &arg);
-    Object FetchInterfaceObject(string id, string domain);
-    string FetchDomain(string id, ArgumentType type);
+    Object FetchInterfaceObject(string id);
     Object FetchObject(Argument &arg, bool checking = false);
 
     bool _FetchInterface(InterfacePointer &interface, string id, string type_id);

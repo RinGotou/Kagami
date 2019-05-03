@@ -16,11 +16,6 @@ namespace kagami {
     kRequestNull
   };
 
-  struct Domain {
-    string data;
-    ArgumentType type;
-  };
-
   struct RequestOption {
     bool void_call;
     bool local_object;
@@ -43,26 +38,19 @@ namespace kagami {
     string data;
     ArgumentType type;
     StringType token_type;
-    Domain domain;
 
     Argument() :
       data(),
       type(kArgumentNull),
-      token_type(kStringTypeNull) {
+      token_type(kStringTypeNull) {}
 
-      domain.type = kArgumentNull;
-    }
-
-    Argument(string data,
+    Argument(
+      string data,
       ArgumentType type,
       StringType token_type) :
       data(data),
       type(type),
-      token_type(token_type) {
-
-      this->domain.data = "";
-      this->domain.type = kArgumentNull;
-    }
+      token_type(token_type) {}
 
     bool IsPlaceholder() const {
       return type == kArgumentNull;
