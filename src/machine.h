@@ -363,10 +363,4 @@ namespace kagami {
 #if not defined(_DISABLE_SDL_)
   void InitSoundComponents();
 #endif
-
-//TODO:Reserved for unix socket wrapper
-//TODO: delete macros after finish it
-#if defined(_WIN32)
-  void LoadSocketStuff();
-#endif
 }

@@ -18,9 +18,6 @@ namespace runtime {
     InitConsoleComponents();
     InitBaseTypes();
     InitContainerComponents();
-#if defined(_WIN32)
-    LoadSocketStuff();
-#endif
 #if not defined(_DISABLE_SDL_)
     InitSoundComponents();
 #endif

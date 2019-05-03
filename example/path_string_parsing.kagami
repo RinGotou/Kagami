@@ -2,7 +2,6 @@ temp = array()
 result = array()
 
 fn Processing(str)
-  #println('Source string:' + str)
   str_ar = str.to_array()
   
   for unit in str_ar
@@ -33,7 +32,6 @@ end
 i = 0
 start = time()
 while i < 10000
-  #println('Processing count:' + i)
   Processing('C:\\workspace\\eternal_feather.mp3')
   i = i + 1
 end

@@ -1,63 +1,52 @@
-fn BubbleSort(array_size)
-  ar = array(array_size, 0)
-  i = 0
-  num = array_size
+fn FillArray(ar)
+  local size = ar.size()
+  local idx = size
   
-  while i < array_size
-    ar[i] = num
-    num = num - 1
-    i = i + 1
+  while (idx = idx - 1, idx <= 0)
+    ar[i] = size - idx
   end
+end
+
+fn BubbleSort(array_size)
+  local ar = array(array_size, 0)
+  local i = 0
   
-  println('Sorting.(Bubble)')
+  FillArray(ar)
   
-  startTime = time()
-  i = 0
-  
+  start_time = time()
+
   while i < array_size
-    j = i + 1
+    local j = i
     
-    while j < array_size
+    while (j = j + 1, j < array_size)
       if ar[i] > ar[j]
         swap(ar[i],ar[j])
       end
-      
-      j = j + 1
     end
     
     i = i + 1
   end
   
-  println('Start Time:' + startTime)
+  println('Start Time:' + start_time)
   println('End Time  :' + time())
 end
 
 fn InsertionSort(array_size)
-  ar = array(array_size, 0)
-  i = 0
-  num = array_size - 1
+  local ar = array(array_size, 0)
+  local i = 0
   
-  while i < array_size 
-    ar[i] = num
-    num = num - 1
-    i = i + 1
-  end
+  FillArray(ar)
   
-  println('Sorting.(Insertion)')
-  
-  startTime = time()
-  i = 0
+  start_time = time()
   
   while i < array_size
-    j = i + 1
-    best_idx = i
+    local j = i
+    local best_idx = i
     
-    while j < array_size
+    while (j = j + 1, j < array_size)
       if ar[j] < ar[best_idx]
         best_idx = j
       end
-    
-      j = j + 1
     end
     
     if best_idx != i
@@ -67,21 +56,20 @@ fn InsertionSort(array_size)
     i = i + 1
   end
   
-  println('Start Time:' + startTime)
+  println('Start Time:' + start_time)
   println('End Time  :' + time())
 end
 
 fn main()
-  value = 10
+  local value = 0
   
   mode = convert(input('Which algorithm?(1:Bubble 2.Insertion) \n>'))
   func = 0
   
   case mode 
-  when 1
-    func = BubbleSort
-  when 2
-    func = InsertionSort
+  when 1; func = BubbleSort
+  when 2; func = InsertionSort
+  else; value = 'q'
   end
   
   while value != 'q'

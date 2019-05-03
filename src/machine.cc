@@ -331,7 +331,7 @@ namespace kagami {
     vector<string> params;
     VMCode code;
 
-    for (size_t idx = nest + 1; idx < nest_end; ++idx) {
+    for (size_t idx = nest + 1; idx < nest_end - frame.jump_offset; ++idx) {
       code.push_back(origin_code[idx]);
     }
 
