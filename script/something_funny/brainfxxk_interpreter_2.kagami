@@ -79,7 +79,7 @@ end
 
 println('program size:' + size)
 
-while(idx < size)
+while idx < size
   if panic; break; end
   
   code = program[idx]

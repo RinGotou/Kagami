@@ -9,7 +9,7 @@ fn fib(num)
 end
 
 i = 1
-while(i < 20)
+while i < 20
   println(fib(i))
   i = i + 1
 end
