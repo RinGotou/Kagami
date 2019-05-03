@@ -26,6 +26,7 @@ namespace kagami::util {
   bool IsBinaryOperator(Keyword token) {
     bool result;
     switch (token) {
+    case kKeywordBind:
     case kKeywordPlus:
     case kKeywordMinus:
     case kKeywordTimes:

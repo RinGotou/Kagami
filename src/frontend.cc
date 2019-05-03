@@ -547,7 +547,7 @@ namespace kagami {
     request.priority = current_priority;
 
     if (!blk->symbol.empty()) {
-      bool stack_top_operator = 
+      bool is_operator = 
         util::IsBinaryOperator(blk->symbol.back().GetKeywordValue());
       int stack_top_priority = 
         util::GetTokenPriority(blk->symbol.back().GetKeywordValue());
@@ -556,9 +556,9 @@ namespace kagami {
         return (stack_top_priority >= current_priority);
       };
 
-      while (!blk->symbol.empty() && stack_top_operator && checking()) {
+      while (!blk->symbol.empty() && is_operator && checking()) {
         ProduceVMCode(blk);
-        stack_top_operator = 
+        is_operator = 
           (!blk->symbol.empty() && util::IsBinaryOperator(blk->symbol.back().GetKeywordValue()));
         stack_top_priority = blk->symbol.empty() ? 5 :
           util::GetTokenPriority(blk->symbol.back().GetKeywordValue());
@@ -573,8 +573,7 @@ namespace kagami {
   bool LineParser::CleanupStack(ParserBlock *blk) {
     bool result = true;
 
-    while (!blk->symbol.empty() && !blk->symbol.back().IsPlaceholder()
-      && blk->symbol.back().GetKeywordValue() != kKeywordBind) {
+    while (!blk->symbol.empty() && !blk->symbol.back().IsPlaceholder()) {
       ProduceVMCode(blk);
     }
 
