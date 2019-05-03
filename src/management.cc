@@ -150,7 +150,7 @@ namespace kagami::management::type {
   }
 
   Object CreateObjectCopy(Object & object) {
-    if (object.GetConstructorFlag() || object.IsMemberRef()) {
+    if (object.GetConstructorFlag()) {
       return object;
     }
 

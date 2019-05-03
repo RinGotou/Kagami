@@ -18,31 +18,13 @@ namespace kagami {
   vector<string> BuildStringVector(string source);
 
   enum ObjectMode {
-    kObjectNormal    = 0,
-    kObjectRef       = 1,
-    kObjectMemberRef = 2
+    kObjectNormal    = 1,
+    kObjectRef       = 2,
   };
 
   struct HasherInterface {
     virtual size_t Get(shared_ptr<void>) const = 0;
     virtual ~HasherInterface() {}
-  };
-
-  template <class Type>
-  class TargetMember {
-  private:
-    Type *dest_;
-
-  public:
-    TargetMember() = delete;
-
-    TargetMember(Type &t) : dest_(&t) {}
-
-    TargetMember(const TargetMember &rhs) : dest_(rhs.dest_) {}
-
-    TargetMember(const TargetMember &&rhs) : TargetMember(rhs) {}
-
-    Type &Cast() { return *dest_; }
   };
 
   class Object {
@@ -124,17 +106,6 @@ namespace kagami {
       return ptr_;
     }
 
-    template <class Tx>
-    Object &PackMember(Tx &tx, string type_id) {
-      type_id_ = type_id;
-      mode_ = kObjectMemberRef;
-
-      TargetMember<Tx> target(tx);
-      ptr_ = make_shared<TargetMember<Tx>>(target);
-
-      return *this;
-    }
-
     Object &Unpack() {
       if (mode_ == kObjectRef) {
         return *real_dest_;
@@ -147,10 +118,6 @@ namespace kagami {
     Tx &Cast() {
       if (mode_ == kObjectRef) { 
         return real_dest_->Cast<Tx>(); 
-      }
-
-      if (mode_ == kObjectMemberRef) {
-        return static_pointer_cast<TargetMember<Tx>>(ptr_)->Cast();
       }
 
       return *std::static_pointer_cast<Tx>(ptr_);
@@ -179,8 +146,6 @@ namespace kagami {
     int64_t ObjRefCount() const { return ref_count_; }
 
     bool IsRef() const { return mode_ == kObjectRef; }
-
-    bool IsMemberRef() const { return mode_ == kObjectMemberRef; }
 
     bool Null() const { return ptr_ == nullptr && real_dest_ == nullptr; }
   };

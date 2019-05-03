@@ -24,7 +24,6 @@ namespace kagami {
       ptr_ = object.ptr_;
     }
 
-    //real_dest_ = object.real_dest_;
     type_id_ = object.type_id_;
     mode_ = object.mode_;
     constructor_ = object.constructor_;
