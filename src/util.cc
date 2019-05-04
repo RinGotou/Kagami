@@ -114,7 +114,7 @@ namespace kagami::util {
       T(kStrRefCount       ,kKeywordRefCount),
       T(kStrTime           ,kKeywordTime),
       T(kStrVersion        ,kKeywordVersion),
-      T(kStrPatch          ,kKeywordPatch),
+      T(kStrCodeNameCmd    ,kKeywordCodeName),
       T(kStrSwap           ,kKeywordSwap),
       T(kStrRequire        ,kKeywordRequire),
       T(kStrUsing          ,kKeywordUsing),

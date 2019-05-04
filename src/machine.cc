@@ -940,9 +940,9 @@ namespace kagami {
     frame.RefreshReturnStack(Object(kInterpreterVersion));
   }
 
-  void Machine::CommandPatch() {
+  void Machine::CommandMachineCodeName() {
     auto &frame = frame_stack_.top();
-    frame.RefreshReturnStack(Object(kPatchName));
+    frame.RefreshReturnStack(Object(kCodeName));
   }
 
   template <Keyword op_code>
@@ -1207,8 +1207,8 @@ namespace kagami {
     case kKeywordVersion:
       CommandVersion();
       break;
-    case kKeywordPatch:
-      CommandPatch();
+    case kKeywordCodeName:
+      CommandMachineCodeName();
       break;
     case kKeywordSwap:
       CommandSwap(args);

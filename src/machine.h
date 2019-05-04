@@ -301,7 +301,7 @@ namespace kagami {
     void CommandRefCount(ArgumentList &args);
     void CommandTime();
     void CommandVersion();
-    void CommandPatch();
+    void CommandMachineCodeName();
 
     template <Keyword op_code>
     void BinaryMathOperatorImpl(ArgumentList &args);

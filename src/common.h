@@ -41,11 +41,11 @@
 //Switching Debugging Feature
 //#define _DEBUG_
 
-#define ENGINE_NAME "Kagami Project"
+#define ENGINE_NAME     "Kagami Project"
 #define INTERPRETER_VER "2.2"
-#define CODENAME "Little Explorer"
-#define MAINTAINER "Suzu Nakamura"
-#define COPYRIGHT "Copyright(c) 2019"
+#define CODENAME        "Little Explorer"
+#define MAINTAINER      "Suzu Nakamura"
+#define COPYRIGHT       "Copyright(c) 2019"
 
 #define MAX_ERROR_COUNT 20
 #define DEFAULT_STACK_DEPTH 10000
@@ -87,7 +87,7 @@ namespace kagami {
 
   /* Application Info */
   const string kInterpreterVersion = INTERPRETER_VER;
-  const string kPatchName          = CODENAME;
+  const string kCodeName           = CODENAME;
 #if defined(_WIN32)
   const string kPlatformType   = "Windows Platform";
 #else
@@ -113,6 +113,7 @@ namespace kagami {
   /* Reserved keywords mark/IR framework commands */
   enum Keyword {
     kKeywordLocal,
+    kKeywordGlobal,
     kKeywordCall,
     kKeywordHash,
     kKeywordFor,
@@ -123,7 +124,7 @@ namespace kagami {
     kKeywordRefCount,
     kKeywordTime,
     kKeywordVersion,
-    kKeywordPatch,
+    kKeywordCodeName,
     kKeywordSwap,
     kKeywordRequire,
     kKeywordUsing,
@@ -218,7 +219,7 @@ namespace kagami {
     kStrRefCount       = "ref_count",
     kStrTime           = "time",
     kStrVersion        = "version",
-    kStrPatch          = "patch",
+    kStrCodeNameCmd    = "codename",
     kStrEnd            = "end",
     kStrPrint          = "print",
     kStrSwitchLine     = "!switch_line",
