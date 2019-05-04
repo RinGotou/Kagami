@@ -81,8 +81,8 @@ void AtExitHandler() {
 }
 
 void Processing(Processor &processor) {
-  if (processor.Exist("path")) {
-    string path = processor.ValueOf("path");
+  if (processor.Exist("script")) {
+    string path = processor.ValueOf("script");
     string log = processor.Exist("log") ?
       processor.ValueOf("log") :
       "project-kagami.log";

@@ -22,36 +22,42 @@ namespace kagami {
     auto &GetOutput() { return dest_; }
   };
 
-  struct ParserBlock {
+  struct ParserFrame {
     deque<Argument> args;
     deque<Request> symbol;
     bool fn_expr;
     bool foreach_expr;
     bool local_object;
+    bool eol;
+    size_t idx;
     Token current;
     Token next;
     Token next_2;
     Token last;
     Argument domain;
-    int forward_priority;
+    deque<Token> &tokens;
 
-    ParserBlock() :
+    ParserFrame(deque<Token> &tokens) :
       args(),
       symbol(),
       fn_expr(false),
       foreach_expr(false),
       local_object(false),
+      eol(false),
+      idx(0),
       current(),
       next(),
       next_2(),
       last(),
       domain(),
-      forward_priority(0) {}
+      tokens(tokens) {}
+
+    void Eat();
   };
 
   class LineParser {
   private:
-    ParserBlock *blk;
+    ParserFrame *frame_;
     size_t index_;
     deque<Token> tokens_;
     VMCode action_base_;
@@ -64,7 +70,7 @@ namespace kagami {
     void FuncInvokingExpr();
     bool IndexExpr();
     bool ArrayExpr();
-    bool FunctionAndObject();
+    bool OtherExpressions();
     void LiteralValue();
     void BinaryExpr();
     bool CleanupStack();
