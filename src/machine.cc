@@ -1099,19 +1099,26 @@ namespace kagami {
       return;
     }
 
-    auto *container = &obj_stack_.GetCurrent();
-    while (container->Find(kStrUserFunc) == nullptr) {
-      obj_stack_.Pop();
-      container = &obj_stack_.GetCurrent();
-    }
-
     if (args.size() == 1) {
-      Object src_obj = FetchObject(args[0]);
-      Object ret_obj = type::CreateObjectCopy(src_obj);
+      Object ret_obj = FetchObject(args[0]);
+      //Object ret_obj = type::CreateObjectCopy(src_obj);
+
+      auto *container = &obj_stack_.GetCurrent();
+      while (container->Find(kStrUserFunc) == nullptr) {
+        obj_stack_.Pop();
+        container = &obj_stack_.GetCurrent();
+      }
+
       RecoverLastState();
       frame_stack_.top().RefreshReturnStack(ret_obj);
     }
     else if (args.size() == 0) {
+      auto *container = &obj_stack_.GetCurrent();
+      while (container->Find(kStrUserFunc) == nullptr) {
+        obj_stack_.Pop();
+        container = &obj_stack_.GetCurrent();
+      }
+
       RecoverLastState();
       frame_stack_.top().RefreshReturnStack(Object());
     }
@@ -1121,6 +1128,13 @@ namespace kagami {
         obj_array->emplace_back(FetchObject(*it));
       }
       Object ret_obj(obj_array, kTypeIdArray);
+
+      auto *container = &obj_stack_.GetCurrent();
+      while (container->Find(kStrUserFunc) == nullptr) {
+        obj_stack_.Pop();
+        container = &obj_stack_.GetCurrent();
+      }
+
       RecoverLastState();
       frame_stack_.top().RefreshReturnStack(ret_obj);
     }
