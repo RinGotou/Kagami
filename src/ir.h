@@ -64,7 +64,7 @@ namespace kagami {
 
   class Request {
   private:
-    any data;
+    variant<Keyword, InterfaceInfo> data_;
 
   public:
     size_t idx;
@@ -73,21 +73,21 @@ namespace kagami {
     RequestOption option;
 
     Request(Keyword token) :
-      data(token),
+      data_(token),
       idx(0),
       priority(5),
       type(kRequestCommand),
       option() {}
 
     Request(string token, Argument domain = Argument()) :
-      data(InterfaceInfo{ token, domain }),
+      data_(InterfaceInfo{ token, domain }),
       idx(0),
       priority(5),
       type(kRequestInterface),
       option() {}
 
     Request() :
-      data(),
+      data_(),
       idx(0),
       priority(5),
       type(kRequestNull),
@@ -95,7 +95,7 @@ namespace kagami {
 
     string GetInterfaceId() {
       if (type == kRequestInterface) {
-        return any_cast<InterfaceInfo>(data).id;
+        return std::get<InterfaceInfo>(data_).id;
       }
 
       return string();
@@ -103,7 +103,7 @@ namespace kagami {
 
     Argument GetInterfaceDomain() {
       if (type == kRequestInterface) {
-        return any_cast<InterfaceInfo>(data).domain;
+        return std::get<InterfaceInfo>(data_).domain;
       }
 
       return Argument();
@@ -111,7 +111,7 @@ namespace kagami {
 
     Keyword GetKeywordValue() {
       if (type == kRequestCommand) {
-        return any_cast<Keyword>(data);
+        return std::get<Keyword>(data_);
       }
 
       return kKeywordNull;

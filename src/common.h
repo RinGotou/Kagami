@@ -17,6 +17,7 @@
 #include <functional>
 #include <list>
 #include <charconv>
+#include <variant>
 #include <any>
 
 #if defined(_WIN32)
@@ -77,6 +78,7 @@ namespace kagami {
   using std::is_base_of;
   using std::from_chars;
   using std::to_chars;
+  using std::variant;
   using std::any;
   using std::any_cast;
   using namespace minatsuki;
