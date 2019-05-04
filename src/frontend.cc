@@ -274,7 +274,7 @@ namespace kagami {
   }
 
 
-  void LineParser::ProduceVMCode(ParserBlock *blk) {
+  void LineParser::ProduceVMCode() {
     deque<Argument> arguments;
     size_t idx = 0, limit = 0;
 
@@ -313,7 +313,7 @@ namespace kagami {
     }
   }
 
-  void LineParser::BindExpr(ParserBlock *blk) {
+  void LineParser::BindExpr() {
     if (!blk->args.empty() && blk->next.first != kStrFn) {
       Request request(kKeywordBind);
       request.option.local_object = blk->local_object;
@@ -323,17 +323,17 @@ namespace kagami {
     }
   }
 
-  void LineParser::DotExpr(ParserBlock *blk) {
+  void LineParser::DotExpr() {
     blk->domain = blk->args.back();
     blk->args.pop_back();
   }
 
-  void LineParser::UnaryExpr(ParserBlock *blk) {
+  void LineParser::UnaryExpr() {
     auto token = util::GetKeywordCode(blk->current.first);
     blk->symbol.emplace_back(Request(token));
   }
 
-  void LineParser::FuncInvokingExpr(ParserBlock *blk) {
+  void LineParser::FuncInvokingExpr() {
     if (blk->fn_expr) return;
     if (blk->last.second != kStringTypeIdentifier) {
       blk->symbol.emplace_back(Request(kKeywordExpList));
@@ -349,7 +349,7 @@ namespace kagami {
     blk->args.emplace_back(Argument());
   }
 
-  bool LineParser::IndexExpr(ParserBlock *blk) {
+  bool LineParser::IndexExpr() {
     bool result = true;
 
     deque<Argument> arguments = {
@@ -366,7 +366,7 @@ namespace kagami {
     return result;
   }
 
-  bool LineParser::ArrayExpr(ParserBlock *blk) {
+  bool LineParser::ArrayExpr() {
     bool result;
     if (blk->last.second == StringType::kStringTypeSymbol) {
       blk->symbol.emplace_back(Request(kKeywordInitialArray));
@@ -381,7 +381,7 @@ namespace kagami {
     return result;
   }
 
-  bool LineParser::FunctionAndObject(ParserBlock *blk) {
+  bool LineParser::FunctionAndObject() {
     Keyword token = util::GetKeywordCode(blk->current.first);
     auto token_type = util::GetStringType(blk->current.first);
     auto token_next = util::GetKeywordCode(blk->next.first);
@@ -523,7 +523,7 @@ namespace kagami {
       Request request(blk->current.first, blk->domain);
       blk->symbol.emplace_back(request);
       blk->args.emplace_back(Argument());
-      ProduceVMCode(blk);
+      ProduceVMCode();
       blk->domain = Argument();
     }
     else {
@@ -535,12 +535,12 @@ namespace kagami {
     return true;
   }
 
-  void LineParser::OtherToken(ParserBlock *blk) {
+  void LineParser::LiteralValue() {
     blk->args.emplace_back(
       Argument(blk->current.first, kArgumentNormal, blk->current.second));
   }
 
-  void LineParser::BinaryExpr(ParserBlock *blk) {
+  void LineParser::BinaryExpr() {
     auto token = util::GetKeywordCode(blk->current.first);
     int current_priority = util::GetTokenPriority(token);
     Request request(token);
@@ -557,7 +557,7 @@ namespace kagami {
       };
 
       while (!blk->symbol.empty() && is_operator && checking()) {
-        ProduceVMCode(blk);
+        ProduceVMCode();
         is_operator = 
           (!blk->symbol.empty() && util::IsBinaryOperator(blk->symbol.back().GetKeywordValue()));
         stack_top_priority = blk->symbol.empty() ? 5 :
@@ -570,11 +570,11 @@ namespace kagami {
     blk->forward_priority = current_priority;
   }
 
-  bool LineParser::CleanupStack(ParserBlock *blk) {
+  bool LineParser::CleanupStack() {
     bool result = true;
 
     while (!blk->symbol.empty() && !blk->symbol.back().IsPlaceholder()) {
-      ProduceVMCode(blk);
+      ProduceVMCode();
     }
 
     return result;
@@ -585,7 +585,7 @@ namespace kagami {
     const auto size = tokens_.size();
     Message result;
 
-    ParserBlock *blk = new ParserBlock();
+    blk = new ParserBlock();
 
     for (size_t i = 0; i < size; ++i) {
       if (!state)  break;
@@ -601,54 +601,54 @@ namespace kagami {
         Terminator value = util::GetTerminatorCode(blk->current.first);
         switch (value) {
         case kTerminatorAssign:         
-          BindExpr(blk); 
+          BindExpr(); 
           break;
         case kTerminatorComma:
-          state = CleanupStack(blk);
+          state = CleanupStack();
           break;
         case kTerminatorDot:            
-          DotExpr(blk); 
+          DotExpr(); 
           break;
         case kTerminatorLeftParen:
-          FuncInvokingExpr(blk);
+          FuncInvokingExpr();
           break;
         case kTerminatorLeftBracket:
-          state = IndexExpr(blk);
+          state = IndexExpr();
           break;
         case kTerminatorLeftBrace:
-          state = ArrayExpr(blk);
+          state = ArrayExpr();
           break;
         case kTerminatorMonoOperator:  
-          UnaryExpr(blk); 
+          UnaryExpr(); 
           break;
         case kTerminatorBinaryOperator:         
-          BinaryExpr(blk); 
+          BinaryExpr(); 
           break;
         case kTerminatorRightSqrBracket:
         case kTerminatorRightBracket:
         case kTerminatorRightCurBracket:
-          state = CleanupStack(blk);
-          if (state) ProduceVMCode(blk);
+          state = CleanupStack();
+          if (state) ProduceVMCode();
           break;
         default:
           break;
         }
       }
       else if (token_type == kStringTypeIdentifier) {
-        state = FunctionAndObject(blk);
+        state = FunctionAndObject();
       }
       else if (token_type == kStringTypeNull) {
         result = ERROR_MSG("Illegal token - " + blk->current.first)
           .SetIndex(index_);
         state = false;
       }
-      else OtherToken(blk);
+      else LiteralValue();
       blk->last = blk->current;
     }
 
     if (state) {
       while (!blk->symbol.empty()) {
-        ProduceVMCode(blk);
+        ProduceVMCode();
       }
     }
     else {

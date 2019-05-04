@@ -50,22 +50,24 @@ namespace kagami {
   };
 
   class LineParser {
+  private:
+    ParserBlock *blk;
     size_t index_;
     deque<Token> tokens_;
     VMCode action_base_;
     string error_string_;
 
-    void ProduceVMCode(ParserBlock *blk);
-    void BindExpr(ParserBlock *blk);
-    void DotExpr(ParserBlock *blk);
-    void UnaryExpr(ParserBlock *blk);
-    void FuncInvokingExpr(ParserBlock *blk);
-    bool IndexExpr(ParserBlock *blk);
-    bool ArrayExpr(ParserBlock *blk);
-    bool FunctionAndObject(ParserBlock *blk);
-    void OtherToken(ParserBlock *blk);
-    void BinaryExpr(ParserBlock *blk);
-    bool CleanupStack(ParserBlock *blk);
+    void ProduceVMCode();
+    void BindExpr();
+    void DotExpr();
+    void UnaryExpr();
+    void FuncInvokingExpr();
+    bool IndexExpr();
+    bool ArrayExpr();
+    bool FunctionAndObject();
+    void LiteralValue();
+    void BinaryExpr();
+    bool CleanupStack();
     
     Message Parse();
   public:

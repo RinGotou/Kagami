@@ -58,13 +58,21 @@ void HelpFile() {
   printf("%s", runtime::binary_name.data());
   printf(" [-OPTION][-OPTION=VALUE]...\n\n");
   printf(
-    "\tpath=PATH         Path of script file.\n"
-    "\tlog=(PATH|stdout) Output of error log.\n"
-    "\trtlog             Enable real-time logger\n"
-    "\twait              Automatically pause at application exit.\n"
-    "\thelp              Show this message.\n"
-    "\tversion           Show version message of interpreter.\n"
+    "\tscript=FILE         Path of script file.\n"
+    "\tlog=(FILE|stdout)   Output of error log.\n"
+    "\tlocale=LOCALE_STR   Locale string for interpreter.(default=en_US.UTF8)\n"
+    "\tvm_stdout=FILE      Redirection of script standard output.\n"
+    "\tvm_stdin=FILE       Redirection of script standard input.\n"
+    "\trtlog               Enable real-time logger\n"
+    "\twait                Automatically pause at application exit.\n"
+    "\thelp                Show this message.\n"
+    "\tversion             Show version message of interpreter.\n"
   );
+}
+
+void Motto() {
+  puts("\"I say good-bye to my tears that I don't need.\"");
+  puts(ENGINE_NAME " Version " INTERPRETER_VER " '"  CODENAME "'");
 }
 
 void AtExitHandler() {
@@ -110,6 +118,9 @@ void Processing(Processor &processor) {
   else if (processor.Exist("version")) {
     ApplicationInfo();
   }
+  else if (processor.Exist("motto")) {
+    Motto();
+  }
 }
 
 int main(int argc, char **argv) {
@@ -117,9 +128,10 @@ int main(int argc, char **argv) {
   runtime::InitEmbeddedComponents();
 
   Processor processor = {
-    Pattern("path"   , Option(true, false, 1)),
+    Pattern("script" , Option(true, false, 1)),
     Pattern("help"   , Option(false, false, 1)),
     Pattern("version", Option(false, false, 1)),
+    Pattern("motto"  , Option(false, false, 1)),
     Pattern("rtlog"  , Option(false, true)),
     Pattern("log"    , Option(true, true)),
     Pattern("wait"   , Option(false, true)),

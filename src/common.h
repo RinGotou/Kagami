@@ -18,7 +18,6 @@
 #include <list>
 #include <charconv>
 #include <variant>
-#include <any>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -42,14 +41,13 @@
 //#define _DEBUG_
 
 #define ENGINE_NAME     "Kagami Project"
-#define INTERPRETER_VER "2.2"
-#define CODENAME        "Little Explorer"
+#define INTERPRETER_VER "2.21"
+#define CODENAME        "Cradle"
 #define MAINTAINER      "Suzu Nakamura"
 #define COPYRIGHT       "Copyright(c) 2019"
 
-#define MAX_ERROR_COUNT 20
 #define DEFAULT_STACK_DEPTH 10000
-#define DEFAULT_GIL_TICK 20
+//#define DEFAULT_GIL_TICK 20
 
 namespace kagami {
   using std::string;
@@ -79,8 +77,6 @@ namespace kagami {
   using std::from_chars;
   using std::to_chars;
   using std::variant;
-  using std::any;
-  using std::any_cast;
   using namespace minatsuki;
 
   using Byte = uint64_t;
