@@ -170,6 +170,7 @@ namespace kagami {
     kTerminatorRightCurBracket, 
     kTerminatorMonoOperator,
     kTerminatorBinaryOperator,
+    kTerminatorFn,
     kTerminatorNull
   };
 

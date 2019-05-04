@@ -25,7 +25,6 @@ namespace kagami {
   struct ParserFrame {
     deque<Argument> args;
     deque<Request> symbol;
-    bool fn_expr;
     bool foreach_expr;
     bool local_object;
     bool eol;
@@ -40,7 +39,6 @@ namespace kagami {
     ParserFrame(deque<Token> &tokens) :
       args(),
       symbol(),
-      fn_expr(false),
       foreach_expr(false),
       local_object(false),
       eol(false),
@@ -64,6 +62,8 @@ namespace kagami {
     string error_string_;
 
     void ProduceVMCode();
+    bool CleanupStack();
+
     void BindExpr();
     void DotExpr();
     void UnaryExpr();
@@ -73,7 +73,7 @@ namespace kagami {
     bool OtherExpressions();
     void LiteralValue();
     void BinaryExpr();
-    bool CleanupStack();
+    bool FnExpr();
     
     Message Parse();
   public:

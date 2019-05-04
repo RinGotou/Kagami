@@ -326,6 +326,16 @@ namespace kagami {
     }
   }
 
+  bool LineParser::CleanupStack() {
+    bool result = true;
+
+    while (!frame_->symbol.empty() && !frame_->symbol.back().IsPlaceholder()) {
+      ProduceVMCode();
+    }
+
+    return result;
+  }
+
   void LineParser::BindExpr() {
     if (!frame_->args.empty() && frame_->next.first != kStrFn) {
       Request request(kKeywordBind);
@@ -347,7 +357,6 @@ namespace kagami {
   }
 
   void LineParser::FuncInvokingExpr() {
-    if (frame_->fn_expr) return;
     if (frame_->last.second != kStringTypeIdentifier) {
       frame_->symbol.emplace_back(Request(kKeywordExpList));
     }
@@ -394,6 +403,86 @@ namespace kagami {
     return result;
   }
 
+  void LineParser::BinaryExpr() {
+    auto token = util::GetKeywordCode(frame_->current.first);
+    int current_priority = util::GetTokenPriority(token);
+    Request request(token);
+    request.priority = current_priority;
+
+    if (!frame_->symbol.empty()) {
+      bool is_operator =
+        util::IsBinaryOperator(frame_->symbol.back().GetKeywordValue());
+      int stack_top_priority =
+        util::GetTokenPriority(frame_->symbol.back().GetKeywordValue());
+
+      auto checking = [&stack_top_priority, &current_priority]()->bool {
+        return (stack_top_priority >= current_priority);
+      };
+
+      while (!frame_->symbol.empty() && is_operator && checking()) {
+        ProduceVMCode();
+        is_operator =
+          (!frame_->symbol.empty() && util::IsBinaryOperator(frame_->symbol.back().GetKeywordValue()));
+        stack_top_priority = frame_->symbol.empty() ? 5 :
+          util::GetTokenPriority(frame_->symbol.back().GetKeywordValue());
+      }
+    }
+
+    frame_->symbol.emplace_back(request);
+  }
+
+  bool LineParser::FnExpr() {
+    //TODO: binding support
+    if (tokens_.size() < 4) {
+      error_string_ = "Invalid function definition";
+      return false;
+    }
+
+    if (frame_->next_2.first != "(") {
+      error_string_ = "Invalid function definition";
+      return false;
+    }
+
+    bool left_paren = false;
+    bool good = true;
+
+    frame_->symbol.emplace_back(Request(kKeywordFn));
+    frame_->symbol.emplace_back(Request());
+    frame_->args.emplace_back(Argument());
+
+    while (!frame_->eol) {
+      frame_->Eat();
+      
+      if (frame_->current.first == "(") {
+        if (!left_paren) {
+          error_string_ = "Invalid symbol in function definition";
+          good = false;
+          break;
+        }
+        else {
+          left_paren = true;
+        }
+      }
+      else if (frame_->current.first == ")") {
+        ProduceVMCode();
+        break;
+      }
+      else if (util::GetStringType(frame_->current.first) != kStringTypeIdentifier) {
+        error_string_ = "Invalid value in function definition";
+        good = false;
+        break;
+      }
+      
+
+      frame_->args.emplace_back(
+        Argument(frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+
+
+    }
+
+    return good;
+  }
+
   bool LineParser::OtherExpressions() {
     Keyword token = util::GetKeywordCode(frame_->current.first);
     auto token_type = util::GetStringType(frame_->current.first);
@@ -409,41 +498,6 @@ namespace kagami {
 
       Request request(token);
       frame_->symbol.emplace_back(request);
-      return true;
-    }
-
-    if (frame_->fn_expr) {
-      if (token_type != kStringTypeIdentifier) {
-        error_string_ = "Invalid token in function definition";
-        return false;
-      }
-
-      if (frame_->current.first == kStrOptional || frame_->current.first == kStrVariable) {
-        if (util::GetStringType(frame_->next.first) != kStringTypeIdentifier) {
-          error_string_ = "Invalid syntax after " + frame_->current.first;
-          return false;
-        }
-      }
-
-      frame_->args.emplace_back(Argument(frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
-      return true;
-    }
-
-    if (token == kKeywordFn) {
-      if (frame_->next.first == "(" && frame_->next.second == kStringTypeIdentifier) {
-        lambda_func = true;
-      }
-
-      if (frame_->next.first != "(" && frame_->next_2.first != "(") {
-        error_string_ = "Invalid syntax after fn";
-        return false;
-      }
-
-      frame_->fn_expr = true;
-      Request request(kKeywordFn);
-      frame_->symbol.emplace_back(request);
-      frame_->symbol.emplace_back(Request());
-      frame_->args.emplace_back(Argument());
       return true;
     }
 
@@ -552,43 +606,6 @@ namespace kagami {
       Argument(frame_->current.first, kArgumentNormal, frame_->current.second));
   }
 
-  void LineParser::BinaryExpr() {
-    auto token = util::GetKeywordCode(frame_->current.first);
-    int current_priority = util::GetTokenPriority(token);
-    Request request(token);
-    request.priority = current_priority;
-
-    if (!frame_->symbol.empty()) {
-      bool is_operator = 
-        util::IsBinaryOperator(frame_->symbol.back().GetKeywordValue());
-      int stack_top_priority = 
-        util::GetTokenPriority(frame_->symbol.back().GetKeywordValue());
-
-      auto checking = [&stack_top_priority, &current_priority]()->bool {
-        return (stack_top_priority >= current_priority);
-      };
-
-      while (!frame_->symbol.empty() && is_operator && checking()) {
-        ProduceVMCode();
-        is_operator = 
-          (!frame_->symbol.empty() && util::IsBinaryOperator(frame_->symbol.back().GetKeywordValue()));
-        stack_top_priority = frame_->symbol.empty() ? 5 :
-          util::GetTokenPriority(frame_->symbol.back().GetKeywordValue());
-      }
-    }
-
-    frame_->symbol.emplace_back(request);
-  }
-
-  bool LineParser::CleanupStack() {
-    bool result = true;
-
-    while (!frame_->symbol.empty() && !frame_->symbol.back().IsPlaceholder()) {
-      ProduceVMCode();
-    }
-
-    return result;
-  }
 
   Message LineParser::Parse() {
     auto state = true;
@@ -628,6 +645,9 @@ namespace kagami {
           break;
         case kTerminatorBinaryOperator:
           BinaryExpr();
+          break;
+        case kTerminatorFn:
+          FnExpr();
           break;
         case kTerminatorRightSqrBracket:
         case kTerminatorRightBracket:
