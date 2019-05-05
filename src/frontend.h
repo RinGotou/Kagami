@@ -2,6 +2,8 @@
 #include "trace.h"
 #include "filestream.h"
 
+#define INVALID_TOKEN Token(string(), kStringTypeNull)
+
 //Frontend version: hatsuki
 
 namespace kagami {
@@ -25,7 +27,6 @@ namespace kagami {
   struct ParserFrame {
     deque<Argument> args;
     deque<Request> symbol;
-    bool foreach_expr;
     bool local_object;
     bool eol;
     size_t idx;
@@ -39,14 +40,13 @@ namespace kagami {
     ParserFrame(deque<Token> &tokens) :
       args(),
       symbol(),
-      foreach_expr(false),
       local_object(false),
       eol(false),
       idx(0),
-      current(),
-      next(),
-      next_2(),
-      last(),
+      current(INVALID_TOKEN),
+      next(INVALID_TOKEN),
+      next_2(INVALID_TOKEN),
+      last(INVALID_TOKEN),
       domain(),
       tokens(tokens) {}
 
@@ -70,10 +70,12 @@ namespace kagami {
     void FuncInvokingExpr();
     bool IndexExpr();
     bool ArrayExpr();
-    bool OtherExpressions();
-    void LiteralValue();
     void BinaryExpr();
     bool FnExpr();
+    bool ForEachExpr();
+
+    bool OtherExpressions();
+    void LiteralValue();
     
     Message Parse();
   public:

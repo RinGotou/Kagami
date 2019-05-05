@@ -20,6 +20,8 @@ namespace kagami::util {
     if (src == "{")   return kTerminatorLeftBrace;
     if (src == "}")   return kTerminatorRightCurBracket;
     if (src == "fn")  return kTerminatorFn;
+    if (src == "for") return kTerminatorFor;
+    if (src == "in")  return kTerminatorIn;
     return kTerminatorNull;
   }
 

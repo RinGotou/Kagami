@@ -171,6 +171,8 @@ namespace kagami {
     kTerminatorMonoOperator,
     kTerminatorBinaryOperator,
     kTerminatorFn,
+    kTerminatorFor,
+    kTerminatorIn,
     kTerminatorNull
   };
 

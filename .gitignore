@@ -37,6 +37,7 @@
 script.log
 event.log
 bin
+vc140.pdb
 .vscode
 vsproject
 CMakeFiles

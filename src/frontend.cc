@@ -1,6 +1,5 @@
 #include "frontend.h"
 
-#define INVALID_TOKEN Token(string(), kStringTypeNull)
 #define ERROR_MSG(_Msg) Message(kCodeBadExpression, _Msg, kStateError)
 
 namespace kagami {
@@ -433,6 +432,11 @@ namespace kagami {
 
   bool LineParser::FnExpr() {
     //TODO: binding support
+    if (frame_->last.second != kStringTypeNull) {
+      error_string_ = "Invalid function definition";
+      return false;
+    }
+
     if (tokens_.size() < 4) {
       error_string_ = "Invalid function definition";
       return false;
@@ -483,12 +487,45 @@ namespace kagami {
     return good;
   }
 
+  bool LineParser::ForEachExpr() {
+    if (frame_->last.second != kStringTypeNull) {
+      error_string_ = "Invalid for-each expression";
+      return false;
+    }
+
+    if (tokens_.size() < 4) {
+      error_string_ = "Invalid for-each expression";
+      return false;
+    }
+
+    bool good = true;
+
+    frame_->symbol.emplace_back(Request(kKeywordFor));
+    frame_->symbol.emplace_back(Request());
+    frame_->args.emplace_back(Argument());
+
+    frame_->Eat();
+
+    if (util::GetStringType(frame_->current.first) != kStringTypeIdentifier) {
+      error_string_ = "Invalid identifier argument in for-each expression";
+      return false;
+    }
+
+    frame_->args.emplace_back(Argument(
+      frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+
+    frame_->Eat();
+
+    if (util::GetTerminatorCode(frame_->current.first) != kTerminatorIn) {
+      error_string_ = "Invalid for-each expression";
+      return false;
+    }
+
+    return good;
+  }
+
   bool LineParser::OtherExpressions() {
     Keyword token = util::GetKeywordCode(frame_->current.first);
-    auto token_type = util::GetStringType(frame_->current.first);
-    auto token_next = util::GetKeywordCode(frame_->next.first);
-    auto token_next_2 = util::GetKeywordCode(frame_->next_2.first);
-    bool lambda_func = false;
 
     if (IsSingleKeyword(token)) {
       if (frame_->next.second != kStringTypeNull) {
@@ -501,23 +538,6 @@ namespace kagami {
       return true;
     }
 
-    if (token == kKeywordFor) {
-      if (token_next_2 != kKeywordIn) {
-        error_string_ = "Invalid syntax after for";
-        return false;
-      }
-
-      if (frame_->next.second != kStringTypeIdentifier) {
-        error_string_ = "Invalid unit name after for";
-        return false;
-      }
-
-      frame_->foreach_expr = true;
-      frame_->symbol.emplace_back(Request(kKeywordFor));
-      frame_->args.emplace_back(Argument());
-      return true;
-    }
-
     if (token == kKeywordLocal) {
       if (frame_->next_2.first != "=") {
         error_string_ = "Invalid 'local' token.";
@@ -525,21 +545,6 @@ namespace kagami {
       }
 
       frame_->local_object = true;
-      return true;
-    }
-
-    if (token == kKeywordIn) {
-      if (!frame_->foreach_expr) {
-        error_string_ = "Invalid 'in' token";
-        return false;
-      }
-
-      return true;
-    }
-
-    if (frame_->foreach_expr && token_next == kKeywordIn) {
-      frame_->args.emplace_back(Argument(
-        frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
       return true;
     }
 
@@ -648,6 +653,9 @@ namespace kagami {
           break;
         case kTerminatorFn:
           FnExpr();
+          break;
+        case kTerminatorFor:
+          ForEachExpr();
           break;
         case kTerminatorRightSqrBracket:
         case kTerminatorRightBracket:
@@ -808,7 +816,7 @@ namespace kagami {
 
       if (IsBranchKeyword(ast_root)) {
         if (jump_stack_.empty()) {
-          trace::AddEvent("Invalid branch keyword at " + to_string(it->first), kStateError);
+          trace::AddEvent("Invalid branch keyword at line " + to_string(it->first), kStateError);
           break;
         }
 
@@ -817,7 +825,7 @@ namespace kagami {
             jump_stack_.top().jump_record.push_back(dest_->size());
           }
           else {
-            trace::AddEvent("Invalid branch keyword at " + to_string(it->first));
+            trace::AddEvent("Invalid branch keyword at line " + to_string(it->first));
             break;
           }
         }
@@ -826,7 +834,7 @@ namespace kagami {
             jump_stack_.top().jump_record.push_back(dest_->size());
           }
           else {
-            trace::AddEvent("Invalid branch keyword at " + to_string(it->first), kStateError);
+            trace::AddEvent("Invalid branch keyword at line " + to_string(it->first), kStateError);
             break;
           }
         }
@@ -834,7 +842,7 @@ namespace kagami {
 
       if (ast_root == kKeywordContinue || ast_root == kKeywordBreak) {
         if (cycle_escaper_.empty()) {
-          trace::AddEvent("Invalid cycle escaper at" + to_string(it->first), kStateError);
+          trace::AddEvent("Invalid cycle escaper at line " + to_string(it->first), kStateError);
           break;
         }
 
@@ -843,7 +851,7 @@ namespace kagami {
 
       if (ast_root == kKeywordEnd) {
         if (nest_type_.empty()) {
-          trace::AddEvent("Invalid 'end' token at " + to_string(it->first), kStateError);
+          trace::AddEvent("Invalid 'end' token at line " + to_string(it->first), kStateError);
           good = false;
           break;
         }
