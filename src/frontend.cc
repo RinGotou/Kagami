@@ -388,7 +388,7 @@ namespace kagami {
   }
 
   bool LineParser::ArrayExpr() {
-    bool result;
+    bool result = true;
     if (frame_->last.second == StringType::kStringTypeSymbol) {
       frame_->symbol.emplace_back(Request(kKeywordInitialArray));
       frame_->symbol.emplace_back(Request());
@@ -504,9 +504,7 @@ namespace kagami {
     frame_->symbol.emplace_back(Request());
     frame_->args.emplace_back(Argument());
 
-    frame_->Eat();
-
-    if (util::GetStringType(frame_->current.first) != kStringTypeIdentifier) {
+    if (frame_->Eat(); util::GetStringType(frame_->current.first) != kStringTypeIdentifier) {
       error_string_ = "Invalid identifier argument in for-each expression";
       return false;
     }
@@ -514,9 +512,8 @@ namespace kagami {
     frame_->args.emplace_back(Argument(
       frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
 
-    frame_->Eat();
-
-    if (util::GetTerminatorCode(frame_->current.first) != kTerminatorIn) {
+    
+    if (frame_->Eat(); util::GetTerminatorCode(frame_->current.first) != kTerminatorIn) {
       error_string_ = "Invalid for-each expression";
       return false;
     }
@@ -623,9 +620,8 @@ namespace kagami {
       if (!state) break;
       frame_->Eat();
 
-      Terminator value = util::GetTerminatorCode(frame_->current.first);
-
-      if (value != kTerminatorNull) {
+      if (Terminator value = util::GetTerminatorCode(frame_->current.first); 
+        value != kTerminatorNull) {
         switch (value) {
         case kTerminatorAssign:
           BindExpr();

@@ -11,9 +11,8 @@ namespace kagami {
   }
 
   int64_t IntProducer(Object &obj) {
-    auto type = FindTypeCode(obj.GetTypeId());
     int64_t result = 0;
-    switch (type) {
+    switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
     case kPlainInt:result = obj.Cast<int64_t>(); break;
     case kPlainFloat:result = static_cast<int64_t>(obj.Cast<double>()); break;
     case kPlainBool:result = obj.Cast<bool>() ? 1 : 0; break;
@@ -24,9 +23,8 @@ namespace kagami {
   }
 
   double FloatProducer(Object &obj) {
-    auto type = FindTypeCode(obj.GetTypeId());
     double result = 0;
-    switch (type) {
+    switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
     case kPlainFloat:result = obj.Cast<double>(); break;
     case kPlainInt:result = static_cast<double>(obj.Cast<int64_t>()); break;
     case kPlainBool:result = obj.Cast<bool>() ? 1.0 : 0.0; break;
@@ -37,9 +35,8 @@ namespace kagami {
   }
 
   string StringProducer(Object &obj) {
-    auto type = FindTypeCode(obj.GetTypeId());
     string result;
-    switch (type) {
+    switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
     case kPlainInt:result = to_string(obj.Cast<int64_t>()); break;
     case kPlainFloat:result = to_string(obj.Cast<double>()); break;
     case kPlainBool:result = obj.Cast<bool>() ? kStrTrue : kStrFalse; break;
@@ -193,9 +190,8 @@ namespace kagami {
   Object Machine::FetchInterfaceObject(string id) {
     Object obj;
     auto &frame = frame_stack_.top();
-    auto ptr = FindInterface(id);
-
-    if (ptr != nullptr) {
+    
+    if (auto ptr = FindInterface(id); ptr != nullptr) {
       auto interface = *ptr;
       obj.PackContent(make_shared<Interface>(interface), kTypeIdFunction);
     }
@@ -214,15 +210,12 @@ namespace kagami {
     Object obj;
 
     if (arg.type == kArgumentObjectStack) {
-      ptr = obj_stack_.Find(arg.data);
-      if (ptr != nullptr) {
+      if (ptr = obj_stack_.Find(arg.data); ptr != nullptr) {
         obj.PackObject(*ptr);
         return obj;
       }
 
-      obj = GetConstantObject(arg.data);
-
-      if (obj.Null()) {
+      if (obj = GetConstantObject(arg.data); obj.Null()) {
         obj = FetchInterfaceObject(arg.data);
       }
 
@@ -248,9 +241,7 @@ namespace kagami {
 
     //Modified version for function invoking
     if (type_id != kTypeIdNull) {
-      interface = FindInterface(id, type_id);
-
-      if (interface == nullptr) {
+      if (interface = FindInterface(id, type_id); interface == nullptr) {
         frame.MakeError("Method is not found - " + id);
         return false;
       }
@@ -258,12 +249,8 @@ namespace kagami {
       return true;
     }
     else {
-      interface = FindInterface(id);
-
-      if (interface != nullptr) return true;
-
+      if (interface = FindInterface(id); interface != nullptr) return true;
       ObjectPointer ptr = obj_stack_.Find(id);
-
       if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
         interface = &ptr->Cast<Interface>();
         return true;
@@ -290,9 +277,7 @@ namespace kagami {
 
       if (frame.error) return false;
 
-      interface = FindInterface(id, obj.GetTypeId());
-
-      if (interface == nullptr) {
+      if (interface = FindInterface(id, obj.GetTypeId()); interface == nullptr) {
         frame.MakeError("Method is not found - " + id);
         return false;
       }
@@ -304,9 +289,7 @@ namespace kagami {
     //At first, Machine will querying in built-in function map,
     //and then try to fetch function object in heap.
     else {
-      interface = FindInterface(id);
-
-      if (interface != nullptr) return true;
+      if (interface = FindInterface(id); interface != nullptr) return true;
 
       ObjectPointer ptr = obj_stack_.Find(id);
 
@@ -410,16 +393,13 @@ namespace kagami {
   }
 
   Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
-    bool found = type::CheckMethod(id, obj.GetTypeId());
     InterfacePointer interface;
 
-    if (!found) {
+    if (bool found = _FetchInterface(interface, id, obj.GetTypeId()); !found) {
       //Immediately push event to avoid ugly checking block.
       trace::AddEvent("Method is not found - " + id);
       return Message();
     }
-
-    _FetchInterface(interface, id, obj.GetTypeId());
 
     ObjectMap obj_map = args;
     obj_map.insert(NamedObject(kStrMe, obj));
@@ -1101,7 +1081,6 @@ namespace kagami {
 
     if (args.size() == 1) {
       Object ret_obj = FetchObject(args[0]);
-      //Object ret_obj = type::CreateObjectCopy(src_obj);
 
       auto *container = &obj_stack_.GetCurrent();
       while (container->Find(kStrUserFunc) == nullptr) {
@@ -1435,16 +1414,14 @@ namespace kagami {
         continue;
       }
 
-      obj_map.clear();
-      command = &(*code)[frame->idx];
-      script_idx = command->first.idx;
-      frame->void_call = command->first.option.void_call;
 
-      //frontend panic checking
-      if (command->first.type == kRequestNull) {
+      if (command = &(*code)[frame->idx]; command->first.type == kRequestNull) {
         trace::AddEvent("Frontend Panic.", kStateError);
         break;
       }
+
+      script_idx = command->first.idx;
+      frame->void_call = command->first.option.void_call;
 
       //Embedded machine commands.
       if (command->first.type == kRequestCommand) {
@@ -1471,9 +1448,9 @@ namespace kagami {
       }
 
       //Building object map for function call expressed by command
-      GenerateArgs(*interface, command->second, obj_map);
-
-      if (frame->error) {
+      obj_map.clear();
+      
+      if (GenerateArgs(*interface, command->second, obj_map); frame->error) {
         script_idx = command->first.idx;
         break;
       }
@@ -1496,8 +1473,8 @@ namespace kagami {
 
       //Invoking by return value.
       if (msg.GetCode() == kCodeInterface) {
-        auto arg = BuildStringVector(msg.GetDetail());
-        if (!_FetchInterface(interface, arg[0], arg[1])) {
+        if (auto arg = BuildStringVector(msg.GetDetail()); 
+          !_FetchInterface(interface, arg[0], arg[1])) {
           break;
         }
 
