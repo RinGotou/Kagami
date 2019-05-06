@@ -339,7 +339,6 @@ namespace kagami {
     if (!frame_->args.empty() && frame_->next.first != kStrFn) {
       Request request(kKeywordBind);
       request.option.local_object = frame_->local_object;
-      request.priority = util::GetTokenPriority(kKeywordBind);
       frame_->local_object = false;
       frame_->symbol.emplace_back(request);
     }
@@ -406,7 +405,6 @@ namespace kagami {
     auto token = util::GetKeywordCode(frame_->current.first);
     int current_priority = util::GetTokenPriority(token);
     Request request(token);
-    request.priority = current_priority;
 
     if (!frame_->symbol.empty()) {
       bool is_operator =

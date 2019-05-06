@@ -72,7 +72,7 @@ namespace kagami {
   }
 
   /* string/wstring convertor */
-  //from https://www.yasuhisay.info/interface/20090722/1248245439
+  //from https://www.yasuhisay.info/impl/20090722/1248245439
   std::wstring s2ws(const std::string &s) {
     if (s.empty()) return wstring();
     size_t length = s.size();
@@ -99,16 +99,16 @@ namespace kagami {
   }
 
   void InitPlainTypes() {
-    using type::NewTypeSetup;
+    using type::ObjectTraitsSetup;
     using type::PlainHasher;
 
-    NewTypeSetup(kTypeIdInt, SimpleSharedPtrCopy<int64_t>, PlainHasher<int64_t>())
+    ObjectTraitsSetup(kTypeIdInt, PlainDeliveryImpl<int64_t>, PlainHasher<int64_t>())
       .InitComparator(PlainComparator<int64_t>);
-    NewTypeSetup(kTypeIdFloat, SimpleSharedPtrCopy<double>, PlainHasher<double>())
+    ObjectTraitsSetup(kTypeIdFloat, PlainDeliveryImpl<double>, PlainHasher<double>())
       .InitComparator(PlainComparator<double>);
-    NewTypeSetup(kTypeIdBool, SimpleSharedPtrCopy<bool>, PlainHasher<bool>())
+    ObjectTraitsSetup(kTypeIdBool, PlainDeliveryImpl<bool>, PlainHasher<bool>())
       .InitComparator(PlainComparator<bool>);
-    NewTypeSetup(kTypeIdNull, FakeCopy<void>);
+    ObjectTraitsSetup(kTypeIdNull, ShallowDelivery<void>);
 
     EXPORT_CONSTANT(kTypeIdInt);
     EXPORT_CONSTANT(kTypeIdFloat);
@@ -187,13 +187,14 @@ namespace kagami {
     return obj;
   }
 
-  Object Machine::FetchInterfaceObject(string id) {
+  Object Machine::FetchFunctionObject(string id) {
     Object obj;
     auto &frame = frame_stack_.top();
-    
-    if (auto ptr = FindInterface(id); ptr != nullptr) {
-      auto interface = *ptr;
-      obj.PackContent(make_shared<Interface>(interface), kTypeIdFunction);
+    auto ptr = FindFunction(id);
+
+    if (ptr != nullptr) {
+      auto impl = *ptr;
+      obj.PackContent(make_shared<FunctionImpl>(impl), kTypeIdFunction);
     }
 
     return obj;
@@ -216,7 +217,7 @@ namespace kagami {
       }
 
       if (obj = GetConstantObject(arg.data); obj.Null()) {
-        obj = FetchInterfaceObject(arg.data);
+        obj = FetchFunctionObject(arg.data);
       }
 
       if (obj.Null()) {
@@ -236,12 +237,12 @@ namespace kagami {
     return obj;
   }
 
-  bool Machine::_FetchInterface(InterfacePointer &interface, string id, string type_id) {
+  bool Machine::_FetchFunctionImpl(FunctionImplPointer &impl, string id, string type_id) {
     auto &frame = frame_stack_.top();
 
     //Modified version for function invoking
     if (type_id != kTypeIdNull) {
-      if (interface = FindInterface(id, type_id); interface == nullptr) {
+      if (impl = FindFunction(id, type_id); impl == nullptr) {
         frame.MakeError("Method is not found - " + id);
         return false;
       }
@@ -249,10 +250,10 @@ namespace kagami {
       return true;
     }
     else {
-      if (interface = FindInterface(id); interface != nullptr) return true;
+      if (impl = FindFunction(id); impl != nullptr) return true;
       ObjectPointer ptr = obj_stack_.Find(id);
       if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
-        interface = &ptr->Cast<Interface>();
+        impl = &ptr->Cast<FunctionImpl>();
         return true;
       }
 
@@ -262,7 +263,7 @@ namespace kagami {
     return false;
   }
 
-  bool Machine::FetchInterface(InterfacePointer &interface, CommandPointer &command, ObjectMap &obj_map) {
+  bool Machine::FetchFunctionImpl(FunctionImplPointer &impl, CommandPointer &command, ObjectMap &obj_map) {
     auto &frame = frame_stack_.top();
     auto id = command->first.GetInterfaceId();
     auto domain = command->first.GetInterfaceDomain();
@@ -277,7 +278,7 @@ namespace kagami {
 
       if (frame.error) return false;
 
-      if (interface = FindInterface(id, obj.GetTypeId()); interface == nullptr) {
+      if (impl = FindFunction(id, obj.GetTypeId()); impl == nullptr) {
         frame.MakeError("Method is not found - " + id);
         return false;
       }
@@ -289,12 +290,12 @@ namespace kagami {
     //At first, Machine will querying in built-in function map,
     //and then try to fetch function object in heap.
     else {
-      if (interface = FindInterface(id); interface != nullptr) return true;
+      if (impl = FindFunction(id); impl != nullptr) return true;
 
       ObjectPointer ptr = obj_stack_.Find(id);
 
       if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
-        interface = &ptr->Cast<Interface>();
+        impl = &ptr->Cast<FunctionImpl>();
         return true;
       }
 
@@ -310,7 +311,7 @@ namespace kagami {
     auto &origin_code = *code_stack_.back();
     size_t counter = 0, size = args.size(), nest = frame.idx;
     bool optional = false, variable = false;
-    StateCode argument_mode = kCodeNormalParam;
+    ParameterPattern argument_mode = kParamNormal;
     vector<string> params;
     VMCode code;
 
@@ -355,13 +356,13 @@ namespace kagami {
       return;
     }
 
-    if (optional) argument_mode = kCodeAutoFill;
-    if (variable) argument_mode = kCodeAutoSize;
+    if (optional) argument_mode = kParamAutoFill;
+    if (variable) argument_mode = kParamAutoSize;
 
-    Interface interface(nest + 1, code, args[0].data, params, argument_mode);
+    FunctionImpl impl(nest + 1, code, args[0].data, params, argument_mode);
 
     if (optional) {
-      interface.SetMinArgSize(params.size() - counter);
+      impl.SetLimit(params.size() - counter);
     }
 
     if (closure) {
@@ -383,19 +384,19 @@ namespace kagami {
         }
       }
 
-      interface.SetClosureRecord(scope_record);
+      impl.SetClosureRecord(scope_record);
     }
 
     obj_stack_.CreateObject(args[0].data,
-      Object(make_shared<Interface>(interface), kTypeIdFunction));
+      Object(make_shared<FunctionImpl>(impl), kTypeIdFunction));
 
     frame.Goto(nest_end + 1);
   }
 
   Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
-    InterfacePointer interface;
+    FunctionImplPointer impl;
 
-    if (bool found = _FetchInterface(interface, id, obj.GetTypeId()); !found) {
+    if (bool found = _FetchFunctionImpl(impl, id, obj.GetTypeId()); !found) {
       //Immediately push event to avoid ugly checking block.
       trace::AddEvent("Method is not found - " + id);
       return Message();
@@ -404,14 +405,14 @@ namespace kagami {
     ObjectMap obj_map = args;
     obj_map.insert(NamedObject(kStrMe, obj));
 
-    if (interface->GetPolicyType() == kInterfaceVMCode) {
-      Run(true, id, &interface->GetCode(), &obj_map, &interface->GetClosureRecord());
+    if (impl->GetType() == kFunctionVMCode) {
+      Run(true, id, &impl->GetCode(), &obj_map, &impl->GetClosureRecord());
       Object obj = frame_stack_.top().return_stack.top();
       frame_stack_.top().return_stack.pop();
       return Message().SetObject(obj);
     }
 
-    return interface->Start(obj_map);
+    return impl->Start(obj_map);
   }
 
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
@@ -795,7 +796,7 @@ namespace kagami {
       }
 
       Object obj(base, kTypeIdArray);
-      obj.SetConstructorFlag();
+      obj.SetDeliverFlag();
       frame.RefreshReturnStack(obj);
     }
     else if (args.size() == 1) {
@@ -819,7 +820,7 @@ namespace kagami {
     }
 
     Object ret_obj(base, kTypeIdArray);
-    ret_obj.SetConstructorFlag();
+    ret_obj.SetDeliverFlag();
     frame.RefreshReturnStack(ret_obj);
   }
 
@@ -1069,7 +1070,7 @@ namespace kagami {
     }
 
     Object obj(base, kTypeIdArray);
-    obj.SetConstructorFlag();
+    obj.SetDeliverFlag();
     frame.RefreshReturnStack(obj);
   }
 
@@ -1255,25 +1256,25 @@ namespace kagami {
     }
   }
 
-  void Machine::GenerateArgs(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
-    switch (interface.GetArgumentMode()) {
-    case kCodeNormalParam:
-      Generate_Normal(interface, args, obj_map);
+  void Machine::GenerateArgs(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map) {
+    switch (impl.GetPattern()) {
+    case kParamNormal:
+      Generate_Normal(impl, args, obj_map);
       break;
-    case kCodeAutoSize:
-      Generate_AutoSize(interface, args, obj_map);
+    case kParamAutoSize:
+      Generate_AutoSize(impl, args, obj_map);
       break;
-    case kCodeAutoFill:
-      Generate_AutoFill(interface, args, obj_map);
+    case kParamAutoFill:
+      Generate_AutoFill(impl, args, obj_map);
       break;
     default:
       break;
     }
   }
 
-  void Machine::Generate_Normal(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
+  void Machine::Generate_Normal(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map) {
     auto &frame = frame_stack_.top();
-    auto &params = interface.GetParameters();
+    auto &params = impl.GetParameters();
     size_t pos = args.size() - 1;
 
     ERROR_CHECKING(args.size() > params.size(), 
@@ -1288,9 +1289,9 @@ namespace kagami {
     }
   }
 
-  void Machine::Generate_AutoSize(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
+  void Machine::Generate_AutoSize(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map) {
     auto &frame = frame_stack_.top();
-    vector<string> &params = interface.GetParameters();
+    vector<string> &params = impl.GetParameters();
     list<Object> temp_list;
     ManagedArray va_base = make_shared<ObjectArray>();
     size_t pos = args.size(), diff = args.size() - params.size() + 1;
@@ -1322,16 +1323,16 @@ namespace kagami {
     }
   }
 
-  void Machine::Generate_AutoFill(Interface &interface, ArgumentList &args, ObjectMap &obj_map) {
+  void Machine::Generate_AutoFill(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map) {
     auto &frame = frame_stack_.top();
-    auto &params = interface.GetParameters();
-    size_t min_size = interface.GetMinArgSize();
+    auto &params = impl.GetParameters();
+    size_t limit = impl.GetLimit();
     size_t pos = args.size() - 1, param_pos = params.size() - 1;
 
     ERROR_CHECKING(args.size() > params.size(),
       "Too many arguments");
-    ERROR_CHECKING(args.size() < min_size, 
-      "You need at least " + to_string(min_size) + "argument(s)");
+    ERROR_CHECKING(args.size() < limit, 
+      "You need at least " + to_string(limit) + "argument(s)");
 
     for (auto it = params.crbegin(); it != params.crend(); ++it) {
       if (param_pos != pos) {
@@ -1365,7 +1366,7 @@ namespace kagami {
     Message msg;
     VMCode *code = code_stack_.back();
     Command *command = nullptr;
-    InterfacePointer interface;
+    FunctionImplPointer impl;
     ObjectMap obj_map;
 
     frame_stack_.push(RuntimeFrame());
@@ -1387,13 +1388,13 @@ namespace kagami {
       frame = &frame_stack_.top();
     };
 
-    auto update_stack_frame = [&](Interface &func)->void {
+    auto update_stack_frame = [&](FunctionImpl &func)->void {
       code_stack_.push_back(&func.GetCode());
       frame_stack_.push(RuntimeFrame());
       obj_stack_.Push();
       obj_stack_.CreateObject(kStrUserFunc, Object(func.GetId()));
       obj_stack_.MergeMap(obj_map);
-      obj_stack_.MergeMap(interface->GetClosureRecord());
+      obj_stack_.MergeMap(impl->GetClosureRecord());
       refresh_tick();
       frame->jump_offset = func.GetOffset();
     };
@@ -1414,8 +1415,9 @@ namespace kagami {
         continue;
       }
 
+      command = &(*code)[frame->idx];
 
-      if (command = &(*code)[frame->idx]; command->first.type == kRequestNull) {
+      if (command->first.type == kRequestNull) {
         trace::AddEvent("Frontend Panic.", kStateError);
         break;
       }
@@ -1442,15 +1444,15 @@ namespace kagami {
 
       //Querying function(Interpreter built-in or user-defined)
       if (command->first.type == kRequestInterface) {
-        if (!FetchInterface(interface, command, obj_map)) {
+        if (!FetchFunctionImpl(impl, command, obj_map)) {
           break;
         }
       }
 
       //Building object map for function call expressed by command
       obj_map.clear();
-      
-      if (GenerateArgs(*interface, command->second, obj_map); frame->error) {
+      GenerateArgs(*impl, command->second, obj_map);
+      if (frame->error) {
         script_idx = command->first.idx;
         break;
       }
@@ -1458,12 +1460,12 @@ namespace kagami {
       //(For user-defined function)
       //Machine will create new stack frame and push IR pointer to machine stack,
       //and start new processing in next tick.
-      if (interface->GetPolicyType() == kInterfaceVMCode) {
-        update_stack_frame(*interface);
+      if (impl->GetType() == kFunctionVMCode) {
+        update_stack_frame(*impl);
         continue;
       }
       else {
-        msg = interface->Start(obj_map);
+        msg = impl->Start(obj_map);
       }
 
       if (msg.GetLevel() == kStateError) {
@@ -1473,16 +1475,16 @@ namespace kagami {
 
       //Invoking by return value.
       if (msg.GetCode() == kCodeInterface) {
-        if (auto arg = BuildStringVector(msg.GetDetail()); 
-          !_FetchInterface(interface, arg[0], arg[1])) {
+        auto arg = BuildStringVector(msg.GetDetail());
+        if (!_FetchFunctionImpl(impl, arg[0], arg[1])) {
           break;
         }
 
-        if (interface->GetPolicyType() == kInterfaceVMCode) {
-          update_stack_frame(*interface);
+        if (impl->GetType() == kFunctionVMCode) {
+          update_stack_frame(*impl);
         }
         else {
-          msg = interface->Start(obj_map);
+          msg = impl->Start(obj_map);
           frame->Steping();
         }
         continue;

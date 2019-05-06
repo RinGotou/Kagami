@@ -69,7 +69,7 @@ namespace kagami {
       }
     }
 
-    return Message().SetObject(Object(base, kTypeIdArray).SetConstructorFlag());
+    return Message().SetObject(Object(base, kTypeIdArray).SetDeliverFlag());
   }
 
   Message ArrayGetElement(ObjectMap &p) {
@@ -144,7 +144,7 @@ namespace kagami {
     return result;
   }
 
-  shared_ptr<void> ArrayCopyingPolicy(shared_ptr<void> ptr) {
+  shared_ptr<void> ArrayDelivery(shared_ptr<void> ptr) {
     using namespace management::type;
     auto &src_base = *static_pointer_cast<ObjectArray>(ptr);
     ManagedArray dest_base = make_shared<ObjectArray>();
@@ -163,7 +163,7 @@ namespace kagami {
       management::type::CreateObjectCopy(left),
       management::type::CreateObjectCopy(right));
     return Message().SetObject(Object(pair, kTypeIdPair)
-      .SetConstructorFlag());
+      .SetDeliverFlag());
   }
 
   Message PairLeft(ObjectMap &p) {
@@ -176,7 +176,7 @@ namespace kagami {
     return Message().SetObject(Object().PackObject(base.second));
   }
 
-  shared_ptr<void> PairCopyingPolicy(shared_ptr<void> ptr) {
+  shared_ptr<void> PairDelivery(shared_ptr<void> ptr) {
     auto &src_base = *static_pointer_cast<ObjectPair>(ptr);
     ManagedPair dest_base = make_shared<ObjectPair>(
       management::type::CreateObjectCopy(src_base.first),
@@ -245,7 +245,7 @@ namespace kagami {
     return Message().SetObject(Object(it, kTypeIdIterator));
   }
 
-  shared_ptr<void> TableCopyingPolicy(shared_ptr<void> ptr) {
+  shared_ptr<void> TableDelivery(shared_ptr<void> ptr) {
     using namespace management::type;
     auto &table = *static_pointer_cast<ObjectTable>(ptr);
     ManagedTable dest = make_shared<ObjectTable>();
@@ -262,64 +262,64 @@ namespace kagami {
   }
 
   void InitContainerComponents() {
-    using management::type::NewTypeSetup;
+    using management::type::ObjectTraitsSetup;
     using management::type::CustomHasher;
 
-    NewTypeSetup(kTypeIdArray, ArrayCopyingPolicy, CustomHasher<ObjectArray, ArrayHasher>())
+    ObjectTraitsSetup(kTypeIdArray, ArrayDelivery, CustomHasher<ObjectArray, ArrayHasher>())
       .InitConstructor(
-        Interface(NewArray, "size|init_value", "array", kCodeAutoFill)
+        FunctionImpl(NewArray, "size|init_value", "array", kParamAutoFill)
       )
       .InitMethods(
         {
-          Interface(ArrayGetElement, "index", "__at"),
-          Interface(ArrayGetSize, "", "size"),
-          Interface(ArrayPush, "object", "push"),
-          Interface(ArrayPop, "object", "pop"),
-          Interface(ArrayEmpty, "", "empty"),
-          Interface(ArrayHead, "", "head"),
-          Interface(ArrayTail, "", "tail"),
-          Interface(ArrayClear, "", "clear")
+          FunctionImpl(ArrayGetElement, "index", "__at"),
+          FunctionImpl(ArrayGetSize, "", "size"),
+          FunctionImpl(ArrayPush, "object", "push"),
+          FunctionImpl(ArrayPop, "object", "pop"),
+          FunctionImpl(ArrayEmpty, "", "empty"),
+          FunctionImpl(ArrayHead, "", "head"),
+          FunctionImpl(ArrayTail, "", "tail"),
+          FunctionImpl(ArrayClear, "", "clear")
         }
     );
 
-    NewTypeSetup(kTypeIdIterator, SimpleSharedPtrCopy<UnifiedIterator>)
+    ObjectTraitsSetup(kTypeIdIterator, PlainDeliveryImpl<UnifiedIterator>)
       .InitComparator(IteratorComparator)
       .InitMethods(
         {
-          Interface(IteratorGet, "", "obj"),
-          Interface(IteratorForward, "", "forward"),
-          Interface(IteratorBack, "", "back"),
-          Interface(IteratorStepForward, "", "step_forward"),
-          Interface(IteratorStepBack, "", "step_back"),
-          Interface(IteratorOperatorCompare, kStrRightHandSide, kStrCompare)
+          FunctionImpl(IteratorGet, "", "obj"),
+          FunctionImpl(IteratorForward, "", "forward"),
+          FunctionImpl(IteratorBack, "", "back"),
+          FunctionImpl(IteratorStepForward, "", "step_forward"),
+          FunctionImpl(IteratorStepBack, "", "step_back"),
+          FunctionImpl(IteratorOperatorCompare, kStrRightHandSide, kStrCompare)
         }
     );
 
-    NewTypeSetup(kTypeIdPair, PairCopyingPolicy)
+    ObjectTraitsSetup(kTypeIdPair, PairDelivery)
       .InitConstructor(
-        Interface(NewPair, "left|right", "pair")
+        FunctionImpl(NewPair, "left|right", "pair")
       )
       .InitMethods(
         {
-          Interface(PairLeft, "", "left"),
-          Interface(PairRight, "", "right")
+          FunctionImpl(PairLeft, "", "left"),
+          FunctionImpl(PairRight, "", "right")
         }
     );
 
-    NewTypeSetup(kTypeIdTable, TableCopyingPolicy)
+    ObjectTraitsSetup(kTypeIdTable, TableDelivery)
       .InitConstructor(
-        Interface(NewTable, "", "table")
+        FunctionImpl(NewTable, "", "table")
       )
       .InitMethods(
         {
-          Interface(TableInsert, "key|value", "insert"),
-          Interface(TableGetElement, "key", "__at"),
-          Interface(TableEraseElement, "key", "erase"),
-          Interface(TableEmpty, "", "empty"),
-          Interface(TableSize, "", "size"),
-          Interface(TableClear, "", "clear"),
-          Interface(TableHead, "", "head"),
-          Interface(TableTail, "", "tail")
+          FunctionImpl(TableInsert, "key|value", "insert"),
+          FunctionImpl(TableGetElement, "key", "__at"),
+          FunctionImpl(TableEraseElement, "key", "erase"),
+          FunctionImpl(TableEmpty, "", "empty"),
+          FunctionImpl(TableSize, "", "size"),
+          FunctionImpl(TableClear, "", "clear"),
+          FunctionImpl(TableHead, "", "head"),
+          FunctionImpl(TableTail, "", "tail")
         }
     );
 

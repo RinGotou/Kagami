@@ -4,43 +4,42 @@ namespace kagami::management {
   ///////////////////////////////////////////////////////////////
 //Inteface management
 
-  auto &GetInterfaceCollections() {
-    static map<string, InterfaceCollection> collection_base;
+  auto &GetFunctionImplCollections() {
+    static map<string, FunctionImplCollection> collection_base;
     return collection_base;
   }
 
-  auto &GetInterfaceCache() {
-    static unordered_map<string, InterfaceHashMap> cache;
+  auto &GetFunctionImplCache() {
+    static unordered_map<string, FunctionHashMap> cache;
     return cache;
   }
 
-  void BuildInterfaceCache(string domain) {
-    auto &base = GetInterfaceCache();
-    auto &col = GetInterfaceCollections().at(domain);
+  void BuildFunctionImplCache(string domain) {
+    auto &base = GetFunctionImplCache();
+    auto &col = GetFunctionImplCollections().at(domain);
 
     for (auto &unit : col) {
       base[domain].insert(make_pair(unit.first, &unit.second));
     }
   }
 
-  void CreateNewInterface(Interface interface) {
-    string domain = interface.GetTypeDomain();
-    auto &collection_base = GetInterfaceCollections();
+  void CreateImpl(FunctionImpl impl, string domain) {
+    auto &collection_base = GetFunctionImplCollections();
     auto it = collection_base.find(domain);
 
     if (it != collection_base.end()) {
-      it->second.insert(std::make_pair(interface.GetId(), interface));
+      it->second.insert(std::make_pair(impl.GetId(), impl));
     }
     else {
-      collection_base.insert(make_pair(domain, InterfaceCollection()));
-      collection_base[domain].insert(std::make_pair(interface.GetId(), interface));
+      collection_base.insert(make_pair(domain, FunctionImplCollection()));
+      collection_base[domain].insert(std::make_pair(impl.GetId(), impl));
     }
 
-    BuildInterfaceCache(domain);
+    BuildFunctionImplCache(domain);
   }
 
-  Interface *FindInterface(string id, string domain) {
-    auto &cache = GetInterfaceCache();
+  FunctionImpl *FindFunction(string id, string domain) {
+    auto &cache = GetFunctionImplCache();
     auto it = cache.find(domain);
 
     if (it != cache.end()) {
@@ -92,24 +91,16 @@ namespace kagami::management {
 }
 
 namespace kagami::management::type {
-  shared_ptr<void> ObjectPolicy::CreateObjectCopy(shared_ptr<void> target) const {
-    shared_ptr<void> result = nullptr;
-    if (target != nullptr) {
-      result = copying_policy_(target);
-    }
-    return result;
-  }
-
-  auto &GetObjPolicyCollection() {
-    static unordered_map<string, ObjectPolicy> base;
+  auto &GetObjectTraitsCollection() {
+    static unordered_map<string, ObjectTraits> base;
     return base;
   }
 
   vector<string> GetMethods(string id) {
     vector<string> result;
-    const auto it = GetObjPolicyCollection().find(id);
+    const auto it = GetObjectTraitsCollection().find(id);
 
-    if (it != GetObjPolicyCollection().end()) {
+    if (it != GetObjectTraitsCollection().end()) {
       result = it->second.GetMethods();
     }
     return result;
@@ -117,9 +108,9 @@ namespace kagami::management::type {
 
   bool CheckMethod(string func_id, string domain) {
     bool result = false;
-    const auto it = GetObjPolicyCollection().find(domain);
+    const auto it = GetObjectTraitsCollection().find(domain);
 
-    if (it != GetObjPolicyCollection().end()) {
+    if (it != GetObjectTraitsCollection().end()) {
       result = find_in_vector(func_id, it->second.GetMethods());
     }
 
@@ -127,7 +118,7 @@ namespace kagami::management::type {
   }
 
   size_t GetHash(Object &obj) {
-    auto &base = GetObjPolicyCollection();
+    auto &base = GetObjectTraitsCollection();
     const auto it = base.find(obj.GetTypeId());
     auto hasher = it->second.GetHasher();
     return hasher->Get(obj.Unpack().Get());
@@ -135,7 +126,7 @@ namespace kagami::management::type {
 
   bool IsHashable(Object &obj) {
     bool result = false;
-    auto &base = GetObjPolicyCollection();
+    auto &base = GetObjectTraitsCollection();
     const auto it = base.find(obj.GetTypeId());
 
     if (it != base.end()) {
@@ -145,18 +136,18 @@ namespace kagami::management::type {
     return result;
   }
 
-  void NewType(string id, ObjectPolicy temp) {
-    GetObjPolicyCollection().insert(pair<string, ObjectPolicy>(id, temp));
+  void CreateObjectTraits(string id, ObjectTraits temp) {
+    GetObjectTraitsCollection().insert(pair<string, ObjectTraits>(id, temp));
   }
 
   Object CreateObjectCopy(Object & object) {
-    if (object.GetConstructorFlag()) {
+    if (object.GetDeliverFlag()) {
       return object;
     }
 
     Object result;
-    const auto it = GetObjPolicyCollection().find(object.GetTypeId());
-    if (it != GetObjPolicyCollection().end()) {
+    const auto it = GetObjectTraitsCollection().find(object.GetTypeId());
+    if (it != GetObjectTraitsCollection().end()) {
       result.PackContent(it->second.CreateObjectCopy(object.Get()),
         object.GetTypeId());
     }
@@ -181,7 +172,7 @@ namespace kagami::management::type {
 
   bool CompareObjects(Object &lhs, Object &rhs) {
     if (lhs.GetTypeId() != rhs.GetTypeId()) return false;
-    auto &collection = GetObjPolicyCollection();
+    auto &collection = GetObjectTraitsCollection();
     const auto it = collection.find(lhs.GetTypeId());
     bool value = false;
 
@@ -194,12 +185,11 @@ namespace kagami::management::type {
     return value;
   }
 
-  NewTypeSetup &NewTypeSetup::InitMethods(initializer_list<Interface> && rhs) {
-    interfaces_ = rhs;
+  ObjectTraitsSetup &ObjectTraitsSetup::InitMethods(initializer_list<FunctionImpl> && rhs) {
+    impl_ = rhs;
     string method_list("");
 
-    for (auto &unit : interfaces_) {
-      unit.SetDomain(type_name_);
+    for (auto &unit : impl_) {
       method_list.append(unit.GetId()).append("|");
     }
 
@@ -210,11 +200,11 @@ namespace kagami::management::type {
     return *this;
   }
 
-  NewTypeSetup::~NewTypeSetup() {
-    NewType(type_name_, ObjectPolicy(policy_, methods_, hasher_, comparator_));
-    CreateNewInterface(constructor_);
-    for (auto &unit : interfaces_) {
-      CreateNewInterface(unit);
+  ObjectTraitsSetup::~ObjectTraitsSetup() {
+    CreateObjectTraits(type_id_, ObjectTraits(dlvy_, methods_, hasher_, comparator_));
+    CreateImpl(constructor_);
+    for (auto &unit : impl_) {
+      CreateImpl(unit, type_id_);
     }
   }
 }

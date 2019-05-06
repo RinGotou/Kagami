@@ -1,4 +1,4 @@
-#include "interface.h"
+#include "function.h"
 
 namespace kagami {
   Message MakeInvokePoint(string id, string type_id) {

@@ -1,12 +1,12 @@
 #pragma once
-#include "interface.h"
+#include "function.h"
 
 namespace kagami::management {
-  using InterfaceCollection = map<string, Interface>;
-  using InterfaceHashMap = unordered_map<string, Interface *>;
+  using FunctionImplCollection = map<string, FunctionImpl>;
+  using FunctionHashMap = unordered_map<string, FunctionImpl *>;
 
-  void CreateNewInterface(Interface interface);
-  Interface *FindInterface(string id, string domain = kTypeIdNull);
+  void CreateImpl(FunctionImpl impl, string domain = kTypeIdNull);
+  FunctionImpl *FindFunction(string id, string domain = kTypeIdNull);
 
   Object *CreateConstantObject(string id, Object &object);
   Object *CreateConstantObject(string id, Object &&object);
@@ -14,8 +14,6 @@ namespace kagami::management {
 }
 
 namespace kagami::management::type {
-  using HasherFunction = size_t(*)(shared_ptr<void>);
-
   template <class T>
   struct PlainHasher : public HasherInterface {
     size_t Get(shared_ptr<void> ptr) const override {
@@ -32,7 +30,7 @@ namespace kagami::management::type {
     }
   };
 
-  /* Hasher for object using FakeCopy() */
+  /* Hasher for object using ShallowDelivery() */
   struct PointerHasher : public HasherInterface {
     size_t Get(shared_ptr<void> ptr) const override {
       auto hasher = std::hash<shared_ptr<void>>();
@@ -45,81 +43,54 @@ namespace kagami::management::type {
     return lhs.Cast<T>() == rhs.Cast<T>();
   }
 
-  class ObjectPolicy {
-  private:
-    CopyingPolicy copying_policy_;
-    ObjectComparator comparator_;
-    shared_ptr<HasherInterface> hasher_;
-    vector<string> methods_;
-
-  public:
-    ObjectPolicy() = delete;
-
-    ObjectPolicy(
-      CopyingPolicy copying_policy,
-      string methods,
-      shared_ptr<HasherInterface> hasher = nullptr,
-      ObjectComparator comparator = nullptr) :
-      copying_policy_(copying_policy),
-      comparator_(comparator),
-      methods_(BuildStringVector(methods)),
-      hasher_(hasher) {}
-
-    shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const;
-
-    vector<string> &GetMethods() { return methods_;}
-    shared_ptr<HasherInterface> &GetHasher() { return hasher_; }
-    ObjectComparator GetComparator() { return comparator_; }
-  };
-
   vector<string> GetMethods(string id);
   bool CheckMethod(string func_id, string domain);
   size_t GetHash(Object &obj);
   bool IsHashable(Object &obj);
-  void NewType(string id, ObjectPolicy temp);
+  void CreateObjectTraits(string id, ObjectTraits temp);
   Object CreateObjectCopy(Object &object);
   bool CheckBehavior(Object obj, string method_str);
   bool CompareObjects(Object &lhs, Object &rhs);
 
-  class NewTypeSetup {
+  class ObjectTraitsSetup {
   private:
-    string type_name_;
+    string type_id_;
     string methods_;
-    CopyingPolicy policy_;
-    ObjectComparator comparator_;
-    shared_ptr<HasherInterface> hasher_;
-    vector<Interface> interfaces_;
-    Interface constructor_;
+    DeliveryImpl dlvy_;
+    Comparator comparator_;
+    ManagedHasher hasher_;
+    vector<FunctionImpl> impl_;
+    FunctionImpl constructor_;
 
   public:
-    NewTypeSetup() = delete;
+    ObjectTraitsSetup() = delete;
 
     template <class HasherType>
-    NewTypeSetup(
+    ObjectTraitsSetup(
       string type_name,
-      CopyingPolicy policy,
+      DeliveryImpl dlvy,
       HasherType hasher) :
-      type_name_(type_name),
-      policy_(policy),
+      type_id_(type_name),
+      dlvy_(dlvy),
       comparator_(nullptr),
       hasher_(new HasherType(hasher)) {
       static_assert(is_base_of<HasherInterface, HasherType>::value,
         "Wrong hasher type.");
     }
 
-    NewTypeSetup(string type_name, CopyingPolicy policy) :
-      type_name_(type_name), policy_(policy), hasher_(nullptr) {}
+    ObjectTraitsSetup(string type_name, DeliveryImpl dlvy) :
+      type_id_(type_name), dlvy_(dlvy), hasher_(nullptr) {}
 
-    NewTypeSetup &InitConstructor(Interface interface) {
-      constructor_ = interface; return *this; 
+    ObjectTraitsSetup &InitConstructor(FunctionImpl impl) {
+      constructor_ = impl; return *this; 
     }
 
-    NewTypeSetup &InitComparator(ObjectComparator comparator) {
+    ObjectTraitsSetup &InitComparator(Comparator comparator) {
       comparator_ = comparator; return *this; 
     }
 
-    NewTypeSetup &InitMethods(initializer_list<Interface> &&rhs);
-    ~NewTypeSetup();
+    ObjectTraitsSetup &InitMethods(initializer_list<FunctionImpl> &&rhs);
+    ~ObjectTraitsSetup();
   };
 }
 

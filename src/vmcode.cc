@@ -1,4 +1,4 @@
-#include "ir.h"
+#include "vmcode.h"
 
 namespace kagami {
   bool VMCode::FindJumpRecord(size_t index, stack<size_t> &dest) {

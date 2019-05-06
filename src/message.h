@@ -10,11 +10,14 @@ namespace kagami {
     kStateWarning
   };
 
+  enum ParameterPattern {
+    kParamAutoSize,
+    kParamAutoFill,
+    kParamNormal
+  };
+
   enum StateCode {
     kCodeInterface = 5,
-    kCodeAutoSize = 4,
-    kCodeAutoFill = 3,
-    kCodeNormalParam = 2,
     kCodeObject = 1,
     kCodeSuccess = 0,
     kCodeIllegalParam = -1,

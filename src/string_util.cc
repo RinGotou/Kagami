@@ -56,18 +56,18 @@ namespace kagami {
       string output = ws2s(wstr);
 
       base.PackContent(make_shared<string>(output), kTypeIdString)
-        .SetConstructorFlag();
+        .SetDeliverFlag();
     }
     else if (obj.GetTypeId() == kTypeIdString) {
       string copy = obj.Cast<string>();
       base.PackContent(make_shared<string>(copy), kTypeIdString)
-        .SetConstructorFlag();
+        .SetDeliverFlag();
     }
     else {
       string output = obj.Cast<string>();
 
       base.PackContent(make_shared<string>(output), kTypeIdString)
-        .SetConstructorFlag();
+        .SetDeliverFlag();
     }
 
     return Message().SetObject(base);
@@ -97,91 +97,6 @@ namespace kagami {
     }
 
     return Message().SetObject(Object(base, kTypeIdArray));
-  }
-
-  //InStream-new
-  Message NewInStream(ObjectMap &p) {
-    EXPECT_TYPE(p, "path", kTypeIdString);
-    string path = p.Cast<string>("path");
-
-    shared_ptr<InStream> ifs = make_shared<InStream>(path);
-
-    return Message().SetObject(Object(ifs, kTypeIdInStream));
-  }
-
-  Message InStreamGet(ObjectMap &p) {
-    InStream &ifs = p.Cast<InStream>(kStrMe);
-
-    if (!ifs.Good()) {
-      return Message(kCodeBadStream, "Invalid instream.", kStateError);
-    }
-
-    string result = ifs.GetLine();
-
-    return Message().SetObject(result);
-  }
-
-  Message InStreamEOF(ObjectMap &p) {
-    InStream &ifs = p.Cast<InStream>(kStrMe);
-    return Message().SetObject(ifs.eof());
-  }
-
-  //OutStream
-  Message NewOutStream(ObjectMap &p) {
-    EXPECT_TYPE(p, "path", kTypeIdString);
-    EXPECT_TYPE(p, "mode", kTypeIdString);
-
-    string path = p.Cast<string>("path");
-    string mode = p.Cast<string>("mode");
-
-    shared_ptr<OutStream> ofs;
-    bool append = (mode == "append");
-    bool truncate = (mode == "truncate");
-
-    if (!append && truncate) {
-      ofs = make_shared<OutStream>(path, "w");
-    }
-    else if (append && !truncate) {
-      ofs = make_shared<OutStream>(path, "a+");
-    }
-
-    return Message().SetObject(Object(ofs, kTypeIdOutStream));
-  }
-
-  Message OutStreamWrite(ObjectMap &p) {
-    OutStream &ofs = p.Cast<OutStream>(kStrMe);
-    auto &obj = p["str"];
-    bool result = true;
-
-    if (obj.GetTypeId() == kTypeIdString) {
-      string str = obj.Cast<string>();
-      result = ofs.WriteLine(str);
-    }
-    else {
-      result = false;
-    }
-    
-    return Message().SetObject(result);
-  }
-
-  //regex
-  Message NewRegex(ObjectMap &p) {
-    EXPECT_TYPE(p, "pattern", kTypeIdString);
-
-    string pattern_string = p.Cast<string>("pattern");
-    shared_ptr<regex> reg = make_shared<regex>(pattern_string);
-
-    return Message().SetObject(Object(reg, kTypeIdRegex));
-  }
-
-  Message RegexMatch(ObjectMap &p) {
-    EXPECT_TYPE(p, "str", kTypeIdString);
-
-    string str = p.Cast<string>("str");
-    auto &pat = p.Cast<regex>(kStrMe);
-    bool result = regex_match(str, pat);
-
-    return Message().SetObject(result);
   }
 
   //wstring
@@ -216,133 +131,82 @@ namespace kagami {
     return Message();
   }
 
-  //Function
-  Message FunctionGetId(ObjectMap &p) {
-    auto &interface = p.Cast<Interface>(kStrMe);
-    return Message(interface.GetId());
+  Message NewRegex(ObjectMap &p) {
+    EXPECT_TYPE(p, "pattern", kTypeIdString);
+
+    string pattern_string = p.Cast<string>("pattern");
+    shared_ptr<regex> reg = make_shared<regex>(pattern_string);
+
+    return Message().SetObject(Object(reg, kTypeIdRegex));
   }
 
-  Message FunctionGetParameters(ObjectMap &p) {
-    auto &interface = p.Cast<Interface>(kStrMe);
-    shared_ptr<ObjectArray> dest_base = make_shared<ObjectArray>();
-    auto origin_vector = interface.GetParameters();
+  Message RegexMatch(ObjectMap &p) {
+    EXPECT_TYPE(p, "str", kTypeIdString);
 
-    for (auto it = origin_vector.begin(); it != origin_vector.end(); ++it) {
-      dest_base->emplace_back(Object(*it, kTypeIdString));
-    }
+    string str = p.Cast<string>("str");
+    auto &pat = p.Cast<regex>(kStrMe);
+    bool result = regex_match(str, pat);
 
-    return Message().SetObject(Object(dest_base, kTypeIdArray));
-  }
-
-  Message FunctionCompare(ObjectMap &p) {
-    auto &rhs = p[kStrRightHandSide];
-    auto &lhs = p[kStrMe].Cast<Interface>();
-
-    string type_id = rhs.GetTypeId();
-    bool result = false;
-
-    if (type_id == kTypeIdFunction) {
-      auto &rhs_interface = rhs.Cast<Interface>();
-
-      result = (lhs == rhs_interface);
-    }
-    
     return Message().SetObject(result);
   }
 
   void InitBaseTypes() {
-    using management::CreateNewInterface;
+    using management::CreateImpl;
     using namespace management::type;
 
-    NewTypeSetup(kTypeIdFunction, SimpleSharedPtrCopy<Interface>)
-      .InitComparator(PlainComparator<Interface>)
-      .InitMethods(
-        {
-          Interface(FunctionGetId, "", "id"),
-          Interface(FunctionGetParameters, "", "params"),
-          Interface(FunctionCompare, kStrRightHandSide, kStrCompare)
-        }
-    );
-
-    NewTypeSetup(kTypeIdString, SimpleSharedPtrCopy<string>, PlainHasher<string>())
+    ObjectTraitsSetup(kTypeIdString, PlainDeliveryImpl<string>, PlainHasher<string>())
       .InitComparator(PlainComparator<string>)
       .InitConstructor(
-        Interface(NewString, "raw_string", "string")
+        FunctionImpl(NewString, "raw_string", "string")
       )
       .InitMethods(
         {
-          Interface(StringFamilyGetElement<string>, "index", "__at"),
-          Interface(StringFamilySubStr<string>, "start|size", "substr"),
-          Interface(GetStringFamilySize<string>, "", "size"),
-          Interface(StringFamilyConverting<wstring, string>, "", "to_wide"),
-          Interface(StringCompare, kStrRightHandSide, kStrCompare),
-          Interface(StringToArray, "","to_array")
+          FunctionImpl(StringFamilyGetElement<string>, "index", "__at"),
+          FunctionImpl(StringFamilySubStr<string>, "start|size", "substr"),
+          FunctionImpl(GetStringFamilySize<string>, "", "size"),
+          FunctionImpl(StringFamilyConverting<wstring, string>, "", "to_wide"),
+          FunctionImpl(StringCompare, kStrRightHandSide, kStrCompare),
+          FunctionImpl(StringToArray, "","to_array")
         }
     );
 
-    NewTypeSetup(kTypeIdInStream, FakeCopy<InStream>, PointerHasher())
-      .InitConstructor(
-        Interface(NewInStream, "path", "instream")
-      )
-      .InitMethods(
-        {
-          Interface(InStreamGet, "", "get"),
-          Interface(InStreamEOF, "", "eof"),
-          Interface(StreamFamilyState<InStream>, "", "good"),
-        }
-    );
-
-    NewTypeSetup(kTypeIdOutStream, FakeCopy<OutStream>, PointerHasher())
-      .InitConstructor(
-        Interface(NewOutStream, "path|mode", "outstream")
-      )
-      .InitMethods(
-        {
-          Interface(OutStreamWrite, "str", "write"),
-          Interface(StreamFamilyState<OutStream>, "", "good"),
-        }
-    );
-    management::CreateConstantObject("kOutstreamModeAppend", Object("'append'"));
-    management::CreateConstantObject("kOutstreamModeTruncate", Object("'truncate'"));
-
-    NewTypeSetup(kTypeIdRegex, FakeCopy<regex>, PointerHasher())
-      .InitConstructor(
-        Interface(NewRegex, "pattern", "regex")
-      )
-      .InitMethods(
-        {
-          Interface(RegexMatch, "str", "match")
-        }
-    );
-
-    NewTypeSetup(kTypeIdWideString, SimpleSharedPtrCopy<wstring>, PlainHasher<wstring>())
+    ObjectTraitsSetup(kTypeIdWideString, PlainDeliveryImpl<wstring>, PlainHasher<wstring>())
       .InitComparator(PlainComparator<wstring>)
       .InitConstructor(
-        Interface(NewWideString, "raw_string", "wstring")
+        FunctionImpl(NewWideString, "raw_string", "wstring")
       )
       .InitMethods(
         {
-          Interface(GetStringFamilySize<wstring>,  "", "size"),
-          Interface(StringFamilyGetElement<wstring>, "index", "__at"),
-          Interface(WideStringPrint, "", "print"),
-          Interface(StringFamilySubStr<wstring>, "start|size", "substr"),
-          Interface(StringFamilyConverting<string, wstring>, "", "to_byte"),
-          Interface(WideStringCompare, kStrRightHandSide, kStrCompare)
+          FunctionImpl(GetStringFamilySize<wstring>,  "", "size"),
+          FunctionImpl(StringFamilyGetElement<wstring>, "index", "__at"),
+          FunctionImpl(WideStringPrint, "", "print"),
+          FunctionImpl(StringFamilySubStr<wstring>, "start|size", "substr"),
+          FunctionImpl(StringFamilyConverting<string, wstring>, "", "to_byte"),
+          FunctionImpl(WideStringCompare, kStrRightHandSide, kStrCompare)
         }
     );
 
-    CreateNewInterface(Interface(DecimalConvert<2>, "str", "bin"));
-    CreateNewInterface(Interface(DecimalConvert<8>, "str", "octa"));
-    CreateNewInterface(Interface(DecimalConvert<16>, "str", "hex"));
-    CreateNewInterface(Interface(CreateStringFromArray, "src", "ar2string"));
-    CreateNewInterface(Interface(CharFromInt, "value", "int2str"));
-    CreateNewInterface(Interface(IntFromChar, "value", "str2int"));
 
-    EXPORT_CONSTANT(kTypeIdFunction);
+    ObjectTraitsSetup(kTypeIdRegex, ShallowDelivery<regex>, PointerHasher())
+      .InitConstructor(
+        FunctionImpl(NewRegex, "pattern", "regex")
+      )
+      .InitMethods(
+        {
+          FunctionImpl(RegexMatch, "str", "match")
+        }
+    );
+
+    CreateImpl(FunctionImpl(DecimalConvert<2>, "str", "bin"));
+    CreateImpl(FunctionImpl(DecimalConvert<8>, "str", "octa"));
+    CreateImpl(FunctionImpl(DecimalConvert<16>, "str", "hex"));
+    CreateImpl(FunctionImpl(CreateStringFromArray, "src", "ar2string"));
+    CreateImpl(FunctionImpl(CharFromInt, "value", "int2str"));
+    CreateImpl(FunctionImpl(IntFromChar, "value", "str2int"));
+
+
     EXPORT_CONSTANT(kTypeIdString);
-    EXPORT_CONSTANT(kTypeIdInStream);
-    EXPORT_CONSTANT(kTypeIdOutStream);
-    EXPORT_CONSTANT(kTypeIdRegex);
     EXPORT_CONSTANT(kTypeIdWideString);
+    EXPORT_CONSTANT(kTypeIdRegex);
   }
 }

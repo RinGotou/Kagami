@@ -48,23 +48,23 @@ namespace kagami {
   }
 
   void InitSoundComponents() {
-    using management::type::NewTypeSetup;
-    using management::CreateNewInterface;
+    using management::type::ObjectTraitsSetup;
+    using management::CreateImpl;
     using management::type::PointerHasher;
 
-    NewTypeSetup(kTypeIdMusic,FakeCopy<dawn::Music>, PointerHasher())
+    ObjectTraitsSetup(kTypeIdMusic,ShallowDelivery<dawn::Music>, PointerHasher())
       .InitConstructor(
-       Interface(NewMusicObject,"path",kTypeIdMusic)
+       FunctionImpl(NewMusicObject,"path",kTypeIdMusic)
       )
       .InitMethods(
         {
-          Interface(MusicPlay,"","Play")
+          FunctionImpl(MusicPlay,"","Play")
         }
     );
 
-    CreateNewInterface(Interface(MusicPause, "", "PauseMusic"));
-    CreateNewInterface(Interface(MusicResume, "", "ResumeMusic"));
-    CreateNewInterface(Interface(MusicHalt, "", "HaltMusic"));
+    CreateImpl(FunctionImpl(MusicPause, "", "PauseMusic"));
+    CreateImpl(FunctionImpl(MusicResume, "", "ResumeMusic"));
+    CreateImpl(FunctionImpl(MusicHalt, "", "HaltMusic"));
   }
 #endif
 }

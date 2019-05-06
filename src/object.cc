@@ -16,6 +16,14 @@ namespace kagami {
     return result;
   }
 
+  shared_ptr<void> ObjectTraits::CreateObjectCopy(shared_ptr<void> target) const {
+    shared_ptr<void> result = nullptr;
+    if (target != nullptr) {
+      result = dlvy_(target);
+    }
+    return result;
+  }
+
   Object &Object::operator=(const Object &object) {
     if (object.mode_ == kObjectRef) {
       real_dest_ = object.real_dest_;

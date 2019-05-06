@@ -209,13 +209,13 @@ namespace kagami {
   using CommandPointer = Command * ;
 
   template <class T>
-  shared_ptr<void> SimpleSharedPtrCopy(shared_ptr<void> target) {
+  shared_ptr<void> PlainDeliveryImpl(shared_ptr<void> target) {
     T temp(*static_pointer_cast<T>(target));
     return make_shared<T>(temp);
   }
 
   template <class T>
-  shared_ptr<void> FakeCopy(shared_ptr<void> target) {
+  shared_ptr<void> ShallowDelivery(shared_ptr<void> target) {
     return target;
   }
 
@@ -266,11 +266,11 @@ namespace kagami {
     void RecoverLastState();
 
     Object FetchPlainObject(Argument &arg);
-    Object FetchInterfaceObject(string id);
+    Object FetchFunctionObject(string id);
     Object FetchObject(Argument &arg, bool checking = false);
 
-    bool _FetchInterface(InterfacePointer &interface, string id, string type_id);
-    bool FetchInterface(InterfacePointer &interface, CommandPointer &command,
+    bool _FetchFunctionImpl(FunctionImplPointer &impl, string id, string type_id);
+    bool FetchFunctionImpl(FunctionImplPointer &impl, CommandPointer &command,
       ObjectMap &obj_map);
 
     void ClosureCatching(ArgumentList &args, size_t nest_end, bool closure);
@@ -317,10 +317,10 @@ namespace kagami {
     void CommandReturn(ArgumentList &args);
     void MachineCommands(Keyword token, ArgumentList &args, Request &request);
 
-    void GenerateArgs(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
-    void Generate_Normal(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
-    void Generate_AutoSize(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
-    void Generate_AutoFill(Interface &interface, ArgumentList &args, ObjectMap &obj_map);
+    void GenerateArgs(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
+    void Generate_Normal(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
+    void Generate_AutoSize(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
+    void Generate_AutoFill(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
   private:
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;
@@ -359,7 +359,8 @@ namespace kagami {
   void InitConsoleComponents();
   void InitBaseTypes();
   void InitContainerComponents();
-
+  void InitFunctionType();
+  void InitStreamComponents();
 #if not defined(_DISABLE_SDL_)
   void InitSoundComponents();
 #endif

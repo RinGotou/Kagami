@@ -11,7 +11,7 @@ namespace kagami {
     kContainerNull
   };
 
-  /* Unified iterator wrapper interface */
+  /* Unified iterator wrapper */
   class IteratorInterface {
   public:
     virtual ~IteratorInterface() {}

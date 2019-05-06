@@ -1,5 +1,5 @@
 #pragma once
-#include "ir.h"
+#include "vmcode.h"
  
 namespace kagami {
   namespace trace {

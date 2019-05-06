@@ -42,12 +42,6 @@ namespace kagami {
     return Message().SetObject(Object(output, type_id));
   }
 
-  template <class StreamType>
-  Message StreamFamilyState(ObjectMap &p) {
-    StreamType &stream = p.Cast<StreamType>(kStrMe);
-    return Message().SetObject(stream.Good());
-  }
-
   template<class DestType,class SrcType>
   Message StringFamilyConverting(ObjectMap &p) {
     SrcType &str = p.Cast<SrcType>(kStrMe); 

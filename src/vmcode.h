@@ -68,28 +68,24 @@ namespace kagami {
 
   public:
     size_t idx;
-    int priority;
     RequestType type;
     RequestOption option;
 
     Request(Keyword token) :
       data_(token),
       idx(0),
-      priority(5),
       type(kRequestCommand),
       option() {}
 
     Request(string token, Argument domain = Argument()) :
       data_(InterfaceInfo{ token, domain }),
       idx(0),
-      priority(5),
       type(kRequestInterface),
       option() {}
 
     Request() :
       data_(),
       idx(0),
-      priority(5),
       type(kRequestNull),
       option() {}
 

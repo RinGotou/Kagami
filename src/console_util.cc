@@ -95,7 +95,7 @@ namespace kagami {
     }
 
     string buf = GetLine();
-    DEBUG_EVENT("(Input Interface)Content:" + buf);
+    DEBUG_EVENT("(Input FunctionImpl)Content:" + buf);
     return Message().SetObject(buf);
   }
 
@@ -109,14 +109,14 @@ namespace kagami {
   }
 
   void InitConsoleComponents() {
-    using management::CreateNewInterface;
+    using management::CreateImpl;
 
-    CreateNewInterface(Interface(Input, "msg", "input", kCodeAutoFill));
-    CreateNewInterface(Interface(GetChar, "", "getchar"));
-    CreateNewInterface(Interface(Print, kStrMe, "print"));
-    CreateNewInterface(Interface(PrintLine, kStrMe, "println"));
-    CreateNewInterface(Interface(SystemCommand, "command", "console"));
-    CreateNewInterface(Interface(ThreadSleep, "milliseconds", "sleep"));
-    CreateNewInterface(Interface(Test, "obj", "InvokeTest"));
+    CreateImpl(FunctionImpl(Input, "msg", "input", kParamAutoFill));
+    CreateImpl(FunctionImpl(GetChar, "", "getchar"));
+    CreateImpl(FunctionImpl(Print, kStrMe, "print"));
+    CreateImpl(FunctionImpl(PrintLine, kStrMe, "println"));
+    CreateImpl(FunctionImpl(SystemCommand, "command", "console"));
+    CreateImpl(FunctionImpl(ThreadSleep, "milliseconds", "sleep"));
+    CreateImpl(FunctionImpl(Test, "obj", "InvokeTest"));
   }
 }

@@ -9,10 +9,10 @@ namespace kagami {
 
   using ObjectPointer = Object *;
   using ObjectRef = Object &;
-  using ObjectComparator = bool(*)(Object &, Object &);
+  using Comparator = bool(*)(Object &, Object &);
   using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
-  using CopyingPolicy = shared_ptr<void>(*)(shared_ptr<void>);
+  using DeliveryImpl = shared_ptr<void>(*)(shared_ptr<void>);
   using ContainerPool = list<ObjectContainer>;
   
   vector<string> BuildStringVector(string source);
@@ -25,6 +25,35 @@ namespace kagami {
   struct HasherInterface {
     virtual size_t Get(shared_ptr<void>) const = 0;
     virtual ~HasherInterface() {}
+  };
+
+  using HasherFunction = size_t(*)(shared_ptr<void>);
+  using ManagedHasher = shared_ptr<HasherInterface>;
+
+  class ObjectTraits {
+  private:
+    DeliveryImpl dlvy_;
+    Comparator comparator_;
+    ManagedHasher hasher_;
+    vector<string> methods_;
+
+  public:
+    ObjectTraits() = delete;
+
+    ObjectTraits(
+      DeliveryImpl copying_policy,
+      string methods,
+      ManagedHasher hasher = nullptr,
+      Comparator comparator = nullptr) :
+      dlvy_(copying_policy),
+      comparator_(comparator),
+      methods_(BuildStringVector(methods)),
+      hasher_(hasher) {}
+
+    shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const;
+    vector<string> &GetMethods() { return methods_; }
+    shared_ptr<HasherInterface> &GetHasher() { return hasher_; }
+    Comparator GetComparator() { return comparator_; }
   };
 
   class Object {
@@ -123,12 +152,12 @@ namespace kagami {
       return *std::static_pointer_cast<Tx>(ptr_);
     }
 
-    Object &SetConstructorFlag() {
+    Object &SetDeliverFlag() {
       constructor_ = true;
       return *this;
     }
 
-    bool GetConstructorFlag() {
+    bool GetDeliverFlag() {
       bool result = constructor_;
       constructor_ = false;
       return result;

@@ -18,6 +18,8 @@ namespace runtime {
     InitConsoleComponents();
     InitBaseTypes();
     InitContainerComponents();
+    InitFunctionType();
+    InitStreamComponents();
 #if not defined(_DISABLE_SDL_)
     InitSoundComponents();
 #endif
