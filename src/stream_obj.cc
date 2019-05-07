@@ -79,7 +79,7 @@ namespace kagami {
   void InitStreamComponents() {
     using namespace management::type;
 
-    ObjectTraitsSetup(kTypeIdInStream, ShallowDelivery<InStream>, PointerHasher())
+    ObjectTraitsSetup(kTypeIdInStream, ShallowDelivery, PointerHasher())
       .InitConstructor(
         FunctionImpl(NewInStream, "path", "instream")
       )
@@ -91,7 +91,7 @@ namespace kagami {
         }
     );
 
-    ObjectTraitsSetup(kTypeIdOutStream, ShallowDelivery<OutStream>, PointerHasher())
+    ObjectTraitsSetup(kTypeIdOutStream, ShallowDelivery, PointerHasher())
       .InitConstructor(
         FunctionImpl(NewOutStream, "path|mode", "outstream")
       )

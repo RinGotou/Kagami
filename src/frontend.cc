@@ -336,8 +336,17 @@ namespace kagami {
   }
 
   void LineParser::BindExpr() {
-    if (!frame_->args.empty() && frame_->next.first != kStrFn) {
+    if (!frame_->args.empty()) {
       Request request(kKeywordBind);
+      request.option.local_object = frame_->local_object;
+      frame_->local_object = false;
+      frame_->symbol.emplace_back(request);
+    }
+  }
+
+  void LineParser::DeliverExpr() {
+    if (!frame_->args.empty()) {
+      Request request(kKeywordDeliver);
       request.option.local_object = frame_->local_object;
       frame_->local_object = false;
       frame_->symbol.emplace_back(request);
@@ -571,7 +580,7 @@ namespace kagami {
       return true;
     }
 
-    if (frame_->next.first == "=") {
+    if (frame_->next.first == "=" || frame_->next.first == "<-") {
       frame_->args.emplace_back(Argument(
         frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
       return true;
@@ -613,6 +622,9 @@ namespace kagami {
         switch (value) {
         case kTerminatorAssign:
           BindExpr();
+          break;
+        case kTerminatorArrow:
+          DeliverExpr();
           break;
         case kTerminatorComma:
           state = CleanupStack();

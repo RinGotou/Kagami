@@ -30,6 +30,7 @@ namespace kagami::util {
     bool result;
     switch (token) {
     case kKeywordBind:
+    case kKeywordDeliver:
     case kKeywordPlus:
     case kKeywordMinus:
     case kKeywordTimes:
@@ -255,7 +256,7 @@ namespace kagami::util {
 
 
   bool IsSymbol(string target) {
-    static const regex kPatternSymbol(R"(==|<=|>=|!=|&&|\|\||[[:Punct:]])");
+    static const regex kPatternSymbol(R"(==|<-|<=|>=|!=|&&|\|\||[[:Punct:]])");
     if (target.empty()) return false;
     return std::regex_match(target, kPatternSymbol);
   }

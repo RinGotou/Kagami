@@ -187,7 +187,7 @@ namespace kagami {
     );
 
 
-    ObjectTraitsSetup(kTypeIdRegex, ShallowDelivery<regex>, PointerHasher())
+    ObjectTraitsSetup(kTypeIdRegex, ShallowDelivery, PointerHasher())
       .InitConstructor(
         FunctionImpl(NewRegex, "pattern", "regex")
       )

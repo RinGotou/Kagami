@@ -133,6 +133,7 @@ namespace kagami {
     kKeywordEnd, 
     kKeywordElse, 
     kKeywordBind, 
+    kKeywordDeliver,
     kKeywordWhile, 
     kKeywordPlus, 
     kKeywordMinus, 

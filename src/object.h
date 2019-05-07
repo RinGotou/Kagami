@@ -30,6 +30,14 @@ namespace kagami {
   using HasherFunction = size_t(*)(shared_ptr<void>);
   using ManagedHasher = shared_ptr<HasherInterface>;
 
+  template <class T>
+  shared_ptr<void> PlainDeliveryImpl(shared_ptr<void> target) {
+    T temp(*static_pointer_cast<T>(target));
+    return make_shared<T>(temp);
+  }
+
+  shared_ptr<void> ShallowDelivery(shared_ptr<void> target);
+
   class ObjectTraits {
   private:
     DeliveryImpl dlvy_;
@@ -50,10 +58,10 @@ namespace kagami {
       methods_(BuildStringVector(methods)),
       hasher_(hasher) {}
 
-    shared_ptr<void> CreateObjectCopy(shared_ptr<void> target) const;
     vector<string> &GetMethods() { return methods_; }
     shared_ptr<HasherInterface> &GetHasher() { return hasher_; }
     Comparator GetComparator() { return comparator_; }
+    DeliveryImpl GetDeliver() { return dlvy_; }
   };
 
   class Object {
@@ -158,9 +166,19 @@ namespace kagami {
     }
 
     bool GetDeliverFlag() {
+      if (mode_ == kObjectRef) {
+        return real_dest_->GetDeliverFlag();
+      }
       bool result = constructor_;
       constructor_ = false;
       return result;
+    }
+
+    bool SeekDeliverFlag() {
+      if (mode_ == kObjectRef) {
+        return real_dest_->SeekDeliverFlag();
+      }
+      return constructor_;
     }
 
     bool operator==(const Object &obj) = delete;

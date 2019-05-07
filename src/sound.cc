@@ -52,7 +52,7 @@ namespace kagami {
     using management::CreateImpl;
     using management::type::PointerHasher;
 
-    ObjectTraitsSetup(kTypeIdMusic,ShallowDelivery<dawn::Music>, PointerHasher())
+    ObjectTraitsSetup(kTypeIdMusic,ShallowDelivery, PointerHasher())
       .InitConstructor(
        FunctionImpl(NewMusicObject,"path",kTypeIdMusic)
       )

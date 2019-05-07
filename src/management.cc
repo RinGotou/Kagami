@@ -136,11 +136,23 @@ namespace kagami::management::type {
     return result;
   }
 
+  bool IsCopyable(Object &obj) {
+    bool result = false;
+    auto &base = GetObjectTraitsCollection();
+    const auto it = base.find(obj.GetTypeId());
+
+    if (it != base.end()) {
+      result = (it->second.GetDeliver() != ShallowDelivery);
+    }
+
+    return result;
+  }
+
   void CreateObjectTraits(string id, ObjectTraits temp) {
     GetObjectTraitsCollection().insert(pair<string, ObjectTraits>(id, temp));
   }
 
-  Object CreateObjectCopy(Object & object) {
+  Object CreateObjectCopy(Object &object) {
     if (object.GetDeliverFlag()) {
       return object;
     }
@@ -148,8 +160,8 @@ namespace kagami::management::type {
     Object result;
     const auto it = GetObjectTraitsCollection().find(object.GetTypeId());
     if (it != GetObjectTraitsCollection().end()) {
-      result.PackContent(it->second.CreateObjectCopy(object.Get()),
-        object.GetTypeId());
+      auto deliver = it->second.GetDeliver();
+      result.PackContent(deliver(object.Get()), object.GetTypeId());
     }
 
     return result;

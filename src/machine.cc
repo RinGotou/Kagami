@@ -108,7 +108,7 @@ namespace kagami {
       .InitComparator(PlainComparator<double>);
     ObjectTraitsSetup(kTypeIdBool, PlainDeliveryImpl<bool>, PlainHasher<bool>())
       .InitComparator(PlainComparator<bool>);
-    ObjectTraitsSetup(kTypeIdNull, ShallowDelivery<void>);
+    ObjectTraitsSetup(kTypeIdNull, ShallowDelivery);
 
     EXPORT_CONSTANT(kTypeIdInt);
     EXPORT_CONSTANT(kTypeIdFloat);
@@ -134,7 +134,12 @@ namespace kagami {
 
   void RuntimeFrame::MakeError(string str) {
     error = true;
-    error_string = str;
+    msg_string = str;
+  }
+
+  void RuntimeFrame::MakeWaring(string str) {
+    warning = true;
+    msg_string = str;
   }
 
   void RuntimeFrame::RefreshReturnStack(Object obj) {
@@ -768,6 +773,9 @@ namespace kagami {
     else {
       string id = lhs.Cast<string>();
 
+      ERROR_CHECKING(util::GetStringType(id) != kStringTypeIdentifier,
+        "Invalid object id.");
+
       if (!local_value) {
         ObjectPointer ptr = obj_stack_.Find(id);
 
@@ -778,8 +786,41 @@ namespace kagami {
       }
 
       Object obj = CreateObjectCopy(rhs);
+
+      ERROR_CHECKING(!obj_stack_.CreateObject(id, obj),
+        "Object binding failed.");
+    }
+  }
+
+  void Machine::CommandDeliver(ArgumentList &args, bool local_value) {
+    auto &frame = frame_stack_.top();
+    //Do not change the order!
+    auto rhs = FetchObject(args[1]);
+    auto lhs = FetchObject(args[0]);
+
+    if (lhs.IsRef()) {
+      auto &real_lhs = lhs.Unpack();
+      real_lhs = rhs.Unpack();
+      rhs.Unpack() = Object();
+    }
+    else {
+      string id = lhs.Cast<string>();
+
       ERROR_CHECKING(util::GetStringType(id) != kStringTypeIdentifier,
         "Invalid object id.");
+
+      if (!local_value) {
+        ObjectPointer ptr = obj_stack_.Find(id);
+
+        if (ptr != nullptr) {
+          ptr->Unpack() = rhs.Unpack();
+          rhs.Unpack() = Object();
+          return;
+        }
+      }
+
+      Object obj = rhs.Unpack();
+      rhs.Unpack() = Object();
       ERROR_CHECKING(!obj_stack_.CreateObject(id, obj),
         "Object binding failed.");
     }
@@ -1196,6 +1237,9 @@ namespace kagami {
     case kKeywordBind:
       CommandBind(args, request.option.local_object);
       break;
+    case kKeywordDeliver:
+      CommandDeliver(args, request.option.local_object);
+      break;
     case kKeywordExpList:
       ExpList(args);
       break;
@@ -1401,6 +1445,11 @@ namespace kagami {
 
     // Main loop of virtual machine.
     while (frame->idx < size || frame_stack_.size() > 1) {
+      if (frame->warning) {
+        trace::AddEvent(frame->msg_string, kStateWarning);
+        frame->warning = false;
+      }
+
       //stop at invoking point
       if (invoking && frame_stack_.size() == stop_point) {
         break;
@@ -1497,7 +1546,7 @@ namespace kagami {
 
     if (frame->error) {
       trace::AddEvent(
-        Message(kCodeBadExpression, frame->error_string, kStateError)
+        Message(kCodeBadExpression, frame->msg_string, kStateError)
           .SetIndex(script_idx));
       if (invoking) invoking_error = true;
     }

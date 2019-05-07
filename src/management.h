@@ -47,6 +47,7 @@ namespace kagami::management::type {
   bool CheckMethod(string func_id, string domain);
   size_t GetHash(Object &obj);
   bool IsHashable(Object &obj);
+  bool IsCopyable(Object &obj);
   void CreateObjectTraits(string id, ObjectTraits temp);
   Object CreateObjectCopy(Object &object);
   bool CheckBehavior(Object obj, string method_str);

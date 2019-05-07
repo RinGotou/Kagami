@@ -208,20 +208,10 @@ namespace kagami {
 
   using CommandPointer = Command * ;
 
-  template <class T>
-  shared_ptr<void> PlainDeliveryImpl(shared_ptr<void> target) {
-    T temp(*static_pointer_cast<T>(target));
-    return make_shared<T>(temp);
-  }
-
-  template <class T>
-  shared_ptr<void> ShallowDelivery(shared_ptr<void> target) {
-    return target;
-  }
-
   class RuntimeFrame {
   public:
     bool error;
+    bool warning;
     bool activated_continue;
     bool activated_break;
     bool void_call;
@@ -230,7 +220,7 @@ namespace kagami {
     bool jump_from_end;
     size_t jump_offset;
     size_t idx;
-    string error_string;
+    string msg_string;
     stack<bool> condition_stack; //preserved
     stack<bool> scope_stack;
     stack<size_t> jump_stack;
@@ -247,7 +237,7 @@ namespace kagami {
       jump_from_end(false),
       jump_offset(0),
       idx(0),
-      error_string(),
+      msg_string(),
       condition_stack(),
       jump_stack(),
       branch_jump_stack(),
@@ -257,6 +247,7 @@ namespace kagami {
     void Goto(size_t taget_idx);
     void AddJumpRecord(size_t target_idx);
     void MakeError(string str);
+    void MakeWaring(string str);
     void RefreshReturnStack(Object obj = Object());
   };
 
@@ -292,6 +283,7 @@ namespace kagami {
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);
     void CommandBind(ArgumentList &args, bool local_value);
+    void CommandDeliver(ArgumentList &args, bool local_value);
     void CommandTypeId(ArgumentList &args);
     void CommandMethods(ArgumentList &args);
     void CommandExist(ArgumentList &args);
