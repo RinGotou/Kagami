@@ -1081,7 +1081,7 @@ namespace kagami {
     }
 
     if (args.size() == 1) {
-      Object ret_obj = FetchObject(args[0]);
+      Object ret_obj = FetchObject(args[0]).Unpack();
 
       auto *container = &obj_stack_.GetCurrent();
       while (container->Find(kStrUserFunc) == nullptr) {
@@ -1105,7 +1105,7 @@ namespace kagami {
     else {
       ManagedArray obj_array = make_shared<ObjectArray>();
       for (auto it = args.begin(); it != args.end(); ++it) {
-        obj_array->emplace_back(FetchObject(*it));
+        obj_array->emplace_back(FetchObject(*it).Unpack());
       }
       Object ret_obj(obj_array, kTypeIdArray);
 

@@ -58,7 +58,7 @@ namespace kagami {
       )
       .InitMethods(
         {
-          FunctionImpl(MusicPlay,"","Play")
+          FunctionImpl(MusicPlay,"","play")
         }
     );
 
