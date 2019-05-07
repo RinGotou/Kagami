@@ -191,6 +191,8 @@ namespace kagami {
     bool operator==(const Object &obj) = delete;
     bool operator==(const Object &&obj) = delete;
 
+    Object *GetRealDest() { return real_dest_; }
+
     Object &operator=(const Object &&object) { return operator=(object); }
 
     Object &swap(Object &&obj) { return swap(obj); }
@@ -224,6 +226,7 @@ namespace kagami {
     bool Add(string id, Object source);
     bool Dispose(string id);
     Object *Find(string id, bool forward_seeking = true);
+    bool FindDest(Object *ptr);
     string FindDomain(string id, bool forward_seeking = true);
     void ClearExcept(string exceptions);
 
@@ -253,8 +256,12 @@ namespace kagami {
       BuildCache();
     }
 
-    map<string, Object> &GetContent() {
+    auto &GetContent() {
       return base_;
+    }
+
+    auto &GetHashMap() {
+      return dest_map_;
     }
 
     ObjectContainer &SetPreviousContainer(ObjectContainer *prev) {
@@ -294,7 +301,7 @@ namespace kagami {
 
     ObjectMap &operator=(const initializer_list<NamedObject> &rhs);
     ObjectMap &operator=(const ObjectMap &rhs);
-    void merge(ObjectMap &source);
+    void Naturalize(ObjectContainer &container);
 
     ObjectMap &operator=(const initializer_list<NamedObject> &&rhs) {
       return operator=(rhs);
@@ -350,6 +357,12 @@ namespace kagami {
     bool ClearCurrent() {
       if (base_.empty()) return false;
       base_.back().Clear();
+      return true;
+    }
+
+    bool ClearCurrentExcept(string exceptions) {
+      if (base_.empty()) return false;
+      base_.back().ClearExcept(exceptions);
       return true;
     }
 

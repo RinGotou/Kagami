@@ -1364,7 +1364,7 @@ namespace kagami {
     ERROR_CHECKING(args.size() > params.size(), 
       "Too many arguments");
     ERROR_CHECKING(args.size() < params.size(), 
-      "Youe need at least " + to_string(params.size()) + "argument(s).");
+      "You need at least " + to_string(params.size()) + " argument(s).");
 
 
     for (auto it = params.rbegin(); it != params.rend(); ++it) {
@@ -1487,6 +1487,7 @@ namespace kagami {
     auto tail_recursion = [&]() -> void {
       string function_scope = frame_stack_.top().function_scope;
       size_t jump_offset = frame_stack_.top().jump_offset;
+      obj_map.Naturalize(obj_stack_.GetCurrent());
       frame_stack_.top() = RuntimeFrame(function_scope);
       obj_stack_.ClearCurrent();
       obj_stack_.CreateObject(kStrUserFunc, Object(function_scope));
@@ -1499,6 +1500,7 @@ namespace kagami {
     auto tail_call = [&](FunctionImpl &func) -> void {
       code_stack_.pop_back();
       code_stack_.push_back(&func.GetCode());
+      obj_map.Naturalize(obj_stack_.GetCurrent());
       frame_stack_.top() = RuntimeFrame(func.GetId());
       obj_stack_.ClearCurrent();
       obj_stack_.CreateObject(kStrUserFunc, Object(func.GetId()));

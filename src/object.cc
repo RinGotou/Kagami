@@ -31,6 +31,7 @@ namespace kagami {
       ptr_.reset();
     }
     else {
+      real_dest_ = nullptr;
       ptr_ = object.ptr_;
     }
 
@@ -125,6 +126,14 @@ namespace kagami {
     return ptr;
   }
 
+  bool ObjectContainer::FindDest(Object *ptr) {
+    bool result = false;
+    for (const auto &unit : dest_map_) {
+      if (unit.second == ptr) result = true;
+    }
+    return result;
+  }
+
   string ObjectContainer::FindDomain(string id, bool forward_seeking) {
     if (base_.empty() && prev_ == nullptr) return kTypeIdNull;
 
@@ -182,14 +191,12 @@ namespace kagami {
     return *this;
   }
 
-  void ObjectMap::merge(ObjectMap &source) {
-    for (auto &unit : source) {
-      auto it = find(unit.first);
-      if (it != end()) {
-        it->second = unit.second;
-      }
-      else {
-        this->insert(unit);
+  void ObjectMap::Naturalize(ObjectContainer &container) {
+    auto &hash_map = container.GetHashMap();
+
+    for (auto it = begin(); it != end(); ++it) {
+      if (it->second.IsRef() && container.FindDest(it->second.GetRealDest())) {
+        it->second = it->second.Unpack();
       }
     }
   }
