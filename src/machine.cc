@@ -156,8 +156,8 @@ namespace kagami {
   bool Machine::IsTailRecursion(size_t idx, VMCode *code) {
     if (code != code_stack_.back()) return false;
 
-    auto & vmcode = *code;
-    auto & current = vmcode[idx];
+    auto &vmcode = *code;
+    auto &current = vmcode[idx];
     bool result = false;
 
     if (idx == vmcode.size() - 1) {
@@ -165,9 +165,30 @@ namespace kagami {
     }
     else if (idx == vmcode.size() - 2) {
       bool needed_by_next_call =
+        vmcode[idx + 1].first.GetKeywordValue() == kKeywordReturn &&
         vmcode[idx + 1].second.back().type == kArgumentReturnStack &&
         vmcode[idx + 1].second.size() == 1;
       if (!current.first.option.void_call && needed_by_next_call) {
+        result = true;
+      }
+    }
+
+    return result;
+  }
+
+  bool Machine::IsTailCall(size_t idx) {
+    auto &vmcode = *code_stack_.back();
+    bool result = false;
+
+    if (idx == vmcode.size() - 1) {
+      result = true;
+    }
+    else if (idx == vmcode.size() - 2) {
+      bool needed_by_next_call = 
+        vmcode[idx + 1].first.GetKeywordValue() == kKeywordReturn &&
+        vmcode[idx + 1].second.back().type == kArgumentReturnStack &&
+        vmcode[idx + 1].second.size() == 1;
+      if (!vmcode[idx].first.option.void_call && needed_by_next_call) {
         result = true;
       }
     }
@@ -1439,21 +1460,22 @@ namespace kagami {
       obj_stack_.CreateObject(kStrUserFunc, Object(id));
       obj_stack_.MergeMap(*p);
       obj_stack_.MergeMap(*closure_record);
+      frame_stack_.top().function_scope = id;
     }
 
     RuntimeFrame *frame = &frame_stack_.top();
     size_t size = code->size();
 
     //Refreshing loop tick state to make it work correctly.
-    auto refresh_tick = [&]() ->void {
+    auto refresh_tick = [&]() -> void {
       code = code_stack_.back();
       size = code->size();
       frame = &frame_stack_.top();
     };
 
-    auto update_stack_frame = [&](FunctionImpl &func)->void {
+    auto update_stack_frame = [&](FunctionImpl &func) -> void {
       code_stack_.push_back(&func.GetCode());
-      frame_stack_.push(RuntimeFrame());
+      frame_stack_.push(RuntimeFrame(func.GetId()));
       obj_stack_.Push();
       obj_stack_.CreateObject(kStrUserFunc, Object(func.GetId()));
       obj_stack_.MergeMap(obj_map);
@@ -1462,7 +1484,7 @@ namespace kagami {
       frame->jump_offset = func.GetOffset();
     };
 
-    auto tail_call = [&]() -> void {
+    auto tail_recursion = [&]() -> void {
       string function_scope = frame_stack_.top().function_scope;
       size_t jump_offset = frame_stack_.top().jump_offset;
       frame_stack_.top() = RuntimeFrame(function_scope);
@@ -1472,6 +1494,18 @@ namespace kagami {
       obj_stack_.MergeMap(impl->GetClosureRecord());
       refresh_tick();
       frame->jump_offset = jump_offset;
+    };
+
+    auto tail_call = [&](FunctionImpl &func) -> void {
+      code_stack_.pop_back();
+      code_stack_.push_back(&func.GetCode());
+      frame_stack_.top() = RuntimeFrame(func.GetId());
+      obj_stack_.ClearCurrent();
+      obj_stack_.CreateObject(kStrUserFunc, Object(func.GetId()));
+      obj_stack_.MergeMap(obj_map);
+      obj_stack_.MergeMap(impl->GetClosureRecord());
+      refresh_tick();
+      frame->jump_offset = func.GetOffset();
     };
 
     // Main loop of virtual machine.
@@ -1531,7 +1565,6 @@ namespace kagami {
       }
 
       //Building object map for function call expressed by command
-      
       GenerateArgs(*impl, command->second, obj_map);
       if (frame->error) {
         script_idx = command->first.idx;
@@ -1543,7 +1576,10 @@ namespace kagami {
       //and start new processing in next tick.
       if (impl->GetType() == kFunctionVMCode) {
         if (IsTailRecursion(frame->idx, &impl->GetCode())) {
-          tail_call();
+          tail_recursion();
+        }
+        else if (IsTailCall(frame->idx)) {
+          tail_call(*impl);
         }
         else {
           update_stack_frame(*impl);

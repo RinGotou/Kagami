@@ -259,6 +259,7 @@ namespace kagami {
   private:
     void RecoverLastState();
     bool IsTailRecursion(size_t idx, VMCode *code);
+    bool IsTailCall(size_t idx);
 
     Object FetchPlainObject(Argument &arg);
     Object FetchFunctionObject(string id);
