@@ -51,11 +51,11 @@ namespace kagami {
     ObjectTraits() = delete;
 
     ObjectTraits(
-      DeliveryImpl copying_policy,
+      DeliveryImpl dlvy,
       string methods,
       HasherFunction hasher = nullptr,
       Comparator comparator = nullptr) :
-      dlvy_(copying_policy),
+      dlvy_(dlvy),
       comparator_(comparator),
       methods_(BuildStringVector(methods)),
       hasher_(hasher) {}

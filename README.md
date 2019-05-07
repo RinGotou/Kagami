@@ -11,8 +11,9 @@ implementation, not CPU intensive job. This project contains a language interpre
 free implementation with C++17.
 
 ## About repo branch
-"master" is complete version of code in "testing" branch. IT'S NOT REAL STABLE BRANCH! "x.x-stable" is the 
-stable version of interpreter. "testing" is current developing branch.
+"master" is complete version of code in "testing" branch. IT'S NOT REAL STABLE BRANCH! "testing" is current developing branch.
+
+"x.x-stable" is real stable version of interpreter. 
 
 ## How to use these codes?
 
