@@ -211,6 +211,7 @@ namespace kagami {
   const string kTypeIdTable           = "table";
 
   const string
+    kStrRootScope      = "!root",
     kStrLocal          = "local",
     kStrHash           = "hash",
     kStrIf             = "if",

@@ -55,19 +55,16 @@ namespace kagami {
       wstring wstr = obj.Cast<wstring>();
       string output = ws2s(wstr);
 
-      base.PackContent(make_shared<string>(output), kTypeIdString)
-        .SetDeliverFlag();
+      base.PackContent(make_shared<string>(output), kTypeIdString);
     }
     else if (obj.GetTypeId() == kTypeIdString) {
       string copy = obj.Cast<string>();
-      base.PackContent(make_shared<string>(copy), kTypeIdString)
-        .SetDeliverFlag();
+      base.PackContent(make_shared<string>(copy), kTypeIdString);
     }
     else {
       string output = obj.Cast<string>();
 
-      base.PackContent(make_shared<string>(output), kTypeIdString)
-        .SetDeliverFlag();
+      base.PackContent(make_shared<string>(output), kTypeIdString);
     }
 
     return Message().SetObject(base);
@@ -154,7 +151,7 @@ namespace kagami {
     using management::CreateImpl;
     using namespace management::type;
 
-    ObjectTraitsSetup(kTypeIdString, PlainDeliveryImpl<string>, PlainHasher<string>())
+    ObjectTraitsSetup(kTypeIdString, PlainDeliveryImpl<string>, PlainHasher<string>)
       .InitComparator(PlainComparator<string>)
       .InitConstructor(
         FunctionImpl(NewString, "raw_string", "string")
@@ -170,7 +167,7 @@ namespace kagami {
         }
     );
 
-    ObjectTraitsSetup(kTypeIdWideString, PlainDeliveryImpl<wstring>, PlainHasher<wstring>())
+    ObjectTraitsSetup(kTypeIdWideString, PlainDeliveryImpl<wstring>, PlainHasher<wstring>)
       .InitComparator(PlainComparator<wstring>)
       .InitConstructor(
         FunctionImpl(NewWideString, "raw_string", "wstring")
@@ -187,7 +184,7 @@ namespace kagami {
     );
 
 
-    ObjectTraitsSetup(kTypeIdRegex, ShallowDelivery, PointerHasher())
+    ObjectTraitsSetup(kTypeIdRegex, ShallowDelivery, PointerHasher)
       .InitConstructor(
         FunctionImpl(NewRegex, "pattern", "regex")
       )

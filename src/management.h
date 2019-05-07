@@ -15,30 +15,6 @@ namespace kagami::management {
 
 namespace kagami::management::type {
   template <class T>
-  struct PlainHasher : public HasherInterface {
-    size_t Get(shared_ptr<void> ptr) const override {
-      auto hasher = std::hash<T>();
-      return hasher(*static_pointer_cast<T>(ptr));
-    }
-  };
-
-
-  template <class T, HasherFunction hash_func>
-  struct CustomHasher : public HasherInterface {
-    size_t Get(shared_ptr<void> ptr) const override {
-      return hash_func(ptr);
-    }
-  };
-
-  /* Hasher for object using ShallowDelivery() */
-  struct PointerHasher : public HasherInterface {
-    size_t Get(shared_ptr<void> ptr) const override {
-      auto hasher = std::hash<shared_ptr<void>>();
-      return hasher(ptr);
-    }
-  };
-
-  template <class T>
   bool PlainComparator(Object &lhs, Object &rhs) {
     return lhs.Cast<T>() == rhs.Cast<T>();
   }
@@ -59,31 +35,27 @@ namespace kagami::management::type {
     string methods_;
     DeliveryImpl dlvy_;
     Comparator comparator_;
-    ManagedHasher hasher_;
+    HasherFunction hasher_;
     vector<FunctionImpl> impl_;
-    FunctionImpl constructor_;
+    FunctionImpl do_not_copy_;
 
   public:
     ObjectTraitsSetup() = delete;
 
-    template <class HasherType>
     ObjectTraitsSetup(
       string type_name,
       DeliveryImpl dlvy,
-      HasherType hasher) :
+      HasherFunction hasher) :
       type_id_(type_name),
       dlvy_(dlvy),
       comparator_(nullptr),
-      hasher_(new HasherType(hasher)) {
-      static_assert(is_base_of<HasherInterface, HasherType>::value,
-        "Wrong hasher type.");
-    }
+      hasher_(hasher) {}
 
     ObjectTraitsSetup(string type_name, DeliveryImpl dlvy) :
       type_id_(type_name), dlvy_(dlvy), hasher_(nullptr) {}
 
     ObjectTraitsSetup &InitConstructor(FunctionImpl impl) {
-      constructor_ = impl; return *this; 
+      do_not_copy_ = impl; return *this; 
     }
 
     ObjectTraitsSetup &InitComparator(Comparator comparator) {

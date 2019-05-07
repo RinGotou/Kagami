@@ -121,7 +121,7 @@ namespace kagami::management::type {
     auto &base = GetObjectTraitsCollection();
     const auto it = base.find(obj.GetTypeId());
     auto hasher = it->second.GetHasher();
-    return hasher->Get(obj.Unpack().Get());
+    return hasher(obj.Get());
   }
 
   bool IsHashable(Object &obj) {
@@ -214,7 +214,7 @@ namespace kagami::management::type {
 
   ObjectTraitsSetup::~ObjectTraitsSetup() {
     CreateObjectTraits(type_id_, ObjectTraits(dlvy_, methods_, hasher_, comparator_));
-    CreateImpl(constructor_);
+    CreateImpl(do_not_copy_);
     for (auto &unit : impl_) {
       CreateImpl(unit, type_id_);
     }

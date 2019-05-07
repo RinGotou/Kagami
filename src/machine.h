@@ -221,14 +221,16 @@ namespace kagami {
     size_t jump_offset;
     size_t idx;
     string msg_string;
+    string function_scope;
     stack<bool> condition_stack; //preserved
     stack<bool> scope_stack;
     stack<size_t> jump_stack;
     stack<size_t> branch_jump_stack;
     stack<Object> return_stack;
 
-    RuntimeFrame() :
+    RuntimeFrame(string scope = kStrRootScope) :
       error(false),
+      warning(false),
       activated_continue(false),
       activated_break(false),
       void_call(false),
@@ -238,6 +240,7 @@ namespace kagami {
       jump_offset(0),
       idx(0),
       msg_string(),
+      function_scope(),
       condition_stack(),
       jump_stack(),
       branch_jump_stack(),
@@ -247,7 +250,7 @@ namespace kagami {
     void Goto(size_t taget_idx);
     void AddJumpRecord(size_t target_idx);
     void MakeError(string str);
-    void MakeWaring(string str);
+    void MakeWarning(string str);
     void RefreshReturnStack(Object obj = Object());
   };
 
@@ -255,6 +258,7 @@ namespace kagami {
   class Machine {
   private:
     void RecoverLastState();
+    bool IsTailRecursion(size_t idx, VMCode *code);
 
     Object FetchPlainObject(Argument &arg);
     Object FetchFunctionObject(string id);

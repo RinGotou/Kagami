@@ -16,6 +16,11 @@ namespace kagami {
     return result;
   }
 
+  size_t PointerHasher(shared_ptr<void> ptr) {
+    auto hasher = std::hash<shared_ptr<void>>();
+    return hasher(ptr);
+  }
+
   shared_ptr<void> ShallowDelivery(shared_ptr<void> target) {
     return target;
   }
@@ -31,7 +36,7 @@ namespace kagami {
 
     type_id_ = object.type_id_;
     mode_ = object.mode_;
-    constructor_ = object.constructor_;
+    do_not_copy_ = object.do_not_copy_;
     return *this;
   }
 
@@ -49,7 +54,7 @@ namespace kagami {
     ptr_.swap(obj.ptr_);
     std::swap(type_id_, obj.type_id_);
     std::swap(mode_, obj.mode_);
-    std::swap(constructor_, obj.constructor_);
+    std::swap(do_not_copy_, obj.do_not_copy_);
     std::swap(real_dest_, obj.real_dest_);
     return *this;
   }

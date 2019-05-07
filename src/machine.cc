@@ -100,13 +100,12 @@ namespace kagami {
 
   void InitPlainTypes() {
     using type::ObjectTraitsSetup;
-    using type::PlainHasher;
 
-    ObjectTraitsSetup(kTypeIdInt, PlainDeliveryImpl<int64_t>, PlainHasher<int64_t>())
+    ObjectTraitsSetup(kTypeIdInt, PlainDeliveryImpl<int64_t>, PlainHasher<int64_t>)
       .InitComparator(PlainComparator<int64_t>);
-    ObjectTraitsSetup(kTypeIdFloat, PlainDeliveryImpl<double>, PlainHasher<double>())
+    ObjectTraitsSetup(kTypeIdFloat, PlainDeliveryImpl<double>, PlainHasher<double>)
       .InitComparator(PlainComparator<double>);
-    ObjectTraitsSetup(kTypeIdBool, PlainDeliveryImpl<bool>, PlainHasher<bool>())
+    ObjectTraitsSetup(kTypeIdBool, PlainDeliveryImpl<bool>, PlainHasher<bool>)
       .InitComparator(PlainComparator<bool>);
     ObjectTraitsSetup(kTypeIdNull, ShallowDelivery);
 
@@ -137,7 +136,7 @@ namespace kagami {
     msg_string = str;
   }
 
-  void RuntimeFrame::MakeWaring(string str) {
+  void RuntimeFrame::MakeWarning(string str) {
     warning = true;
     msg_string = str;
   }
@@ -152,6 +151,28 @@ namespace kagami {
     frame_stack_.pop();
     code_stack_.pop_back();
     obj_stack_.Pop();
+  }
+
+  bool Machine::IsTailRecursion(size_t idx, VMCode *code) {
+    if (code != code_stack_.back()) return false;
+
+    auto & vmcode = *code;
+    auto & current = vmcode[idx];
+    bool result = false;
+
+    if (idx == vmcode.size() - 1) {
+      result = true;
+    }
+    else if (idx == vmcode.size() - 2) {
+      bool needed_by_next_call =
+        vmcode[idx + 1].second.back().type == kArgumentReturnStack &&
+        vmcode[idx + 1].second.size() == 1;
+      if (!current.first.option.void_call && needed_by_next_call) {
+        result = true;
+      }
+    }
+
+    return result;
   }
 
   Object Machine::FetchPlainObject(Argument &arg) {
@@ -207,7 +228,7 @@ namespace kagami {
 
   Object Machine::FetchObject(Argument &arg, bool checking) {
     if (arg.type == kArgumentNormal) {
-      return FetchPlainObject(arg);
+      return FetchPlainObject(arg).SetDeliverFlag();
     }
 
     auto &frame = frame_stack_.top();
@@ -232,6 +253,7 @@ namespace kagami {
     else if (arg.type == kArgumentReturnStack) {
       if (!return_stack.empty()) {
         obj = return_stack.top();
+        obj.SetDeliverFlag();
         if(!checking) return_stack.pop(); 
       }
       else {
@@ -692,7 +714,7 @@ namespace kagami {
       if (frame.activated_continue) {
         frame.Goto(nest);
         frame.activated_continue = false;
-        obj_stack_.GetCurrent().clear();
+        obj_stack_.GetCurrent().Clear();
         frame.jump_from_end = true;
       }
       else {
@@ -707,7 +729,7 @@ namespace kagami {
     else {
       frame.Goto(nest);
       while (!frame.return_stack.empty()) frame.return_stack.pop();
-      obj_stack_.GetCurrent().clear();
+      obj_stack_.GetCurrent().Clear();
       frame.jump_from_end = true;
     }
   }
@@ -837,7 +859,6 @@ namespace kagami {
       }
 
       Object obj(base, kTypeIdArray);
-      obj.SetDeliverFlag();
       frame.RefreshReturnStack(obj);
     }
     else if (args.size() == 1) {
@@ -861,7 +882,6 @@ namespace kagami {
     }
 
     Object ret_obj(base, kTypeIdArray);
-    ret_obj.SetDeliverFlag();
     frame.RefreshReturnStack(ret_obj);
   }
 
@@ -1111,7 +1131,6 @@ namespace kagami {
     }
 
     Object obj(base, kTypeIdArray);
-    obj.SetDeliverFlag();
     frame.RefreshReturnStack(obj);
   }
 
@@ -1328,7 +1347,7 @@ namespace kagami {
 
 
     for (auto it = params.rbegin(); it != params.rend(); ++it) {
-      obj_map.emplace(NamedObject(*it, FetchObject(args[pos])));
+      obj_map.emplace(NamedObject(*it, FetchObject(args[pos]).RemoveDeliverFlag()));
       pos -= 1;
     }
   }
@@ -1344,7 +1363,7 @@ namespace kagami {
       "Youe need at least " + to_string(params.size()) + "argument(s).");
 
     while (diff != 0) {
-      temp_list.emplace_front(FetchObject(args[pos - 1]));
+      temp_list.emplace_front(FetchObject(args[pos - 1]).RemoveDeliverFlag());
       pos -= 1;
       diff -= 1;
     }
@@ -1361,7 +1380,7 @@ namespace kagami {
 
     if (pos != 0) {
       while (pos > 0) {
-        obj_map.emplace(params[pos - 1], FetchObject(args[pos - 1]));
+        obj_map.emplace(params[pos - 1], FetchObject(args[pos - 1]).RemoveDeliverFlag());
         pos -= 1;
       }
     }
@@ -1383,7 +1402,7 @@ namespace kagami {
         obj_map.emplace(NamedObject(*it, Object()));
       }
       else {
-        obj_map.emplace(NamedObject(*it, FetchObject(args[pos])));
+        obj_map.emplace(NamedObject(*it, FetchObject(args[pos]).RemoveDeliverFlag()));
         pos -= 1;
       }
       param_pos -= 1;
@@ -1441,6 +1460,18 @@ namespace kagami {
       obj_stack_.MergeMap(impl->GetClosureRecord());
       refresh_tick();
       frame->jump_offset = func.GetOffset();
+    };
+
+    auto tail_call = [&]() -> void {
+      string function_scope = frame_stack_.top().function_scope;
+      size_t jump_offset = frame_stack_.top().jump_offset;
+      frame_stack_.top() = RuntimeFrame(function_scope);
+      obj_stack_.ClearCurrent();
+      obj_stack_.CreateObject(kStrUserFunc, Object(function_scope));
+      obj_stack_.MergeMap(obj_map);
+      obj_stack_.MergeMap(impl->GetClosureRecord());
+      refresh_tick();
+      frame->jump_offset = jump_offset;
     };
 
     // Main loop of virtual machine.
@@ -1511,7 +1542,13 @@ namespace kagami {
       //Machine will create new stack frame and push IR pointer to machine stack,
       //and start new processing in next tick.
       if (impl->GetType() == kFunctionVMCode) {
-        update_stack_frame(*impl);
+        if (IsTailRecursion(frame->idx, &impl->GetCode())) {
+          tail_call();
+        }
+        else {
+          update_stack_frame(*impl);
+        }
+        
         continue;
       }
       else {

@@ -50,9 +50,8 @@ namespace kagami {
   void InitSoundComponents() {
     using management::type::ObjectTraitsSetup;
     using management::CreateImpl;
-    using management::type::PointerHasher;
 
-    ObjectTraitsSetup(kTypeIdMusic,ShallowDelivery, PointerHasher())
+    ObjectTraitsSetup(kTypeIdMusic,ShallowDelivery, PointerHasher)
       .InitConstructor(
        FunctionImpl(NewMusicObject,"path",kTypeIdMusic)
       )

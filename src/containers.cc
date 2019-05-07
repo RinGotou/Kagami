@@ -69,7 +69,7 @@ namespace kagami {
       }
     }
 
-    return Message().SetObject(Object(base, kTypeIdArray).SetDeliverFlag());
+    return Message().SetObject(Object(base, kTypeIdArray));
   }
 
   Message ArrayGetElement(ObjectMap &p) {
@@ -162,8 +162,7 @@ namespace kagami {
     ManagedPair pair = make_shared<ObjectPair>(
       management::type::CreateObjectCopy(left),
       management::type::CreateObjectCopy(right));
-    return Message().SetObject(Object(pair, kTypeIdPair)
-      .SetDeliverFlag());
+    return Message().SetObject(Object(pair, kTypeIdPair));
   }
 
   Message PairLeft(ObjectMap &p) {
@@ -263,9 +262,8 @@ namespace kagami {
 
   void InitContainerComponents() {
     using management::type::ObjectTraitsSetup;
-    using management::type::CustomHasher;
 
-    ObjectTraitsSetup(kTypeIdArray, ArrayDelivery, CustomHasher<ObjectArray, ArrayHasher>())
+    ObjectTraitsSetup(kTypeIdArray, ArrayDelivery, ArrayHasher)
       .InitConstructor(
         FunctionImpl(NewArray, "size|init_value", "array", kParamAutoFill)
       )

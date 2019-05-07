@@ -22,13 +22,15 @@ namespace kagami {
     kObjectRef       = 2,
   };
 
-  struct HasherInterface {
-    virtual size_t Get(shared_ptr<void>) const = 0;
-    virtual ~HasherInterface() {}
-  };
-
   using HasherFunction = size_t(*)(shared_ptr<void>);
-  using ManagedHasher = shared_ptr<HasherInterface>;
+
+  template <class T>
+  size_t PlainHasher(shared_ptr<void> ptr) {
+    auto hasher = std::hash<T>();
+    return hasher(*static_pointer_cast<T>(ptr));
+  }
+
+  size_t PointerHasher(shared_ptr<void> ptr);
 
   template <class T>
   shared_ptr<void> PlainDeliveryImpl(shared_ptr<void> target) {
@@ -42,7 +44,7 @@ namespace kagami {
   private:
     DeliveryImpl dlvy_;
     Comparator comparator_;
-    ManagedHasher hasher_;
+    HasherFunction hasher_;
     vector<string> methods_;
 
   public:
@@ -51,7 +53,7 @@ namespace kagami {
     ObjectTraits(
       DeliveryImpl copying_policy,
       string methods,
-      ManagedHasher hasher = nullptr,
+      HasherFunction hasher = nullptr,
       Comparator comparator = nullptr) :
       dlvy_(copying_policy),
       comparator_(comparator),
@@ -59,7 +61,7 @@ namespace kagami {
       hasher_(hasher) {}
 
     vector<string> &GetMethods() { return methods_; }
-    shared_ptr<HasherInterface> &GetHasher() { return hasher_; }
+    HasherFunction GetHasher() { return hasher_; }
     Comparator GetComparator() { return comparator_; }
     DeliveryImpl GetDeliver() { return dlvy_; }
   };
@@ -68,7 +70,7 @@ namespace kagami {
   private:
     ObjectPointer real_dest_;
     ObjectMode mode_;
-    bool constructor_;
+    bool do_not_copy_;
     int64_t ref_count_;
     shared_ptr<void> ptr_;
     string type_id_;
@@ -83,7 +85,7 @@ namespace kagami {
     Object() :
       real_dest_(nullptr),
       mode_(kObjectNormal),
-      constructor_(false),
+      do_not_copy_(false),
       ref_count_(0),
       ptr_(nullptr),
       type_id_(kTypeIdNull) {}
@@ -91,7 +93,7 @@ namespace kagami {
     Object(const Object &obj) :
       real_dest_(obj.real_dest_),
       mode_(obj.mode_),
-      constructor_(obj.constructor_),
+      do_not_copy_(obj.do_not_copy_),
       ref_count_(0),
       ptr_(obj.ptr_),
       type_id_(obj.type_id_) {
@@ -107,7 +109,7 @@ namespace kagami {
     Object(shared_ptr<T> ptr, string type_id) :
       real_dest_(nullptr),
       mode_(kObjectNormal),
-      constructor_(false),
+      do_not_copy_(false),
       ref_count_(0),
       ptr_(ptr), 
       type_id_(type_id) {}
@@ -116,7 +118,7 @@ namespace kagami {
     Object(T &t, string type_id) :
       real_dest_(nullptr),
       mode_(kObjectNormal),
-      constructor_(false),
+      do_not_copy_(false),
       ref_count_(0),
       ptr_(make_shared<T>(t)),
       type_id_(type_id) {}
@@ -128,7 +130,7 @@ namespace kagami {
     Object(string str) :
       real_dest_(nullptr),
       mode_(kObjectNormal),
-      constructor_(false),
+      do_not_copy_(false),
       ref_count_(0),
       ptr_(std::make_shared<string>(str)),
       type_id_(kTypeIdString) {}
@@ -161,7 +163,12 @@ namespace kagami {
     }
 
     Object &SetDeliverFlag() {
-      constructor_ = true;
+      do_not_copy_ = true;
+      return *this;
+    }
+
+    Object &RemoveDeliverFlag() {
+      do_not_copy_ = false;
       return *this;
     }
 
@@ -169,8 +176,8 @@ namespace kagami {
       if (mode_ == kObjectRef) {
         return real_dest_->GetDeliverFlag();
       }
-      bool result = constructor_;
-      constructor_ = false;
+      bool result = do_not_copy_;
+      do_not_copy_ = false;
       return result;
     }
 
@@ -178,7 +185,7 @@ namespace kagami {
       if (mode_ == kObjectRef) {
         return real_dest_->SeekDeliverFlag();
       }
-      return constructor_;
+      return do_not_copy_;
     }
 
     bool operator==(const Object &obj) = delete;
@@ -241,8 +248,9 @@ namespace kagami {
       return *this;
     }
 
-    void clear() {
+    void Clear() {
       base_.clear();
+      BuildCache();
     }
 
     map<string, Object> &GetContent() {
@@ -338,6 +346,12 @@ namespace kagami {
     }
 
     ObjectContainer &GetCurrent() { return base_.back(); }
+
+    bool ClearCurrent() {
+      if (base_.empty()) return false;
+      base_.back().Clear();
+      return true;
+    }
 
     ObjectStack &Push() {
       auto *prev = base_.empty() ? nullptr : &base_.back();
