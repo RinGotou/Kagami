@@ -12,7 +12,7 @@ namespace kagami {
 
   enum RequestType {
     kRequestCommand, 
-    kRequestInterface, 
+    kRequestExt, 
     kRequestNull
   };
 
@@ -80,7 +80,7 @@ namespace kagami {
     Request(string token, Argument domain = Argument()) :
       data_(InterfaceInfo{ token, domain }),
       idx(0),
-      type(kRequestInterface),
+      type(kRequestExt),
       option() {}
 
     Request() :
@@ -90,7 +90,7 @@ namespace kagami {
       option() {}
 
     string GetInterfaceId() {
-      if (type == kRequestInterface) {
+      if (type == kRequestExt) {
         return std::get<InterfaceInfo>(data_).id;
       }
 
@@ -98,7 +98,7 @@ namespace kagami {
     }
 
     Argument GetInterfaceDomain() {
-      if (type == kRequestInterface) {
+      if (type == kRequestExt) {
         return std::get<InterfaceInfo>(data_).domain;
       }
 

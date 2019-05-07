@@ -1442,15 +1442,16 @@ namespace kagami {
         continue;
       }
 
+      obj_map.clear();
       //Querying function(Interpreter built-in or user-defined)
-      if (command->first.type == kRequestInterface) {
+      if (command->first.type == kRequestExt) {
         if (!FetchFunctionImpl(impl, command, obj_map)) {
           break;
         }
       }
 
       //Building object map for function call expressed by command
-      obj_map.clear();
+      
       GenerateArgs(*impl, command->second, obj_map);
       if (frame->error) {
         script_idx = command->first.idx;

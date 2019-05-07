@@ -31,7 +31,7 @@ fn main()
   size = song_list.size()
   
   song = song_list[pos]
-  song.right.Play()
+  song.right().play()
   
   choice = 0
   state_hint = 'Playing'
@@ -53,14 +53,14 @@ fn main()
       if pos < (size - 1)
         pos = pos + 1
         song = song_list[pos]
-        song.right.Play()
+        song.right().play()
       end
     when 'prev'
       state_hint = state_playing
       if pos > 0
         pos = pos - 1
         song = song_list[pos]
-        song.right.Play()
+        song.right().play()
       end
     end
   end

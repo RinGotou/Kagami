@@ -22,9 +22,9 @@ namespace kagami::util {
     if (src == "fn")  return kTerminatorFn;
     if (src == "for") return kTerminatorFor;
     if (src == "in")  return kTerminatorIn;
+    if (src == "<-")  return kTerminatorArrow;
     return kTerminatorNull;
   }
-
 
   bool IsBinaryOperator(Keyword token) {
     bool result;

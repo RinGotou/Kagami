@@ -370,20 +370,13 @@ namespace kagami {
   }
 
   bool LineParser::IndexExpr() {
-    bool result = true;
-
-    deque<Argument> arguments = {
-      frame_->args.back(),
-      Argument("__at", kArgumentNormal, kStringTypeIdentifier)
-    };
-
     Request request("__at", frame_->args.back());
     frame_->symbol.emplace_back(request);
     frame_->symbol.emplace_back(Request());
     frame_->args.pop_back();
     frame_->args.emplace_back(Argument());
 
-    return result;
+    return true;
   }
 
   bool LineParser::ArrayExpr() {
@@ -586,11 +579,8 @@ namespace kagami {
 
     
     if (frame_->domain.type != kArgumentNull) {
-      Request request(frame_->current.first, frame_->domain);
-      frame_->symbol.emplace_back(request);
-      frame_->args.emplace_back(Argument());
-      ProduceVMCode();
-      frame_->domain = Argument();
+      error_string_ = "Invalid expression";
+      return false;
     }
     else {
       Argument arg(

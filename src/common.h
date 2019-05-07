@@ -175,6 +175,7 @@ namespace kagami {
     kTerminatorFn,
     kTerminatorFor,
     kTerminatorIn,
+    kTerminatorArrow,
     kTerminatorNull
   };
 
