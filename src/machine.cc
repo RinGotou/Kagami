@@ -1522,7 +1522,7 @@ namespace kagami {
         break;
       }
 
-      //switch back to last stack frame
+      //switch to last stack frame
       if (frame->idx == size && frame_stack_.size() > 1) {
         RecoverLastState();
         refresh_tick();
@@ -1541,7 +1541,7 @@ namespace kagami {
       script_idx = command->first.idx;
       frame->void_call = command->first.option.void_call;
 
-      //Embedded machine commands.
+      //Built-in machine commands.
       if (command->first.type == kRequestCommand) {
         MachineCommands(command->first.GetKeywordValue(), command->second, command->first);
         
@@ -1559,14 +1559,14 @@ namespace kagami {
       }
 
       obj_map.clear();
-      //Querying function(Interpreter built-in or user-defined)
+      //Query function(Interpreter built-in or user-defined)
       if (command->first.type == kRequestExt) {
         if (!FetchFunctionImpl(impl, command, obj_map)) {
           break;
         }
       }
 
-      //Building object map for function call expressed by command
+      //Build object map for function call expressed by command
       GenerateArgs(*impl, command->second, obj_map);
       if (frame->error) {
         script_idx = command->first.idx;
@@ -1574,7 +1574,7 @@ namespace kagami {
       }
 
       //(For user-defined function)
-      //Machine will create new stack frame and push IR pointer to machine stack,
+      //Ceate new stack frame and push VMCode pointer to machine stack,
       //and start new processing in next tick.
       if (impl->GetType() == kFunctionVMCode) {
         if (IsTailRecursion(frame->idx, &impl->GetCode())) {
@@ -1598,7 +1598,7 @@ namespace kagami {
         break;
       }
 
-      //Invoking by return value.
+      //Invoke by return value.
       if (msg.GetCode() == kCodeInterface) {
         auto arg = BuildStringVector(msg.GetDetail());
         if (!_FetchFunctionImpl(impl, arg[0], arg[1])) {
