@@ -587,7 +587,7 @@ namespace kagami {
     }
 
     
-    if (frame_->domain.type != kArgumentNull) {
+    if (frame_->domain.GetType() != kArgumentNull) {
       error_string_ = "Invalid expression";
       return false;
     }

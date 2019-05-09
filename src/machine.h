@@ -39,18 +39,6 @@ namespace kagami {
   string ParseRawString(const string &src);
   void InitPlainTypes();
 
-  using TypeKey = pair<string, PlainType>;
-  const map<string, PlainType> kTypeStore = {
-    TypeKey(kTypeIdInt, kPlainInt),
-    TypeKey(kTypeIdFloat, kPlainFloat),
-    TypeKey(kTypeIdString, kPlainString),
-    TypeKey(kTypeIdBool, kPlainBool)
-  };
-
-  const vector<Keyword> kStringOpStore = {
-    kKeywordPlus, kKeywordNotEqual, kKeywordEquals
-  };
-
   using ResultTraitKey = pair<PlainType, PlainType>;
   using TraitUnit = pair<ResultTraitKey, PlainType>;
   const map<ResultTraitKey, PlainType> kResultDynamicTraits = {

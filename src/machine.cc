@@ -6,8 +6,20 @@ namespace kagami {
   using namespace management;
 
   PlainType FindTypeCode(string type_id) {
-    auto it = kTypeStore.find(type_id);
-    return it != kTypeStore.end() ? it->second : kNotPlainType;
+    PlainType type = kNotPlainType;
+
+    if (type_id == kTypeIdInt) type = kPlainInt;
+    if (type_id == kTypeIdFloat) type = kPlainFloat;
+    if (type_id == kTypeIdString) type = kPlainString;
+    if (type_id == kTypeIdBool) type = kPlainBool;
+
+    return type;
+  }
+
+  bool IsIllegalStringOperator(Keyword keyword) {
+    return keyword != kKeywordPlus && 
+      keyword != kKeywordNotEqual && 
+      keyword != kKeywordEquals;
   }
 
   int64_t IntProducer(Object &obj) {
@@ -48,8 +60,7 @@ namespace kagami {
   }
 
   bool BoolProducer(Object &obj) {
-    auto it = kTypeStore.find(obj.GetTypeId());
-    auto type = it != kTypeStore.end() ? it->second : kNotPlainType;
+    auto type = FindTypeCode(obj.GetTypeId());
     bool result = false;
 
     if (type == kPlainInt) {
@@ -167,7 +178,7 @@ namespace kagami {
     else if (idx == vmcode.size() - 2) {
       bool needed_by_next_call =
         vmcode[idx + 1].first.GetKeywordValue() == kKeywordReturn &&
-        vmcode[idx + 1].second.back().type == kArgumentReturnStack &&
+        vmcode[idx + 1].second.back().GetType() == kArgumentReturnStack &&
         vmcode[idx + 1].second.size() == 1;
       if (!current.first.option.void_call && needed_by_next_call) {
         result = true;
@@ -187,7 +198,7 @@ namespace kagami {
     else if (idx == vmcode.size() - 2) {
       bool needed_by_next_call = 
         vmcode[idx + 1].first.GetKeywordValue() == kKeywordReturn &&
-        vmcode[idx + 1].second.back().type == kArgumentReturnStack &&
+        vmcode[idx + 1].second.back().GetType() == kArgumentReturnStack &&
         vmcode[idx + 1].second.size() == 1;
       if (!vmcode[idx].first.option.void_call && needed_by_next_call) {
         result = true;
@@ -198,8 +209,8 @@ namespace kagami {
   }
 
   Object Machine::FetchPlainObject(Argument &arg) {
-    auto type = arg.token_type;
-    auto &value = arg.data;
+    auto type = arg.GetStringType();
+    auto value = arg.GetData();
     Object obj;
 
     if (type == kStringTypeInt) {
@@ -249,7 +260,7 @@ namespace kagami {
   }
 
   Object Machine::FetchObject(Argument &arg, bool checking) {
-    if (arg.type == kArgumentNormal) {
+    if (arg.GetType() == kArgumentNormal) {
       return FetchPlainObject(arg).SetDeliverFlag();
     }
 
@@ -258,21 +269,21 @@ namespace kagami {
     ObjectPointer ptr = nullptr;
     Object obj;
 
-    if (arg.type == kArgumentObjectStack) {
-      if (ptr = obj_stack_.Find(arg.data); ptr != nullptr) {
+    if (arg.GetType() == kArgumentObjectStack) {
+      if (ptr = obj_stack_.Find(arg.GetData()); ptr != nullptr) {
         obj.PackObject(*ptr);
         return obj;
       }
 
-      if (obj = GetConstantObject(arg.data); obj.Null()) {
-        obj = FetchFunctionObject(arg.data);
+      if (obj = GetConstantObject(arg.GetData()); obj.Null()) {
+        obj = FetchFunctionObject(arg.GetData());
       }
 
       if (obj.Null()) {
-        frame.MakeError("Object is not found - " + arg.data);
+        frame.MakeError("Object is not found - " + arg.GetData());
       }
     }
-    else if (arg.type == kArgumentReturnStack) {
+    else if (arg.GetType() == kArgumentReturnStack) {
       if (!return_stack.empty()) {
         obj = return_stack.top();
         obj.SetDeliverFlag();
@@ -322,7 +333,7 @@ namespace kagami {
     //In current developing processing, machine forced to querying built-in
     //function. These code need to be rewritten when I work in class feature in
     //the future.
-    if (domain.type != kArgumentNull) {
+    if (domain.GetType() != kArgumentNull) {
       Object obj = FetchObject(domain, true);
 
       if (frame.error) return false;
@@ -369,7 +380,7 @@ namespace kagami {
     }
 
     for (size_t idx = 1; idx < size; idx += 1) {
-      auto &id = args[idx].data;
+      auto id = args[idx].GetData();
 
       if (id == kStrOptional) {
         optional = true;
@@ -393,7 +404,7 @@ namespace kagami {
         continue;
       }
 
-      if (optional && args[idx - 1].data != kStrOptional) {
+      if (optional && args[idx - 1].GetData() != kStrOptional) {
         frame.MakeError("Optional parameter must be defined after normal parameters");
       }
 
@@ -408,7 +419,7 @@ namespace kagami {
     if (optional) argument_mode = kParamAutoFill;
     if (variable) argument_mode = kParamAutoSize;
 
-    FunctionImpl impl(nest + 1, code, args[0].data, params, argument_mode);
+    FunctionImpl impl(nest + 1, code, args[0].GetData(), params, argument_mode);
 
     if (optional) {
       impl.SetLimit(params.size() - counter);
@@ -436,7 +447,7 @@ namespace kagami {
       impl.SetClosureRecord(scope_record);
     }
 
-    obj_stack_.CreateObject(args[0].data,
+    obj_stack_.CreateObject(args[0].GetData(),
       Object(make_shared<FunctionImpl>(impl), kTypeIdFunction));
 
     frame.Goto(nest_end + 1);
@@ -943,7 +954,7 @@ namespace kagami {
     REQUIRED_ARG_COUNT(1);
 
     auto &arg = args[0];
-    if (arg.type == kArgumentNormal) {
+    if (arg.GetType() == kArgumentNormal) {
       FetchPlainObject(arg);
     }
     else {
@@ -1030,7 +1041,7 @@ namespace kagami {
   frame.RefreshReturnStack(Object(result, _TypeId));
 
     if (result_type == kPlainString) {
-      if (!find_in_vector(op_code, kStringOpStore)) {
+      if (IsIllegalStringOperator(op_code)) {
         frame.RefreshReturnStack();
         return;
       }
@@ -1096,7 +1107,7 @@ namespace kagami {
   result = LogicBox<_Type, op_code>().Do(_Func(lhs), _Func(rhs));
 
     if (result_type == kPlainString) {
-      if (!find_in_vector(op_code, kStringOpStore)) {
+      if (IsIllegalStringOperator(op_code)) {
         frame.RefreshReturnStack();
         return;
       }

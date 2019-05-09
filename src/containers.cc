@@ -7,28 +7,6 @@ namespace kagami {
     return Message();
   }
 
-  Message IteratorForward(ObjectMap &p) {
-    auto &obj = p[kStrMe];
-    Object ret_obj(
-      make_shared<UnifiedIterator>(obj.Cast<UnifiedIterator>().CreateCopy()),
-      kTypeIdIterator
-    );
-
-    ret_obj.Cast<UnifiedIterator>().StepForward(1);
-    return Message().SetObject(ret_obj);
-  }
-
-  Message IteratorBack(ObjectMap &p) {
-    auto &obj = p[kStrMe];
-    Object ret_obj(
-      make_shared<UnifiedIterator>(obj.Cast<UnifiedIterator>().CreateCopy()),
-      kTypeIdIterator
-    );
-
-    ret_obj.Cast<UnifiedIterator>().StepBack(1);
-    return Message().SetObject(ret_obj);
-  }
-
   Message IteratorStepBack(ObjectMap &p) {
     auto &it = p[kStrMe].Cast<UnifiedIterator>();
     it.StepBack();
@@ -285,8 +263,6 @@ namespace kagami {
       .InitMethods(
         {
           FunctionImpl(IteratorGet, "", "obj"),
-          FunctionImpl(IteratorForward, "", "forward"),
-          FunctionImpl(IteratorBack, "", "back"),
           FunctionImpl(IteratorStepForward, "", "step_forward"),
           FunctionImpl(IteratorStepBack, "", "step_back"),
           FunctionImpl(IteratorOperatorCompare, kStrRightHandSide, kStrCompare)

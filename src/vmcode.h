@@ -34,26 +34,43 @@ namespace kagami {
   };
 
   class Argument {
-  public:
-    string data;
-    ArgumentType type;
-    StringType token_type;
+  //public:
+  private:
+    string data_;
+    ArgumentType type_;
+    StringType token_type_;
+    shared_ptr<Argument> domain_;
 
+  public:
     Argument() :
-      data(),
-      type(kArgumentNull),
-      token_type(kStringTypeNull) {}
+      data_(),
+      type_(kArgumentNull),
+      token_type_(kStringTypeNull) {}
 
     Argument(
       string data,
       ArgumentType type,
       StringType token_type) :
-      data(data),
-      type(type),
-      token_type(token_type) {}
+      data_(data),
+      type_(type),
+      token_type_(token_type) {}
+
+    void SetDomain(Argument &arg) {
+      domain_ = make_shared<Argument>(arg);
+    }
+
+    auto GetData() { return data_; }
+
+    auto GetType() { return type_; }
+
+    StringType GetStringType() { return token_type_; }
+
+    bool HasDomain() { return domain_ != nullptr; }
+
+    Argument &GetDomain() { return *domain_; }
 
     bool IsPlaceholder() const {
-      return type == kArgumentNull;
+      return type_ == kArgumentNull;
     }
   };
 
