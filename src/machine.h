@@ -55,18 +55,21 @@ namespace kagami {
   using TraitUnit = pair<ResultTraitKey, PlainType>;
   const map<ResultTraitKey, PlainType> kResultDynamicTraits = {
     TraitUnit(ResultTraitKey(kPlainInt, kPlainInt), kPlainInt),
-    TraitUnit(ResultTraitKey(kPlainFloat, kPlainFloat), kPlainFloat),
-    TraitUnit(ResultTraitKey(kPlainString, kPlainString), kPlainString),
-    TraitUnit(ResultTraitKey(kPlainBool, kPlainBool), kPlainBool),
     TraitUnit(ResultTraitKey(kPlainInt, kPlainFloat), kPlainFloat),
     TraitUnit(ResultTraitKey(kPlainInt, kPlainString), kPlainString),
     TraitUnit(ResultTraitKey(kPlainInt, kPlainBool), kPlainInt),
+    TraitUnit(ResultTraitKey(kPlainFloat, kPlainFloat), kPlainFloat),
     TraitUnit(ResultTraitKey(kPlainFloat, kPlainInt), kPlainFloat),
     TraitUnit(ResultTraitKey(kPlainFloat, kPlainString), kPlainString),
     TraitUnit(ResultTraitKey(kPlainFloat, kPlainBool), kPlainFloat),
+    TraitUnit(ResultTraitKey(kPlainString, kPlainString), kPlainString),
     TraitUnit(ResultTraitKey(kPlainString, kPlainInt), kPlainString),
     TraitUnit(ResultTraitKey(kPlainString, kPlainFloat), kPlainString),
-    TraitUnit(ResultTraitKey(kPlainString, kPlainBool), kPlainString)
+    TraitUnit(ResultTraitKey(kPlainString, kPlainBool), kPlainString),
+    TraitUnit(ResultTraitKey(kPlainBool, kPlainBool), kPlainBool),
+    TraitUnit(ResultTraitKey(kPlainBool, kPlainInt), kPlainInt),
+    TraitUnit(ResultTraitKey(kPlainBool, kPlainFloat), kPlainFloat),
+    TraitUnit(ResultTraitKey(kPlainBool, kPlainString), kPlainString)
   };
 
   template <class ResultType, class Tx, class Ty, Keyword op>
