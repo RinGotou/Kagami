@@ -572,8 +572,8 @@ namespace kagami {
 
     if (frame_->next.first == "(") {
       Request request(frame_->current.first,
-        frame_->last.first == "." ?
-        frame_->domain : Argument()
+        frame_->domain.IsPlaceholder() ?
+        Argument() : frame_->domain
       );
       frame_->symbol.emplace_back(request);
       frame_->domain = Argument();
@@ -588,6 +588,7 @@ namespace kagami {
 
     
     if (frame_->domain.GetType() != kArgumentNull) {
+      //TODO:argument domain appending
       error_string_ = "Invalid expression";
       return false;
     }

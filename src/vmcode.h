@@ -39,7 +39,7 @@ namespace kagami {
     string data_;
     ArgumentType type_;
     StringType token_type_;
-    shared_ptr<Argument> domain_;
+    list<Argument> domain_;
 
   public:
     Argument() :
@@ -55,8 +55,8 @@ namespace kagami {
       type_(type),
       token_type_(token_type) {}
 
-    void SetDomain(Argument &arg) {
-      domain_ = make_shared<Argument>(arg);
+    void AppendDomain(Argument &arg) {
+      domain_.push_back(arg);
     }
 
     auto GetData() { return data_; }
@@ -65,9 +65,9 @@ namespace kagami {
 
     StringType GetStringType() { return token_type_; }
 
-    bool HasDomain() { return domain_ != nullptr; }
+    bool HasDomain() { return !domain_.empty(); }
 
-    Argument &GetDomain() { return *domain_; }
+    list<Argument> &GetDomain() { return domain_; }
 
     bool IsPlaceholder() const {
       return type_ == kArgumentNull;

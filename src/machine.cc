@@ -189,6 +189,7 @@ namespace kagami {
   }
 
   bool Machine::IsTailCall(size_t idx) {
+    if (frame_stack_.size() <= 1) return false;
     auto &vmcode = *code_stack_.back();
     bool result = false;
 

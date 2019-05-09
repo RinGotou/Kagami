@@ -198,8 +198,11 @@ namespace kagami {
   const string kTypeIdIterator        = "iterator";
   const string kTypeIdPair            = "pair";
   const string kTypeIdTable           = "table";
+  const string kTypeIdStruct          = "struct";
 
   const string
+    kStrImpl           = "impl",
+    kStrStruct         = "struct",
     kStrRootScope      = "!root",
     kStrLocal          = "local",
     kStrHash           = "hash",
