@@ -81,8 +81,6 @@ namespace kagami {
   
   using namespace minatsuki;
 
-  using Byte = uint64_t;
-
   /* Application Info */
   const string kInterpreterVersion = INTERPRETER_VER;
   const string kCodeName           = CODENAME;
@@ -111,8 +109,6 @@ namespace kagami {
   /* Reserved keywords mark/IR framework commands */
   enum Keyword {
     kKeywordLocal,
-    kKeywordGlobal,
-    kKeywordCall,
     kKeywordHash,
     kKeywordFor,
     kKeywordIn,
@@ -124,8 +120,6 @@ namespace kagami {
     kKeywordVersion,
     kKeywordCodeName,
     kKeywordSwap,
-    kKeywordRequire,
-    kKeywordUsing,
     kKeywordExpList, 
     kKeywordFn, 
     kKeywordIf, 
@@ -194,7 +188,6 @@ namespace kagami {
   const string kTypeIdInt             = "int";
   const string kTypeIdFloat           = "float";
   const string kTypeIdBool            = "bool";
-  const string kTypeIdByte            = "byte";
   const string kTypeIdString          = "string";
   const string kTypeIdWideString      = "wstring";
   const string kTypeIdArray           = "array";
@@ -202,10 +195,6 @@ namespace kagami {
   const string kTypeIdOutStream       = "outstream";
   const string kTypeIdRegex           = "regex";
   const string kTypeIdFunction        = "function";
-  const string kTypeIdTCPClient       = "TCPClient";
-  const string kTypeIdTCPServer       = "TCPServer";
-  const string kTypeIdClientConnector = "ClientConnector";
-  const string kTypeIdTCPConnector    = "TCPConnector";
   const string kTypeIdIterator        = "iterator";
   const string kTypeIdPair            = "pair";
   const string kTypeIdTable           = "table";
@@ -231,8 +220,6 @@ namespace kagami {
     kStrIteratorObj    = "!iterator",
     kStrCommentBegin   = "=begin",
     kStrCommentEnd     = "=end",
-    kStrRequire        = "require",
-    kStrUsing          = "using",
     kStrFor            = "for",
     kStrIn             = "in",
     kStrElse           = "else",
@@ -261,14 +248,12 @@ namespace kagami {
     kStrGreater        = ">",
     kStrLess           = "<",
     kStrUserFunc       = "__func",
-    kStrArray          = "__array",
     kStrTypeId         = "typeid",
     kStrDir            = "dir",
     kStrExist          = "exist",
     kStrSwap           = "swap",
     kStrTrue           = "true",
     kStrFalse          = "false",
-    kStrMember         = "__member",
     kStrCompare        = "__compare",
     kStrRightHandSide  = "__rhs",
     kStrLeftHandSide   = "__lhs",

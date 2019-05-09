@@ -66,7 +66,7 @@ fn main()
   end
 end
 
-println('Kagami Project version:' + version() + '\nCodename:' + patch())
+println('Kagami Project version:' + version() + '\nCodename:' + codename())
 println('Sample:Simple Music Player\n')
 println('Build playlist info...')
 GetSongData()

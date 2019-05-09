@@ -92,6 +92,7 @@ namespace kagami {
     free(c);
     return result;
   }
+  
   string ParseRawString(const string & src) {
     string result = src;
     if (util::IsString(result)) result = util::GetRawString(result);
