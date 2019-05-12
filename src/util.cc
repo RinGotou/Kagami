@@ -272,7 +272,6 @@ namespace kagami::util {
     else if (IsBlank(src))        type = kStringTypeBlank;
     else if (IsString(src))       type = kStringTypeString;
 
-    //holy xxxx -> std::regex
     if (!ignore_symbol_rule) {
       if (IsSymbol(src)) type = kStringTypeSymbol;
     }

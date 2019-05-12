@@ -103,7 +103,7 @@ namespace kagami {
 
   using Token = pair<string, StringType>;
 
-  /* Reserved keywords mark/IR framework commands */
+  /* Reserved keywords mark / VMCode commands */
   enum Keyword {
     kKeywordLocal,
     kKeywordHash,
