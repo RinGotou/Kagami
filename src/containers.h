@@ -18,7 +18,6 @@ namespace kagami {
     virtual void StepForward() = 0;
     virtual void StepBack() = 0;
     virtual Object Unpack() = 0;
-    
   };
 
   template <class IteratorType>
