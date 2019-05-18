@@ -15,7 +15,11 @@ namespace kagami {
   Message MusicPlay(ObjectMap &p) {
     dawn::Music &music = p.Cast<dawn::Music>(kStrMe);
     return Message().SetObject(static_cast<int64_t>(music.Play(-1)));
-    
+  }
+
+  Message MusicGood(ObjectMap &p) {
+    dawn::Music &music = p.Cast<dawn::Music>(kStrMe);
+    return Message().SetObject(music.Good());
   }
 
   Message MusicPause(ObjectMap &p) {
@@ -43,13 +47,14 @@ namespace kagami {
     using management::type::ObjectTraitsSetup;
     using management::CreateImpl;
 
-    ObjectTraitsSetup(kTypeIdMusic,ShallowDelivery, PointerHasher)
+    ObjectTraitsSetup(kTypeIdMusic, ShallowDelivery, PointerHasher)
       .InitConstructor(
-       FunctionImpl(NewMusicObject,"path",kTypeIdMusic)
+        FunctionImpl(NewMusicObject, "path", kTypeIdMusic)
       )
       .InitMethods(
         {
-          FunctionImpl(MusicPlay,"","play")
+          FunctionImpl(MusicPlay,"","play"),
+          FunctionImpl(MusicGood,"","good")
         }
     );
 
