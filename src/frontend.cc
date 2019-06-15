@@ -306,7 +306,7 @@ namespace kagami {
       arguments.emplace_front(frame_->args.back());
       
       frame_->args.pop_back();
-      (is_bin_operator) ? idx += 1 : idx = idx;
+      (is_bin_operator || is_mono_operator) ? idx += 1 : idx = idx;
     }
 
     if (!frame_->args.empty()
@@ -421,7 +421,8 @@ namespace kagami {
       while (!frame_->symbol.empty() && is_operator && checking()) {
         ProduceVMCode();
         is_operator =
-          (!frame_->symbol.empty() && util::IsBinaryOperator(frame_->symbol.back().GetKeywordValue()));
+          (!frame_->symbol.empty() 
+          && util::IsBinaryOperator(frame_->symbol.back().GetKeywordValue()));
         stack_top_priority = frame_->symbol.empty() ? 5 :
           util::GetTokenPriority(frame_->symbol.back().GetKeywordValue());
       }
@@ -670,10 +671,6 @@ namespace kagami {
         if (token_type == kStringTypeIdentifier) {
           state = OtherExpressions();
         }
-        else if (token_type == kStringTypeNull) {
-          error_string_ = "Illegal token - " + frame_->current.first;
-          state = false;
-        }
         else {
           LiteralValue();
         }
@@ -860,8 +857,7 @@ namespace kagami {
         anchorage.back().first.option.nest_root = nest_type_.top();
         anchorage.back().first.option.nest = nest_.top();
 
-
-        if (!jump_stack_.empty()) {
+        if (compare(nest_type_.top(), kKeywordIf, kKeywordCase) && !jump_stack_.empty()){
           if (!jump_stack_.top().jump_record.empty()) {
             dest_->AddJumpRecord(jump_stack_.top().nest, jump_stack_.top().jump_record);
           }

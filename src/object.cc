@@ -61,6 +61,7 @@ namespace kagami {
   }
 
   Object &Object::PackObject(Object &object) {
+    ptr_.reset();
     type_id_ = object.type_id_;
     mode_ = kObjectRef;
 
@@ -192,8 +193,6 @@ namespace kagami {
   }
 
   void ObjectMap::Naturalize(ObjectContainer &container) {
-    auto &hash_map = container.GetHashMap();
-
     for (auto it = begin(); it != end(); ++it) {
       if (it->second.IsRef() && container.FindDest(it->second.GetRealDest())) {
         it->second = it->second.Unpack();

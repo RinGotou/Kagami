@@ -34,7 +34,6 @@ namespace kagami {
   };
 
   class Argument {
-  //public:
   private:
     string data_;
     ArgumentType type_;
@@ -74,14 +73,14 @@ namespace kagami {
     }
   };
 
-  struct InterfaceInfo {
+  struct FunctionInfo {
     string id;
     Argument domain;
   };
 
   class Request {
   private:
-    variant<Keyword, InterfaceInfo> data_;
+    variant<Keyword, FunctionInfo> data_;
 
   public:
     size_t idx;
@@ -95,7 +94,7 @@ namespace kagami {
       option() {}
 
     Request(string token, Argument domain = Argument()) :
-      data_(InterfaceInfo{ token, domain }),
+      data_(FunctionInfo{ token, domain }),
       idx(0),
       type(kRequestExt),
       option() {}
@@ -108,7 +107,7 @@ namespace kagami {
 
     string GetInterfaceId() {
       if (type == kRequestExt) {
-        return std::get<InterfaceInfo>(data_).id;
+        return std::get<FunctionInfo>(data_).id;
       }
 
       return string();
@@ -116,7 +115,7 @@ namespace kagami {
 
     Argument GetInterfaceDomain() {
       if (type == kRequestExt) {
-        return std::get<InterfaceInfo>(data_).domain;
+        return std::get<FunctionInfo>(data_).domain;
       }
 
       return Argument();

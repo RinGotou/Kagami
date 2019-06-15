@@ -1031,7 +1031,7 @@ namespace kagami {
     auto type_lhs = FindTypeCode(lhs.GetTypeId());
 
     if (type_rhs == kNotPlainType || type_rhs == kNotPlainType) {
-      frame.RefreshReturnStack();
+      frame.MakeError("Try to operate with non-plain type.");
       return;
     }
 
@@ -1456,6 +1456,7 @@ namespace kagami {
       code_stack_.push_back(ptr);
     }
 
+    bool hanging = false;
     bool interface_error = false;
     bool invoking_error = false;
     size_t stop_point = invoking ? frame_stack_.size() : 0;
