@@ -1,6 +1,7 @@
 #pragma once
 #include "machine.h"
 
+#ifndef _DISABLE_SDL_
 namespace kagami {
   const string kTypeIdWindow = "window";
   const string kTypeIdFont = "font";
@@ -17,3 +18,4 @@ namespace kagami {
   const string kStrEventKeydown = "kEventKeydown";
   const string kStrEventWindowState = "kEventWindowState";
 }
+#endif

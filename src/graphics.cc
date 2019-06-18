@@ -1,5 +1,6 @@
 #include "graphics.h"
 
+#ifndef _DISABLE_SDL_
 namespace kagami {
   Message NewDisplayWindow(ObjectMap &p) {
     auto &width = p.Cast<int64_t>("width");
@@ -178,3 +179,4 @@ namespace kagami {
     CreateConstantObject(kStrEventWindowState, Object(int64_t(SDL_WINDOWEVENT), kTypeIdInt));
   }
 }
+#endif

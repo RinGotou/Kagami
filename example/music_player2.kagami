@@ -58,11 +58,13 @@ end
 fn KeyboardEvent(code)
   if code == kKeycodeLeft
     if idx > 0
+      pause = false
       idx = idx - 1
       SwitchSong()
     end
   elif code == kKeycodeRight
     if idx < (size - 1)
+      pause = false
       idx = idx + 1
       SwitchSong()
     end
