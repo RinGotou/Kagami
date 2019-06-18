@@ -199,6 +199,9 @@ namespace kagami {
 
   using CommandPointer = Command * ;
 
+  using EventHandlerMark = pair<Uint32, Uint32>;
+  using EventHandler = pair<EventHandlerMark, FunctionImpl>;
+
   class RuntimeFrame {
   public:
     bool error;
@@ -209,6 +212,7 @@ namespace kagami {
     bool disable_step;
     bool final_cycle;
     bool jump_from_end;
+    bool event_processing;
     size_t jump_offset;
     size_t idx;
     string msg_string;
@@ -228,6 +232,7 @@ namespace kagami {
       disable_step(false),
       final_cycle(false),
       jump_from_end(false),
+      event_processing(false),
       jump_offset(0),
       idx(0),
       msg_string(),
@@ -303,27 +308,43 @@ namespace kagami {
     void InitArray(ArgumentList &args);
 
     void CommandReturn(ArgumentList &args);
+
+    void CommandHandle(ArgumentList &args);
+    void CommandWait(ArgumentList &args);
+    void CommandLeave(ArgumentList &args);
+
     void MachineCommands(Keyword token, ArgumentList &args, Request &request);
 
     void GenerateArgs(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_Normal(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoSize(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoFill(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
+
+    void LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl);
   private:
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;
     ObjectStack obj_stack_;
+    map<EventHandlerMark, FunctionImpl> event_list_;
+    bool hanging = false;
+    bool freezing = false;
 
   public:
     Machine() :
       code_stack_(),
       frame_stack_(),
-      obj_stack_() {}
+      obj_stack_(),
+      event_list_(),
+      hanging(false),
+      freezing(false) {}
 
     Machine(const Machine &rhs) :
       code_stack_(rhs.code_stack_),
       frame_stack_(rhs.frame_stack_),
-      obj_stack_(rhs.obj_stack_) {}
+      obj_stack_(rhs.obj_stack_),
+      event_list_(),
+      hanging(false),
+      freezing(false) {}
 
     Machine(const Machine &&rhs) :
       Machine(rhs) {}
@@ -331,7 +352,10 @@ namespace kagami {
     Machine(VMCode &ir) :
       code_stack_(),
       frame_stack_(),
-      obj_stack_() {
+      obj_stack_(),
+      event_list_(), 
+      hanging(false), 
+      freezing(false) {
       code_stack_.push_back(&ir);
     }
 
@@ -351,5 +375,6 @@ namespace kagami {
   void InitStreamComponents();
 #if not defined(_DISABLE_SDL_)
   void InitSoundComponents();
+  void InitWindowComponents();
 #endif
 }

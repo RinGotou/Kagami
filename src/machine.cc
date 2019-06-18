@@ -94,7 +94,7 @@ namespace kagami {
     return str;
   }
 
-  std::string ws2s(const std::wstring & s) {
+  std::string ws2s(const std::wstring &s) {
     if (s.empty()) return string();
     size_t length = s.size();
     char *c = (char *)malloc(sizeof(char) * length * 2);
@@ -1214,6 +1214,34 @@ namespace kagami {
     }
   }
 
+  void Machine::CommandHandle(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    REQUIRED_ARG_COUNT(3);
+
+    auto func = FetchObject(args[2]);
+    auto event_type_obj = FetchObject(args[1]);
+    auto window_obj = FetchObject(args[0]);
+
+    //TODO:Error detecting
+
+    auto window_id = window_obj.Cast<dawn::BasicWindow>().GetId();
+    auto event_type = static_cast<Uint32>(event_type_obj.Cast<int64_t>());
+    auto &func_impl = func.Cast<FunctionImpl>();
+
+    auto dest = std::make_pair(EventHandlerMark(window_id, event_type), func_impl);
+
+    event_list_.insert(dest);
+  }
+
+  void Machine::CommandWait(ArgumentList &args) {
+    hanging = true;
+  }
+
+  void Machine::CommandLeave(ArgumentList &args) {
+    hanging = false;
+  }
+
   void Machine::MachineCommands(Keyword token, ArgumentList &args, Request &request) {
     auto &frame = frame_stack_.top();
 
@@ -1348,6 +1376,15 @@ namespace kagami {
     case kKeywordWhile:
       CommandIfOrWhile(token, args, request.option.nest_end);
       break;
+    case kKeywordHandle:
+      CommandHandle(args);
+      break;
+    case kKeywordWait:
+      CommandWait(args);
+      break;
+    case kKeywordLeave:
+      CommandLeave(args);
+      break;
     default:
       break;
     }
@@ -1443,6 +1480,24 @@ namespace kagami {
     }
   }
 
+  void Machine::LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl) {
+    auto &frame = frame_stack_.top();
+
+    if (event.type == SDL_KEYDOWN) {
+      ERROR_CHECKING(impl.GetParamSize() != 1, "Invalid event function.");
+      auto &params = impl.GetParameters();
+      int64_t keysym = static_cast<int64_t>(event.key.keysym.sym);
+      obj_map.insert(NamedObject(params[0], Object(keysym, kTypeIdInt)));
+    }
+
+    if (event.type == SDL_WINDOWEVENT) {
+      ERROR_CHECKING(impl.GetParamSize() != 1, "Invalid event function.");
+      auto &params = impl.GetParameters();
+      bool is_exit = event.window.event == SDL_WINDOWEVENT_CLOSE;
+      obj_map.insert(NamedObject(params[0], Object(is_exit, kTypeIdBool)));
+    }
+  }
+
   /*
     Main loop and invoking loop of virtual machine.
     This function contains main logic implementation.
@@ -1456,7 +1511,6 @@ namespace kagami {
       code_stack_.push_back(ptr);
     }
 
-    bool hanging = false;
     bool interface_error = false;
     bool invoking_error = false;
     size_t stop_point = invoking ? frame_stack_.size() : 0;
@@ -1466,6 +1520,7 @@ namespace kagami {
     Command *command = nullptr;
     FunctionImplPointer impl;
     ObjectMap obj_map;
+    SDL_Event event;
 
     frame_stack_.push(RuntimeFrame());
     obj_stack_.Push();
@@ -1488,6 +1543,7 @@ namespace kagami {
     };
 
     auto update_stack_frame = [&](FunctionImpl &func) -> void {
+      bool event_processing = frame->event_processing;
       code_stack_.push_back(&func.GetCode());
       frame_stack_.push(RuntimeFrame(func.GetId()));
       obj_stack_.Push();
@@ -1496,9 +1552,11 @@ namespace kagami {
       obj_stack_.MergeMap(impl->GetClosureRecord());
       refresh_tick();
       frame->jump_offset = func.GetOffset();
+      frame->event_processing = event_processing;
     };
 
     auto tail_recursion = [&]() -> void {
+      bool event_processing = frame->event_processing;
       string function_scope = frame_stack_.top().function_scope;
       size_t jump_offset = frame_stack_.top().jump_offset;
       obj_map.Naturalize(obj_stack_.GetCurrent());
@@ -1509,9 +1567,11 @@ namespace kagami {
       obj_stack_.MergeMap(impl->GetClosureRecord());
       refresh_tick();
       frame->jump_offset = jump_offset;
+      frame->event_processing = event_processing;
     };
 
     auto tail_call = [&](FunctionImpl &func) -> void {
+      bool event_processing = frame->event_processing;
       code_stack_.pop_back();
       code_stack_.push_back(&func.GetCode());
       obj_map.Naturalize(obj_stack_.GetCurrent());
@@ -1522,10 +1582,13 @@ namespace kagami {
       obj_stack_.MergeMap(impl->GetClosureRecord());
       refresh_tick();
       frame->jump_offset = func.GetOffset();
+      frame->event_processing = event_processing;
     };
 
     // Main loop of virtual machine.
-    while (frame->idx < size || frame_stack_.size() > 1) {
+    while (frame->idx < size || frame_stack_.size() > 1 || hanging) {
+      freezing = (frame->idx >= size && hanging && frame_stack_.size() == 1);
+
       if (frame->warning) {
         trace::AddEvent(frame->msg_string, kStateWarning);
         frame->warning = false;
@@ -1536,14 +1599,35 @@ namespace kagami {
         break;
       }
 
+      //window event handler
+      if (!frame->event_processing && SDL_PollEvent(&event) != 0) {
+        EventHandlerMark mark(event.window.windowID, event.type);
+        auto it = event_list_.find(mark);
+        if (it != event_list_.end()) {
+          obj_map.clear();
+          LoadEventInfo(event, obj_map, it->second);
+
+          if (frame->error) break;
+
+          update_stack_frame(it->second);
+          refresh_tick();
+          frame->event_processing = true;
+          continue;
+        }
+      }
+
       //switch to last stack frame
       if (frame->idx == size && frame_stack_.size() > 1) {
         RecoverLastState();
         refresh_tick();
-        frame->RefreshReturnStack(Object());
-        frame->Steping();
+        if (!freezing) {
+          frame->RefreshReturnStack(Object());
+          frame->Steping();
+        }
         continue;
       }
+
+      if (freezing) continue;
 
       command = &(*code)[frame->idx];
 

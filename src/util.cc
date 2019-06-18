@@ -145,7 +145,10 @@ namespace kagami::util {
       T(kStrCase           ,kKeywordCase),
       T(kStrWhen           ,kKeywordWhen),
       T(kStrTypeId         ,kKeywordTypeId),
-      T(kStrDir            ,kKeywordDir)
+      T(kStrDir            ,kKeywordDir),
+      T(kStrHandle         ,kKeywordHandle),
+      T(kStrWait           ,kKeywordWait),
+      T(kStrLeave          ,kKeywordLeave)
     };
     return base;
   }

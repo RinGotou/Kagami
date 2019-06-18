@@ -22,6 +22,7 @@ namespace runtime {
     InitStreamComponents();
 #if not defined(_DISABLE_SDL_)
     InitSoundComponents();
+    InitWindowComponents();
 #endif
   }
 }

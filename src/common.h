@@ -149,6 +149,9 @@ namespace kagami {
     kKeywordExist,
     kKeywordDir, 
     kKeywordQuit,
+    kKeywordHandle,
+    kKeywordWait,
+    kKeywordLeave,
     kKeywordNull
   };
 
@@ -209,6 +212,9 @@ namespace kagami {
     kStrDestroy        = "destroy",
     kStrConvert        = "convert",
     kStrGetStr         = "get_str",
+    kStrHandle         = "handle",
+    kStrWait           = "wait",
+    kStrLeave          = "leave",
     kStrRefCount       = "ref_count",
     kStrTime           = "time",
     kStrVersion        = "version",
