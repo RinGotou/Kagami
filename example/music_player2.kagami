@@ -1,0 +1,98 @@
+kStatePlaying = 'Playing - '
+kStatePaused = 'Paused - '
+kWorkingDir = 'C:\\workspace\\'
+idx = 0
+player_info_window = window(1000, 1080)
+main_font = font(40, kWorkingDir + 'font.ttf')
+song_list = array()
+current_song = 0
+size = 0
+pause = false
+color_black = color(0, 0, 0, 0)
+color_background = color(255, 255, 255, 255)
+
+fn GetMusicFileName(str)
+  local ar = str.to_array()
+  local dest = array()
+  
+  for unit in ar
+    if unit != '\\'
+      dest.push(unit)
+    else
+      dest.clear()
+    end
+  end
+  
+  result = ar2string(dest)
+  return result
+end
+
+fn RenderPlayerInfo()
+  local str0 = ''
+  local id = current_song.left()
+  if pause
+   str0 = kStatePaused + current_song.left()
+  else
+   str0 = kStatePlaying + current_song.left()
+  end
+  player_info_window.clear()
+  player_info_window.add_image(kWorkingDir + id + '.jpg', kImageJPG, 0, 0)
+  player_info_window.set_text(str0, main_font, 0, 1000, color_black)
+end
+
+fn GetSongData()
+  local stream = instream(kWorkingDir + 'list.m3u')
+  while stream.eof() != true
+    local path = stream.get()
+    if path.size() == 0; continue; end
+    song_list.push(pair(GetMusicFileName(path), music(path)))
+  end
+  size = song_list.size()
+end
+
+fn SwitchSong()
+  current_song = song_list[idx]
+  current_song.right().play()
+end
+
+fn KeyboardEvent(code)
+  if code == kKeycodeLeft
+    if idx > 0
+      idx = idx - 1
+      SwitchSong()
+    end
+  elif code == kKeycodeRight
+    if idx < (size - 1)
+      idx = idx + 1
+      SwitchSong()
+    end
+  elif code == kKeycodeReturn
+    if pause
+      pause = false
+      ResumeMusic()
+    else
+      pause = true
+      PauseMusic()
+    end
+  end
+  
+  RenderPlayerInfo()
+end
+
+fn WindowStateEvent(is_exit)
+  if is_exit; leave(); end
+end
+
+fn InitPlayer()
+  current_song = song_list[0]
+  current_song.right().play()
+  player_info_window.set_draw_color(color_background)
+  RenderPlayerInfo()
+end
+
+GetSongData()
+InitPlayer()
+handle(player_info_window, kEventKeydown, KeyboardEvent)
+handle(player_info_window, kEventWindowState, WindowStateEvent)
+wait()
+

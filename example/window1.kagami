@@ -1,0 +1,15 @@
+main_window = window(1920, 1080)
+main_font = font(90, 'C:\\workspace\\font.ttf')
+str1 = '中文字符样例'
+str2 = '吾輩は猫である。名前はまだ無い。'
+str3 = 'English character test'
+color_white = color(255, 255, 255, 0)
+color_black_tr = color(0, 0, 0, 150)
+
+main_window.set_background('C:\\workspace\\20th_main_bg.jpg', kImageJPG)
+main_window.add_image('C:\\workspace\\img1.jpg', kImageJPG, 1920-500, 1080-500)
+main_window.set_text(str1, main_font, 0, 0, color_white)
+main_window.set_text(str2, main_font, 0, 100, color_white)
+main_window.set_text(str3, main_font, 0, 200, color_black_tr)
+
+main_window.waiting()
