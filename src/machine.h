@@ -198,10 +198,10 @@ namespace kagami {
   const string kContainerBehavior = "head|tail";
 
   using CommandPointer = Command * ;
-
+#ifndef _DISABLE_SDL_
   using EventHandlerMark = pair<Uint32, Uint32>;
   using EventHandler = pair<EventHandlerMark, FunctionImpl>;
-
+#endif
   class RuntimeFrame {
   public:
     bool error;
@@ -308,26 +308,27 @@ namespace kagami {
     void InitArray(ArgumentList &args);
 
     void CommandReturn(ArgumentList &args);
-
+#ifndef _DISABLE_SDL_
     void CommandHandle(ArgumentList &args);
     void CommandWait(ArgumentList &args);
     void CommandLeave(ArgumentList &args);
-
+#endif
     void MachineCommands(Keyword token, ArgumentList &args, Request &request);
 
     void GenerateArgs(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_Normal(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoSize(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoFill(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
-
+#ifndef _DISABLE_SDL_
     void LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl);
+#endif
   private:
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;
     ObjectStack obj_stack_;
     map<EventHandlerMark, FunctionImpl> event_list_;
-    bool hanging = false;
-    bool freezing = false;
+    bool hanging;
+    bool freezing;
 
   public:
     Machine() :

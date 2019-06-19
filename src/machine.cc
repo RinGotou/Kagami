@@ -1213,7 +1213,7 @@ namespace kagami {
       frame_stack_.top().RefreshReturnStack(ret_obj);
     }
   }
-
+#ifndef _DISABLE_SDL_
   void Machine::CommandHandle(ArgumentList &args) {
     auto &frame = frame_stack_.top();
 
@@ -1241,7 +1241,7 @@ namespace kagami {
   void Machine::CommandLeave(ArgumentList &args) {
     hanging = false;
   }
-
+#endif
   void Machine::MachineCommands(Keyword token, ArgumentList &args, Request &request) {
     auto &frame = frame_stack_.top();
 
@@ -1376,6 +1376,7 @@ namespace kagami {
     case kKeywordWhile:
       CommandIfOrWhile(token, args, request.option.nest_end);
       break;
+#ifndef _DISABLE_SDL_
     case kKeywordHandle:
       CommandHandle(args);
       break;
@@ -1385,6 +1386,7 @@ namespace kagami {
     case kKeywordLeave:
       CommandLeave(args);
       break;
+#endif
     default:
       break;
     }
@@ -1520,8 +1522,9 @@ namespace kagami {
     Command *command = nullptr;
     FunctionImplPointer impl;
     ObjectMap obj_map;
+#ifndef _DISABLE_SDL_
     SDL_Event event;
-
+#endif
     frame_stack_.push(RuntimeFrame());
     obj_stack_.Push();
 
@@ -1599,6 +1602,7 @@ namespace kagami {
         break;
       }
 
+#ifndef _DISABLE_SDL_
       //window event handler
       if (!frame->event_processing && SDL_PollEvent(&event) != 0) {
         EventHandlerMark mark(event.window.windowID, event.type);
@@ -1615,6 +1619,7 @@ namespace kagami {
           continue;
         }
       }
+#endif
 
       //switch to last stack frame
       if (frame->idx == size && frame_stack_.size() > 1) {

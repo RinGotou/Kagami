@@ -5,7 +5,10 @@
 namespace kagami {
   const string kTypeIdWindow = "window";
   const string kTypeIdFont = "font";
+  const string kTypeIdTexture = "texture";
   const string kTypeIdColorValue = "color";
+  const string kTypeIdRectangle = "rectangle";
+  const string kTypeIdPoint = "point";
   const string kStrImageJPG = "kImageJPG";
   const string kStrImagePNG = "kImagePNG";
   const string kStrImageTIF = "kImageTIF";

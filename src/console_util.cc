@@ -111,7 +111,7 @@ namespace kagami {
   void InitConsoleComponents() {
     using management::CreateImpl;
 
-    CreateImpl(FunctionImpl(Input, "msg", "input", kParamAutoFill));
+    CreateImpl(FunctionImpl(Input, "msg", "input", kParamAutoFill).SetLimit(0));
     CreateImpl(FunctionImpl(GetChar, "", "getchar"));
     CreateImpl(FunctionImpl(Print, kStrMe, "print"));
     CreateImpl(FunctionImpl(PrintLine, kStrMe, "println"));

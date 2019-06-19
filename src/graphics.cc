@@ -37,13 +37,12 @@ namespace kagami {
   Message WindowAddImage(ObjectMap &p) {
     auto &path = p.Cast<string>("path");
     auto &image_type = p.Cast<dawn::ImageType>("type");
-    auto x = static_cast<int>(p.Cast<int64_t>("x"));
-    auto y = static_cast<int>(p.Cast<int64_t>("y"));
+    auto point = p.Cast<SDL_Point>("point");
     auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
     auto renderer = window.GetRenderer();
 
     dawn::Texture image_data(path, image_type, renderer);
-    auto rect = dawn::ProduceRect(x, y, image_data.GetWidth(), image_data.GetHeight());
+    auto rect = dawn::ProduceRect(point.x, point.y, image_data.GetWidth(), image_data.GetHeight());
 
     if (image_data.Get() == nullptr) {
       return Message(kCodeIllegalParam, SDL_GetError(), kStateError);
@@ -57,15 +56,14 @@ namespace kagami {
 
   Message WindowSetText(ObjectMap &p) {
     auto text = p.Cast<string>("text");
-    auto x = static_cast<int>(p.Cast<int64_t>("x"));
-    auto y = static_cast<int>(p.Cast<int64_t>("y"));
+    auto point = p.Cast<SDL_Point>("point");
     auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
     auto &font = p.Cast<dawn::Font>("font");
     auto renderer = window.GetRenderer();
     auto &color = p.Cast<dawn::ColorValue>("color");
 
     dawn::Texture text_data(text, font, renderer, color);
-    auto rect = dawn::ProduceRect(x, y, text_data.GetWidth(), text_data.GetHeight());
+    auto rect = dawn::ProduceRect(point.x, point.y, text_data.GetWidth(), text_data.GetHeight());
 
     if (text_data.Get() == nullptr) {
       return Message(kCodeIllegalParam, SDL_GetError(), kStateError);
@@ -75,6 +73,21 @@ namespace kagami {
     window.Present();
 
     return Message();
+  }
+
+  //Limit:1
+  Message WindowCopy(ObjectMap &p) {
+    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &texture = p.Cast<dawn::Texture>("texture");
+    auto &src_rect_obj = p["src_rect"];
+    auto &dest_rect_obj = p["dest_rect"];
+    SDL_Rect *src_rect = src_rect_obj.Null() ? 
+      nullptr : &src_rect_obj.Cast<SDL_Rect>();
+    SDL_Rect *dest_rect = dest_rect_obj.Null() ?
+      nullptr : &dest_rect_obj.Cast<SDL_Rect>();
+    bool result = window.Copy(texture, src_rect, dest_rect);
+    window.Present();
+    return Message().SetObject(result);
   }
 
   Message WindowWaiting(ObjectMap &p) {
@@ -135,6 +148,66 @@ namespace kagami {
     return Message().SetObject(Object(dawn::ColorValue(r, g, b, a), kTypeIdColorValue));
   }
 
+  Message NewRectangle(ObjectMap &p) {
+    auto x = static_cast<int>(p.Cast<int64_t>("x"));
+    auto y = static_cast<int>(p.Cast<int64_t>("y"));
+    auto w = static_cast<int>(p.Cast<int64_t>("width"));
+    auto h = static_cast<int>(p.Cast<int64_t>("height"));
+
+    auto rect = dawn::ProduceRect(x, y, w, h);
+
+    return Message().SetObject(Object(rect, kTypeIdRectangle));
+  }
+
+  Message NewPoint(ObjectMap &p) {
+    auto x = static_cast<int>(p.Cast<int64_t>("x"));
+    auto y = static_cast<int>(p.Cast<int64_t>("y"));
+
+    auto point = dawn::ProducePoint(x, y);
+
+    return Message().SetObject(Object(point, kTypeIdPoint));
+  }
+
+  Message NewTexture(ObjectMap &p) {
+    return Message().SetObject(Object(dawn::Texture(), kTypeIdTexture));
+  }
+
+  //Limit:3
+  Message TextureInitFromImage(ObjectMap &p) {
+    auto &texture = p.Cast<dawn::Texture>(kStrMe);
+    auto &image_path = p.Cast<string>("path");
+    auto &type = p.Cast<dawn::ImageType>("type");
+    auto &window = p.Cast<dawn::BasicWindow>("window");
+    auto &color_key = p["color_key"];
+    bool result = false;
+
+    if (color_key.Null()) {
+      result = texture.Init(image_path, type, window.GetRenderer());
+    }
+    else {
+      //TODO:Remove redundant argument from init
+      auto &color_value = color_key.Cast<dawn::ColorValue>();
+      result = texture.Init(image_path, type, window.GetRenderer(), true, color_value);
+    }
+
+    return Message().SetObject(result);
+  }
+
+  Message TextureInitFromText(ObjectMap &p) {
+    auto &texture = p.Cast<dawn::Texture>(kStrMe);
+    auto &text = p.Cast<string>("text");
+    auto &font = p.Cast<dawn::Font>("font");
+    auto &window = p.Cast<dawn::BasicWindow>("window");
+    auto &color_key = p.Cast<dawn::ColorValue>("color_key");
+    bool result = texture.Init(text, font, window.GetRenderer(), color_key);
+    return Message().SetObject(result);
+  }
+
+  Message TextureGood(ObjectMap &p) {
+    auto &texture = p.Cast<dawn::Texture>(kStrMe);
+    return Message().SetObject(texture.Get() != nullptr);
+  }
+
   void InitWindowComponents() {
     using management::type::ObjectTraitsSetup;
     using namespace management;
@@ -146,8 +219,9 @@ namespace kagami {
       .InitMethods(
         {
           FunctionImpl(WindowSetBackground,"path|type","set_background"),
-          FunctionImpl(WindowAddImage, "path|type|x|y","add_image"),
-          FunctionImpl(WindowSetText, "text|font|x|y|color","set_text"),
+          FunctionImpl(WindowAddImage, "path|type|point","add_image"),
+          FunctionImpl(WindowSetText, "text|font|color|point","set_text"),
+          FunctionImpl(WindowCopy, "texture|src_rect|dest_rect", "copy", kParamAutoFill).SetLimit(1),
           FunctionImpl(WindowWaiting, "", "waiting"),
           FunctionImpl(WindowClear, "", "clear"),
           FunctionImpl(WindowSetDrawColor, "color", "set_draw_color")
@@ -162,6 +236,28 @@ namespace kagami {
     ObjectTraitsSetup(kTypeIdColorValue, PlainDeliveryImpl<dawn::ColorValue>)
       .InitConstructor(
         FunctionImpl(NewColorValue, "r|g|b|a", "color")
+    );
+
+    ObjectTraitsSetup(kTypeIdRectangle, PlainDeliveryImpl<SDL_Rect>)
+      .InitConstructor(
+        FunctionImpl(NewRectangle, "x|y|width|height", "rectangle")
+    );
+
+    ObjectTraitsSetup(kTypeIdPoint, PlainDeliveryImpl<SDL_Point>)
+      .InitConstructor(
+        FunctionImpl(NewPoint, "x|y", "point")
+    );
+
+    ObjectTraitsSetup(kTypeIdTexture, ShallowDelivery)
+      .InitConstructor(
+        FunctionImpl(NewTexture, "", "texture")
+      )
+      .InitMethods(
+        {
+          FunctionImpl(TextureInitFromImage, "path|type|window|color_key", "from_image", kParamAutoFill).SetLimit(3),
+          FunctionImpl(TextureInitFromText, "text|font|window|color_key", "from_text"),
+          FunctionImpl(TextureGood, "", "good")
+        }
     );
 
     CreateConstantObject(kStrImageJPG, Object(int64_t(dawn::kImageJPG), kTypeIdInt));

@@ -243,7 +243,7 @@ namespace kagami {
 
     ObjectTraitsSetup(kTypeIdArray, ArrayDelivery, ArrayHasher)
       .InitConstructor(
-        FunctionImpl(NewArray, "size|init_value", "array", kParamAutoFill)
+        FunctionImpl(NewArray, "size|init_value", "array", kParamAutoFill).SetLimit(0)
       )
       .InitMethods(
         {
