@@ -1482,6 +1482,7 @@ namespace kagami {
     }
   }
 
+#ifndef _DISABLE_SDL
   void Machine::LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl) {
     auto &frame = frame_stack_.top();
 
@@ -1499,7 +1500,7 @@ namespace kagami {
       obj_map.insert(NamedObject(params[0], Object(is_exit, kTypeIdBool)));
     }
   }
-
+#endif 
   /*
     Main loop and invoking loop of virtual machine.
     This function contains main logic implementation.

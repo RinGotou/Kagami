@@ -21,14 +21,14 @@ namespace kagami {
     auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
     auto renderer = window.GetRenderer();
 
-    dawn::Texture backgroud_data(path, image_type, renderer);
+    dawn::Texture background_data(path, image_type, renderer);
 
-    if (backgroud_data.Get() == nullptr) {
+    if (background_data.Get() == nullptr) {
       return Message(kCodeIllegalParam, SDL_GetError(), kStateError);
     }
     
     window.Clear();
-    window.Copy(backgroud_data);
+    window.Copy(background_data);
     window.Present();
 
     return Message();
