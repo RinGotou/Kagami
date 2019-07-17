@@ -326,7 +326,9 @@ namespace kagami {
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;
     ObjectStack obj_stack_;
+#ifndef _DISABLE_SDL_
     map<EventHandlerMark, FunctionImpl> event_list_;
+#endif
     bool hanging;
     bool freezing;
 
