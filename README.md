@@ -9,7 +9,7 @@ It's a project of experimental script language. The name of this project is from
 I want to create a simple language for simple visual novel developing. Kagami is design for logic 
 implementation, not CPU intensive job. This project contains a try-catch free implementation with C++17.
 
-## Building Kagami Interpreter
+## Build Kagami Interpreter
 
 ### Dependencies
 SDL2/SDL2_image/SDL2_mixer/SDL2_ttf are required.
@@ -28,11 +28,8 @@ I recommend using gcc 8.0+ or clang 8.0+.
 # Archlinux/Manjaro Linux
 sudo pacman -Syyu sdl2 sdl2_image sdl2_mixer sdl2_ttf
 
-#Ubuntu/Debian
-sudo apt-get install libsdl2 libsdl2-dev libsdl2-image libsdl2-image-dev libsdl2-ttf libsdl2-ttf-dev libsdl2-mixer libsdl2-mixer-dev
-
 #clone & build
-git clone https://github.com/suzunakamura/kagami
+git clone https://github.com/kagami-project/kagami
 cd kagami
 git submodule init && git submodule update
 cmake .
