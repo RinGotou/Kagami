@@ -1605,7 +1605,8 @@ namespace kagami {
 
 #ifndef _DISABLE_SDL_
       //window event handler
-      if (!frame->event_processing && SDL_PollEvent(&event) != 0) {
+      if ((!frame->event_processing && SDL_PollEvent(&event) != 0)
+        || (freezing && SDL_WaitEvent(&event) != 0)) {
         EventHandlerMark mark(event.window.windowID, event.type);
         auto it = event_list_.find(mark);
         if (it != event_list_.end()) {
@@ -1619,6 +1620,8 @@ namespace kagami {
           frame->event_processing = true;
           continue;
         }
+
+        if (freezing) continue;
       }
 #endif
 
@@ -1627,7 +1630,7 @@ namespace kagami {
         RecoverLastState();
         refresh_tick();
         if (!freezing) {
-          frame->RefreshReturnStack(Object());
+          //frame->RefreshReturnStack(Object());
           frame->Steping();
         }
         continue;
