@@ -1636,7 +1636,7 @@ namespace kagami {
         continue;
       }
 
-      if (freezing) continue;
+      //if (freezing) continue;
 
       command = &(*code)[frame->idx];
 
