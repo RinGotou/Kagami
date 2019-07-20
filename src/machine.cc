@@ -1482,7 +1482,7 @@ namespace kagami {
     }
   }
 
-#ifndef _DISABLE_SDL
+#ifndef _DISABLE_SDL_
   void Machine::LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl) {
     auto &frame = frame_stack_.top();
 
