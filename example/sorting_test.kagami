@@ -31,7 +31,7 @@ fn BubbleSort(array_size)
   println('End Time  :' + time())
 end
 
-fn InsertionSort(array_size)
+fn SelectionSort(array_size)
   local ar = array(array_size, 0)
   local i = 0
   
@@ -63,12 +63,12 @@ end
 fn main()
   local value = 0
   
-  mode = convert(input('Which algorithm?(1:Bubble 2.Insertion) \n>'))
+  mode = convert(input('Which algorithm?(1:Bubble 2.Selection) \n>'))
   func = 0
   
   case mode 
   when 1; func = BubbleSort
-  when 2; func = InsertionSort
+  when 2; func = SelectionSort
   else; value = 'q'
   end
   
