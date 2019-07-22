@@ -1,19 +1,25 @@
+# Useful constant for player interface
 kStatePlaying = 'Playing - '
 kStatePaused = 'Paused - '
 kWorkingDir = 'C:\\workspace\\'
 
+# Player status
 idx = 0
 size = 0
 current_song = 0
 pause = false
+song_list = array()
 
+# Interface contents
+cover_rect = rectangle(0, 0, 1000, 1000)
 player_info_window = window(1000, 1080)
 main_font = font(40, kWorkingDir + 'font.ttf')
-song_list = array()
+
+# Main color keys
 color_black = color(0, 0, 0, 0)
 color_background = color(255, 255, 255, 255)
+
 msg_position = point(0, 1000)
-cover_position = point(0, 0)
 
 fn GetMusicFileName(str)
   local ar = str.to_array()
@@ -39,8 +45,12 @@ fn RenderPlayerInfo()
   else
    str0 = kStatePlaying + current_song.left()
   end
+  
+  cover = texture()
+  cover.from_image(kWorkingDir + id + '.jpg', kImageJPG, player_info_window)
+  src_rect = rectangle(0, 0, cover.width(), cover.height())
   player_info_window.clear()
-  player_info_window.add_image(kWorkingDir + id + '.jpg', kImageJPG, cover_position)
+  player_info_window.copy(cover, src_rect, cover_rect)
   player_info_window.set_text(str0, main_font, color_black, msg_position)
 end
 
@@ -93,6 +103,8 @@ fn WindowStateEvent(win_event)
     PauseMusic()
   when kWindowRestored
     if !pause; ResumeMusic(); end
+  when kWindowMoved
+    println('X=' + win_event.data1() + ' Y=' + win_event.data2())
   end
 end
 

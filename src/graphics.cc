@@ -208,6 +208,16 @@ namespace kagami {
     return Message().SetObject(texture.Get() != nullptr);
   }
 
+  Message TextureHeight(ObjectMap &p) {
+    auto &texture = p.Cast<dawn::Texture>(kStrMe);
+    return Message().SetObject(static_cast<int64_t>(texture.GetHeight()));
+  }
+
+  Message TextureWidth(ObjectMap &p) {
+    auto &texture = p.Cast<dawn::Texture>(kStrMe);
+    return Message().SetObject(static_cast<int64_t>(texture.GetWidth()));
+  }
+
   Message WindowEventGetType(ObjectMap &p) {
     auto &obj = p.Cast<SDL_WindowEvent>(kStrMe);
     return Message().SetObject(static_cast<int64_t>(obj.event));
@@ -221,6 +231,63 @@ namespace kagami {
   Message WindowEventGetData2(ObjectMap &p) {
     auto &obj = p.Cast<SDL_WindowEvent>(kStrMe);
     return Message().SetObject(static_cast<int64_t>(obj.data2));
+  }
+
+  void CreateImageTypeMapping() {
+    using namespace management;
+    CreateConstantObject(kStrImageJPG, Object(int64_t(dawn::kImageJPG), kTypeIdInt));
+    CreateConstantObject(kStrImagePNG, Object(int64_t(dawn::kImagePNG), kTypeIdInt));
+    CreateConstantObject(kStrImageTIF, Object(int64_t(dawn::kImageTIF), kTypeIdInt));
+    CreateConstantObject(kStrImageWEBP, Object(int64_t(dawn::kImageWEBP), kTypeIdInt));
+  }
+
+  void CreateKeyMapping() {
+    using namespace management;
+#define CREATE_KEYCODE(_Str, _Code) \
+    CreateConstantObject(_Str, Object(int64_t(_Code), kTypeIdInt))
+
+    CREATE_KEYCODE(kStrKeycodeUp, SDLK_UP);
+    CREATE_KEYCODE(kStrKeycodeDown, SDLK_DOWN);
+    CREATE_KEYCODE(kStrKeycodeLeft, SDLK_LEFT);
+    CREATE_KEYCODE(kStrKeycodeRight, SDLK_RIGHT);
+    CREATE_KEYCODE(kStrKeycodeReturn, SDLK_RETURN);
+
+#undef CREATE_KEYODE
+  }
+
+  void CreateWindowStateMapping() {
+    using namespace management;
+    CreateConstantObject(kStrWindowClosed, Object(int64_t(SDL_WINDOWEVENT_CLOSE), kTypeIdInt));
+    CreateConstantObject(kStrWindowMinimized, Object(int64_t(SDL_WINDOWEVENT_MINIMIZED), kTypeIdInt));
+    CreateConstantObject(kStrWindowRestored, Object(int64_t(SDL_WINDOWEVENT_RESTORED), kTypeIdInt));
+    CreateConstantObject(kStrWindowMouseEnter, Object(int64_t(SDL_WINDOWEVENT_ENTER), kTypeIdInt));
+    CreateConstantObject(kStrWindowMouseLeave, Object(int64_t(SDL_WINDOWEVENT_LEAVE), kTypeIdInt));
+    CreateConstantObject(kStrWindowMoved, Object(int64_t(SDL_WINDOWEVENT_MOVED), kTypeIdInt));
+  }
+
+  void CreateMouseButtonMapping() {
+    using namespace management;
+#define CREATE_BTN_CODE(_Str, _Code) \
+    CreateConstantObject(_Str, Object(int64_t(_Code), kTypeIdInt))
+
+    CREATE_BTN_CODE(kStrMouseLeft, SDL_BUTTON_LEFT);
+    CREATE_BTN_CODE(kStrMouseMiddle, SDL_BUTTON_MIDDLE);
+    CREATE_BTN_CODE(kStrMouseRight, SDL_BUTTON_RIGHT);
+
+#undef CREATE_BTN_CODE
+  }
+
+  void CreateEventTypeId() {
+    using namespace management;
+#define CREATE_EVENTID(_Str, _Code) \
+    CreateConstantObject(_Str, Object(int64_t(_Code), kTypeIdInt))
+
+    CREATE_EVENTID(kStrEventKeydown, SDL_KEYDOWN);
+    CREATE_EVENTID(kStrEventWindowState, SDL_WINDOWEVENT);
+    CREATE_EVENTID(kStrEventMouseDown, SDL_MOUSEBUTTONDOWN);
+    CREATE_EVENTID(kStrEventMouseUp, SDL_MOUSEBUTTONUP);
+
+#undef CREATE_EVENTID
   }
 
   void InitWindowComponents() {
@@ -271,7 +338,9 @@ namespace kagami {
         {
           FunctionImpl(TextureInitFromImage, "path|type|window|color_key", "from_image", kParamAutoFill).SetLimit(3),
           FunctionImpl(TextureInitFromText, "text|font|window|color_key", "from_text"),
-          FunctionImpl(TextureGood, "", "good")
+          FunctionImpl(TextureGood, "", "good"),
+          FunctionImpl(TextureHeight, "", "height"),
+          FunctionImpl(TextureWidth, "", "width")
         }
     );
 
@@ -284,26 +353,12 @@ namespace kagami {
         }
     );
 
-    CreateConstantObject(kStrImageJPG, Object(int64_t(dawn::kImageJPG), kTypeIdInt));
-    CreateConstantObject(kStrImagePNG, Object(int64_t(dawn::kImagePNG), kTypeIdInt));
-    CreateConstantObject(kStrImageTIF, Object(int64_t(dawn::kImageTIF), kTypeIdInt));
-    CreateConstantObject(kStrImageWEBP, Object(int64_t(dawn::kImageWEBP), kTypeIdInt));
 
-    CreateConstantObject(kStrKeycodeUp, Object(int64_t(SDLK_UP), kTypeIdInt));
-    CreateConstantObject(kStrKeycodeDown, Object(int64_t(SDLK_DOWN), kTypeIdInt));
-    CreateConstantObject(kStrKeycodeLeft, Object(int64_t(SDLK_LEFT), kTypeIdInt));
-    CreateConstantObject(kStrKeycodeRight, Object(int64_t(SDLK_RIGHT), kTypeIdInt));
-    CreateConstantObject(kStrKeycodeReturn, Object(int64_t(SDLK_RETURN), kTypeIdInt));
-
-    CreateConstantObject(kStrEventKeydown, Object(int64_t(SDL_KEYDOWN), kTypeIdInt));
-    CreateConstantObject(kStrEventWindowState, Object(int64_t(SDL_WINDOWEVENT), kTypeIdInt));
-
-    CreateConstantObject(kStrWindowClosed, Object(int64_t(SDL_WINDOWEVENT_CLOSE), kTypeIdInt));
-    CreateConstantObject(kStrWindowMinimized, Object(int64_t(SDL_WINDOWEVENT_MINIMIZED), kTypeIdInt));
-    CreateConstantObject(kStrWindowRestored, Object(int64_t(SDL_WINDOWEVENT_RESTORED), kTypeIdInt));
-    CreateConstantObject(kStrWindowMouseEnter, Object(int64_t(SDL_WINDOWEVENT_ENTER), kTypeIdInt));
-    CreateConstantObject(kStrWindowMouseLeave, Object(int64_t(SDL_WINDOWEVENT_LEAVE), kTypeIdInt));
-    CreateConstantObject(kStrWindowMoved, Object(int64_t(SDL_WINDOWEVENT_MOVED), kTypeIdInt));
+    CreateImageTypeMapping();
+    CreateKeyMapping();
+    CreateWindowStateMapping();
+    CreateMouseButtonMapping();
+    CreateEventTypeId();
   }
 }
 #endif

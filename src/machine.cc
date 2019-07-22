@@ -1497,8 +1497,17 @@ namespace kagami {
       ERROR_CHECKING(impl.GetParamSize() != 1, "Invalid event function.");
       auto &params = impl.GetParameters();
       obj_map.insert(NamedObject(params[0], Object(event.window, kTypeIdWindowEvent)));
-      //bool is_exit = event.window.event == SDL_WINDOWEVENT_CLOSE;
-      //obj_map.insert(NamedObject(params[0], Object(is_exit, kTypeIdBool)));
+    }
+
+    if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
+      ERROR_CHECKING(impl.GetParamSize() != 3, "Invalid event function.");
+      auto &params = impl.GetParameters();
+      auto y = static_cast<int64_t>(event.button.y);
+      auto x = static_cast<int64_t>(event.button.x);
+      auto button = static_cast<int64_t>(event.button.button);
+      obj_map.insert(NamedObject(params[2], Object(y, kTypeIdInt)));
+      obj_map.insert(NamedObject(params[1], Object(x, kTypeIdInt)));
+      obj_map.insert(NamedObject(params[0], Object(button, kTypeIdInt)));
     }
   }
 #endif 

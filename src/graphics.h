@@ -15,8 +15,25 @@ namespace kagami {
   const string kStrKeycodeLeft = "kKeycodeLeft";
   const string kStrKeycodeRight = "kKeycodeRight";
   const string kStrKeycodeReturn = "kKeycodeReturn";
+  const string kStrKeycodeLCtrl = "kKeycodeLCtrl";
+  const string kStrKeycodeRCtrl = "kKeycodeRCtrl";
+  const string kStrKeycodeLShift = "kKeycodeLShift";
+  const string kStrKeycodeRShift = "kKeycodeRShift";
+  const string kStrKeycodeLAlt = "kKeycodeLAlt";
+  const string kStrKeycodeRAlt = "kKeycodeRAlt";
+
+  // Mouse button constant id
+  const string kStrMouseLeft = "kMouseLeft";
+  const string kStrMouseMiddle = "kMouseMiddle";
+  const string kStrMouseRight = "kMouseRight";
+
+  // For CommandHandle
   const string kStrEventKeydown = "kEventKeydown";
   const string kStrEventWindowState = "kEventWindowState";
+  const string kStrEventMouseDown = "kEventMouseDown";
+  const string kStrEventMouseUp = "kEventMouseUp";
+  const string kStrEventMouseMotion = "kEventMouseMotion";
+  const string kStrEventMouseWheel = "kEventMouseWheel";
 
   // Window state constant id
   // "Maximized" and "Resized" is not needed until resizable window is implemented.

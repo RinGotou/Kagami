@@ -1,0 +1,45 @@
+main_window = window(1000, 1000)
+img = texture()
+img.from_image('C:\\workspace\\img1.jpg', kImageJPG, main_window)
+img_x = 0
+img_y = 0
+original_x = 0
+original_y = 0
+img_rect = rectangle(0, 0, img.width(), img.height())
+
+fn RenderImage()
+  local dest_rect = rectangle(img_x, img_y, img.width(), img.height())
+  main_window.clear()
+  main_window.copy(img, img_rect, dest_rect)
+end
+
+fn MouseDownEvent(button, x, y)
+  if button == kMouseLeft
+    original_x = x
+    original_y = y
+  end
+end
+
+fn MouseUpEvent(button, x, y)
+  if button == kMouseLeft
+    local deviation_x = x - original_x
+    local deviation_y = y - original_y
+    img_x = img_x + deviation_x
+    img_y = img_y + deviation_y
+  end
+  
+  RenderImage()
+end
+
+fn WindowStateEvent(win_event)
+  if win_event.type() == kWindowClosed
+    leave()
+  end
+end
+
+# Initialization
+handle(main_window, kEventMouseDown, MouseDownEvent)
+handle(main_window, kEventMouseUp, MouseUpEvent)
+handle(main_window, kEventWindowState, WindowStateEvent)
+RenderImage()
+wait()
