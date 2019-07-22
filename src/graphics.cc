@@ -208,6 +208,11 @@ namespace kagami {
     return Message().SetObject(texture.Get() != nullptr);
   }
 
+  Message GetWindowEvent(ObjectMap &p) {
+
+    return Message();
+  }
+
   void InitWindowComponents() {
     using management::type::ObjectTraitsSetup;
     using namespace management;

@@ -20,5 +20,15 @@ namespace kagami {
   const string kStrKeycodeReturn = "kKeycodeReturn";
   const string kStrEventKeydown = "kEventKeydown";
   const string kStrEventWindowState = "kEventWindowState";
+
+  //Window state constant object id
+  //"Maximized" is not needed until resizable window is implemented.
+
+  //const string kStrWindowStateMaximized = "kWindowStateMaximized";
+  const string kStrWindowMinimized = "kWindowMinimized";
+  const string kStrWindowRestored = "kWindowRestored";
+  const string kStrWindowMouseEnter = "kWindowMouseEnter";
+  const string kStrWindowMouseLeave = "kWindowMouseLeave";
+  const string kStrWindowMoved = "kWindowMoved";
 }
 #endif
