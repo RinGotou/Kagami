@@ -1496,8 +1496,9 @@ namespace kagami {
     if (event.type == SDL_WINDOWEVENT) {
       ERROR_CHECKING(impl.GetParamSize() != 1, "Invalid event function.");
       auto &params = impl.GetParameters();
-      bool is_exit = event.window.event == SDL_WINDOWEVENT_CLOSE;
-      obj_map.insert(NamedObject(params[0], Object(is_exit, kTypeIdBool)));
+      obj_map.insert(NamedObject(params[0], Object(event.window, kTypeIdWindowEvent)));
+      //bool is_exit = event.window.event == SDL_WINDOWEVENT_CLOSE;
+      //obj_map.insert(NamedObject(params[0], Object(is_exit, kTypeIdBool)));
     }
   }
 #endif 

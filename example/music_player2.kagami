@@ -85,8 +85,15 @@ fn KeyboardEvent(code)
   RenderPlayerInfo()
 end
 
-fn WindowStateEvent(is_exit)
-  if is_exit; leave(); end
+fn WindowStateEvent(win_event)
+  case win_event.type()
+  when kWindowClosed
+    leave()
+  when kWindowMinimized
+    PauseMusic()
+  when kWindowRestored
+    if !pause; ResumeMusic(); end
+  end
 end
 
 fn InitPlayer()

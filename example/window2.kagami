@@ -10,8 +10,8 @@ fn keyboard_event(code)
   end
 end
 
-fn window_event(is_exit)
-  if is_exit
+fn window_event(win_event)
+  if win_event.type() == kWindowClosed
     leave()
   end
 end

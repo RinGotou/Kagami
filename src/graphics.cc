@@ -208,9 +208,19 @@ namespace kagami {
     return Message().SetObject(texture.Get() != nullptr);
   }
 
-  Message GetWindowEvent(ObjectMap &p) {
+  Message WindowEventGetType(ObjectMap &p) {
+    auto &obj = p.Cast<SDL_WindowEvent>(kStrMe);
+    return Message().SetObject(static_cast<int64_t>(obj.event));
+  }
 
-    return Message();
+  Message WindowEventGetData1(ObjectMap &p) {
+    auto &obj = p.Cast<SDL_WindowEvent>(kStrMe);
+    return Message().SetObject(static_cast<int64_t>(obj.data1));
+  }
+
+  Message WindowEventGetData2(ObjectMap &p) {
+    auto &obj = p.Cast<SDL_WindowEvent>(kStrMe);
+    return Message().SetObject(static_cast<int64_t>(obj.data2));
   }
 
   void InitWindowComponents() {
@@ -265,6 +275,15 @@ namespace kagami {
         }
     );
 
+    ObjectTraitsSetup(kTypeIdWindowEvent, PlainDeliveryImpl<SDL_WindowEvent>)
+      .InitMethods(
+        {
+          FunctionImpl(WindowEventGetType, "", "type"),
+          FunctionImpl(WindowEventGetData1, "", "data1"),
+          FunctionImpl(WindowEventGetData2, "", "data2")
+        }
+    );
+
     CreateConstantObject(kStrImageJPG, Object(int64_t(dawn::kImageJPG), kTypeIdInt));
     CreateConstantObject(kStrImagePNG, Object(int64_t(dawn::kImagePNG), kTypeIdInt));
     CreateConstantObject(kStrImageTIF, Object(int64_t(dawn::kImageTIF), kTypeIdInt));
@@ -278,6 +297,13 @@ namespace kagami {
 
     CreateConstantObject(kStrEventKeydown, Object(int64_t(SDL_KEYDOWN), kTypeIdInt));
     CreateConstantObject(kStrEventWindowState, Object(int64_t(SDL_WINDOWEVENT), kTypeIdInt));
+
+    CreateConstantObject(kStrWindowClosed, Object(int64_t(SDL_WINDOWEVENT_CLOSE), kTypeIdInt));
+    CreateConstantObject(kStrWindowMinimized, Object(int64_t(SDL_WINDOWEVENT_MINIMIZED), kTypeIdInt));
+    CreateConstantObject(kStrWindowRestored, Object(int64_t(SDL_WINDOWEVENT_RESTORED), kTypeIdInt));
+    CreateConstantObject(kStrWindowMouseEnter, Object(int64_t(SDL_WINDOWEVENT_ENTER), kTypeIdInt));
+    CreateConstantObject(kStrWindowMouseLeave, Object(int64_t(SDL_WINDOWEVENT_LEAVE), kTypeIdInt));
+    CreateConstantObject(kStrWindowMoved, Object(int64_t(SDL_WINDOWEVENT_MOVED), kTypeIdInt));
   }
 }
 #endif

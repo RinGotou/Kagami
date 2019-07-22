@@ -200,6 +200,16 @@ namespace kagami {
   const string kTypeIdTable           = "table";
   const string kTypeIdStruct          = "struct";
 
+#ifndef _DISABLE_SDL_
+  const string kTypeIdWindowEvent     = "WindowEvent";
+  const string kTypeIdWindow          = "window";
+  const string kTypeIdFont            = "font";
+  const string kTypeIdTexture         = "texture";
+  const string kTypeIdColorValue      = "color";
+  const string kTypeIdRectangle       = "rectangle";
+  const string kTypeIdPoint           = "point";
+#endif
+
   const string
     kStrImpl           = "impl",
     kStrStruct         = "struct",
