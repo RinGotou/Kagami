@@ -1745,7 +1745,7 @@ namespace kagami {
     }
 
     if (invoking && invoking_error) {
-      frame_stack_.top().MakeError("Invoking error is happened.");
+      frame_stack_.top().MakeError("Invoking error is occurred.");
     }
   }
 }
