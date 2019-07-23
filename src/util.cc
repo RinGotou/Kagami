@@ -108,6 +108,7 @@ namespace kagami::util {
   map<string, Keyword> &GetKeywordBase() {
     using T = pair<string, Keyword>;
     static map<string, Keyword> base = {
+      T(kStrAssert         ,kKeywordAssert),
       T(kStrLocal          ,kKeywordLocal),
       T(kStrHash           ,kKeywordHash),
       T(kStrFor            ,kKeywordFor),

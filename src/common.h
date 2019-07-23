@@ -105,6 +105,7 @@ namespace kagami {
 
   /* Reserved keywords mark / VMCode commands */
   enum Keyword {
+    kKeywordAssert,
     kKeywordLocal,
     kKeywordHash,
     kKeywordFor,
@@ -211,6 +212,7 @@ namespace kagami {
 #endif
 
   const string
+    kStrAssert         = "assert",
     kStrImpl           = "impl",
     kStrStruct         = "struct",
     kStrRootScope      = "!root",

@@ -308,6 +308,7 @@ namespace kagami {
     void InitArray(ArgumentList &args);
 
     void CommandReturn(ArgumentList &args);
+    void CommandAssert(ArgumentList &args);
 #ifndef _DISABLE_SDL_
     void CommandHandle(ArgumentList &args);
     void CommandWait(ArgumentList &args);

@@ -5,30 +5,55 @@ img_x = 0
 img_y = 0
 original_x = 0
 original_y = 0
+motion_x = 0
+motion_y = 0
 img_rect = rectangle(0, 0, img.width(), img.height())
+current_position = rectangle(0, 0, img.width(), img.height())
+clicked = false
 
-fn RenderImage()
-  local dest_rect = rectangle(img_x, img_y, img.width(), img.height())
+fn RenderImage(x, y)
+  println('render direction: x=' + x + ' y=' + y)
+  local dest_rect = rectangle(x, y, img.width(), img.height())
   main_window.clear()
   main_window.copy(img, img_rect, dest_rect)
+  current_position = dest_rect
 end
 
 fn MouseDownEvent(button, x, y)
-  if button == kMouseLeft
+  println('mouse pressed x=' + x + ' y=' + y)
+  println('image position: original_x=' + original_x + ' original_y=' + original_y)
+  mouse_pos = point(x, y)
+  
+  if button == kMouseLeft && main_window.in_range(current_position, mouse_pos)
+    motion_x = img_x
+    motion_y = img_y
     original_x = x
     original_y = y
+    clicked = true
   end
 end
 
 fn MouseUpEvent(button, x, y)
-  if button == kMouseLeft
+  println('mouse released')
+  if button == kMouseLeft && clicked
     local deviation_x = x - original_x
     local deviation_y = y - original_y
     img_x = img_x + deviation_x
     img_y = img_y + deviation_y
+    clicked = false
+    
+    RenderImage(img_x, img_y)
   end
-  
-  RenderImage()
+end
+
+fn MouseMotionEvent(x, y, xrel, yrel)
+  if clicked
+    println('pre: motion_x=' + motion_x + ' motion_y=' + motion_y)
+    motion_x = motion_x + xrel
+    motion_y = motion_y + yrel
+    println('after: motion_x=' + motion_x + ' motion_y=' + motion_y)
+    RenderImage(motion_x, motion_y)
+  end
 end
 
 fn WindowStateEvent(win_event)
@@ -41,5 +66,6 @@ end
 handle(main_window, kEventMouseDown, MouseDownEvent)
 handle(main_window, kEventMouseUp, MouseUpEvent)
 handle(main_window, kEventWindowState, WindowStateEvent)
-RenderImage()
+handle(main_window, kEventMouseMotion, MouseMotionEvent)
+RenderImage(0, 0)
 wait()

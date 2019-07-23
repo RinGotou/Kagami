@@ -1225,6 +1225,24 @@ namespace kagami {
       }
     }
   }
+
+  void Machine::CommandAssert(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    REQUIRED_ARG_COUNT(1);
+
+    auto result_obj = FetchObject(args[0]);
+
+    if (result_obj.GetTypeId() != kTypeIdBool) {
+      frame.MakeError("Invalid object type for assertion.");
+      return;
+    }
+
+    if (!result_obj.Cast<bool>()) {
+      frame.MakeError("User assertion failed.");
+    }
+  }
+
 #ifndef _DISABLE_SDL_
   void Machine::CommandHandle(ArgumentList &args) {
     auto &frame = frame_stack_.top();
@@ -1341,6 +1359,9 @@ namespace kagami {
       break;
     case kKeywordReturn:
       CommandReturn(args);
+      break;
+    case kKeywordAssert:
+      CommandAssert(args);
       break;
     case kKeywordTypeId:
       CommandTypeId(args);
