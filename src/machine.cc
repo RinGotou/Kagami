@@ -1030,6 +1030,8 @@ namespace kagami {
     auto type_rhs = FindTypeCode(rhs.GetTypeId());
     auto type_lhs = FindTypeCode(lhs.GetTypeId());
 
+    if (frame.error) return;
+
     if (type_rhs == kNotPlainType || type_rhs == kNotPlainType) {
       frame.MakeError("Try to operate with non-plain type.");
       return;
@@ -1073,6 +1075,8 @@ namespace kagami {
     auto type_rhs = FindTypeCode(rhs.GetTypeId());
     auto type_lhs = FindTypeCode(lhs.GetTypeId());
     bool result = false;
+
+    if (frame.error) return;
 
     if (!util::IsPlainType(lhs.GetTypeId())) {
       if (op_code != kKeywordEquals && op_code != kKeywordNotEqual) {
@@ -1174,6 +1178,8 @@ namespace kagami {
       return;
     }
 
+    bool dispose_return_value = frame_stack_.top().event_processing;
+
     if (args.size() == 1) {
       Object ret_obj = FetchObject(args[0]).Unpack();
 
@@ -1184,7 +1190,9 @@ namespace kagami {
       }
 
       RecoverLastState();
-      frame_stack_.top().RefreshReturnStack(ret_obj);
+      if (!dispose_return_value) {
+        frame_stack_.top().RefreshReturnStack(ret_obj);
+      }
     }
     else if (args.size() == 0) {
       auto *container = &obj_stack_.GetCurrent();
@@ -1194,7 +1202,9 @@ namespace kagami {
       }
 
       RecoverLastState();
-      frame_stack_.top().RefreshReturnStack(Object());
+      if (!dispose_return_value) {
+        frame_stack_.top().RefreshReturnStack(Object());
+      }
     }
     else {
       ManagedArray obj_array = make_shared<ObjectArray>();
@@ -1210,7 +1220,9 @@ namespace kagami {
       }
 
       RecoverLastState();
-      frame_stack_.top().RefreshReturnStack(ret_obj);
+      if (!dispose_return_value) {
+        frame_stack_.top().RefreshReturnStack(ret_obj);
+      }
     }
   }
 #ifndef _DISABLE_SDL_
@@ -1509,6 +1521,19 @@ namespace kagami {
       obj_map.insert(NamedObject(params[1], Object(x, kTypeIdInt)));
       obj_map.insert(NamedObject(params[0], Object(button, kTypeIdInt)));
     }
+
+    if (event.type == SDL_MOUSEMOTION) {
+      ERROR_CHECKING(impl.GetParamSize() != 4, "Invalid event function.");
+      auto &params = impl.GetParameters();
+      auto yrel = static_cast<int64_t>(event.motion.yrel);
+      auto xrel = static_cast<int64_t>(event.motion.xrel);
+      auto y = static_cast<int64_t>(event.motion.y);
+      auto x = static_cast<int64_t>(event.motion.x);
+      obj_map.insert(NamedObject(params[3], Object(yrel, kTypeIdInt)));
+      obj_map.insert(NamedObject(params[2], Object(xrel, kTypeIdInt)));
+      obj_map.insert(NamedObject(params[1], Object(y, kTypeIdInt)));
+      obj_map.insert(NamedObject(params[0], Object(x, kTypeIdInt)));
+    }
   }
 #endif 
   /*
@@ -1600,6 +1625,7 @@ namespace kagami {
     };
 
     // Main loop of virtual machine.
+    // TODO:dispose return value in event function
     while (frame->idx < size || frame_stack_.size() > 1 || hanging) {
       freezing = (frame->idx >= size && hanging && frame_stack_.size() == 1);
 
@@ -1640,13 +1666,10 @@ namespace kagami {
         RecoverLastState();
         refresh_tick();
         if (!freezing) {
-          //frame->RefreshReturnStack(Object());
           frame->Steping();
         }
         continue;
       }
-
-      //if (freezing) continue;
 
       command = &(*code)[frame->idx];
 

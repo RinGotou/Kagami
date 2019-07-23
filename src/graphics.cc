@@ -126,6 +126,14 @@ namespace kagami {
     return Message();
   }
 
+  Message WindowInRange(ObjectMap &p) {
+    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &rect = p.Cast<SDL_Rect>("rect");
+    auto &point = p.Cast<SDL_Point>("point");
+
+    return Message().SetObject(window.InRange(rect, point));
+  }
+
   Message NewFont(ObjectMap &p) {
     auto size = static_cast<int>(p.Cast<int64_t>("size"));
     auto &path = p.Cast<string>("path");
@@ -286,6 +294,7 @@ namespace kagami {
     CREATE_EVENTID(kStrEventWindowState, SDL_WINDOWEVENT);
     CREATE_EVENTID(kStrEventMouseDown, SDL_MOUSEBUTTONDOWN);
     CREATE_EVENTID(kStrEventMouseUp, SDL_MOUSEBUTTONUP);
+    CREATE_EVENTID(kStrEventMouseMotion, SDL_MOUSEMOTION);
 
 #undef CREATE_EVENTID
   }
@@ -306,7 +315,8 @@ namespace kagami {
           FunctionImpl(WindowCopy, "texture|src_rect|dest_rect", "copy", kParamAutoFill).SetLimit(1),
           FunctionImpl(WindowWaiting, "", "waiting"),
           FunctionImpl(WindowClear, "", "clear"),
-          FunctionImpl(WindowSetDrawColor, "color", "set_draw_color")
+          FunctionImpl(WindowSetDrawColor, "color", "set_draw_color"),
+          FunctionImpl(WindowInRange, "rect|point", "in_range")
         }
     );
 
