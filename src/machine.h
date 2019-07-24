@@ -383,7 +383,7 @@ namespace kagami {
   void InitContainerComponents();
   void InitFunctionType();
   void InitStreamComponents();
-#if not defined(_DISABLE_SDL_)
+#ifndef _DISABLE_SDL_
   void InitSoundComponents();
   void InitWindowComponents();
 #endif

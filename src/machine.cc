@@ -221,7 +221,7 @@ namespace kagami {
     }
     else if (type == kStringTypeFloat) {
       double float_value;
-#if not defined (_MSC_VER)
+#ifndef _MSC_VER
       float_value = stod(value);
 #else
       from_chars(value.data(), value.data() + value.size(), float_value);

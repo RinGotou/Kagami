@@ -20,7 +20,7 @@ namespace runtime {
     InitContainerComponents();
     InitFunctionType();
     InitStreamComponents();
-#if not defined(_DISABLE_SDL_)
+#ifndef _DISABLE_SDL_
     InitSoundComponents();
     InitWindowComponents();
 #endif
@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
     Pattern("vm_stdin"  ,Option(true, true))
   };
 
-#if not defined(_DISABLE_SDL_)
+#ifndef _DISABLE_SDL_
   if (dawn::EnvironmentSetup() != 0) {
     puts("SDL initialization error!");
     return 0;
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
   }
 
   
-#if not defined(_DISABLE_SDL_)
+#ifndef _DISABLE_SDL_
   dawn::EnvironmentCleanup();
 #endif
   return 0;
