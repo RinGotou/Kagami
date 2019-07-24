@@ -6,4 +6,4 @@
 	url = https://github.com/suzunakamura/minatsuki.log
 [submodule "src/sdl2-cmake-modules"]
 	path = src/sdl2-cmake-modules
-	url = https://github.com/aminosbh/sdl2-cmake-modules
+	url = https://github.com/suzunakamura/sdl2-cmake-modules
