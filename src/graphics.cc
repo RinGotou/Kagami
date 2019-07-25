@@ -10,7 +10,8 @@ namespace kagami {
     option.width = static_cast<int>(width);
     option.height = static_cast<int>(height);
 
-    dawn::ManagedWindow window = make_shared<dawn::BasicWindow>(option);
+    dawn::ManagedPlainWindow window = 
+      make_shared<dawn::PlainWindow>(option);
 
     return Message().SetObject(Object(window, kTypeIdWindow));
   }
@@ -18,7 +19,7 @@ namespace kagami {
   Message WindowSetBackground(ObjectMap &p) {
     auto &path = p.Cast<string>("path");
     auto &image_type = p.Cast<dawn::ImageType>("type");
-    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto renderer = window.GetRenderer();
 
     dawn::Texture background_data(path, image_type, renderer);
@@ -38,7 +39,7 @@ namespace kagami {
     auto &path = p.Cast<string>("path");
     auto &image_type = p.Cast<dawn::ImageType>("type");
     auto point = p.Cast<SDL_Point>("point");
-    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto renderer = window.GetRenderer();
 
     dawn::Texture image_data(path, image_type, renderer);
@@ -57,7 +58,7 @@ namespace kagami {
   Message WindowSetText(ObjectMap &p) {
     auto text = p.Cast<string>("text");
     auto point = p.Cast<SDL_Point>("point");
-    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &font = p.Cast<dawn::Font>("font");
     auto renderer = window.GetRenderer();
     auto &color = p.Cast<dawn::ColorValue>("color");
@@ -77,7 +78,7 @@ namespace kagami {
 
   //Limit:1
   Message WindowCopy(ObjectMap &p) {
-    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &texture = p.Cast<dawn::Texture>("texture");
     auto &src_rect_obj = p["src_rect"];
     auto &dest_rect_obj = p["dest_rect"];
@@ -91,7 +92,7 @@ namespace kagami {
   }
 
   Message WindowWaiting(ObjectMap &p) {
-    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     bool exit = false;
     bool first_time = true;
     SDL_Event e;
@@ -111,7 +112,7 @@ namespace kagami {
   }
 
   Message WindowClear(ObjectMap &p) {
-    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
 
     window.Clear();
 
@@ -119,7 +120,7 @@ namespace kagami {
   }
 
   Message WindowSetDrawColor(ObjectMap &p) {
-    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &color = p.Cast<dawn::ColorValue>("color");
     window.SetDrawColor(color.r, color.g, color.b, color.a);
 
@@ -127,7 +128,7 @@ namespace kagami {
   }
 
   Message WindowInRange(ObjectMap &p) {
-    auto &window = p.Cast<dawn::BasicWindow>(kStrMe);
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &rect = p.Cast<SDL_Rect>("rect");
     auto &point = p.Cast<SDL_Point>("point");
 
@@ -185,7 +186,7 @@ namespace kagami {
     auto &texture = p.Cast<dawn::Texture>(kStrMe);
     auto &image_path = p.Cast<string>("path");
     auto &type = p.Cast<dawn::ImageType>("type");
-    auto &window = p.Cast<dawn::BasicWindow>("window");
+    auto &window = p.Cast<dawn::PlainWindow>("window");
     auto &color_key = p["color_key"];
     bool result = false;
 
@@ -205,7 +206,7 @@ namespace kagami {
     auto &texture = p.Cast<dawn::Texture>(kStrMe);
     auto &text = p.Cast<string>("text");
     auto &font = p.Cast<dawn::Font>("font");
-    auto &window = p.Cast<dawn::BasicWindow>("window");
+    auto &window = p.Cast<dawn::PlainWindow>("window");
     auto &color_key = p.Cast<dawn::ColorValue>("color_key");
     bool result = texture.Init(text, font, window.GetRenderer(), color_key);
     return Message().SetObject(result);
