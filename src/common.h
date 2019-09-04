@@ -44,7 +44,7 @@
 #define ENGINE_NAME     "Kagami Project"
 #define INTERPRETER_VER "2.21"
 #define CODENAME        "Cradle"
-#define MAINTAINER      "Suzu Nakamura"
+#define MAINTAINER      "Rin Gotou"
 #define COPYRIGHT       "Copyright(c) 2019"
 
 namespace kagami {
