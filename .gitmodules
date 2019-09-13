@@ -5,5 +5,5 @@
 	path = src/minatsuki.log
 	url = https://github.com/ringotou/minatsuki.log
 [submodule "src/sdl2-cmake-modules"]
-	path = src/sdl2-cmake-modulesn
+	path = src/sdl2-cmake-modules
 	url = https://github.com/ringotou/sdl2-cmake-modules
