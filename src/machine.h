@@ -242,7 +242,7 @@ namespace kagami {
       branch_jump_stack(),
       return_stack() {}
 
-    void Steping();
+    void Stepping();
     void Goto(size_t taget_idx);
     void AddJumpRecord(size_t target_idx);
     void MakeError(string str);

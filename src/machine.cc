@@ -127,7 +127,7 @@ namespace kagami {
     EXPORT_CONSTANT(kTypeIdNull);
   }
 
-  void RuntimeFrame::Steping() {
+  void RuntimeFrame::Stepping() {
     if (!disable_step) idx += 1;
     disable_step = false;
   }
@@ -1687,7 +1687,7 @@ namespace kagami {
         RecoverLastState();
         refresh_tick();
         if (!freezing) {
-          frame->Steping();
+          frame->Stepping();
         }
         continue;
       }
@@ -1715,7 +1715,7 @@ namespace kagami {
           break;
         }
 
-        frame->Steping();
+        frame->Stepping();
         continue;
       }
 
@@ -1771,13 +1771,13 @@ namespace kagami {
         }
         else {
           msg = impl->Start(obj_map);
-          frame->Steping();
+          frame->Stepping();
         }
         continue;
       }
 
       frame->RefreshReturnStack(msg.GetObj());
-      frame->Steping();
+      frame->Stepping();
     }
 
     if (frame->error) {

@@ -74,7 +74,7 @@ void HelpFile() {
 }
 
 void Motto() {
-  puts("\"I say good-bye to my tears that I don't need.\"");
+  puts("\"Praying for next morning.\"");
   puts(ENGINE_NAME " Version " INTERPRETER_VER " '"  CODENAME "'");
 }
 
