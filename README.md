@@ -1,8 +1,7 @@
 # Kagami Project
 
 ## Intro
-It's a project of experimental script language and implementation.It aims to become a cross-platform 
-visual novel AVG Engine.The interpreter is built with C++17 and SDL2.0.
+It's a project of experimental scripting langauge. 
 
 ## Build Binary
 ### Dependencies
@@ -15,7 +14,7 @@ Compile them in Visual Studio 2017 or later version.(MSVC 14+).
 Just add all source files into a new solution, and configure SDL2 include and library directory in project settings.
 You can also build them with cl.exe manually.
 
-Notice: Mingw/Cygwin is NOT OFFICIAL SUPPORTED for now. You can post issues for these resolution but I may not fix 
+Notice: Mingw/Cygwin is NOT OFFICIAL SUPPORTED for now. You can post issues for these resolutions but I may not fix 
 them until I start working on them.
 
 ### Linux/BSD Platform
