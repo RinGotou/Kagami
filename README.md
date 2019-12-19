@@ -1,16 +1,16 @@
 # Kagami Project
 
 ## Intro
-It's a project of experimental scripting langauge. 
+It's a project of experimental scripting language. 
 
 ## Build Binary
 ### Dependencies
 SDL2/SDL2_image/SDL2_mixer/SDL2_ttf are required.
 
-If you want a interpreter without multimedia support, just edit DISABLE_SDL option and relax.
+If you want an interpreter without multimedia support, just edit DISABLE_SDL option and relax.
 
 ### Windows Platform
-Compile them in Visual Studio 2017 or later version.(MSVC 14+).
+Compile them in Visual Studio 2017 or later versions.(MSVC 14+).
 Just add all source files into a new solution, and configure SDL2 include and library directory in project settings.
 You can also build them with cl.exe manually.
 
