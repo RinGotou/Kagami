@@ -204,6 +204,7 @@ namespace kagami {
 #ifndef _DISABLE_SDL_
   const string kTypeIdWindowEvent     = "WindowEvent";
   const string kTypeIdWindow          = "window";
+	const string kTypeIdElement         = "element";
   const string kTypeIdFont            = "font";
   const string kTypeIdTexture         = "texture";
   const string kTypeIdColorValue      = "color";

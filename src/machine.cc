@@ -954,7 +954,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     REQUIRED_ARG_COUNT(1);
 
-    auto &arg = args[0];
+    Argument &arg = args[0];
     if (arg.GetType() == kArgumentNormal) {
       FetchPlainObject(arg);
     }
@@ -1032,7 +1032,7 @@ namespace kagami {
 
     if (frame.error) return;
 
-    if (type_rhs == kNotPlainType || type_rhs == kNotPlainType) {
+    if (type_lhs == kNotPlainType || type_rhs == kNotPlainType) {
       frame.MakeError("Try to operate with non-plain type.");
       return;
     }
@@ -1484,11 +1484,10 @@ namespace kagami {
 
     obj_map.insert(NamedObject(params.back(), Object(va_base, kTypeIdArray)));
 
-    if (pos != 0) {
-      while (pos > 0) {
-        obj_map.emplace(params[pos - 1], FetchObject(args[pos - 1]).RemoveDeliverFlag());
-        pos -= 1;
-      }
+
+    while (pos > 0) {
+      obj_map.emplace(params[pos - 1], FetchObject(args[pos - 1]).RemoveDeliverFlag());
+      pos -= 1;
     }
   }
 

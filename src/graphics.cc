@@ -2,7 +2,56 @@
 
 #ifndef _DISABLE_SDL_
 namespace kagami {
-  Message NewDisplayWindow(ObjectMap &p) {
+  //limit:2
+	Message NewElement(ObjectMap& p) {
+    auto &texture = p.Cast<dawn::Texture>("texture");
+    auto &src = p.Cast<SDL_Rect>("src");
+    auto &dest = p.Cast<SDL_Rect>("dest");
+    dawn::Element element(texture, src, dest);
+
+    return Message().SetObject(Object(element, kTypeIdElement));
+	}
+
+	Message ElementGetSrcInfo(ObjectMap& p) {
+    auto &element = p.Cast<dawn::Element>(kStrMe);
+    return Message().SetObject(Object(element.GetSrcInfo(), kTypeIdRectangle));
+	}
+
+	Message ElementGetDestInfo(ObjectMap& p) {
+    auto &element = p.Cast<dawn::Element>(kStrMe);
+    return Message().SetObject(Object(element.GetDestInfo(), kTypeIdRectangle));
+	}
+
+	Message ElementSetPriority(ObjectMap& p) {
+    auto &element = p.Cast<dawn::Element>(kStrMe);
+    auto &priority = p.Cast<int64_t>("priority");
+    return Message().SetObject(element.SetPriority(int(priority)));
+	}
+
+	Message ElementGetPriority(ObjectMap& p) {
+    auto &element = p.Cast<dawn::Element>(kStrMe);
+    return Message().SetObject(int64_t(element.GetPriority()));
+	}
+
+  Message ElementSetDest(ObjectMap &p) {
+    auto &element = p.Cast<dawn::Element>(kStrMe);
+    auto &new_dest = p.Cast<SDL_Rect>("dest");
+    auto &dest = element.GetDestInfo();
+    dest.x = new_dest.x;
+    dest.y = new_dest.y;
+    return Message();
+  }
+
+  Message ElementSetSrc(ObjectMap &p) {
+    auto &element = p.Cast<dawn::Element>(kStrMe);
+    auto &new_src = p.Cast<SDL_Rect>("src");
+    auto &src = element.GetSrcInfo();
+    src.x = new_src.x;
+    src.y = new_src.y;
+    return Message();
+  }
+
+  Message NewWindow(ObjectMap &p) {
     auto &width = p.Cast<int64_t>("width");
     auto &height = p.Cast<int64_t>("height");
     dawn::WindowOption option;
@@ -87,7 +136,7 @@ namespace kagami {
     SDL_Rect *dest_rect = dest_rect_obj.Null() ?
       nullptr : &dest_rect_obj.Cast<SDL_Rect>();
     bool result = window.Copy(texture, src_rect, dest_rect);
-    window.Present();
+    window.DrawElements();
     return Message().SetObject(result);
   }
 
@@ -304,9 +353,24 @@ namespace kagami {
     using management::type::ObjectTraitsSetup;
     using namespace management;
 
+    ObjectTraitsSetup(kTypeIdElement, PlainDeliveryImpl<dawn::Element>)
+      .InitConstructor(
+        FunctionImpl(NewElement, "texture|dest|src", "element").SetLimit(2)
+      )
+      .InitMethods(
+        {
+          FunctionImpl(ElementGetSrcInfo, "", "get_src"),
+          FunctionImpl(ElementGetDestInfo, "", "get_dest"),
+          FunctionImpl(ElementSetPriority, "priority", "set_priority"),
+          FunctionImpl(ElementSetSrc, "src", "set_src"),
+          FunctionImpl(ElementSetDest, "dest", "set_dest")
+        }
+    );
+
+
     ObjectTraitsSetup(kTypeIdWindow, ShallowDelivery, PointerHasher)
       .InitConstructor(
-        FunctionImpl(NewDisplayWindow, "width|height", "window")
+        FunctionImpl(NewWindow, "width|height", "window")
       )
       .InitMethods(
         {
