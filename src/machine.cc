@@ -1255,7 +1255,7 @@ namespace kagami {
 
     //TODO:Error detecting
 
-    auto window_id = window_obj.Cast<dawn::BasicWindow>().GetId();
+    auto window_id = window_obj.Cast<dawn::PlainWindow>().GetId();
     auto event_type = static_cast<Uint32>(event_type_obj.Cast<int64_t>());
     auto &func_impl = func.Cast<FunctionImpl>();
 

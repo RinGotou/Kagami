@@ -15,23 +15,23 @@ namespace kagami {
     return Message().SetObject(Object(element, kTypeIdElement));
 	}
 
-	Message ElementGetSrcInfo(ObjectMap& p) {
+	Message ElementGetSrcInfo(ObjectMap &p) {
     auto &element = p.Cast<dawn::Element>(kStrMe);
     return Message().SetObject(Object(element.GetSrcInfo(), kTypeIdRectangle));
 	}
 
-	Message ElementGetDestInfo(ObjectMap& p) {
+	Message ElementGetDestInfo(ObjectMap &p) {
     auto &element = p.Cast<dawn::Element>(kStrMe);
     return Message().SetObject(Object(element.GetDestInfo(), kTypeIdRectangle));
 	}
 
-	Message ElementSetPriority(ObjectMap& p) {
+	Message ElementSetPriority(ObjectMap &p) {
     auto &element = p.Cast<dawn::Element>(kStrMe);
     auto &priority = p.Cast<int64_t>("priority");
     return Message().SetObject(element.SetPriority(int(priority)));
 	}
 
-	Message ElementGetPriority(ObjectMap& p) {
+	Message ElementGetPriority(ObjectMap &p) {
     auto &element = p.Cast<dawn::Element>(kStrMe);
     return Message().SetObject(int64_t(element.GetPriority()));
 	}
@@ -82,6 +82,13 @@ namespace kagami {
     auto &point = p.Cast<SDL_Point>("point");
 
     return Message().SetObject(window.SetElementPosition(id, point));
+  }
+
+  Message WindowGetElementPosition(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+
+    return Message().SetObject(Object(window.GetElementPosition(id), kTypeIdPoint));
   }
 
   Message WindowSetElementSize(ObjectMap &p) {
@@ -275,6 +282,18 @@ namespace kagami {
     return Message().SetObject(Object(point, kTypeIdPoint));
   }
 
+  Message PointGetX(ObjectMap &p) {
+    auto &point = p.Cast<SDL_Point>(kStrMe);
+    int64_t x = point.x;
+    return Message().SetObject(x);
+  }
+
+  Message PointGetY(ObjectMap &p) {
+    auto &point = p.Cast<SDL_Point>(kStrMe);
+    int64_t y = point.y;
+    return Message().SetObject(y);
+  }
+
   Message NewTexture(ObjectMap &p) {
     return Message().SetObject(Object(dawn::Texture(), kTypeIdTexture));
   }
@@ -410,6 +429,7 @@ namespace kagami {
         {
           FunctionImpl(ElementGetSrcInfo, "", "get_src"),
           FunctionImpl(ElementGetDestInfo, "", "get_dest"),
+          FunctionImpl(ElementGetPriority, "", "get_priority"),
           FunctionImpl(ElementSetPriority, "priority", "set_priority"),
           FunctionImpl(ElementSetSrc, "src", "set_src"),
           FunctionImpl(ElementSetDest, "dest", "set_dest")
@@ -424,9 +444,10 @@ namespace kagami {
         {
           FunctionImpl(WindowAddElement, "id|element", "add_element"),
           FunctionImpl(WindowSetElementPosition, "id|point", "set_element_position"),
+          FunctionImpl(WindowGetElementPosition, "id", "get_element_position"),
           FunctionImpl(WindowSetElementSize, "id|width|height", "set_element_size"),
           FunctionImpl(WindowSetElementCropper, "id|cropper", "set_element_cropper"),
-          FunctionImpl(WindowElementInRange, "id|point", "in_range"),
+          FunctionImpl(WindowElementInRange, "id|point", "element_in_range"),
           FunctionImpl(WindowDraw, "", "draw"),
           FunctionImpl(WindowSetBackground,"path|type","set_background"),
           FunctionImpl(WindowAddImage, "path|type|point","add_image"),
@@ -457,6 +478,12 @@ namespace kagami {
     ObjectTraitsSetup(kTypeIdPoint, PlainDeliveryImpl<SDL_Point>)
       .InitConstructor(
         FunctionImpl(NewPoint, "x|y", "point")
+      )
+      .InitMethods(
+        {
+          FunctionImpl(PointGetX, "", "get_x"),
+          FunctionImpl(PointGetY, "", "get_y")
+        }
     );
 
     ObjectTraitsSetup(kTypeIdTexture, ShallowDelivery)
