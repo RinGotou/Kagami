@@ -129,6 +129,27 @@ namespace kagami {
     return Message().SetObject(result);
   }
 
+  Message WindowDisposeElement(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+
+    return Message().SetObject(window.DisposeElement(id));
+  }
+
+  Message WindowSetElementOnTop(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+
+    return Message().SetObject(window.SetElementOnTop(id));
+  }
+
+  Message WindowSetElementOnBottom(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+
+    return Message().SetObject(window.SetElementOnBottom(id));
+  }
+
   Message WindowDraw(ObjectMap &p) {
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     return Message().SetObject(window.DrawElements());
@@ -469,6 +490,9 @@ namespace kagami {
           FunctionImpl(WindowSetElementCropper, "id|cropper", "set_element_cropper"),
           FunctionImpl(WindowElementInRange, "id|point", "element_in_range"),
           FunctionImpl(WindowFindElementByPoint, "point", "shoot"),
+          FunctionImpl(WindowDisposeElement, "id", "dispose"),
+          FunctionImpl(WindowSetElementOnTop, "id", "set_on_top"),
+          FunctionImpl(WindowSetElementOnBottom, "id", "set_on_bottom"),
           FunctionImpl(WindowDraw, "", "draw"),
           FunctionImpl(WindowSetBackground,"path|type","set_background"),
           FunctionImpl(WindowAddImage, "path|type|point","add_image"),
