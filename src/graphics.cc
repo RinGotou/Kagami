@@ -116,6 +116,19 @@ namespace kagami {
     return Message().SetObject(window.ElementInRange(id, point));
   }
 
+  Message WindowFindElementByPoint(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &point = p.Cast<SDL_Point>("point");
+    auto *named_element = window.FindElementByPoint(point);
+    string result = "";
+
+    if (named_element != nullptr) {
+      result = named_element->first;
+    }
+
+    return Message().SetObject(result);
+  }
+
   Message WindowDraw(ObjectMap &p) {
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     return Message().SetObject(window.DrawElements());
@@ -238,6 +251,13 @@ namespace kagami {
     auto &point = p.Cast<SDL_Point>("point");
 
     return Message().SetObject(window.InRange(rect, point));
+  }
+
+  Message WindowRealTimeRefreshingMode(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &value = p.Cast<bool>("value");
+    window.RealTimeRefreshingMode(value);
+    return Message();
   }
 
   Message NewFont(ObjectMap &p) {
@@ -448,6 +468,7 @@ namespace kagami {
           FunctionImpl(WindowSetElementSize, "id|width|height", "set_element_size"),
           FunctionImpl(WindowSetElementCropper, "id|cropper", "set_element_cropper"),
           FunctionImpl(WindowElementInRange, "id|point", "element_in_range"),
+          FunctionImpl(WindowFindElementByPoint, "point", "shoot"),
           FunctionImpl(WindowDraw, "", "draw"),
           FunctionImpl(WindowSetBackground,"path|type","set_background"),
           FunctionImpl(WindowAddImage, "path|type|point","add_image"),
@@ -456,7 +477,8 @@ namespace kagami {
           FunctionImpl(WindowWaiting, "", "waiting"),
           FunctionImpl(WindowClear, "", "clear"),
           FunctionImpl(WindowSetDrawColor, "color", "set_draw_color"),
-          FunctionImpl(WindowInRange, "rect|point", "in_range")
+          FunctionImpl(WindowInRange, "rect|point", "in_range"),
+          FunctionImpl(WindowRealTimeRefreshingMode, "value", "real_time_refreshing")
         }
     );
 
