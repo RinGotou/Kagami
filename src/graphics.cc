@@ -5,8 +5,11 @@ namespace kagami {
   //limit:2
 	Message NewElement(ObjectMap& p) {
     auto &texture = p.Cast<dawn::Texture>("texture");
-    auto &src = p.Cast<SDL_Rect>("src");
     auto &dest = p.Cast<SDL_Rect>("dest");
+    auto &src_obj = p["src"];
+    auto src = src_obj.Null() ?
+      dawn::ProduceRect(0, 0, texture.GetWidth(), texture.GetHeight()) :
+      src_obj.Cast<SDL_Rect>();
     dawn::Element element(texture, src, dest);
 
     return Message().SetObject(Object(element, kTypeIdElement));
@@ -63,6 +66,52 @@ namespace kagami {
       make_shared<dawn::PlainWindow>(option);
 
     return Message().SetObject(Object(window, kTypeIdWindow));
+  }
+
+  Message WindowAddElement(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+    auto &element = p.Cast<dawn::Element>("element");
+
+    return Message().SetObject(window.AddElement(id, element));
+  }
+
+  Message WindowSetElementPosition(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+    auto &point = p.Cast<SDL_Point>("point");
+
+    return Message().SetObject(window.SetElementPosition(id, point));
+  }
+
+  Message WindowSetElementSize(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+    auto &width = p.Cast<int64_t>("width");
+    auto &height = p.Cast<int64_t>("height");
+
+    return Message().SetObject(window.SetElementSize(id, int(width), int(height)));
+  }
+
+  Message WindowSetElementCropper(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("Id");
+    auto &cropper = p.Cast<SDL_Rect>("cropper");
+
+    return Message().SetObject(window.SetElementCropper(id, cropper));
+  }
+
+  Message WindowElementInRange(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+    auto &point = p.Cast<SDL_Point>("point");
+
+    return Message().SetObject(window.ElementInRange(id, point));
+  }
+
+  Message WindowDraw(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    return Message().SetObject(window.DrawElements());
   }
 
   Message WindowSetBackground(ObjectMap &p) {
@@ -355,7 +404,7 @@ namespace kagami {
 
     ObjectTraitsSetup(kTypeIdElement, PlainDeliveryImpl<dawn::Element>)
       .InitConstructor(
-        FunctionImpl(NewElement, "texture|dest|src", "element").SetLimit(2)
+        FunctionImpl(NewElement, "texture|dest|src", "element", kParamAutoFill).SetLimit(2)
       )
       .InitMethods(
         {
@@ -367,13 +416,18 @@ namespace kagami {
         }
     );
 
-
     ObjectTraitsSetup(kTypeIdWindow, ShallowDelivery, PointerHasher)
       .InitConstructor(
         FunctionImpl(NewWindow, "width|height", "window")
       )
       .InitMethods(
         {
+          FunctionImpl(WindowAddElement, "id|element", "add_element"),
+          FunctionImpl(WindowSetElementPosition, "id|point", "set_element_position"),
+          FunctionImpl(WindowSetElementSize, "id|width|height", "set_element_size"),
+          FunctionImpl(WindowSetElementCropper, "id|cropper", "set_element_cropper"),
+          FunctionImpl(WindowElementInRange, "id|point", "in_range"),
+          FunctionImpl(WindowDraw, "", "draw"),
           FunctionImpl(WindowSetBackground,"path|type","set_background"),
           FunctionImpl(WindowAddImage, "path|type|point","add_image"),
           FunctionImpl(WindowSetText, "text|font|color|point","set_text"),
