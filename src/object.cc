@@ -85,6 +85,8 @@ namespace kagami {
   }
 
   bool ObjectContainer::Add(string id, Object source) {
+    if (IsDelegated()) return delegator_->Add(id, source);
+
     if (CheckObject(id)) return false;
     base_.insert(NamedObject(id, source));
     BuildCache();
@@ -92,6 +94,8 @@ namespace kagami {
   }
 
   bool ObjectContainer::Dispose(string id) {
+    if (IsDelegated()) return delegator_->Dispose(id);
+
     auto it = base_.find(id);
     bool result = it != base_.end();
 
@@ -104,6 +108,8 @@ namespace kagami {
   }
 
   Object *ObjectContainer::Find(string id, bool forward_seeking) {
+    if (IsDelegated()) return delegator_->Find(id, forward_seeking);
+
     if (base_.empty() && prev_ == nullptr) return nullptr;
 
     ObjectPointer ptr = nullptr;
@@ -128,6 +134,8 @@ namespace kagami {
   }
 
   bool ObjectContainer::FindDest(Object *ptr) {
+    if (IsDelegated()) return delegator_->FindDest(ptr);
+
     bool result = false;
     for (const auto &unit : dest_map_) {
       if (unit.second == ptr) result = true;
@@ -136,6 +144,8 @@ namespace kagami {
   }
 
   string ObjectContainer::FindDomain(string id, bool forward_seeking) {
+    if (IsDelegated()) return delegator_->FindDomain(id, forward_seeking);
+
     if (base_.empty() && prev_ == nullptr) return kTypeIdNull;
 
     string result;
@@ -160,6 +170,8 @@ namespace kagami {
   }
 
   void ObjectContainer::ClearExcept(string exceptions) {
+    if (IsDelegated()) delegator_->ClearExcept(exceptions);
+
     map<string, Object> dest;
     map<string, Object>::iterator it;
     auto obj_list = BuildStringVector(exceptions);

@@ -153,6 +153,7 @@ namespace kagami {
     kKeywordHandle,
     kKeywordWait,
     kKeywordLeave,
+    kKeywordLoad,
     kKeywordNull
   };
 
@@ -234,6 +235,7 @@ namespace kagami {
     kStrCodeNameCmd    = "codename",
     kStrEnd            = "end",
     kStrPrint          = "print",
+    kStrLoad           = "load",
     kStrSwitchLine     = "!switch_line",
     kStrCaseObj        = "!case",
     kStrIteratorObj    = "!iterator",

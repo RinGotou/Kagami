@@ -338,9 +338,7 @@ namespace kagami {
       code_stack_(),
       frame_stack_(),
       obj_stack_(),
-#ifndef _DISABLE_SDL_
       event_list_(),
-#endif
       hanging(false),
       freezing(false) {}
 
@@ -348,9 +346,7 @@ namespace kagami {
       code_stack_(rhs.code_stack_),
       frame_stack_(rhs.frame_stack_),
       obj_stack_(rhs.obj_stack_),
-#ifndef _DISABLE_SDL_
       event_list_(),
-#endif
       hanging(false),
       freezing(false) {}
 
@@ -361,9 +357,7 @@ namespace kagami {
       code_stack_(),
       frame_stack_(),
       obj_stack_(),
-#ifndef _DISABLE_SDL_
       event_list_(), 
-#endif
       hanging(false), 
       freezing(false) {
       code_stack_.push_back(&ir);

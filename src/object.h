@@ -213,9 +213,14 @@ namespace kagami {
 
   class ObjectContainer {
   private:
+    ObjectContainer *delegator_;
     ObjectContainer *prev_;
     map<string, Object> base_;
-    unordered_map<string, Object *>dest_map_;
+    unordered_map<string, Object *> dest_map_;
+
+    bool IsDelegated() const { 
+      return delegator_ != nullptr; 
+    }
 
     bool CheckObject(string id) {
       return (base_.find(id) != base_.end());
@@ -230,41 +235,53 @@ namespace kagami {
     string FindDomain(string id, bool forward_seeking = true);
     void ClearExcept(string exceptions);
 
-    ObjectContainer() : prev_(nullptr), base_(), dest_map_() {}
+    ObjectContainer() : delegator_(nullptr),
+      prev_(nullptr), base_(), dest_map_() {}
 
-    ObjectContainer(const ObjectContainer &&mgr) {}
+    ObjectContainer(const ObjectContainer &&mgr) :
+    delegator_(nullptr), prev_(nullptr) {}
 
     ObjectContainer(const ObjectContainer &container) :
-      prev_(container.prev_) {
+      delegator_(container.delegator_), prev_(container.prev_) {
       if (!container.base_.empty()) {
         base_ = container.base_;
         BuildCache();
       }
     }
 
+    ObjectContainer(ObjectContainer *delegator) :
+      delegator_(delegator), prev_(nullptr) {}
+
     bool Empty() const {
       return base_.empty();
     }
 
     ObjectContainer &operator=(ObjectContainer &mgr) {
+      if (IsDelegated()) return delegator_->operator=(mgr);
+
       base_ = mgr.base_;
       return *this;
     }
 
     void Clear() {
+      if (IsDelegated()) delegator_->Clear();
+
       base_.clear();
       BuildCache();
     }
 
-    auto &GetContent() {
+    map<string, Object> &GetContent() {
+      if (IsDelegated()) return delegator_->GetContent();
       return base_;
     }
 
-    auto &GetHashMap() {
+    unordered_map<string, Object *> &GetHashMap() {
+      if (IsDelegated()) return delegator_->GetHashMap();
       return dest_map_;
     }
 
     ObjectContainer &SetPreviousContainer(ObjectContainer *prev) {
+      if (IsDelegated()) return delegator_->SetPreviousContainer(prev);
       prev_ = prev;
       return *this;
     }
@@ -332,15 +349,18 @@ namespace kagami {
   class ObjectStack {
   private:
     using DataType = list<ObjectContainer>;
+    ObjectContainer *root_container_;
     DataType base_;
     ObjectStack *prev_;
 
   public:
     ObjectStack() :
+      root_container_(nullptr),
       base_(),
       prev_(nullptr) {}
 
     ObjectStack(const ObjectStack &rhs) :
+      root_container_(rhs.root_container_),
       base_(rhs.base_),
       prev_(rhs.prev_) {}
 
@@ -349,6 +369,12 @@ namespace kagami {
 
     ObjectStack &SetPreviousStack(ObjectStack &prev) {
       prev_ = &prev;
+      return *this;
+    }
+
+    ObjectStack& SetDelegatedRoot(ObjectContainer& root) {
+      base_.pop_front();
+      base_.push_front(ObjectContainer(&root));
       return *this;
     }
 
