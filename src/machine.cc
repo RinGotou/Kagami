@@ -1518,7 +1518,7 @@ namespace kagami {
   void Machine::LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl) {
     auto &frame = frame_stack_.top();
 
-    if (event.type == SDL_KEYDOWN) {
+    if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
       ERROR_CHECKING(impl.GetParamSize() != 1, "Invalid event function.");
       auto &params = impl.GetParameters();
       int64_t keysym = static_cast<int64_t>(event.key.keysym.sym);

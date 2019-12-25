@@ -1,6 +1,5 @@
 #include "graphics.h"
 
-#ifndef _DISABLE_SDL_
 namespace kagami {
   //limit:2
 	Message NewElement(ObjectMap& p) {
@@ -148,6 +147,15 @@ namespace kagami {
     auto &id = p.Cast<string>("id");
 
     return Message().SetObject(window.SetElementOnBottom(id));
+  }
+
+  Message WindowSetTitle(ObjectMap& p) {
+    auto& window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto& title = p.Cast<string>("title");
+
+    window.SetWindowTitle(title);
+
+    return Message();
   }
 
   Message WindowDraw(ObjectMap &p) {
@@ -418,6 +426,14 @@ namespace kagami {
     CREATE_KEYCODE(kStrKeycodeLeft, SDLK_LEFT);
     CREATE_KEYCODE(kStrKeycodeRight, SDLK_RIGHT);
     CREATE_KEYCODE(kStrKeycodeReturn, SDLK_RETURN);
+    CREATE_KEYCODE(kStrKeycodeLCtrl, SDLK_LCTRL);
+    CREATE_KEYCODE(kStrKeycodeRCtrl, SDLK_RCTRL);
+    CREATE_KEYCODE(kStrKeycodeLShift, SDLK_LSHIFT);
+    CREATE_KEYCODE(kStrKeycodeRShift, SDLK_RSHIFT);
+    CREATE_KEYCODE(kStrKeycodeLAlt, SDLK_LALT);
+    CREATE_KEYCODE(kStrKeycodeRAlt, SDLK_RALT);
+    CREATE_KEYCODE(kStrKeycodeTab, SDLK_TAB);
+    CREATE_KEYCODE(kStrKeycodeCaps, SDLK_CAPSLOCK);
 
 #undef CREATE_KEYODE
   }
@@ -450,6 +466,7 @@ namespace kagami {
     CreateConstantObject(_Str, Object(int64_t(_Code), kTypeIdInt))
 
     CREATE_EVENTID(kStrEventKeydown, SDL_KEYDOWN);
+    CREATE_EVENTID(kStrEventKeyup, SDL_KEYUP);
     CREATE_EVENTID(kStrEventWindowState, SDL_WINDOWEVENT);
     CREATE_EVENTID(kStrEventMouseDown, SDL_MOUSEBUTTONDOWN);
     CREATE_EVENTID(kStrEventMouseUp, SDL_MOUSEBUTTONUP);
@@ -476,7 +493,7 @@ namespace kagami {
           FunctionImpl(ElementSetDest, "dest", "set_dest")
         }
     );
-
+    
     ObjectTraitsSetup(kTypeIdWindow, ShallowDelivery, PointerHasher)
       .InitConstructor(
         FunctionImpl(NewWindow, "width|height", "window")
@@ -493,6 +510,7 @@ namespace kagami {
           FunctionImpl(WindowDisposeElement, "id", "dispose"),
           FunctionImpl(WindowSetElementOnTop, "id", "set_on_top"),
           FunctionImpl(WindowSetElementOnBottom, "id", "set_on_bottom"),
+          FunctionImpl(WindowSetTitle, "title", "set_title"),
           FunctionImpl(WindowDraw, "", "draw"),
           FunctionImpl(WindowSetBackground,"path|type","set_background"),
           FunctionImpl(WindowAddImage, "path|type|point","add_image"),
@@ -563,4 +581,3 @@ namespace kagami {
     CreateEventTypeId();
   }
 }
-#endif
