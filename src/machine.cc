@@ -374,7 +374,7 @@ namespace kagami {
     bool optional = false, variable = false;
     ParameterPattern argument_mode = kParamNormal;
     vector<string> params;
-    VMCode code;
+    VMCode code(&origin_code);
 
     for (size_t idx = nest + 1; idx < nest_end - frame.jump_offset; ++idx) {
       code.push_back(origin_code[idx]);
