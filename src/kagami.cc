@@ -4,7 +4,8 @@
 using namespace std;
 using namespace suzu;
 using namespace kagami;
-using namespace kagami::trace;
+using namespace kagami::management;
+//using namespace kagami::trace;
 using namespace minatsuki;
 using Processor = ArgumentProcessor<kHeadHorizon, kJoinerEqual>;
 
@@ -20,10 +21,8 @@ namespace runtime {
     InitContainerComponents();
     InitFunctionType();
     InitStreamComponents();
-#ifndef _DISABLE_SDL_
     InitSoundComponents();
     InitWindowComponents();
-#endif
   }
 }
 
@@ -35,13 +34,13 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
   trace::InitLoggerSession(agent);
   trace::AddEvent("Script:" + path);
 
-  DEBUG_EVENT("Your're running a copy of Kagami interpreter with debug flag!");
+  DEBUG_EVENT("Your're running a copy of Kagami Project Core with debugging flag!");
 
-  VMCode script;
-  VMCodeFactory factory(path, script);
+  VMCode &script_file = script::AppendBlankScript(path);
+  VMCodeFactory factory(path, script_file);
 
   if (factory.Start()) {
-    Machine main_thread(script);
+    Machine main_thread(script_file);
     main_thread.Run();
   }
 
@@ -143,12 +142,10 @@ int main(int argc, char **argv) {
     Pattern("vm_stdin"  ,Option(true, true))
   };
 
-#ifndef _DISABLE_SDL_
   if (dawn::EnvironmentSetup() != 0) {
     puts("SDL initialization error!");
     return 0;
   }
-#endif
 
   if (argc <= 1) {
     HelpFile();

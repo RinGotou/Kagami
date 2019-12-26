@@ -19,11 +19,10 @@ namespace kagami {
 
   class VMCodeFunction : public _FunctionImpl {
   private:
-    VMCode *source_;
     VMCode code_;
     
   public:
-    VMCodeFunction(VMCode ir) : source_(nullptr), code_(ir) {}
+    VMCodeFunction(VMCode ir) : code_(ir) {}
 
     VMCode &GetCode() { return code_; }
   };

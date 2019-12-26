@@ -71,9 +71,9 @@ namespace kagami::management::script {
   using ProcessedScript = pair<string, VMCode>;
   using ScriptStorage = unordered_map<string, VMCode>;
 
-  VMCode &FindScriptByPath(string path);
+  VMCode *FindScriptByPath(string path);
   VMCode &AppendScript(string path, VMCode &code);
-  bool IsScriptLoaded(string path);
+  VMCode &AppendBlankScript(string path);
 }
 
 namespace std {

@@ -238,14 +238,34 @@ namespace kagami::management::script {
   }
 
   VMCode &AppendScript(string path, VMCode &code) {
-    auto storage = GetScriptStorage();
+    auto &storage = GetScriptStorage();
     ScriptStorage::iterator it;
     
     it = storage.find(path);
 
     if (it != storage.end()) return it->second;
 
+    VMCode script;
+    
+
     storage.insert(std::make_pair(path, code));
+    it = storage.find(path);
+
+    return it->second;
+  }
+
+  VMCode &AppendBlankScript(string path) {
+    auto &storage = GetScriptStorage();
+    ScriptStorage::iterator it;
+
+    it = storage.find(path);
+
+    if (it != storage.end()) return it->second;
+
+    VMCode script;
+
+
+    storage.insert(std::make_pair(path, VMCode()));
     it = storage.find(path);
 
     return it->second;
