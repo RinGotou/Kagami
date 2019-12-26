@@ -149,7 +149,8 @@ namespace kagami::util {
       T(kStrDir            ,kKeywordDir),
       T(kStrHandle         ,kKeywordHandle),
       T(kStrWait           ,kKeywordWait),
-      T(kStrLeave          ,kKeywordLeave)
+      T(kStrLeave          ,kKeywordLeave),
+      T(kStrLoad           ,kKeywordLoad)
     };
     return base;
   }

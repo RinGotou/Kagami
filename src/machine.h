@@ -292,6 +292,7 @@ namespace kagami {
     void CommandDestroy(ArgumentList &args);
     void CommandConvert(ArgumentList &args);
     void CommandRefCount(ArgumentList &args);
+    void CommandLoad(ArgumentList &args);
     void CommandTime();
     void CommandVersion();
     void CommandMachineCodeName();
@@ -327,11 +328,10 @@ namespace kagami {
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;
     ObjectStack obj_stack_;
-#ifndef _DISABLE_SDL_
     map<EventHandlerMark, FunctionImpl> event_list_;
-#endif
     bool hanging;
     bool freezing;
+    bool error_;
 
   public:
     Machine() :
@@ -340,7 +340,8 @@ namespace kagami {
       obj_stack_(),
       event_list_(),
       hanging(false),
-      freezing(false) {}
+      freezing(false),
+      error_(false) {}
 
     Machine(const Machine &rhs) :
       code_stack_(rhs.code_stack_),
@@ -348,7 +349,8 @@ namespace kagami {
       obj_stack_(rhs.obj_stack_),
       event_list_(),
       hanging(false),
-      freezing(false) {}
+      freezing(false),
+      error_(false) {}
 
     Machine(const Machine &&rhs) :
       Machine(rhs) {}
@@ -359,7 +361,8 @@ namespace kagami {
       obj_stack_(),
       event_list_(), 
       hanging(false), 
-      freezing(false) {
+      freezing(false),
+      error_(false) {
       code_stack_.push_back(&ir);
     }
 
@@ -367,9 +370,17 @@ namespace kagami {
       obj_stack_.SetPreviousStack(prev);
     }
 
+    void SetDelegatedRoot(ObjectContainer &root) {
+      obj_stack_.SetDelegatedRoot(root);
+    }
+
     void Run(bool invoking = false, string id = "", 
       VMCodePointer ptr = nullptr, ObjectMap *p = nullptr, 
       ObjectMap *closure_record = nullptr);
+
+    bool ErrorOccurred() const {
+      return error_;
+    }
   };
 
   void InitConsoleComponents();

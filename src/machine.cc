@@ -604,7 +604,7 @@ namespace kagami {
 
   void Machine::CommandCase(ArgumentList &args, size_t nest_end) {
     auto &frame = frame_stack_.top();
-    auto &code = code_stack_.front();
+    auto &code = code_stack_.back();
     ERROR_CHECKING(args.empty(), "Empty argument list");
     frame.AddJumpRecord(nest_end);
 
@@ -1001,6 +1001,37 @@ namespace kagami {
     Object ret_obj(make_shared<int64_t>(obj.ObjRefCount()), kTypeIdInt);
 
     frame.RefreshReturnStack(ret_obj);
+  }
+
+  void Machine::CommandLoad(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+    REQUIRED_ARG_COUNT(1);
+
+    auto path_obj = FetchObject(args[0]);
+    ERROR_CHECKING(path_obj.GetTypeId() != kTypeIdString,
+      "Invalid script path");
+
+    string path = path_obj.Cast<string>();
+
+    VMCode &script_file = management::script::AppendBlankScript(path);
+
+    if (!script_file.empty()) return;
+
+    VMCodeFactory factory(path, script_file);
+
+    if (factory.Start()) {
+      Machine sub_machine(script_file);
+      auto &obj_base = obj_stack_.GetBase();
+      sub_machine.SetDelegatedRoot(obj_base.front());
+      sub_machine.Run();
+
+      if (sub_machine.ErrorOccurred()) {
+        frame.MakeError("Error is occurred in loaded script");
+      }
+    }
+    else {
+      frame.MakeError("Invalid script - " + path);
+    }
   }
 
   void Machine::CommandTime() {
@@ -1409,7 +1440,6 @@ namespace kagami {
     case kKeywordWhile:
       CommandIfOrWhile(token, args, request.option.nest_end);
       break;
-#ifndef _DISABLE_SDL_
     case kKeywordHandle:
       CommandHandle(args);
       break;
@@ -1419,7 +1449,9 @@ namespace kagami {
     case kKeywordLeave:
       CommandLeave(args);
       break;
-#endif
+    case kKeywordLoad:
+      CommandLoad(args);
+      break;
     default:
       break;
     }
@@ -1800,5 +1832,7 @@ namespace kagami {
     if (invoking && invoking_error) {
       frame_stack_.top().MakeError("Invoking error is occurred.");
     }
+
+    error_ = frame->error || interface_error || invoking_error;
   }
 }

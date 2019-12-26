@@ -239,7 +239,7 @@ namespace kagami {
       prev_(nullptr), base_(), dest_map_() {}
 
     ObjectContainer(const ObjectContainer &&mgr) :
-    delegator_(nullptr), prev_(nullptr) {}
+    delegator_(mgr.delegator_), prev_(mgr.prev_) {}
 
     ObjectContainer(const ObjectContainer &container) :
       delegator_(container.delegator_), prev_(container.prev_) {
@@ -352,17 +352,20 @@ namespace kagami {
     ObjectContainer *root_container_;
     DataType base_;
     ObjectStack *prev_;
+    bool delegated_;
 
   public:
     ObjectStack() :
       root_container_(nullptr),
       base_(),
-      prev_(nullptr) {}
+      prev_(nullptr),
+      delegated_(false) {}
 
     ObjectStack(const ObjectStack &rhs) :
       root_container_(rhs.root_container_),
       base_(rhs.base_),
-      prev_(rhs.prev_) {}
+      prev_(rhs.prev_),
+      delegated_(false) {}
 
     ObjectStack(const ObjectStack &&rhs) :
       ObjectStack(rhs) {}
@@ -373,8 +376,9 @@ namespace kagami {
     }
 
     ObjectStack& SetDelegatedRoot(ObjectContainer& root) {
-      base_.pop_front();
+      if(!base_.empty()) base_.pop_front();
       base_.push_front(ObjectContainer(&root));
+      delegated_ = true;
       return *this;
     }
 
@@ -393,6 +397,11 @@ namespace kagami {
     }
 
     ObjectStack &Push() {
+      if (base_.size() == 1 && delegated_) {
+        delegated_ = false;
+        return *this;
+      }
+
       auto *prev = base_.empty() ? nullptr : &base_.back();
       base_.emplace_back(ObjectContainer());
       base_.back().SetPreviousContainer(prev);
