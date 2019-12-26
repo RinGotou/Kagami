@@ -220,3 +220,7 @@ namespace kagami::management::type {
     }
   }
 }
+
+namespace kagami::management::script {
+
+}

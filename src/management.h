@@ -67,6 +67,10 @@ namespace kagami::management::type {
   };
 }
 
+namespace kagami::management::script {
+
+}
+
 namespace std {
   template <>
   struct hash<kagami::Object> {

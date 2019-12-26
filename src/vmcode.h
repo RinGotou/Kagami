@@ -130,9 +130,13 @@ namespace kagami {
 
   class VMCode : public deque<Command> {
   protected:
+    VMCode *source_;
     unordered_map<size_t, list<size_t>> jump_record_;
 
   public:
+    VMCode() : deque<Command>(), source_(nullptr) {}
+    VMCode(VMCode *source) : deque<Command>(), source_(source) {}
+
     void AddJumpRecord(size_t index, list<size_t> record) {
       jump_record_.emplace(std::make_pair(index, record));
     }

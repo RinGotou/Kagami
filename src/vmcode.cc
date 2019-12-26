@@ -2,6 +2,8 @@
 
 namespace kagami {
   bool VMCode::FindJumpRecord(size_t index, stack<size_t> &dest) {
+    if (source_ != nullptr) return source_->FindJumpRecord(index, dest);
+
     bool found = false;
     while (!dest.empty()) dest.pop();
 
