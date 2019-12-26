@@ -222,5 +222,32 @@ namespace kagami::management::type {
 }
 
 namespace kagami::management::script {
+  auto &GetScriptStorage() {
+    static ScriptStorage storage;
+    return storage;
+  }
 
+  VMCode *FindScriptByPath(string path) {
+    VMCode result = nullptr;
+    auto &storage = GetScriptStorage();
+    auto it = storage.find(path);
+    
+    if (it != storage.end()) return &(it->second);
+
+    return nullptr;
+  }
+
+  VMCode &AppendScript(string path, VMCode &code) {
+    auto storage = GetScriptStorage();
+    ScriptStorage::iterator it;
+    
+    it = storage.find(path);
+
+    if (it != storage.end()) return it->second;
+
+    storage.insert(std::make_pair(path, code));
+    it = storage.find(path);
+
+    return it->second;
+  }
 }
