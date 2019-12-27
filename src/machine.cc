@@ -993,16 +993,6 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandRefCount(ArgumentList &args) {
-    auto &frame = frame_stack_.top();
-    REQUIRED_ARG_COUNT(1);
-
-    auto &obj = FetchObject(args[0]).Unpack();
-    Object ret_obj(make_shared<int64_t>(obj.ObjRefCount()), kTypeIdInt);
-
-    frame.RefreshReturnStack(ret_obj);
-  }
-
   void Machine::CommandLoad(ArgumentList &args) {
     auto &frame = frame_stack_.top();
     REQUIRED_ARG_COUNT(1);
@@ -1296,11 +1286,11 @@ namespace kagami {
   }
 
   void Machine::CommandWait(ArgumentList &args) {
-    hanging = true;
+    hanging_ = true;
   }
 
   void Machine::CommandLeave(ArgumentList &args) {
-    hanging = false;
+    hanging_ = false;
   }
 #endif
   void Machine::MachineCommands(Keyword token, ArgumentList &args, Request &request) {
@@ -1360,9 +1350,6 @@ namespace kagami {
       break;
     case kKeywordConvert:
       CommandConvert(args);
-      break;
-    case kKeywordRefCount:
-      CommandRefCount(args);
       break;
     case kKeywordTime:
       CommandTime();
@@ -1678,8 +1665,8 @@ namespace kagami {
 
     // Main loop of virtual machine.
     // TODO:dispose return value in event function
-    while (frame->idx < size || frame_stack_.size() > 1 || hanging) {
-      freezing = (frame->idx >= size && hanging && frame_stack_.size() == 1);
+    while (frame->idx < size || frame_stack_.size() > 1 || hanging_) {
+      freezing_ = (frame->idx >= size && hanging_ && frame_stack_.size() == 1);
 
       if (frame->warning) {
         trace::AddEvent(frame->msg_string, kStateWarning);
@@ -1694,7 +1681,7 @@ namespace kagami {
 #ifndef _DISABLE_SDL_
       //window event handler
       if ((!frame->event_processing && SDL_PollEvent(&event) != 0)
-        || (freezing && SDL_WaitEvent(&event) != 0)) {
+        || (freezing_ && SDL_WaitEvent(&event) != 0)) {
         EventHandlerMark mark(event.window.windowID, event.type);
         auto it = event_list_.find(mark);
         if (it != event_list_.end()) {
@@ -1709,7 +1696,7 @@ namespace kagami {
           continue;
         }
 
-        if (freezing) continue;
+        if (freezing_) continue;
       }
 #endif
 
@@ -1717,7 +1704,7 @@ namespace kagami {
       if (frame->idx == size && frame_stack_.size() > 1) {
         RecoverLastState();
         refresh_tick();
-        if (!freezing) {
+        if (!freezing_) {
           frame->Stepping();
         }
         continue;

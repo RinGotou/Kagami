@@ -327,8 +327,8 @@ namespace kagami {
     stack<RuntimeFrame> frame_stack_;
     ObjectStack obj_stack_;
     map<EventHandlerMark, FunctionImpl> event_list_;
-    bool hanging;
-    bool freezing;
+    bool hanging_;
+    bool freezing_;
     bool error_;
 
   public:
@@ -337,8 +337,8 @@ namespace kagami {
       frame_stack_(),
       obj_stack_(),
       event_list_(),
-      hanging(false),
-      freezing(false),
+      hanging_(false),
+      freezing_(false),
       error_(false) {}
 
     Machine(const Machine &rhs) :
@@ -346,8 +346,8 @@ namespace kagami {
       frame_stack_(rhs.frame_stack_),
       obj_stack_(rhs.obj_stack_),
       event_list_(),
-      hanging(false),
-      freezing(false),
+      hanging_(false),
+      freezing_(false),
       error_(false) {}
 
     Machine(const Machine &&rhs) :
@@ -358,8 +358,8 @@ namespace kagami {
       frame_stack_(),
       obj_stack_(),
       event_list_(), 
-      hanging(false), 
-      freezing(false),
+      hanging_(false), 
+      freezing_(false),
       error_(false) {
       code_stack_.push_back(&ir);
     }
