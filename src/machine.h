@@ -310,11 +310,9 @@ namespace kagami {
 
     void CommandReturn(ArgumentList &args);
     void CommandAssert(ArgumentList &args);
-#ifndef _DISABLE_SDL_
     void CommandHandle(ArgumentList &args);
     void CommandWait(ArgumentList &args);
     void CommandLeave(ArgumentList &args);
-#endif
     void MachineCommands(Keyword token, ArgumentList &args, Request &request);
 
     void GenerateArgs(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);

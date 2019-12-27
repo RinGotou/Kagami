@@ -29,8 +29,8 @@ namespace kagami {
   const string kStrMouseRight = "kMouseRight";
 
   // For CommandHandle
-  const string kStrEventKeydown = "kEventKeydown";
-  const string kStrEventKeyup = "kEventKeyup";
+  const string kStrEventKeydown = "kEventKeyDown";
+  const string kStrEventKeyup = "kEventKeyUp";
   const string kStrEventWindowState = "kEventWindowState";
   const string kStrEventMouseDown = "kEventMouseDown";
   const string kStrEventMouseUp = "kEventMouseUp";
