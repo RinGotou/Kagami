@@ -1547,7 +1547,7 @@ namespace kagami {
   }
 
 #ifndef _DISABLE_SDL_
-  void Machine::LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl) {
+  void Machine::LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id) {
     auto &frame = frame_stack_.top();
 
     if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
@@ -1699,7 +1699,7 @@ namespace kagami {
         auto it = event_list_.find(mark);
         if (it != event_list_.end()) {
           obj_map.clear();
-          LoadEventInfo(event, obj_map, it->second);
+          LoadEventInfo(event, obj_map, it->second, event.window.windowID);
 
           if (frame->error) break;
 

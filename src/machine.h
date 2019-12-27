@@ -320,7 +320,7 @@ namespace kagami {
     void Generate_AutoSize(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoFill(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
 #ifndef _DISABLE_SDL_
-    void LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl);
+    void LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id);
 #endif
   private:
     deque<VMCodePointer> code_stack_;
