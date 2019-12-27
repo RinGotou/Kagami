@@ -33,11 +33,11 @@ namespace kagami::management::type {
   private:
     string type_id_;
     string methods_;
-    DeliveryImpl dlvy_;
+    DeliveryImpl delivering_impl_;
     Comparator comparator_;
     HasherFunction hasher_;
     vector<FunctionImpl> impl_;
-    FunctionImpl do_not_copy_;
+    FunctionImpl delivering_;
 
   public:
     ObjectTraitsSetup() = delete;
@@ -47,15 +47,15 @@ namespace kagami::management::type {
       DeliveryImpl dlvy,
       HasherFunction hasher) :
       type_id_(type_name),
-      dlvy_(dlvy),
+      delivering_impl_(dlvy),
       comparator_(nullptr),
       hasher_(hasher) {}
 
     ObjectTraitsSetup(string type_name, DeliveryImpl dlvy) :
-      type_id_(type_name), dlvy_(dlvy), hasher_(nullptr) {}
+      type_id_(type_name), delivering_impl_(dlvy), hasher_(nullptr) {}
 
     ObjectTraitsSetup &InitConstructor(FunctionImpl impl) {
-      do_not_copy_ = impl; return *this; 
+      delivering_ = impl; return *this; 
     }
 
     ObjectTraitsSetup &InitComparator(Comparator comparator) {

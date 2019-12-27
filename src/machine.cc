@@ -262,7 +262,7 @@ namespace kagami {
 
   Object Machine::FetchObject(Argument &arg, bool checking) {
     if (arg.GetType() == kArgumentNormal) {
-      return FetchPlainObject(arg).SetDeliverFlag();
+      return FetchPlainObject(arg).SetDeliveringFlag();
     }
 
     auto &frame = frame_stack_.top();
@@ -287,7 +287,7 @@ namespace kagami {
     else if (arg.GetType() == kArgumentReturnStack) {
       if (!return_stack.empty()) {
         obj = return_stack.top();
-        obj.SetDeliverFlag();
+        obj.SetDeliveringFlag();
         if(!checking) return_stack.pop(); 
       }
       else {
@@ -1264,7 +1264,6 @@ namespace kagami {
     }
   }
 
-#ifndef _DISABLE_SDL_
   void Machine::CommandHandle(ArgumentList &args) {
     auto &frame = frame_stack_.top();
 
@@ -1292,7 +1291,7 @@ namespace kagami {
   void Machine::CommandLeave(ArgumentList &args) {
     hanging_ = false;
   }
-#endif
+
   void Machine::MachineCommands(Keyword token, ArgumentList &args, Request &request) {
     auto &frame = frame_stack_.top();
 
@@ -1366,7 +1365,7 @@ namespace kagami {
     case kKeywordBind:
       CommandBind(args, request.option.local_object);
       break;
-    case kKeywordDeliver:
+    case kKeywordDelivering:
       CommandDeliver(args, request.option.local_object);
       break;
     case kKeywordExpList:
@@ -1472,7 +1471,7 @@ namespace kagami {
 
 
     for (auto it = params.rbegin(); it != params.rend(); ++it) {
-      obj_map.emplace(NamedObject(*it, FetchObject(args[pos]).RemoveDeliverFlag()));
+      obj_map.emplace(NamedObject(*it, FetchObject(args[pos]).RemoveDeliveringFlag()));
       pos -= 1;
     }
   }
@@ -1488,7 +1487,7 @@ namespace kagami {
       "Youe need at least " + to_string(params.size()) + "argument(s).");
 
     while (diff != 0) {
-      temp_list.emplace_front(FetchObject(args[pos - 1]).RemoveDeliverFlag());
+      temp_list.emplace_front(FetchObject(args[pos - 1]).RemoveDeliveringFlag());
       pos -= 1;
       diff -= 1;
     }
@@ -1505,7 +1504,7 @@ namespace kagami {
 
 
     while (pos > 0) {
-      obj_map.emplace(params[pos - 1], FetchObject(args[pos - 1]).RemoveDeliverFlag());
+      obj_map.emplace(params[pos - 1], FetchObject(args[pos - 1]).RemoveDeliveringFlag());
       pos -= 1;
     }
   }
@@ -1526,7 +1525,7 @@ namespace kagami {
         obj_map.emplace(NamedObject(*it, Object()));
       }
       else {
-        obj_map.emplace(NamedObject(*it, FetchObject(args[pos]).RemoveDeliverFlag()));
+        obj_map.emplace(NamedObject(*it, FetchObject(args[pos]).RemoveDeliveringFlag()));
         pos -= 1;
       }
       param_pos -= 1;

@@ -30,7 +30,7 @@ namespace kagami::util {
     bool result;
     switch (token) {
     case kKeywordBind:
-    case kKeywordDeliver:
+    case kKeywordDelivering:
     case kKeywordPlus:
     case kKeywordMinus:
     case kKeywordTimes:
@@ -116,7 +116,6 @@ namespace kagami::util {
       T(kStrNullObj        ,kKeywordNullObj),
       T(kStrDestroy        ,kKeywordDestroy),
       T(kStrConvert        ,kKeywordConvert),
-      T(kStrRefCount       ,kKeywordRefCount),
       T(kStrTime           ,kKeywordTime),
       T(kStrVersion        ,kKeywordVersion),
       T(kStrCodeNameCmd    ,kKeywordCodeName),

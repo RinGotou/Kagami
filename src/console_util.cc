@@ -104,10 +104,6 @@ namespace kagami {
     return Message().SetObject(string().append(1, value));
   }
 
-  Message Test(ObjectMap &p) {
-    return Message();
-  }
-
   void InitConsoleComponents() {
     using management::CreateImpl;
 
@@ -117,6 +113,5 @@ namespace kagami {
     CreateImpl(FunctionImpl(PrintLine, kStrMe, "println"));
     CreateImpl(FunctionImpl(SystemCommand, "command", "console"));
     CreateImpl(FunctionImpl(ThreadSleep, "milliseconds", "sleep"));
-    CreateImpl(FunctionImpl(Test, "obj", "InvokeTest"));
   }
 }

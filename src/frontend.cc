@@ -346,7 +346,7 @@ namespace kagami {
 
   void LineParser::DeliverExpr() {
     if (!frame_->args.empty()) {
-      Request request(kKeywordDeliver);
+      Request request(kKeywordDelivering);
       request.option.local_object = frame_->local_object;
       frame_->local_object = false;
       frame_->symbol.emplace_back(request);

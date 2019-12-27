@@ -142,7 +142,7 @@ namespace kagami::management::type {
     const auto it = base.find(obj.GetTypeId());
 
     if (it != base.end()) {
-      result = (it->second.GetDeliver() != ShallowDelivery);
+      result = (it->second.GetDeliveringImpl() != ShallowDelivery);
     }
 
     return result;
@@ -160,7 +160,7 @@ namespace kagami::management::type {
     Object result;
     const auto it = GetObjectTraitsCollection().find(object.GetTypeId());
     if (it != GetObjectTraitsCollection().end()) {
-      auto deliver = it->second.GetDeliver();
+      auto deliver = it->second.GetDeliveringImpl();
       result.PackContent(deliver(object.Get()), object.GetTypeId());
     }
 
@@ -213,8 +213,8 @@ namespace kagami::management::type {
   }
 
   ObjectTraitsSetup::~ObjectTraitsSetup() {
-    CreateObjectTraits(type_id_, ObjectTraits(dlvy_, methods_, hasher_, comparator_));
-    CreateImpl(do_not_copy_);
+    CreateObjectTraits(type_id_, ObjectTraits(delivering_impl_, methods_, hasher_, comparator_));
+    CreateImpl(delivering_);
     for (auto &unit : impl_) {
       CreateImpl(unit, type_id_);
     }

@@ -58,9 +58,9 @@ namespace kagami {
         }
     );
 
-    CreateImpl(FunctionImpl(MusicPause, "", "PauseMusic"));
-    CreateImpl(FunctionImpl(MusicResume, "", "ResumeMusic"));
-    CreateImpl(FunctionImpl(MusicHalt, "", "HaltMusic"));
+    CreateImpl(FunctionImpl(MusicPause, "", "pause_music"));
+    CreateImpl(FunctionImpl(MusicResume, "", "resume_music"));
+    CreateImpl(FunctionImpl(MusicHalt, "", "halt_music"));
   }
 #endif
 }

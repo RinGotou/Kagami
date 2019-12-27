@@ -1,4 +1,19 @@
 #pragma once
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#if defined(_MSC_VER)
+//Disable STUPID visual studio intellisense warning
+#pragma warning(disable:4996)
+#pragma warning(disable:6031)
+#pragma warning(disable:26812)
+#pragma warning(disable:26439)
+#endif
+#else
+#include <dlfcn.h>
+#include <unistd.h>
+#endif
+
 #include <ctime>
 #include <cstdio>
 #include <clocale>
@@ -20,22 +35,8 @@
 #include <variant>
 #include <filesystem>
 
-#if defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#if defined(_MSC_VER)
-#pragma warning(disable:4996)
-#endif
-#else
-#include <dlfcn.h>
-#include <unistd.h>
-#endif
-
-#ifndef _DISABLE_SDL_
 #include "dawn/src/dawn.ui.h"
 #include "dawn/src/dawn.sound.h"
-#endif
-
 #include "minatsuki.log/src/minatsuki.log.h"
 
 //Switching Debugging Feature
@@ -124,7 +125,7 @@ namespace kagami {
     kKeywordEnd, 
     kKeywordElse, 
     kKeywordBind, 
-    kKeywordDeliver,
+    kKeywordDelivering,
     kKeywordWhile, 
     kKeywordPlus, 
     kKeywordMinus, 
@@ -200,9 +201,7 @@ namespace kagami {
   const string kTypeIdPair            = "pair";
   const string kTypeIdTable           = "table";
   const string kTypeIdStruct          = "struct";
-
-#ifndef _DISABLE_SDL_
-  const string kTypeIdWindowEvent     = "WindowEvent";
+  const string kTypeIdWindowEvent     = "window_event";
   const string kTypeIdWindow          = "window";
 	const string kTypeIdElement         = "element";
   const string kTypeIdFont            = "font";
@@ -210,7 +209,6 @@ namespace kagami {
   const string kTypeIdColorValue      = "color";
   const string kTypeIdRectangle       = "rectangle";
   const string kTypeIdPoint           = "point";
-#endif
 
   const string
     kStrAssert         = "assert",

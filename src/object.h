@@ -42,7 +42,7 @@ namespace kagami {
 
   class ObjectTraits {
   private:
-    DeliveryImpl dlvy_;
+    DeliveryImpl delivering_impl_;
     Comparator comparator_;
     HasherFunction hasher_;
     vector<string> methods_;
@@ -55,7 +55,7 @@ namespace kagami {
       string methods,
       HasherFunction hasher = nullptr,
       Comparator comparator = nullptr) :
-      dlvy_(dlvy),
+      delivering_impl_(dlvy),
       comparator_(comparator),
       methods_(BuildStringVector(methods)),
       hasher_(hasher) {}
@@ -63,54 +63,42 @@ namespace kagami {
     vector<string> &GetMethods() { return methods_; }
     HasherFunction GetHasher() { return hasher_; }
     Comparator GetComparator() { return comparator_; }
-    DeliveryImpl GetDeliver() { return dlvy_; }
+    DeliveryImpl GetDeliveringImpl() { return delivering_impl_; }
   };
 
   class Object {
   private:
     ObjectPointer real_dest_;
     ObjectMode mode_;
-    bool do_not_copy_;
-    int64_t ref_count_;
+    bool delivering_;
     shared_ptr<void> ptr_;
     string type_id_;
 
   public:
-    ~Object() {
-      if (mode_ == kObjectRef && real_dest_ != nullptr) {
-        real_dest_->ref_count_ -= 1;
-      }
-    }
+    ~Object() {}
 
     Object() :
       real_dest_(nullptr),
       mode_(kObjectNormal),
-      do_not_copy_(false),
-      ref_count_(0),
+      delivering_(false),
       ptr_(nullptr),
       type_id_(kTypeIdNull) {}
 
     Object(const Object &obj) :
       real_dest_(obj.real_dest_),
       mode_(obj.mode_),
-      do_not_copy_(obj.do_not_copy_),
-      ref_count_(0),
+      delivering_(obj.delivering_),
       ptr_(obj.ptr_),
-      type_id_(obj.type_id_) {
-      if (obj.mode_ == kObjectRef) {
-        real_dest_->ref_count_ += 1;
-      }
-    }
+      type_id_(obj.type_id_) {}
 
-    Object(const Object &&obj) :
+    Object(const Object &&obj) noexcept :
       Object(obj) {}
 
     template <class T>
     Object(shared_ptr<T> ptr, string type_id) :
       real_dest_(nullptr),
       mode_(kObjectNormal),
-      do_not_copy_(false),
-      ref_count_(0),
+      delivering_(false),
       ptr_(ptr), 
       type_id_(type_id) {}
 
@@ -118,8 +106,7 @@ namespace kagami {
     Object(T &t, string type_id) :
       real_dest_(nullptr),
       mode_(kObjectNormal),
-      do_not_copy_(false),
-      ref_count_(0),
+      delivering_(false),
       ptr_(make_shared<T>(t)),
       type_id_(type_id) {}
 
@@ -130,8 +117,7 @@ namespace kagami {
     Object(string str) :
       real_dest_(nullptr),
       mode_(kObjectNormal),
-      do_not_copy_(false),
-      ref_count_(0),
+      delivering_(false),
       ptr_(std::make_shared<string>(str)),
       type_id_(kTypeIdString) {}
 
@@ -162,13 +148,13 @@ namespace kagami {
       return *std::static_pointer_cast<Tx>(ptr_);
     }
 
-    Object &SetDeliverFlag() {
-      do_not_copy_ = true;
+    Object &SetDeliveringFlag() {
+      delivering_ = true;
       return *this;
     }
 
-    Object &RemoveDeliverFlag() {
-      do_not_copy_ = false;
+    Object &RemoveDeliveringFlag() {
+      delivering_ = false;
       return *this;
     }
 
@@ -176,8 +162,8 @@ namespace kagami {
       if (mode_ == kObjectRef) {
         return real_dest_->GetDeliverFlag();
       }
-      bool result = do_not_copy_;
-      do_not_copy_ = false;
+      bool result = delivering_;
+      delivering_ = false;
       return result;
     }
 
@@ -185,7 +171,7 @@ namespace kagami {
       if (mode_ == kObjectRef) {
         return real_dest_->SeekDeliverFlag();
       }
-      return do_not_copy_;
+      return delivering_;
     }
 
     bool operator==(const Object &obj) = delete;
@@ -198,8 +184,6 @@ namespace kagami {
     Object &swap(Object &&obj) { return swap(obj); }
 
     string GetTypeId() const { return type_id_; }
-
-    int64_t ObjRefCount() const { return ref_count_; }
 
     bool IsRef() const { return mode_ == kObjectRef; }
 

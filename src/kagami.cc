@@ -5,7 +5,6 @@ using namespace std;
 using namespace suzu;
 using namespace kagami;
 using namespace kagami::management;
-//using namespace kagami::trace;
 using namespace minatsuki;
 using Processor = ArgumentProcessor<kHeadHorizon, kJoinerEqual>;
 
@@ -162,8 +161,6 @@ int main(int argc, char **argv) {
   }
 
   
-#ifndef _DISABLE_SDL_
   dawn::EnvironmentCleanup();
-#endif
   return 0;
 }
