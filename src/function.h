@@ -27,8 +27,12 @@ namespace kagami {
     VMCode &GetCode() { return code_; }
   };
 
+  class ExternalFunction :public _FunctionImpl {
+
+  };
+
   enum FunctionImplType {
-    kFunctionCXX, kFunctionVMCode
+    kFunctionCXX, kFunctionVMCode, kFunctionExternal
   };
 
   class FunctionImpl {

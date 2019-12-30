@@ -76,6 +76,11 @@ namespace kagami::management::script {
   VMCode &AppendBlankScript(string path);
 }
 
+namespace kagami::management::plugin {
+
+
+}
+
 namespace std {
   template <>
   struct hash<kagami::Object> {
