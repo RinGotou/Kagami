@@ -1677,7 +1677,6 @@ namespace kagami {
         break;
       }
 
-#ifndef _DISABLE_SDL_
       //window event handler
       if ((!frame->event_processing && SDL_PollEvent(&event) != 0)
         || (freezing_ && SDL_WaitEvent(&event) != 0)) {
@@ -1697,7 +1696,6 @@ namespace kagami {
 
         if (freezing_) continue;
       }
-#endif
 
       //switch to last stack frame
       if (frame->idx == size && frame_stack_.size() > 1) {

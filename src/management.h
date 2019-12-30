@@ -77,8 +77,13 @@ namespace kagami::management::script {
 }
 
 namespace kagami::management::plugin {
-
-
+#ifdef _WIN32
+  using LoadedLibraryUnit = pair<string, HMODULE>;
+  using LibraryMgmtStorage = unordered_map<string, HMODULE>;
+#else
+  using LoadedLibraryUnit = pair<string, void *>;
+  using LibraryMgmtStorage = unordered_map<string, void *>;
+#endif
 }
 
 namespace std {

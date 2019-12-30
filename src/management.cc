@@ -271,3 +271,7 @@ namespace kagami::management::script {
     return it->second;
   }
 }
+
+namespace kagami::management::plugin {
+
+}
