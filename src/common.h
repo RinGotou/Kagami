@@ -39,9 +39,6 @@
 #include "dawn/src/dawn.sound.h"
 #include "minatsuki.log/src/minatsuki.log.h"
 
-//Switching Debugging Feature
-//#define _DEBUG_
-
 #define ENGINE_NAME     "Kagami Project"
 #define INTERPRETER_VER "2.21"
 #define CODENAME        "Cradle"
