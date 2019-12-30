@@ -39,6 +39,7 @@ event.log
 bin
 vc140.pdb
 .vscode
+.vs
 vsproject
 CMakeFiles
 cmake_install.cmake
