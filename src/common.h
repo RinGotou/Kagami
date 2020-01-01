@@ -206,7 +206,7 @@ namespace kagami {
   const string kTypeIdColorValue      = "color";
   const string kTypeIdRectangle       = "rectangle";
   const string kTypeIdPoint           = "point";
-  const string kTypeIdModule          = "module";
+  const string kTypeIdModule          = "module";  //not implemented
 
   const string
     kStrAssert         = "assert",

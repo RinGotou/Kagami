@@ -84,6 +84,26 @@ namespace kagami::management::plugin {
   using LoadedLibraryUnit = pair<string, void *>;
   using LibraryMgmtStorage = unordered_map<string, void *>;
 #endif
+
+#ifdef _WIN32
+  class ExternalPlugin {
+  protected:
+    HMODULE ptr_;
+  public:
+    ~ExternalPlugin() { FreeLibrary(ptr_); }
+    ExternalPlugin() : ptr_(nullptr) {}
+    ExternalPlugin(wstring path) : ptr_(LoadLibrary(path.data())) {}
+
+    template <typename _TargetFunction>
+    bool GetTargetInterface(_TargetFunction &func, string id) {
+      func = static_cast<_TargetFunction>(GetProcAddress(ptr_, id.data()));
+      if (func == nullptr) return false;
+      return true;
+    }
+  };
+#else
+
+#endif
 }
 
 namespace std {

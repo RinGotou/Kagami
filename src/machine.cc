@@ -222,6 +222,7 @@ namespace kagami {
     else if (type == kStringTypeFloat) {
       double float_value;
 #ifndef _MSC_VER
+      //dealing with issues of charconv implementation in low-version clang
       float_value = stod(value);
 #else
       from_chars(value.data(), value.data() + value.size(), float_value);
