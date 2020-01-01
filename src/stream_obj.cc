@@ -102,8 +102,8 @@ namespace kagami {
         }
     );
 
-    management::CreateConstantObject("kOutstreamModeAppend", Object("'append'"));
-    management::CreateConstantObject("kOutstreamModeTruncate", Object("'truncate'"));
+    management::CreateConstantObject("kOutstreamModeAppend", Object("append"));
+    management::CreateConstantObject("kOutstreamModeTruncate", Object("truncate"));
 
     EXPORT_CONSTANT(kTypeIdInStream);
     EXPORT_CONSTANT(kTypeIdOutStream);

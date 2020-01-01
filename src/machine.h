@@ -5,6 +5,7 @@
 */
 #include "frontend.h"
 #include "management.h"
+#include "components.h"
 
 #define CHECK_PRINT_OPT()                          \
   if (p.find(kStrSwitchLine) != p.end()) {         \
@@ -37,7 +38,9 @@ namespace kagami {
   std::wstring s2ws(const std::string &s);
   std::string ws2s(const std::wstring &s);
   string ParseRawString(const string &src);
-  void InitPlainTypes();
+  void InitPlainTypesAndConstants();
+  void ActivateComponents();
+
 
   using ResultTraitKey = pair<PlainType, PlainType>;
   using TraitUnit = pair<ResultTraitKey, PlainType>;
@@ -380,12 +383,4 @@ namespace kagami {
       return error_;
     }
   };
-
-  void InitConsoleComponents();
-  void InitBaseTypes();
-  void InitContainerComponents();
-  void InitFunctionType();
-  void InitStreamComponents();
-  void InitSoundComponents();
-  void InitWindowComponents();
 }

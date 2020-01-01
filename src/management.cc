@@ -271,3 +271,17 @@ namespace kagami::management::script {
     return it->second;
   }
 }
+
+namespace kagami::management::runtime {
+  static string binary_name;
+  static string binary_path;
+
+  void InformBinaryPathAndName(string info) {
+    std::filesystem::path processed_path(info);
+    binary_name = processed_path.filename().string();
+    binary_path = processed_path.parent_path().string();
+  }
+
+  string GetBinaryPath() { return binary_path; }
+  string GetBinaryName() { return binary_name; }
+}

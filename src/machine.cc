@@ -110,9 +110,9 @@ namespace kagami {
     return result;
   }
 
-  void InitPlainTypes() {
+  void InitPlainTypesAndConstants() {
     using type::ObjectTraitsSetup;
-
+    using namespace management;
     ObjectTraitsSetup(kTypeIdInt, PlainDeliveryImpl<int64_t>, PlainHasher<int64_t>)
       .InitComparator(PlainComparator<int64_t>);
     ObjectTraitsSetup(kTypeIdFloat, PlainDeliveryImpl<double>, PlainHasher<double>)
@@ -125,6 +125,15 @@ namespace kagami {
     EXPORT_CONSTANT(kTypeIdFloat);
     EXPORT_CONSTANT(kTypeIdBool);
     EXPORT_CONSTANT(kTypeIdNull);
+    CreateConstantObject("kCoreFilename", Object(runtime::GetBinaryName()));
+    CreateConstantObject("kCorePath", Object(runtime::GetBinaryPath()));
+  }
+
+  void ActivateComponents() {
+    InitPlainTypesAndConstants();
+    for (const auto func : kEmbeddedComponents) {
+      func();
+    }
   }
 
   void RuntimeFrame::Stepping() {

@@ -8,23 +8,6 @@ using namespace kagami::management;
 using namespace minatsuki;
 using Processor = ArgumentProcessor<kHeadHorizon, kJoinerEqual>;
 
-namespace runtime {
-  // Binary name from command line
-  static string binary_name;
-
-  // Load add built-in components
-  void InitEmbeddedComponents() {
-    InitPlainTypes();
-    InitConsoleComponents();
-    InitBaseTypes();
-    InitContainerComponents();
-    InitFunctionType();
-    InitStreamComponents();
-    InitSoundComponents();
-    InitWindowComponents();
-  }
-}
-
 void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log) {
   Agent *agent = real_time_log ?
     static_cast<Agent *>(new StandardRealTimeAgent(log_path.data(), "a+")) :
@@ -56,7 +39,7 @@ void ApplicationInfo() {
 
 void HelpFile() {
   printf("Usage:");
-  printf("%s", runtime::binary_name.data());
+  printf("%s", runtime::GetBinaryName().data());
   printf(" [-OPTION][-OPTION=VALUE]...\n\n");
   printf(
     "\tscript=FILE         Path of script file.\n"
@@ -125,8 +108,8 @@ void Processing(Processor &processor) {
 }
 
 int main(int argc, char **argv) {
-  runtime::binary_name = argv[0];
-  runtime::InitEmbeddedComponents();
+  runtime::InformBinaryPathAndName(argv[0]);
+  ActivateComponents();
 
   Processor processor = {
     Pattern("script" , Option(true, false, 1)),

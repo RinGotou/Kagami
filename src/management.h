@@ -106,6 +106,12 @@ namespace kagami::management::plugin {
 #endif
 }
 
+namespace kagami::management::runtime {
+  void InformBinaryPathAndName(string info);
+  string GetBinaryPath();
+  string GetBinaryName();
+}
+
 namespace std {
   template <>
   struct hash<kagami::Object> {
