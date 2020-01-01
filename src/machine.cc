@@ -1596,9 +1596,8 @@ namespace kagami {
     Command *command = nullptr;
     FunctionImplPointer impl;
     ObjectMap obj_map;
-#ifndef _DISABLE_SDL_
     SDL_Event event;
-#endif
+
     frame_stack_.push(RuntimeFrame());
     obj_stack_.Push();
 

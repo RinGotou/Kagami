@@ -197,7 +197,7 @@ namespace kagami {
   const string kTypeIdIterator        = "iterator";
   const string kTypeIdPair            = "pair";
   const string kTypeIdTable           = "table";
-  const string kTypeIdStruct          = "struct";
+  const string kTypeIdStruct          = "struct";  //not implemented
   const string kTypeIdWindowEvent     = "window_event";
   const string kTypeIdWindow          = "window";
 	const string kTypeIdElement         = "element";
@@ -206,6 +206,7 @@ namespace kagami {
   const string kTypeIdColorValue      = "color";
   const string kTypeIdRectangle       = "rectangle";
   const string kTypeIdPoint           = "point";
+  const string kTypeIdModule          = "module";
 
   const string
     kStrAssert         = "assert",
