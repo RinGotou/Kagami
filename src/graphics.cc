@@ -5,7 +5,7 @@ namespace kagami {
 	Message NewElement(ObjectMap& p) {
     auto tc = TypeChecking(
       {
-        Expect("texture", kTypeIdIterator),
+        Expect("texture", kTypeIdTexture),
         Expect("dest", kTypeIdRectangle),
         Expect("src", kTypeIdRectangle)
       }, p, { "src" }
@@ -417,8 +417,8 @@ namespace kagami {
   Message NewRectangle(ObjectMap &p) {
     auto tc = TypeChecking(
       {
-        Expect("r", kTypeIdInt), Expect("g", kTypeIdInt),
-        Expect("b", kTypeIdInt), Expect("a", kTypeIdInt)
+        Expect("x", kTypeIdInt), Expect("y", kTypeIdInt),
+        Expect("width", kTypeIdInt), Expect("height", kTypeIdInt)
       }, p);
 
     if (TC_FAIL(tc)) return TC_ERROR(tc);
