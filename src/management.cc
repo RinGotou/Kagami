@@ -235,6 +235,9 @@ namespace kagami::management::type {
     };
 
     for (auto &unit : lst) {
+#ifdef _MSC_VER
+#pragma warning(disable:4101)
+#endif
       try {
         auto &obj = obj_map.at(unit.first);
         if (find_in_list(obj.GetTypeId(), unit.second)) continue;
@@ -258,6 +261,9 @@ namespace kagami::management::type {
         msg = "Internal error";
         break;
       }
+#ifdef _MSC_VER
+#pragma warning(default:4101)
+#endif
     }
 
     return { result, msg };

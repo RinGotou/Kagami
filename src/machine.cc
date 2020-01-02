@@ -490,7 +490,11 @@ namespace kagami {
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
     auto &frame = frame_stack_.top();
     auto &code = code_stack_.front();
-    REQUIRED_ARG_COUNT(1);
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument for condition is missing");
+      return;
+    }
 
     if (token == kKeywordIf || token == kKeywordWhile) {
       frame.AddJumpRecord(nest_end);
@@ -916,7 +920,11 @@ namespace kagami {
 
   void Machine::CommandMethods(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    REQUIRED_ARG_COUNT(1);
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument is missing  - dir(obj)");
+      return;
+    }
 
     Object obj = FetchObject(args[0]);
     auto methods = type::GetMethods(obj.GetTypeId());
@@ -932,7 +940,11 @@ namespace kagami {
 
   void Machine::CommandExist(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    REQUIRED_ARG_COUNT(2);
+
+    if (!EXPECTED_COUNT(2)) {
+      frame.MakeError("Argument is missing  - exist(obj, id)");
+      return;
+    }
 
     //Do not change the order
     auto str_obj = FetchObject(args[1]);
@@ -947,7 +959,11 @@ namespace kagami {
 
   void Machine::CommandNullObj(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    REQUIRED_ARG_COUNT(1);
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument is missing  - null_obj(obj)");
+      return;
+    }
 
     Object obj = FetchObject(args[0]);
     frame.RefreshReturnStack(Object(obj.GetTypeId() == kTypeIdNull, kTypeIdBool));
@@ -955,7 +971,11 @@ namespace kagami {
 
   void Machine::CommandDestroy(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    REQUIRED_ARG_COUNT(1);
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument is missing  - destroy(obj)");
+      return;
+    }
 
     Object &obj = FetchObject(args[0]).Unpack();
     obj.swap(Object());
@@ -963,7 +983,11 @@ namespace kagami {
 
   void Machine::CommandConvert(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    REQUIRED_ARG_COUNT(1);
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument is missing  - convert(obj)");
+      return;
+    }
 
     Argument &arg = args[0];
     if (arg.GetType() == kArgumentNormal) {
@@ -1006,7 +1030,11 @@ namespace kagami {
 
   void Machine::CommandLoad(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    REQUIRED_ARG_COUNT(1);
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument is missing  - load(obj)");
+      return;
+    }
 
     auto path_obj = FetchObject(args[0]);
     ERROR_CHECKING(path_obj.GetTypeId() != kTypeIdString,
@@ -1056,7 +1084,12 @@ namespace kagami {
   template <Keyword op_code>
   void Machine::BinaryMathOperatorImpl(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    REQUIRED_ARG_COUNT(2);
+
+    if (!EXPECTED_COUNT(2)) {
+      frame.MakeError("Argument behind operator is missing");
+      return;
+    }
+
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
     auto type_rhs = FindTypeCode(rhs.GetTypeId());
@@ -1100,7 +1133,10 @@ namespace kagami {
     using namespace type;
     auto &frame = frame_stack_.top();
 
-    REQUIRED_ARG_COUNT(2);
+    if (!EXPECTED_COUNT(2)) {
+      frame.MakeError("Argument behind operator is missing");
+      return;
+    }
 
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
@@ -1168,7 +1204,10 @@ namespace kagami {
   void Machine::OperatorLogicNot(ArgumentList &args) {
     auto &frame = frame_stack_.top();
 
-    REQUIRED_ARG_COUNT(1);
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument behind operator is missing");
+      return;
+    }
 
     auto rhs = FetchObject(args[0]);
 
@@ -1261,7 +1300,10 @@ namespace kagami {
   void Machine::CommandAssert(ArgumentList &args) {
     auto &frame = frame_stack_.top();
 
-    REQUIRED_ARG_COUNT(1);
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument is missing  - assert(bool_obj)");
+      return;
+    }
 
     auto result_obj = FetchObject(args[0]);
 
@@ -1278,7 +1320,10 @@ namespace kagami {
   void Machine::CommandHandle(ArgumentList &args) {
     auto &frame = frame_stack_.top();
 
-    REQUIRED_ARG_COUNT(3);
+    if (!EXPECTED_COUNT(3)) {
+      frame.MakeError("Argument is missing  - handle(win, event, func)");
+      return;
+    }
 
     auto func = FetchObject(args[2]);
     auto event_type_obj = FetchObject(args[1]);

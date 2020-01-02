@@ -21,6 +21,8 @@
 #define EXPECT(_State, _Mess)                      \
   if (!(_State)) return Message(kCodeIllegalParam, _Mess, kStateError)
 
+#define EXPECTED_COUNT(_Count) (args.size() == _Count)
+
 #define REQUIRED_ARG_COUNT(_Size)                  \
   if (args.size() != _Size) {                      \
     frame.MakeError("Argument is missing.");       \
