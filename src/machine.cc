@@ -5,20 +5,11 @@
 namespace kagami {
   using namespace management;
 
-  CommentedResult CheckTypeExpectations(ExpectationList &&lst,
+  CommentedResult TypeChecking(ExpectationList &&lst,
     ObjectMap &obj_map,
     NullableList &&nullable) {
     bool result = true;
     string msg;
-
-    auto assembler = [](initializer_list<string> lst) ->string {
-      string output;
-      for (auto &unit : lst) {
-        output.append(unit).append("/");
-      }
-      output.pop_back();
-      return output;
-    };
 
     for (auto &unit : lst) {
 #ifdef _MSC_VER
@@ -26,11 +17,14 @@ namespace kagami {
 #endif
       try {
         auto &obj = obj_map.at(unit.first);
-        if (find_in_list(obj.GetTypeId(), unit.second)) continue;
-        else if (find_in_list(unit.first, nullable)) continue;
+        bool founded = (unit.second == obj.GetTypeId());
+        bool null = find_in_list(unit.first, nullable);
+
+        if (founded) continue;
+        else if (founded && null) continue;
         else {
           result = false;
-          msg = "Expected type is " + assembler(unit.second) +
+          msg = "Expected type is " + unit.second +
             ", but object type is " + obj.GetTypeId();
           break;
         }

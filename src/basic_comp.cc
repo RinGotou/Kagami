@@ -6,8 +6,8 @@ namespace kagami {
   }
 
   Message SystemCommand(ObjectMap &p) {
-    auto tc_result = CheckTypeExpectations(
-      { Expect("command", { kTypeIdString }) }, p);
+    auto tc_result = TypeChecking(
+      { Expect("command", kTypeIdString) }, p);
 
     if (TC_FAIL(tc_result)) { return TC_ERROR(tc_result); }
 
@@ -16,8 +16,8 @@ namespace kagami {
   }
 
   Message ThreadSleep(ObjectMap& p) {
-    auto tc_result = CheckTypeExpectations(
-      { Expect("milliseconds", { kTypeIdInt }) }, p);
+    auto tc_result = TypeChecking(
+      { Expect("milliseconds", kTypeIdInt) }, p);
 
     if (TC_FAIL(tc_result)) { return TC_ERROR(tc_result); }
 
@@ -113,8 +113,8 @@ namespace kagami {
   }
 
   Message SetWorkingDir(ObjectMap &p) {
-    auto tc_result = CheckTypeExpectations(
-      { Expect("dir",{kTypeIdString}) }, p);
+    auto tc_result = TypeChecking(
+      { Expect("dir", kTypeIdString) }, p);
 
     if (TC_FAIL(tc_result)) return TC_ERROR(tc_result);
 

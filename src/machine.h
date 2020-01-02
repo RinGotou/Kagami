@@ -30,12 +30,12 @@
   }
 
 namespace kagami {
-  using Expect = pair<string, initializer_list<string>>;
+  using Expect = pair<string, string>;
   using ExpectationList = initializer_list<Expect>;
   using NullableList = initializer_list<string>;
   using CommentedResult = tuple<bool, string>;
 
-  CommentedResult CheckTypeExpectations(ExpectationList &&lst,
+  CommentedResult TypeChecking(ExpectationList &&lst,
     ObjectMap &obj_map,
     NullableList &&nullable = {});
 

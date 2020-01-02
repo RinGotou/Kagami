@@ -3,6 +3,16 @@
 namespace kagami {
   //limit:2
 	Message NewElement(ObjectMap& p) {
+    auto tc = TypeChecking(
+      {
+        Expect("texture", kTypeIdIterator),
+        Expect("dest", kTypeIdRectangle),
+        Expect("src", kTypeIdRectangle)
+      }, p, { "src" }
+    );
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &texture = p.Cast<dawn::Texture>("texture");
     auto &dest = p.Cast<SDL_Rect>("dest");
     auto &src_obj = p["src"];
@@ -25,6 +35,9 @@ namespace kagami {
 	}
 
 	Message ElementSetPriority(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("priority", kTypeIdInt) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &element = p.Cast<dawn::Element>(kStrMe);
     auto &priority = p.Cast<int64_t>("priority");
     return Message().SetObject(element.SetPriority(int(priority)));
@@ -36,6 +49,9 @@ namespace kagami {
 	}
 
   Message ElementSetDest(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("dest", kTypeIdRectangle) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &element = p.Cast<dawn::Element>(kStrMe);
     auto &new_dest = p.Cast<SDL_Rect>("dest");
     auto &dest = element.GetDestInfo();
@@ -45,6 +61,9 @@ namespace kagami {
   }
 
   Message ElementSetSrc(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("src", kTypeIdRectangle) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &element = p.Cast<dawn::Element>(kStrMe);
     auto &new_src = p.Cast<SDL_Rect>("src");
     auto &src = element.GetSrcInfo();
@@ -54,6 +73,14 @@ namespace kagami {
   }
 
   Message NewWindow(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { 
+        Expect("width", kTypeIdInt),
+        Expect("height", kTypeIdInt) 
+      }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &width = p.Cast<int64_t>("width");
     auto &height = p.Cast<int64_t>("height");
     dawn::WindowOption option;
@@ -68,6 +95,14 @@ namespace kagami {
   }
 
   Message WindowAddElement(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { 
+        Expect("id", kTypeIdString),
+        Expect("element", kTypeIdElement) 
+      }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &id = p.Cast<string>("id");
     auto &element = p.Cast<dawn::Element>("element");
@@ -76,6 +111,15 @@ namespace kagami {
   }
 
   Message WindowSetElementPosition(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("id", kTypeIdString),
+        Expect("point", kTypeIdPoint)
+      }, p
+    );
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &id = p.Cast<string>("id");
     auto &point = p.Cast<SDL_Point>("point");
@@ -84,6 +128,11 @@ namespace kagami {
   }
 
   Message WindowGetElementPosition(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { Expect("id", kTypeIdString) }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &id = p.Cast<string>("id");
 
@@ -91,6 +140,9 @@ namespace kagami {
   }
 
   Message WindowSetElementSize(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("id", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &id = p.Cast<string>("id");
     auto &width = p.Cast<int64_t>("width");
@@ -100,14 +152,30 @@ namespace kagami {
   }
 
   Message WindowSetElementCropper(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("id", kTypeIdString),
+        Expect("cropper", kTypeIdRectangle)
+      }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
-    auto &id = p.Cast<string>("Id");
+    auto &id = p.Cast<string>("id");
     auto &cropper = p.Cast<SDL_Rect>("cropper");
 
     return Message().SetObject(window.SetElementCropper(id, cropper));
   }
 
   Message WindowElementInRange(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("id", kTypeIdString),
+        Expect("point", kTypeIdPoint)
+      }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &id = p.Cast<string>("id");
     auto &point = p.Cast<SDL_Point>("point");
@@ -116,6 +184,9 @@ namespace kagami {
   }
 
   Message WindowFindElementByPoint(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("point", kTypeIdPoint) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &point = p.Cast<SDL_Point>("point");
     auto *named_element = window.FindElementByPoint(point);
@@ -129,6 +200,9 @@ namespace kagami {
   }
 
   Message WindowDisposeElement(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("id", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &id = p.Cast<string>("id");
 
@@ -136,6 +210,9 @@ namespace kagami {
   }
 
   Message WindowSetElementOnTop(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("id", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &id = p.Cast<string>("id");
 
@@ -143,6 +220,9 @@ namespace kagami {
   }
 
   Message WindowSetElementOnBottom(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("id", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &id = p.Cast<string>("id");
 
@@ -150,6 +230,9 @@ namespace kagami {
   }
 
   Message WindowSetTitle(ObjectMap& p) {
+    auto tc = TypeChecking({ Expect("title", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto& window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto& title = p.Cast<string>("title");
 
@@ -163,6 +246,7 @@ namespace kagami {
     return Message().SetObject(window.DrawElements());
   }
 
+  //deprecated
   Message WindowSetBackground(ObjectMap &p) {
     auto &path = p.Cast<string>("path");
     auto &image_type = p.Cast<dawn::ImageType>("type");
@@ -182,6 +266,7 @@ namespace kagami {
     return Message();
   }
 
+  //deprecated
   Message WindowAddImage(ObjectMap &p) {
     auto &path = p.Cast<string>("path");
     auto &image_type = p.Cast<dawn::ImageType>("type");
@@ -202,6 +287,7 @@ namespace kagami {
     return Message();
   }
 
+  //deprecated
   Message WindowSetText(ObjectMap &p) {
     auto text = p.Cast<string>("text");
     auto point = p.Cast<SDL_Point>("point");
@@ -224,6 +310,7 @@ namespace kagami {
   }
 
   //Limit:1
+  //deprecated
   Message WindowCopy(ObjectMap &p) {
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &texture = p.Cast<dawn::Texture>("texture");
@@ -290,6 +377,14 @@ namespace kagami {
   }
 
   Message NewFont(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("path", kTypeIdString),
+        Expect("size", kTypeIdInt),
+      }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto size = static_cast<int>(p.Cast<int64_t>("size"));
     auto &path = p.Cast<string>("path");
 
@@ -303,6 +398,14 @@ namespace kagami {
   }
 
   Message NewColorValue(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("r", kTypeIdInt), Expect("g", kTypeIdInt),
+        Expect("b", kTypeIdInt), Expect("a", kTypeIdInt)
+      }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto r = static_cast<int>(p.Cast<int64_t>("r"));
     auto g = static_cast<int>(p.Cast<int64_t>("g"));
     auto b = static_cast<int>(p.Cast<int64_t>("b"));
@@ -312,6 +415,14 @@ namespace kagami {
   }
 
   Message NewRectangle(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("r", kTypeIdInt), Expect("g", kTypeIdInt),
+        Expect("b", kTypeIdInt), Expect("a", kTypeIdInt)
+      }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto x = static_cast<int>(p.Cast<int64_t>("x"));
     auto y = static_cast<int>(p.Cast<int64_t>("y"));
     auto w = static_cast<int>(p.Cast<int64_t>("width"));
@@ -323,6 +434,11 @@ namespace kagami {
   }
 
   Message NewPoint(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { Expect("x", kTypeIdInt), Expect("y", kTypeIdInt) }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto x = static_cast<int>(p.Cast<int64_t>("x"));
     auto y = static_cast<int>(p.Cast<int64_t>("y"));
 
@@ -349,6 +465,16 @@ namespace kagami {
 
   //Limit:3
   Message TextureInitFromImage(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("path", kTypeIdString),
+        Expect("type", kTypeIdInt),
+        Expect("window", kTypeIdWindow),
+        Expect("color_key", kTypeIdColorValue)
+      }, p, { "color_key" });
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &texture = p.Cast<dawn::Texture>(kStrMe);
     auto &image_path = p.Cast<string>("path");
     auto &type = p.Cast<dawn::ImageType>("type");
@@ -369,6 +495,16 @@ namespace kagami {
   }
 
   Message TextureInitFromText(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("text", kTypeIdString),
+        Expect("font", kTypeIdFont),
+        Expect("window", kTypeIdWindow),
+        Expect("color_key", kTypeIdColorValue)
+      }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &texture = p.Cast<dawn::Texture>(kStrMe);
     auto &text = p.Cast<string>("text");
     auto &font = p.Cast<dawn::Font>("font");

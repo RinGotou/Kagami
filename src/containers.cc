@@ -14,8 +14,8 @@ namespace kagami {
   }
 
   Message IteratorOperatorCompare(ObjectMap &p) {
-    auto tc = CheckTypeExpectations(
-      { Expect(kStrRightHandSide, {kTypeIdIterator}) }, p
+    auto tc = TypeChecking(
+      { Expect(kStrRightHandSide, kTypeIdIterator) }, p
     );
 
     if (TC_FAIL(tc)) return TC_ERROR(tc);
@@ -38,8 +38,8 @@ namespace kagami {
   }
 
   Message NewArray(ObjectMap &p) {
-    auto tc_result = CheckTypeExpectations(
-      { Expect("size", {kTypeIdInt}) }, p,
+    auto tc_result = TypeChecking(
+      { Expect("size", kTypeIdInt) }, p,
       { "size" }
     );
 
@@ -64,8 +64,8 @@ namespace kagami {
   }
 
   Message ArrayGetElement(ObjectMap &p) {
-    auto tc = CheckTypeExpectations(
-      { Expect("index", {kTypeIdInt}) }, p
+    auto tc = TypeChecking(
+      { Expect("index", kTypeIdInt) }, p
     );
 
     if (TC_FAIL(tc)) return TC_ERROR(tc);
