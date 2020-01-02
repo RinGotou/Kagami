@@ -10,7 +10,9 @@ namespace kagami {
   ///////////////////////////////////////////////////////////////
   // InStream implementations
   Message NewInStream(ObjectMap &p) {
-    EXPECT_TYPE(p, "path", kTypeIdString);
+    auto tc = TypeChecking({ Expect("path", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     string path = p.Cast<string>("path");
 
     shared_ptr<InStream> ifs = make_shared<InStream>(path);
@@ -39,23 +41,17 @@ namespace kagami {
   ///////////////////////////////////////////////////////////////
   // OutStream implementations
   Message NewOutStream(ObjectMap &p) {
-    EXPECT_TYPE(p, "path", kTypeIdString);
-    EXPECT_TYPE(p, "mode", kTypeIdString);
+    auto tc = TypeChecking(
+      { 
+        Expect("path", kTypeIdString),
+        Expect("mode", kTypeIdString)
+      }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
 
     string path = p.Cast<string>("path");
     string mode = p.Cast<string>("mode");
 
-    shared_ptr<OutStream> ofs;
-    bool append = (mode == "append");
-    bool truncate = (mode == "truncate");
-
-    if (!append && truncate) {
-      ofs = make_shared<OutStream>(path, "w");
-    }
-    else if (append && !truncate) {
-      ofs = make_shared<OutStream>(path, "a+");
-    }
-
+    shared_ptr<OutStream> ofs = make_shared<OutStream>(path, mode);
     return Message().SetObject(Object(ofs, kTypeIdOutStream));
   }
 
