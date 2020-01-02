@@ -1882,7 +1882,7 @@ namespace kagami {
       }
 
       //Invoke by return value.
-      if (msg.GetCode() == kCodeInterface) {
+      if (msg.IsInvokingMsg()) {
         auto arg = BuildStringVector(msg.GetDetail());
         if (!_FetchFunctionImpl(impl, arg[0], arg[1])) {
           break;

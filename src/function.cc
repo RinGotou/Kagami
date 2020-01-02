@@ -3,6 +3,7 @@
 namespace kagami {
   Message MakeInvokePoint(string id, string type_id) {
     vector<string> arg = { id,type_id };
-    return Message(kCodeInterface, util::CombineStringVector(arg));
+    return Message(util::CombineStringVector(arg))
+      .SetInvokingSign();
   }
 }

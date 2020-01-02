@@ -17,8 +17,6 @@ namespace kagami {
   };
 
   enum StateCode {
-    kCodeInterface = 5,
-    kCodeObject = 1,
     kCodeSuccess = 0,
     kCodeIllegalParam = -1,
     kCodeIllegalCall = -2,
@@ -29,6 +27,7 @@ namespace kagami {
 
   class Message {
   private:
+    bool invoking_msg_;
     StateLevel level_;
     string detail_;
     StateCode code_;
@@ -37,12 +36,14 @@ namespace kagami {
 
   public:
     Message() :
+      invoking_msg_(false),
       level_(kStateNormal), 
       detail_(""), 
       code_(kCodeSuccess), 
       idx_(0) {}
 
     Message(const Message &msg) :
+      invoking_msg_(msg.invoking_msg_),
       level_(msg.level_),
       detail_(msg.detail_),
       code_(msg.code_),
@@ -53,19 +54,22 @@ namespace kagami {
       Message(msg) {}
 
     Message(StateCode code, string detail, StateLevel level = kStateNormal) :
+      invoking_msg_(false),
       level_(level), 
       detail_(detail), 
       code_(code), 
       idx_(0) {}
 
     Message(string detail) :
+      invoking_msg_(false),
       level_(kStateNormal), 
-      code_(kCodeObject), 
+      code_(kCodeSuccess), 
       detail_(""), 
       object_(make_shared<Object>(detail)),
       idx_(0) {}
 
     Message &operator=(Message &msg) {
+      invoking_msg_ = msg.invoking_msg_;
       level_ = msg.level_;
       detail_ = msg.detail_;
       code_ = msg.code_;
@@ -78,30 +82,20 @@ namespace kagami {
       return this->operator=(msg);
     }
 
-    StateLevel GetLevel() const {
-      return level_;
-    }
-
-    StateCode GetCode() const { 
-      return code_; 
-    }
-
-    string GetDetail() const { 
-      return detail_; 
-    }
-
-    size_t GetIndex() const { 
-      return idx_; 
-    }
+    StateLevel GetLevel() const { return level_; }
+    StateCode GetCode() const { return code_; }
+    string GetDetail() const { return detail_; }
+    size_t GetIndex() const { return idx_; }
+    bool HasObject() const { return object_ != nullptr; }
+    bool IsInvokingMsg() const { return invoking_msg_; }
 
     Object GetObj() const {
-      if (code_ != kCodeObject) return Object();
+      if (object_ == nullptr) return Object();
       return *static_pointer_cast<Object>(object_);
     }
 
     Message &SetObject(Object &object) {
       object_ = make_shared<Object>(object);
-      code_ = kCodeObject;
       return *this;
     }
 
@@ -109,7 +103,6 @@ namespace kagami {
       object_ = make_shared<Object>(
         make_shared<bool>(value), kTypeIdBool
       );
-      code_ = kCodeObject;
       return *this;
     }
 
@@ -117,7 +110,6 @@ namespace kagami {
       object_ = make_shared<Object>(
         make_shared<int64_t>(value), kTypeIdInt
         );
-      code_ = kCodeObject;
       return *this;
     }
 
@@ -125,7 +117,6 @@ namespace kagami {
       object_ = make_shared<Object>(
         make_shared<double>(value), kTypeIdFloat
         );
-      code_ = kCodeObject;
       return *this;
     }
 
@@ -133,7 +124,6 @@ namespace kagami {
       object_ = make_shared<Object>(
         make_shared<string>(value), kTypeIdString
         );
-      code_ = kCodeObject;
       return *this;
     }
 
@@ -161,6 +151,11 @@ namespace kagami {
       return *this;
     }
 
+    Message &SetInvokingSign() {
+      invoking_msg_ = true;
+      return *this;
+    }
+
     void Clear() {
       level_ = kStateNormal;
       detail_.clear();
@@ -169,7 +164,5 @@ namespace kagami {
       object_.reset();
       idx_ = 0;
     }
-
-    bool HasObject() const { return object_ != nullptr; }
   };
 }
