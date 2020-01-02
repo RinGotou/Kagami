@@ -106,6 +106,7 @@ namespace kagami {
   enum Keyword {
     kKeywordAssert,
     kKeywordLocal,
+    kKeywordExt,
     kKeywordHash,
     kKeywordFor,
     kKeywordIn,
@@ -215,6 +216,7 @@ namespace kagami {
     kStrStruct         = "struct",
     kStrRootScope      = "!root",
     kStrLocal          = "local",
+    kStrExt            = "ext",
     kStrHash           = "hash",
     kStrIf             = "if",
     kStrFn             = "fn",

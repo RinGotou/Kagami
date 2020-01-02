@@ -546,6 +546,16 @@ namespace kagami {
       return true;
     }
 
+    if (token == kKeywordExt) {
+      if (frame_->next_2.first != "=") {
+        error_string_ = "Invalid 'local' token.";
+        return false;
+      }
+
+      frame_->ext_object = true;
+      return true;
+    }
+
     if (token != kKeywordNull) {
       if (frame_->next.first == "=" || util::IsOperator(token)) {
         error_string_ = "Trying to operate with reserved keyword";

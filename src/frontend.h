@@ -28,6 +28,7 @@ namespace kagami {
     deque<Argument> args;
     deque<Request> symbol;
     bool local_object;
+    bool ext_object;
     bool eol;
     size_t idx;
     Token current;
@@ -41,6 +42,7 @@ namespace kagami {
       args(),
       symbol(),
       local_object(false),
+      ext_object(false),
       eol(false),
       idx(0),
       current(INVALID_TOKEN),

@@ -1,5 +1,5 @@
 #pragma once
-#include "util.h"
+#include "lexical.h"
 #include "object.h"
 
 namespace kagami {

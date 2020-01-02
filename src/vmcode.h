@@ -19,6 +19,7 @@ namespace kagami {
   struct RequestOption {
     bool void_call;
     bool local_object;
+    bool ext_object;
     size_t nest;
     size_t nest_end;
     size_t escape_depth;
@@ -27,6 +28,7 @@ namespace kagami {
     RequestOption() : 
       void_call(false), 
       local_object(false), 
+      ext_object(false),
       nest(0),
       nest_end(0),
       escape_depth(0),

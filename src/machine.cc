@@ -825,7 +825,7 @@ namespace kagami {
     left.swap(right);
   }
 
-  void Machine::CommandBind(ArgumentList &args, bool local_value) {
+  void Machine::CommandBind(ArgumentList &args, bool local_value, bool ext_value) {
     using namespace type;
     auto &frame = frame_stack_.top();
     //Do not change the order!
@@ -859,7 +859,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandDeliver(ArgumentList &args, bool local_value) {
+  void Machine::CommandDeliver(ArgumentList &args, bool local_value, bool ext_value) {
     auto &frame = frame_stack_.top();
     //Do not change the order!
     auto rhs = FetchObject(args[1]);
@@ -1374,10 +1374,12 @@ namespace kagami {
       CommandSwap(args);
       break;
     case kKeywordBind:
-      CommandBind(args, request.option.local_object);
+      CommandBind(args, request.option.local_object,
+        request.option.ext_object);
       break;
     case kKeywordDelivering:
-      CommandDeliver(args, request.option.local_object);
+      CommandDeliver(args, request.option.local_object,
+        request.option.ext_object);
       break;
     case kKeywordExpList:
       ExpList(args);
