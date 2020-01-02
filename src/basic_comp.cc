@@ -113,6 +113,11 @@ namespace kagami {
   }
 
   Message SetWorkingDir(ObjectMap &p) {
+    auto tc_result = CheckTypeExpectations(
+      { Expect("dir",{kTypeIdString}) }, p);
+
+    if (TC_FAIL(tc_result)) return TC_ERROR(tc_result);
+
     auto &dir = p.Cast<string>("dir");
     bool result = management::runtime::SetWorkingDirectory(dir);
     return Message().SetObject(result);
