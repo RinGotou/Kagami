@@ -1,4 +1,4 @@
-#include "util.h"
+#include "lexical.h"
 
 namespace kagami::util {
   Terminator GetTerminatorCode(string src) {

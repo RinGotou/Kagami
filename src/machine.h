@@ -294,7 +294,6 @@ namespace kagami {
     void CommandNullObj(ArgumentList &args);
     void CommandDestroy(ArgumentList &args);
     void CommandConvert(ArgumentList &args);
-    void CommandRefCount(ArgumentList &args);
     void CommandLoad(ArgumentList &args);
     void CommandTime();
     void CommandVersion();

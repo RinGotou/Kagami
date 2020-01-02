@@ -35,6 +35,7 @@
 #include <charconv>
 #include <variant>
 #include <filesystem>
+#include <tuple>
 
 #include "dawn/src/dawn.ui.h"
 #include "dawn/src/dawn.sound.h"
@@ -74,6 +75,7 @@ namespace kagami {
   using std::from_chars;
   using std::to_chars;
   using std::variant;
+  using std::tuple;
   
   using namespace minatsuki;
 
@@ -88,92 +90,6 @@ namespace kagami {
   const string kEngineName     = ENGINE_NAME;
   const string kMaintainer     = MAINTAINER;
   const string kCopyright      = COPYRIGHT;
-
-  enum StringType {
-    kStringTypeIdentifier, 
-    kStringTypeString, 
-    kStringTypeInt, 
-    kStringTypeFloat,
-    kStringTypeBool, 
-    kStringTypeSymbol, 
-    kStringTypeBlank,
-    kStringTypeNull
-  };
-
-  using Token = pair<string, StringType>;
-
-  /* Reserved keywords mark / VMCode commands */
-  enum Keyword {
-    kKeywordAssert,
-    kKeywordLocal,
-    kKeywordExt,
-    kKeywordHash,
-    kKeywordFor,
-    kKeywordIn,
-    kKeywordNullObj,
-    kKeywordDestroy,
-    kKeywordConvert,
-    kKeywordTime,
-    kKeywordVersion,
-    kKeywordCodeName,
-    kKeywordSwap,
-    kKeywordExpList, 
-    kKeywordFn, 
-    kKeywordIf, 
-    kKeywordElif, 
-    kKeywordEnd, 
-    kKeywordElse, 
-    kKeywordBind, 
-    kKeywordDelivering,
-    kKeywordWhile, 
-    kKeywordPlus, 
-    kKeywordMinus, 
-    kKeywordTimes, 
-    kKeywordDivide, 
-    kKeywordEquals, 
-    kKeywordLessOrEqual, 
-    kKeywordGreaterOrEqual, 
-    kKeywordNotEqual,
-    kKeywordGreater, 
-    kKeywordLess, 
-    kKeywordReturn,
-    kKeywordAnd, 
-    kKeywordOr, 
-    kKeywordNot, 
-    kKeywordInitialArray, 
-    kKeywordContinue, 
-    kKeywordBreak, 
-    kKeywordCase, 
-    kKeywordWhen, 
-    kKeywordTypeId, 
-    kKeywordExist,
-    kKeywordDir, 
-    kKeywordQuit,
-    kKeywordHandle,
-    kKeywordWait,
-    kKeywordLeave,
-    kKeywordLoad,
-    kKeywordNull
-  };
-
-  enum Terminator {
-    kTerminatorAssign, 
-    kTerminatorComma, 
-    kTerminatorLeftBracket, 
-    kTerminatorDot,
-    kTerminatorLeftParen, 
-    kTerminatorRightSqrBracket, 
-    kTerminatorRightBracket,
-    kTerminatorLeftBrace, 
-    kTerminatorRightCurBracket, 
-    kTerminatorMonoOperator,
-    kTerminatorBinaryOperator,
-    kTerminatorFn,
-    kTerminatorFor,
-    kTerminatorIn,
-    kTerminatorArrow,
-    kTerminatorNull
-  };
 
   /* Plain Type Code */
   enum PlainType {
@@ -210,73 +126,6 @@ namespace kagami {
   const string kTypeIdPoint           = "point";
   const string kTypeIdModule          = "module";  //not implemented
 
-  const string
-    kStrAssert         = "assert",
-    kStrImpl           = "impl",
-    kStrStruct         = "struct",
-    kStrRootScope      = "!root",
-    kStrLocal          = "local",
-    kStrExt            = "ext",
-    kStrHash           = "hash",
-    kStrIf             = "if",
-    kStrFn             = "fn",
-    kStrNullObj        = "null_obj",
-    kStrDestroy        = "destroy",
-    kStrConvert        = "convert",
-    kStrGetStr         = "get_str",
-    kStrHandle         = "handle",
-    kStrWait           = "wait",
-    kStrLeave          = "leave",
-    kStrTime           = "time",
-    kStrVersion        = "version",
-    kStrCodeNameCmd    = "codename",
-    kStrEnd            = "end",
-    kStrPrint          = "print",
-    kStrLoad           = "load",
-    kStrSwitchLine     = "!switch_line",
-    kStrCaseObj        = "!case",
-    kStrIteratorObj    = "!iterator",
-    kStrCommentBegin   = "=begin",
-    kStrCommentEnd     = "=end",
-    kStrFor            = "for",
-    kStrIn             = "in",
-    kStrElse           = "else",
-    kStrElif           = "elif",
-    kStrWhile          = "while",
-    kStrContinue       = "continue",
-    kStrBreak          = "break",
-    kStrCase           = "case",
-    kStrWhen           = "when",
-    kStrReturn         = "return",
-    kStrOptional       = "optional",
-    kStrVariable       = "variable",
-    kStrHead           = "head",
-    kStrTail           = "tail",
-    kStrPlus           = "+",
-    kStrMinus          = "-",
-    kStrTimes          = "*",
-    kStrDiv            = "/",
-    kStrIs             = "==",
-    kStrAnd            = "&&",
-    kStrOr             = "||",
-    kStrNot            = "!",
-    kStrLessOrEqual    = "<=",
-    kStrGreaterOrEqual = ">=",
-    kStrNotEqual       = "!=",
-    kStrGreater        = ">",
-    kStrLess           = "<",
-    kStrUserFunc       = "__func",
-    kStrTypeId         = "typeid",
-    kStrDir            = "dir",
-    kStrExist          = "exist",
-    kStrSwap           = "swap",
-    kStrTrue           = "true",
-    kStrFalse          = "false",
-    kStrCompare        = "__compare",
-    kStrRightHandSide  = "__rhs",
-    kStrLeftHandSide   = "__lhs",
-    kStrMe             = "me";
-
   template <class _Lhs, class... _Rhs>
   inline bool compare(_Lhs lhs, _Rhs... rhs) {
     return ((lhs == rhs) || ...);
@@ -301,6 +150,14 @@ namespace kagami {
       }
     }
 
+    return false;
+  }
+
+  template <class _UnitType>
+  inline bool find_in_list(_UnitType target, initializer_list<_UnitType> lst) {
+    for (auto &unit : lst) {
+      if (unit == target) return true;
+    }
     return false;
   }
 }

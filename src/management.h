@@ -65,6 +65,14 @@ namespace kagami::management::type {
     ObjectTraitsSetup &InitMethods(initializer_list<FunctionImpl> &&rhs);
     ~ObjectTraitsSetup();
   };
+
+  using Expectation = pair<string, initializer_list<string>>;
+  using ExpectationList = initializer_list<Expectation>;
+  using NullableList = initializer_list<string>;
+  using ReadableResult = tuple<bool, string>;
+
+  ReadableResult CheckExpectations(ExpectationList &&lst, ObjectMap &obj_map,
+    NullableList &&nullable = {});
 }
 
 namespace kagami::management::script {
