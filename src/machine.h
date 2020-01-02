@@ -12,9 +12,6 @@
     putc('\n', VM_STDOUT);                         \
   }
 
-#define EXPECT(_State, _Mess)                      \
-  if (!(_State)) return Message(_Mess, kStateError)
-
 #define EXPECTED_COUNT(_Count) (args.size() == _Count)
 
 namespace kagami {

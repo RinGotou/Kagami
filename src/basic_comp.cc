@@ -92,8 +92,9 @@ namespace kagami {
     auto type_id = msg.GetTypeId();
 
     if (!msg.Null()) {
-      EXPECT(type_id == kTypeIdString || type_id == kTypeIdWideString,
-        "Illegal message string.");
+      if (type_id != kTypeIdString && type_id != kTypeIdWideString) {
+        return Message("Invalid message string", kStateError);
+      }
       
       ObjectMap obj_map = {
         NamedObject(kStrMe, p["msg"])

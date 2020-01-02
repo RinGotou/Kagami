@@ -48,7 +48,7 @@ namespace kagami {
 
     if (!p["size"].Null()) {
       size_t size = p.Cast<int64_t>("size");
-      EXPECT(size > 0, "Illegal array size.");
+      if (size < 0) return Message("Invalid array size.", kStateError);
 
       Object obj = p["init_value"];
 
@@ -73,7 +73,7 @@ namespace kagami {
     size_t idx = p.Cast<int64_t>("index");
     size_t size = base.size();
 
-    EXPECT(idx < size, "Subscript is out of range. - " + to_string(idx));
+    if (idx >= size) return Message("Subscript is out of range", kStateError);
 
     return Message().SetObject(Object().PackObject(base[idx]));
   }

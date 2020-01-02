@@ -54,8 +54,9 @@ namespace kagami {
     Object &obj = p["raw_string"];
     Object base;
 
-    EXPECT(IsStringFamily(obj),
-      "String constructor can't accept this object.");
+    if (!IsStringFamily(obj)) {
+      return Message("String constructor cannot accept non-string obejct.", kStateError);
+    }
 
     if (obj.GetTypeId() == kTypeIdWideString) {
       wstring wstr = obj.Cast<wstring>();

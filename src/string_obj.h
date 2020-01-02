@@ -18,8 +18,9 @@ namespace kagami {
     int64_t start = p.Cast<int64_t>("start");
     int64_t size = p.Cast<int64_t>("size");
 
-    EXPECT((start >= 0 && size <= static_cast<int64_t>(str.size() - start)),
-      "Illegal index or size.");
+    if (start < 0 || size > static_cast<int64_t>(str.size() - start)) {
+      return Message("Invalid index/size", kStateError);
+    }
 
     StringType output = str.substr(start, size);
 
@@ -34,7 +35,7 @@ namespace kagami {
     size_t size = str.size();
     size_t idx = p.Cast<int64_t>("index");
 
-    EXPECT((idx < size && idx >= 0), "Index out of range.");
+    if (idx >= size || idx < 0) return Message("Index is out of range", kStateError);
 
     shared_ptr<StringType> output = make_shared<StringType>();
 
@@ -64,7 +65,7 @@ namespace kagami {
 
   template <int base>
   Message DecimalConvert(ObjectMap &p) {
-    auto tc = TypeChecking({ Expect(str, kTypeIdString) }, p);
+    auto tc = TypeChecking({ Expect("str", kTypeIdString) }, p);
     if (TC_FAIL(tc)) return TC_ERROR(tc);
 
     string str = ParseRawString(p["str"].Cast<string>());
