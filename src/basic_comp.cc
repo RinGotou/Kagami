@@ -9,9 +9,7 @@ namespace kagami {
     auto tc_result = CheckTypeExpectations(
       { Expect("command", { kTypeIdString }) }, p);
 
-    if (!std::get<bool>(tc_result)) {
-      return Message(std::get<string>(tc_result), kStateError);
-    }
+    if (TC_FAIL(tc_result)) { return TC_ERROR(tc_result); }
 
     int64_t result = system(p.Cast<string>("command").data());
     return Message().SetObject(Object(result, kTypeIdInt));
@@ -21,11 +19,8 @@ namespace kagami {
     auto tc_result = CheckTypeExpectations(
       { Expect("milliseconds", { kTypeIdInt }) }, p);
 
-    if (!std::get<bool>(tc_result)) {
-      return Message(std::get<string>(tc_result), kStateError);
-    }
+    if (TC_FAIL(tc_result)) { return TC_ERROR(tc_result); }
 
-    EXPECT_TYPE(p, "milliseconds", kTypeIdInt);
     auto value = p.Cast<int64_t>("milliseconds");
 #if defined (_WIN32)
     Sleep(DWORD(p.Cast<int64_t>("milliseconds")));

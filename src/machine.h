@@ -39,6 +39,9 @@ namespace kagami {
     ObjectMap &obj_map,
     NullableList &&nullable = {});
 
+#define TC_ERROR(_Obj) Message(std::get<string>(_Obj), kStateError)
+#define TC_FAIL(_Obj) !std::get<bool>(_Obj)
+
   using management::type::PlainComparator;
 
   PlainType FindTypeCode(string type_id);
