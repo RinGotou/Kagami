@@ -14,6 +14,12 @@ namespace kagami {
   }
 
   Message IteratorOperatorCompare(ObjectMap &p) {
+    auto tc = CheckTypeExpectations(
+      { Expect(kStrRightHandSide, {kTypeIdIterator}) }, p
+    );
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     EXPECT_TYPE(p, kStrRightHandSide, kTypeIdIterator);
     auto &rhs = p[kStrRightHandSide].Cast<UnifiedIterator>();
     auto &lhs = p[kStrMe].Cast<UnifiedIterator>();
