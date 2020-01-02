@@ -27,6 +27,7 @@ namespace kagami {
       try {
         auto &obj = obj_map.at(unit.first);
         if (find_in_list(obj.GetTypeId(), unit.second)) continue;
+        else if (find_in_list(unit.first, nullable)) continue;
         else {
           result = false;
           msg = "Expected type is " + assembler(unit.second) +

@@ -32,6 +32,13 @@ namespace kagami {
   }
 
   Message NewArray(ObjectMap &p) {
+    auto tc_result = CheckTypeExpectations(
+      { Expect("size", {kTypeIdInt}) }, p,
+      { "size" }
+    );
+
+    if (TC_FAIL(tc_result)) return TC_ERROR(tc_result);
+
     ManagedArray base = make_shared<ObjectArray>();
 
     if (!p["size"].Null()) {
@@ -51,7 +58,11 @@ namespace kagami {
   }
 
   Message ArrayGetElement(ObjectMap &p) {
-    EXPECT_TYPE(p, "index", kTypeIdInt);
+    auto tc = CheckTypeExpectations(
+      { Expect("index", {kTypeIdInt}) }, p
+    );
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
 
     ObjectArray &base = p.Cast<ObjectArray>(kStrMe);
     size_t idx = p.Cast<int64_t>("index");
