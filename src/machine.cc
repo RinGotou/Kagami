@@ -21,7 +21,7 @@ namespace kagami {
         bool null = find_in_list(unit.first, nullable);
 
         if (founded) continue;
-        else if (founded && null) continue;
+        else if (null) continue;
         else {
           result = false;
           msg = "Expected type is " + unit.second +
