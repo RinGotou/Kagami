@@ -104,6 +104,16 @@ namespace kagami {
     return Message().SetObject(string().append(1, value));
   }
 
+  Message SetWorkingDir(ObjectMap &p) {
+    auto &dir = p.Cast<string>("dir");
+    bool result = management::runtime::SetWorkingDirectory(dir);
+    return Message().SetObject(result);
+  }
+
+  Message GetWorkingDir(ObjectMap &p) {
+    return Message().SetObject(management::runtime::GetWorkingDirectory());
+  }
+
   void InitConsoleComponents() {
     using management::CreateImpl;
 
@@ -113,5 +123,7 @@ namespace kagami {
     CreateImpl(FunctionImpl(PrintLine, kStrMe, "println"));
     CreateImpl(FunctionImpl(SystemCommand, "command", "console"));
     CreateImpl(FunctionImpl(ThreadSleep, "milliseconds", "sleep"));
+    CreateImpl(FunctionImpl(SetWorkingDir, "dir", "setwd"));
+    CreateImpl(FunctionImpl(GetWorkingDir, "dir", "getwd"));
   }
 }

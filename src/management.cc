@@ -247,7 +247,6 @@ namespace kagami::management::script {
 
     VMCode script;
     
-
     storage.insert(std::make_pair(path, code));
     it = storage.find(path);
 
@@ -275,6 +274,7 @@ namespace kagami::management::script {
 namespace kagami::management::runtime {
   static string binary_name;
   static string binary_path;
+  static string script_work_dir;
 
   void InformBinaryPathAndName(string info) {
     std::filesystem::path processed_path(info);
@@ -284,4 +284,29 @@ namespace kagami::management::runtime {
 
   string GetBinaryPath() { return binary_path; }
   string GetBinaryName() { return binary_name; }
+
+  string GetWorkingDirectory() {
+#ifdef _WIN32
+    //using recommended implementation from Microsoft's document
+    auto *buffer = _getcwd(nullptr, 0);
+#else
+    auto *buffer = getcwd(nullptr, 0);
+#endif
+
+    if (buffer == nullptr) return "";
+
+    string result(buffer);
+    free(buffer);
+    return result;
+  }
+
+  bool SetWorkingDirectory(string dir) {
+#ifdef _WIN32
+    int ret = _chdir(dir.data());
+#else
+    int ret = chdir(dir.data());
+#endif
+
+    return ret == 0;
+  }
 }

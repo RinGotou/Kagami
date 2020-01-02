@@ -110,6 +110,8 @@ namespace kagami::management::runtime {
   void InformBinaryPathAndName(string info);
   string GetBinaryPath();
   string GetBinaryName();
+  string GetWorkingDirectory();
+  bool SetWorkingDirectory(string dir);
 }
 
 namespace std {

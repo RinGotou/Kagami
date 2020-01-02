@@ -127,6 +127,7 @@ namespace kagami {
     EXPORT_CONSTANT(kTypeIdNull);
     CreateConstantObject("kCoreFilename", Object(runtime::GetBinaryName()));
     CreateConstantObject("kCorePath", Object(runtime::GetBinaryPath()));
+    //CreateConstantObject("kCoreWorkingDir", Object(runtime::GetWorkingDirectory()));
   }
 
   void ActivateComponents() {

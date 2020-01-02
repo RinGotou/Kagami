@@ -2,6 +2,7 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <direct.h>
 #if defined(_MSC_VER)
 //Disable STUPID visual studio intellisense warning
 #pragma warning(disable:4996)
@@ -43,7 +44,7 @@
 #define INTERPRETER_VER "2.21"
 #define CODENAME        "Cradle"
 #define MAINTAINER      "Rin Gotou"
-#define COPYRIGHT       "Copyright(c) 2019"
+#define COPYRIGHT       "Copyright(c) 2020"
 
 namespace kagami {
   using std::string;
