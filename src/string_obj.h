@@ -64,7 +64,9 @@ namespace kagami {
 
   template <int base>
   Message DecimalConvert(ObjectMap &p) {
-    EXPECT_TYPE(p, "str", kTypeIdString);
+    auto tc = TypeChecking({ Expect(str, kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     string str = ParseRawString(p["str"].Cast<string>());
 
     int64_t dest = stol(str, nullptr, base);

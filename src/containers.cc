@@ -20,7 +20,6 @@ namespace kagami {
 
     if (TC_FAIL(tc)) return TC_ERROR(tc);
 
-    EXPECT_TYPE(p, kStrRightHandSide, kTypeIdIterator);
     auto &rhs = p[kStrRightHandSide].Cast<UnifiedIterator>();
     auto &lhs = p[kStrMe].Cast<UnifiedIterator>();
     return Message().SetObject(lhs.Compare(rhs));

@@ -12,12 +12,6 @@
     putc('\n', VM_STDOUT);                         \
   }
 
-#define EXPECT_TYPE(_Map, _Item, _Type)            \
-  if (!_Map.CheckTypeId(_Item, _Type))             \
-    return Message(                                \
-    "Expect object type - " + _Type + ".",         \
-    kStateError)
-
 #define EXPECT(_State, _Mess)                      \
   if (!(_State)) return Message(_Mess, kStateError)
 

@@ -6,7 +6,9 @@ namespace kagami {
   }
 
   Message CreateStringFromArray(ObjectMap &p) {
-    EXPECT_TYPE(p, "src", kTypeIdArray);
+    auto tc = TypeChecking({ Expect("src", kTypeIdArray) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &base = p.Cast<ObjectArray>("src");
     shared_ptr<string> dest(make_shared<string>());
     
@@ -27,13 +29,17 @@ namespace kagami {
   }
 
   Message CharFromInt(ObjectMap &p) {
-    EXPECT_TYPE(p, "value", kTypeIdInt);
+    auto tc = TypeChecking({ Expect("value", kTypeIdInt) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto value = static_cast<char>(p.Cast<int64_t>("value"));
     return Message().SetObject(string().append(1, value));
   }
 
   Message IntFromChar(ObjectMap &p) {
-    EXPECT_TYPE(p, "value", kTypeIdString);
+    auto tc = TypeChecking({ Expect("value", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     auto &value = p.Cast<string>("value");
 
     if (value.size() != 1) {
@@ -98,7 +104,9 @@ namespace kagami {
 
   //wstring
   Message NewWideString(ObjectMap &p) {
-    EXPECT_TYPE(p, "raw_string", kTypeIdString);
+    auto tc = TypeChecking({ Expect("raw_string", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     Object obj = p["raw_string"];
 
     string output = obj.Cast<string>();
@@ -129,7 +137,8 @@ namespace kagami {
   }
 
   Message NewRegex(ObjectMap &p) {
-    EXPECT_TYPE(p, "pattern", kTypeIdString);
+    auto tc = TypeChecking({ Expect("pattern", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
 
     string pattern_string = p.Cast<string>("pattern");
     shared_ptr<regex> reg = make_shared<regex>(pattern_string);
@@ -138,7 +147,8 @@ namespace kagami {
   }
 
   Message RegexMatch(ObjectMap &p) {
-    EXPECT_TYPE(p, "str", kTypeIdString);
+    auto tc = TypeChecking({ Expect("str", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
 
     string str = p.Cast<string>("str");
     auto &pat = p.Cast<regex>(kStrMe);
