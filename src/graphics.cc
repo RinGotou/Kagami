@@ -2,7 +2,7 @@
 
 namespace kagami {
   //limit:2
-	Message NewElement(ObjectMap& p) {
+  Message NewElement(ObjectMap& p) {
     auto tc = TypeChecking(
       {
         Expect("texture", kTypeIdTexture),
@@ -22,31 +22,31 @@ namespace kagami {
     dawn::Element element(texture, src, dest);
 
     return Message().SetObject(Object(element, kTypeIdElement));
-	}
+  }
 
-	Message ElementGetSrcInfo(ObjectMap &p) {
+  Message ElementGetSrcInfo(ObjectMap &p) {
     auto &element = p.Cast<dawn::Element>(kStrMe);
     return Message().SetObject(Object(element.GetSrcInfo(), kTypeIdRectangle));
-	}
+  }
 
-	Message ElementGetDestInfo(ObjectMap &p) {
+  Message ElementGetDestInfo(ObjectMap &p) {
     auto &element = p.Cast<dawn::Element>(kStrMe);
     return Message().SetObject(Object(element.GetDestInfo(), kTypeIdRectangle));
-	}
+  }
 
-	Message ElementSetPriority(ObjectMap &p) {
+  Message ElementSetPriority(ObjectMap &p) {
     auto tc = TypeChecking({ Expect("priority", kTypeIdInt) }, p);
     if (TC_FAIL(tc)) return TC_ERROR(tc);
 
     auto &element = p.Cast<dawn::Element>(kStrMe);
     auto &priority = p.Cast<int64_t>("priority");
     return Message().SetObject(element.SetPriority(int(priority)));
-	}
+  }
 
-	Message ElementGetPriority(ObjectMap &p) {
+  Message ElementGetPriority(ObjectMap &p) {
     auto &element = p.Cast<dawn::Element>(kStrMe);
     return Message().SetObject(int64_t(element.GetPriority()));
-	}
+  }
 
   Message ElementSetDest(ObjectMap &p) {
     auto tc = TypeChecking({ Expect("dest", kTypeIdRectangle) }, p);
