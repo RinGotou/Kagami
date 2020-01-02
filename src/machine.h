@@ -17,12 +17,6 @@
 
 #define EXPECTED_COUNT(_Count) (args.size() == _Count)
 
-#define REQUIRED_ARG_COUNT(_Size)                  \
-  if (args.size() != _Size) {                      \
-    frame.MakeError("Argument is missing.");       \
-    return;                                        \
-  }
-
 namespace kagami {
   using Expect = pair<string, string>;
   using ExpectationList = initializer_list<Expect>;
