@@ -37,7 +37,7 @@ namespace kagami {
     auto &value = p.Cast<string>("value");
 
     if (value.size() != 1) {
-      return Message(kCodeIllegalParam, "Invalid char", kStateError);
+      return Message("Invalid char", kStateError);
     }
 
     return Message().SetObject(static_cast<int64_t>(value[0]));

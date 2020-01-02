@@ -1904,7 +1904,7 @@ namespace kagami {
 
     if (frame->error) {
       trace::AddEvent(
-        Message(kCodeBadExpression, frame->msg_string, kStateError)
+        Message(frame->msg_string, kStateError)
           .SetIndex(script_idx));
       if (invoking) invoking_error = true;
     }

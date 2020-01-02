@@ -10,7 +10,7 @@ namespace kagami {
       { Expect("command", { kTypeIdString }) }, p);
 
     if (!std::get<bool>(tc_result)) {
-      return Message(kCodeIllegalParam, std::get<string>(tc_result), kStateError);
+      return Message(std::get<string>(tc_result), kStateError);
     }
 
     int64_t result = system(p.Cast<string>("command").data());
@@ -22,7 +22,7 @@ namespace kagami {
       { Expect("milliseconds", { kTypeIdInt }) }, p);
 
     if (!std::get<bool>(tc_result)) {
-      return Message(kCodeIllegalParam, std::get<string>(tc_result), kStateError);
+      return Message(std::get<string>(tc_result), kStateError);
     }
 
     EXPECT_TYPE(p, "milliseconds", kTypeIdInt);

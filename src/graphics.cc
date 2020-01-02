@@ -172,7 +172,7 @@ namespace kagami {
     dawn::Texture background_data(path, image_type, renderer);
 
     if (background_data.Get() == nullptr) {
-      return Message(kCodeIllegalParam, SDL_GetError(), kStateError);
+      return Message(SDL_GetError(), kStateError);
     }
     
     window.Clear();
@@ -193,7 +193,7 @@ namespace kagami {
     auto rect = dawn::ProduceRect(point.x, point.y, image_data.GetWidth(), image_data.GetHeight());
 
     if (image_data.Get() == nullptr) {
-      return Message(kCodeIllegalParam, SDL_GetError(), kStateError);
+      return Message(SDL_GetError(), kStateError);
     }
 
     window.Copy(image_data, nullptr, &rect);
@@ -214,7 +214,7 @@ namespace kagami {
     auto rect = dawn::ProduceRect(point.x, point.y, text_data.GetWidth(), text_data.GetHeight());
 
     if (text_data.Get() == nullptr) {
-      return Message(kCodeIllegalParam, SDL_GetError(), kStateError);
+      return Message(SDL_GetError(), kStateError);
     }
 
     window.Copy(text_data, nullptr, &rect);
@@ -296,7 +296,7 @@ namespace kagami {
     dawn::ManagedFont font = make_shared<dawn::Font>(path, size);
 
     if (font->Get() == nullptr) {
-      return Message(kCodeIllegalParam, SDL_GetError(), kStateError);
+      return Message(SDL_GetError(), kStateError);
     }
 
     return Message().SetObject(Object(font, kTypeIdFont));

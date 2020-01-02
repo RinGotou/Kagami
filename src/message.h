@@ -16,21 +16,11 @@ namespace kagami {
     kParamNormal
   };
 
-  enum StateCode {
-    kCodeSuccess = 0,
-    kCodeIllegalParam = -1,
-    kCodeIllegalCall = -2,
-    kCodeIllegalSymbol = -3,
-    kCodeBadStream = -4,
-    kCodeBadExpression = -5
-  };
-
   class Message {
   private:
     bool invoking_msg_;
     StateLevel level_;
     string detail_;
-    StateCode code_;
     shared_ptr<void> object_;
     size_t idx_;
 
@@ -39,40 +29,28 @@ namespace kagami {
       invoking_msg_(false),
       level_(kStateNormal), 
       detail_(""), 
-      code_(kCodeSuccess), 
       idx_(0) {}
 
     Message(const Message &msg) :
       invoking_msg_(msg.invoking_msg_),
       level_(msg.level_),
       detail_(msg.detail_),
-      code_(msg.code_),
       object_(msg.object_),
       idx_(msg.idx_) {}
 
     Message(const Message &&msg) :
       Message(msg) {}
 
-    Message(StateCode code, string detail, StateLevel level = kStateNormal) :
+    Message(string detail, StateLevel level = kStateNormal) :
       invoking_msg_(false),
       level_(level), 
       detail_(detail), 
-      code_(code), 
-      idx_(0) {}
-
-    Message(string detail) :
-      invoking_msg_(false),
-      level_(kStateNormal), 
-      code_(kCodeSuccess), 
-      detail_(""), 
-      object_(make_shared<Object>(detail)),
       idx_(0) {}
 
     Message &operator=(Message &msg) {
       invoking_msg_ = msg.invoking_msg_;
       level_ = msg.level_;
       detail_ = msg.detail_;
-      code_ = msg.code_;
       object_ = msg.object_;
       idx_ = msg.idx_;
       return *this;
@@ -83,7 +61,6 @@ namespace kagami {
     }
 
     StateLevel GetLevel() const { return level_; }
-    StateCode GetCode() const { return code_; }
     string GetDetail() const { return detail_; }
     size_t GetIndex() const { return idx_; }
     bool HasObject() const { return object_ != nullptr; }
@@ -136,11 +113,6 @@ namespace kagami {
       return *this;
     }
 
-    Message &SetCode(StateCode code) {
-      code_ = code;
-      return *this;
-    }
-
     Message &SetDetail(const string &detail) {
       detail_ = detail;
       return *this;
@@ -160,7 +132,6 @@ namespace kagami {
       level_ = kStateNormal;
       detail_.clear();
       detail_.shrink_to_fit();
-      code_ = kCodeSuccess;
       object_.reset();
       idx_ = 0;
     }

@@ -22,7 +22,7 @@ namespace kagami {
     InStream &ifs = p.Cast<InStream>(kStrMe);
 
     if (!ifs.Good()) {
-      return Message(kCodeBadStream, "Invalid instream.", kStateError);
+      return Message("Invalid instream.", kStateError);
     }
 
     string result = ifs.GetLine();

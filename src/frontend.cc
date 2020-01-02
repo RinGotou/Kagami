@@ -1,6 +1,6 @@
 #include "frontend.h"
 
-#define ERROR_MSG(_Msg) Message(kCodeBadExpression, _Msg, kStateError)
+#define ERROR_MSG(_Msg) Message(_Msg, kStateError)
 
 namespace kagami {
   /* Disposing all indentation and comments */
