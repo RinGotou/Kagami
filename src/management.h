@@ -14,6 +14,7 @@ namespace kagami::management {
 }
 
 namespace kagami::management::type {
+
   template <class T>
   bool PlainComparator(Object &lhs, Object &rhs) {
     return lhs.Cast<T>() == rhs.Cast<T>();
@@ -65,14 +66,6 @@ namespace kagami::management::type {
     ObjectTraitsSetup &InitMethods(initializer_list<FunctionImpl> &&rhs);
     ~ObjectTraitsSetup();
   };
-
-  using Expectation = pair<string, initializer_list<string>>;
-  using ExpectationList = initializer_list<Expectation>;
-  using NullableList = initializer_list<string>;
-  using ReadableResult = tuple<bool, string>;
-
-  ReadableResult CheckExpectations(ExpectationList &&lst, ObjectMap &obj_map,
-    NullableList &&nullable = {});
 }
 
 namespace kagami::management::script {
@@ -157,6 +150,8 @@ namespace kagami {
   using ObjectTable = unordered_map<Object, Object>;
   using ManagedTable = shared_ptr<ObjectTable>;
 }
+
+namespace mgmt = kagami::management;
 
 #define EXPORT_CONSTANT(ID) management::CreateConstantObject(#ID, Object(ID))
 

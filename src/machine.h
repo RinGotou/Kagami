@@ -30,6 +30,15 @@
   }
 
 namespace kagami {
+  using Expect = pair<string, initializer_list<string>>;
+  using ExpectationList = initializer_list<Expect>;
+  using NullableList = initializer_list<string>;
+  using CommentedResult = tuple<bool, string>;
+
+  CommentedResult CheckTypeExpectations(ExpectationList &&lst,
+    ObjectMap &obj_map,
+    NullableList &&nullable = {});
+
   using management::type::PlainComparator;
 
   PlainType FindTypeCode(string type_id);

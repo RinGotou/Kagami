@@ -6,12 +6,25 @@ namespace kagami {
   }
 
   Message SystemCommand(ObjectMap &p) {
-    EXPECT_TYPE(p, "command", kTypeIdString);
+    auto tc_result = CheckTypeExpectations(
+      { Expect("command", { kTypeIdString }) }, p);
+
+    if (!std::get<bool>(tc_result)) {
+      return Message(kCodeIllegalParam, std::get<string>(tc_result), kStateError);
+    }
+
     int64_t result = system(p.Cast<string>("command").data());
     return Message().SetObject(Object(result, kTypeIdInt));
   }
 
   Message ThreadSleep(ObjectMap& p) {
+    auto tc_result = CheckTypeExpectations(
+      { Expect("milliseconds", { kTypeIdInt }) }, p);
+
+    if (!std::get<bool>(tc_result)) {
+      return Message(kCodeIllegalParam, std::get<string>(tc_result), kStateError);
+    }
+
     EXPECT_TYPE(p, "milliseconds", kTypeIdInt);
     auto value = p.Cast<int64_t>("milliseconds");
 #if defined (_WIN32)

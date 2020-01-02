@@ -5,6 +5,57 @@
 namespace kagami {
   using namespace management;
 
+  CommentedResult CheckTypeExpectations(ExpectationList &&lst,
+    ObjectMap &obj_map,
+    NullableList &&nullable) {
+    bool result = true;
+    string msg;
+
+    auto assembler = [](initializer_list<string> lst) ->string {
+      string output;
+      for (auto &unit : lst) {
+        output.append(unit).append("/");
+      }
+      output.pop_back();
+      return output;
+    };
+
+    for (auto &unit : lst) {
+#ifdef _MSC_VER
+#pragma warning(disable:4101)
+#endif
+      try {
+        auto &obj = obj_map.at(unit.first);
+        if (find_in_list(obj.GetTypeId(), unit.second)) continue;
+        else {
+          result = false;
+          msg = "Expected type is " + assembler(unit.second) +
+            ", but object type is " + obj.GetTypeId();
+          break;
+        }
+      }
+      catch (std::out_of_range & e) {
+        if (find_in_list(unit.first, nullable)) continue;
+        else {
+          result = false;
+          msg = "Argument \"" + unit.first + "\" is missing";
+          break;
+        }
+      }
+      catch (...) {
+        result = false;
+        msg = "Internal error";
+        break;
+      }
+#ifdef _MSC_VER
+#pragma warning(default:4101)
+#endif
+    }
+
+    return { result, msg };
+  }
+
+
   PlainType FindTypeCode(string type_id) {
     PlainType type = kNotPlainType;
 
@@ -574,8 +625,7 @@ namespace kagami {
       "Invalid object container");
 
     auto msg = Invoke(container_obj, kStrHead);
-    ERROR_CHECKING(msg.GetCode() != kCodeObject,
-      "Invalid iterator of container");
+    ERROR_CHECKING(!msg.HasObject(), "Invalid iterator of container");
 
     auto iterator_obj = msg.GetObj();
     ERROR_CHECKING(!type::CheckBehavior(iterator_obj, kIteratorBehavior),

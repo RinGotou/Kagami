@@ -169,5 +169,7 @@ namespace kagami {
       object_.reset();
       idx_ = 0;
     }
+
+    bool HasObject() const { return object_ != nullptr; }
   };
 }

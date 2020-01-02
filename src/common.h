@@ -7,8 +7,10 @@
 //Disable STUPID visual studio intellisense warning
 #pragma warning(disable:4996)
 #pragma warning(disable:6031)
+#pragma warning(disable:6387)
 #pragma warning(disable:26812)
 #pragma warning(disable:26439)
+#pragma warning(disable:26444)
 #endif
 #else
 #include <dlfcn.h>
@@ -41,7 +43,7 @@
 #include "dawn/src/dawn.sound.h"
 #include "minatsuki.log/src/minatsuki.log.h"
 
-#define ENGINE_NAME     "Kagami Project"
+#define ENGINE_NAME     "Kagami Project Core"
 #define INTERPRETER_VER "2.21"
 #define CODENAME        "Cradle"
 #define MAINTAINER      "Rin Gotou"
