@@ -3,7 +3,9 @@
 namespace kagami {
 #ifndef _DISABLE_SDL_
   Message NewMusicObject(ObjectMap &p) {
-    EXPECT_TYPE(p, "path", kTypeIdString);
+    auto tc = TypeChecking({ Expect("path", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
     string path = p.Cast<string>("path");
     dawn::ManagedMusic music(new dawn::Music(path));
 
