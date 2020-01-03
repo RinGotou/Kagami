@@ -155,7 +155,7 @@ namespace kagami {
     kStrLeftHandSide   = "__lhs",
     kStrMe             = "me";
 
-  namespace util {
+  namespace lexical {
     Terminator GetTerminatorCode(string src);
     bool IsBinaryOperator(Keyword token);
     bool IsMonoOperator(Keyword token);
@@ -175,7 +175,6 @@ namespace kagami {
     char GetEscapeChar(char target);
     wchar_t GetEscapeCharW(wchar_t target);
     bool IsWideString(string target);
-    string CombineStringVector(vector<string> target);
     string MakeBoolean(bool origin);
     bool IsDigit(char c);
     bool IsAlpha(char c);

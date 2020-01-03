@@ -16,6 +16,7 @@ namespace kagami {
   using ContainerPool = list<ObjectContainer>;
   
   vector<string> BuildStringVector(string source);
+  string CombineStringVector(vector<string> target);
 
   enum ObjectMode {
     kObjectNormal    = 1,

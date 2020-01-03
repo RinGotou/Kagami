@@ -49,7 +49,7 @@ namespace kagami {
 
     for (size_t count = 0; count < target.size(); ++count) {
       current = target[count];
-      auto type = util::GetStringType(toString(current));
+      auto type = lexical::GetStringType(toString(current));
       if (type != StringType::kStringTypeBlank && exempt_blank_char) {
         head = count;
         exempt_blank_char = false;
@@ -68,7 +68,7 @@ namespace kagami {
     if (data.front() == '#') return "";
 
     while (!data.empty() &&
-      util::GetStringType(toString(data.back())) == kStringTypeBlank) {
+      lexical::GetStringType(toString(data.back())) == kStringTypeBlank) {
       data.pop_back();
     }
     return data;
@@ -100,7 +100,7 @@ namespace kagami {
       if (not_escape_char) not_escape_char = false;
 
       if (current == '\'' && !escape_flag) {
-        if (!inside_string && util::GetStringType(current_token) == kStringTypeBlank) {
+        if (!inside_string && lexical::GetStringType(current_token) == kStringTypeBlank) {
           current_token.clear();
         }
 
@@ -113,16 +113,16 @@ namespace kagami {
         temp = current_token;
         temp.append(1, current);
 
-        auto type = util::GetStringType(temp);
+        auto type = lexical::GetStringType(temp);
         if (type == kStringTypeNull) {
-          auto type = util::GetStringType(current_token);
+          auto type = lexical::GetStringType(current_token);
           switch (type) {
           case kStringTypeBlank:
             current_token.clear();
             current_token.append(1, current);
             break;
           case kStringTypeInt:
-            if (current == '.' && util::IsDigit(next)) {
+            if (current == '.' && lexical::IsDigit(next)) {
               current_token.append(1, current);
             }
             else {
@@ -152,7 +152,7 @@ namespace kagami {
         if (enter_string) enter_string = false;
       }
       else {
-        if (escape_flag) current = util::GetEscapeChar(current);
+        if (escape_flag) current = lexical::GetEscapeChar(current);
         if (current == '\\' && last == '\\') not_escape_char = true;
         current_token.append(1, current);
       }
@@ -160,7 +160,7 @@ namespace kagami {
       last = target[idx];
     }
 
-    if (util::GetStringType(current_token) != kStringTypeBlank) {
+    if (lexical::GetStringType(current_token) != kStringTypeBlank) {
       output.emplace_back(current_token);
     }
 
@@ -182,9 +182,9 @@ namespace kagami {
     auto *tokens = &dest_->back().second;
 
     for (size_t idx = 0; idx < target.size(); idx += 1) {
-      current = Token(target[idx], util::GetStringType(target[idx]));
+      current = Token(target[idx], lexical::GetStringType(target[idx]));
       next = (idx < target.size() - 1) ?
-        Token(target[idx + 1], util::GetStringType(target[idx + 1])) :
+        Token(target[idx + 1], lexical::GetStringType(target[idx + 1])) :
         INVALID_TOKEN;
 
       if (current.first == ";") {
@@ -292,9 +292,9 @@ namespace kagami {
     if (frame_->symbol.back().IsPlaceholder()) frame_->symbol.pop_back();
 
     bool is_bin_operator = 
-      util::IsBinaryOperator(frame_->symbol.back().GetKeywordValue());
+      lexical::IsBinaryOperator(frame_->symbol.back().GetKeywordValue());
     bool is_mono_operator = 
-      util::IsMonoOperator(frame_->symbol.back().GetKeywordValue());
+      lexical::IsMonoOperator(frame_->symbol.back().GetKeywordValue());
 
     if (is_bin_operator) limit = 2;
     if (is_mono_operator) limit = 1;
@@ -358,7 +358,7 @@ namespace kagami {
   }
 
   void LineParser::UnaryExpr() {
-    auto token = util::GetKeywordCode(frame_->current.first);
+    auto token = lexical::GetKeywordCode(frame_->current.first);
     frame_->symbol.emplace_back(Request(token));
   }
 
@@ -367,7 +367,7 @@ namespace kagami {
       frame_->symbol.emplace_back(Request(kKeywordExpList));
     }
 
-    if (compare(util::GetKeywordCode(frame_->last.first),
+    if (compare(lexical::GetKeywordCode(frame_->last.first),
       kKeywordIf, kKeywordElif, kKeywordWhile,
       kKeywordCase, kKeywordWhen, kKeywordReturn)) {
       frame_->symbol.emplace_back(Request(kKeywordExpList));
@@ -403,15 +403,15 @@ namespace kagami {
   }
 
   void LineParser::BinaryExpr() {
-    auto token = util::GetKeywordCode(frame_->current.first);
-    int current_priority = util::GetTokenPriority(token);
+    auto token = lexical::GetKeywordCode(frame_->current.first);
+    int current_priority = lexical::GetTokenPriority(token);
     Request request(token);
 
     if (!frame_->symbol.empty()) {
       bool is_operator =
-        util::IsBinaryOperator(frame_->symbol.back().GetKeywordValue());
+        lexical::IsBinaryOperator(frame_->symbol.back().GetKeywordValue());
       int stack_top_priority =
-        util::GetTokenPriority(frame_->symbol.back().GetKeywordValue());
+        lexical::GetTokenPriority(frame_->symbol.back().GetKeywordValue());
 
       auto checking = [&stack_top_priority, &current_priority]()->bool {
         return (stack_top_priority >= current_priority);
@@ -421,9 +421,9 @@ namespace kagami {
         ProduceVMCode();
         is_operator =
           (!frame_->symbol.empty() 
-          && util::IsBinaryOperator(frame_->symbol.back().GetKeywordValue()));
+          && lexical::IsBinaryOperator(frame_->symbol.back().GetKeywordValue()));
         stack_top_priority = frame_->symbol.empty() ? 5 :
-          util::GetTokenPriority(frame_->symbol.back().GetKeywordValue());
+          lexical::GetTokenPriority(frame_->symbol.back().GetKeywordValue());
       }
     }
 
@@ -574,7 +574,7 @@ namespace kagami {
     frame_->symbol.emplace_back(Request());
     frame_->args.emplace_back(Argument());
 
-    if (frame_->Eat(); util::GetStringType(frame_->current.first) != kStringTypeIdentifier) {
+    if (frame_->Eat(); lexical::GetStringType(frame_->current.first) != kStringTypeIdentifier) {
       error_string_ = "Invalid identifier argument in for-each expression";
       return false;
     }
@@ -583,7 +583,7 @@ namespace kagami {
       frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
 
     
-    if (frame_->Eat(); util::GetTerminatorCode(frame_->current.first) != kTerminatorIn) {
+    if (frame_->Eat(); lexical::GetTerminatorCode(frame_->current.first) != kTerminatorIn) {
       error_string_ = "Invalid for-each expression";
       return false;
     }
@@ -592,7 +592,7 @@ namespace kagami {
   }
 
   bool LineParser::OtherExpressions() {
-    Keyword token = util::GetKeywordCode(frame_->current.first);
+    Keyword token = lexical::GetKeywordCode(frame_->current.first);
 
     if (IsSingleKeyword(token)) {
       if (frame_->next.second != kStringTypeNull) {
@@ -626,7 +626,7 @@ namespace kagami {
     }
 
     if (token != kKeywordNull) {
-      if (frame_->next.first == "=" || util::IsOperator(token)) {
+      if (frame_->next.first == "=" || lexical::IsOperator(token)) {
         error_string_ = "Trying to operate with reserved keyword";
         return false;
       }
@@ -698,7 +698,7 @@ namespace kagami {
       if (!state) break;
       frame_->Eat();
 
-      if (Terminator value = util::GetTerminatorCode(frame_->current.first); 
+      if (Terminator value = lexical::GetTerminatorCode(frame_->current.first); 
         value != kTerminatorNull) {
         switch (value) {
         case kTerminatorAssign:

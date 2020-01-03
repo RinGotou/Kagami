@@ -29,7 +29,7 @@ namespace kagami {
           break;
         }
       }
-      catch (std::out_of_range & e) {
+      catch (std::out_of_range &e) {
         if (find_in_list(unit.first, nullable)) continue;
         else {
           result = false;
@@ -152,7 +152,7 @@ namespace kagami {
   
   string ParseRawString(const string & src) {
     string result = src;
-    if (util::IsString(result)) result = util::GetRawString(result);
+    if (lexical::IsString(result)) result = lexical::GetRawString(result);
     return result;
   }
 
@@ -651,7 +651,7 @@ namespace kagami {
 
     Object obj = FetchObject(args[0]);
     string type_id = obj.GetTypeId();
-    ERROR_CHECKING(!util::IsPlainType(type_id),
+    ERROR_CHECKING(!lexical::IsPlainType(type_id),
       "Non-plain object is not supported by case");
 
     Object sample_obj = type::CreateObjectCopy(obj);
@@ -701,7 +701,7 @@ namespace kagami {
 
       ERROR_CHECKING(ptr == nullptr, 
         "Unexpected 'when'");
-      ERROR_CHECKING(!util::IsPlainType(type_id), 
+      ERROR_CHECKING(!lexical::IsPlainType(type_id), 
         "Non-plain object is not supported by when");
 
 #define COMPARE_RESULT(_Type) (ptr->Cast<_Type>() == obj.Cast<_Type>())
@@ -867,7 +867,7 @@ namespace kagami {
     else {
       string id = lhs.Cast<string>();
 
-      ERROR_CHECKING(util::GetStringType(id) != kStringTypeIdentifier,
+      ERROR_CHECKING(lexical::GetStringType(id) != kStringTypeIdentifier,
         "Invalid object id.");
 
       if (!local_value) {
@@ -900,7 +900,7 @@ namespace kagami {
     else {
       string id = lhs.Cast<string>();
 
-      ERROR_CHECKING(util::GetStringType(id) != kStringTypeIdentifier,
+      ERROR_CHECKING(lexical::GetStringType(id) != kStringTypeIdentifier,
         "Invalid object id.");
 
       if (!local_value) {
@@ -1023,7 +1023,7 @@ namespace kagami {
 
       if (type_id == kTypeIdString) {
         auto str = obj.Cast<string>();
-        auto type = util::GetStringType(str, true);
+        auto type = lexical::GetStringType(str, true);
 
         switch (type) {
         case kStringTypeInt:
@@ -1169,7 +1169,7 @@ namespace kagami {
 
     if (frame.error) return;
 
-    if (!util::IsPlainType(lhs.GetTypeId())) {
+    if (!lexical::IsPlainType(lhs.GetTypeId())) {
       if (op_code != kKeywordEquals && op_code != kKeywordNotEqual) {
         frame.RefreshReturnStack();
         return;
@@ -1615,7 +1615,6 @@ namespace kagami {
     }
   }
 
-#ifndef _DISABLE_SDL_
   void Machine::LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id) {
     auto &frame = frame_stack_.top();
 
@@ -1656,7 +1655,6 @@ namespace kagami {
       obj_map.insert(NamedObject(params[0], Object(x, kTypeIdInt)));
     }
   }
-#endif 
 
   void Machine::Run(bool invoking, string id, VMCodePointer ptr, ObjectMap *p,
     ObjectMap *closure_record) {
@@ -1761,8 +1759,8 @@ namespace kagami {
 
       //window event handler
       //cannot invoke new event inside a running event function
-      if ((!frame->event_processing && SDL_PollEvent(&event) != 0)
-        || (freezing_ && SDL_WaitEvent(&event) != 0)) {
+      if ((!frame->event_processing && 
+        SDL_PollEvent(&event) != 0) || (freezing_ && SDL_WaitEvent(&event) != 0)) {
         EventHandlerMark mark(event.window.windowID, event.type);
         auto it = event_list_.find(mark);
         if (it != event_list_.end()) {
@@ -1780,7 +1778,8 @@ namespace kagami {
         if (freezing_) continue;
       }
 
-      //switch to last stack frame
+      //switch to last stack frame when indicator reaches end of the block.
+      //return expression will be processed in Machine::CommandReturn
       if (frame->idx == size && frame_stack_.size() > 1) {
         //Bring saved environment back
         RecoverLastState();
@@ -1792,24 +1791,17 @@ namespace kagami {
         continue;
       }
 
-      //load current command
+      //load current command and refreshing indicators
       command = &(*code)[frame->idx];
-
-      if (command->first.type == kRequestNull) {
-        trace::AddEvent("Frontend Panic.", kStateError);
-        break;
-      }
-
       script_idx = command->first.idx;
-      frame->void_call = command->first.option.void_call; // dispose returning value
+      // dispose returning value
+      frame->void_call = command->first.option.void_call; 
 
       //Built-in machine commands.
       if (command->first.type == kRequestCommand) {
         MachineCommands(command->first.GetKeywordValue(), command->second, command->first);
         
-        if (command->first.GetKeywordValue() == kKeywordReturn) {
-          refresh_tick();
-        }
+        if (command->first.GetKeywordValue() == kKeywordReturn) refresh_tick();
 
         if (frame->error) {
           script_idx = command->first.idx;
@@ -1820,34 +1812,31 @@ namespace kagami {
         continue;
       }
 
+      //cleaning object map for user-defined function and C++ function
       obj_map.clear();
+
       //Query function(Interpreter built-in or user-defined)
-      if (command->first.type == kRequestExt) {
-        if (!FetchFunctionImpl(impl, command, obj_map)) {
-          break;
-        }
+      //error string will be generated in FetchFunctionImpl.
+      if (command->first.type == kRequestComp) {
+        if (!FetchFunctionImpl(impl, command, obj_map)) break;
       }
 
       //Build object map for function call expressed by command
       GenerateArgs(*impl, command->second, obj_map);
+
       if (frame->error) {
+        //Get actual script index for error reporting
         script_idx = command->first.idx;
         break;
       }
 
-      //(For user-defined function)
+      //user-defined function invoking
       //Ceate new stack frame and push VMCode pointer to machine stack,
       //and start new processing in next tick.
       if (impl->GetType() == kFunctionVMCode) {
-        if (IsTailRecursion(frame->idx, &impl->GetCode())) {
-          tail_recursion();
-        }
-        else if (IsTailCall(frame->idx)) {
-          tail_call(*impl);
-        }
-        else {
-          update_stack_frame(*impl);
-        }
+        if (IsTailRecursion(frame->idx, &impl->GetCode())) tail_recursion();
+        else if (IsTailCall(frame->idx)) tail_call(*impl);
+        else update_stack_frame(*impl);
         
         continue;
       }
@@ -1863,29 +1852,32 @@ namespace kagami {
 
       //Invoke by return value.
       if (msg.IsInvokingMsg()) {
-        auto arg = BuildStringVector(msg.GetDetail());
-        if (!_FetchFunctionImpl(impl, arg[0], arg[1])) {
+        //process invoking request in returning message
+        auto invoking_req = BuildStringVector(msg.GetDetail());
+        if (!_FetchFunctionImpl(impl, invoking_req[0], invoking_req[1])) {
           break;
         }
 
+        //not checked.for OOP feature in the future.
         if (impl->GetType() == kFunctionVMCode) {
           update_stack_frame(*impl);
         }
         else {
+          //calling method.
           msg = impl->GetActivity()(obj_map);
           frame->Stepping();
         }
         continue;
       }
-
+      
+      //Pushing returning value to returning stack.
       frame->RefreshReturnStack(msg.GetObj());
+      //indicator+1
       frame->Stepping();
     }
 
     if (frame->error) {
-      trace::AddEvent(
-        Message(frame->msg_string, kStateError)
-          .SetIndex(script_idx));
+      trace::AddEvent(Message(frame->msg_string, kStateError).SetIndex(script_idx));
       if (invoking) invoking_error = true;
     }
 

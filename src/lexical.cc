@@ -1,6 +1,6 @@
 #include "lexical.h"
 
-namespace kagami::util {
+namespace kagami::lexical {
   Terminator GetTerminatorCode(string src) {
     if (IsBinaryOperator(GetKeywordCode(src))) {
       return kTerminatorBinaryOperator;
@@ -312,15 +312,6 @@ namespace kagami::util {
         break;
       }
     }
-    return result;
-  }
-
-  string CombineStringVector(vector<string> target) {
-    string result;
-    for (size_t i = 0; i < target.size(); ++i) {
-      result = result + target[i] + "|";
-    }
-    result.pop_back();
     return result;
   }
 

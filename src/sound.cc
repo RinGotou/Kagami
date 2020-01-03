@@ -1,7 +1,6 @@
 #include "sound.h"
 
 namespace kagami {
-#ifndef _DISABLE_SDL_
   Message NewMusicObject(ObjectMap &p) {
     auto tc = TypeChecking({ Expect("path", kTypeIdString) }, p);
     if (TC_FAIL(tc)) return TC_ERROR(tc);
@@ -64,5 +63,4 @@ namespace kagami {
     CreateImpl(FunctionImpl(MusicResume, "", "resume_music"));
     CreateImpl(FunctionImpl(MusicHalt, "", "halt_music"));
   }
-#endif
 }

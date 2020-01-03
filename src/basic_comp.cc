@@ -47,7 +47,7 @@ namespace kagami {
   Message Print(ObjectMap &p) {
     Object &obj = p[kStrMe];
     string type_id = obj.GetTypeId();
-    if (util::IsPlainType(type_id)) {
+    if (lexical::IsPlainType(type_id)) {
       if (type_id == kTypeIdInt) {
 #ifndef _MSC_VER
         fprintf(VM_STDOUT, "%ld", obj.Cast<int64_t>());

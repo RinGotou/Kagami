@@ -200,10 +200,9 @@ namespace kagami {
   const string kContainerBehavior = "head|tail";
 
   using CommandPointer = Command * ;
-#ifndef _DISABLE_SDL_
   using EventHandlerMark = pair<Uint32, Uint32>;
   using EventHandler = pair<EventHandlerMark, FunctionImpl>;
-#endif
+
   class RuntimeFrame {
   public:
     bool error;
@@ -320,9 +319,8 @@ namespace kagami {
     void Generate_Normal(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoSize(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoFill(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
-#ifndef _DISABLE_SDL_
     void LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id);
-#endif
+
   private:
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;
