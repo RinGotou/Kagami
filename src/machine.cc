@@ -440,38 +440,14 @@ namespace kagami {
     for (size_t idx = 1; idx < size; idx += 1) {
       auto id = args[idx].GetData();
 
-      if (id == kStrOptional) {
+      if (args[idx].option.optional_param) {
         optional = true;
         counter += 1;
-        continue;
       }
 
-      if (id == kStrVariable) {
-        if (counter == 1) {
-          frame.MakeError("Variable parameter can be defined only once");
-          break;
-        }
-
-        if (idx != size - 2) {
-          frame.MakeError("Variable parameter must be last one");
-          break;
-        }
-
-        variable = true;
-        counter += 1;
-        continue;
-      }
-
-      if (optional && args[idx - 1].GetData() != kStrOptional) {
-        frame.MakeError("Optional parameter must be defined after normal parameters");
-      }
+      if (args[idx].option.variable_param) variable = true;
 
       params.push_back(id);
-    }
-
-    if (optional && variable) {
-      frame.MakeError("Variable and optional parameter can't be defined at same time");
-      return;
     }
 
     if (optional) argument_mode = kParamAutoFill;
