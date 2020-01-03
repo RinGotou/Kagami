@@ -120,7 +120,7 @@ namespace kagami {
   const string kTypeIdStruct          = "struct";  //not implemented
   const string kTypeIdWindowEvent     = "window_event";
   const string kTypeIdWindow          = "window";
-	const string kTypeIdElement         = "element";
+  const string kTypeIdElement         = "element";
   const string kTypeIdFont            = "font";
   const string kTypeIdTexture         = "texture";
   const string kTypeIdColorValue      = "color";

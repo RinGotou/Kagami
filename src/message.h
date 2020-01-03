@@ -10,12 +10,6 @@ namespace kagami {
     kStateWarning
   };
 
-  enum ParameterPattern {
-    kParamAutoSize,
-    kParamAutoFill,
-    kParamNormal
-  };
-
   class Message {
   private:
     bool invoking_msg_;

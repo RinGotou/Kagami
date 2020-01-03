@@ -153,7 +153,7 @@ namespace kagami::management::type {
   }
 
   Object CreateObjectCopy(Object &object) {
-    if (object.GetDeliverFlag()) {
+    if (object.GetDeliveringFlag()) {
       return object;
     }
 

@@ -2,6 +2,12 @@
 #include "vmcode.h"
 
 namespace kagami {
+  enum ParameterPattern {
+    kParamAutoSize,
+    kParamAutoFill,
+    kParamNormal
+  };
+
   class _FunctionImpl {
   public:
     virtual ~_FunctionImpl() {}
@@ -90,18 +96,12 @@ namespace kagami {
       id_(id),
       params_(params) {}
 
-    Message Start(ObjectMap &obj_map) {
-      Message result;
-      Activity activity = static_pointer_cast<CXXFunction>(impl_)
-        ->GetActivity();
-
-      result = activity(obj_map);
-
-      return result;
-    }
-
     VMCode &GetCode() {
       return dynamic_pointer_cast<VMCodeFunction>(impl_)->GetCode();
+    }
+
+    Activity GetActivity() {
+      return dynamic_pointer_cast<CXXFunction>(impl_)->GetActivity();
     }
 
     bool operator==(FunctionImpl &rhs) const {

@@ -530,7 +530,9 @@ namespace kagami {
       return Message().SetObject(obj);
     }
 
-    return impl->Start(obj_map);
+    auto activity = impl->GetActivity();
+
+    return activity(obj_map);
   }
 
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
@@ -1868,7 +1870,7 @@ namespace kagami {
         continue;
       }
       else {
-        msg = impl->Start(obj_map);
+        msg = impl->GetActivity()(obj_map);
       }
 
       if (msg.GetLevel() == kStateError) {
@@ -1887,7 +1889,7 @@ namespace kagami {
           update_stack_frame(*impl);
         }
         else {
-          msg = impl->Start(obj_map);
+          msg = impl->GetActivity()(obj_map);
           frame->Stepping();
         }
         continue;

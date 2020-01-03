@@ -158,18 +158,18 @@ namespace kagami {
       return *this;
     }
 
-    bool GetDeliverFlag() {
+    bool GetDeliveringFlag() {
       if (mode_ == kObjectRef) {
-        return real_dest_->GetDeliverFlag();
+        return real_dest_->GetDeliveringFlag();
       }
       bool result = delivering_;
       delivering_ = false;
       return result;
     }
 
-    bool SeekDeliverFlag() {
+    bool SeekDeliveringFlag() {
       if (mode_ == kObjectRef) {
-        return real_dest_->SeekDeliverFlag();
+        return real_dest_->SeekDeliveringFlag();
       }
       return delivering_;
     }
