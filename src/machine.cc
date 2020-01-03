@@ -1657,11 +1657,7 @@ namespace kagami {
     }
   }
 #endif 
-  /*
-    Main loop and invoking loop of virtual machine.
-    This function contains main logic implementation.
-    VM runs single command in every single tick of machine loop.
-  */
+
   void Machine::Run(bool invoking, string id, VMCodePointer ptr, ObjectMap *p,
     ObjectMap *closure_record) {
     if (code_stack_.empty()) return;
@@ -1701,6 +1697,7 @@ namespace kagami {
       frame = &frame_stack_.top();
     };
 
+    //Protect current runtime environment and load another function
     auto update_stack_frame = [&](FunctionImpl &func) -> void {
       bool event_processing = frame->event_processing;
       code_stack_.push_back(&func.GetCode());
@@ -1714,6 +1711,7 @@ namespace kagami {
       frame->event_processing = event_processing;
     };
 
+    //Convert current environment to next self-calling 
     auto tail_recursion = [&]() -> void {
       bool event_processing = frame->event_processing;
       string function_scope = frame_stack_.top().function_scope;
@@ -1729,6 +1727,7 @@ namespace kagami {
       frame->event_processing = event_processing;
     };
 
+    //Convert current environment to next calling
     auto tail_call = [&](FunctionImpl &func) -> void {
       bool event_processing = frame->event_processing;
       code_stack_.pop_back();
@@ -1747,6 +1746,7 @@ namespace kagami {
     // Main loop of virtual machine.
     // TODO:dispose return value in event function
     while (frame->idx < size || frame_stack_.size() > 1 || hanging_) {
+      //freeze mainloop to keep querying events
       freezing_ = (frame->idx >= size && hanging_ && frame_stack_.size() == 1);
 
       if (frame->warning) {
@@ -1760,6 +1760,7 @@ namespace kagami {
       }
 
       //window event handler
+      //cannot invoke new event inside a running event function
       if ((!frame->event_processing && SDL_PollEvent(&event) != 0)
         || (freezing_ && SDL_WaitEvent(&event) != 0)) {
         EventHandlerMark mark(event.window.windowID, event.type);
@@ -1781,7 +1782,9 @@ namespace kagami {
 
       //switch to last stack frame
       if (frame->idx == size && frame_stack_.size() > 1) {
+        //Bring saved environment back
         RecoverLastState();
+        //Update register data
         refresh_tick();
         if (!freezing_) {
           frame->Stepping();
@@ -1789,6 +1792,7 @@ namespace kagami {
         continue;
       }
 
+      //load current command
       command = &(*code)[frame->idx];
 
       if (command->first.type == kRequestNull) {
@@ -1797,7 +1801,7 @@ namespace kagami {
       }
 
       script_idx = command->first.idx;
-      frame->void_call = command->first.option.void_call;
+      frame->void_call = command->first.option.void_call; // dispose returning value
 
       //Built-in machine commands.
       if (command->first.type == kRequestCommand) {
@@ -1848,6 +1852,7 @@ namespace kagami {
         continue;
       }
       else {
+        //calling C++ functions.
         msg = impl->GetActivity()(obj_map);
       }
 

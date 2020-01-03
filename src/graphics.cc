@@ -246,85 +246,6 @@ namespace kagami {
     return Message().SetObject(window.DrawElements());
   }
 
-  //deprecated
-  Message WindowSetBackground(ObjectMap &p) {
-    auto &path = p.Cast<string>("path");
-    auto &image_type = p.Cast<dawn::ImageType>("type");
-    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
-    auto renderer = window.GetRenderer();
-
-    dawn::Texture background_data(path, image_type, renderer);
-
-    if (background_data.Get() == nullptr) {
-      return Message(SDL_GetError(), kStateError);
-    }
-    
-    window.Clear();
-    window.Copy(background_data);
-    window.Present();
-
-    return Message();
-  }
-
-  //deprecated
-  Message WindowAddImage(ObjectMap &p) {
-    auto &path = p.Cast<string>("path");
-    auto &image_type = p.Cast<dawn::ImageType>("type");
-    auto point = p.Cast<SDL_Point>("point");
-    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
-    auto renderer = window.GetRenderer();
-
-    dawn::Texture image_data(path, image_type, renderer);
-    auto rect = dawn::ProduceRect(point.x, point.y, image_data.GetWidth(), image_data.GetHeight());
-
-    if (image_data.Get() == nullptr) {
-      return Message(SDL_GetError(), kStateError);
-    }
-
-    window.Copy(image_data, nullptr, &rect);
-    window.Present();
-
-    return Message();
-  }
-
-  //deprecated
-  Message WindowSetText(ObjectMap &p) {
-    auto text = p.Cast<string>("text");
-    auto point = p.Cast<SDL_Point>("point");
-    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
-    auto &font = p.Cast<dawn::Font>("font");
-    auto renderer = window.GetRenderer();
-    auto &color = p.Cast<dawn::ColorValue>("color");
-
-    dawn::Texture text_data(text, font, renderer, color);
-    auto rect = dawn::ProduceRect(point.x, point.y, text_data.GetWidth(), text_data.GetHeight());
-
-    if (text_data.Get() == nullptr) {
-      return Message(SDL_GetError(), kStateError);
-    }
-
-    window.Copy(text_data, nullptr, &rect);
-    window.Present();
-
-    return Message();
-  }
-
-  //Limit:1
-  //deprecated
-  Message WindowCopy(ObjectMap &p) {
-    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
-    auto &texture = p.Cast<dawn::Texture>("texture");
-    auto &src_rect_obj = p["src_rect"];
-    auto &dest_rect_obj = p["dest_rect"];
-    SDL_Rect *src_rect = src_rect_obj.Null() ? 
-      nullptr : &src_rect_obj.Cast<SDL_Rect>();
-    SDL_Rect *dest_rect = dest_rect_obj.Null() ?
-      nullptr : &dest_rect_obj.Cast<SDL_Rect>();
-    bool result = window.Copy(texture, src_rect, dest_rect);
-    window.DrawElements();
-    return Message().SetObject(result);
-  }
-
   Message WindowWaiting(ObjectMap &p) {
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     bool exit = false;
@@ -648,10 +569,6 @@ namespace kagami {
           FunctionImpl(WindowSetElementOnBottom, "id", "set_on_bottom"),
           FunctionImpl(WindowSetTitle, "title", "set_title"),
           FunctionImpl(WindowDraw, "", "draw"),
-          FunctionImpl(WindowSetBackground,"path|type","set_background"),
-          FunctionImpl(WindowAddImage, "path|type|point","add_image"),
-          FunctionImpl(WindowSetText, "text|font|color|point","set_text"),
-          FunctionImpl(WindowCopy, "texture|src_rect|dest_rect", "copy", kParamAutoFill).SetLimit(1),
           FunctionImpl(WindowWaiting, "", "waiting"),
           FunctionImpl(WindowClear, "", "clear"),
           FunctionImpl(WindowSetDrawColor, "color", "set_draw_color"),

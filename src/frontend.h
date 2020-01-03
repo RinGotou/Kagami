@@ -67,7 +67,7 @@ namespace kagami {
     bool CleanupStack();
 
     void BindExpr();
-    void DeliverExpr();
+    void DeliveringExpr();
     void DotExpr();
     void UnaryExpr();
     void FuncInvokingExpr();

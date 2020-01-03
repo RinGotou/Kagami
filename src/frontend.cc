@@ -3,7 +3,6 @@
 #define ERROR_MSG(_Msg) Message(_Msg, kStateError)
 
 namespace kagami {
-  /* Disposing all indentation and comments */
   inline bool IsBranchKeyword(Keyword keyword) {
     return keyword == kKeywordElif || keyword == kKeywordElse || keyword == kKeywordWhen;
   }
@@ -344,7 +343,7 @@ namespace kagami {
     }
   }
 
-  void LineParser::DeliverExpr() {
+  void LineParser::DeliveringExpr() {
     if (!frame_->args.empty()) {
       Request request(kKeywordDelivering);
       request.option.local_object = frame_->local_object;
@@ -706,7 +705,7 @@ namespace kagami {
           BindExpr();
           break;
         case kTerminatorArrow:
-          DeliverExpr();
+          DeliveringExpr();
           break;
         case kTerminatorComma:
           state = CleanupStack();
