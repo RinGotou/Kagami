@@ -16,12 +16,18 @@ namespace kagami {
     kRequestNull
   };
 
+  struct ArgumentOption {
+    bool optional_param;
+    bool variable_param;
+
+    ArgumentOption() : optional_param(false),
+    variable_param(false) {}
+  };
+
   struct RequestOption {
     bool void_call;
     bool local_object;
     bool ext_object;
-    bool optional_param;
-    bool variable_param;
     size_t nest;
     size_t nest_end;
     size_t escape_depth;
@@ -31,8 +37,6 @@ namespace kagami {
       void_call(false), 
       local_object(false), 
       ext_object(false),
-      optional_param(false),
-      variable_param(false),
       nest(0),
       nest_end(0),
       escape_depth(0),
@@ -46,10 +50,14 @@ namespace kagami {
     StringType token_type_;
 
   public:
+    ArgumentOption option;
+
+  public:
     Argument() :
       data_(),
       type_(kArgumentNull),
-      token_type_(kStringTypeNull) {}
+      token_type_(kStringTypeNull),
+      option() {}
 
     Argument(
       string data,
@@ -57,7 +65,8 @@ namespace kagami {
       StringType token_type) :
       data_(data),
       type_(type),
-      token_type_(token_type) {}
+      token_type_(token_type),
+      option() {}
 
     auto GetData() { return data_; }
 

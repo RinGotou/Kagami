@@ -450,15 +450,34 @@ namespace kagami {
 
     bool left_paren = false;
     bool inside_params = false;
+    bool optional = false, optional_declared = false;
+    bool variable = false, variable_declared = false;
     bool good = true;
 
     frame_->symbol.emplace_back(Request(kKeywordFn));
     frame_->symbol.emplace_back(Request());
     frame_->args.emplace_back(Argument());
 
+    auto invalid_param_pattern = [&]()->bool {
+      return frame_->next.first == "," ||
+        frame_->next.first == kStrOptional ||
+        frame_->next.first == kStrVariable;
+    };
+
+    //Function identifier
+    frame_->Eat();
+    if (auto &str = frame_->current.first; (str == kStrOptional || str == kStrVariable)) {
+      error_string_ = "Invalid function identifier";
+      return false;
+    }
+
+    frame_->args.emplace_back(
+      Argument(frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+
+    //Parameter segment
     while (!frame_->eol) {
       frame_->Eat();
-      
+
       if (frame_->current.first == "(") {
         if (left_paren) {
           error_string_ = "Invalid symbol in function definition";
@@ -467,24 +486,73 @@ namespace kagami {
         }
         else {
           left_paren = true;
+          inside_params = true;
           continue;
         }
       }
       else if (frame_->current.first == ")") {
+        inside_params = false;
         ProduceVMCode();
         break;
       }
-      else if (util::GetStringType(frame_->current.first) != kStringTypeIdentifier) {
+      else if (frame_->current.first == kStrOptional) {
+        if (invalid_param_pattern()) {
+          error_string_ = "Invalid function parameter declaration.";
+          good = false;
+          break;
+        }
+
+        if (variable_declared) {
+          error_string_ = "Cannot declare optional/variable parameters at same time";
+          good = false;
+          break;
+        }
+
+        optional = true;
+        if (!optional_declared) optional_declared = true;
+      }
+      else if (frame_->current.first == kStrVariable) {
+        if (invalid_param_pattern()) {
+          error_string_ = "Invalid function parameter declaration.";
+          good = false;
+          break;
+        }
+
+        if (variable_declared) {
+          error_string_ = "Cannot declare multiple variable parameters at same time";
+          good = false;
+          break;
+        }
+
+        if (optional_declared) {
+          error_string_ = "Cannot declare optional/variable parameters at same time";
+          good = false;
+          break;
+        }
+
+        variable = true;
+        if (!variable_declared) variable_declared = true;
+      }
+      else if (frame_->current.first == ",") continue;
+      else if (frame_->current.second != kStringTypeIdentifier) {
         error_string_ = "Invalid value in function definition";
         good = false;
         break;
       }
-      
+      else {
+        Argument arg(frame_->current.first, kArgumentNormal, kStringTypeIdentifier);
+        if (optional) {
+          arg.option.optional_param = true;
+          optional = false;
+        }
 
-      frame_->args.emplace_back(
-        Argument(frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+        if (variable) {
+          arg.option.variable_param = true;
+          variable = false;
+        }
 
-
+        frame_->args.emplace_back(arg);
+      }
     }
 
     return good;
@@ -662,10 +730,10 @@ namespace kagami {
           BinaryExpr();
           break;
         case kTerminatorFn:
-          FnExpr();
+          state = FnExpr();
           break;
         case kTerminatorFor:
-          ForEachExpr();
+          state = ForEachExpr();
           break;
         case kTerminatorRightSqrBracket:
         case kTerminatorRightBracket:
