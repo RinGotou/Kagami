@@ -432,7 +432,7 @@ namespace kagami {
   }
 
   bool LineParser::FnExpr() {
-    //TODO: binding support
+    //TODO:Preprecessing-time argument type checking
     if (frame_->last.second != kStringTypeNull) {
       error_string_ = "Invalid function definition";
       return false;
@@ -449,6 +449,7 @@ namespace kagami {
     }
 
     bool left_paren = false;
+    bool inside_params = false;
     bool good = true;
 
     frame_->symbol.emplace_back(Request(kKeywordFn));
@@ -459,13 +460,14 @@ namespace kagami {
       frame_->Eat();
       
       if (frame_->current.first == "(") {
-        if (!left_paren) {
+        if (left_paren) {
           error_string_ = "Invalid symbol in function definition";
           good = false;
           break;
         }
         else {
           left_paren = true;
+          continue;
         }
       }
       else if (frame_->current.first == ")") {

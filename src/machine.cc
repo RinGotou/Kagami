@@ -1571,8 +1571,10 @@ namespace kagami {
 
     ERROR_CHECKING(args.size() > params.size(), 
       "Too many arguments");
-    ERROR_CHECKING(args.size() < params.size(), 
-      "You need at least " + to_string(params.size()) + " argument(s).");
+
+    if (args.size() < params.size()) {
+      frame.MakeError("You need at least " + to_string(params.size()) + " argument(s).");
+    }
 
 
     for (auto it = params.rbegin(); it != params.rend(); ++it) {

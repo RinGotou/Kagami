@@ -20,6 +20,8 @@ namespace kagami {
     bool void_call;
     bool local_object;
     bool ext_object;
+    bool optional_param;
+    bool variable_param;
     size_t nest;
     size_t nest_end;
     size_t escape_depth;
@@ -29,6 +31,8 @@ namespace kagami {
       void_call(false), 
       local_object(false), 
       ext_object(false),
+      optional_param(false),
+      variable_param(false),
       nest(0),
       nest_end(0),
       escape_depth(0),
