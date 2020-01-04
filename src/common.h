@@ -38,6 +38,7 @@
 #include <variant>
 #include <filesystem>
 #include <tuple>
+#include <unordered_set>
 
 #include "dawn/src/dawn.ui.h"
 #include "dawn/src/dawn.sound.h"
@@ -55,6 +56,7 @@ namespace kagami {
   using std::vector;
   using std::map;
   using std::unordered_map;
+  using std::unordered_set;
   using std::deque;
   using std::shared_ptr;
   using std::unique_ptr;

@@ -257,9 +257,19 @@ namespace kagami::lexical {
 
 
   bool IsSymbol(string target) {
-    static const regex kPatternSymbol(R"(==|<-|<=|>=|!=|&&|\|\||[[:Punct:]])");
+    static const unordered_set<string> symbols = {
+      "+", "-", "*", "/", ">", ">=", "<", "<=", "<-",
+      "!=", "&&", "||", "&", "|", "!", "(", ")", "{", "}", "=", "==",
+      "[", "]", ",", ".", "'", ";", "_"
+    };
+
     if (target.empty()) return false;
-    return std::regex_match(target, kPatternSymbol);
+    bool result = (symbols.find(target) != symbols.end());
+    return result;
+
+    //static const regex kPatternSymbol(R"(==|<-|<=|>=|!=|&&|\|\||[[:Punct:]])");
+    //if (target.empty()) return false;
+    //return std::regex_match(target, kPatternSymbol);
   }
 
   bool IsBoolean(string target) {
