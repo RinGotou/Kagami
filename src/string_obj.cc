@@ -137,27 +137,6 @@ namespace kagami {
     return Message();
   }
 
-  Message NewRegex(ObjectMap &p) {
-    auto tc = TypeChecking({ Expect("pattern", kTypeIdString) }, p);
-    if (TC_FAIL(tc)) return TC_ERROR(tc);
-
-    string pattern_string = p.Cast<string>("pattern");
-    shared_ptr<regex> reg = make_shared<regex>(pattern_string);
-
-    return Message().SetObject(Object(reg, kTypeIdRegex));
-  }
-
-  Message RegexMatch(ObjectMap &p) {
-    auto tc = TypeChecking({ Expect("str", kTypeIdString) }, p);
-    if (TC_FAIL(tc)) return TC_ERROR(tc);
-
-    string str = p.Cast<string>("str");
-    auto &pat = p.Cast<regex>(kStrMe);
-    bool result = regex_match(str, pat);
-
-    return Message().SetObject(result);
-  }
-
   void InitBaseTypes() {
     using management::CreateImpl;
     using namespace management::type;
@@ -194,17 +173,6 @@ namespace kagami {
         }
     );
 
-
-    ObjectTraitsSetup(kTypeIdRegex, ShallowDelivery, PointerHasher)
-      .InitConstructor(
-        FunctionImpl(NewRegex, "pattern", "regex")
-      )
-      .InitMethods(
-        {
-          FunctionImpl(RegexMatch, "str", "match")
-        }
-    );
-
     CreateImpl(FunctionImpl(DecimalConvert<2>, "str", "bin"));
     CreateImpl(FunctionImpl(DecimalConvert<8>, "str", "octa"));
     CreateImpl(FunctionImpl(DecimalConvert<16>, "str", "hex"));
@@ -215,6 +183,5 @@ namespace kagami {
 
     EXPORT_CONSTANT(kTypeIdString);
     EXPORT_CONSTANT(kTypeIdWideString);
-    EXPORT_CONSTANT(kTypeIdRegex);
   }
 }

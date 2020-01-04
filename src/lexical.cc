@@ -266,10 +266,6 @@ namespace kagami::lexical {
     if (target.empty()) return false;
     bool result = (symbols.find(target) != symbols.end());
     return result;
-
-    //static const regex kPatternSymbol(R"(==|<-|<=|>=|!=|&&|\|\||[[:Punct:]])");
-    //if (target.empty()) return false;
-    //return std::regex_match(target, kPatternSymbol);
   }
 
   bool IsBoolean(string target) {
