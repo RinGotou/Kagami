@@ -29,7 +29,6 @@
 #include <map>
 #include <unordered_map>
 #include <deque>
-#include <regex>
 #include <stack>
 #include <type_traits>
 #include <functional>
@@ -62,8 +61,6 @@ namespace kagami {
   using std::unique_ptr;
   using std::static_pointer_cast;
   using std::dynamic_pointer_cast;
-  using std::regex;
-  using std::regex_match;
   using std::make_shared;
   using std::make_unique;
   using std::size_t;
