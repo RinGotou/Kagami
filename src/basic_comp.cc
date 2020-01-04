@@ -128,6 +128,10 @@ namespace kagami {
     return Message().SetObject(management::runtime::GetWorkingDirectory());
   }
 
+  Message GetScriptAbsolutePath(ObjectMap &p) {
+    
+  }
+
   void InitConsoleComponents() {
     using management::CreateImpl;
 

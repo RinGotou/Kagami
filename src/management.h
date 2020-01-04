@@ -113,6 +113,8 @@ namespace kagami::management::runtime {
   string GetBinaryName();
   string GetWorkingDirectory();
   bool SetWorkingDirectory(string dir);
+  void InformScriptPath(string path);
+  string GetScriptAbsolutePath();
 }
 
 namespace std {

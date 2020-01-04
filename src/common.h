@@ -79,6 +79,7 @@ namespace kagami {
   using std::tuple;
   
   using namespace minatsuki;
+  namespace fs = std::filesystem;
 
   /* Application Info */
   const string kInterpreterVersion = INTERPRETER_VER;

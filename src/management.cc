@@ -275,9 +275,10 @@ namespace kagami::management::runtime {
   static string binary_name;
   static string binary_path;
   static string script_work_dir;
+  static fs::path script_absolute_path;
 
   void InformBinaryPathAndName(string info) {
-    std::filesystem::path processed_path(info);
+    fs::path processed_path(info);
     binary_name = processed_path.filename().string();
     binary_path = processed_path.parent_path().string();
   }
@@ -308,5 +309,13 @@ namespace kagami::management::runtime {
 #endif
 
     return ret == 0;
+  }
+
+  void InformScriptPath(string path) {
+    script_absolute_path = fs::absolute(fs::path(path));
+  }
+
+  string GetScriptAbsolutePath() {
+    return script_absolute_path.string();
   }
 }
