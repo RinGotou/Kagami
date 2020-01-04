@@ -96,8 +96,11 @@ namespace kagami {
     if (IsDelegated()) return delegator_->Add(id, source);
 
     if (CheckObject(id)) return false;
-    base_.insert(NamedObject(id, source));
-    BuildCache();
+    auto result = base_.insert(NamedObject(id, source));
+    if (result.second) {
+      dest_map_.insert(make_pair(id, &result.first->second));
+    }
+
     return true;
   }
 
@@ -109,7 +112,7 @@ namespace kagami {
 
     if (result) {
       base_.erase(it);
-      BuildCache();
+      dest_map_.erase(id);
     }
 
     return result;
