@@ -65,7 +65,7 @@ namespace kagami {
         fputs(obj.Cast<bool>() ? "true" : "false", VM_STDOUT);
       }
 
-      CHECK_PRINT_OPT();
+      CHECK_PRINT_OPT(p);
 
       return Message();
     }

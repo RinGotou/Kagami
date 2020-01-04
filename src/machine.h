@@ -7,9 +7,9 @@
 #include "management.h"
 #include "components.h"
 
-#define CHECK_PRINT_OPT()                          \
-  if (p.find(kStrSwitchLine) != p.end()) {         \
-    putc('\n', VM_STDOUT);                         \
+#define CHECK_PRINT_OPT(_Map)                          \
+  if (_Map.find(kStrSwitchLine) != p.end()) {          \
+    putc('\n', VM_STDOUT);                             \
   }
 
 #define EXPECTED_COUNT(_Count) (args.size() == _Count)

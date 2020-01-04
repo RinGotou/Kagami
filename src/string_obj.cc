@@ -132,8 +132,8 @@ namespace kagami {
 
   Message WideStringPrint(ObjectMap &p) {
     wstring &str = p.Cast<wstring>(kStrMe);
-    OutStreamW(stdout).WriteLine(str);
-    CHECK_PRINT_OPT();
+    OutStreamW(VM_STDOUT).WriteLine(str);
+    CHECK_PRINT_OPT(p);
     return Message();
   }
 
