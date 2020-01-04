@@ -1,7 +1,5 @@
 #include "machine.h"
 
-#define ERROR_CHECKING(_Cond, _Msg) if (_Cond) { frame.MakeError(_Msg); return; }
-
 namespace kagami {
   using namespace management;
 
@@ -526,7 +524,11 @@ namespace kagami {
     }
     
     Object obj = FetchObject(args[0]);
-    ERROR_CHECKING(obj.GetTypeId() != kTypeIdBool, "Invalid state value type.");
+
+    if (obj.GetTypeId() != kTypeIdBool) {
+      frame.MakeError("Invalid state value type.");
+      return;
+    }
 
     bool state = obj.Cast<bool>();
 
@@ -544,7 +546,10 @@ namespace kagami {
       }
     }
     else if (token == kKeywordElif) {
-      ERROR_CHECKING(frame.condition_stack.empty(), "Unexpected Elif.");
+      if (frame.condition_stack.empty()) {
+        frame.MakeError("Unexpected Elif");
+        return;
+      }
 
       if (frame.condition_stack.top()) {
         frame.Goto(frame.jump_stack.top());
@@ -594,15 +599,23 @@ namespace kagami {
 
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto container_obj = FetchObject(args[1]);
-    ERROR_CHECKING(!type::CheckBehavior(container_obj, kContainerBehavior),
-      "Invalid object container");
+
+    if (!type::CheckBehavior(container_obj, kContainerBehavior)) {
+      frame.MakeError("Invalid container object");
+      return;
+    }
 
     auto msg = Invoke(container_obj, kStrHead);
-    ERROR_CHECKING(!msg.HasObject(), "Invalid iterator of container");
+    if (!msg.HasObject()) {
+      frame.MakeError("Invalid returning value from iterator");
+      return;
+    }
 
     auto iterator_obj = msg.GetObj();
-    ERROR_CHECKING(!type::CheckBehavior(iterator_obj, kIteratorBehavior),
-      "Invalid iterator behavior");
+    if (!type::CheckBehavior(iterator_obj, kIteratorBehavior)) {
+      frame.MakeError("Invalid iterator object");
+      return;
+    }
 
     auto unit = Invoke(iterator_obj, "obj").GetObj();
 
@@ -620,15 +633,20 @@ namespace kagami {
     ObjectMap obj_map;
 
     auto tail = Invoke(container, kStrTail).GetObj();
-    ERROR_CHECKING(!type::CheckBehavior(tail, kIteratorBehavior),
-      "Invalid container behavior");
+    if (!type::CheckBehavior(tail, kIteratorBehavior)) {
+      frame.MakeError("Invalid container object");
+      return;
+    }
 
     Invoke(iterator, "step_forward");
 
     auto result = Invoke(iterator, kStrCompare,
       { NamedObject(kStrRightHandSide,tail) }).GetObj();
-    ERROR_CHECKING(result.GetTypeId() != kTypeIdBool,
-      "Invalid iterator behavior");
+
+    if (result.GetTypeId() != kTypeIdBool) {
+      frame.MakeError("Invalid iterator object");
+      return;
+    }
 
     if (result.Cast<bool>()) {
       frame.Goto(nest_end);
@@ -643,7 +661,12 @@ namespace kagami {
   void Machine::CommandCase(ArgumentList &args, size_t nest_end) {
     auto &frame = frame_stack_.top();
     auto &code = code_stack_.back();
-    ERROR_CHECKING(args.empty(), "Empty argument list");
+
+    if (args.empty()) {
+      frame.MakeError("Empty argument list");
+      return;
+    }
+
     frame.AddJumpRecord(nest_end);
 
     bool has_jump_list = 
@@ -651,8 +674,11 @@ namespace kagami {
 
     Object obj = FetchObject(args[0]);
     string type_id = obj.GetTypeId();
-    ERROR_CHECKING(!lexical::IsPlainType(type_id),
-      "Non-plain object is not supported by case");
+
+    if (!lexical::IsPlainType(type_id)) {
+      frame.MakeError("Non-plain object is not supported for now");
+      return;
+    }
 
     Object sample_obj = type::CreateObjectCopy(obj);
 
@@ -673,7 +699,11 @@ namespace kagami {
 
   void Machine::CommandElse() {
     auto &frame = frame_stack_.top();
-    ERROR_CHECKING(frame.condition_stack.empty(), "Unexpected Else.");
+
+    if (frame.condition_stack.empty()) {
+      frame.MakeError("Unexpected 'else'");
+      return;
+    }
 
     if (frame.condition_stack.top() == true) {
       frame.Goto(frame.jump_stack.top());
@@ -686,8 +716,11 @@ namespace kagami {
   void Machine::CommandWhen(ArgumentList &args) {
     auto &frame = frame_stack_.top();
     bool result = false;
-    ERROR_CHECKING(frame.condition_stack.empty(), 
-      "Unexpected 'when'");
+
+    if (frame.condition_stack.empty()) {
+      frame.MakeError("Unexpected 'when'");
+      return;
+    }
 
     if (frame.condition_stack.top()) {
       frame.Goto(frame.jump_stack.top());
@@ -699,10 +732,15 @@ namespace kagami {
       string type_id = ptr->GetTypeId();
       bool found = false;
 
-      ERROR_CHECKING(ptr == nullptr, 
-        "Unexpected 'when'");
-      ERROR_CHECKING(!lexical::IsPlainType(type_id), 
-        "Non-plain object is not supported by when");
+      if (ptr == nullptr) {
+        frame.MakeError("Unexpected 'when'(2)");
+        return;
+      }
+
+      if (!lexical::IsPlainType(type_id)) {
+        frame.MakeError("Non-plain object is not supported for now");
+        return;
+      }
 
 #define COMPARE_RESULT(_Type) (ptr->Cast<_Type>() == obj.Cast<_Type>())
 
@@ -867,8 +905,10 @@ namespace kagami {
     else {
       string id = lhs.Cast<string>();
 
-      ERROR_CHECKING(lexical::GetStringType(id) != kStringTypeIdentifier,
-        "Invalid object id.");
+      if (lexical::GetStringType(id) != kStringTypeIdentifier) {
+        frame.MakeError("Invalid object id");
+        return;
+      }
 
       if (!local_value) {
         ObjectPointer ptr = obj_stack_.Find(id);
@@ -881,12 +921,14 @@ namespace kagami {
 
       Object obj = CreateObjectCopy(rhs);
 
-      ERROR_CHECKING(!obj_stack_.CreateObject(id, obj),
-        "Object binding failed.");
+      if (!obj_stack_.CreateObject(id, obj)) {
+        frame.MakeError("Object binding is failed");
+        return;
+      }
     }
   }
 
-  void Machine::CommandDeliver(ArgumentList &args, bool local_value, bool ext_value) {
+  void Machine::CommandDelivering(ArgumentList &args, bool local_value, bool ext_value) {
     auto &frame = frame_stack_.top();
     //Do not change the order!
     auto rhs = FetchObject(args[1]);
@@ -900,8 +942,10 @@ namespace kagami {
     else {
       string id = lhs.Cast<string>();
 
-      ERROR_CHECKING(lexical::GetStringType(id) != kStringTypeIdentifier,
-        "Invalid object id.");
+      if (lexical::GetStringType(id) != kStringTypeIdentifier) {
+        frame.MakeError("Invalid object id");
+        return;
+      }
 
       if (!local_value) {
         ObjectPointer ptr = obj_stack_.Find(id);
@@ -915,8 +959,11 @@ namespace kagami {
 
       Object obj = rhs.Unpack();
       rhs.Unpack() = Object();
-      ERROR_CHECKING(!obj_stack_.CreateObject(id, obj),
-        "Object binding failed.");
+
+      if (!obj_stack_.CreateObject(id, obj)) {
+        frame.MakeError("Object delivering is failed");
+        return;
+      }
     }
   }
 
@@ -972,7 +1019,11 @@ namespace kagami {
     //Do not change the order
     auto str_obj = FetchObject(args[1]);
     auto obj = FetchObject(args[0]);
-    ERROR_CHECKING(str_obj.GetTypeId() != kTypeIdString, "Invalid method id");
+
+    if (str_obj.GetTypeId() != kTypeIdString) {
+      frame.MakeError("Invalid method id");
+      return;
+    }
 
     string str = str_obj.Cast<string>();
     Object ret_obj(type::CheckMethod(str, obj.GetTypeId()), kTypeIdBool);
@@ -1041,8 +1092,10 @@ namespace kagami {
         }
       }
       else {
-        ERROR_CHECKING(!type::CheckMethod(kStrGetStr, type_id),
-          "Invalid argument of convert()");
+        if (!type::CheckMethod(kStrGetStr, type_id)) {
+          frame.MakeError("Invalid argument for convert()");
+          return;
+        }
 
         auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
       }
@@ -1060,8 +1113,11 @@ namespace kagami {
     }
 
     auto path_obj = FetchObject(args[0]);
-    ERROR_CHECKING(path_obj.GetTypeId() != kTypeIdString,
-      "Invalid script path");
+
+    if (path_obj.GetTypeId() != kTypeIdString) {
+      frame.MakeError("Invalid script path");
+      return;
+    }
 
     string path = path_obj.Cast<string>();
 
@@ -1446,7 +1502,7 @@ namespace kagami {
         request.option.ext_object);
       break;
     case kKeywordDelivering:
-      CommandDeliver(args, request.option.local_object,
+      CommandDelivering(args, request.option.local_object,
         request.option.ext_object);
       break;
     case kKeywordExpList:
@@ -1545,11 +1601,14 @@ namespace kagami {
     auto &params = impl.GetParameters();
     size_t pos = args.size() - 1;
 
-    ERROR_CHECKING(args.size() > params.size(), 
-      "Too many arguments");
+    if (args.size() > params.size()) {
+      frame.MakeError("Too many arguments");
+      return;
+    }
 
     if (args.size() < params.size()) {
-      frame.MakeError("You need at least " + to_string(params.size()) + " argument(s).");
+      frame.MakeError("Minimum argument amount is " + to_string(params.size()));
+      return;
     }
 
 
@@ -1566,8 +1625,10 @@ namespace kagami {
     ManagedArray va_base = make_shared<ObjectArray>();
     size_t pos = args.size(), diff = args.size() - params.size() + 1;
 
-    ERROR_CHECKING(args.size() < params.size(),
-      "Youe need at least " + to_string(params.size()) + "argument(s).");
+    if (args.size() < params.size()) {
+      frame.MakeError("Minimum argument amount is " + to_string(params.size()));
+      return;
+    }
 
     while (diff != 0) {
       temp_list.emplace_front(FetchObject(args[pos - 1]).RemoveDeliveringFlag());
@@ -1598,10 +1659,15 @@ namespace kagami {
     size_t limit = impl.GetLimit();
     size_t pos = args.size() - 1, param_pos = params.size() - 1;
 
-    ERROR_CHECKING(args.size() > params.size(),
-      "Too many arguments");
-    ERROR_CHECKING(args.size() < limit, 
-      "You need at least " + to_string(limit) + "argument(s)");
+    if (args.size() > params.size()) {
+      frame.MakeError("Too many arguments");
+      return;
+    }
+
+    if (args.size() < limit) {
+      frame.MakeError("Minimum argument amount is " + to_string(limit));
+      return;
+    }
 
     for (auto it = params.crbegin(); it != params.crend(); ++it) {
       if (param_pos != pos) {
@@ -1617,22 +1683,31 @@ namespace kagami {
 
   void Machine::LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id) {
     auto &frame = frame_stack_.top();
-
+    
     if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-      ERROR_CHECKING(impl.GetParamSize() != 1, "Invalid event function.");
+      if (impl.GetParamSize() != 1) {
+        frame.MakeError("Invalid function for KeyDown/KeyUp event");
+        return;
+      }
       auto &params = impl.GetParameters();
       int64_t keysym = static_cast<int64_t>(event.key.keysym.sym);
       obj_map.insert(NamedObject(params[0], Object(keysym, kTypeIdInt)));
     }
 
     if (event.type == SDL_WINDOWEVENT) {
-      ERROR_CHECKING(impl.GetParamSize() != 1, "Invalid event function.");
+      if (impl.GetParamSize() != 1) {
+        frame.MakeError("Invalid function for window event");
+        return;
+      }
       auto &params = impl.GetParameters();
       obj_map.insert(NamedObject(params[0], Object(event.window, kTypeIdWindowEvent)));
     }
 
     if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
-      ERROR_CHECKING(impl.GetParamSize() != 3, "Invalid event function.");
+      if (impl.GetParamSize() != 3) {
+        frame.MakeError("Invalid function for MouseDown/MouseUp event");
+        return;
+      }
       auto &params = impl.GetParameters();
       auto y = static_cast<int64_t>(event.button.y);
       auto x = static_cast<int64_t>(event.button.x);
@@ -1643,7 +1718,10 @@ namespace kagami {
     }
 
     if (event.type == SDL_MOUSEMOTION) {
-      ERROR_CHECKING(impl.GetParamSize() != 4, "Invalid event function.");
+      if (impl.GetParamSize() != 4) {
+        frame.MakeError("Invalid function for MouseMotion event");
+        return;
+      }
       auto &params = impl.GetParameters();
       auto yrel = static_cast<int64_t>(event.motion.yrel);
       auto xrel = static_cast<int64_t>(event.motion.xrel);

@@ -285,7 +285,7 @@ namespace kagami {
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);
     void CommandBind(ArgumentList &args, bool local_value, bool ext_value);
-    void CommandDeliver(ArgumentList &args, bool local_value, bool ext_value);
+    void CommandDelivering(ArgumentList &args, bool local_value, bool ext_value);
     void CommandTypeId(ArgumentList &args);
     void CommandMethods(ArgumentList &args);
     void CommandExist(ArgumentList &args);
