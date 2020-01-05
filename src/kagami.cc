@@ -93,6 +93,7 @@ void Processing(Processor &processor) {
     setlocale(LC_ALL, processor.Exist("locale") ?
       processor.ValueOf("locale").data() : "en_US.UTF8");
 
+    runtime::InformScriptPath(path);
     StartInterpreter_Kisaragi(path, log, processor.Exist("rtlog"));
     CloseStream();
   }

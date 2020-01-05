@@ -129,7 +129,7 @@ namespace kagami {
   }
 
   Message GetScriptAbsolutePath(ObjectMap &p) {
-    
+    return Message().SetObject(mgmt::runtime::GetScriptAbsolutePath());
   }
 
   void InitConsoleComponents() {
@@ -143,5 +143,6 @@ namespace kagami {
     CreateImpl(FunctionImpl(ThreadSleep, "milliseconds", "sleep"));
     CreateImpl(FunctionImpl(SetWorkingDir, "dir", "setwd"));
     CreateImpl(FunctionImpl(GetWorkingDir, "dir", "getwd"));
+    CreateImpl(FunctionImpl(GetScriptAbsolutePath, "", "get_script_path"));
   }
 }

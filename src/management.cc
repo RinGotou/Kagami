@@ -312,7 +312,7 @@ namespace kagami::management::runtime {
   }
 
   void InformScriptPath(string path) {
-    script_absolute_path = fs::absolute(fs::path(path));
+    script_absolute_path = fs::absolute(fs::path(path)).parent_path();
   }
 
   string GetScriptAbsolutePath() {
