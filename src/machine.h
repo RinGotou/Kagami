@@ -60,91 +60,91 @@ namespace kagami {
     TraitUnit(ResultTraitKey(kPlainBool, kPlainString), kPlainString)
   };
 
-  template <class ResultType, class Tx, class Ty, Keyword op>
+  template <typename ResultType, class Tx, class Ty, Keyword op>
   struct BinaryOpBox {
     ResultType Do(Tx A, Ty B) {
       return Tx();
     }
   };
 
-  template <class ResultType, class Tx, class Ty>
+  template <typename ResultType, class Tx, class Ty>
   struct BinaryOpBox<ResultType, Tx, Ty, kKeywordPlus> {
     ResultType Do(Tx A, Ty B) {
       return A + B;
     }
   };
 
-  template <class ResultType, class Tx, class Ty>
+  template <typename ResultType, class Tx, class Ty>
   struct BinaryOpBox<ResultType, Tx, Ty, kKeywordMinus> {
     ResultType Do(Tx A, Ty B) {
       return A - B;
     }
   };
 
-  template <class ResultType, class Tx, class Ty>
+  template <typename ResultType, class Tx, class Ty>
   struct BinaryOpBox<ResultType, Tx, Ty, kKeywordTimes> {
     ResultType Do(Tx A, Ty B) {
       return A * B;
     }
   };
 
-  template <class ResultType, class Tx, class Ty>
+  template <typename ResultType, class Tx, class Ty>
   struct BinaryOpBox<ResultType, Tx, Ty, kKeywordDivide> {
     ResultType Do(Tx A, Ty B) {
       return A / B;
     }
   };
 
-  template <class Tx, class Ty>
+  template <typename Tx, class Ty>
   struct BinaryOpBox<bool, Tx, Ty, kKeywordEquals> {
     bool Do(Tx A, Ty B) {
       return A == B;
     }
   };
 
-  template <class Tx, class Ty>
+  template <typename Tx, class Ty>
   struct BinaryOpBox<bool, Tx, Ty, kKeywordLessOrEqual> {
     bool Do(Tx A, Ty B) {
       return A <= B;
     }
   };
 
-  template <class Tx, class Ty>
+  template <typename Tx, class Ty>
   struct BinaryOpBox<bool, Tx, Ty, kKeywordGreaterOrEqual> {
     bool Do(Tx A, Ty B) {
       return A >= B;
     }
   };
 
-  template <class Tx, class Ty>
+  template <typename Tx, class Ty>
   struct BinaryOpBox<bool, Tx, Ty, kKeywordNotEqual> {
     bool Do(Tx A, Ty B) {
       return A != B;
     }
   };
 
-  template <class Tx, class Ty>
+  template <typename Tx, class Ty>
   struct BinaryOpBox<bool, Tx, Ty, kKeywordGreater> {
     bool Do(Tx A, Ty B) {
       return A > B;
     }
   };
 
-  template <class Tx, class Ty>
+  template <typename Tx, class Ty>
   struct BinaryOpBox<bool, Tx, Ty, kKeywordLess> {
     bool Do(Tx A, Ty B) {
       return A < B;
     }
   };
 
-  template <class Tx, class Ty>
+  template <typename Tx, class Ty>
   struct BinaryOpBox<bool, Tx, Ty, kKeywordAnd> {
     bool Do(Tx A, Ty B) {
       return A && B;
     }
   };
 
-  template <class Tx, class Ty>
+  template <typename Tx, class Ty>
   struct BinaryOpBox<bool, Tx, Ty, kKeywordOr> {
     bool Do(Tx A, Ty B) {
       return A || B;
@@ -188,10 +188,10 @@ namespace kagami {
 #undef DISPOSE_STRING_MATH_OP
 #undef DISPOSE_STRING_LOGIC_OP
 
-  template <class ResultType, Keyword op>
+  template <typename ResultType, Keyword op>
   using MathBox = BinaryOpBox<ResultType, ResultType, ResultType, op>;
 
-  template <class Tx, Keyword op>
+  template <typename Tx, Keyword op>
   using LogicBox = BinaryOpBox<bool, Tx, Tx, op>;
 
   const string kIteratorBehavior = "obj|step_forward|__compare";

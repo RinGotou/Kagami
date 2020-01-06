@@ -130,12 +130,12 @@ namespace kagami {
   const string kTypeIdPoint           = "point";
   const string kTypeIdModule          = "module";  //not implemented
 
-  template <class _Lhs, class... _Rhs>
+  template <typename _Lhs, class... _Rhs>
   inline bool compare(_Lhs lhs, _Rhs... rhs) {
     return ((lhs == rhs) || ...);
   }
 
-  template <class T>
+  template <typename T>
   inline bool find_in_vector(T t, const vector<T> &&vec) {
     for (auto &unit : vec) {
       if (t == unit) {
@@ -146,7 +146,7 @@ namespace kagami {
     return false;
   }
 
-  template <class T>
+  template <typename T>
   inline bool find_in_vector(T t, const vector<T> &vec) {
     for (auto &unit : vec) {
       if (t == unit) {
@@ -157,7 +157,7 @@ namespace kagami {
     return false;
   }
 
-  template <class _UnitType>
+  template <typename _UnitType>
   inline bool find_in_list(_UnitType target, initializer_list<_UnitType> lst) {
     for (auto &unit : lst) {
       if (unit == target) return true;

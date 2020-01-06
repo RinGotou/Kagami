@@ -1,7 +1,7 @@
 #include "machine.h"
 
 namespace kagami {
-  template <class StreamType>
+  template <typename StreamType>
   Message StreamFamilyState(ObjectMap &p) {
     StreamType &stream = p.Cast<StreamType>(kStrMe);
     return Message().SetObject(stream.Good());

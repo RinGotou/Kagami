@@ -20,7 +20,7 @@ namespace kagami {
     virtual Object Unpack() = 0;
   };
 
-  template <class IteratorType>
+  template <typename IteratorType>
   class BasicIterator : public IteratorInterface {
   private:
     IteratorType it_;
@@ -79,14 +79,14 @@ namespace kagami {
     shared_ptr<IteratorInterface> it_;
 
   private:
-    template <class Tx>
+    template <typename Tx>
     bool CastAndCompare(shared_ptr<IteratorInterface> &lhs,
       shared_ptr<IteratorInterface> &rhs) {
       return dynamic_pointer_cast<Tx>(lhs)->Get()
         == dynamic_pointer_cast<Tx>(rhs)->Get();
     }
 
-    template <class Tx>
+    template <typename Tx>
     auto GetPointer() {
       return dynamic_cast<IteratorInterface *>(new Tx(
         *dynamic_pointer_cast<Tx>(it_)));
@@ -107,7 +107,7 @@ namespace kagami {
       Hint: You must add new type identifier code in BaseContainerCode and add 
       casting actions below(Compare() and CreateCopy()) before add new items!
     */
-    template <class Tx>
+    template <typename Tx>
     UnifiedIterator(Tx it, BaseContainerCode type) :
       it_(dynamic_pointer_cast<IteratorInterface>(make_shared<BasicIterator<Tx>>(it))),
       container_type_(type) {}

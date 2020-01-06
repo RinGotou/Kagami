@@ -5,6 +5,7 @@ using namespace std;
 using namespace kagami;
 using namespace kagami::management;
 using namespace minatsuki;
+
 using Processor = ArgumentProcessor<kHeadHorizon, kJoinerEqual>;
 
 void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log) {

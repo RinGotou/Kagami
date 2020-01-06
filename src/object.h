@@ -25,7 +25,7 @@ namespace kagami {
 
   using HasherFunction = size_t(*)(shared_ptr<void>);
 
-  template <class T>
+  template <typename T>
   size_t PlainHasher(shared_ptr<void> ptr) {
     auto hasher = std::hash<T>();
     return hasher(*static_pointer_cast<T>(ptr));
@@ -33,7 +33,7 @@ namespace kagami {
 
   size_t PointerHasher(shared_ptr<void> ptr);
 
-  template <class T>
+  template <typename T>
   shared_ptr<void> PlainDeliveryImpl(shared_ptr<void> target) {
     T temp(*static_pointer_cast<T>(target));
     return make_shared<T>(temp);
@@ -95,7 +95,7 @@ namespace kagami {
     Object(const Object &&obj) noexcept :
       Object(obj) {}
 
-    template <class T>
+    template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
       real_dest_(nullptr),
       mode_(kObjectNormal),
@@ -103,7 +103,7 @@ namespace kagami {
       ptr_(ptr), 
       type_id_(type_id) {}
 
-    template <class T>
+    template <typename T>
     Object(T &t, string type_id) :
       real_dest_(nullptr),
       mode_(kObjectNormal),
@@ -111,7 +111,7 @@ namespace kagami {
       ptr_(make_shared<T>(t)),
       type_id_(type_id) {}
 
-    template <class T>
+    template <typename T>
     Object(T &&t, string type_id) :
       Object(t, type_id) {}
 
@@ -140,7 +140,7 @@ namespace kagami {
       return *this;
     }
 
-    template <class Tx>
+    template <typename Tx>
     Tx &Cast() {
       if (mode_ == kObjectRef) { 
         return real_dest_->Cast<Tx>(); 
@@ -309,7 +309,7 @@ namespace kagami {
       return operator=(rhs);
     }
 
-    template <class T>
+    template <typename T>
     T &Cast(string id) {
       return this->operator[](id).Cast<T>();
     }

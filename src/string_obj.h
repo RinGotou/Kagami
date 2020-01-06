@@ -2,14 +2,14 @@
 #include "machine.h"
 
 namespace kagami {
-  template <class StringType>
+  template <typename StringType>
   Message GetStringFamilySize(ObjectMap &p) {
     StringType &str = p.Cast<StringType>(kStrMe);
     int64_t size = static_cast<int64_t>(str.size());
     return Message().SetObject(size);
   }
   
-  template <class StringType>
+  template <typename StringType>
   Message StringFamilySubStr(ObjectMap &p) {
     StringType &str = p.Cast<StringType>(kStrMe);
 
@@ -27,7 +27,7 @@ namespace kagami {
     return Message().SetObject(Object(make_shared<StringType>(output), type_id));
   }
 
-  template <class StringType>
+  template <typename StringType>
   Message StringFamilyGetElement(ObjectMap &p) {
     StringType &str = p.Cast<StringType>(kStrMe);
     string type_id = p[kStrMe].GetTypeId();
@@ -43,7 +43,7 @@ namespace kagami {
     return Message().SetObject(Object(output, type_id));
   }
 
-  template<class DestType,class SrcType>
+  template<typename DestType,class SrcType>
   Message StringFamilyConverting(ObjectMap &p) {
     SrcType &str = p.Cast<SrcType>(kStrMe); 
     string type_id;

@@ -20,7 +20,7 @@ namespace kagami {
 
   using Parameters       = std::map<std::string, Option>;
   using Pattern          = Parameters::value_type;
-  using Argument         = std::pair<std::string, std::string>;
+  using CommandArgument  = std::pair<std::string, std::string>;
   using AnalyzedArgument = std::map<std::string, std::string>;
 
   enum HeadFormEnum {
@@ -54,11 +54,11 @@ namespace kagami {
   public:
     ArgumentProcessorError(ArgumentProcessorErrorEnum e) {
       switch (e) {
-      case kErrorBadHead:          msg = "Argument head symbol is missing"; break;
+      case kErrorBadHead:          msg = "CommandArgument head symbol is missing"; break;
       case kErrorMisssingRequired: msg = "Required argument is missing"; break;
       case kErrorMissingValue:     msg = "Value of argument is missing"; break;
       case kErrorRedundantValue:   msg = "Value of argument is redundant"; break;
-      case kErrorRedundantArgument:msg = "Argument is redundant"; break;
+      case kErrorRedundantArgument:msg = "CommandArgument is redundant"; break;
       case kErrorUnknownArgument:  msg = "Unknown argument"; break;
       case kErrorEmptyPattern:     msg = "You must provide patterns"; break;
       default:break;
@@ -172,11 +172,11 @@ namespace kagami {
   template <JoinerFormEnum joiner_code>
   class JoinerChecker {
   public:
-    Argument value;
+    CommandArgument value;
 
     bool Do(std::string str) {
       char joiner;
-      value = Argument();
+      value = CommandArgument();
 
       if constexpr (joiner_code == kJoinerColon) {
         joiner = ':';
@@ -194,9 +194,9 @@ namespace kagami {
         if (str[idx] != joiner) continue;
 
         value = idx < str.size() - 1 ?
-          Argument(str.substr(0, idx),
+          CommandArgument(str.substr(0, idx),
             str.substr(idx + 1, str.size() - idx + 1)) :
-          Argument(str.substr(0, str.size() - 1),
+          CommandArgument(str.substr(0, str.size() - 1),
             std::string());
 
         found = true;

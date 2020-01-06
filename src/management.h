@@ -20,7 +20,7 @@ namespace kagami::management::type {
     kTypeIdWideString, kTypeIdInStream, kTypeIdOutStream
   };
 
-  template <class T>
+  template <typename T>
   bool PlainComparator(Object &lhs, Object &rhs) {
     return lhs.Cast<T>() == rhs.Cast<T>();
   }
