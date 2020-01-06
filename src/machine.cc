@@ -125,28 +125,6 @@ namespace kagami {
 
     return result;
   }
-
-  /* string/wstring convertor */
-  //from https://www.yasuhisay.info/impl/20090722/1248245439
-  std::wstring s2ws(const std::string &s) {
-    if (s.empty()) return wstring();
-    size_t length = s.size();
-    wchar_t *wc = (wchar_t *)malloc(sizeof(wchar_t) * (length + 2));
-    mbstowcs(wc, s.data(), s.length() + 1);
-    std::wstring str(wc);
-    free(wc);
-    return str;
-  }
-
-  std::string ws2s(const std::wstring &s) {
-    if (s.empty()) return string();
-    size_t length = s.size();
-    char *c = (char *)malloc(sizeof(char) * length * 2);
-    wcstombs(c, s.data(), s.length() + 1);
-    std::string result(c);
-    free(c);
-    return result;
-  }
   
   string ParseRawString(const string & src) {
     string result = src;
@@ -171,7 +149,6 @@ namespace kagami {
     EXPORT_CONSTANT(kTypeIdNull);
     CreateConstantObject("kCoreFilename", Object(runtime::GetBinaryName()));
     CreateConstantObject("kCorePath", Object(runtime::GetBinaryPath()));
-    //CreateConstantObject("kCoreWorkingDir", Object(runtime::GetWorkingDirectory()));
   }
 
   void ActivateComponents() {

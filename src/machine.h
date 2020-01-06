@@ -34,8 +34,6 @@ namespace kagami {
   double FloatProducer(Object &obj);
   string StringProducer(Object &obj);
   bool BoolProducer(Object &obj);
-  std::wstring s2ws(const std::string &s);
-  std::string ws2s(const std::wstring &s);
   string ParseRawString(const string &src);
   void InitPlainTypesAndConstants();
   void ActivateComponents();

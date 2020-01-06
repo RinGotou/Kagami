@@ -1,5 +1,29 @@
 #include "lexical.h"
 
+namespace kagami {
+  /* string/wstring convertor */
+//from https://www.yasuhisay.info/impl/20090722/1248245439
+  wstring s2ws(const string &s) {
+    if (s.empty()) return wstring();
+    size_t length = s.size();
+    wchar_t *wc = (wchar_t *)malloc(sizeof(wchar_t) * (length + 2));
+    mbstowcs(wc, s.data(), s.length() + 1);
+    wstring str(wc);
+    free(wc);
+    return str;
+  }
+
+  string ws2s(const wstring &s) {
+    if (s.empty()) return string();
+    size_t length = s.size();
+    char *c = (char *)malloc(sizeof(char) * length * 2);
+    wcstombs(c, s.data(), s.length() + 1);
+    string result(c);
+    free(c);
+    return result;
+  }
+}
+
 namespace kagami::lexical {
   Terminator GetTerminatorCode(string src) {
     if (IsBinaryOperator(GetKeywordCode(src))) {

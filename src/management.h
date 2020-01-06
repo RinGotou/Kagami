@@ -98,7 +98,10 @@ namespace kagami::management::extension {
   public:
     ~Extension() { FreeLibrary(ptr_); }
     Extension() : ptr_(nullptr) {}
-    Extension(wstring path) : ptr_(LoadLibrary(path.data())) {}
+    Extension(string path) : ptr_(nullptr) {
+      wstring wstr = s2ws(path);
+      ptr_ = LoadLibraryW(wstr.data());
+    }
 
     template <typename _TargetFunction>
     bool GetTargetInterface(_TargetFunction &func, string id) {
@@ -108,7 +111,21 @@ namespace kagami::management::extension {
     }
   };
 #else
+  class Extension {
+  protected:
+    void *ptr_;
+  public:
+    ~Extension() { dlclose(ptr_); }
+    Extension() : ptr_(nullptr) {}
+    Extension(string path) : ptr_(dlopen(path.data(), RTLD_LAZY)) {}
 
+    template <typename _TargetFunction>
+    bool GetTargetInterface(_TargetFunction &func, string id) {
+      func = static_cast<_TargetFunction>(dlsym(ptr_, id.data()));
+      if (func == nullptr) return false;
+      return true;
+    }
+  };
 #endif
   //Callback facilities
   void DisposeMemoryUnit(void *ptr);
