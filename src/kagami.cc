@@ -2,7 +2,6 @@
 #include "argument.h"
 
 using namespace std;
-using namespace suzu;
 using namespace kagami;
 using namespace kagami::management;
 using namespace minatsuki;
