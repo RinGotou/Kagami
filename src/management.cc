@@ -271,6 +271,86 @@ namespace kagami::management::script {
   }
 }
 
+namespace kagami::management::extension {
+  void DisposeMemoryUnit(void *ptr) {
+    delete ptr;
+  }
+
+  void DisposeMemoryUnitGroup(void *ptr) {
+    delete[] ptr;
+  }
+
+  int FetchInt(int64_t **target, void *obj_map, const char *id) {
+    auto *source = static_cast<ObjectMap *>(obj_map);
+    auto it = source->find(string(id));
+    if (it == source->end()) return 0;
+    if (it->second.GetTypeId() != kTypeIdInt) return -1;
+    auto &value = it->second.Cast<int64_t>();
+    *target = new int64_t(value);
+    return 1;
+  }
+
+  int FetchFloat(double **target, void *obj_map, const char *id) {
+    auto *source = static_cast<ObjectMap *>(obj_map);
+    auto it = source->find(string(id));
+    if (it == source->end()) return 0;
+    if (it->second.GetTypeId() != kTypeIdFloat) return -1;
+    auto &value = it->second.Cast<double>();
+    *target = new double(value);
+    return 1;
+  }
+
+  int FetchBool(int **target, void *obj_map, const char *id) {
+    auto *source = static_cast<ObjectMap *>(obj_map);
+    auto it = source->find(string(id));
+    if (it == source->end()) return 0;
+    if (it->second.GetTypeId() != kTypeIdBool) return -1;
+    auto &value = it->second.Cast<bool>();
+    *target = value ? new int(1) : new int(0);
+    return 1;
+  }
+
+  int FetchString(char **target, void *obj_map, const char *id) {
+    auto *source = static_cast<ObjectMap *>(obj_map);
+    auto it = source->find(string(id));
+    if (it == source->end()) return 0;
+    if (it->second.GetTypeId() != kTypeIdString) return -1;
+    auto &value = it->second.Cast<string>();
+    *target = new char[value.size() + 1];
+    std::strcpy(*target, value.data());
+    return 1;
+  }
+
+  int FetchWideString(wchar_t **target, void *obj_map, const char *id) {
+    auto *source = static_cast<ObjectMap *>(obj_map);
+    auto it = source->find(string(id));
+    if (it == source->end()) return 0;
+    if (it->second.GetTypeId() != kTypeIdWideString) return -1;
+    auto &value = it->second.Cast<wstring>();
+    *target = new wchar_t[value.size() + 1];
+    std::wcscpy(*target, value.data());
+    return 1;
+  }
+
+  int FetchInStream(FILE **target, void *obj_map, const char *id) {
+    auto *source = static_cast<ObjectMap *>(obj_map);
+    auto it = source->find(string(id));
+    if (it == source->end()) return 0;
+    if (it->second.GetTypeId() != kTypeIdInStream) return -1;
+    *target = it->second.Cast<InStream>()._GetPtr();
+    return 1;
+  }
+
+  int FetchOutStream(FILE **target, void *obj_map, const char *id) {
+    auto *source = static_cast<ObjectMap *>(obj_map);
+    auto it = source->find(string(id));
+    if (it == source->end()) return 0;
+    if (it->second.GetTypeId() != kTypeIdOutStream) return -1;
+    *target = it->second.Cast<OutStream>()._GetPtr();
+    return 1;
+  }
+}
+
 namespace kagami::management::runtime {
   static string binary_name;
   static string binary_path;

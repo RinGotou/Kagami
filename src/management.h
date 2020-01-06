@@ -1,5 +1,6 @@
 #pragma once
 #include "function.h"
+#include "filestream.h"
 
 namespace kagami::management {
   using FunctionImplCollection = map<string, FunctionImpl>;
@@ -14,6 +15,10 @@ namespace kagami::management {
 }
 
 namespace kagami::management::type {
+  const unordered_set<string> RepackableObjTypes = {
+    kTypeIdInt, kTypeIdFloat, kTypeIdBool, kTypeIdString,
+    kTypeIdWideString, kTypeIdInStream, kTypeIdOutStream
+  };
 
   template <class T>
   bool PlainComparator(Object &lhs, Object &rhs) {
@@ -77,7 +82,7 @@ namespace kagami::management::script {
   VMCode &AppendBlankScript(string path);
 }
 
-namespace kagami::management::plugin {
+namespace kagami::management::extension {
 #ifdef _WIN32
   using LoadedLibraryUnit = pair<string, HMODULE>;
   using LibraryMgmtStorage = unordered_map<string, HMODULE>;
@@ -87,13 +92,13 @@ namespace kagami::management::plugin {
 #endif
 
 #ifdef _WIN32
-  class ExternalPlugin {
+  class Extension {
   protected:
     HMODULE ptr_;
   public:
-    ~ExternalPlugin() { FreeLibrary(ptr_); }
-    ExternalPlugin() : ptr_(nullptr) {}
-    ExternalPlugin(wstring path) : ptr_(LoadLibrary(path.data())) {}
+    ~Extension() { FreeLibrary(ptr_); }
+    Extension() : ptr_(nullptr) {}
+    Extension(wstring path) : ptr_(LoadLibrary(path.data())) {}
 
     template <typename _TargetFunction>
     bool GetTargetInterface(_TargetFunction &func, string id) {
@@ -105,6 +110,16 @@ namespace kagami::management::plugin {
 #else
 
 #endif
+  //Callback facilities
+  void DisposeMemoryUnit(void *ptr);
+  void DisposeMemoryUnitGroup(void *ptr);
+  int FetchInt(int64_t **target, void *obj_map, const char *id);
+  int FetchFloat(double **target, void *obj_map, const char *id);
+  int FetchBool(int **target, void *obj_map, const char *id);
+  int FetchString(char **target, void *obj_map, const char *id);
+  int FetchWideString(wchar_t **target, void *obj_map, const char *id);
+  int FetchInStream(FILE **target, void *obj_map, const char *id);
+  int FetchOutStream(FILE **target, void *obj_map, const char *id);
 }
 
 namespace kagami::management::runtime {
@@ -154,6 +169,8 @@ namespace kagami {
 }
 
 namespace mgmt = kagami::management;
+namespace ext = kagami::management::extension;
+namespace rt = kagami::management::runtime;
 
 #define EXPORT_CONSTANT(ID) management::CreateConstantObject(#ID, Object(ID))
 

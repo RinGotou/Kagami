@@ -30,6 +30,7 @@ namespace kagami {
 
     bool Good() const { return fp_ != nullptr; }
     bool eof() const { return eof_; }
+    FILE *_GetPtr() { return fp_; }
   };
 
   class InStream : public BasicStream {

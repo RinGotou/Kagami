@@ -102,6 +102,9 @@ namespace kagami {
     kNotPlainType = -1
   };
 
+  //TODO:Port some object type to extension
+  //int, float, bool, string, wstring, instream, outstream
+
   /* Embedded type identifier strings */
   const string kTypeIdNull            = "null";
   const string kTypeIdInt             = "int";
