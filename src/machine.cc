@@ -404,7 +404,7 @@ namespace kagami {
     auto &origin_code = *code_stack_.back();
     size_t counter = 0, size = args.size(), nest = frame.idx;
     bool optional = false, variable = false;
-    ParameterPattern argument_mode = kParamNormal;
+    ParameterPattern argument_mode = kParamFixed;
     vector<string> params;
     VMCode code(&origin_code);
 
@@ -1559,8 +1559,8 @@ namespace kagami {
 
   void Machine::GenerateArgs(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map) {
     switch (impl.GetPattern()) {
-    case kParamNormal:
-      Generate_Normal(impl, args, obj_map);
+    case kParamFixed:
+      Generate_Fixed(impl, args, obj_map);
       break;
     case kParamAutoSize:
       Generate_AutoSize(impl, args, obj_map);
@@ -1573,7 +1573,7 @@ namespace kagami {
     }
   }
 
-  void Machine::Generate_Normal(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map) {
+  void Machine::Generate_Fixed(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map) {
     auto &frame = frame_stack_.top();
     auto &params = impl.GetParameters();
     size_t pos = args.size() - 1;
@@ -1709,6 +1709,11 @@ namespace kagami {
       obj_map.insert(NamedObject(params[1], Object(y, kTypeIdInt)));
       obj_map.insert(NamedObject(params[0], Object(x, kTypeIdInt)));
     }
+  }
+
+  void Machine::CallingExtensionFunction(ObjectMap &p, FunctionImpl &impl) {
+    auto &frame = frame_stack_.top();
+    //TODO:
   }
 
   void Machine::Run(bool invoking, string id, VMCodePointer ptr, ObjectMap *p,

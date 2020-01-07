@@ -2,10 +2,16 @@
 #include "vmcode.h"
 
 namespace kagami {
+  using Activity = Message(*)(ObjectMap &);
+  using MemoryDisposer = void(*)(void *);
+  using ParameterInformer = const char *(*)(const char *);
+  using ExtensionLoader = void(*)(void **, MemoryDisposer, MemoryDisposer);
+  using ExtensionActivity = int(*)(void *);
+
   enum ParameterPattern {
     kParamAutoSize,
     kParamAutoFill,
-    kParamNormal
+    kParamFixed
   };
 
   class _FunctionImpl {
@@ -33,8 +39,15 @@ namespace kagami {
     VMCode &GetCode() { return code_; }
   };
 
-  class ExternalFunction :public _FunctionImpl {
+  class ExternalFunction : public _FunctionImpl {
+  private:
+    ExtensionActivity activity_;
 
+  public:
+    ExternalFunction(ExtensionActivity activity) :
+      activity_(activity) {}
+
+    ExtensionActivity GetExtActivity() const { return activity_; }
   };
 
   enum FunctionImplType {
@@ -69,7 +82,7 @@ namespace kagami {
       Activity activity,
       string params,
       string id,
-      ParameterPattern argument_mode = kParamNormal
+      ParameterPattern argument_mode = kParamFixed
     ) :
       impl_(new CXXFunction(activity)),
       record_(),
@@ -85,7 +98,7 @@ namespace kagami {
       VMCode ir,
       string id,
       vector<string> params,
-      ParameterPattern argument_mode = kParamNormal
+      ParameterPattern argument_mode = kParamFixed
     ) :
       impl_(new VMCodeFunction(ir)),
       record_(),
@@ -96,12 +109,30 @@ namespace kagami {
       id_(id),
       params_(params) {}
 
+    FunctionImpl(
+      ExtensionActivity activity,
+      string id,
+      string params_pattern
+    ) :
+      impl_(new ExternalFunction(activity)),
+      record_(),
+      mode_(kParamFixed),
+      type_(kFunctionExternal),
+      limit_(0),
+      offset_(0),
+      id_(id),
+      params_(BuildStringVector(params_pattern)) {}
+
     VMCode &GetCode() {
       return dynamic_pointer_cast<VMCodeFunction>(impl_)->GetCode();
     }
 
     Activity GetActivity() {
       return dynamic_pointer_cast<CXXFunction>(impl_)->GetActivity();
+    }
+
+    ExtensionActivity GetExtActivity() {
+      return dynamic_pointer_cast<ExternalFunction>(impl_)->GetExtActivity();
     }
 
     bool operator==(FunctionImpl &rhs) const {

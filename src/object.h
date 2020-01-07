@@ -10,7 +10,6 @@ namespace kagami {
   using ObjectPointer = Object *;
   using ObjectRef = Object &;
   using Comparator = bool(*)(Object &, Object &);
-  using Activity = Message(*)(ObjectMap &);
   using NamedObject = pair<string, Object>;
   using DeliveryImpl = shared_ptr<void>(*)(shared_ptr<void>);
   using ContainerPool = list<ObjectContainer>;

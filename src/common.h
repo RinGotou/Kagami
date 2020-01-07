@@ -129,6 +129,7 @@ namespace kagami {
   const string kTypeIdRectangle       = "rectangle";
   const string kTypeIdPoint           = "point";
   const string kTypeIdModule          = "module";  //not implemented
+  const string kTypeIdExtension       = "extension";
 
   template <typename _Lhs, class... _Rhs>
   inline bool compare(_Lhs lhs, _Rhs... rhs) {

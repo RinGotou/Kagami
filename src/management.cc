@@ -349,6 +349,10 @@ namespace kagami::management::extension {
     *target = it->second.Cast<OutStream>()._GetPtr();
     return 1;
   }
+
+  const void **GetObjectConvertors() {
+    return kObjectConvertors;
+  }
 }
 
 namespace kagami::management::runtime {

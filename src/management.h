@@ -1,5 +1,6 @@
 #pragma once
 #include "function.h"
+#include "extension.h"
 #include "filestream.h"
 
 namespace kagami::management {
@@ -83,50 +84,6 @@ namespace kagami::management::script {
 }
 
 namespace kagami::management::extension {
-#ifdef _WIN32
-  using LoadedLibraryUnit = pair<string, HMODULE>;
-  using LibraryMgmtStorage = unordered_map<string, HMODULE>;
-#else
-  using LoadedLibraryUnit = pair<string, void *>;
-  using LibraryMgmtStorage = unordered_map<string, void *>;
-#endif
-
-#ifdef _WIN32
-  class Extension {
-  protected:
-    HMODULE ptr_;
-  public:
-    ~Extension() { FreeLibrary(ptr_); }
-    Extension() : ptr_(nullptr) {}
-    Extension(string path) : ptr_(nullptr) {
-      wstring wstr = s2ws(path);
-      ptr_ = LoadLibraryW(wstr.data());
-    }
-
-    template <typename _TargetFunction>
-    bool GetTargetInterface(_TargetFunction &func, string id) {
-      func = static_cast<_TargetFunction>(GetProcAddress(ptr_, id.data()));
-      if (func == nullptr) return false;
-      return true;
-    }
-  };
-#else
-  class Extension {
-  protected:
-    void *ptr_;
-  public:
-    ~Extension() { dlclose(ptr_); }
-    Extension() : ptr_(nullptr) {}
-    Extension(string path) : ptr_(dlopen(path.data(), RTLD_LAZY)) {}
-
-    template <typename _TargetFunction>
-    bool GetTargetInterface(_TargetFunction &func, string id) {
-      func = static_cast<_TargetFunction>(dlsym(ptr_, id.data()));
-      if (func == nullptr) return false;
-      return true;
-    }
-  };
-#endif
   //Callback facilities
   void DisposeMemoryUnit(void *ptr);
   void DisposeMemoryUnitGroup(void *ptr);
@@ -137,6 +94,13 @@ namespace kagami::management::extension {
   int FetchWideString(wchar_t **target, void *obj_map, const char *id);
   int FetchInStream(FILE **target, void *obj_map, const char *id);
   int FetchOutStream(FILE **target, void *obj_map, const char *id);
+
+  static const void *kObjectConvertors[] = {
+    FetchInt, FetchFloat, FetchBool, FetchString, FetchWideString,
+    FetchInStream, FetchOutStream
+  };
+
+  const void **GetObjectConvertors();
 }
 
 namespace kagami::management::runtime {
