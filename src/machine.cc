@@ -1742,7 +1742,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CallingExtensionFunction(ObjectMap &p, FunctionImpl &impl) {
+  void Machine::CallExtensionFunction(ObjectMap &p, FunctionImpl &impl) {
     auto &frame = frame_stack_.top();
     Object returning_slot;
     auto ext_activity = impl.GetExtActivity();
@@ -1938,6 +1938,9 @@ namespace kagami {
         else update_stack_frame(*impl);
         
         continue;
+      }
+      else if (impl->GetType() == kFunctionExternal) {
+        CallExtensionFunction(obj_map, *impl);
       }
       else {
         //calling C++ functions.

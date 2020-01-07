@@ -318,7 +318,7 @@ namespace kagami {
     void Generate_AutoSize(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void Generate_AutoFill(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);
     void LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id);
-    void CallingExtensionFunction(ObjectMap &p, FunctionImpl &impl);
+    void CallExtensionFunction(ObjectMap &p, FunctionImpl &impl);
 
   private:
     deque<VMCodePointer> code_stack_;
