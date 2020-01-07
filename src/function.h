@@ -2,8 +2,11 @@
 #include "vmcode.h"
 
 namespace kagami {
+  using ReturningTunnel = void(*)(void *, void *, int);
+
   extern "C" struct VMState {
     void *obj_map, *ret_slot;
+    ReturningTunnel tunnel;
   };
 
   using Activity = Message(*)(ObjectMap &);
@@ -12,8 +15,7 @@ namespace kagami {
   using ObjectValueFetcher = int(*)(void **, void *, const char *);
   using CallbackFacilityLauncher = ObjectValueFetcher(*)(const char *);
   using ExtensionLoader = int(*)(CallbackFacilityLauncher, MemoryDisposer, MemoryDisposer);
-  using ReturningTunnel = void(*)(void *, void *, int);
-  using ExtensionActivity = int(*)(VMState, ReturningTunnel);
+  using ExtensionActivity = int(*)(VMState);
 
   enum ParameterPattern {
     kParamAutoSize,

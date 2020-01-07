@@ -1744,7 +1744,15 @@ namespace kagami {
 
   void Machine::CallingExtensionFunction(ObjectMap &p, FunctionImpl &impl) {
     auto &frame = frame_stack_.top();
-    //TODO:
+    Object returning_slot;
+    auto ext_activity = impl.GetExtActivity();
+    VMState vm_state{ &p, &returning_slot, ReceiveExtReturningValue };
+    auto result_code = ext_activity(vm_state);
+    if (result_code < 1) {
+      frame.MakeError("Extension reports error while invoking external activity.");
+      return;
+    }
+    frame.RefreshReturnStack(returning_slot);
   }
 
   void Machine::Run(bool invoking, string id, VMCodePointer ptr, ObjectMap *p,
