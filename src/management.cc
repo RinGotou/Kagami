@@ -280,7 +280,7 @@ namespace kagami::management::extension {
     delete[] ptr;
   }
 
-  int FetchInt(int64_t **target, void *obj_map, const char *id) {
+  int FetchInt(void **target, void *obj_map, const char *id) {
     auto *source = static_cast<ObjectMap *>(obj_map);
     auto it = source->find(string(id));
     if (it == source->end()) return 0;
@@ -290,7 +290,7 @@ namespace kagami::management::extension {
     return 1;
   }
 
-  int FetchFloat(double **target, void *obj_map, const char *id) {
+  int FetchFloat(void **target, void *obj_map, const char *id) {
     auto *source = static_cast<ObjectMap *>(obj_map);
     auto it = source->find(string(id));
     if (it == source->end()) return 0;
@@ -300,7 +300,7 @@ namespace kagami::management::extension {
     return 1;
   }
 
-  int FetchBool(int **target, void *obj_map, const char *id) {
+  int FetchBool(void **target, void *obj_map, const char *id) {
     auto *source = static_cast<ObjectMap *>(obj_map);
     auto it = source->find(string(id));
     if (it == source->end()) return 0;
@@ -310,30 +310,26 @@ namespace kagami::management::extension {
     return 1;
   }
 
-  int FetchString(char **target, void *obj_map, const char *id) {
+  int FetchString(void **target, void *obj_map, const char *id) {
     auto *source = static_cast<ObjectMap *>(obj_map);
     auto it = source->find(string(id));
     if (it == source->end()) return 0;
     if (it->second.GetTypeId() != kTypeIdString) return -1;
     auto &value = it->second.Cast<string>();
     *target = new char[value.size() + 1];
-    std::strcpy(*target, value.data());
+    std::strcpy((char *)*target, value.data());
     return 1;
   }
 
-  int FetchWideString(wchar_t **target, void *obj_map, const char *id) {
+  int FetchWideString(void **target, void *obj_map, const char *id) {
     auto *source = static_cast<ObjectMap *>(obj_map);
     auto it = source->find(string(id));
     if (it == source->end()) return 0;
     if (it->second.GetTypeId() != kTypeIdWideString) return -1;
     auto &value = it->second.Cast<wstring>();
     *target = new wchar_t[value.size() + 1];
-    std::wcscpy(*target, value.data());
+    std::wcscpy((wchar_t *)*target, value.data());
     return 1;
-  }
-
-  const void **GetObjectConvertors() {
-    return kObjectConvertors;
   }
 }
 

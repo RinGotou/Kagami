@@ -87,17 +87,11 @@ namespace kagami::management::extension {
   //Callback facilities
   void DisposeMemoryUnit(void *ptr);
   void DisposeMemoryUnitGroup(void *ptr);
-  int FetchInt(int64_t **target, void *obj_map, const char *id);
-  int FetchFloat(double **target, void *obj_map, const char *id);
-  int FetchBool(int **target, void *obj_map, const char *id);
-  int FetchString(char **target, void *obj_map, const char *id);
-  int FetchWideString(wchar_t **target, void *obj_map, const char *id);
-
-  static const void *kObjectConvertors[] = {
-    FetchInt, FetchFloat, FetchBool, FetchString, FetchWideString
-  };
-
-  const void **GetObjectConvertors();
+  int FetchInt(void **target, void *obj_map, const char *id);
+  int FetchFloat(void **target, void *obj_map, const char *id);
+  int FetchBool(void **target, void *obj_map, const char *id);
+  int FetchString(void **target, void *obj_map, const char *id);
+  int FetchWideString(void **target, void *obj_map, const char *id);
 }
 
 namespace kagami::management::runtime {
