@@ -92,8 +92,6 @@ namespace kagami::management::extension {
   int FetchBool(int **target, void *obj_map, const char *id);
   int FetchString(char **target, void *obj_map, const char *id);
   int FetchWideString(wchar_t **target, void *obj_map, const char *id);
-  int FetchInStream(FILE **target, void *obj_map, const char *id);
-  int FetchOutStream(FILE **target, void *obj_map, const char *id);
 
   static const void *kObjectConvertors[] = {
     FetchInt, FetchFloat, FetchBool, FetchString, FetchWideString,

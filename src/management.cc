@@ -332,24 +332,6 @@ namespace kagami::management::extension {
     return 1;
   }
 
-  int FetchInStream(FILE **target, void *obj_map, const char *id) {
-    auto *source = static_cast<ObjectMap *>(obj_map);
-    auto it = source->find(string(id));
-    if (it == source->end()) return 0;
-    if (it->second.GetTypeId() != kTypeIdInStream) return -1;
-    *target = it->second.Cast<InStream>()._GetPtr();
-    return 1;
-  }
-
-  int FetchOutStream(FILE **target, void *obj_map, const char *id) {
-    auto *source = static_cast<ObjectMap *>(obj_map);
-    auto it = source->find(string(id));
-    if (it == source->end()) return 0;
-    if (it->second.GetTypeId() != kTypeIdOutStream) return -1;
-    *target = it->second.Cast<OutStream>()._GetPtr();
-    return 1;
-  }
-
   const void **GetObjectConvertors() {
     return kObjectConvertors;
   }

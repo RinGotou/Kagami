@@ -1,7 +1,22 @@
 #pragma once
-#include "common.h"
+//#include "common.h"
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
 
 namespace kagami {
+  using std::FILE;
+  using std::fopen;
+  using std::string;
+  using std::wstring;
+  using std::fputc;
+  using std::fputwc;
+  using std::fgetc;
+  using std::fgetwc;
+
   string GetLine();
   wstring GetLineW();
   FILE *GetVMStdout(FILE *dest = nullptr);
