@@ -97,7 +97,7 @@ namespace kagami::management::extension {
 
   static const void *kObjectConvertors[] = {
     FetchInt, FetchFloat, FetchBool, FetchString, FetchWideString,
-    FetchInStream, FetchOutStream
+    FetchInStream, FetchOutStream, nullptr
   };
 
   const void **GetObjectConvertors();

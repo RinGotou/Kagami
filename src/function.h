@@ -5,7 +5,7 @@ namespace kagami {
   using Activity = Message(*)(ObjectMap &);
   using MemoryDisposer = void(*)(void *);
   using ParameterInformer = const char *(*)(const char *);
-  using ExtensionLoader = void(*)(void **, MemoryDisposer, MemoryDisposer);
+  using ExtensionLoader = int(*)(const void **, MemoryDisposer, MemoryDisposer);
   using ExtensionActivity = int(*)(void *);
 
   enum ParameterPattern {
