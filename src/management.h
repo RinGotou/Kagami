@@ -85,6 +85,8 @@ namespace kagami::management::script {
 
 namespace kagami::management::extension {
   //Callback facilities
+  using CallbackUnit = pair<string, ObjectValueFetcher>;
+
   void DisposeMemoryUnit(void *ptr);
   void DisposeMemoryUnitGroup(void *ptr);
   int FetchInt(void **target, void *obj_map, const char *id);
@@ -92,6 +94,7 @@ namespace kagami::management::extension {
   int FetchBool(void **target, void *obj_map, const char *id);
   int FetchString(void **target, void *obj_map, const char *id);
   int FetchWideString(void **target, void *obj_map, const char *id);
+  ObjectValueFetcher GetCallbackFacilities(const char *id);
 }
 
 namespace kagami::management::runtime {

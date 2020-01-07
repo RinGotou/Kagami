@@ -2,6 +2,14 @@
 #include "function.h"
 
 namespace kagami {
+  enum ExtActivityReturnType {
+    kExtTypeInt        = 1,
+    kExtTypeFloat      = 2,
+    kExtTypeBool       = 3,
+    kExtTypeString     = 4,
+    kExtTypeWideString = 5
+  };
+
 #ifdef _WIN32
   class Extension {
   protected:

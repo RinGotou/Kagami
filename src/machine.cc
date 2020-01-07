@@ -158,6 +158,37 @@ namespace kagami {
     }
   }
 
+  void ReceiveExtReturningValue(void *value, void *slot, int type) {
+    auto &slot_obj = *static_cast<Object *>(slot);
+
+    if (type == kExtTypeInt) {
+      auto *ret_value = static_cast<int64_t *>(value);
+      slot_obj.PackContent(make_shared<int64_t>(*ret_value), kTypeIdInt);
+    }
+    else if (type == kExtTypeFloat) {
+      auto *ret_value = static_cast<double *>(value);
+      slot_obj.PackContent(make_shared<double>(*ret_value), kTypeIdFloat);
+    }
+    else if (type == kExtTypeBool) {
+      auto *ret_value = static_cast<int *>(value);
+      bool content = *ret_value == 1 ? true : false;
+      slot_obj.PackContent(make_shared<bool>(content), kTypeIdBool);
+    }
+    else if (type == kExtTypeString) {
+      const auto *ret_value = static_cast<char *>(value);
+      string content(ret_value);
+      slot_obj.PackContent(make_shared<string>(content), kTypeIdString);
+    }
+    else if (type == kExtTypeWideString) {
+      const auto *ret_value = static_cast<wchar_t *>(value);
+      wstring content(ret_value);
+      slot_obj.PackContent(make_shared<wstring>(content), kTypeIdWideString);
+    }
+    else {
+      slot_obj.PackContent(nullptr, kTypeIdNull);
+    }
+  }
+
   void RuntimeFrame::Stepping() {
     if (!disable_step) idx += 1;
     disable_step = false;

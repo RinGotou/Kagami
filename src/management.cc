@@ -331,6 +331,20 @@ namespace kagami::management::extension {
     std::wcscpy((wchar_t *)*target, value.data());
     return 1;
   }
+
+  ObjectValueFetcher GetCallbackFacilities(const char *id) {
+    static unordered_map<string, ObjectValueFetcher> facilities = {
+      CallbackUnit("int", FetchInt),
+      CallbackUnit("float", FetchFloat),
+      CallbackUnit("bool", FetchBool),
+      CallbackUnit("string", FetchString),
+      CallbackUnit("wstring", FetchWideString)
+    };
+
+    auto it = facilities.find(string(id));
+    if (it != facilities.end()) return it->second;
+    return nullptr;
+  }
 }
 
 namespace kagami::management::runtime {

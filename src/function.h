@@ -2,11 +2,18 @@
 #include "vmcode.h"
 
 namespace kagami {
+  extern "C" struct VMState {
+    void *obj_map, *ret_slot;
+  };
+
   using Activity = Message(*)(ObjectMap &);
   using MemoryDisposer = void(*)(void *);
   using ParameterInformer = const char *(*)(const char *);
-  using ExtensionLoader = int(*)(const void **, MemoryDisposer, MemoryDisposer);
-  using ExtensionActivity = int(*)(void *);
+  using ObjectValueFetcher = int(*)(void **, void *, const char *);
+  using CallbackFacilityLauncher = ObjectValueFetcher(*)(const char *);
+  using ExtensionLoader = int(*)(CallbackFacilityLauncher, MemoryDisposer, MemoryDisposer);
+  using ReturningTunnel = void(*)(void *, void *, int);
+  using ExtensionActivity = int(*)(VMState, ReturningTunnel);
 
   enum ParameterPattern {
     kParamAutoSize,
