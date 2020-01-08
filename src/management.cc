@@ -272,12 +272,26 @@ namespace kagami::management::script {
 }
 
 namespace kagami::management::extension {
-  void DisposeMemoryUnit(void *ptr) {
-    delete ptr;
+  template <typename _ExtDataType>
+  void DMU_Deleter(_ExtDataType *ptr) { delete ptr; }
+
+  template <typename _ExtDataType>
+  void DMUG_Deleter(_ExtDataType *ptr) { delete[] ptr; }
+
+  void DisposeMemoryUnit(void *ptr, int type) {
+    switch (type) {
+    case kExtTypeInt:DMU_Deleter((int64_t *)ptr); break;
+    case kExtTypeFloat:DMU_Deleter((double *)ptr); break;
+    case kExtTypeBool:DMU_Deleter((int *)ptr); break;
+    default:break;
+    }
   }
 
-  void DisposeMemoryUnitGroup(void *ptr) {
-    delete[] ptr;
+  void DisposeMemoryUnitGroup(void *ptr, int type) {
+    switch (type) {
+    case kExtTypeString:DMUG_Deleter((char *)ptr); break;
+    case kExtTypeWideString:DMUG_Deleter((wchar_t *)ptr); break;
+    }
   }
 
   int FetchInt(void **target, void *obj_map, const char *id) {

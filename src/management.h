@@ -87,8 +87,8 @@ namespace kagami::management::extension {
   //Callback facilities
   using CallbackUnit = pair<string, ObjectValueFetcher>;
 
-  void DisposeMemoryUnit(void *ptr);
-  void DisposeMemoryUnitGroup(void *ptr);
+  void DisposeMemoryUnit(void *ptr, int type);
+  void DisposeMemoryUnitGroup(void *ptr, int type);
   int FetchInt(void **target, void *obj_map, const char *id);
   int FetchFloat(void **target, void *obj_map, const char *id);
   int FetchBool(void **target, void *obj_map, const char *id);

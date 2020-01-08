@@ -10,7 +10,7 @@ namespace kagami {
   };
 
   using Activity = Message(*)(ObjectMap &);
-  using MemoryDisposer = void(*)(void *);
+  using MemoryDisposer = void(*)(void *, int);
   using ParameterInformer = const char *(*)(const char *);
   using ObjectValueFetcher = int(*)(void **, void *, const char *);
   using CallbackFacilityLauncher = ObjectValueFetcher(*)(const char *);
