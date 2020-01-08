@@ -44,8 +44,8 @@
 #include "minatsuki.log/src/minatsuki.log.h"
 
 #define ENGINE_NAME     "Kagami Project Core"
-#define INTERPRETER_VER "2.21"
-#define CODENAME        "Cradle"
+#define INTERPRETER_VER "2.25"
+#define CODENAME        ""
 #define MAINTAINER      "Rin Gotou"
 #define COPYRIGHT       "Copyright(c) 2020"
 

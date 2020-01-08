@@ -1941,6 +1941,15 @@ namespace kagami {
       }
       else if (impl->GetType() == kFunctionExternal) {
         CallExtensionFunction(obj_map, *impl);
+
+        if (frame->error) {
+          //Get actual script index for error reporting
+          script_idx = command->first.idx;
+          break;
+        }
+
+        frame->Stepping();
+        continue;
       }
       else {
         //calling C++ functions.

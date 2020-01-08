@@ -46,6 +46,19 @@ namespace kagami {
   }
 
   void InitExtensionComponents() {
-    //Reserved
+    using namespace mgmt::type;
+
+    ObjectTraitsSetup(kTypeIdExtension, ShallowDelivery)
+      .InitConstructor(
+        FunctionImpl(NewExtension, "path", kTypeIdExtension)
+      )
+      .InitMethods(
+        {
+          FunctionImpl(ExtensionGood, "", "good"),
+          FunctionImpl(ExtensionFetchFunction, "id", "fetch")
+        }
+    );
+
+    EXPORT_CONSTANT(kTypeIdExtension);
   }
 }
