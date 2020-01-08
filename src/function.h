@@ -14,7 +14,9 @@ namespace kagami {
   using ParameterInformer = const char *(*)(const char *);
   using ObjectValueFetcher = int(*)(void **, void *, const char *);
   using CallbackFacilityLauncher = ObjectValueFetcher(*)(const char *);
-  using ExtensionLoader = int(*)(CallbackFacilityLauncher, MemoryDisposer, MemoryDisposer);
+  using ObjectTypeFetcher = int(*)(void *, const char *);
+  using ExtensionLoader = int(*)(CallbackFacilityLauncher, 
+    MemoryDisposer, MemoryDisposer, ObjectTypeFetcher);
   using ExtensionActivity = int(*)(VMState);
 
   enum ParameterPattern {

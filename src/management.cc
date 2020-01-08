@@ -359,6 +359,23 @@ namespace kagami::management::extension {
     if (it != facilities.end()) return it->second;
     return nullptr;
   }
+
+  int FetchObjectType(void *obj_map, const char *id) {
+    auto &p = *static_cast<ObjectMap *>(obj_map);
+    auto it = p.find(string(id));
+    int result = kExtTypeNull;
+
+    if (it != p.end()) {
+      auto type = it->second.GetTypeId();
+      if (type == kTypeIdInt) result = kExtTypeInt;
+      else if (type == kTypeIdFloat) result = kExtTypeFloat;
+      else if (type == kTypeIdBool) result = kExtTypeBool;
+      else if (type == kTypeIdString) result = kExtTypeString;
+      else if (type == kTypeIdWideString) result = kExtTypeWideString;
+    }
+
+    return result;
+  }
 }
 
 namespace kagami::management::runtime {

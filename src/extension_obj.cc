@@ -13,7 +13,8 @@ namespace kagami {
       return Message("Invalid extension interface", kStateError);
     }
 
-    auto result = loader(ext::GetCallbackFacilities, DisposeMemoryUnit, DisposeMemoryUnitGroup);
+    auto result = loader(ext::GetCallbackFacilities, 
+      DisposeMemoryUnit, DisposeMemoryUnitGroup, FetchObjectType);
 
     if (result != 1) {
       return Message("Error is occurred while core is trying to load extension");

@@ -3,6 +3,7 @@
 
 namespace kagami {
   enum ExtActivityReturnType {
+    kExtTypeNull       = 0,
     kExtTypeInt        = 1,
     kExtTypeFloat      = 2,
     kExtTypeBool       = 3,
