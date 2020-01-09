@@ -58,8 +58,6 @@ namespace kagami {
     Extension() = delete;
     Extension(string path) : ptr_(dlopen(path.data(), RTLD_LAZY)) {}
 
-    ExtensionActivity FetchFunction(string id);
-
     ExtensionActivity FetchFunction(string id) {
       return FetchInterface<ExtensionActivity>(id);
   }

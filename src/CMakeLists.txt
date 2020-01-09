@@ -31,6 +31,8 @@ target_link_libraries(${PROJECT_NAME} ${SDL2_MIXER_LIBRARIES})
 
 if(WIN32)
   add_definitions(-DWIN32)
+else()
+  set(CMAKE_EXE_LINKER_FLAGS "-ldl")
 endif()
 
 if(MSVC)
