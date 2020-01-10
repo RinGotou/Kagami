@@ -142,7 +142,7 @@ namespace kagami {
     CreateImpl(FunctionImpl(SystemCommand, "command", "console"));
     CreateImpl(FunctionImpl(ThreadSleep, "milliseconds", "sleep"));
     CreateImpl(FunctionImpl(SetWorkingDir, "dir", "setwd"));
-    CreateImpl(FunctionImpl(GetWorkingDir, "dir", "getwd"));
+    CreateImpl(FunctionImpl(GetWorkingDir, "", "getwd"));
     CreateImpl(FunctionImpl(GetScriptAbsolutePath, "", "get_script_path"));
   }
 }
