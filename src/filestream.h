@@ -61,7 +61,7 @@ namespace kagami {
     void operator=(InStream &rhs) {
       std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
     }
-    void operator=(InStream &&rhs) {
+    void operator=(InStream &&rhs) noexcept {
       operator=(rhs);
     }
 
@@ -79,7 +79,7 @@ namespace kagami {
     void operator=(InStreamW &rhs) {
       std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
     }
-    void operator=(InStreamW &&rhs) {
+    void operator=(InStreamW &&rhs) noexcept {
       operator=(rhs);
     }
 

@@ -52,7 +52,8 @@ namespace kagami {
 
   Object &Object::PackContent(shared_ptr<void> ptr, string type_id) {
     if (mode_ == kObjectRef) {
-      return real_dest_->PackContent(ptr, type_id);
+      return static_cast<ObjectPointer>(real_dest_)
+        ->PackContent(ptr, type_id);
     }
 
     ptr_ = ptr;

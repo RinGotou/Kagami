@@ -20,6 +20,7 @@ namespace kagami {
   enum ObjectMode {
     kObjectNormal    = 1,
     kObjectRef       = 2,
+    kObjectExternal  = 3
   };
 
   using HasherFunction = size_t(*)(shared_ptr<void>);
@@ -68,7 +69,7 @@ namespace kagami {
 
   class Object {
   private:
-    ObjectPointer real_dest_;
+    void *real_dest_;
     ObjectMode mode_;
     bool delivering_;
     shared_ptr<void> ptr_;
@@ -127,22 +128,24 @@ namespace kagami {
     Object &PackObject(Object &object);
 
     shared_ptr<void> Get() {
-      if (mode_ == kObjectRef) return real_dest_->Get();
+      if (mode_ == kObjectRef) {
+        return static_cast<ObjectPointer>(real_dest_)->Get();
+      }
       return ptr_;
     }
 
     Object &Unpack() {
       if (mode_ == kObjectRef) {
-        return *real_dest_;
+        return *static_cast<ObjectPointer>(real_dest_);
       }
-
       return *this;
     }
 
     template <typename Tx>
     Tx &Cast() {
       if (mode_ == kObjectRef) { 
-        return real_dest_->Cast<Tx>(); 
+        return static_cast<ObjectPointer>(real_dest_)
+          ->Cast<Tx>(); 
       }
 
       return *std::static_pointer_cast<Tx>(ptr_);
@@ -160,7 +163,8 @@ namespace kagami {
 
     bool GetDeliveringFlag() {
       if (mode_ == kObjectRef) {
-        return real_dest_->GetDeliveringFlag();
+        return static_cast<ObjectPointer>(real_dest_)
+          ->GetDeliveringFlag();
       }
       bool result = delivering_;
       delivering_ = false;
@@ -169,7 +173,8 @@ namespace kagami {
 
     bool SeekDeliveringFlag() {
       if (mode_ == kObjectRef) {
-        return real_dest_->SeekDeliveringFlag();
+        return static_cast<ObjectPointer>(real_dest_)
+          ->SeekDeliveringFlag();
       }
       return delivering_;
     }
@@ -177,7 +182,7 @@ namespace kagami {
     bool operator==(const Object &obj) = delete;
     bool operator==(const Object &&obj) = delete;
 
-    Object *GetRealDest() { return real_dest_; }
+    Object *GetRealDest() { return static_cast<ObjectPointer>(real_dest_); }
 
     Object &operator=(const Object &&object) { return operator=(object); }
 

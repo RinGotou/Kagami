@@ -59,7 +59,8 @@ namespace kagami::management::type {
       hasher_(hasher) {}
 
     ObjectTraitsSetup(string type_name, DeliveryImpl dlvy) :
-      type_id_(type_name), delivering_impl_(dlvy), hasher_(nullptr) {}
+      type_id_(type_name), delivering_impl_(dlvy), 
+      comparator_(nullptr), hasher_(nullptr) {}
 
     ObjectTraitsSetup &InitConstructor(FunctionImpl impl) {
       delivering_ = impl; return *this; 
