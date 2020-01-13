@@ -13,7 +13,9 @@ namespace kagami {
   using NamedObject = pair<string, Object>;
   using DeliveryImpl = shared_ptr<void>(*)(shared_ptr<void>);
   using ContainerPool = list<ObjectContainer>;
-  
+  using ExternalMemoryDisposer = void(*)(void *, const char *);
+  using MemoryDisposer = void(*)(void *, int);
+
   vector<string> BuildStringVector(string source);
   string CombineStringVector(vector<string> target);
 
@@ -65,6 +67,22 @@ namespace kagami {
     HasherFunction GetHasher() { return hasher_; }
     Comparator GetComparator() { return comparator_; }
     DeliveryImpl GetDeliveringImpl() { return delivering_impl_; }
+  };
+
+  class ExternalRCContainer {
+  protected:
+    void *ptr_;
+    ExternalMemoryDisposer disposer_;
+    string type_id_;
+
+  public:
+    ~ExternalRCContainer() {
+      if (disposer_ != nullptr) disposer_(ptr_, type_id_.data());
+    }
+    ExternalRCContainer() = delete;
+    ExternalRCContainer(void *ptr, ExternalMemoryDisposer disposer, 
+      string type_id) :
+      ptr_(ptr), disposer_(disposer), type_id_(type_id) {}
   };
 
   class Object {
@@ -184,6 +202,8 @@ namespace kagami {
 
     Object *GetRealDest() { return static_cast<ObjectPointer>(real_dest_); }
 
+    void *GetExternalPointer() { return real_dest_; }
+
     Object &operator=(const Object &&object) { return operator=(object); }
 
     Object &swap(Object &&obj) { return swap(obj); }
@@ -193,6 +213,8 @@ namespace kagami {
     bool IsRef() const { return mode_ == kObjectRef; }
 
     bool Null() const { return ptr_ == nullptr && real_dest_ == nullptr; }
+
+    ObjectMode GetMode() const { return mode_; }
   };
 
   using ObjectArray = deque<Object>;

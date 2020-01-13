@@ -40,7 +40,7 @@ namespace kagami {
     void operator=(BasicStream &rhs) {
       std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
     }
-    void operator=(BasicStream &&rhs) {
+    void operator=(BasicStream &&rhs) noexcept {
       operator=(rhs);
     }
 
@@ -97,7 +97,7 @@ namespace kagami {
     void operator=(OutStream &rhs) {
       std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
     }
-    void operator=(OutStream &&rhs) {
+    void operator=(OutStream &&rhs) noexcept {
       operator=(rhs);
     }
 
@@ -115,7 +115,7 @@ namespace kagami {
     void operator=(OutStreamW &rhs) {
       std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
     }
-    void operator=(OutStreamW &&rhs) {
+    void operator=(OutStreamW &&rhs) noexcept {
       operator=(rhs);
     }
 

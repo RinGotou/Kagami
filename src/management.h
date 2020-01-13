@@ -95,6 +95,7 @@ namespace kagami::management::extension {
   int FetchBool(void **target, void *obj_map, const char *id);
   int FetchString(void **target, void *obj_map, const char *id);
   int FetchWideString(void **target, void *obj_map, const char *id);
+  int FetchCustomTypes(void **target, void *obj_map, const char *id);
   ObjectValueFetcher GetCallbackFacilities(const char *id);
   int FetchObjectType(void *obj_map, const char *id);
 }

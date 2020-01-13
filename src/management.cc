@@ -346,6 +346,15 @@ namespace kagami::management::extension {
     return 1;
   }
 
+  int FetchCustomTypes(void **target, void *obj_map, const char *id) {
+    auto *source = static_cast<ObjectMap *>(obj_map);
+    auto it = source->find(string(id));
+    if (it == source->end()) return 0;
+    if (it->second.GetMode() != kObjectExternal) return 0;
+    *target = it->second.GetExternalPointer();
+    return 1;
+  }
+
   ObjectValueFetcher GetCallbackFacilities(const char *id) {
     static unordered_map<string, ObjectValueFetcher> facilities = {
       CallbackUnit("int", FetchInt),
