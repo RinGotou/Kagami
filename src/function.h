@@ -5,12 +5,11 @@ namespace kagami {
   using ReturningTunnel = void(*)(void *, void *, int);
 
   extern "C" struct VMState {
-    void *obj_map, *ret_slot;
+    void *obj_map, *ret_slot, *vm;
     ReturningTunnel tunnel;
   };
 
   using Activity = Message(*)(ObjectMap &);
-  using MemoryDisposer = void(*)(void *, int);
   using ParameterInformer = const char *(*)(const char *);
   using ObjectValueFetcher = int(*)(void **, void *, const char *);
   using CallbackFacilityLauncher = ObjectValueFetcher(*)(const char *);

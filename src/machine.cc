@@ -189,6 +189,14 @@ namespace kagami {
     }
   }
 
+  int PushObjectToVM(const char *id, void *ptr, const char *type_id, ExternalMemoryDisposer disposer,
+    void *vm) {
+    auto &machine = *static_cast<Machine *>(vm);
+    Object ext_obj(ptr, disposer, string(type_id));
+    auto result = machine.PushObject(string(id), ext_obj);
+    return result ? 1 : 0;
+  }
+
   void RuntimeFrame::Stepping() {
     if (!disable_step) idx += 1;
     disable_step = false;
@@ -1746,13 +1754,23 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     Object returning_slot;
     auto ext_activity = impl.GetExtActivity();
-    VMState vm_state{ &p, &returning_slot, ReceiveExtReturningValue };
+    VMState vm_state{ &p, &returning_slot, this, ReceiveExtReturningValue };
     auto result_code = ext_activity(vm_state);
     if (result_code < 1) {
       frame.MakeError("Extension reports error while invoking external activity.");
       return;
     }
     frame.RefreshReturnStack(returning_slot);
+  }
+
+  bool Machine::PushObject(string id, Object object) {
+    auto &frame = frame_stack_.top();
+    auto result = obj_stack_.CreateObject(id, object);
+    if (!result) {
+      frame.MakeError("Cannot create object");
+      return false;
+    }
+    return true;
   }
 
   void Machine::Run(bool invoking, string id, VMCodePointer ptr, ObjectMap *p,

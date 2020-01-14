@@ -96,49 +96,38 @@ namespace kagami {
   public:
     ~Object() {}
 
-    Object() :
-      real_dest_(nullptr),
-      mode_(kObjectNormal),
-      delivering_(false),
-      ptr_(nullptr),
-      type_id_(kTypeIdNull) {}
+    Object() : real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
+      ptr_(nullptr), type_id_(kTypeIdNull) {}
 
     Object(const Object &obj) :
-      real_dest_(obj.real_dest_),
-      mode_(obj.mode_),
-      delivering_(obj.delivering_),
-      ptr_(obj.ptr_),
-      type_id_(obj.type_id_) {}
+      real_dest_(obj.real_dest_), mode_(obj.mode_), delivering_(obj.delivering_),
+      ptr_(obj.ptr_), type_id_(obj.type_id_) {}
 
     Object(const Object &&obj) noexcept :
       Object(obj) {}
 
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
-      real_dest_(nullptr),
-      mode_(kObjectNormal),
-      delivering_(false),
-      ptr_(ptr), 
-      type_id_(type_id) {}
+      real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
+      ptr_(ptr), type_id_(type_id) {}
 
     template <typename T>
     Object(T &t, string type_id) :
-      real_dest_(nullptr),
-      mode_(kObjectNormal),
-      delivering_(false),
-      ptr_(make_shared<T>(t)),
-      type_id_(type_id) {}
+      real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
+      ptr_(make_shared<T>(t)), type_id_(type_id) {}
 
     template <typename T>
     Object(T &&t, string type_id) :
       Object(t, type_id) {}
 
+    Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
+      real_dest_(ext_ptr), mode_(kObjectExternal), delivering_(false), 
+      ptr_(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)),
+      type_id_(type_id) {}
+
     Object(string str) :
-      real_dest_(nullptr),
-      mode_(kObjectNormal),
-      delivering_(false),
-      ptr_(std::make_shared<string>(str)),
-      type_id_(kTypeIdString) {}
+      real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
+      ptr_(make_shared<string>(str)), type_id_(kTypeIdString) {}
 
     Object &operator=(const Object &object);
     Object &PackContent(shared_ptr<void> ptr, string type_id);

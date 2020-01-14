@@ -2,6 +2,9 @@
 #include "function.h"
 
 namespace kagami {
+  //TODO:External Type Facility
+  using ExternalDelivery = void *(*)(void *);
+
   enum ExtActivityReturnType {
     kExtTypeNull       = 0,
     kExtTypeInt        = 1,

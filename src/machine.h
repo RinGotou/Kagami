@@ -362,6 +362,8 @@ namespace kagami {
       code_stack_.push_back(&ir);
     }
 
+    bool PushObject(string id, Object object);
+
     void SetPreviousStack(ObjectStack &prev) {
       obj_stack_.SetPreviousStack(prev);
     }
