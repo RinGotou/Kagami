@@ -46,7 +46,7 @@
 #define ENGINE_NAME     "Kagami Project Core"
 #define INTERPRETER_VER "2.5"
 #define CODENAME        "Daydream"
-#define MAINTAINER      "Rin Gotou"
+#define AUTHOR      "Rin Gotou"
 #define COPYRIGHT       "Copyright(c) 2020"
 
 namespace kagami {
@@ -90,7 +90,7 @@ namespace kagami {
   const string kPlatformType   = "Unix-like Platform";
 #endif
   const string kEngineName     = ENGINE_NAME;
-  const string kMaintainer     = MAINTAINER;
+  const string kAuthor         = AUTHOR;
   const string kCopyright      = COPYRIGHT;
 
   /* Plain Type Code */
