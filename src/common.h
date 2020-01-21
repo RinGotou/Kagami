@@ -43,11 +43,11 @@
 #include "dawn/src/dawn.sound.h"
 #include "minatsuki.log/src/minatsuki.log.h"
 
-#define ENGINE_NAME     "Kagami Project Core"
-#define INTERPRETER_VER "2.5"
-#define CODENAME        "Daydream"
+#define PRODUCT     "Kagami Project Core"
+#define PRODUCT_VER "2.5"
+#define CODENAME    "Daydream"
 #define AUTHOR      "Rin Gotou"
-#define COPYRIGHT       "Copyright(c) 2020"
+#define COPYRIGHT   "Copyright(c) 2020"
 
 namespace kagami {
   using std::string;
@@ -81,17 +81,11 @@ namespace kagami {
   using namespace minatsuki;
   namespace fs = std::filesystem;
 
-  /* Application Info */
-  const string kInterpreterVersion = INTERPRETER_VER;
-  const string kCodeName           = CODENAME;
 #if defined(_WIN32)
-  const string kPlatformType   = "Windows Platform";
+  const string kPlatformType   = "Windows";
 #else
-  const string kPlatformType   = "Unix-like Platform";
+  const string kPlatformType   = "Linux";
 #endif
-  const string kEngineName     = ENGINE_NAME;
-  const string kAuthor         = AUTHOR;
-  const string kCopyright      = COPYRIGHT;
 
   /* Plain Type Code */
   enum PlainType {

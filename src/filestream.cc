@@ -49,6 +49,23 @@ namespace kagami {
     return result;
   }
 
+  char InStream::Get() {
+    auto buf = fgetc(fp_);
+    if (buf == EOF) {
+      eof_ = true; return '\0';
+    }
+    return buf;
+  }
+
+  wchar_t InStreamW::Get() {
+    auto buf = fgetwc(fp_);
+    if (buf == WEOF) {
+      eof_ = true; return L'\0';
+    }
+
+    return buf;
+  }
+
   wstring InStreamW::GetLine() {
     if (fp_ == nullptr || eof_) return wstring();
 
@@ -74,7 +91,7 @@ namespace kagami {
     return result;
   }
 
-  bool OutStream::WriteLine(string str) {
+  bool OutStream::Write(string str) {
     if (fp_ == nullptr) return false;
     auto it = str.begin();
     auto end = str.end();
@@ -87,7 +104,12 @@ namespace kagami {
     return flag != EOF;
   }
 
-  bool OutStreamW::WriteLine(wstring str) {
+  bool OutStream::Write(char chr) {
+    if (fp_ == nullptr) return false;
+    return fputc(chr, fp_) != EOF;
+  }
+
+  bool OutStreamW::Write(wstring str) {
     if (fp_ == nullptr) return false;
     auto it = str.begin();
     auto end = str.end();
@@ -98,6 +120,11 @@ namespace kagami {
     }
 
     return flag != WEOF;
+  }
+
+  bool OutStreamW::Write(wchar_t wchr) {
+    if (fp_ == nullptr) return false;
+    return fputc(wchr, fp_) != WEOF;
   }
 
   string GetLine() {

@@ -363,6 +363,7 @@ namespace kagami {
     }
 
     bool PushObject(string id, Object object);
+    void PushError(string msg);
 
     void SetPreviousStack(ObjectStack &prev) {
       obj_stack_.SetPreviousStack(prev);

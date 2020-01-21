@@ -17,6 +17,15 @@ namespace kagami {
   using ExtensionLoader = int(*)(CallbackFacilityLauncher, 
     MemoryDisposer, MemoryDisposer, ObjectTypeFetcher);
   using ExtensionActivity = int(*)(VMState);
+  using ErrorInformer = void(*)(void *, const char *);
+  
+  extern "C" struct ExtInterfaces {
+    CallbackFacilityLauncher launcher;
+    MemoryDisposer disposer;
+    MemoryDisposer group_disposer;
+    ObjectTypeFetcher type_fetcher;
+    ErrorInformer error_informer;
+  };
 
   enum ParameterPattern {
     kParamAutoSize,

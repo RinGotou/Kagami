@@ -44,15 +44,17 @@ namespace kagami {
     auto tc = TypeChecking(
       { 
         Expect("path", kTypeIdString),
-        Expect("mode", kTypeIdString)
+        Expect("binary", kTypeIdBool),
+        Expect("append", kTypeIdBool)
       }, p);
     if (TC_FAIL(tc)) return TC_ERROR(tc);
 
     string path = p.Cast<string>("path");
-    string mode = p.Cast<string>("mode");
+    bool binary = p.Cast<bool>("binary");
+    bool append = p.Cast<bool>("append");
 
-    shared_ptr<OutStream> ofs = make_shared<OutStream>(path, mode);
-    return Message().SetObject(Object(ofs, kTypeIdOutStream));
+    //shared_ptr<OutStream> ofs = make_shared<OutStream>(path, mode);
+    //return Message().SetObject(Object(ofs, kTypeIdOutStream));
   }
 
   Message OutStreamWrite(ObjectMap &p) {
@@ -62,7 +64,7 @@ namespace kagami {
 
     if (obj.GetTypeId() == kTypeIdString) {
       string str = obj.Cast<string>();
-      result = ofs.WriteLine(str);
+      result = ofs.Write(str);
     }
     else {
       result = false;
@@ -89,7 +91,7 @@ namespace kagami {
 
     ObjectTraitsSetup(kTypeIdOutStream, ShallowDelivery, PointerHasher)
       .InitConstructor(
-        FunctionImpl(NewOutStream, "path|mode", "outstream")
+        FunctionImpl(NewOutStream, "path|binary|append", "outstream")
       )
       .InitMethods(
         {

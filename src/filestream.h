@@ -23,6 +23,12 @@ namespace kagami {
   FILE *GetVMStdin(FILE *dest = nullptr);
   void CloseStream();
 
+  enum class SeekingMode {
+    kSeekingBegin = SEEK_SET, 
+    kSeekingCurrent = SEEK_CUR, 
+    kSeekingEnd = SEEK_END
+  };
+
   class BasicStream {
   protected:
     bool eof_;
@@ -47,13 +53,19 @@ namespace kagami {
     bool Good() const { return fp_ != nullptr; }
     bool eof() const { return eof_; }
     FILE *_GetPtr() { return fp_; }
+    auto GetPosition() { return std::ftell(fp_); }
+    bool SetPosition(long offset, SeekingMode mode) {
+      return (std::fseek(fp_, offset, static_cast<int>(mode)));
+    }
   };
 
   class InStream : public BasicStream {
   public:
     InStream(FILE *fp) : BasicStream(fp) {}
-    InStream(const char *path) : BasicStream(path, "r") {}
-    InStream(string path) : BasicStream(path.data(), "r") {}
+    InStream(const char *path, bool binary = false) :
+      BasicStream(path, binary ? "rb" : "r") {}
+    InStream(string path, bool binary = false) :
+      BasicStream(path.data(), binary ? "rb" : "r") {}
     InStream(const InStream &) = delete;
     InStream(const InStream &&) = delete;
     InStream() : BasicStream() {}
@@ -66,13 +78,16 @@ namespace kagami {
     }
 
     string GetLine();
+    char Get();
   };
 
   class InStreamW : public BasicStream {
   public:
     InStreamW(FILE *fp) : BasicStream(fp) {}
-    InStreamW(const char *path) : BasicStream(path, "r") {}
-    InStreamW(string path) : BasicStream(path.data(), "r") {}
+    InStreamW(const char *path, bool binary = false) :
+      BasicStream(path, binary ? "rb" : "r") {}
+    InStreamW(string path, bool binary = false) :
+      BasicStream(path.data(), binary ? "rb" : "r") {}
     InStreamW(const InStreamW &) = delete;
     InStreamW(const InStreamW &&) = delete;
     InStreamW() : BasicStream() {}
@@ -84,16 +99,23 @@ namespace kagami {
     }
 
     wstring GetLine();
+    wchar_t Get();
   };
+
+
 
   class OutStream : public BasicStream {
   public:
     OutStream(FILE *fp) : BasicStream(fp) {}
-    OutStream(const char *path, const char *mode) : BasicStream(path, mode) {}
-    OutStream(string path, string mode) : BasicStream(path.data(), mode.data()) {}
     OutStream(const OutStream &) = delete;
     OutStream(const OutStream &&) = delete;
     OutStream() : BasicStream() {}
+
+    OutStream(const char *path, const char *mode) :
+      BasicStream(path, mode) {}
+    OutStream(string path, string mode) :
+      BasicStream(path.data(), mode.data()) {}
+
     void operator=(OutStream &rhs) {
       std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
     }
@@ -101,17 +123,22 @@ namespace kagami {
       operator=(rhs);
     }
 
-    bool WriteLine(string str);
+    bool Write(string str);
+    bool Write(char chr);
   };
 
   class OutStreamW : public BasicStream {
   public:
     OutStreamW(FILE *fp) : BasicStream(fp) {}
-    OutStreamW(const char *path, const char *mode) : BasicStream(path, mode) {}
-    OutStreamW(string path, string mode) : BasicStream(path.data(), mode.data()) {}
     OutStreamW(const OutStreamW &) = delete;
     OutStreamW(const OutStreamW &&) = delete;
     OutStreamW() : BasicStream() {}
+
+    OutStreamW(const char *path, const char *mode) :
+      BasicStream(path, mode) {}
+    OutStreamW(string path, string mode) :
+      BasicStream(path.data(), mode.data()) {}
+
     void operator=(OutStreamW &rhs) {
       std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
     }
@@ -119,13 +146,9 @@ namespace kagami {
       operator=(rhs);
     }
 
-    bool WriteLine(wstring str);
+    bool Write(wstring str);
+    bool Write(wchar_t wchr);
   };
-
-  //class FileStreamEx : public BasicStream {
-
-  //};
-
 }
 
 #define VM_STDOUT GetVMStdout()

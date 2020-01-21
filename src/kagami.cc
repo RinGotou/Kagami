@@ -31,10 +31,10 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
 }
 
 void ApplicationInfo() {
-  printf(ENGINE_NAME " " INTERPRETER_VER "\n");
+  printf(PRODUCT " " PRODUCT_VER "\n");
   printf("Codename:" CODENAME "\n");
   printf("Build date:" __DATE__ "\n");
-  printf(COPYRIGHT ", " MAINTAINER "\n");
+  printf(COPYRIGHT ", " AUTHOR "\n");
 }
 
 void HelpFile() {
@@ -56,7 +56,7 @@ void HelpFile() {
 
 void Motto() {
   puts("\"Praying for next morning.\"");
-  puts(ENGINE_NAME " Version " INTERPRETER_VER " '"  CODENAME "'");
+  puts(PRODUCT " Version " PRODUCT_VER " '"  CODENAME "'");
 }
 
 void AtExitHandler() {

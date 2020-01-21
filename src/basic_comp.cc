@@ -132,6 +132,10 @@ namespace kagami {
     return Message().SetObject(mgmt::runtime::GetScriptAbsolutePath());
   }
 
+  Message GetPlatform(ObjectMap &p) {
+    return Message().SetObject(kPlatformType);
+  }
+
   void InitConsoleComponents() {
     using management::CreateImpl;
 
@@ -144,5 +148,6 @@ namespace kagami {
     CreateImpl(FunctionImpl(SetWorkingDir, "dir", "setwd"));
     CreateImpl(FunctionImpl(GetWorkingDir, "", "getwd"));
     CreateImpl(FunctionImpl(GetScriptAbsolutePath, "", "get_script_path"));
+    CreateImpl(FunctionImpl(GetPlatform, "", "get_platform"));
   }
 }

@@ -12,11 +12,11 @@ namespace kagami {
 
     void InitLoggerSession(Agent *agent) {
       ContactLogger(agent);
-      agent->WriteLine("Kagami Project Session - Start");
+      agent->WriteLine("Kagami Project Core Session - Start");
     }
 
     void StopLoggerSession() {
-      ContactLogger()->WriteLine("Kagami Project Session - Stop");
+      ContactLogger()->WriteLine("Kagami Project Core Session - Stop");
     }
 
     void AddEvent(Message msg) {

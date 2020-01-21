@@ -197,6 +197,11 @@ namespace kagami {
     return result ? 1 : 0;
   }
 
+  void ReceiveError(void *vm, const char *msg) {
+    auto &machine = *static_cast<Machine *>(vm);
+    machine.PushError(string(msg));
+  }
+
   void RuntimeFrame::Stepping() {
     if (!disable_step) idx += 1;
     disable_step = false;
@@ -1168,12 +1173,12 @@ namespace kagami {
 
   void Machine::CommandVersion() {
     auto &frame = frame_stack_.top();
-    frame.RefreshReturnStack(Object(kInterpreterVersion));
+    frame.RefreshReturnStack(Object(PRODUCT_VER));
   }
 
   void Machine::CommandMachineCodeName() {
     auto &frame = frame_stack_.top();
-    frame.RefreshReturnStack(Object(kCodeName));
+    frame.RefreshReturnStack(Object(CODENAME));
   }
 
   template <Keyword op_code>
@@ -1771,6 +1776,11 @@ namespace kagami {
       return false;
     }
     return true;
+  }
+
+  void Machine::PushError(string msg) {
+    auto &frame = frame_stack_.top();
+    frame.MakeError(msg);
   }
 
   void Machine::Run(bool invoking, string id, VMCodePointer ptr, ObjectMap *p,
