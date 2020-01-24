@@ -14,8 +14,6 @@ namespace kagami {
   using ObjectValueFetcher = int(*)(void **, void *, const char *);
   using CallbackFacilityLauncher = ObjectValueFetcher(*)(const char *);
   using ObjectTypeFetcher = int(*)(void *, const char *);
-  using ExtensionLoader = int(*)(CallbackFacilityLauncher, 
-    MemoryDisposer, MemoryDisposer, ObjectTypeFetcher);
   using ExtensionActivity = int(*)(VMState);
   using ErrorInformer = void(*)(void *, const char *);
   
@@ -26,6 +24,8 @@ namespace kagami {
     ObjectTypeFetcher type_fetcher;
     ErrorInformer error_informer;
   };
+
+  using ExtensionLoader = int(*)(ExtInterfaces *);
 
   enum ParameterPattern {
     kParamAutoSize,

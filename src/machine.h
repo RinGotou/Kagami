@@ -37,7 +37,7 @@ namespace kagami {
   string ParseRawString(const string &src);
   void InitPlainTypesAndConstants();
   void ActivateComponents();
-
+  void ReceiveError(void* vm, const char* msg);
 
   using ResultTraitKey = pair<PlainType, PlainType>;
   using TraitUnit = pair<ResultTraitKey, PlainType>;
