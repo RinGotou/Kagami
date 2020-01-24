@@ -91,6 +91,13 @@ namespace kagami {
     return result;
   }
 
+  string _ProcessingOutStreamArgument(bool append, bool binary) {
+    string result;
+    result.append(append ? "a" : "w");
+    if (binary)result.append("b");
+    return result;
+  }
+
   bool OutStream::Write(string str) {
     if (fp_ == nullptr) return false;
     auto it = str.begin();

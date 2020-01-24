@@ -37,8 +37,6 @@ namespace kagami {
   public:
     virtual ~BasicStream() { if (fp_ != nullptr && fp_ != stdout) fclose(fp_); }
     BasicStream(FILE *fp) : eof_(false), fp_(fp) {}
-    BasicStream(const char *path, const char *mode) :
-      eof_(false), fp_(fopen(path, mode)) {}
     BasicStream(string path, string mode) :
       eof_(false), fp_(fopen(path.data(), mode.data())) {}
     BasicStream() : eof_(true), fp_(nullptr) {}
@@ -62,8 +60,6 @@ namespace kagami {
   class InStream : public BasicStream {
   public:
     InStream(FILE *fp) : BasicStream(fp) {}
-    InStream(const char *path, bool binary = false) :
-      BasicStream(path, binary ? "rb" : "r") {}
     InStream(string path, bool binary = false) :
       BasicStream(path.data(), binary ? "rb" : "r") {}
     InStream(const InStream &) = delete;
@@ -84,8 +80,6 @@ namespace kagami {
   class InStreamW : public BasicStream {
   public:
     InStreamW(FILE *fp) : BasicStream(fp) {}
-    InStreamW(const char *path, bool binary = false) :
-      BasicStream(path, binary ? "rb" : "r") {}
     InStreamW(string path, bool binary = false) :
       BasicStream(path.data(), binary ? "rb" : "r") {}
     InStreamW(const InStreamW &) = delete;
@@ -102,7 +96,7 @@ namespace kagami {
     wchar_t Get();
   };
 
-
+  string _ProcessingOutStreamArgument(bool append, bool binary);
 
   class OutStream : public BasicStream {
   public:
@@ -110,11 +104,8 @@ namespace kagami {
     OutStream(const OutStream &) = delete;
     OutStream(const OutStream &&) = delete;
     OutStream() : BasicStream() {}
-
-    OutStream(const char *path, const char *mode) :
-      BasicStream(path, mode) {}
-    OutStream(string path, string mode) :
-      BasicStream(path.data(), mode.data()) {}
+    OutStream(string path, bool append, bool binary) :
+      BasicStream(path, _ProcessingOutStreamArgument(append, binary)) {}
 
     void operator=(OutStream &rhs) {
       std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);
@@ -133,11 +124,8 @@ namespace kagami {
     OutStreamW(const OutStreamW &) = delete;
     OutStreamW(const OutStreamW &&) = delete;
     OutStreamW() : BasicStream() {}
-
-    OutStreamW(const char *path, const char *mode) :
-      BasicStream(path, mode) {}
-    OutStreamW(string path, string mode) :
-      BasicStream(path.data(), mode.data()) {}
+    OutStreamW(string path, bool append, bool binary) :
+      BasicStream(path, _ProcessingOutStreamArgument(append, binary)) {}
 
     void operator=(OutStreamW &rhs) {
       std::swap(eof_, rhs.eof_); std::swap(fp_, rhs.fp_);

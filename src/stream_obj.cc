@@ -53,8 +53,8 @@ namespace kagami {
     bool binary = p.Cast<bool>("binary");
     bool append = p.Cast<bool>("append");
 
-    //shared_ptr<OutStream> ofs = make_shared<OutStream>(path, mode);
-    //return Message().SetObject(Object(ofs, kTypeIdOutStream));
+    shared_ptr<OutStream> ofs = make_shared<OutStream>(path, append, binary);
+    return Message().SetObject(Object(ofs, kTypeIdOutStream));
   }
 
   Message OutStreamWrite(ObjectMap &p) {
