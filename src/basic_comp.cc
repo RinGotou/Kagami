@@ -136,6 +136,36 @@ namespace kagami {
     return Message().SetObject(kPlatformType);
   }
 
+  Message GetFunctionPointer(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { 
+        Expect("library", kTypeIdString),
+        Expect("id", kTypeIdString)
+      }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+#ifdef _WIN32
+    wstring path = s2ws(p.Cast<string>("library"));
+    string id = p.Cast<string>("id");
+    HMODULE mod = LoadLibraryW(path.data());
+
+    if (mod == nullptr) return Message().SetObject(int64_t(0));
+
+    FARPROC func = GetProcAddress(mod, id.data());
+    int64_t result = reinterpret_cast<int64_t>(func);
+#else
+    string path = p.Cast<string>("library");
+    string id = p.Cast<string>("id");
+    void *mod = dlopen(path.data(), RTLD_LAZY);
+
+    if (mod == nullptr) return Message().SetObject(int64_t(0));
+
+    void *func = dlsym(mod, id.data());
+    int64_t result = reinterpret_cast<int64_t>(func);
+#endif
+    return Message().SetObject(result);
+  }
+
   void InitConsoleComponents() {
     using management::CreateImpl;
 
@@ -149,5 +179,6 @@ namespace kagami {
     CreateImpl(FunctionImpl(GetWorkingDir, "", "getwd"));
     CreateImpl(FunctionImpl(GetScriptAbsolutePath, "", "get_script_path"));
     CreateImpl(FunctionImpl(GetPlatform, "", "get_platform"));
+    CreateImpl(FunctionImpl(GetFunctionPointer, "library|id", "get_function_ptr"));
   }
 }
