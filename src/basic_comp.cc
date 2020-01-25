@@ -22,7 +22,7 @@ namespace kagami {
     if (TC_FAIL(tc_result)) { return TC_ERROR(tc_result); }
 
     auto value = p.Cast<int64_t>("milliseconds");
-#if defined (_WIN32)
+#ifdef _MSC_VER
     Sleep(DWORD(p.Cast<int64_t>("milliseconds")));
 #else
     timespec spec;

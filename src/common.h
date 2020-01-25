@@ -81,7 +81,7 @@ namespace kagami {
   using namespace minatsuki;
   namespace fs = std::filesystem;
 
-#if defined(_WIN32)
+#ifdef _WIN32
   const string kPlatformType   = "Windows";
 #else
   const string kPlatformType   = "Linux";

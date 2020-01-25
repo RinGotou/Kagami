@@ -632,5 +632,15 @@ namespace kagami {
     CreateWindowStateMapping();
     CreateMouseButtonMapping();
     CreateEventTypeId();
+
+    EXPORT_CONSTANT(kTypeIdWindowEvent);
+    EXPORT_CONSTANT(kTypeIdWindow);
+    EXPORT_CONSTANT(kTypeIdElement);
+    EXPORT_CONSTANT(kTypeIdFont);
+    EXPORT_CONSTANT(kTypeIdTexture);
+    EXPORT_CONSTANT(kTypeIdColorValue);
+    EXPORT_CONSTANT(kTypeIdRectangle);
+    EXPORT_CONSTANT(kTypeIdPoint);
+    EXPORT_CONSTANT(kTypeIdExtension);
   }
 }

@@ -6,6 +6,7 @@
 namespace kagami::management {
   using FunctionImplCollection = map<string, FunctionImpl>;
   using FunctionHashMap = unordered_map<string, FunctionImpl *>;
+  
 
   void CreateImpl(FunctionImpl impl, string domain = kTypeIdNull);
   FunctionImpl *FindFunction(string id, string domain = kTypeIdNull);
