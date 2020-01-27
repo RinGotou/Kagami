@@ -15,7 +15,6 @@ namespace kagami {
 
     ExtInterfaces interfaces{
       DisposeMemoryUnit,
-      DisposeMemoryUnitGroup,
       FetchObjectType,
       ReceiveError,
       FetchDescriptor,
@@ -38,6 +37,7 @@ namespace kagami {
   }
 
   Message ExtensionFetchFunction(ObjectMap &p) {
+    //TODO:Variable arugment
     auto tc = TypeChecking({ Expect("id",kTypeIdString) }, p);
     if (TC_FAIL(tc)) return TC_ERROR(tc);
     auto &extension = p.Cast<Extension>(kStrMe);

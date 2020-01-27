@@ -272,27 +272,28 @@ namespace kagami::management::script {
 }
 
 namespace kagami::management::extension {
-  template <typename _ExtDataType>
-  void DMU_Deleter(_ExtDataType *ptr) { delete ptr; }
-
-  template <typename _ExtDataType>
-  void DMUG_Deleter(_ExtDataType *ptr) { delete[] ptr; }
+  template <ObjectType _TypeCode>
+  struct _Deleter {
+    _Deleter(void *ptr) {
+      if constexpr (_IsStringObject(_TypeCode)) {
+        delete[] (typename _CharTypeTraitS<_TypeCode>::Type *)ptr;
+      }
+      else {
+        delete (typename _ObjectTypeTrait<_TypeCode>::Type *)ptr;
+      }
+    }
+  };
 
   void DisposeMemoryUnit(void *ptr, int type) {
     switch (type) {
-    case kExtTypeInt:DMU_Deleter((int64_t *)ptr); break;
-    case kExtTypeFloat:DMU_Deleter((double *)ptr); break;
-    case kExtTypeBool:DMU_Deleter((int *)ptr); break;
-    case kExtTypeFunctionPointer:DMU_Deleter((GenericFunctionPointer *)ptr); break;
-    case kExtTypeObjectPointer:DMU_Deleter((GenericPointer *)ptr);
+    case kExtTypeInt:_Deleter<kExtTypeInt>((void *)ptr); break;
+    case kExtTypeFloat:_Deleter<kExtTypeFloat>((void *)ptr); break;
+    case kExtTypeBool:_Deleter<kExtTypeBool>((void *)ptr); break;
+    case kExtTypeFunctionPointer:
+      _Deleter<kExtTypeFunctionPointer>((void *)ptr); break;
+    case kExtTypeObjectPointer:
+      _Deleter<kExtTypeObjectPointer>((void *)ptr); break;
     default:break;
-    }
-  }
-
-  void DisposeMemoryUnitGroup(void *ptr, int type) {
-    switch (type) {
-    case kExtTypeString:DMUG_Deleter((char *)ptr); break;
-    case kExtTypeWideString:DMUG_Deleter((wchar_t *)ptr); break;
     }
   }
 
@@ -411,6 +412,7 @@ namespace kagami::management::extension {
       else if (type == kTypeIdBool) result = kExtTypeBool;
       else if (type == kTypeIdString) result = kExtTypeString;
       else if (type == kTypeIdWideString) result = kExtTypeWideString;
+      //TODO:
     }
 
     return result;

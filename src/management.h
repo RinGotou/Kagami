@@ -87,7 +87,6 @@ namespace kagami::management::script {
 
 namespace kagami::management::extension {
   void DisposeMemoryUnit(void *ptr, int type);
-  void DisposeMemoryUnitGroup(void *ptr, int type);
   int FetchDescriptor(Descriptor *descriptor, void *obj_map, const char *id);
   int FetchArrayElementDescriptor(Descriptor *arr, Descriptor *dest, size_t index);
   int DumpObjectFromDescriptor(Descriptor *descriptor, void **dest);
