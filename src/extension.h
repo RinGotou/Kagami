@@ -5,7 +5,7 @@ namespace kagami {
   //TODO:External Type Facility
   using ExternalDelivery = void *(*)(void *);
 
-  enum ExtActivityReturnType {
+  enum ObjectType {
     kExtUnsupported         = -1,
     kExtTypeNull            = 0,
     kExtTypeInt             = 1,
@@ -19,7 +19,7 @@ namespace kagami {
     kExtCustomTypes         = 100
   };
 
-  const unordered_map<string, ExtActivityReturnType> kExtTypeMatcher = {
+  const unordered_map<string, ObjectType> kExtTypeMatcher = {
     make_pair(kTypeIdNull, kExtTypeNull),
     make_pair(kTypeIdInt, kExtTypeInt),
     make_pair(kTypeIdFloat, kExtTypeFloat),
@@ -33,10 +33,28 @@ namespace kagami {
 
   extern "C" struct Descriptor {
     void *ptr;
-    ExtActivityReturnType type;
+    ObjectType type;
   };
 
+  using ParameterInformer = const char *(*)(const char *);
+  using ObjectTypeFetcher = int(*)(void *, const char *);
+  using ErrorInformer = void(*)(void *, const char *);
   using DescriptorFetcher = int(*)(Descriptor *, void *, const char *);
+  using ArrayElementFetcher = int(*)(Descriptor *, Descriptor *, size_t);
+  using ObjectDumper = int(*)(Descriptor *, void **);
+  using DescriptorFetcher = int(*)(Descriptor *, void *, const char *);
+
+  extern "C" struct ExtInterfaces {
+    MemoryDisposer disposer;
+    MemoryDisposer group_disposer;
+    ObjectTypeFetcher type_fetcher;
+    ErrorInformer error_informer;
+    DescriptorFetcher desc_fetcher;
+    ArrayElementFetcher arr_elem_fetcher;
+    ObjectDumper dumper;
+  };
+
+  using ExtensionLoader = int(*)(ExtInterfaces *);
 
 #ifdef _WIN32
   class Extension {

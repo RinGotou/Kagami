@@ -82,7 +82,7 @@ namespace kagami {
     
     Message Parse();
   public:
-    LineParser() : index_(0) {}
+    LineParser() : frame_(nullptr), index_(0) {}
     VMCode &GetOutput() { return action_base_; }
 
     Keyword GetASTRoot() {

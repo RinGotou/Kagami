@@ -152,7 +152,6 @@ namespace kagami {
     if (mod == nullptr) return Message().SetObject(int64_t(0));
 
     auto func = GenericFunctionPointer(GetProcAddress(mod, id.data()));
-    CABIContainer result{ func };
 #else
     string path = p.Cast<string>("library");
     string id = p.Cast<string>("id");
@@ -161,9 +160,8 @@ namespace kagami {
     if (mod == nullptr) return Message().SetObject(int64_t(0));
 
     auto func = GenericFunctionPointer(dlsym(mod, id.data()));
-    CABIContainer result{ func };
 #endif
-    return Message().SetObject(Object(result, kTypeIdFunctionPointer));
+    return Message().SetObject(Object(func, kTypeIdFunctionPointer));
   }
 
   void InitConsoleComponents() {

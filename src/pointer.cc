@@ -4,10 +4,14 @@ namespace kagami {
   void InitExternalPointerComponents() {
     using namespace mgmt::type;
 
-    ObjectTraitsSetup(kTypeIdFunctionPointer, PlainDeliveryImpl<CABIContainer>, PlainHasher<CABIContainer>)
-      .InitComparator(PlainComparator<CABIContainer>);
+    ObjectTraitsSetup(kTypeIdFunctionPointer, 
+      PlainDeliveryImpl<GenericFunctionPointer>, 
+      PlainHasher<GenericFunctionPointer>)
+      .InitComparator(PlainComparator<GenericFunctionPointer>);
 
-    ObjectTraitsSetup(kTypeIdObjectPointer, PlainDeliveryImpl<GenericPointer>, PlainHasher<GenericPointer>)
+    ObjectTraitsSetup(kTypeIdObjectPointer, 
+      PlainDeliveryImpl<GenericPointer>, 
+      PlainHasher<GenericPointer>)
       .InitComparator(PlainComparator<GenericPointer>);
 
     EXPORT_CONSTANT(kTypeIdFunctionPointer);

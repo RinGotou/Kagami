@@ -188,8 +188,8 @@ namespace kagami {
       slot_obj.PackContent(make_shared<wstring>(content), kTypeIdWideString);
     }
     else if (type == kExtTypeFunctionPointer) {
-      const auto *ret_value = static_cast<CABIContainer *>(value);
-      slot_obj.PackContent(make_shared<CABIContainer>(*ret_value), kTypeIdFunctionPointer);
+      const auto *ret_value = static_cast<GenericFunctionPointer *>(value);
+      slot_obj.PackContent(make_shared<GenericFunctionPointer>(*ret_value), kTypeIdFunctionPointer);
     }
     else if (type == kExtTypeObjectPointer) {
       const auto *ret_value = static_cast<uintptr_t *>(value);

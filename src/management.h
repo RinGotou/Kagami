@@ -86,9 +86,6 @@ namespace kagami::management::script {
 }
 
 namespace kagami::management::extension {
-  //Callback facilities
-  using CallbackUnit = pair<string, ObjectValueFetcher>;
-
   void DisposeMemoryUnit(void *ptr, int type);
   void DisposeMemoryUnitGroup(void *ptr, int type);
   int FetchDescriptor(Descriptor *descriptor, void *obj_map, const char *id);

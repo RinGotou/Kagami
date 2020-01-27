@@ -296,7 +296,7 @@ namespace kagami::management::extension {
     }
   }
 
-  inline ExtActivityReturnType MatchExtType(string type_id) {
+  inline ObjectType MatchExtType(string type_id) {
     auto result = kExtUnsupported;
     auto it = kExtTypeMatcher.find(type_id);
     if (it != kExtTypeMatcher.end()) result = it->second;
@@ -325,7 +325,7 @@ namespace kagami::management::extension {
 
   template <typename _Type>
   void _DumpObjectA(Object &obj, void **dest) {
-    auto &value = obj.Cast<_ObjType>();
+    auto &value = obj.Cast<_Type>();
     *dest = new _Type(value);
   }
 
@@ -367,10 +367,6 @@ namespace kagami::management::extension {
 
     auto is_string = [](auto type) -> bool {
       return type == kExtTypeString || type == kExtTypeWideString; };
-    auto dump_func_ptr = [](Object &obj, void **dest) -> void {
-      auto &value = obj.Cast<CABIContainer>();
-      *dest = new GenericFunctionPointer(value.ptr);
-    };
 
     if (is_string(descriptor->type)) {
       switch (descriptor->type) {
@@ -384,7 +380,8 @@ namespace kagami::management::extension {
       case kExtTypeInt:_DumpObjectA<int64_t>(obj, dest); break;
       case kExtTypeFloat:_DumpObjectA<double>(obj, dest); break;
       case kExtTypeBool:_DumpObjectA<int>(obj, dest); break;
-      case kExtTypeFunctionPointer:dump_func_ptr(obj, dest);break;
+      case kExtTypeFunctionPointer:
+        _DumpObjectA<GenericFunctionPointer>(obj, dest);break;
       case kExtTypeObjectPointer:_DumpObjectA<GenericPointer>(obj, dest); break;
       default:break;
       }

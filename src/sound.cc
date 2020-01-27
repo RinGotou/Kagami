@@ -62,7 +62,7 @@ namespace kagami {
     CreateImpl(FunctionImpl(MusicPause, "", "pause_music"));
     CreateImpl(FunctionImpl(MusicResume, "", "resume_music"));
     CreateImpl(FunctionImpl(MusicHalt, "", "halt_music"));
-  }
 
-  EXPORT_CONSTANT(kTypeIdMusic);
+    EXPORT_CONSTANT(kTypeIdMusic);
+  }
 }
