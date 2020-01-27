@@ -6,13 +6,37 @@ namespace kagami {
   using ExternalDelivery = void *(*)(void *);
 
   enum ExtActivityReturnType {
-    kExtTypeNull       = 0,
-    kExtTypeInt        = 1,
-    kExtTypeFloat      = 2,
-    kExtTypeBool       = 3,
-    kExtTypeString     = 4,
-    kExtTypeWideString = 5
+    kExtUnsupported         = -1,
+    kExtTypeNull            = 0,
+    kExtTypeInt             = 1,
+    kExtTypeFloat           = 2,
+    kExtTypeBool            = 3,
+    kExtTypeString          = 4,
+    kExtTypeWideString      = 5,
+    kExtTypeFunctionPointer = 6,
+    kExtTypeObjectPointer   = 7,
+    kExtTypeArray           = 8,
+    kExtCustomTypes         = 100
   };
+
+  const unordered_map<string, ExtActivityReturnType> kExtTypeMatcher = {
+    make_pair(kTypeIdNull, kExtTypeNull),
+    make_pair(kTypeIdInt, kExtTypeInt),
+    make_pair(kTypeIdFloat, kExtTypeFloat),
+    make_pair(kTypeIdBool, kExtTypeBool),
+    make_pair(kTypeIdString, kExtTypeString),
+    make_pair(kTypeIdWideString, kExtTypeWideString),
+    make_pair(kTypeIdFunctionPointer, kExtTypeFunctionPointer),
+    make_pair(kTypeIdObjectPointer, kExtTypeObjectPointer),
+    make_pair(kTypeIdArray, kExtTypeArray)
+  };
+
+  extern "C" struct Descriptor {
+    void *ptr;
+    ExtActivityReturnType type;
+  };
+
+  using DescriptorFetcher = int(*)(Descriptor *, void *, const char *);
 
 #ifdef _WIN32
   class Extension {

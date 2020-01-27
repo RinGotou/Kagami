@@ -7,6 +7,7 @@ namespace kagami {
   class ObjectMap;
   class Message;
 
+  using GenericPointer = uintptr_t;
   using ObjectPointer = Object *;
   using ObjectRef = Object &;
   using Comparator = bool(*)(Object &, Object &);

@@ -1,8 +1,4 @@
 #pragma once
-/*
-   Main virtual machine implementation of Kagami Project
-   Machine version : kisaragi
-*/
 #include "frontend.h"
 #include "management.h"
 #include "components.h"
@@ -18,7 +14,6 @@ namespace kagami {
   using Expect = pair<string, string>;
   using ExpectationList = initializer_list<Expect>;
   using NullableList = initializer_list<string>;
-  using CommentedResult = tuple<bool, string>;
 
   CommentedResult TypeChecking(ExpectationList &&lst,
     ObjectMap &obj_map,

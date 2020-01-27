@@ -28,11 +28,11 @@ namespace kagami::management {
     auto it = collection_base.find(domain);
 
     if (it != collection_base.end()) {
-      it->second.insert(std::make_pair(impl.GetId(), impl));
+      it->second.insert(make_pair(impl.GetId(), impl));
     }
     else {
       collection_base.insert(make_pair(domain, FunctionImplCollection()));
-      collection_base[domain].insert(std::make_pair(impl.GetId(), impl));
+      collection_base[domain].insert(make_pair(impl.GetId(), impl));
     }
 
     BuildFunctionImplCache(domain);
@@ -247,7 +247,7 @@ namespace kagami::management::script {
 
     VMCode script;
     
-    storage.insert(std::make_pair(path, code));
+    storage.insert(make_pair(path, code));
     it = storage.find(path);
 
     return it->second;
@@ -264,7 +264,7 @@ namespace kagami::management::script {
     VMCode script;
 
 
-    storage.insert(std::make_pair(path, VMCode()));
+    storage.insert(make_pair(path, VMCode()));
     it = storage.find(path);
 
     return it->second;
@@ -283,6 +283,8 @@ namespace kagami::management::extension {
     case kExtTypeInt:DMU_Deleter((int64_t *)ptr); break;
     case kExtTypeFloat:DMU_Deleter((double *)ptr); break;
     case kExtTypeBool:DMU_Deleter((int *)ptr); break;
+    case kExtTypeFunctionPointer:DMU_Deleter((GenericFunctionPointer *)ptr); break;
+    case kExtTypeObjectPointer:DMU_Deleter((GenericPointer *)ptr);
     default:break;
     }
   }
@@ -294,55 +296,100 @@ namespace kagami::management::extension {
     }
   }
 
-  int FetchInt(void **target, void *obj_map, const char *id) {
+  inline ExtActivityReturnType MatchExtType(string type_id) {
+    auto result = kExtUnsupported;
+    auto it = kExtTypeMatcher.find(type_id);
+    if (it != kExtTypeMatcher.end()) result = it->second;
+    return result;
+  }
+
+  int FetchDescriptor(Descriptor *descriptor, void *obj_map, const char *id) {
     auto *source = static_cast<ObjectMap *>(obj_map);
     auto it = source->find(string(id));
     if (it == source->end()) return 0;
-    if (it->second.GetTypeId() != kTypeIdInt) return -1;
-    auto &value = it->second.Cast<int64_t>();
-    *target = new int64_t(value);
+    *descriptor = Descriptor{ &it->second, MatchExtType(it->second.GetTypeId()) };
     return 1;
   }
 
-  int FetchFloat(void **target, void *obj_map, const char *id) {
-    auto *source = static_cast<ObjectMap *>(obj_map);
-    auto it = source->find(string(id));
-    if (it == source->end()) return 0;
-    if (it->second.GetTypeId() != kTypeIdFloat) return -1;
-    auto &value = it->second.Cast<double>();
-    *target = new double(value);
+  //for variable argument pattern
+  // -1 : type mismatch
+  // 0 : index out of range
+  int FetchArrayElementDescriptor(Descriptor *arr, Descriptor *dest, size_t index) {
+    if (arr->type != kExtTypeArray) return -1;
+    auto &arr_obj = *static_cast<ObjectArray *>(arr->ptr);
+    if (index >= arr_obj.size()) return 0;
+    void *elem_ptr = &arr_obj[index];
+    *dest = Descriptor{ elem_ptr, MatchExtType(arr_obj[index].GetTypeId()) };
     return 1;
   }
 
-  int FetchBool(void **target, void *obj_map, const char *id) {
-    auto *source = static_cast<ObjectMap *>(obj_map);
-    auto it = source->find(string(id));
-    if (it == source->end()) return 0;
-    if (it->second.GetTypeId() != kTypeIdBool) return -1;
-    auto &value = it->second.Cast<bool>();
-    *target = value ? new int(1) : new int(0);
-    return 1;
+  template <typename _Type>
+  void _DumpObjectA(Object &obj, void **dest) {
+    auto &value = obj.Cast<_ObjType>();
+    *dest = new _Type(value);
   }
 
-  int FetchString(void **target, void *obj_map, const char *id) {
-    auto *source = static_cast<ObjectMap *>(obj_map);
-    auto it = source->find(string(id));
-    if (it == source->end()) return 0;
-    if (it->second.GetTypeId() != kTypeIdString) return -1;
-    auto &value = it->second.Cast<string>();
-    *target = new char[value.size() + 1];
-    std::strcpy((char *)*target, value.data());
-    return 1;
+  template <typename _CharType>
+  using _StrCpyFunc = _CharType * (*)(_CharType *, const _CharType *);
+
+  template <typename _CharType>
+  struct _StrCpySelector{ 
+    _StrCpyFunc<_CharType> func;
+  };
+
+  template <>
+  struct _StrCpySelector<char> {
+    _StrCpyFunc<char> func;
+    _StrCpySelector() : func(std::strcpy) {}
+  };
+
+  template <>
+  struct _StrCpySelector<wchar_t> {
+    _StrCpyFunc<wchar_t> func;
+    _StrCpySelector() : func(std::wcscpy) {}
+  };
+
+  template <typename _CharType, typename _StringType>
+  void _DumpObjectS(Object &obj, void **dest) {
+    auto &value = obj.Cast<_StringType>();
+    *dest = new _CharType[value.size() + 1];
+    _StrCpySelector<_CharType>().func((_CharType *)*dest, value.data());
   }
 
-  int FetchWideString(void **target, void *obj_map, const char *id) {
-    auto *source = static_cast<ObjectMap *>(obj_map);
-    auto it = source->find(string(id));
-    if (it == source->end()) return 0;
-    if (it->second.GetTypeId() != kTypeIdWideString) return -1;
-    auto &value = it->second.Cast<wstring>();
-    *target = new wchar_t[value.size() + 1];
-    std::wcscpy((wchar_t *)*target, value.data());
+  //Old fetching facilities will be deprecated in the future
+  // 0 : type mismatch
+  // -1 : unsupported
+  int DumpObjectFromDescriptor(Descriptor *descriptor, void **dest) {
+    auto &obj = *static_cast<ObjectPointer>(descriptor->ptr);
+
+    if (descriptor->type == kExtUnsupported) return -1;
+    if (descriptor->type != MatchExtType(obj.GetTypeId())) return 0;
+
+    auto is_string = [](auto type) -> bool {
+      return type == kExtTypeString || type == kExtTypeWideString; };
+    auto dump_func_ptr = [](Object &obj, void **dest) -> void {
+      auto &value = obj.Cast<CABIContainer>();
+      *dest = new GenericFunctionPointer(value.ptr);
+    };
+
+    if (is_string(descriptor->type)) {
+      switch (descriptor->type) {
+      case kExtTypeString:_DumpObjectS<char, string>(obj, dest); break;
+      case kExtTypeWideString:_DumpObjectS<wchar_t, wstring>(obj, dest); break;
+      default:break;
+      }
+    }
+    else {
+      switch (descriptor->type) {
+      case kExtTypeInt:_DumpObjectA<int64_t>(obj, dest); break;
+      case kExtTypeFloat:_DumpObjectA<double>(obj, dest); break;
+      case kExtTypeBool:_DumpObjectA<int>(obj, dest); break;
+      case kExtTypeFunctionPointer:dump_func_ptr(obj, dest);break;
+      case kExtTypeObjectPointer:_DumpObjectA<GenericPointer>(obj, dest); break;
+      default:break;
+      }
+    }
+
     return 1;
   }
 
@@ -350,23 +397,9 @@ namespace kagami::management::extension {
     auto *source = static_cast<ObjectMap *>(obj_map);
     auto it = source->find(string(id));
     if (it == source->end()) return 0;
-    if (it->second.GetMode() != kObjectExternal) return 0;
+    if (it->second.GetMode() != kObjectExternal) return -1;
     *target = it->second.GetExternalPointer();
     return 1;
-  }
-
-  ObjectValueFetcher GetCallbackFacilities(const char *id) {
-    static unordered_map<string, ObjectValueFetcher> facilities = {
-      CallbackUnit("int", FetchInt),
-      CallbackUnit("float", FetchFloat),
-      CallbackUnit("bool", FetchBool),
-      CallbackUnit("string", FetchString),
-      CallbackUnit("wstring", FetchWideString)
-    };
-
-    auto it = facilities.find(string(id));
-    if (it != facilities.end()) return it->second;
-    return nullptr;
   }
 
   int FetchObjectType(void *obj_map, const char *id) {

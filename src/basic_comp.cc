@@ -151,8 +151,8 @@ namespace kagami {
 
     if (mod == nullptr) return Message().SetObject(int64_t(0));
 
-    FARPROC func = GetProcAddress(mod, id.data());
-    int64_t result = reinterpret_cast<int64_t>(func);
+    auto func = GenericFunctionPointer(GetProcAddress(mod, id.data()));
+    CABIContainer result{ func };
 #else
     string path = p.Cast<string>("library");
     string id = p.Cast<string>("id");
@@ -160,10 +160,10 @@ namespace kagami {
 
     if (mod == nullptr) return Message().SetObject(int64_t(0));
 
-    void *func = dlsym(mod, id.data());
-    int64_t result = reinterpret_cast<int64_t>(func);
+    auto func = GenericFunctionPointer(dlsym(mod, id.data()));
+    CABIContainer result{ func };
 #endif
-    return Message().SetObject(result);
+    return Message().SetObject(Object(result, kTypeIdFunctionPointer));
   }
 
   void InitConsoleComponents() {

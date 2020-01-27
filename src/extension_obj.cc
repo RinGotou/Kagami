@@ -14,11 +14,13 @@ namespace kagami {
     }
 
     ExtInterfaces interfaces{
-      ext::GetCallbackFacilities,
       DisposeMemoryUnit,
       DisposeMemoryUnitGroup,
       FetchObjectType,
-      ReceiveError
+      ReceiveError,
+      FetchDescriptor,
+      FetchArrayElementDescriptor,
+      DumpObjectFromDescriptor
     };
 
     auto result = loader(&interfaces);

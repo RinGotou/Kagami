@@ -38,6 +38,7 @@
 #include <filesystem>
 #include <tuple>
 #include <unordered_set>
+#include <optional>
 
 #include "dawn/src/dawn.ui.h"
 #include "dawn/src/dawn.sound.h"
@@ -45,7 +46,7 @@
 
 #define PRODUCT     "Kagami Project Core"
 #define PRODUCT_VER "2.5"
-#define CODENAME    "Daydream"
+#define CODENAME    ""
 #define AUTHOR      "Rin Gotou"
 #define COPYRIGHT   "Copyright(c) 2020"
 
@@ -63,6 +64,7 @@ namespace kagami {
   using std::dynamic_pointer_cast;
   using std::make_shared;
   using std::make_unique;
+  using std::make_pair;
   using std::size_t;
   using std::stack;
   using std::to_string;
@@ -110,6 +112,8 @@ namespace kagami {
   const string kTypeIdInStream        = "instream";
   const string kTypeIdOutStream       = "outstream";
   const string kTypeIdFunction        = "function";
+  const string kTypeIdFunctionPointer = "function_pointer";
+  const string kTypeIdObjectPointer   = "object_pointer";
   const string kTypeIdIterator        = "iterator";
   const string kTypeIdPair            = "pair";
   const string kTypeIdTable           = "table";

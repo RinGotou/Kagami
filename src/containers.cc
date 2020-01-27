@@ -189,7 +189,7 @@ namespace kagami {
     auto &key = p["key"];
     auto &value = p["value"];
     auto result = table.insert(
-      std::make_pair(CreateObjectCopy(key), CreateObjectCopy(value))
+      make_pair(CreateObjectCopy(key), CreateObjectCopy(value))
     );
     return Message();
   }
@@ -246,8 +246,7 @@ namespace kagami {
 
     for (auto &unit : table) {
       key_copy = unit.first;
-      dest->insert(
-        std::make_pair(CreateObjectCopy(key_copy), 
+      dest->insert(make_pair(CreateObjectCopy(key_copy), 
           CreateObjectCopy(unit.second)));
     }
 

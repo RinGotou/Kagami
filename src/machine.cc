@@ -141,7 +141,10 @@ namespace kagami {
       .InitComparator(PlainComparator<double>);
     ObjectTraitsSetup(kTypeIdBool, PlainDeliveryImpl<bool>, PlainHasher<bool>)
       .InitComparator(PlainComparator<bool>);
-    ObjectTraitsSetup(kTypeIdNull, ShallowDelivery);
+    ObjectTraitsSetup(kTypeIdNull, ShallowDelivery)
+      .InitConstructor(FunctionImpl([](ObjectMap &p)->Message {
+        return Message().SetObject(Object());
+      }, kTypeIdNull, ""));
 
     EXPORT_CONSTANT(kTypeIdInt);
     EXPORT_CONSTANT(kTypeIdFloat);
@@ -183,6 +186,14 @@ namespace kagami {
       const auto *ret_value = static_cast<wchar_t *>(value);
       wstring content(ret_value);
       slot_obj.PackContent(make_shared<wstring>(content), kTypeIdWideString);
+    }
+    else if (type == kExtTypeFunctionPointer) {
+      const auto *ret_value = static_cast<CABIContainer *>(value);
+      slot_obj.PackContent(make_shared<CABIContainer>(*ret_value), kTypeIdFunctionPointer);
+    }
+    else if (type == kExtTypeObjectPointer) {
+      const auto *ret_value = static_cast<uintptr_t *>(value);
+      slot_obj.PackContent(make_shared<GenericPointer>(*ret_value), kTypeIdObjectPointer);
     }
     else {
       slot_obj.PackContent(nullptr, kTypeIdNull);
@@ -1435,7 +1446,7 @@ namespace kagami {
     auto event_type = static_cast<Uint32>(event_type_obj.Cast<int64_t>());
     auto &func_impl = func.Cast<FunctionImpl>();
 
-    auto dest = std::make_pair(EventHandlerMark(window_id, event_type), func_impl);
+    auto dest = make_pair(EventHandlerMark(window_id, event_type), func_impl);
 
     event_list_.insert(dest);
   }

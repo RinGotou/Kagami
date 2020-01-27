@@ -91,13 +91,9 @@ namespace kagami::management::extension {
 
   void DisposeMemoryUnit(void *ptr, int type);
   void DisposeMemoryUnitGroup(void *ptr, int type);
-  int FetchInt(void **target, void *obj_map, const char *id);
-  int FetchFloat(void **target, void *obj_map, const char *id);
-  int FetchBool(void **target, void *obj_map, const char *id);
-  int FetchString(void **target, void *obj_map, const char *id);
-  int FetchWideString(void **target, void *obj_map, const char *id);
-  int FetchCustomTypes(void **target, void *obj_map, const char *id);
-  ObjectValueFetcher GetCallbackFacilities(const char *id);
+  int FetchDescriptor(Descriptor *descriptor, void *obj_map, const char *id);
+  int FetchArrayElementDescriptor(Descriptor *arr, Descriptor *dest, size_t index);
+  int DumpObjectFromDescriptor(Descriptor *descriptor, void **dest);
   int FetchObjectType(void *obj_map, const char *id);
 }
 

@@ -3,7 +3,6 @@
 #include "object.h"
 
 namespace kagami {
-  /* Message state level for Message class */
   enum StateLevel {
     kStateNormal,
     kStateError,
@@ -130,4 +129,6 @@ namespace kagami {
       idx_ = 0;
     }
   };
+
+  using CommentedResult = tuple<bool, string>;
 }

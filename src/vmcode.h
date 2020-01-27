@@ -156,7 +156,7 @@ namespace kagami {
     VMCode(VMCode &&rhs) : VMCode(rhs) {}
 
     void AddJumpRecord(size_t index, list<size_t> record) {
-      jump_record_.emplace(std::make_pair(index, record));
+      jump_record_.emplace(make_pair(index, record));
     }
 
     bool FindJumpRecord(size_t index, stack<size_t> &dest);

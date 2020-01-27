@@ -2,7 +2,12 @@
 #include "vmcode.h"
 
 namespace kagami {
+  using GenericFunctionPointer = void(*)();
   using ReturningTunnel = void(*)(void *, void *, int);
+
+  extern "C" struct CABIContainer {
+    GenericFunctionPointer ptr;
+  };
 
   extern "C" struct VMState {
     void *obj_map, *ret_slot, *vm;
@@ -11,18 +16,25 @@ namespace kagami {
 
   using Activity = Message(*)(ObjectMap &);
   using ParameterInformer = const char *(*)(const char *);
+  //deprecated
   using ObjectValueFetcher = int(*)(void **, void *, const char *);
   using CallbackFacilityLauncher = ObjectValueFetcher(*)(const char *);
   using ObjectTypeFetcher = int(*)(void *, const char *);
+  
   using ExtensionActivity = int(*)(VMState);
   using ErrorInformer = void(*)(void *, const char *);
-  
+  using DescriptorFetcher = int(*)(Descriptor *, void *, const char *);
+  using ArrayElementFetcher = int(*)(Descriptor *, Descriptor *, size_t);
+  using ObjectDumper = int(*)(Descriptor *, void **);
+
   extern "C" struct ExtInterfaces {
-    CallbackFacilityLauncher launcher;
     MemoryDisposer disposer;
     MemoryDisposer group_disposer;
     ObjectTypeFetcher type_fetcher;
     ErrorInformer error_informer;
+    DescriptorFetcher desc_fetcher;
+    ArrayElementFetcher arr_elem_fetcher;
+    ObjectDumper dumper;
   };
 
   using ExtensionLoader = int(*)(ExtInterfaces *);
