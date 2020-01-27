@@ -19,7 +19,8 @@ namespace kagami {
       ReceiveError,
       FetchDescriptor,
       FetchArrayElementDescriptor,
-      DumpObjectFromDescriptor
+      DumpObjectFromDescriptor,
+      GetArrayObjectCapacity
     };
 
     auto result = loader(&interfaces);
@@ -47,8 +48,18 @@ namespace kagami {
 
     if (activity != nullptr && informer != nullptr) {
       string param_pattern(informer(id.data()));
-      shared_ptr<FunctionImpl> impl_ptr = 
-        make_shared<FunctionImpl>(activity, id, param_pattern);
+      auto mode = kParamFixed;
+
+      if (!param_pattern.empty() && param_pattern.front() == '@') {
+        mode = kParamAutoSize;
+        if (param_pattern.size() == 1) 
+          return Message("Invalid argument size for variable function", kStateError);
+        param_pattern = param_pattern.substr(1, param_pattern.size() - 1);
+      }
+
+      shared_ptr<FunctionImpl> impl_ptr =
+        make_shared<FunctionImpl>(activity, id, param_pattern, mode);
+
       return Message().SetObject(Object(impl_ptr, kTypeIdFunction));
     }
 

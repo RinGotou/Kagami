@@ -315,13 +315,20 @@ namespace kagami::management::extension {
   //for variable argument pattern
   // -1 : type mismatch
   // 0 : index out of range
-  int FetchArrayElementDescriptor(Descriptor *arr, Descriptor *dest, size_t index) {
-    if (arr->type != kExtTypeArray) return -1;
-    auto &arr_obj = *static_cast<ObjectArray *>(arr->ptr);
-    if (index >= arr_obj.size()) return 0;
-    void *elem_ptr = &arr_obj[index];
-    *dest = Descriptor{ elem_ptr, MatchExtType(arr_obj[index].GetTypeId()) };
+  int FetchArrayElementDescriptor(Descriptor *arr_desc, Descriptor *dest, size_t index) {
+    if (arr_desc->type != kExtTypeArray) return -1;
+    auto &arr_obj = *static_cast<Object *>(arr_desc->ptr);
+    auto &arr = arr_obj.Cast<ObjectArray>();
+    if (index >= arr.size()) return 0;
+    void *elem_ptr = &arr[index];
+    *dest = Descriptor{ elem_ptr, MatchExtType(arr[index].GetTypeId()) };
     return 1;
+  }
+
+  size_t GetArrayObjectCapacity(Descriptor desc) {
+    if (desc.type != kExtTypeArray) return 0;
+    auto &arr = *static_cast<Object *>(desc.ptr);
+    return arr.Cast<ObjectArray>().size();
   }
 
   template <typename _Type>

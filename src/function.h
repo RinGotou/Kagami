@@ -117,11 +117,12 @@ namespace kagami {
     FunctionImpl(
       ExtensionActivity activity,
       string id,
-      string params_pattern
+      string params_pattern,
+      ParameterPattern argument_mode = kParamFixed
     ) :
       impl_(new ExternalFunction(activity)),
       record_(),
-      mode_(kParamFixed),
+      mode_(argument_mode),
       type_(kFunctionExternal),
       limit_(0),
       offset_(0),
