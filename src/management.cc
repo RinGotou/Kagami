@@ -152,6 +152,7 @@ namespace kagami::management::type {
     GetObjectTraitsCollection().insert(pair<string, ObjectTraits>(id, temp));
   }
 
+  //TODO:External/Delegator object processing
   Object CreateObjectCopy(Object &object) {
     if (object.GetDeliveringFlag()) {
       return object;
@@ -159,7 +160,14 @@ namespace kagami::management::type {
 
     Object result;
     const auto it = GetObjectTraitsCollection().find(object.GetTypeId());
-    if (it != GetObjectTraitsCollection().end()) {
+
+    if (object.GetMode() == kObjectExternal) {
+      //TODO:Implementations (After finishing callback facility for types)
+    }
+    else if (object.GetMode() == kObjectDelegator) {
+      result = object;
+    }
+    else if (it != GetObjectTraitsCollection().end()) {
       auto deliver = it->second.GetDeliveringImpl();
       result.PackContent(deliver(object.Get()), object.GetTypeId());
     }

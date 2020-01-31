@@ -96,9 +96,7 @@ namespace kagami {
         return Message("Invalid message string", kStateError);
       }
       
-      ObjectMap obj_map = {
-        NamedObject(kStrMe, p["msg"])
-      };
+      ObjectMap obj_map = { NamedObject(kStrMe, p["msg"]) };
 
       Print(obj_map);
     }
@@ -111,6 +109,85 @@ namespace kagami {
   Message GetChar(ObjectMap &p) {
     auto value = static_cast<char>(fgetc(VM_STDIN));
     return Message().SetObject(string().append(1, value));
+  }
+
+  Message ExistFSObject(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { Expect("path", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &path = p.Cast<string>("path");
+    auto exists = fs::exists(fs::path(path));
+
+    return Message().SetObject(exists);
+  }
+
+  Message CreateNewDirectory(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { Expect("path", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &path = p.Cast<string>("path");
+    auto result = fs::create_directories(path);
+    return Message().SetObject(result);
+  }
+
+  Message RemoveFSObject(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { Expect("path", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &path = p.Cast<string>("path");
+    auto result = fs::remove(fs::path(path));
+
+    return Message().SetObject(result);
+  }
+
+  Message RemoveFSObject_Recursive(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { Expect("path", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &path = p.Cast<string>("path");
+    auto result = fs::remove_all(fs::path(path));
+    
+    return Message().SetObject(int64_t(result));
+  }
+
+  Message CopyFSObject(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { 
+        Expect("from", kTypeIdString), 
+        Expect("to", kTypeIdString)
+      }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto from = p.Cast<string>("from");
+    auto to = p.Cast<string>("to");
+    Message result;
+
+    try {
+      fs::copy(fs::path(from), fs::path(to));
+    }
+    catch (std::exception & e) {
+      result = Message(e.what(), kStateError);
+    }
+
+    return result;
+  }
+
+  Message CopyFSFile(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("from", kTypeIdString),
+        Expect("to", kTypeIdString)
+      }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto from = p.Cast<string>("from");
+    auto to = p.Cast<string>("to");
+    auto result = fs::copy_file(fs::path(from), fs::path(to));
+    return Message().SetObject(result);
   }
 
   Message SetWorkingDir(ObjectMap &p) {
@@ -178,5 +255,11 @@ namespace kagami {
     CreateImpl(FunctionImpl(GetScriptAbsolutePath, "", "get_script_path"));
     CreateImpl(FunctionImpl(GetPlatform, "", "get_platform"));
     CreateImpl(FunctionImpl(GetFunctionPointer, "library|id", "get_function_ptr"));
+    CreateImpl(FunctionImpl(ExistFSObject, "path", "exist_fsobj"));
+    CreateImpl(FunctionImpl(CreateNewDirectory, "path", "create_dir"));
+    CreateImpl(FunctionImpl(RemoveFSObject, "path", "remove_fsobj"));
+    CreateImpl(FunctionImpl(RemoveFSObject_Recursive, "path", "remove_all_fsobj"));
+    CreateImpl(FunctionImpl(CopyFSObject, "from|to", "copy_fsobj"));
+    CreateImpl(FunctionImpl(CopyFSFile, "from|to", "copy_file"));
   }
 }

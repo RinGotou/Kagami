@@ -129,7 +129,7 @@ namespace kagami {
   const string kTypeIdModule          = "module";  //not implemented
   const string kTypeIdExtension       = "extension";
 
-  template <typename _Lhs, class... _Rhs>
+  template <typename _Lhs, typename... _Rhs>
   inline bool compare(_Lhs lhs, _Rhs... rhs) {
     return ((lhs == rhs) || ...);
   }

@@ -72,6 +72,17 @@ namespace kagami {
     return Message();
   }
 
+  Message ElementSetTexture(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("texture", kTypeIdTexture) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &element = p.Cast<dawn::Element>(kStrMe);
+    auto &texture = p.Cast<dawn::Texture>("texture");
+    element.SetTexture(texture.Get());
+
+    return Message();
+  }
+
   Message NewWindow(ObjectMap &p) {
     auto tc = TypeChecking(
       { 
@@ -547,7 +558,8 @@ namespace kagami {
           FunctionImpl(ElementGetPriority, "", "get_priority"),
           FunctionImpl(ElementSetPriority, "priority", "set_priority"),
           FunctionImpl(ElementSetSrc, "src", "set_src"),
-          FunctionImpl(ElementSetDest, "dest", "set_dest")
+          FunctionImpl(ElementSetDest, "dest", "set_dest"),
+          FunctionImpl(ElementSetTexture, "texture", "set_texture")
         }
     );
     

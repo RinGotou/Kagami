@@ -23,7 +23,8 @@ namespace kagami {
   enum ObjectMode {
     kObjectNormal    = 1,
     kObjectRef       = 2,
-    kObjectExternal  = 3
+    kObjectExternal  = 3,
+    kObjectDelegator = 4
   };
 
   using HasherFunction = size_t(*)(shared_ptr<void>);
@@ -86,6 +87,7 @@ namespace kagami {
       ptr_(ptr), disposer_(disposer), type_id_(type_id) {}
   };
 
+  //TODO:delegator mode
   class Object {
   private:
     void *real_dest_;
@@ -121,6 +123,11 @@ namespace kagami {
     Object(T &&t, string type_id) :
       Object(t, type_id) {}
 
+    template <typename T>
+    Object(T *ptr, string type_id) :
+      real_dest_((void *)ptr), mode_(kObjectDelegator),  delivering_(false),
+      ptr_(nullptr), type_id_(type_id) {}
+
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
       real_dest_(ext_ptr), mode_(kObjectExternal), delivering_(false), 
       ptr_(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)),
@@ -152,8 +159,11 @@ namespace kagami {
     template <typename Tx>
     Tx &Cast() {
       if (mode_ == kObjectRef) { 
-        return static_cast<ObjectPointer>(real_dest_)
-          ->Cast<Tx>(); 
+        return static_cast<ObjectPointer>(real_dest_)->Cast<Tx>(); 
+      }
+
+      if (mode_ == kObjectDelegator) {
+        return *static_cast<Tx *>(real_dest_);
       }
 
       return *std::static_pointer_cast<Tx>(ptr_);
