@@ -154,6 +154,7 @@ namespace kagami {
     kStrCompare        = "__compare",
     kStrRightHandSide  = "__rhs",
     kStrLeftHandSide   = "__lhs",
+    kStrTextureTableHead   = "__texture_table_",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);

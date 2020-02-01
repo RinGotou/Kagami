@@ -1447,15 +1447,21 @@ namespace kagami {
     auto event_type_obj = FetchObject(args[1]);
     auto window_obj = FetchObject(args[0]);
 
-    //TODO:Error detecting
-
     auto window_id = window_obj.Cast<dawn::PlainWindow>().GetId();
     auto event_type = static_cast<Uint32>(event_type_obj.Cast<int64_t>());
-    auto &func_impl = func.Cast<FunctionImpl>();
+    EventHandlerMark handler(window_id, event_type);
 
-    auto dest = make_pair(EventHandlerMark(window_id, event_type), func_impl);
+    auto it = event_list_.find(handler);
 
-    event_list_.insert(dest);
+    if (it != event_list_.end()) {
+      auto &func_impl = func.Cast<FunctionImpl>();
+      it->second = func_impl;
+    }
+    else {
+      auto &func_impl = func.Cast<FunctionImpl>();
+      auto dest = make_pair(EventHandlerMark(window_id, event_type), func_impl);
+      event_list_.insert(dest);
+    }
   }
 
   void Machine::CommandWait(ArgumentList &args) {
