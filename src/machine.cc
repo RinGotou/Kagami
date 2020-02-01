@@ -931,6 +931,11 @@ namespace kagami {
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
 
+    if (rhs.GetMode() == kObjectDelegator || lhs.GetMode() == kObjectDelegator) {
+      frame.MakeError("Trying to assign a language key constant");
+      return;
+    }
+
     if (lhs.IsRef()) {
       auto &real_lhs = lhs.Unpack();
       real_lhs = CreateObjectCopy(rhs);
