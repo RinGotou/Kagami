@@ -46,7 +46,7 @@
 
 #define PRODUCT     "Kagami Project Core"
 #define PRODUCT_VER "2.5"
-#define CODENAME    ""
+#define CODENAME    "Oratorio"
 #define AUTHOR      "Rin Gotou"
 #define COPYRIGHT   "Copyright(c) 2020"
 

@@ -24,7 +24,7 @@ namespace kagami {
     kObjectNormal    = 1,
     kObjectRef       = 2,
     kObjectExternal  = 3,
-    kObjectDelegator = 4
+    kObjectDelegator = 4    //for language key features
   };
 
   using HasherFunction = size_t(*)(shared_ptr<void>);

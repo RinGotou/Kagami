@@ -489,6 +489,7 @@ namespace kagami {
       impl.SetLimit(params.size() - counter);
     }
 
+    //TODO:Object Selection
     if (closure) {
       ObjectMap scope_record;
       auto &base = obj_stack_.GetBase();
@@ -501,6 +502,7 @@ namespace kagami {
         if (it->Find(kStrUserFunc) != nullptr) flag = true;
 
         for (auto &unit : it->GetContent()) {
+          if (unit.first == kStrThisWindow) continue;
           if (scope_record.find(unit.first) == scope_record.end()) {
             scope_record.insert(NamedObject(unit.first,
               type::CreateObjectCopy(unit.second)));
@@ -1715,7 +1717,10 @@ namespace kagami {
 
   void Machine::LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id) {
     auto &frame = frame_stack_.top();
-    
+    auto window = dynamic_cast<dawn::PlainWindow *>(dawn::GetWindowById(id));
+    Object this_window_obj(window, kTypeIdWindow);
+    obj_map.insert(NamedObject(kStrThisWindow, this_window_obj));
+
     if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
       if (impl.GetParamSize() != 1) {
         frame.MakeError("Invalid function for KeyDown/KeyUp event");
@@ -1797,10 +1802,7 @@ namespace kagami {
   void Machine::Run(bool invoking, string id, VMCodePointer ptr, ObjectMap *p,
     ObjectMap *closure_record) {
     if (code_stack_.empty()) return;
-
-    if (invoking) {
-      code_stack_.push_back(ptr);
-    }
+    if (invoking) code_stack_.push_back(ptr);
 
     bool interface_error = false;
     bool invoking_error = false;

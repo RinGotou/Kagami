@@ -193,6 +193,10 @@ namespace kagami {
   const string kContainerBehavior = "head|tail";
 
   using CommandPointer = Command * ;
+  //struct EventHandlerMark {
+  //  Object window_ref;
+  //  Uint32 event_type;
+  //};
   using EventHandlerMark = pair<Uint32, Uint32>;
   using EventHandler = pair<EventHandlerMark, FunctionImpl>;
 
@@ -244,7 +248,6 @@ namespace kagami {
     void RefreshReturnStack(Object obj = Object());
   };
 
-  //Kisaragi Machine Class
   class Machine {
   private:
     void RecoverLastState();

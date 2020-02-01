@@ -90,6 +90,7 @@ namespace kagami {
 
   const string
     kStrAssert         = "assert",
+    kStrThisWindow     = "this_window",
     kStrImpl           = "impl",
     kStrStruct         = "struct",
     kStrRootScope      = "!root",
