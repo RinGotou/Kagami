@@ -1,22 +1,4 @@
 #pragma once
-#if defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <direct.h>
-#if defined(_MSC_VER)
-//Disable STUPID visual studio intellisense warning
-#pragma warning(disable:4996)
-#pragma warning(disable:6031)
-#pragma warning(disable:6387)
-#pragma warning(disable:26812)
-#pragma warning(disable:26439)
-#pragma warning(disable:26444)
-#endif
-#else
-#include <dlfcn.h>
-#include <unistd.h>
-#endif
-
 #include <ctime>
 #include <cstdio>
 #include <clocale>
@@ -39,6 +21,26 @@
 #include <tuple>
 #include <unordered_set>
 #include <optional>
+
+#include "toml11/toml.hpp"
+
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <direct.h>
+#if defined(_MSC_VER)
+//Disable STUPID visual studio intellisense warning
+#pragma warning(disable:4996)
+#pragma warning(disable:6031)
+#pragma warning(disable:6387)
+#pragma warning(disable:26812)
+#pragma warning(disable:26439)
+#pragma warning(disable:26444)
+#endif
+#else
+#include <dlfcn.h>
+#include <unistd.h>
+#endif
 
 #include "dawn/src/dawn.ui.h"
 #include "dawn/src/dawn.sound.h"
@@ -79,6 +81,7 @@ namespace kagami {
   using std::to_chars;
   using std::variant;
   using std::tuple;
+  using std::optional;
   
   using namespace minatsuki;
   namespace fs = std::filesystem;

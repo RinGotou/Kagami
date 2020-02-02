@@ -248,6 +248,49 @@ namespace kagami {
     void RefreshReturnStack(Object obj = Object());
   };
 
+  struct _IgnoredException : std::exception {};
+  struct _CustomError : std::exception {
+  public:
+    _CustomError(const char *msg) : 
+      std::exception(msg, 0) {}
+  };
+
+  class LayoutProcessor {
+  private:
+    const unordered_map<string, dawn::ImageType> kImageTypeMatcher = {
+      make_pair("jpg", dawn::kImageJPG),
+      make_pair("png", dawn::kImagePNG),
+      make_pair("tif", dawn::kImageTIF),
+      make_pair("tiff", dawn::kImageTIF),
+      make_pair("webp", dawn::kImageWEBP)
+    };
+
+  private:
+    ObjectStack &obj_stack_;
+    stack<RuntimeFrame> &frame_stack_;
+    string toml_file_;
+
+  private:
+    using TOMLValueTable = map<string, toml::value>;
+
+    template <typename _Type>
+    optional<_Type> ExpectParameter(const toml::value &value, string id) {
+      auto expected_value = toml::expect<_Type>(value, id);
+      if (expected_value.is_err()) return nullopt;
+      return expected_value.unwrap();
+    }
+
+    void ElementProcessing(ObjectTable &obj_table, string id, 
+      const toml::value &elem_def, dawn::PlainWindow &window);
+
+  public:
+    LayoutProcessor() = delete;
+    LayoutProcessor(ObjectStack &obj_stack, stack<RuntimeFrame> frames, string layout_file) :
+      obj_stack_(obj_stack), frame_stack_(frames), toml_file_(layout_file) {}
+
+    bool Run();
+  };
+
   class Machine {
   private:
     void RecoverLastState();

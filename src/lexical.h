@@ -185,4 +185,6 @@ namespace kagami::lexical {
   bool IsDigit(char c);
   bool IsAlpha(char c);
   bool IsPlainType(string type_id);
+  string ToUpper(string source);
+  string ToLower(string source);
 }

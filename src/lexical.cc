@@ -381,4 +381,22 @@ namespace kagami::lexical {
     return type_id == kTypeIdInt || type_id == kTypeIdFloat ||
       type_id == kTypeIdString || type_id == kTypeIdBool;
   }
+
+  string ToUpper(string source) {
+    string result;
+    for (auto &unit : source) {
+      result.append(1, std::toupper(unit));
+    }
+
+    return result;
+  }
+
+  string ToLower(string source) {
+    string result;
+    for (auto &unit : source) {
+      result.append(1, std::tolower(unit));
+    }
+
+    return result;
+  }
 }
