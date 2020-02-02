@@ -276,7 +276,7 @@ namespace kagami {
     template <typename _Type>
     optional<_Type> ExpectParameter(const toml::value &value, string id) {
       auto expected_value = toml::expect<_Type>(value, id);
-      if (expected_value.is_err()) return nullopt;
+      if (expected_value.is_err()) return std::nullopt;
       return expected_value.unwrap();
     }
 

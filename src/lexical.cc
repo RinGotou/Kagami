@@ -399,4 +399,18 @@ namespace kagami::lexical {
 
     return result;
   }
+
+  string ReplaceInvalidChar(string source) {
+    string result;
+    for (auto &unit : source) {
+      if (!IsAlpha(unit) && unit != '_') {
+        result.append("_");
+        continue;
+      }
+
+      result.append(1, unit);
+    }
+
+    return result;
+  }
 }

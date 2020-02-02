@@ -248,18 +248,19 @@ namespace kagami {
   void LayoutProcessor::ElementProcessing(ObjectTable &obj_table, string id, 
     const toml::value &elem_def, dawn::PlainWindow &window) {
     SDL_Rect dest_rect{
-      toml::find<int64_t>(elem_def, "x"),
-      toml::find<int64_t>(elem_def, "y"),
-      toml::find<int64_t>(elem_def, "width"),
-      toml::find<int64_t>(elem_def, "height")
+      toml::find<int>(elem_def, "x"),
+      toml::find<int>(elem_def, "y"),
+      toml::find<int>(elem_def, "width"),
+      toml::find<int>(elem_def, "height")
     };
     optional<SDL_Rect> src_rect_value = std::nullopt;
     optional<SDL_Color> color_key_value = std::nullopt;
 
-    auto type = toml::find<string>(elem_def, "file");
+    auto type = toml::find<string>(elem_def, "type");
     auto priority_value = ExpectParameter<int64_t>(elem_def, "priority");
 
     if (type == "image") {
+      //TODO:Texture reuse
       auto image_file = toml::find<string>(elem_def, "image_file");
       //these operations may throw std::out_or_range
       auto cropper_table = toml::expect<TOMLValueTable>(elem_def, "cropper");
@@ -269,10 +270,10 @@ namespace kagami {
       if (cropper_table.is_ok()) {
         auto &cropper = cropper_table.unwrap();
         src_rect_value = SDL_Rect{
-          cropper.at("x").as_integer(),
-          cropper.at("y").as_integer(),
-          cropper.at("width").as_integer(),
-          cropper.at("height").as_integer()
+          int(cropper.at("x").as_integer()),
+          int(cropper.at("y").as_integer()),
+          int(cropper.at("width").as_integer()),
+          int(cropper.at("height").as_integer())
         };
       }
 
@@ -280,19 +281,12 @@ namespace kagami {
         auto array_size = color_key_array.unwrap().size();
         auto color_key = color_key_array.unwrap();
 
-        if (array_size == 3) {
+      if (array_size == 4) {
           color_key_value = SDL_Color{
-            color_key[0].as_integer(),
-            color_key[1].as_integer(),
-            color_key[2].as_integer(),
-            color_key[3].as_integer()
-          };
-        }
-        else if (array_size == 4) {
-          color_key_value = SDL_Color{
-            color_key[0].as_integer(),
-            color_key[1].as_integer(),
-            color_key[2].as_integer(),
+            Uint8(color_key[0].as_integer()),
+            Uint8(color_key[1].as_integer()),
+            Uint8(color_key[2].as_integer()),
+            Uint8(color_key[3].as_integer())
           };
         }
         else {
@@ -320,18 +314,73 @@ namespace kagami {
       window.AddElement(id, element);
     }
     else if (type == "text") {
+      auto text = toml::find<string>(elem_def, "text");
+      auto size = toml::find<int64_t>(elem_def, "size");
+      //expect?
+      auto font_file = toml::find<string>(elem_def, "font");
+      auto font_path = fs::path(font_file);
+      auto font_obj_id = kStrFontObjectHead + lexical::ReplaceInvalidChar(
+        font_path.filename().string());
+      
+      auto color_key_array = toml::find<toml::array>(elem_def, "color_key");
+      auto color_key = [&]() -> SDL_Color {
+        SDL_Color color_key;
+        auto size = color_key_array.size();
+        if (size == 4) {
+          color_key = SDL_Color{
+            Uint8(color_key_array[0].as_integer()),
+            Uint8(color_key_array[1].as_integer()),
+            Uint8(color_key_array[2].as_integer()),
+            Uint8(color_key_array[3].as_integer())
+          };
+        }
+        else {
+          throw _CustomError("Invalid color key");
+        }
+        return color_key;
+      }();
 
+
+      if (auto ptr = obj_stack_.Find(font_obj_id); ptr != nullptr) {
+        auto &font = ptr->Cast<dawn::Font>();
+        auto managed_texture = make_shared<dawn::Texture>(
+          text, font, window.GetRenderer(), color_key);
+        Object texture_key_obj(id, kTypeIdString);
+        Object texture_obj(managed_texture, kTypeIdTexture);
+        obj_table.insert(make_pair(texture_key_obj, texture_obj));
+        auto element = src_rect_value.has_value() ?
+          dawn::Element(*managed_texture, src_rect_value.value(), dest_rect) :
+          dawn::Element(*managed_texture, dest_rect);
+        window.AddElement(id, element);
+      }
+      else {
+        auto managed_font = make_shared<dawn::Font>(font_file, int(size));
+        Object font_obj(managed_font, kTypeIdFont);
+        auto &font = *managed_font;
+        auto managed_texture = make_shared<dawn::Texture>(
+          text, font, window.GetRenderer(), color_key);
+        obj_stack_.CreateObject(font_obj_id, font_obj);
+        Object texture_key_obj(id, kTypeIdString);
+        Object texture_obj(managed_texture, kTypeIdTexture);
+        obj_table.insert(make_pair(texture_key_obj, texture_obj));
+        auto element = src_rect_value.has_value() ?
+          dawn::Element(*managed_texture, src_rect_value.value(), dest_rect) :
+          dawn::Element(*managed_texture, dest_rect);
+        window.AddElement(id, element);
+      }
     }
     else {
       throw _CustomError("Unknown element type");
     }
   }
 
+  //TODO:Inject to base frame
   bool LayoutProcessor::Run() {
     bool result = true;
     auto &frame = frame_stack_.top();
 
     //TODO:specific error processing
+    //TODO:Default font definition
     try {
       //Init TOML Layout
       const auto layout_file = toml::parse(toml_file_);
@@ -349,7 +398,10 @@ namespace kagami {
         return title_value.unwrap();
       }();
 
-      auto managed_window = make_shared<dawn::PlainWindow>(win_width, win_height);
+      dawn::WindowOption option;
+      option.width = int(win_width);
+      option.height = int(win_height);
+      auto managed_window = make_shared<dawn::PlainWindow>(option);
       managed_window->RealTimeRefreshingMode(rtr_value.has_value() ? rtr_value.value() : true);
       managed_window->SetWindowTitle(title);
       Object window_obj(managed_window, kTypeIdWindow);

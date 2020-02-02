@@ -155,6 +155,7 @@ namespace kagami {
     kStrRightHandSide  = "__rhs",
     kStrLeftHandSide   = "__lhs",
     kStrTextureTableHead   = "__texture_table_",
+    kStrFontObjectHead     = "__font_",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);
@@ -187,4 +188,5 @@ namespace kagami::lexical {
   bool IsPlainType(string type_id);
   string ToUpper(string source);
   string ToLower(string source);
+  string ReplaceInvalidChar(string source);
 }

@@ -1,4 +1,15 @@
 #pragma once
+#if defined(_MSC_VER)
+//Disable STUPID visual studio intellisense warning
+#pragma warning(disable:4996)
+#pragma warning(disable:6031)
+#pragma warning(disable:6387)
+#pragma warning(disable:26812)
+#pragma warning(disable:26439)
+#pragma warning(disable:26444)
+#pragma warning(disable:26451)
+#pragma warning(disable:26495)
+#endif
 #include <ctime>
 #include <cstdio>
 #include <clocale>
@@ -28,15 +39,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <direct.h>
-#if defined(_MSC_VER)
-//Disable STUPID visual studio intellisense warning
-#pragma warning(disable:4996)
-#pragma warning(disable:6031)
-#pragma warning(disable:6387)
-#pragma warning(disable:26812)
-#pragma warning(disable:26439)
-#pragma warning(disable:26444)
-#endif
 #else
 #include <dlfcn.h>
 #include <unistd.h>
