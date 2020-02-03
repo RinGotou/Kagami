@@ -67,6 +67,7 @@ namespace kagami {
     kKeywordLeave,
     kKeywordLoad,
     kKeywordUsing,
+    kKeywordUsingTable,
     kKeywordNull
   };
 

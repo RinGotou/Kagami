@@ -560,7 +560,7 @@ namespace kagami {
       auto &config = toml::find(table_file, "Config");
       auto file_type = toml::find<string>(config, "filetype");
 
-      if (file_type != "layout") throw _CustomError("Expected file type is 'layout'");
+      if (file_type != "table") throw _CustomError("Expected file type is 'layout'");
 
       auto table_def = toml::find<TOMLValueTable>(table_file, "Table");
       
@@ -1528,12 +1528,41 @@ namespace kagami {
     auto path_obj = FetchObject(args[0]);
 
     if (path_obj.GetTypeId() != kTypeIdString) {
-      frame.MakeError("Invalid layout path");
+      frame.MakeError("Invalid layout file path");
       return;
     }
 
     LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
     layout_proc.InitWindowFromLayout();
+  }
+
+  void Machine::CommandUsingTable(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(2)) {
+      frame.MakeError("Argument is misssing - using_table(obj, obj)");
+      return;
+    }
+
+    auto window_obj = FetchObject(args[1]);
+    auto path_obj = FetchObject(args[0]);
+    
+    if (path_obj.GetTypeId() != kTypeIdString) {
+      frame.MakeError("Invalid table file path");
+      return;
+    }
+
+    if (window_obj.GetTypeId() != kTypeIdWindow) {
+      frame.MakeError("Invalid window object");
+    }
+
+    auto &window = window_obj.Cast<dawn::PlainWindow>();
+    LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
+    auto managed_table = make_shared<ObjectTable>();
+    Object table_obj(managed_table, kTypeIdTable);
+    layout_proc.InitTextureTable(*managed_table, window);
+    if (frame.error) return;
+    frame.RefreshReturnStack(table_obj);
   }
 
   void Machine::CommandTime() {
@@ -1977,6 +2006,9 @@ namespace kagami {
       break;
     case kKeywordUsing:
       CommandUsing(args);
+      break;
+    case kKeywordUsingTable:
+      CommandUsingTable(args);
       break;
     default:
       break;

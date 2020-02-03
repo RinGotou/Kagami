@@ -335,6 +335,7 @@ namespace kagami {
     void CommandConvert(ArgumentList &args);
     void CommandLoad(ArgumentList &args);
     void CommandUsing(ArgumentList &args);
+    void CommandUsingTable(ArgumentList &args);
     void CommandTime();
     void CommandVersion();
     void CommandMachineCodeName();

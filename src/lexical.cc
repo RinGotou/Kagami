@@ -174,7 +174,8 @@ namespace kagami::lexical {
       T(kStrWait           ,kKeywordWait),
       T(kStrLeave          ,kKeywordLeave),
       T(kStrLoad           ,kKeywordLoad),
-      T(kStrUsing          ,kKeywordUsing)
+      T(kStrUsing          ,kKeywordUsing),
+      T(kStrUsingTable     ,kKeywordUsingTable)
     };
     return base;
   }
