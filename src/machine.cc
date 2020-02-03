@@ -387,6 +387,105 @@ namespace kagami {
     }
   }
 
+  void LayoutProcessor::TableElementProcessing(string id, const toml::value &elem_def, 
+    dawn::PlainWindow &window, ObjectTable &table) {
+    auto type = toml::find<string>(elem_def, "type");
+
+    if (type == "image") {
+      optional<SDL_Color> color_key_value = std::nullopt;
+      auto image_file = toml::find<string>(elem_def, "image_file");
+      auto color_key_array = toml::expect<toml::array>(elem_def, "color_key");
+
+      if (color_key_array.is_ok()) {
+        auto array_size = color_key_array.unwrap().size();
+        auto color_key = color_key_array.unwrap();
+
+        if (array_size == 4) {
+          color_key_value = SDL_Color{
+            Uint8(color_key[0].as_integer()),
+            Uint8(color_key[1].as_integer()),
+            Uint8(color_key[2].as_integer()),
+            Uint8(color_key[3].as_integer())
+          };
+        }
+        else {
+          throw _CustomError("Invalid color key");
+        }
+      }
+
+      fs::path image_path(image_file);
+      auto image_type_str = lexical::ToLower(image_path.extension().string());
+      auto image_type = [&]() -> dawn::ImageType {
+        const auto it = kImageTypeMatcher.find(image_type_str);
+        if (it == kImageTypeMatcher.cend()) throw _CustomError("Unknown image type");
+        return it->second;
+      }();
+
+      //Init Texture Object
+      auto managed_texture = color_key_value.has_value() ?
+        make_shared<dawn::Texture>(
+        image_file, image_type, window.GetRenderer(),
+        true, color_key_value.value()) :
+        make_shared<dawn::Texture>(
+        image_file, image_type, window.GetRenderer());
+      Object texture_key_obj(id, kTypeIdString);
+      Object texture_obj(managed_texture, kTypeIdTexture);
+
+      table.insert(make_pair(texture_key_obj, texture_obj));
+    }
+    else if (type == "text") {
+      auto text = toml::find<string>(elem_def, "text");
+      auto size = toml::find<int64_t>(elem_def, "size");
+      //expect?
+      auto font_file = toml::find<string>(elem_def, "font");
+      auto font_path = fs::path(font_file);
+      auto font_obj_id = kStrFontObjectHead + lexical::ReplaceInvalidChar(
+        font_path.filename().string());
+
+      auto color_key_array = toml::find<toml::array>(elem_def, "color_key");
+      auto color_key = [&]() -> SDL_Color {
+        SDL_Color color_key;
+        auto size = color_key_array.size();
+        if (size == 4) {
+          color_key = SDL_Color{
+            Uint8(color_key_array[0].as_integer()),
+            Uint8(color_key_array[1].as_integer()),
+            Uint8(color_key_array[2].as_integer()),
+            Uint8(color_key_array[3].as_integer())
+          };
+        }
+        else {
+          throw _CustomError("Invalid color key");
+        }
+        return color_key;
+      }();
+
+
+      if (auto ptr = obj_stack_.Find(font_obj_id); ptr != nullptr) {
+        auto &font = ptr->Cast<dawn::Font>();
+        auto managed_texture = make_shared<dawn::Texture>(
+          text, font, window.GetRenderer(), color_key);
+        Object texture_key_obj(id, kTypeIdString);
+        Object texture_obj(managed_texture, kTypeIdTexture);
+        table.insert(make_pair(texture_key_obj, texture_obj));
+      }
+      else {
+        auto managed_font = make_shared<dawn::Font>(font_file, int(size));
+        Object font_obj(managed_font, kTypeIdFont);
+        auto &font = *managed_font;
+        auto managed_texture = make_shared<dawn::Texture>(
+          text, font, window.GetRenderer(), color_key);
+        obj_stack_.CreateObject(font_obj_id, font_obj);
+        Object texture_key_obj(id, kTypeIdString);
+        Object texture_obj(managed_texture, kTypeIdTexture);
+        table.insert(make_pair(texture_key_obj, texture_obj));
+      }
+    }
+    else {
+      throw _CustomError("Unknown element type");
+    }
+  }
+
   //TODO:Inject to base frame
   bool LayoutProcessor::InitWindowFromLayout() {
     bool result = true;
@@ -404,6 +503,8 @@ namespace kagami {
         if (it == config.end()) throw _CustomError("Unknown TOML file");
         return it->second.as_string();
       }();
+
+      if (file_type != "layout") throw _CustomError("Expected file type is 'layout'");
 
       auto &window_layout = toml::find(layout_file, "WindowLayout");
       //Create Window Object
@@ -450,8 +551,32 @@ namespace kagami {
     return result;
   }
 
-  bool LayoutProcessor::InitTextureTable(ObjectTable &table) {
+  bool LayoutProcessor::InitTextureTable(ObjectTable &table, dawn::PlainWindow &window) {
     bool result = true;
+    auto &frame = frame_stack_.top();
+
+    try {
+      const auto table_file = toml::parse(toml_file_);
+      auto &config = toml::find(table_file, "Config");
+      auto file_type = toml::find<string>(config, "filetype");
+
+      if (file_type != "layout") throw _CustomError("Expected file type is 'layout'");
+
+      auto table_def = toml::find<TOMLValueTable>(table_file, "Table");
+      
+      for (const auto &unit : table_def) {
+        TableElementProcessing(
+          unit.first,
+          unit.second,
+          window,
+          table
+        );
+      }
+    }
+    catch (std::exception & e) {
+      frame.MakeError(e.what());
+      result = false;
+    }
 
     return result;
   }
