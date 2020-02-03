@@ -133,6 +133,7 @@ namespace kagami {
     kStrHead           = "head",
     kStrTail           = "tail",
     kStrUsing          = "using",
+    kStrUsingTable     = "using_table",
     kStrPlus           = "+",
     kStrMinus          = "-",
     kStrTimes          = "*",

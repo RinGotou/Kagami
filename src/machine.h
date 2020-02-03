@@ -282,13 +282,13 @@ namespace kagami {
 
     void ElementProcessing(ObjectTable &obj_table, string id, 
       const toml::value &elem_def, dawn::PlainWindow &window);
-
   public:
     LayoutProcessor() = delete;
     LayoutProcessor(ObjectStack &obj_stack, stack<RuntimeFrame> &frames, string layout_file) :
       obj_stack_(obj_stack), frame_stack_(frames), toml_file_(layout_file) {}
 
-    bool Run();
+    bool InitWindowFromLayout();
+    bool InitTextureTable(ObjectTable &table);
   };
 
   class Machine {

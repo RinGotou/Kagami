@@ -240,6 +240,20 @@ namespace kagami {
     return Message().SetObject(window.SetElementOnBottom(id));
   }
 
+  Message WindowSetElementTexture(ObjectMap &p) {
+    auto tc = TypeChecking({ 
+      Expect("texture", kTypeIdTexture),
+      Expect("id", kTypeIdString)
+      }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &texture = p.Cast<dawn::Texture>("texture");
+    auto &id = p.Cast<string>("id");
+    
+    return Message().SetObject(window.SetElementTexture(id, texture));
+  }
+
   Message WindowSetTitle(ObjectMap& p) {
     auto tc = TypeChecking({ Expect("title", kTypeIdString) }, p);
     if (TC_FAIL(tc)) return TC_ERROR(tc);
@@ -392,7 +406,8 @@ namespace kagami {
   }
 
   Message NewTexture(ObjectMap &p) {
-    return Message().SetObject(Object(dawn::Texture(), kTypeIdTexture));
+    auto managed_texture = make_shared<dawn::Texture>();
+    return Message().SetObject(Object(managed_texture, kTypeIdTexture));
   }
 
   //Limit:3
@@ -579,6 +594,7 @@ namespace kagami {
           FunctionImpl(WindowDisposeElement, "id", "dispose"),
           FunctionImpl(WindowSetElementOnTop, "id", "set_on_top"),
           FunctionImpl(WindowSetElementOnBottom, "id", "set_on_bottom"),
+          FunctionImpl(WindowSetElementTexture, "id|texture", "set_texture"),
           FunctionImpl(WindowSetTitle, "title", "set_title"),
           FunctionImpl(WindowDraw, "", "draw"),
           FunctionImpl(WindowWaiting, "", "waiting"),

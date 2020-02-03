@@ -388,7 +388,7 @@ namespace kagami {
   }
 
   //TODO:Inject to base frame
-  bool LayoutProcessor::Run() {
+  bool LayoutProcessor::InitWindowFromLayout() {
     bool result = true;
     auto &frame = frame_stack_.top();
 
@@ -397,6 +397,14 @@ namespace kagami {
     try {
       //Init TOML Layout
       const auto layout_file = toml::parse(toml_file_);
+
+      auto config = toml::find<TOMLValueTable>(layout_file, "Config");
+      auto file_type = [&]() -> string {
+        auto it = config.find("filetype");
+        if (it == config.end()) throw _CustomError("Unknown TOML file");
+        return it->second.as_string();
+      }();
+
       auto &window_layout = toml::find(layout_file, "WindowLayout");
       //Create Window Object
       auto id = toml::find<string>(window_layout, "id"); //for window/texture table identifier
@@ -438,6 +446,12 @@ namespace kagami {
       frame.MakeError(e.what());
       result = false;
     }
+
+    return result;
+  }
+
+  bool LayoutProcessor::InitTextureTable(ObjectTable &table) {
+    bool result = true;
 
     return result;
   }
@@ -1394,7 +1408,7 @@ namespace kagami {
     }
 
     LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
-    layout_proc.Run();
+    layout_proc.InitWindowFromLayout();
   }
 
   void Machine::CommandTime() {
