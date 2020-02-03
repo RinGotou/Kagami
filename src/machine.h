@@ -258,11 +258,11 @@ namespace kagami {
   class LayoutProcessor {
   private:
     const unordered_map<string, dawn::ImageType> kImageTypeMatcher = {
-      make_pair("jpg", dawn::kImageJPG),
-      make_pair("png", dawn::kImagePNG),
-      make_pair("tif", dawn::kImageTIF),
-      make_pair("tiff", dawn::kImageTIF),
-      make_pair("webp", dawn::kImageWEBP)
+      make_pair(".jpg", dawn::kImageJPG),
+      make_pair(".png", dawn::kImagePNG),
+      make_pair(".tif", dawn::kImageTIF),
+      make_pair(".tiff", dawn::kImageTIF),
+      make_pair(".webp", dawn::kImageWEBP)
     };
 
   private:
@@ -271,7 +271,7 @@ namespace kagami {
     string toml_file_;
 
   private:
-    using TOMLValueTable = map<string, toml::value>;
+    using TOMLValueTable = unordered_map<string, toml::value>;
 
     template <typename _Type>
     optional<_Type> ExpectParameter(const toml::value &value, string id) {
@@ -285,7 +285,7 @@ namespace kagami {
 
   public:
     LayoutProcessor() = delete;
-    LayoutProcessor(ObjectStack &obj_stack, stack<RuntimeFrame> frames, string layout_file) :
+    LayoutProcessor(ObjectStack &obj_stack, stack<RuntimeFrame> &frames, string layout_file) :
       obj_stack_(obj_stack), frame_stack_(frames), toml_file_(layout_file) {}
 
     bool Run();
@@ -332,6 +332,7 @@ namespace kagami {
     void CommandDestroy(ArgumentList &args);
     void CommandConvert(ArgumentList &args);
     void CommandLoad(ArgumentList &args);
+    void CommandUsing(ArgumentList &args);
     void CommandTime();
     void CommandVersion();
     void CommandMachineCodeName();

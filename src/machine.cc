@@ -296,7 +296,11 @@ namespace kagami {
 
       fs::path image_path(image_file);
       auto image_type_str = lexical::ToLower(image_path.extension().string());
-      auto image_type = kImageTypeMatcher.at(image_type_str);
+      auto image_type = [&]() -> dawn::ImageType {
+        const auto it = kImageTypeMatcher.find(image_type_str);
+        if (it == kImageTypeMatcher.cend()) throw _CustomError("Unknown image type");
+        return it->second;
+      }();
       //Init Texture Object
       auto managed_texture = color_key_value.has_value() ?
         make_shared<dawn::Texture>(
@@ -311,6 +315,9 @@ namespace kagami {
       auto element = src_rect_value.has_value() ?
         dawn::Element(*managed_texture, src_rect_value.value(), dest_rect) :
         dawn::Element(*managed_texture, dest_rect);
+      if (priority_value.has_value()) {
+        element.SetPriority(int(priority_value.value()));
+      }
       window.AddElement(id, element);
     }
     else if (type == "text") {
@@ -351,6 +358,9 @@ namespace kagami {
         auto element = src_rect_value.has_value() ?
           dawn::Element(*managed_texture, src_rect_value.value(), dest_rect) :
           dawn::Element(*managed_texture, dest_rect);
+        if (priority_value.has_value()) {
+          element.SetPriority(int(priority_value.value()));
+        }
         window.AddElement(id, element);
       }
       else {
@@ -366,6 +376,9 @@ namespace kagami {
         auto element = src_rect_value.has_value() ?
           dawn::Element(*managed_texture, src_rect_value.value(), dest_rect) :
           dawn::Element(*managed_texture, dest_rect);
+        if (priority_value.has_value()) {
+          element.SetPriority(int(priority_value.value()));
+        }
         window.AddElement(id, element);
       }
     }
@@ -1365,6 +1378,25 @@ namespace kagami {
     }
   }
 
+  void Machine::CommandUsing(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument is misssing - using(obj)");
+      return;
+    }
+
+    auto path_obj = FetchObject(args[0]);
+
+    if (path_obj.GetTypeId() != kTypeIdString) {
+      frame.MakeError("Invalid layout path");
+      return;
+    }
+
+    LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
+    layout_proc.Run();
+  }
+
   void Machine::CommandTime() {
     auto &frame = frame_stack_.top();
     time_t now = time(nullptr);
@@ -1803,6 +1835,9 @@ namespace kagami {
       break;
     case kKeywordLoad:
       CommandLoad(args);
+      break;
+    case kKeywordUsing:
+      CommandUsing(args);
       break;
     default:
       break;

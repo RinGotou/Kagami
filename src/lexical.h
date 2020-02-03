@@ -66,6 +66,7 @@ namespace kagami {
     kKeywordWait,
     kKeywordLeave,
     kKeywordLoad,
+    kKeywordUsing,
     kKeywordNull
   };
 
@@ -131,6 +132,7 @@ namespace kagami {
     kStrVariable       = "variable",
     kStrHead           = "head",
     kStrTail           = "tail",
+    kStrUsing          = "using",
     kStrPlus           = "+",
     kStrMinus          = "-",
     kStrTimes          = "*",
