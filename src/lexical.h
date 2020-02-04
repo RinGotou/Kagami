@@ -133,6 +133,7 @@ namespace kagami {
     kStrHead           = "head",
     kStrTail           = "tail",
     kStrUsing          = "using",
+    kStrReuseLayout    = "reuse_layout",
     kStrUsingTable     = "using_table",
     kStrApplyLayout    = "apply_layout",
     kStrPlus           = "+",
@@ -158,8 +159,8 @@ namespace kagami {
     kStrCompare        = "__compare",
     kStrRightHandSide  = "__rhs",
     kStrLeftHandSide   = "__lhs",
-    kStrTextureTableHead   = "__texture_table_",
-    kStrFontObjectHead     = "__font_",
+    kStrTextureTable   = "__texture_table",
+    kStrFontObjectHead = "__font_",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);

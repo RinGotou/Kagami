@@ -245,7 +245,7 @@ namespace kagami {
     }
   }
 
-  void LayoutProcessor::ElementProcessing(ObjectTable &obj_table, string id, 
+  void ConfigProcessor::ElementProcessing(ObjectTable &obj_table, string id, 
     const toml::value &elem_def, dawn::PlainWindow &window) {
     SDL_Rect dest_rect{
       toml::find<int>(elem_def, "x"),
@@ -387,7 +387,7 @@ namespace kagami {
     }
   }
 
-  void LayoutProcessor::TextureProcessing(string id, const toml::value &elem_def, 
+  void ConfigProcessor::TextureProcessing(string id, const toml::value &elem_def, 
     dawn::PlainWindow &window, ObjectTable &table) {
     auto type = toml::find<string>(elem_def, "type");
 
@@ -486,7 +486,7 @@ namespace kagami {
     }
   }
 
-  void LayoutProcessor::RectangleProcessing(string id, const toml::value &elem_def,
+  void ConfigProcessor::RectangleProcessing(string id, const toml::value &elem_def,
     ObjectTable &table) {
     SDL_Rect rect{
       toml::find<int>(elem_def, "x"),
@@ -500,7 +500,7 @@ namespace kagami {
     table.insert(make_pair(rect_key_obj, rect_obj));
   }
 
-  void LayoutProcessor::InterfaceLayoutProcessing(string target_elem_id,
+  void ConfigProcessor::InterfaceLayoutProcessing(string target_elem_id,
     const toml::value &elem_def, dawn::PlainWindow &window) {
     auto *elem = window.GetElementById(target_elem_id);
 
@@ -538,7 +538,7 @@ namespace kagami {
     }
   }
 
-  string LayoutProcessor::GetTableVariant() {
+  string ConfigProcessor::GetTableVariant() {
     auto &frame = frame_stack_.top();
     string result;
     try {
@@ -564,8 +564,16 @@ namespace kagami {
     return result;
   }
 
-  void LayoutProcessor::InitWindowFromLayout() {
+  void ConfigProcessor::InitWindowFromConfig() {
     auto &frame = frame_stack_.top();
+    auto &base = obj_stack_.GetBase().front();
+
+    auto *texture_table_obj = base.Find(kStrTextureTable);
+    if (texture_table_obj == nullptr) {
+      base.Add(kStrTextureTable, Object(ObjectTable(), kTypeIdTable));
+      texture_table_obj = base.Find(kStrTextureTable);
+    }
+    auto &table = texture_table_obj->Cast<ObjectTable>();
 
     //TODO:specific error processing
     //TODO:Default font definition
@@ -591,7 +599,6 @@ namespace kagami {
         return title_value.unwrap();
       }();
       
-      auto &base = obj_stack_.GetBase().front();
       auto *obj = base.Find(id);
 
       auto managed_window = [&]()-> shared_ptr<void> {
@@ -605,29 +612,35 @@ namespace kagami {
         if (obj->GetTypeId() != kTypeIdWindow) throw _CustomError("Invalid window object");
         return obj->Get();
       }();
-
+      Object window_obj(managed_window, kTypeIdWindow);
       auto &window = *static_pointer_cast<dawn::PlainWindow>(managed_window);
+      Object window_id_obj(int64_t(window.GetId()), kTypeIdInt);
 
       window.RealTimeRefreshingMode(rtr_value.has_value() ? rtr_value.value() : true);
       window.SetWindowTitle(title);
 
       if (obj == nullptr) {
-        Object window_obj(managed_window, kTypeIdWindow);
         base.Add(id, window_obj);
       }
       else {
         window.ClearElements();
-        base.Dispose(kStrTextureTableHead + id);
+        table.erase(window_id_obj);
       }
 
       //Processing Elements
       auto elements = toml::find<TOMLValueTable>(layout_file, "Elements");
-      base.Add(kStrTextureTableHead + id, Object(ObjectTable(), kTypeIdTable));
-      auto *obj_table = base.Find(kStrTextureTableHead + id);
+      auto it = table.find(window_obj);
+
+      if (it != table.end()) {
+        table.erase(it);
+      }
+
+      Object sub_table_obj(ObjectTable(), kTypeIdTable);
+      table.insert(make_pair(window_id_obj, sub_table_obj));
 
       for (const auto &unit : elements) {
         ElementProcessing(
-          obj_table->Cast<ObjectTable>(),
+          sub_table_obj.Cast<ObjectTable>(),
           unit.first,
           unit.second,
           window
@@ -639,7 +652,7 @@ namespace kagami {
     }
   }
 
-  void LayoutProcessor::InitTextureTable(ObjectTable &table, dawn::PlainWindow &window) {
+  void ConfigProcessor::InitTextureTable(ObjectTable &table, dawn::PlainWindow &window) {
     auto &frame = frame_stack_.top();
 
     try {
@@ -666,7 +679,7 @@ namespace kagami {
     }
   } 
 
-  void LayoutProcessor::InitRectangleTable(ObjectTable &table) {
+  void ConfigProcessor::InitRectangleTable(ObjectTable &table) {
     auto &frame = frame_stack_.top();
 
     try {
@@ -692,7 +705,7 @@ namespace kagami {
     }
   }
 
-  void LayoutProcessor::ApplyInterfaceLayout(dawn::PlainWindow &window) {
+  void ConfigProcessor::ApplyInterfaceLayout(dawn::PlainWindow &window) {
     auto &frame = frame_stack_.top();
 
     try {
@@ -1658,9 +1671,9 @@ namespace kagami {
       }
     }
     else if (extension_name == ".toml") {
-      LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
+      ConfigProcessor config_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
       if (frame.error) return;
-      layout_proc.InitWindowFromLayout();
+      config_proc.InitWindowFromConfig();
     }
   }
 
@@ -1685,19 +1698,19 @@ namespace kagami {
     }
 
     auto &window = window_obj.Cast<dawn::PlainWindow>();
-    LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
+    ConfigProcessor config_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
     if (frame.error) return;
     auto managed_table = make_shared<ObjectTable>();
     Object table_obj(managed_table, kTypeIdTable);
 
-    string variant_string = layout_proc.GetTableVariant();
+    string variant_string = config_proc.GetTableVariant();
     if (frame.error) return;
 
     if (variant_string == "texture") {
-      layout_proc.InitTextureTable(*managed_table, window);
+      config_proc.InitTextureTable(*managed_table, window);
     }
     else if (variant_string == "rectangle") {
-      layout_proc.InitRectangleTable(*managed_table);
+      config_proc.InitRectangleTable(*managed_table);
     }
     
     if (frame.error) return;
@@ -1720,10 +1733,10 @@ namespace kagami {
     }
 
     auto &window = window_obj.Cast<dawn::PlainWindow>();
-    LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
+    ConfigProcessor config_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
     if (frame.error) return;
 
-    layout_proc.ApplyInterfaceLayout(window);
+    config_proc.ApplyInterfaceLayout(window);
   }
 
   void Machine::CommandTime() {
@@ -2461,7 +2474,7 @@ namespace kagami {
 
       //window event handler
       //cannot invoke new event inside a running event function
-      if ((!frame->event_processing && SDL_PollEvent(&event) != 0) 
+      if ((hanging_ && !frame->event_processing && SDL_PollEvent(&event) != 0) 
         || (freezing_ && SDL_WaitEvent(&event) != 0)) {
         EventHandlerMark mark(event.window.windowID, event.type);
         auto it = event_list_.find(mark);

@@ -2,7 +2,7 @@
 
 namespace kagami {
   //limit:2
-  Message NewElement(ObjectMap& p) {
+  Message NewElement(ObjectMap &p) {
     auto tc = TypeChecking(
       {
         Expect("texture", kTypeIdTexture),
@@ -85,9 +85,9 @@ namespace kagami {
 
   Message NewWindow(ObjectMap &p) {
     auto tc = TypeChecking(
-      { 
+      {
         Expect("width", kTypeIdInt),
-        Expect("height", kTypeIdInt) 
+        Expect("height", kTypeIdInt)
       }, p);
 
     if (TC_FAIL(tc)) return TC_ERROR(tc);
@@ -99,7 +99,7 @@ namespace kagami {
     option.width = static_cast<int>(width);
     option.height = static_cast<int>(height);
 
-    dawn::ManagedPlainWindow window = 
+    dawn::ManagedPlainWindow window =
       make_shared<dawn::PlainWindow>(option);
 
     return Message().SetObject(Object(window, kTypeIdWindow));
@@ -107,9 +107,9 @@ namespace kagami {
 
   Message WindowAddElement(ObjectMap &p) {
     auto tc = TypeChecking(
-      { 
+      {
         Expect("id", kTypeIdString),
-        Expect("element", kTypeIdElement) 
+        Expect("element", kTypeIdElement)
       }, p);
 
     if (TC_FAIL(tc)) return TC_ERROR(tc);
@@ -294,7 +294,7 @@ namespace kagami {
   }
 
   Message WindowSetElementTexture(ObjectMap &p) {
-    auto tc = TypeChecking({ 
+    auto tc = TypeChecking({
       Expect("texture", kTypeIdTexture),
       Expect("id", kTypeIdString)
       }, p);
@@ -303,16 +303,21 @@ namespace kagami {
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &texture = p.Cast<dawn::Texture>("texture");
     auto &id = p.Cast<string>("id");
-    
+
     return Message().SetObject(window.SetElementTexture(id, texture));
   }
 
-  Message WindowSetTitle(ObjectMap& p) {
+  Message WindowGetId(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    return Message().SetObject(int64_t(window.GetId()));
+  }
+
+  Message WindowSetTitle(ObjectMap &p) {
     auto tc = TypeChecking({ Expect("title", kTypeIdString) }, p);
     if (TC_FAIL(tc)) return TC_ERROR(tc);
 
-    auto& window = p.Cast<dawn::PlainWindow>(kStrMe);
-    auto& title = p.Cast<string>("title");
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &title = p.Cast<string>("title");
 
     window.SetWindowTitle(title);
 
@@ -372,6 +377,18 @@ namespace kagami {
     auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
     auto &value = p.Cast<bool>("value");
     window.RealTimeRefreshingMode(value);
+    return Message();
+  }
+
+  Message WindowShow(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    window.Show();
+    return Message();
+  }
+
+  Message WindowHide(ObjectMap &p) {
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    window.Hide();
     return Message();
   }
 
@@ -652,13 +669,16 @@ namespace kagami {
           FunctionImpl(WindowSetElementOnTop, "id", "set_on_top"),
           FunctionImpl(WindowSetElementOnBottom, "id", "set_on_bottom"),
           FunctionImpl(WindowSetElementTexture, "id|texture", "set_texture"),
+          FunctionImpl(WindowGetId, "", "id"),
           FunctionImpl(WindowSetTitle, "title", "set_title"),
           FunctionImpl(WindowDraw, "", "draw"),
           FunctionImpl(WindowWaiting, "", "waiting"),
           FunctionImpl(WindowClear, "", "clear"),
           FunctionImpl(WindowSetDrawColor, "color", "set_draw_color"),
           FunctionImpl(WindowInRange, "rect|point", "in_range"),
-          FunctionImpl(WindowRealTimeRefreshingMode, "value", "real_time_refreshing")
+          FunctionImpl(WindowRealTimeRefreshingMode, "value", "real_time_refreshing"),
+          FunctionImpl(WindowShow, "", "show"),
+          FunctionImpl(WindowHide, "", "hide")
         }
     );
 

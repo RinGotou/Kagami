@@ -174,6 +174,7 @@ namespace kagami::lexical {
       T(kStrWait           ,kKeywordWait),
       T(kStrLeave          ,kKeywordLeave),
       T(kStrUsing          ,kKeywordUsing),
+      T(kStrReuseLayout    ,kKeywordUsing),
       T(kStrUsingTable     ,kKeywordUsingTable),
       T(kStrApplyLayout    ,kKeywordApplyLayout)
     };

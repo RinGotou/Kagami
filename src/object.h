@@ -146,6 +146,7 @@ namespace kagami {
       if (mode_ == kObjectRef) {
         return static_cast<ObjectPointer>(real_dest_)->Get();
       }
+
       return ptr_;
     }
 

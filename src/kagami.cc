@@ -23,7 +23,7 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
 
   if (factory.Start()) {
     Machine main_thread(script_file);
-    main_thread.Run();
+     main_thread.Run();
   }
 
   trace::StopLoggerSession();

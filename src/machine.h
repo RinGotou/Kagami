@@ -255,7 +255,7 @@ namespace kagami {
       std::exception(msg, 0) {}
   };
 
-  class LayoutProcessor {
+  class ConfigProcessor {
   private:
     const unordered_map<string, dawn::ImageType> kImageTypeMatcher = {
       make_pair(".jpg", dawn::kImageJPG),
@@ -289,8 +289,8 @@ namespace kagami {
     void InterfaceLayoutProcessing(string target_elem_id, 
       const toml::value &elem_def, dawn::PlainWindow &window);
   public:
-    LayoutProcessor() = delete;
-    LayoutProcessor(ObjectStack &obj_stack, stack<RuntimeFrame> &frames, string file) noexcept :
+    ConfigProcessor() = delete;
+    ConfigProcessor(ObjectStack &obj_stack, stack<RuntimeFrame> &frames, string file) noexcept :
       obj_stack_(obj_stack), frame_stack_(frames), toml_file_() {
       try { toml_file_ = toml::parse(file); }
       catch (std::runtime_error &e) {
@@ -302,7 +302,7 @@ namespace kagami {
     }
 
     string GetTableVariant();
-    void InitWindowFromLayout();
+    void InitWindowFromConfig();
     void InitTextureTable(ObjectTable &table, dawn::PlainWindow &window);
     void InitRectangleTable(ObjectTable &table);
     void ApplyInterfaceLayout(dawn::PlainWindow &window);
