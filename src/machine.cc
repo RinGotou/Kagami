@@ -2148,6 +2148,9 @@ namespace kagami {
     case kKeywordUsingTable:
       CommandUsingTable(args);
       break;
+    case kKeywordApplyLayout:
+      CommandApplyLayout(args);
+      break;
     default:
       break;
     }

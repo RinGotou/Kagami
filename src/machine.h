@@ -296,6 +296,9 @@ namespace kagami {
       catch (std::runtime_error &e) {
         frame_stack_.top().MakeError(e.what());
       }
+      catch (toml::syntax_error &e) {
+        frame_stack_.top().MakeError(e.what());
+      }
     }
 
     string GetTableVariant();
