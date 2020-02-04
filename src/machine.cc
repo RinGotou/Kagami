@@ -541,13 +541,13 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     string result;
     try {
-      auto config = toml::find(toml_file_, "config");
+      auto config = toml::find(toml_file_, "Config");
 
       auto file_type = toml::find(config, "filetype");
 
       if (file_type.as_string() != "table") {
         frame.MakeError("Expected file type is 'table'");
-        return;
+        return "";
       }
 
       auto variant_string = toml::find(config, "variant");

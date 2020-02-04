@@ -345,7 +345,6 @@ namespace kagami {
     void CommandNullObj(ArgumentList &args);
     void CommandDestroy(ArgumentList &args);
     void CommandConvert(ArgumentList &args);
-    void CommandLoad(ArgumentList &args);
     void CommandUsing(ArgumentList &args);
     void CommandUsingTable(ArgumentList &args);
     void CommandApplyLayout(ArgumentList &args);
