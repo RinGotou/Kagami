@@ -575,7 +575,7 @@ namespace kagami {
       auto config = toml::find(layout_file, "Config");
       auto file_type = toml::find<string>(config, "filetype");
 
-      if (file_type != "layout") throw _CustomError("Expected file type is 'layout'");
+      if (file_type != "window") throw _CustomError("Expected file type is 'window'");
 
       auto &window_layout = toml::find(layout_file, "WindowLayout");
       //Create Window Object
@@ -680,7 +680,7 @@ namespace kagami {
       auto config = toml::find(layout_file, "Config");
       auto file_type = toml::find<string>(config, "filetype");
 
-      if (file_type != "interface") throw _CustomError("Expected type is 'interface'");
+      if (file_type != "layout") throw _CustomError("Expected type is 'interface'");
 
       auto interface_layout = toml::find<TOMLValueTable>(layout_file, "Layout");
 
@@ -1597,7 +1597,7 @@ namespace kagami {
     }
   }
 
-  void Machine::CommandLoad(ArgumentList &args) {
+  void Machine::CommandUsing(ArgumentList &args) {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
@@ -1608,50 +1608,40 @@ namespace kagami {
     auto path_obj = FetchObject(args[0]);
 
     if (path_obj.GetTypeId() != kTypeIdString) {
-      frame.MakeError("Invalid script path");
+      frame.MakeError("Invalid path");
       return;
     }
 
     string path = path_obj.Cast<string>();
+    fs::path path_cls(path);
+    string extension_name = lexical::ToLower(path_cls.extension().string());
 
-    VMCode &script_file = management::script::AppendBlankScript(path);
+    if (extension_name == ".kagami") {
+      VMCode &script_file = management::script::AppendBlankScript(path);
 
-    if (!script_file.empty()) return;
+      if (!script_file.empty()) return;
 
-    VMCodeFactory factory(path, script_file);
+      VMCodeFactory factory(path, script_file);
 
-    if (factory.Start()) {
-      Machine sub_machine(script_file);
-      auto &obj_base = obj_stack_.GetBase();
-      sub_machine.SetDelegatedRoot(obj_base.front());
-      sub_machine.Run();
+      if (factory.Start()) {
+        Machine sub_machine(script_file);
+        auto &obj_base = obj_stack_.GetBase();
+        sub_machine.SetDelegatedRoot(obj_base.front());
+        sub_machine.Run();
 
-      if (sub_machine.ErrorOccurred()) {
-        frame.MakeError("Error is occurred in loaded script");
+        if (sub_machine.ErrorOccurred()) {
+          frame.MakeError("Error is occurred in loaded script");
+        }
+      }
+      else {
+        frame.MakeError("Invalid script - " + path);
       }
     }
-    else {
-      frame.MakeError("Invalid script - " + path);
+    else if (extension_name == ".toml") {
+      LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
+      if (frame.error) return;
+      layout_proc.InitWindowFromLayout();
     }
-  }
-
-  void Machine::CommandUsing(ArgumentList &args) {
-    auto &frame = frame_stack_.top();
-
-    if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is misssing - using(obj)");
-      return;
-    }
-
-    auto path_obj = FetchObject(args[0]);
-
-    if (path_obj.GetTypeId() != kTypeIdString) {
-      frame.MakeError("Invalid layout file path");
-      return;
-    }
-
-    LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
-    layout_proc.InitWindowFromLayout();
   }
 
   void Machine::CommandUsingTable(ArgumentList &args) {
@@ -1676,6 +1666,7 @@ namespace kagami {
 
     auto &window = window_obj.Cast<dawn::PlainWindow>();
     LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
+    if (frame.error) return;
     auto managed_table = make_shared<ObjectTable>();
     Object table_obj(managed_table, kTypeIdTable);
 
@@ -1691,6 +1682,28 @@ namespace kagami {
     
     if (frame.error) return;
     frame.RefreshReturnStack(table_obj);
+  }
+
+  void Machine::CommandApplyLayout(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    auto window_obj = FetchObject(args[1]);
+    auto path_obj = FetchObject(args[0]);
+
+    if (path_obj.GetTypeId() != kTypeIdString) {
+      frame.MakeError("Invalid table file path");
+      return;
+    }
+
+    if (window_obj.GetTypeId() != kTypeIdWindow) {
+      frame.MakeError("Invalid window object");
+    }
+
+    auto &window = window_obj.Cast<dawn::PlainWindow>();
+    LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
+    if (frame.error) return;
+
+    layout_proc.ApplyInterfaceLayout(window);
   }
 
   void Machine::CommandTime() {
@@ -2128,9 +2141,6 @@ namespace kagami {
       break;
     case kKeywordLeave:
       CommandLeave(args);
-      break;
-    case kKeywordLoad:
-      CommandLoad(args);
       break;
     case kKeywordUsing:
       CommandUsing(args);

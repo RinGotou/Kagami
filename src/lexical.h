@@ -65,9 +65,9 @@ namespace kagami {
     kKeywordHandle,
     kKeywordWait,
     kKeywordLeave,
-    kKeywordLoad,
     kKeywordUsing,
     kKeywordUsingTable,
+    kKeywordApplyLayout,
     kKeywordNull
   };
 
@@ -113,7 +113,6 @@ namespace kagami {
     kStrCodeNameCmd    = "codename",
     kStrEnd            = "end",
     kStrPrint          = "print",
-    kStrLoad           = "load",
     kStrSwitchLine     = "!switch_line",
     kStrCaseObj        = "!case",
     kStrIteratorObj    = "!iterator",
@@ -135,6 +134,7 @@ namespace kagami {
     kStrTail           = "tail",
     kStrUsing          = "using",
     kStrUsingTable     = "using_table",
+    kStrApplyLayout    = "apply_layout",
     kStrPlus           = "+",
     kStrMinus          = "-",
     kStrTimes          = "*",

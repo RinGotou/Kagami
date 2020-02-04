@@ -303,7 +303,6 @@ namespace kagami {
     void InitTextureTable(ObjectTable &table, dawn::PlainWindow &window);
     void InitRectangleTable(ObjectTable &table);
     void ApplyInterfaceLayout(dawn::PlainWindow &window);
-
   };
 
   class Machine {
@@ -349,6 +348,8 @@ namespace kagami {
     void CommandLoad(ArgumentList &args);
     void CommandUsing(ArgumentList &args);
     void CommandUsingTable(ArgumentList &args);
+    void CommandApplyLayout(ArgumentList &args);
+
     void CommandTime();
     void CommandVersion();
     void CommandMachineCodeName();
