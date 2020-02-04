@@ -387,7 +387,7 @@ namespace kagami {
     }
   }
 
-  void LayoutProcessor::TableElementProcessing(string id, const toml::value &elem_def, 
+  void LayoutProcessor::TextureProcessing(string id, const toml::value &elem_def, 
     dawn::PlainWindow &window, ObjectTable &table) {
     auto type = toml::find<string>(elem_def, "type");
 
@@ -486,23 +486,94 @@ namespace kagami {
     }
   }
 
+  void LayoutProcessor::RectangleProcessing(string id, const toml::value &elem_def,
+    ObjectTable &table) {
+    SDL_Rect rect{
+      toml::find<int>(elem_def, "x"),
+      toml::find<int>(elem_def, "y"),
+      toml::find<int>(elem_def, "width"),
+      toml::find<int>(elem_def, "height")
+    };
+
+    Object rect_key_obj(id, kTypeIdString);
+    Object rect_obj(rect, kTypeIdRectangle);
+    table.insert(make_pair(rect_key_obj, rect_obj));
+  }
+
+  void LayoutProcessor::InterfaceLayoutProcessing(string target_elem_id,
+    const toml::value &elem_def, dawn::PlainWindow &window) {
+    auto *elem = window.GetElementById(target_elem_id);
+
+    if (elem == nullptr) {
+      frame_stack_.top().MakeError("Element is not found - " + target_elem_id);
+      return;
+    }
+
+    auto &dest_info = elem->GetDestInfo();
+    auto &src_info = elem->GetSrcInfo();
+
+    auto select_value = [](int origin, const toml::value &def, string id) -> int {
+      auto expected = toml::expect<int>(def, id);
+      if (expected.is_ok()) return expected.unwrap();
+      return origin;
+    };
+
+    dest_info = SDL_Rect{
+      select_value(dest_info.x, elem_def, "x"),
+      select_value(dest_info.y, elem_def, "y"),
+      select_value(dest_info.w, elem_def, "width"),
+      select_value(dest_info.h, elem_def, "height")
+    };
+
+    auto cropper = toml::expect<toml::value>(elem_def, "cropper");
+
+    if (cropper.is_ok()) {
+      src_info = SDL_Rect{
+        select_value(src_info.x, cropper.unwrap(), "x"),
+        select_value(src_info.y, cropper.unwrap(), "y"),
+        select_value(src_info.w, cropper.unwrap(), "width"),
+        select_value(src_info.h, cropper.unwrap(), "height")
+      };
+    }
+  }
+
+  string LayoutProcessor::GetTableVariant() {
+    auto &frame = frame_stack_.top();
+    string result;
+    try {
+      auto config = toml::find(toml_file_, "config");
+
+      auto file_type = toml::find(config, "filetype");
+
+      if (file_type.as_string() != "table") {
+        frame.MakeError("Expected file type is 'table'");
+        return;
+      }
+
+      auto variant_string = toml::find(config, "variant");
+      result = variant_string.as_string();
+    }
+    catch (std::out_of_range &e) {
+      frame_stack_.top().MakeError(e.what());
+    }
+    catch (toml::type_error &e) {
+      frame_stack_.top().MakeError(e.what());
+    }
+
+    return result;
+  }
+
   //TODO:Inject to base frame
-  bool LayoutProcessor::InitWindowFromLayout() {
-    bool result = true;
+  void LayoutProcessor::InitWindowFromLayout() {
     auto &frame = frame_stack_.top();
 
     //TODO:specific error processing
     //TODO:Default font definition
     try {
       //Init TOML Layout
-      const auto layout_file = toml::parse(toml_file_);
-
-      auto config = toml::find<TOMLValueTable>(layout_file, "Config");
-      auto file_type = [&]() -> string {
-        auto it = config.find("filetype");
-        if (it == config.end()) throw _CustomError("Unknown TOML file");
-        return it->second.as_string();
-      }();
+      auto &layout_file = toml_file_;
+      auto config = toml::find(layout_file, "Config");
+      auto file_type = toml::find<string>(config, "filetype");
 
       if (file_type != "layout") throw _CustomError("Expected file type is 'layout'");
 
@@ -545,27 +616,24 @@ namespace kagami {
     }
     catch (std::exception &e) {
       frame.MakeError(e.what());
-      result = false;
     }
-
-    return result;
   }
 
-  bool LayoutProcessor::InitTextureTable(ObjectTable &table, dawn::PlainWindow &window) {
-    bool result = true;
+  void LayoutProcessor::InitTextureTable(ObjectTable &table, dawn::PlainWindow &window) {
     auto &frame = frame_stack_.top();
 
     try {
-      const auto table_file = toml::parse(toml_file_);
+      auto &table_file = toml_file_;
       auto &config = toml::find(table_file, "Config");
       auto file_type = toml::find<string>(config, "filetype");
-
-      if (file_type != "table") throw _CustomError("Expected file type is 'layout'");
+      auto variant_string = toml::find<string>(config, "variant");
+      if (file_type != "table") throw _CustomError("Expected file type is 'table'");
+      if (variant_string != "texture") throw _CustomError("Variant mismatch");
 
       auto table_def = toml::find<TOMLValueTable>(table_file, "Table");
       
       for (const auto &unit : table_def) {
-        TableElementProcessing(
+        TextureProcessing(
           unit.first,
           unit.second,
           window,
@@ -573,12 +641,62 @@ namespace kagami {
         );
       }
     }
-    catch (std::exception & e) {
+    catch (std::exception &e) {
       frame.MakeError(e.what());
-      result = false;
+    }
+  } 
+
+  void LayoutProcessor::InitRectangleTable(ObjectTable &table) {
+    auto &frame = frame_stack_.top();
+
+    try {
+      auto &table_file = toml_file_;
+      auto &config = toml::find(table_file, "Config");
+      auto file_type = toml::find<string>(config, "filetype");
+      auto variant_string = toml::find<string>(config, "variant");
+      if (file_type != "table") throw _CustomError("Expected file type is 'table'");
+      if (variant_string != "rectangle") throw _CustomError("Variant mismatch");
+
+      auto table_def = toml::find<TOMLValueTable>(table_file, "Table");
+
+      for (const auto &unit : table_def) {
+        RectangleProcessing(
+          unit.first,
+          unit.second,
+          table
+        );
+      }
+    }
+    catch (std::exception &e) {
+      frame.MakeError(e.what());
+    }
+  }
+
+  void LayoutProcessor::ApplyInterfaceLayout(dawn::PlainWindow &window) {
+    auto &frame = frame_stack_.top();
+
+    try {
+      auto &layout_file = toml_file_;
+      auto config = toml::find(layout_file, "Config");
+      auto file_type = toml::find<string>(config, "filetype");
+
+      if (file_type != "interface") throw _CustomError("Expected type is 'interface'");
+
+      auto interface_layout = toml::find<TOMLValueTable>(layout_file, "Layout");
+
+      for (const auto &unit : interface_layout) {
+        InterfaceLayoutProcessing(
+          unit.first, 
+          unit.second,
+          window
+        );
+      }
+    }
+    catch (std::exception &e) {
+      frame.MakeError(e.what());
     }
 
-    return result;
+    if (window.GetRefreshingMode()) window.DrawElements();
   }
 
   void Machine::RecoverLastState() {
@@ -1560,7 +1678,17 @@ namespace kagami {
     LayoutProcessor layout_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
     auto managed_table = make_shared<ObjectTable>();
     Object table_obj(managed_table, kTypeIdTable);
-    layout_proc.InitTextureTable(*managed_table, window);
+
+    string variant_string = layout_proc.GetTableVariant();
+    if (frame.error) return;
+
+    if (variant_string == "texture") {
+      layout_proc.InitTextureTable(*managed_table, window);
+    }
+    else if (variant_string == "rectangle") {
+      layout_proc.InitRectangleTable(*managed_table);
+    }
+    
     if (frame.error) return;
     frame.RefreshReturnStack(table_obj);
   }

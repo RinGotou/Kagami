@@ -268,7 +268,7 @@ namespace kagami {
   private:
     ObjectStack &obj_stack_;
     stack<RuntimeFrame> &frame_stack_;
-    string toml_file_;
+    toml::value toml_file_;
 
   private:
     using TOMLValueTable = unordered_map<string, toml::value>;
@@ -282,15 +282,28 @@ namespace kagami {
 
     void ElementProcessing(ObjectTable &obj_table, string id, 
       const toml::value &elem_def, dawn::PlainWindow &window);
-    void TableElementProcessing(string id, const toml::value &elem_def, 
+    void TextureProcessing(string id, const toml::value &elem_def, 
       dawn::PlainWindow &window, ObjectTable &table);
+    void RectangleProcessing(string id, const toml::value &elem_def,
+      ObjectTable &table);
+    void InterfaceLayoutProcessing(string target_elem_id, 
+      const toml::value &elem_def, dawn::PlainWindow &window);
   public:
     LayoutProcessor() = delete;
-    LayoutProcessor(ObjectStack &obj_stack, stack<RuntimeFrame> &frames, string layout_file) :
-      obj_stack_(obj_stack), frame_stack_(frames), toml_file_(layout_file) {}
+    LayoutProcessor(ObjectStack &obj_stack, stack<RuntimeFrame> &frames, string file) noexcept :
+      obj_stack_(obj_stack), frame_stack_(frames), toml_file_() {
+      try { toml_file_ = toml::parse(file); }
+      catch (std::runtime_error &e) {
+        frame_stack_.top().MakeError(e.what());
+      }
+    }
 
-    bool InitWindowFromLayout();
-    bool InitTextureTable(ObjectTable &table, dawn::PlainWindow &window);
+    string GetTableVariant();
+    void InitWindowFromLayout();
+    void InitTextureTable(ObjectTable &table, dawn::PlainWindow &window);
+    void InitRectangleTable(ObjectTable &table);
+    void ApplyInterfaceLayout(dawn::PlainWindow &window);
+
   };
 
   class Machine {
