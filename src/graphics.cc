@@ -17,7 +17,7 @@ namespace kagami {
     auto &dest = p.Cast<SDL_Rect>("dest");
     auto &src_obj = p["src"];
     auto src = src_obj.Null() ?
-      dawn::ProduceRect(0, 0, texture.GetWidth(), texture.GetHeight()) :
+      SDL_Rect{ 0, 0, texture.GetWidth(), texture.GetHeight() } :
       src_obj.Cast<SDL_Rect>();
     dawn::Element element(texture, src, dest);
 
@@ -121,6 +121,35 @@ namespace kagami {
     return Message().SetObject(window.AddElement(id, element));
   }
 
+  Message WindowGetElementDestination(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { Expect("id", kTypeIdString) }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+
+    return Message().SetObject(Object(window.GetElementDestination(id), kTypeIdRectangle));
+  }
+
+  Message WindowSetElementDestination(ObjectMap &p) {
+    auto tc = TypeChecking(
+      {
+        Expect("id", kTypeIdString),
+        Expect("dest", kTypeIdRectangle)
+      }, p
+    );
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+    auto &rect = p.Cast<SDL_Rect>("dest");
+
+    return Message().SetObject(window.SetElementDestination(id, rect));
+  }
+
   Message WindowSetElementPosition(ObjectMap &p) {
     auto tc = TypeChecking(
       {
@@ -162,6 +191,18 @@ namespace kagami {
     return Message().SetObject(window.SetElementSize(id, int(width), int(height)));
   }
 
+  Message WindowGetElementSize(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { Expect("id", kTypeIdString) }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+
+    return Message().SetObject(Object(window.GetElementSize(id), kTypeIdPoint));
+  }
+
   Message WindowSetElementCropper(ObjectMap &p) {
     auto tc = TypeChecking(
       {
@@ -176,6 +217,18 @@ namespace kagami {
     auto &cropper = p.Cast<SDL_Rect>("cropper");
 
     return Message().SetObject(window.SetElementCropper(id, cropper));
+  }
+
+  Message WindowGetElementCropper(ObjectMap &p) {
+    auto tc = TypeChecking(
+      { Expect("id", kTypeIdString) }, p);
+
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    auto &window = p.Cast<dawn::PlainWindow>(kStrMe);
+    auto &id = p.Cast<string>("id");
+
+    return Message().SetObject(Object(window.GetElementCropper(id), kTypeIdPoint));
   }
 
   Message WindowElementInRange(ObjectMap &p) {
@@ -374,7 +427,7 @@ namespace kagami {
     auto w = static_cast<int>(p.Cast<int64_t>("width"));
     auto h = static_cast<int>(p.Cast<int64_t>("height"));
 
-    auto rect = dawn::ProduceRect(x, y, w, h);
+    SDL_Rect rect{ x, y, w, h };
 
     return Message().SetObject(Object(rect, kTypeIdRectangle));
   }
@@ -388,7 +441,7 @@ namespace kagami {
     auto x = static_cast<int>(p.Cast<int64_t>("x"));
     auto y = static_cast<int>(p.Cast<int64_t>("y"));
 
-    auto point = dawn::ProducePoint(x, y);
+    SDL_Point point{ x, y };
 
     return Message().SetObject(Object(point, kTypeIdPoint));
   }
@@ -585,9 +638,13 @@ namespace kagami {
       .InitMethods(
         {
           FunctionImpl(WindowAddElement, "id|element", "add_element"),
-          FunctionImpl(WindowSetElementPosition, "id|point", "set_element_position"),
+          FunctionImpl(WindowGetElementDestination, "id", "get_element_dest"),
+          FunctionImpl(WindowSetElementDestination, "id|dest", "set_element_dest"),
           FunctionImpl(WindowGetElementPosition, "id", "get_element_position"),
+          FunctionImpl(WindowSetElementPosition, "id|point", "set_element_position"),
+          FunctionImpl(WindowGetElementSize, "id", "get_element_size"),
           FunctionImpl(WindowSetElementSize, "id|width|height", "set_element_size"),
+          FunctionImpl(WindowGetElementCropper, "id", "get_element_cropper"),
           FunctionImpl(WindowSetElementCropper, "id|cropper", "set_element_cropper"),
           FunctionImpl(WindowElementInRange, "id|point", "element_in_range"),
           FunctionImpl(WindowFindElementByPoint, "point", "shoot"),

@@ -270,4 +270,17 @@ namespace kagami {
     auto &scope = base_.back();
     return scope.Dispose(id);
   }
+
+  bool ObjectStack::DisposeObject(string id) {
+    if (base_.empty()) return false;
+    bool result = false;
+
+    for (auto it = base_.rbegin(); it != base_.rend(); it++) {
+      result = it->Dispose(id);
+
+      if (result) break;
+    }
+
+    return result;
+  }
 }

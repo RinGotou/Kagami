@@ -432,5 +432,6 @@ namespace kagami {
     Object *Find(string id);
     bool CreateObject(string id, Object obj);
     bool DisposeObjectInCurrentScope(string id);
+    bool DisposeObject(string id);
   };
 }

@@ -509,6 +509,7 @@ namespace kagami {
       return;
     }
 
+    //Pypass PlainWindow class to avoid redundant querying
     auto &dest_info = elem->GetDestInfo();
     auto &src_info = elem->GetSrcInfo();
 
@@ -563,7 +564,6 @@ namespace kagami {
     return result;
   }
 
-  //TODO:Inject to base frame
   void LayoutProcessor::InitWindowFromLayout() {
     auto &frame = frame_stack_.top();
 
@@ -590,27 +590,47 @@ namespace kagami {
         }
         return title_value.unwrap();
       }();
+      
+      auto &base = obj_stack_.GetBase().front();
+      auto *obj = base.Find(id);
 
-      dawn::WindowOption option;
-      option.width = int(win_width);
-      option.height = int(win_height);
-      auto managed_window = make_shared<dawn::PlainWindow>(option);
-      managed_window->RealTimeRefreshingMode(rtr_value.has_value() ? rtr_value.value() : true);
-      managed_window->SetWindowTitle(title);
-      Object window_obj(managed_window, kTypeIdWindow);
-      obj_stack_.CreateObject(id, window_obj);
+      auto managed_window = [&]()-> shared_ptr<void> {
+        if (obj == nullptr) {
+          dawn::WindowOption option;
+          option.width = int(win_width);
+          option.height = int(win_height);
+          return make_shared<dawn::PlainWindow>(option);
+        }
+
+        if (obj->GetTypeId() != kTypeIdWindow) throw _CustomError("Invalid window object");
+        return obj->Get();
+      }();
+
+      auto &window = *static_pointer_cast<dawn::PlainWindow>(managed_window);
+
+      window.RealTimeRefreshingMode(rtr_value.has_value() ? rtr_value.value() : true);
+      window.SetWindowTitle(title);
+
+      if (obj == nullptr) {
+        Object window_obj(managed_window, kTypeIdWindow);
+        base.Add(id, window_obj);
+      }
+      else {
+        window.ClearElements();
+        base.Dispose(kStrTextureTableHead + id);
+      }
 
       //Processing Elements
       auto elements = toml::find<TOMLValueTable>(layout_file, "Elements");
-      obj_stack_.CreateObject(kStrTextureTableHead + id, Object(ObjectTable(), kTypeIdTable));
-      auto *obj_table = obj_stack_.Find(kStrTextureTableHead + id);
-      
+      base.Add(kStrTextureTableHead + id, Object(ObjectTable(), kTypeIdTable));
+      auto *obj_table = base.Find(kStrTextureTableHead + id);
+
       for (const auto &unit : elements) {
         ElementProcessing(
           obj_table->Cast<ObjectTable>(),
           unit.first,
-          unit.second, 
-          *managed_window
+          unit.second,
+          window
         );
       }
     }
