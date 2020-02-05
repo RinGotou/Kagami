@@ -1739,6 +1739,11 @@ namespace kagami {
   void Machine::CommandApplyLayout(ArgumentList &args) {
     auto &frame = frame_stack_.top();
 
+    if (!EXPECTED_COUNT(2)) {
+      frame.MakeError("Argument is misssing - apply_layout(obj, obj)");
+      return;
+    }
+
     auto window_obj = FetchObject(args[1]);
     auto path_obj = FetchObject(args[0]);
 
@@ -1756,6 +1761,23 @@ namespace kagami {
     if (frame.error) return;
 
     config_proc.ApplyInterfaceLayout(window);
+  }
+
+  void Machine::CommandOffensiveMode(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument is misssing - offensive_mode(obj, obj)");
+      return;
+    }
+
+    auto value_obj = FetchObject(args[0]);
+
+    if (value_obj.GetTypeId() != kTypeIdBool) {
+      frame.MakeError("Invalid boolean value");
+    }
+
+    offensive_ = value_obj.Cast<bool>();
   }
 
   void Machine::CommandTime() {
@@ -2203,6 +2225,9 @@ namespace kagami {
     case kKeywordApplyLayout:
       CommandApplyLayout(args);
       break;
+    case kKeywordOffensiveMode:
+      CommandOffensiveMode(args);
+      break;
     default:
       break;
     }
@@ -2492,7 +2517,7 @@ namespace kagami {
       }
 
       //Draw all windows
-      dawn::ForceRefreshingAllWindow();
+      if (offensive_) dawn::ForceRefreshingAllWindow();
 
       //window event handler
       //cannot invoke new event inside a running event function

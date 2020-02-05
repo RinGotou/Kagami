@@ -68,6 +68,7 @@ namespace kagami {
     kKeywordUsing,
     kKeywordUsingTable,
     kKeywordApplyLayout,
+    kKeywordOffensiveMode,
     kKeywordNull
   };
 
@@ -136,6 +137,7 @@ namespace kagami {
     kStrReuseLayout    = "reuse_layout",
     kStrUsingTable     = "using_table",
     kStrApplyLayout    = "apply_layout",
+    kStrOffensiveMode  = "offensive_mode",
     kStrPlus           = "+",
     kStrMinus          = "-",
     kStrTimes          = "*",

@@ -351,6 +351,7 @@ namespace kagami {
     void CommandUsing(ArgumentList &args);
     void CommandUsingTable(ArgumentList &args);
     void CommandApplyLayout(ArgumentList &args);
+    void CommandOffensiveMode(ArgumentList &args);
 
     void CommandTime();
     void CommandVersion();
@@ -389,6 +390,7 @@ namespace kagami {
     bool hanging_;
     bool freezing_;
     bool error_;
+    bool offensive_;
 
   public:
     Machine() :
@@ -398,7 +400,8 @@ namespace kagami {
       event_list_(),
       hanging_(false),
       freezing_(false),
-      error_(false) {}
+      error_(false),
+      offensive_(false) {}
 
     Machine(const Machine &rhs) :
       code_stack_(rhs.code_stack_),
@@ -407,7 +410,8 @@ namespace kagami {
       event_list_(),
       hanging_(false),
       freezing_(false),
-      error_(false) {}
+      error_(false),
+      offensive_(false) {}
 
     Machine(const Machine &&rhs) :
       Machine(rhs) {}
@@ -419,7 +423,8 @@ namespace kagami {
       event_list_(), 
       hanging_(false), 
       freezing_(false),
-      error_(false) {
+      error_(false),
+      offensive_(false) {
       code_stack_.push_back(&ir);
     }
 

@@ -176,7 +176,8 @@ namespace kagami::lexical {
       T(kStrUsing          ,kKeywordUsing),
       T(kStrReuseLayout    ,kKeywordUsing),
       T(kStrUsingTable     ,kKeywordUsingTable),
-      T(kStrApplyLayout    ,kKeywordApplyLayout)
+      T(kStrApplyLayout    ,kKeywordApplyLayout),
+      T(kStrOffensiveMode  ,kKeywordOffensiveMode)
     };
     return base;
   }
