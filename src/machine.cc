@@ -2491,6 +2491,9 @@ namespace kagami {
         break;
       }
 
+      //Draw all windows
+      dawn::ForceRefreshingAllWindow();
+
       //window event handler
       //cannot invoke new event inside a running event function
       if ((hanging_ && !frame->event_processing && SDL_PollEvent(&event) != 0) 
