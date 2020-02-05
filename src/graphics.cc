@@ -527,7 +527,10 @@ namespace kagami {
     auto &font = p.Cast<dawn::Font>("font");
     auto &window = p.Cast<dawn::PlainWindow>("window");
     auto &color_key = p.Cast<dawn::ColorValue>("color_key");
-    bool result = texture.Init(text, font, window.GetRenderer(), color_key);
+    bool result = false;
+
+    result = texture.Init(text, font, window.GetRenderer(), color_key);
+
     return Message().SetObject(result);
   }
 

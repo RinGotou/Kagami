@@ -2,7 +2,7 @@
 
 namespace kagami {
   /* string/wstring convertor */
-//from https://www.yasuhisay.info/impl/20090722/1248245439
+  //from https://www.yasuhisay.info/impl/20090722/1248245439
   wstring s2ws(const string &s) {
     if (s.empty()) return wstring();
     size_t length = s.size();

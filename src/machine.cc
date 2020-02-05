@@ -247,19 +247,19 @@ namespace kagami {
 
   void ConfigProcessor::ElementProcessing(ObjectTable &obj_table, string id, 
     const toml::value &elem_def, dawn::PlainWindow &window) {
-    SDL_Rect dest_rect{
-      toml::find<int>(elem_def, "x"),
-      toml::find<int>(elem_def, "y"),
-      toml::find<int>(elem_def, "width"),
-      toml::find<int>(elem_def, "height")
-    };
-    optional<SDL_Rect> src_rect_value = std::nullopt;
     optional<SDL_Color> color_key_value = std::nullopt;
 
     auto type = toml::find<string>(elem_def, "type");
     auto priority_value = ExpectParameter<int64_t>(elem_def, "priority");
 
     if (type == "image") {
+      SDL_Rect dest_rect{
+        toml::find<int>(elem_def, "x"),
+        toml::find<int>(elem_def, "y"),
+        toml::find<int>(elem_def, "width"),
+        toml::find<int>(elem_def, "height")
+      };
+      optional<SDL_Rect> src_rect_value = std::nullopt;
       //TODO:Texture reuse
       auto image_file = toml::find<string>(elem_def, "image_file");
       //these operations may throw std::out_or_range
@@ -321,6 +321,8 @@ namespace kagami {
       window.AddElement(id, element);
     }
     else if (type == "text") {
+      auto x = toml::find<int>(elem_def, "x");
+      auto y = toml::find<int>(elem_def, "y");
       auto text = toml::find<string>(elem_def, "text");
       auto size = toml::find<int64_t>(elem_def, "size");
       //expect?
@@ -355,9 +357,12 @@ namespace kagami {
         Object texture_key_obj(id, kTypeIdString);
         Object texture_obj(managed_texture, kTypeIdTexture);
         obj_table.insert(make_pair(texture_key_obj, texture_obj));
-        auto element = src_rect_value.has_value() ?
-          dawn::Element(*managed_texture, src_rect_value.value(), dest_rect) :
-          dawn::Element(*managed_texture, dest_rect);
+
+        SDL_Rect dest_rect{
+          x, y, managed_texture->GetWidth(), managed_texture->GetHeight()
+        };
+
+        auto element = dawn::Element(*managed_texture, dest_rect);
         if (priority_value.has_value()) {
           element.SetPriority(int(priority_value.value()));
         }
@@ -373,9 +378,12 @@ namespace kagami {
         Object texture_key_obj(id, kTypeIdString);
         Object texture_obj(managed_texture, kTypeIdTexture);
         obj_table.insert(make_pair(texture_key_obj, texture_obj));
-        auto element = src_rect_value.has_value() ?
-          dawn::Element(*managed_texture, src_rect_value.value(), dest_rect) :
-          dawn::Element(*managed_texture, dest_rect);
+
+        SDL_Rect dest_rect{
+          x, y, managed_texture->GetWidth(), managed_texture->GetHeight()
+        };
+
+        auto element = dawn::Element(*managed_texture, dest_rect);
         if (priority_value.has_value()) {
           element.SetPriority(int(priority_value.value()));
         }
@@ -459,7 +467,6 @@ namespace kagami {
         }
         return color_key;
       }();
-
 
       if (auto ptr = obj_stack_.Find(font_obj_id); ptr != nullptr) {
         auto &font = ptr->Cast<dawn::Font>();
