@@ -1,13 +1,12 @@
 #include "lexical.h"
 
 namespace kagami {
-  /* string/wstring convertor */
-  //from https://www.yasuhisay.info/impl/20090722/1248245439
   wstring s2ws(const string &s) {
     if (s.empty()) return wstring();
     size_t length = s.size();
-    wchar_t *wc = (wchar_t *)malloc(sizeof(wchar_t) * (length + 2));
-    mbstowcs(wc, s.data(), s.length() + 1);
+    //wchar_t *wc = (wchar_t *)malloc(sizeof(wchar_t) * (length + 2));
+    wchar_t *wc = (wchar_t *)calloc(length + 64, sizeof(wchar_t));
+    auto res = mbstowcs(wc, s.data(), s.length() + 1);
     wstring str(wc);
     free(wc);
     return str;
@@ -16,8 +15,9 @@ namespace kagami {
   string ws2s(const wstring &s) {
     if (s.empty()) return string();
     size_t length = s.size();
-    char *c = (char *)malloc(sizeof(char) * length * 2);
-    wcstombs(c, s.data(), s.length() + 1);
+    //char *c = (char *)malloc(sizeof(char) * (length + 1) * 2);
+    char *c = (char *)calloc((length + 64) * 2, sizeof(char));
+    auto res = wcstombs(c, s.data(), (length + 64) * 2);
     string result(c);
     free(c);
     return result;

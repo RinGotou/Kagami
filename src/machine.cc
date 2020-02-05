@@ -328,9 +328,13 @@ namespace kagami {
       //expect?
       auto font_file = toml::find<string>(elem_def, "font");
       auto font_path = fs::path(font_file);
-      auto font_obj_id = kStrFontObjectHead + lexical::ReplaceInvalidChar(
-        font_path.filename().string());
-      
+      string font_obj_id(kStrFontObjectHead);
+      font_obj_id.append(lexical::ReplaceInvalidChar(
+        font_path.filename().string()))
+        .append("_")
+        .append(to_string(size));
+
+      auto wrap_length = toml::expect<Uint32>(elem_def, "wrap_length");
       auto color_key_array = toml::find<toml::array>(elem_def, "color_key");
       auto color_key = [&]() -> SDL_Color {
         SDL_Color color_key;
@@ -353,7 +357,8 @@ namespace kagami {
       if (auto ptr = obj_stack_.Find(font_obj_id); ptr != nullptr) {
         auto &font = ptr->Cast<dawn::Font>();
         auto managed_texture = make_shared<dawn::Texture>(
-          text, font, window.GetRenderer(), color_key);
+          text, font, window.GetRenderer(), color_key,
+          wrap_length.is_ok() ? wrap_length.unwrap() : 0);
         Object texture_key_obj(id, kTypeIdString);
         Object texture_obj(managed_texture, kTypeIdTexture);
         obj_table.insert(make_pair(texture_key_obj, texture_obj));
@@ -373,7 +378,8 @@ namespace kagami {
         Object font_obj(managed_font, kTypeIdFont);
         auto &font = *managed_font;
         auto managed_texture = make_shared<dawn::Texture>(
-          text, font, window.GetRenderer(), color_key);
+          text, font, window.GetRenderer(), color_key,
+          wrap_length.is_ok() ? wrap_length.unwrap() : 0);
         obj_stack_.CreateObject(font_obj_id, font_obj);
         Object texture_key_obj(id, kTypeIdString);
         Object texture_obj(managed_texture, kTypeIdTexture);
@@ -447,9 +453,13 @@ namespace kagami {
       //expect?
       auto font_file = toml::find<string>(elem_def, "font");
       auto font_path = fs::path(font_file);
-      auto font_obj_id = kStrFontObjectHead + lexical::ReplaceInvalidChar(
-        font_path.filename().string());
+      string font_obj_id(kStrFontObjectHead);
+      font_obj_id.append(lexical::ReplaceInvalidChar(
+        font_path.filename().string()))
+        .append("_")
+        .append(to_string(size));
 
+      auto wrap_length = toml::expect<Uint32>(elem_def, "wrap_length");
       auto color_key_array = toml::find<toml::array>(elem_def, "color_key");
       auto color_key = [&]() -> SDL_Color {
         SDL_Color color_key;
@@ -471,7 +481,8 @@ namespace kagami {
       if (auto ptr = obj_stack_.Find(font_obj_id); ptr != nullptr) {
         auto &font = ptr->Cast<dawn::Font>();
         auto managed_texture = make_shared<dawn::Texture>(
-          text, font, window.GetRenderer(), color_key);
+          text, font, window.GetRenderer(), color_key,
+          wrap_length.is_ok() ? wrap_length.unwrap() : 0);
         Object texture_key_obj(id, kTypeIdString);
         Object texture_obj(managed_texture, kTypeIdTexture);
         table.insert(make_pair(texture_key_obj, texture_obj));
@@ -481,7 +492,8 @@ namespace kagami {
         Object font_obj(managed_font, kTypeIdFont);
         auto &font = *managed_font;
         auto managed_texture = make_shared<dawn::Texture>(
-          text, font, window.GetRenderer(), color_key);
+          text, font, window.GetRenderer(), color_key,
+          wrap_length.is_ok() ? wrap_length.unwrap() : 0);
         obj_stack_.CreateObject(font_obj_id, font_obj);
         Object texture_key_obj(id, kTypeIdString);
         Object texture_obj(managed_texture, kTypeIdTexture);

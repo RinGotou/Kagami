@@ -517,8 +517,9 @@ namespace kagami {
         Expect("text", kTypeIdString),
         Expect("font", kTypeIdFont),
         Expect("window", kTypeIdWindow),
-        Expect("color_key", kTypeIdColorValue)
-      }, p);
+        Expect("color_key", kTypeIdColorValue),
+        Expect("wrap_length", kTypeIdInt)
+      }, p, { "wrap_length" });
 
     if (TC_FAIL(tc)) return TC_ERROR(tc);
 
@@ -527,9 +528,11 @@ namespace kagami {
     auto &font = p.Cast<dawn::Font>("font");
     auto &window = p.Cast<dawn::PlainWindow>("window");
     auto &color_key = p.Cast<dawn::ColorValue>("color_key");
+    auto wrap_length_obj = p["wrap_length"];
     bool result = false;
 
-    result = texture.Init(text, font, window.GetRenderer(), color_key);
+    result = texture.Init(text, font, window.GetRenderer(), color_key,
+      Uint32(wrap_length_obj.Null() ? 0 : wrap_length_obj.Cast<int64_t>()));
 
     return Message().SetObject(result);
   }
@@ -562,6 +565,10 @@ namespace kagami {
   Message WindowEventGetData2(ObjectMap &p) {
     auto &obj = p.Cast<SDL_WindowEvent>(kStrMe);
     return Message().SetObject(static_cast<int64_t>(obj.data2));
+  }
+
+  Message GetSDLError(ObjectMap &p) {
+    return Message().SetObject(string(SDL_GetError()));
   }
 
   void CreateImageTypeMapping() {
@@ -718,7 +725,7 @@ namespace kagami {
       .InitMethods(
         {
           FunctionImpl(TextureInitFromImage, "path|type|window|color_key", "from_image", kParamAutoFill).SetLimit(3),
-          FunctionImpl(TextureInitFromText, "text|font|window|color_key", "from_text"),
+          FunctionImpl(TextureInitFromText, "text|font|window|color_key|wrap_length", "from_text", kParamAutoFill).SetLimit(4),
           FunctionImpl(TextureGood, "", "good"),
           FunctionImpl(TextureHeight, "", "height"),
           FunctionImpl(TextureWidth, "", "width")
@@ -734,6 +741,7 @@ namespace kagami {
         }
     );
 
+    CreateImpl(FunctionImpl(GetSDLError, "", "SDL_error"));
 
     CreateImageTypeMapping();
     CreateKeyMapping();
