@@ -108,9 +108,32 @@ void Processing(Processor &processor) {
   }
 }
 
+void InitFromConfigFile() {
+  try {
+    auto file = toml::parse("init.toml");
+
+
+  }
+  catch (std::runtime_error &e) {
+
+  }
+  catch (toml::syntax_error &e) {
+
+  }
+  catch (toml::type_error &e) {
+
+  }
+}
+
 int main(int argc, char **argv) {
+  namespace fs = std::filesystem;
   runtime::InformBinaryPathAndName(argv[0]);
   ActivateComponents();
+
+  if (fs::exists(fs::path("init.toml"))) {
+    //TODO:Processing config file
+    return 0;
+  }
 
   Processor processor = {
     Pattern("script" , Option(true, false, 1)),

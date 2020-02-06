@@ -2193,7 +2193,6 @@ namespace kagami {
         break;
       default:break;
       }
-
       break;
     case kKeywordContinue:
     case kKeywordBreak:
