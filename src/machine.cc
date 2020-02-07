@@ -1162,6 +1162,7 @@ namespace kagami {
     frame.scope_stack.push(true);
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
+    obj_stack_.CreateObject(kStrContainerKeepAliveSlot, container_obj);
     obj_stack_.CreateObject(unit_id, unit);
   }
 
@@ -1169,7 +1170,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto iterator = *obj_stack_.GetCurrent().Find(kStrIteratorObj);
-    auto container = FetchObject(args[1]);
+    auto container = *obj_stack_.GetCurrent().Find(kStrContainerKeepAliveSlot);
     ObjectMap obj_map;
 
     auto tail = Invoke(container, kStrTail).GetObj();
@@ -1391,7 +1392,7 @@ namespace kagami {
       if (frame.activated_continue) {
         frame.Goto(nest);
         frame.activated_continue = false;
-        obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
+        obj_stack_.GetCurrent().ClearExcept(kForEachExceptions);
         frame.jump_from_end = true;
       }
       else {
@@ -1404,7 +1405,7 @@ namespace kagami {
     }
     else {
       frame.Goto(nest);
-      obj_stack_.GetCurrent().ClearExcept(kStrIteratorObj);
+      obj_stack_.GetCurrent().ClearExcept(kForEachExceptions);
       frame.jump_from_end = true;
     }
   }

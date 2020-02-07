@@ -191,6 +191,7 @@ namespace kagami {
 
   const string kIteratorBehavior = "obj|step_forward|__compare";
   const string kContainerBehavior = "head|tail";
+  const string kForEachExceptions = "!iterator|!containter_keepalive";
 
   using CommandPointer = Command * ;
   //struct EventHandlerMark {

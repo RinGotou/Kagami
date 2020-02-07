@@ -117,6 +117,7 @@ namespace kagami {
     kStrSwitchLine     = "!switch_line",
     kStrCaseObj        = "!case",
     kStrIteratorObj    = "!iterator",
+    kStrContainerKeepAliveSlot = "!containter_keepalive",
     kStrCommentBegin   = "=begin",
     kStrCommentEnd     = "=end",
     kStrFor            = "for",
