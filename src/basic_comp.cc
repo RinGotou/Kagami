@@ -240,6 +240,27 @@ namespace kagami {
     return Message().SetObject(Object(func, kTypeIdFunctionPointer));
   }
 
+  Message GetDirectoryContent(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("path", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    string path_str = p.Cast<string>("path");
+    auto managed_array = make_shared<ObjectArray>();
+    for (auto &unit : fs::directory_iterator(path_str)) {
+      managed_array->emplace_back(Object(unit.path().string(), kTypeIdString));
+    }
+
+    return Message().SetObject(Object(managed_array, kTypeIdArray));
+  }
+
+  Message GetFilenameExtension(ObjectMap &p) {
+    auto tc = TypeChecking({ Expect("path", kTypeIdString) }, p);
+    if (TC_FAIL(tc)) return TC_ERROR(tc);
+
+    fs::path path_cls(p.Cast<string>("path"));
+    return Message().SetObject(Object(path_cls.extension().string(), kTypeIdString));
+  }
+
   void InitConsoleComponents() {
     using management::CreateImpl;
 
@@ -260,5 +281,7 @@ namespace kagami {
     CreateImpl(FunctionImpl(RemoveFSObject_Recursive, "path", "remove_all_fsobj"));
     CreateImpl(FunctionImpl(CopyFSObject, "from|to", "copy_fsobj"));
     CreateImpl(FunctionImpl(CopyFSFile, "from|to", "copy_file"));
+    CreateImpl(FunctionImpl(GetDirectoryContent, "path", "dir_content"));
+    CreateImpl(FunctionImpl(GetFilenameExtension, "path", "filename_ext"));
   }
 }
