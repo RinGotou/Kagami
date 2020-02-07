@@ -16,8 +16,6 @@ void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log)
   trace::InitLoggerSession(agent);
   trace::AddEvent("Script:" + path);
 
-  DEBUG_EVENT("Your're running a copy of Kagami Project Core with debugging flag!");
-
   VMCode &script_file = script::AppendBlankScript(path);
   VMCodeFactory factory(path, script_file);
 
@@ -59,34 +57,31 @@ void Motto() {
   puts(PRODUCT " Version " PRODUCT_VER " '"  CODENAME "'");
 }
 
-void AtExitHandler() {
-  puts("(Application Exit) Press enter to close...");
-  getchar();
-}
-
 void Processing(Processor &processor) {
   if (processor.Exist("script")) {
     string path = processor.ValueOf("script");
     string log = processor.Exist("log") ?
       processor.ValueOf("log") :
       "project-kagami.log";
-    
-    if (processor.Exist("wait")) {
-      atexit(AtExitHandler);
-    }
 
     if (processor.Exist("vm_stdout")) {
       string vm_stdout = processor.ValueOf("vm_stdout");
       if (log == vm_stdout) {
-        puts("VM stdout/Log output confliction!");
+        puts("VM stdout/log output confliction");
         return;
       }
 
-      GetVMStdout(fopen(vm_stdout.data(), "w"));
+      GetVMStdout(fopen(vm_stdout.data(), "a"));
     }
 
     if (processor.Exist("vm_stdin")) {
       string vm_stdin = processor.ValueOf("vm_stdin");
+      if (log == vm_stdin) {
+        puts("VM stdin/log output confliction");
+        return;
+      }
+
+
       GetVMStdin(fopen(vm_stdin.data(), "r"));
     }
 
@@ -111,17 +106,51 @@ void Processing(Processor &processor) {
 void InitFromConfigFile() {
   try {
     auto file = toml::parse("init.toml");
+    auto startup = toml::find(file, "Startup");
 
+    auto script = toml::find<string>(startup, "script");
+    auto log = [&startup]() -> string {
+      auto temp = toml::expect<string>(startup, "log");
+      if (temp.is_ok()) return temp.unwrap();
+      return "project-kagami.log";
+    }();
+    auto real_time_log = toml::expect<bool>(startup, "real_time_log");
+    auto locale = toml::expect<string>(startup, "locale");
+    auto vm_stdin = toml::expect<string>(startup, "vm_stdin");
+    auto vm_stdout = toml::expect<string>(startup, "vm_stdout");
 
+    if (vm_stdout.is_ok()) {
+      if (log == vm_stdout.unwrap()) {
+        puts("VM stdout/log output confliction");
+        return;
+      }
+
+      GetVMStdout(fopen(vm_stdout.unwrap().data(), "a"));
+    }
+
+    if (vm_stdin.is_ok()) {
+      if (log == vm_stdin.unwrap()) {
+        puts("VM stdin/log output confliction");
+      }
+
+      GetVMStdin(fopen(vm_stdin.unwrap().data(), "r"));
+    }
+
+    setlocale(LC_ALL, locale.is_ok() ? locale.unwrap().data() : "en_US.UTF8");
+
+    runtime::InformScriptPath(script);
+    StartInterpreter_Kisaragi(script, log, real_time_log.is_ok() ?
+      real_time_log.unwrap() : false);
+    CloseStream();
   }
   catch (std::runtime_error &e) {
-
+    printf(e.what());
   }
   catch (toml::syntax_error &e) {
-
+    printf(e.what());
   }
   catch (toml::type_error &e) {
-
+    printf(e.what());
   }
 }
 
@@ -131,7 +160,7 @@ int main(int argc, char **argv) {
   ActivateComponents();
 
   if (fs::exists(fs::path("init.toml"))) {
-    //TODO:Processing config file
+    InitFromConfigFile();
     return 0;
   }
 
@@ -142,7 +171,6 @@ int main(int argc, char **argv) {
     Pattern("motto"  , Option(false, false, 1)),
     Pattern("rtlog"  , Option(false, true)),
     Pattern("log"    , Option(true, true)),
-    Pattern("wait"   , Option(false, true)),
     Pattern("locale" , Option(true, true)),
     Pattern("vm_stdout" ,Option(true, true)),
     Pattern("vm_stdin"  ,Option(true, true))

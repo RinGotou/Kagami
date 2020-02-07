@@ -102,7 +102,6 @@ namespace kagami {
     }
 
     string buf = GetLine();
-    DEBUG_EVENT("(Input FunctionImpl)Content:" + buf);
     return Message().SetObject(buf);
   }
 
@@ -240,21 +239,6 @@ namespace kagami {
 #endif
     return Message().SetObject(Object(func, kTypeIdFunctionPointer));
   }
-
-  //Message GetDirectoryContent(ObjectMap &p) {
-  //  auto tc_result = TypeChecking(
-  //    { Expect("dir", kTypeIdString) }, p);
-
-  //  if (TC_FAIL(tc_result)) return TC_ERROR(tc_result);
-
-  //  auto managed_array = make_shared<ObjectArray>();
-
-
-  //}
-
-  //Message GetFiilenameExtension(ObjectMap &p) {
-
-  //}
 
   void InitConsoleComponents() {
     using management::CreateImpl;
