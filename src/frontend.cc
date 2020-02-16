@@ -189,15 +189,15 @@ namespace kagami {
 
       if (current.first == ";") {
         if (!bracket_stack.empty()) {
-          trace::AddEvent("Invalid end of statment at line " +
-            to_string(src.first), kStateError);
+          AppendMessage("Invalid end of statment at line " +
+            to_string(src.first), kStateError, logger_);
           good = false;
           break;
         }
 
         if (idx == target.size() - 1) {
-          trace::AddEvent("Unnecessary semicolon at line " +
-            to_string(src.first), kStateWarning);
+          AppendMessage("Unnecessary semicolon at line " +
+            to_string(src.first), kStateWarning, logger_);
         }
         else {
           dest_->emplace_back(CombinedToken(src.first, deque<Token>()));
@@ -208,8 +208,8 @@ namespace kagami {
       }
 
       if (current.second == kStringTypeNull) {
-        trace::AddEvent("Unknown token - " + current.first +
-          " at line " + to_string(src.first), kStateError);
+        AppendMessage("Unknown token - " + current.first +
+          " at line " + to_string(src.first), kStateError, logger_);
         good = false;
         break;
       }
@@ -230,15 +230,15 @@ namespace kagami {
 
       if (compare(current.first, ")", "]", "}")) {
         if (bracket_stack.empty()) {
-          trace::AddEvent("Left bracket is missing - " + current.first +
-            " at line " + to_string(src.first), kStateError);
+          AppendMessage("Left bracket is missing - " + current.first +
+            " at line " + to_string(src.first), kStateError, logger_);
           good = false;
           break;
         }
 
         if (GetLeftBracket(current.first) != bracket_stack.top()) {
-          trace::AddEvent("Left bracket is missing - " + current.first +
-            " at line " + to_string(src.first), kStateError);
+          AppendMessage("Left bracket is missing - " + current.first +
+            " at line " + to_string(src.first), kStateError, logger_);
           good = false;
           break;
         }
@@ -249,7 +249,8 @@ namespace kagami {
       if (current.first == ",") {
         if (last.second == kStringTypeSymbol &&
           !compare(last.first, "]", ")", "}", "'")) {
-          trace::AddEvent("Invalid comma at line " + to_string(src.first), kStateError);
+          AppendMessage("Invalid comma at line " + to_string(src.first), kStateError,
+            logger_);
           good = false;
           break;
         }
@@ -832,7 +833,7 @@ namespace kagami {
 
   bool VMCodeFactory::Start() {
     bool good = true;
-    LexicalFactory lexer(tokens_);
+    LexicalFactory lexer(tokens_, logger_);
     LineParser line_parser;
     Message msg;
     VMCode anchorage;
@@ -857,12 +858,12 @@ namespace kagami {
       ast_root = line_parser.GetASTRoot();
 
       if (level == kStateError) {
-        trace::AddEvent(msg);
+        AppendMessage(msg, logger_);
         good = false;
         continue;
       }
       else if (level == kStateWarning) {
-        trace::AddEvent(msg);
+        AppendMessage(msg, logger_);
       }
 
       anchorage.swap(line_parser.GetOutput());
@@ -889,7 +890,8 @@ namespace kagami {
 
       if (IsBranchKeyword(ast_root)) {
         if (jump_stack_.empty()) {
-          trace::AddEvent("Invalid branch keyword at line " + to_string(it->first), kStateError);
+          AppendMessage("Invalid branch keyword at line " + to_string(it->first), kStateError,
+            logger_);
           break;
         }
 
@@ -898,7 +900,8 @@ namespace kagami {
             jump_stack_.top().jump_record.push_back(dest_->size());
           }
           else {
-            trace::AddEvent("Invalid branch keyword at line " + to_string(it->first));
+            AppendMessage("Invalid branch keyword at line " + to_string(it->first),
+              logger_);
             break;
           }
         }
@@ -907,7 +910,8 @@ namespace kagami {
             jump_stack_.top().jump_record.push_back(dest_->size());
           }
           else {
-            trace::AddEvent("Invalid branch keyword at line " + to_string(it->first), kStateError);
+            AppendMessage("Invalid branch keyword at line " + to_string(it->first), kStateError,
+              logger_);
             break;
           }
         }
@@ -915,7 +919,8 @@ namespace kagami {
 
       if (ast_root == kKeywordContinue || ast_root == kKeywordBreak) {
         if (cycle_escaper_.empty()) {
-          trace::AddEvent("Invalid cycle escaper at line " + to_string(it->first), kStateError);
+          AppendMessage("Invalid cycle escaper at line " + to_string(it->first), kStateError,
+            logger_);
           break;
         }
 
@@ -924,7 +929,8 @@ namespace kagami {
 
       if (ast_root == kKeywordEnd) {
         if (nest_type_.empty()) {
-          trace::AddEvent("Invalid 'end' token at line " + to_string(it->first), kStateError);
+          AppendMessage("Invalid 'end' token at line " + to_string(it->first), kStateError, 
+            logger_);
           good = false;
           break;
         }
@@ -954,8 +960,8 @@ namespace kagami {
     }
 
     if (!nest_.empty()) {
-      trace::AddEvent("'end' token is not found for line " + 
-        to_string(nest_origin_.top()), kStateError);
+      AppendMessage("'end' token is not found for line " + 
+        to_string(nest_origin_.top()), kStateError, logger_);
       good = false;
     }
 

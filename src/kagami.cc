@@ -8,30 +8,21 @@ using namespace minatsuki;
 
 using Processor = ArgumentProcessor<kHeadHorizon, kJoinerEqual>;
 
-void StartInterpreter_Kisaragi(string path, string log_path, bool real_time_log) {
-  Agent *agent = real_time_log ?
-    static_cast<Agent *>(new StandardRealTimeAgent(log_path.data(), "a+")) :
-    static_cast<Agent *>(new StandardCacheAgent(log_path.data(), "a+"));
-
-  trace::InitLoggerSession(agent);
-  trace::AddEvent("Script:" + path);
-
+void BootMainVMObject(string path, string log_path, bool real_time_log) {
   VMCode &script_file = script::AppendBlankScript(path);
-  VMCodeFactory factory(path, script_file);
+  VMCodeFactory factory(path, script_file, log_path, real_time_log);
 
   if (factory.Start()) {
-    Machine main_thread(script_file);
+    Machine main_thread(script_file, log_path);
      main_thread.Run();
   }
-
-  trace::StopLoggerSession();
-  delete agent;
 }
 
 void ApplicationInfo() {
   printf(PRODUCT " " PRODUCT_VER "\n");
   printf("Codename:" CODENAME "\n");
   printf("Build date:" __DATE__ "\n");
+  printf("Dawn Version:" DAWN_VERSION "\n");
   printf(COPYRIGHT ", " AUTHOR "\n");
 }
 
@@ -89,7 +80,7 @@ void Processing(Processor &processor) {
       processor.ValueOf("locale").data() : "en_US.UTF8");
 
     runtime::InformScriptPath(path);
-    StartInterpreter_Kisaragi(path, log, processor.Exist("rtlog"));
+    BootMainVMObject(path, log, processor.Exist("rtlog"));
     CloseStream();
   }
   else if (processor.Exist("help")) {
@@ -139,7 +130,7 @@ void InitFromConfigFile() {
     setlocale(LC_ALL, locale.is_ok() ? locale.unwrap().data() : "en_US.UTF8");
 
     runtime::InformScriptPath(script);
-    StartInterpreter_Kisaragi(script, log, real_time_log.is_ok() ?
+    BootMainVMObject(script, log, real_time_log.is_ok() ?
       real_time_log.unwrap() : false);
     CloseStream();
   }

@@ -311,6 +311,10 @@ namespace kagami {
 
   class Machine {
   private:
+    StandardLogger *logger_;
+    bool is_logger_host_;
+
+  private:
     void RecoverLastState();
     bool IsTailRecursion(size_t idx, VMCode *code);
     bool IsTailCall(size_t idx);
@@ -394,30 +398,22 @@ namespace kagami {
     bool offensive_;
 
   public:
-    Machine() :
-      code_stack_(),
-      frame_stack_(),
-      obj_stack_(),
-      event_list_(),
-      hanging_(false),
-      freezing_(false),
-      error_(false),
-      offensive_(false) {}
+    //Machine() :
+    //  code_stack_(),
+    //  frame_stack_(),
+    //  obj_stack_(),
+    //  event_list_(),
+    //  hanging_(false),
+    //  freezing_(false),
+    //  error_(false),
+    //  offensive_(false) {}
+    ~Machine() { if (is_logger_host_) delete logger_; }
+    Machine() = delete;
+    Machine(const Machine &rhs) = delete;
+    Machine(const Machine &&rhs) = delete;
 
-    Machine(const Machine &rhs) :
-      code_stack_(rhs.code_stack_),
-      frame_stack_(rhs.frame_stack_),
-      obj_stack_(rhs.obj_stack_),
-      event_list_(),
-      hanging_(false),
-      freezing_(false),
-      error_(false),
-      offensive_(false) {}
-
-    Machine(const Machine &&rhs) :
-      Machine(rhs) {}
-
-    Machine(VMCode &ir) :
+    Machine(VMCode &ir, string log_path, bool rtlog = false) :
+      logger_(nullptr),
       code_stack_(),
       frame_stack_(),
       obj_stack_(),
@@ -425,7 +421,25 @@ namespace kagami {
       hanging_(false), 
       freezing_(false),
       error_(false),
+      offensive_(false) { 
+
+      code_stack_.push_back(&ir); 
+      logger_ = rtlog ?
+        (StandardLogger *)new StandardRTLogger(log_path, "a+") :
+        (StandardLogger *)new StandardCachedLogger(log_path, "a+");
+    }
+
+    Machine(VMCode &ir, StandardLogger *logger) :
+      logger_(logger),
+      code_stack_(),
+      frame_stack_(),
+      obj_stack_(),
+      event_list_(),
+      hanging_(false),
+      freezing_(false),
+      error_(false),
       offensive_(false) {
+
       code_stack_.push_back(&ir);
     }
 

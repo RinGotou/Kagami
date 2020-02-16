@@ -1027,10 +1027,10 @@ namespace kagami {
 
   Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
     FunctionImplPointer impl;
+    auto &frame = frame_stack_.top();
 
     if (bool found = _FetchFunctionImpl(impl, id, obj.GetTypeId()); !found) {
-      //Immediately push event to avoid ugly checking block.
-      trace::AddEvent("Method is not found - " + id);
+      frame.MakeError("Method \"" + id + "\" is found in this type - " + obj.GetTypeId());
       return Message();
     }
 
@@ -1146,6 +1146,7 @@ namespace kagami {
     }
 
     auto msg = Invoke(container_obj, kStrHead);
+    if (frame.error) return;
     if (!msg.HasObject()) {
       frame.MakeError("Invalid returning value from iterator");
       return;
@@ -1158,6 +1159,7 @@ namespace kagami {
     }
 
     auto unit = Invoke(iterator_obj, "obj").GetObj();
+    if (frame.error) return;
 
     frame.scope_stack.push(true);
     obj_stack_.Push();
@@ -1174,15 +1176,18 @@ namespace kagami {
     ObjectMap obj_map;
 
     auto tail = Invoke(container, kStrTail).GetObj();
+    if (frame.error) return;
     if (!type::CheckBehavior(tail, kIteratorBehavior)) {
       frame.MakeError("Invalid container object");
       return;
     }
 
     Invoke(iterator, "step_forward");
+    if (frame.error) return;
 
     auto result = Invoke(iterator, kStrCompare,
       { NamedObject(kStrRightHandSide,tail) }).GetObj();
+    if (frame.error) return;
 
     if (result.GetTypeId() != kTypeIdBool) {
       frame.MakeError("Invalid iterator object");
@@ -1195,6 +1200,7 @@ namespace kagami {
     }
     else {
       auto unit = Invoke(iterator, "obj").GetObj();
+      if (frame.error) return;
       obj_stack_.CreateObject(unit_id, unit);
     }
   }
@@ -1644,6 +1650,7 @@ namespace kagami {
         }
 
         auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
+        if (frame.error) return;
       }
 
       frame.RefreshReturnStack(ret_obj);
@@ -1674,10 +1681,10 @@ namespace kagami {
 
       if (!script_file.empty()) return;
 
-      VMCodeFactory factory(path, script_file);
+      VMCodeFactory factory(path, script_file, logger_);
 
       if (factory.Start()) {
-        Machine sub_machine(script_file);
+        Machine sub_machine(script_file, logger_);
         auto &obj_base = obj_stack_.GetBase();
         sub_machine.SetDelegatedRoot(obj_base.front());
         sub_machine.Run();
@@ -1877,6 +1884,7 @@ namespace kagami {
 
       Object obj = Invoke(lhs, kStrCompare,
         { NamedObject(kStrRightHandSide, rhs) }).GetObj();
+      if (frame.error) return;
 
       if (obj.GetTypeId() != kTypeIdBool) {
         frame.MakeError("Invalid behavior of compare().");
@@ -1962,8 +1970,8 @@ namespace kagami {
   }
 
   void Machine::CommandReturn(ArgumentList &args) {
-    if (frame_stack_.size() <= 1) {
-      trace::AddEvent("Unexpected return.", kStateError);
+    if (frame_stack_.size() == 1) {
+      frame_stack_.top().MakeError("Unexpected return");
       return;
     }
 
@@ -2507,7 +2515,7 @@ namespace kagami {
       freezing_ = (frame->idx >= size && hanging_ && frame_stack_.size() == 1);
 
       if (frame->warning) {
-        trace::AddEvent(frame->msg_string, kStateWarning);
+        AppendMessage(frame->msg_string, kStateWarning, logger_);
         frame->warning = false;
       }
 
@@ -2651,12 +2659,12 @@ namespace kagami {
     }
 
     if (frame->error) {
-      trace::AddEvent(Message(frame->msg_string, kStateError).SetIndex(script_idx));
+      AppendMessage(Message(frame->msg_string, kStateError).SetIndex(script_idx), logger_);
       if (invoking) invoking_error = true;
     }
 
     if (interface_error) {
-      trace::AddEvent(msg.SetIndex(script_idx));
+      AppendMessage(msg.SetIndex(script_idx), logger_);
       if (invoking) invoking_error = true;
     }
 

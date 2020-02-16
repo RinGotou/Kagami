@@ -12,12 +12,16 @@ namespace kagami {
 
   class LexicalFactory {
   private:
+    StandardLogger *logger_;
+
+  private:
     deque<CombinedToken> *dest_;
 
     void Scan(deque<string> &output, string target);
   public:
     LexicalFactory() = delete;
-    LexicalFactory(deque<CombinedToken> &dest) : dest_(&dest) {}
+    LexicalFactory(deque<CombinedToken> &dest, StandardLogger *logger) : 
+      dest_(&dest), logger_(logger) {}
 
     bool Feed(CombinedCodeline &src);
 
@@ -116,12 +120,25 @@ namespace kagami {
     deque<CombinedToken> tokens_;
 
   private:
+    StandardLogger *logger_;
+    bool is_logger_held_;
+
+  private:
     bool ReadScript(list<CombinedCodeline> &dest);
 
   public:
+    ~VMCodeFactory() { if (is_logger_held_) delete logger_; }
     VMCodeFactory() = delete;
-    VMCodeFactory(string path, VMCode &dest) :
-      dest_(&dest), path_(path) {}
+    VMCodeFactory(string path, VMCode &dest, 
+      string log, bool rtlog = false) :
+      dest_(&dest), path_(path), logger_(), is_logger_held_(true) {
+      rtlog ?
+        (StandardLogger *)new StandardRTLogger(log.data(), "a+") :
+        (StandardLogger *)new StandardCachedLogger(log.data(), "a+");
+    }
+    VMCodeFactory(string path, VMCode &dest,
+      StandardLogger *logger) :
+      dest_(&dest), path_(path), logger_(logger), is_logger_held_(false) {}
     
     bool Start();
   };

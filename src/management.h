@@ -45,7 +45,7 @@ namespace kagami::management::type {
     Comparator comparator_;
     HasherFunction hasher_;
     vector<FunctionImpl> impl_;
-    FunctionImpl delivering_;
+    FunctionImpl delivering_;  //deprecated
 
   public:
     ObjectTraitsSetup() = delete;
@@ -63,7 +63,9 @@ namespace kagami::management::type {
       type_id_(type_name), delivering_impl_(dlvy), 
       comparator_(nullptr), hasher_(nullptr) {}
 
+    //TODO:multi constructor injector
     ObjectTraitsSetup &InitConstructor(FunctionImpl impl) {
+
       delivering_ = impl; return *this; 
     }
 
