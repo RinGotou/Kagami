@@ -429,6 +429,7 @@ namespace kagami {
 
     void MergeMap(ObjectMap &p);
     Object *Find(string id);
+    Object *Find(string id, string domain);
     bool CreateObject(string id, Object obj);
     bool DisposeObjectInCurrentScope(string id);
     bool DisposeObject(string id);

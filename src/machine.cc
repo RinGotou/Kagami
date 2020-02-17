@@ -863,18 +863,39 @@ namespace kagami {
     ObjectPointer ptr = nullptr;
     Object obj;
 
+    //TODO:reconstruction
     if (arg.GetType() == kArgumentObjectStack) {
-      if (ptr = obj_stack_.Find(arg.GetData()); ptr != nullptr) {
-        obj.PackObject(*ptr);
-        return obj;
-      }
+      if (!arg.option.domain.empty()) {
+        if (arg.option.domain_type == kArgumentObjectStack) {
+          ptr = obj_stack_.Find(arg.GetData(), arg.option.domain);
 
-      if (obj = GetConstantObject(arg.GetData()); obj.Null()) {
-        obj = FetchFunctionObject(arg.GetData());
+          if (ptr != nullptr) obj.PackObject(*ptr);
+          else {
+            frame.MakeError("Member is not found inside " + arg.option.domain);
+            return obj;
+          }
+        }
+        else if (arg.option.domain_type == kArgumentReturnStack) {
+          auto &sub_container = return_stack.top().Cast<ObjectStruct>();
+          ptr = sub_container.Find(arg.GetData());
+          //keep object alive
+          if (ptr != nullptr) obj = *ptr;
+          return_stack.pop();
+        }
       }
+      else {
+        if (ptr = obj_stack_.Find(arg.GetData()); ptr != nullptr) {
+          obj.PackObject(*ptr);
+          return obj;
+        }
 
-      if (obj.Null()) {
-        frame.MakeError("Object is not found - " + arg.GetData());
+        if (obj = GetConstantObject(arg.GetData()); obj.Null()) {
+          obj = FetchFunctionObject(arg.GetData());
+        }
+
+        if (obj.Null()) {
+          frame.MakeError("Object is not found - " + arg.GetData());
+        }
       }
     }
     else if (arg.GetType() == kArgumentReturnStack) {

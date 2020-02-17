@@ -252,6 +252,17 @@ namespace kagami {
     return ptr;
   }
 
+  Object *ObjectStack::Find(string id, string domain) {
+    if (base_.empty() && prev_ == nullptr) return nullptr;
+    ObjectPointer ptr = base_.back().FindWithDomain(id, domain);
+
+    if (prev_ != nullptr && ptr == nullptr) {
+      ptr = prev_->Find(id, domain);
+    }
+
+    return ptr;
+  }
+
   bool ObjectStack::CreateObject(string id, Object obj) {
     if (base_.empty()) {
       if (prev_ == nullptr) {
