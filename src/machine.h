@@ -398,22 +398,16 @@ namespace kagami {
     bool offensive_;
 
   public:
-    //Machine() :
-    //  code_stack_(),
-    //  frame_stack_(),
-    //  obj_stack_(),
-    //  event_list_(),
-    //  hanging_(false),
-    //  freezing_(false),
-    //  error_(false),
-    //  offensive_(false) {}
     ~Machine() { if (is_logger_host_) delete logger_; }
     Machine() = delete;
     Machine(const Machine &rhs) = delete;
     Machine(const Machine &&rhs) = delete;
+    void operator=(const Machine &) = delete;
+    void operator=(const Machine &&) = delete;
 
     Machine(VMCode &ir, string log_path, bool rtlog = false) :
       logger_(nullptr),
+      is_logger_host_(true),
       code_stack_(),
       frame_stack_(),
       obj_stack_(),
@@ -425,12 +419,13 @@ namespace kagami {
 
       code_stack_.push_back(&ir); 
       logger_ = rtlog ?
-        (StandardLogger *)new StandardRTLogger(log_path, "a+") :
-        (StandardLogger *)new StandardCachedLogger(log_path, "a+");
+        (StandardLogger *)new StandardRTLogger(log_path, "a") :
+        (StandardLogger *)new StandardCachedLogger(log_path, "a");
     }
 
     Machine(VMCode &ir, StandardLogger *logger) :
       logger_(logger),
+      is_logger_host_(false),
       code_stack_(),
       frame_stack_(),
       obj_stack_(),

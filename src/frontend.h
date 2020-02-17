@@ -132,9 +132,9 @@ namespace kagami {
     VMCodeFactory(string path, VMCode &dest, 
       string log, bool rtlog = false) :
       dest_(&dest), path_(path), logger_(), is_logger_held_(true) {
-      rtlog ?
-        (StandardLogger *)new StandardRTLogger(log.data(), "a+") :
-        (StandardLogger *)new StandardCachedLogger(log.data(), "a+");
+      logger_ = rtlog ?
+        (StandardLogger *)new StandardRTLogger(log.data(), "a") :
+        (StandardLogger *)new StandardCachedLogger(log.data(), "a");
     }
     VMCodeFactory(string path, VMCode &dest,
       StandardLogger *logger) :

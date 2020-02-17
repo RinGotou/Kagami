@@ -10,12 +10,14 @@ using Processor = ArgumentProcessor<kHeadHorizon, kJoinerEqual>;
 
 void BootMainVMObject(string path, string log_path, bool real_time_log) {
   VMCode &script_file = script::AppendBlankScript(path);
-  VMCodeFactory factory(path, script_file, log_path, real_time_log);
 
-  if (factory.Start()) {
-    Machine main_thread(script_file, log_path);
-     main_thread.Run();
+  {
+    VMCodeFactory factory(path, script_file, log_path, real_time_log);
+    if (!factory.Start()) return;
   }
+  
+  Machine main_thread(script_file, log_path, real_time_log);
+  main_thread.Run();
 }
 
 void ApplicationInfo() {

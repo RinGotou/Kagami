@@ -857,13 +857,9 @@ namespace kagami {
       level = msg.GetLevel();
       ast_root = line_parser.GetASTRoot();
 
-      if (level == kStateError) {
-        AppendMessage(msg, logger_);
-        good = false;
-        continue;
-      }
-      else if (level == kStateWarning) {
-        AppendMessage(msg, logger_);
+      if (level != kStateNormal) {
+        AppendMessage(msg.GetDetail(), level, logger_, msg.GetIndex());
+        if (level == kStateError) { good = false; continue; }
       }
 
       anchorage.swap(line_parser.GetOutput());

@@ -2625,11 +2625,11 @@ namespace kagami {
       else {
         //calling C++ functions.
         msg = impl->GetActivity()(obj_map);
-      }
 
-      if (msg.GetLevel() == kStateError) {
-        interface_error = true;
-        break;
+        if (msg.GetLevel() == kStateError) {
+          interface_error = true;
+          break;
+        }
       }
 
       //Invoke by return value.
@@ -2659,12 +2659,13 @@ namespace kagami {
     }
 
     if (frame->error) {
-      AppendMessage(Message(frame->msg_string, kStateError).SetIndex(script_idx), logger_);
+      AppendMessage(frame->msg_string, kStateError,
+        logger_, script_idx);
       if (invoking) invoking_error = true;
     }
 
     if (interface_error) {
-      AppendMessage(msg.SetIndex(script_idx), logger_);
+      AppendMessage(msg.GetDetail(), msg.GetLevel(), logger_, script_idx);
       if (invoking) invoking_error = true;
     }
 
