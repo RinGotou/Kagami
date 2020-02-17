@@ -93,6 +93,7 @@ namespace kagami {
     void *real_dest_;
     ObjectMode mode_;
     bool delivering_;
+    bool sub_container_;
     shared_ptr<void> ptr_;
     string type_id_;
 
@@ -100,11 +101,11 @@ namespace kagami {
     ~Object() {}
 
     Object() : real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      ptr_(nullptr), type_id_(kTypeIdNull) {}
+      sub_container_(false), ptr_(nullptr), type_id_(kTypeIdNull) {}
 
     Object(const Object &obj) :
       real_dest_(obj.real_dest_), mode_(obj.mode_), delivering_(obj.delivering_),
-      ptr_(obj.ptr_), type_id_(obj.type_id_) {}
+      sub_container_(false), ptr_(obj.ptr_), type_id_(obj.type_id_) {}
 
     Object(const Object &&obj) noexcept :
       Object(obj) {}
@@ -112,12 +113,12 @@ namespace kagami {
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      ptr_(ptr), type_id_(type_id) {}
+      sub_container_(false), ptr_(ptr), type_id_(type_id) {}
 
     template <typename T>
     Object(T &t, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      ptr_(make_shared<T>(t)), type_id_(type_id) {}
+      sub_container_(false), ptr_(make_shared<T>(t)), type_id_(type_id) {}
 
     template <typename T>
     Object(T &&t, string type_id) :
@@ -126,16 +127,16 @@ namespace kagami {
     template <typename T>
     Object(T *ptr, string type_id) :
       real_dest_((void *)ptr), mode_(kObjectDelegator),  delivering_(false),
-      ptr_(nullptr), type_id_(type_id) {}
+      sub_container_(false), ptr_(nullptr), type_id_(type_id) {}
 
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
       real_dest_(ext_ptr), mode_(kObjectExternal), delivering_(false), 
-      ptr_(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)),
+      sub_container_(false), ptr_(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)),
       type_id_(type_id) {}
 
     Object(string str) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      ptr_(make_shared<string>(str)), type_id_(kTypeIdString) {}
+      sub_container_(false), ptr_(make_shared<string>(str)), type_id_(kTypeIdString) {}
 
     Object &operator=(const Object &object);
     Object &PackContent(shared_ptr<void> ptr, string type_id);
@@ -202,20 +203,15 @@ namespace kagami {
     bool operator==(const Object &&obj) = delete;
 
     Object *GetRealDest() { return static_cast<ObjectPointer>(real_dest_); }
-
     void *GetExternalPointer() { return real_dest_; }
-
     Object &operator=(const Object &&object) { return operator=(object); }
-
     Object &swap(Object &&obj) { return swap(obj); }
-
     string GetTypeId() const { return type_id_; }
-
     bool IsRef() const { return mode_ == kObjectRef; }
-
     bool Null() const { return ptr_ == nullptr && real_dest_ == nullptr; }
-
     ObjectMode GetMode() const { return mode_; }
+    void SetContainerFlag() { sub_container_ = true; }
+    bool IsSubContainer() { return sub_container_; }
   };
 
   using ObjectArray = deque<Object>;
@@ -243,8 +239,8 @@ namespace kagami {
     bool Add(string id, Object source);
     bool Dispose(string id);
     Object *Find(string id, bool forward_seeking = true);
-    bool FindDest(Object *ptr);
-    string FindDomain(string id, bool forward_seeking = true);
+    Object *FindWithDomain(string id, string domain, bool forward_seeking = true);
+    bool IsInside(Object *ptr);
     void ClearExcept(string exceptions);
 
     ObjectContainer() : delegator_(nullptr),
@@ -298,6 +294,8 @@ namespace kagami {
       return *this;
     }
   };
+
+  using ObjectStruct = ObjectContainer;
 
   class ObjectMap : public map<string, Object> {
   public:

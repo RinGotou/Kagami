@@ -145,39 +145,45 @@ namespace kagami {
     return ptr;
   }
 
-  bool ObjectContainer::FindDest(Object *ptr) {
-    if (IsDelegated()) return delegator_->FindDest(ptr);
+  Object *ObjectContainer::FindWithDomain(string id, string domain,
+    bool forward_seeking) {
+    if (IsDelegated()) return delegator_->FindWithDomain(id, domain, forward_seeking);
+  
+    if (base_.empty() && prev_ == nullptr) return nullptr;
+
+    ObjectPointer container_ptr = nullptr;
+
+    //Find sub-container
+    if (!base_.empty()) {
+      auto it = dest_map_.find(domain);
+
+      if (it != dest_map_.end()) {
+        container_ptr = it->second;
+      }
+      else {
+        if (prev_ != nullptr && forward_seeking) {
+          container_ptr = prev_->Find(id);
+        }
+      }
+    }
+    else if (prev_ != nullptr && forward_seeking) {
+      container_ptr = prev_->Find(id);
+    }
+
+    if (container_ptr == nullptr) return nullptr;
+    if (!container_ptr->IsSubContainer()) return nullptr;
+
+    auto &sub_container = container_ptr->Cast<ObjectStruct>();
+    return sub_container.Find(id, false);
+  }
+
+  bool ObjectContainer::IsInside(Object *ptr) {
+    if (IsDelegated()) return delegator_->IsInside(ptr);
 
     bool result = false;
     for (const auto &unit : dest_map_) {
       if (unit.second == ptr) result = true;
     }
-    return result;
-  }
-
-  string ObjectContainer::FindDomain(string id, bool forward_seeking) {
-    if (IsDelegated()) return delegator_->FindDomain(id, forward_seeking);
-
-    if (base_.empty() && prev_ == nullptr) return kTypeIdNull;
-
-    string result;
-
-    if (!base_.empty()) {
-      auto it = dest_map_.find(id);
-
-      if (it != dest_map_.end()) {
-        result = it->second->GetTypeId();
-      }
-      else {
-        if (prev_ != nullptr && forward_seeking) {
-          result = prev_->FindDomain(id);
-        }
-      }
-    }
-    else if (prev_ != nullptr && forward_seeking) {
-      result = prev_->FindDomain(id); 
-    }
-
     return result;
   }
 
@@ -218,7 +224,7 @@ namespace kagami {
 
   void ObjectMap::Naturalize(ObjectContainer &container) {
     for (auto it = begin(); it != end(); ++it) {
-      if (it->second.IsRef() && container.FindDest(it->second.GetRealDest())) {
+      if (it->second.IsRef() && container.IsInside(it->second.GetRealDest())) {
         it->second = it->second.Unpack();
       }
     }
