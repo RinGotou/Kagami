@@ -13,7 +13,12 @@ namespace kagami {
       keyword == kKeywordWhile ||
       keyword == kKeywordReturn ||
       keyword == kKeywordWhen ||
+      keyword == kKeywordStruct ||
       keyword == kKeywordCase;
+  }
+
+  inline bool IsStructExceptions(Keyword keyword) {
+    return keyword == kKeywordBind;
   }
 
   inline bool IsNestRoot(Keyword keyword) {
@@ -21,6 +26,7 @@ namespace kagami {
       keyword == kKeywordWhile ||
       keyword == kKeywordFn ||
       keyword == kKeywordCase ||
+      keyword == kKeywordStruct ||
       keyword == kKeywordFor;
   }
 
@@ -558,6 +564,25 @@ namespace kagami {
     return good;
   }
 
+  bool LineParser::StructExpr() {
+    frame_->symbol.emplace_back(Request(kKeywordStruct));
+    frame_->symbol.emplace_back(Request());
+    frame_->Eat();
+
+    //TODO:inherit
+
+    if (frame_->current.second != kStringTypeIdentifier) {
+      error_string_ = "Invalid struct identifier";
+      return false;
+    }
+
+    frame_->args.emplace_back(Argument());
+    frame_->args.emplace_back(Argument(
+      frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+
+    return true;
+  }
+
   bool LineParser::ForEachExpr() {
     if (frame_->last.second != kStringTypeNull) {
       error_string_ = "Invalid for-each expression";
@@ -650,7 +675,6 @@ namespace kagami {
       return true;
     }
 
-
     if (frame_->next.first == "(") {
       Request request(frame_->current.first,
         frame_->domain.IsPlaceholder() ?
@@ -659,6 +683,12 @@ namespace kagami {
       frame_->symbol.emplace_back(request);
       frame_->domain = Argument();
       return true;
+    }
+    else {
+      frame_->args.emplace_back(Argument(
+        frame_->current.first, kArgumentObjectStack, kStringTypeIdentifier));
+      frame_->args.back().option.domain = frame_->domain.GetData();
+      frame_->args.back().option.domain_type = frame_->domain.GetType();
     }
 
     if (frame_->next.first == "=" || frame_->next.first == "<-") {
@@ -731,6 +761,9 @@ namespace kagami {
           break;
         case kTerminatorFn:
           state = FnExpr();
+          break;
+        case kTerminatorStruct:
+          state = StructExpr();
           break;
         case kTerminatorFor:
           state = ForEachExpr();
@@ -865,6 +898,11 @@ namespace kagami {
       anchorage.swap(line_parser.GetOutput());
       line_parser.Clear();
 
+      if (inside_struct_ && ast_root != kKeywordBind) {
+        AppendMessage("Invalid expression inside struct", kStateError,
+          logger_, msg.GetIndex());
+      }
+
       if (IsNestRoot(ast_root)) {
         if (ast_root == kKeywordIf || ast_root == kKeywordCase) {
           jump_stack_.push(JumpListFrame{ ast_root,
@@ -881,6 +919,11 @@ namespace kagami {
         nest_type_.push(ast_root);
         dest_->insert(dest_->end(), anchorage.begin(), anchorage.end());
         anchorage.clear();
+        continue;
+      }
+
+      if (ast_root == kKeywordStruct) {
+        inside_struct_ = true;
         continue;
       }
 
@@ -926,7 +969,7 @@ namespace kagami {
       if (ast_root == kKeywordEnd) {
         if (nest_type_.empty()) {
           AppendMessage("Invalid 'end' token at line " + to_string(it->first), kStateError, 
-            logger_);
+            logger_, msg.GetIndex());
           good = false;
           break;
         }
@@ -944,6 +987,8 @@ namespace kagami {
           }
           jump_stack_.pop();
         }
+
+        if (compare(nest_type_.top(), kKeywordStruct)) inside_struct_ = false;
 
         nest_.pop();
         nest_end_.pop();

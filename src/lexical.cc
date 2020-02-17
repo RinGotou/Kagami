@@ -44,6 +44,7 @@ namespace kagami::lexical {
     if (src == "{")   return kTerminatorLeftBrace;
     if (src == "}")   return kTerminatorRightCurBracket;
     if (src == "fn")  return kTerminatorFn;
+    if (src == "struct") return kTerminatorStruct;
     if (src == "for") return kTerminatorFor;
     if (src == "in")  return kTerminatorIn;
     if (src == "<-")  return kTerminatorArrow;

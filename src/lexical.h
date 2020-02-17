@@ -69,6 +69,7 @@ namespace kagami {
     kKeywordUsingTable,
     kKeywordApplyLayout,
     kKeywordOffensiveMode,
+    kKeywordStruct,
     kKeywordNull
   };
 
@@ -85,6 +86,7 @@ namespace kagami {
     kTerminatorMonoOperator,
     kTerminatorBinaryOperator,
     kTerminatorFn,
+    kTerminatorStruct,
     kTerminatorFor,
     kTerminatorIn,
     kTerminatorArrow,

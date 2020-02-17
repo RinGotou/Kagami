@@ -19,6 +19,8 @@ namespace kagami {
   struct ArgumentOption {
     bool optional_param;
     bool variable_param;
+    string domain;
+    ArgumentType domain_type;
 
     ArgumentOption() : optional_param(false),
     variable_param(false) {}
@@ -67,6 +69,11 @@ namespace kagami {
       type_(type),
       token_type_(token_type),
       option() {}
+
+    void SetDomain(string id, ArgumentType type) {
+      option.domain = id;
+      option.domain_type = type;
+    }
 
     auto GetData() { return data_; }
 

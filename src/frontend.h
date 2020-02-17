@@ -4,8 +4,6 @@
 
 #define INVALID_TOKEN Token(string(), kStringTypeNull)
 
-//Frontend version: hatsuki
-
 namespace kagami {
   using CombinedCodeline = pair<size_t, string>;
   using CombinedToken = pair<size_t, deque<Token>>;
@@ -79,6 +77,7 @@ namespace kagami {
     bool ArrayExpr();
     void BinaryExpr();
     bool FnExpr();
+    bool StructExpr();
     bool ForEachExpr();
 
     bool OtherExpressions();
@@ -110,6 +109,7 @@ namespace kagami {
   private:
     VMCode *dest_;
     string path_;
+    bool inside_struct_;
     stack<size_t> nest_;
     stack<size_t> nest_end_;
     stack<size_t> nest_origin_;
