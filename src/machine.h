@@ -212,6 +212,7 @@ namespace kagami {
     bool final_cycle;
     bool jump_from_end;
     bool event_processing;
+    bool initializer_calling;
     size_t jump_offset;
     size_t idx;
     string msg_string;
@@ -233,6 +234,7 @@ namespace kagami {
       final_cycle(false),
       jump_from_end(false),
       event_processing(false),
+      initializer_calling(false),
       jump_offset(0),
       idx(0),
       msg_string(),
@@ -393,6 +395,7 @@ namespace kagami {
     void LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id);
     void CallExtensionFunction(ObjectMap &p, FunctionImpl &impl);
 
+    void GenerateStructInstance(string struct_id, ObjectMap &p);
   private:
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;

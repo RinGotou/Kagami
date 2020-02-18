@@ -970,7 +970,7 @@ namespace kagami {
         return true;
       }
 
-      if (impl = FindFunction(id, obj.GetTypeId()); impl == nullptr) {
+      if (impl = mgmt::FindFunction(id, obj.GetTypeId()); impl == nullptr) {
         frame.MakeError("Method is not found - " + id);
         return false;
       }
@@ -1001,13 +1001,9 @@ namespace kagami {
           }
 
           impl = &initializer_obj->Cast<FunctionImpl>();
+          frame.initializer_calling = true;
+          return true;
         }
-      }
-
-      //deprecated block
-      if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
-        impl = &ptr->Cast<FunctionImpl>();
-        return true;
       }
 
       frame.MakeError("Function is not found - " + id);
@@ -2502,6 +2498,27 @@ namespace kagami {
     frame.RefreshReturnStack(returning_slot);
   }
 
+  void Machine::GenerateStructInstance(string struct_id, ObjectMap &p) {
+    using namespace type;
+    auto &frame = frame_stack_.top();
+    auto *struct_def = obj_stack_.Find(struct_id);
+
+    auto &base = struct_def->Cast<ObjectStruct>().GetContent();
+    auto managed_instance = make_shared<ObjectStruct>();
+
+    for (auto &unit : base) {
+      if (unit.first == kStrInitializer) continue;
+
+      //create new object copy instead of RC copy
+      managed_instance->Add(unit.first, CreateObjectCopy(unit.second));
+    }
+
+    Object instance_obj(managed_instance, struct_id);
+    instance_obj.SetContainerFlag();
+    p.insert(NamedObject(kStrMe, instance_obj));
+  }
+
+  //for extension callback facilities
   bool Machine::PushObject(string id, Object object) {
     auto &frame = frame_stack_.top();
     auto result = obj_stack_.CreateObject(id, object);
@@ -2678,13 +2695,16 @@ namespace kagami {
 
       //Query function(Interpreter built-in or user-defined)
       //error string will be generated in FetchFunctionImpl.
-      if (command->first.type == kRequestComp) {
+      if (command->first.type == kRequestFunction) {
         if (!FetchFunctionImpl(impl, command, obj_map)) break;
-        //TODO:struct initializer calling
       }
 
       //Build object map for function call expressed by command
       GenerateArgs(*impl, command->second, obj_map);
+
+      if (frame->initializer_calling) {
+        GenerateStructInstance(command->first.GetInterfaceId(), obj_map);
+      }
 
       if (frame->error) {
         //Get actual script index for error reporting
@@ -2714,7 +2734,7 @@ namespace kagami {
         frame->Stepping();
         continue;
       }
-      else {
+      else if (impl->GetType() == kFunctionCXX) {
         //calling C++ functions.
         msg = impl->GetActivity()(obj_map);
 
@@ -2722,6 +2742,13 @@ namespace kagami {
           interface_error = true;
           break;
         }
+      }
+
+      if (frame->initializer_calling) {
+        //TODO:pushing new struct instance into returning stack
+        auto returning_value = obj_map.at(kStrMe);
+        frame->RefreshReturnStack(returning_value);
+        frame->initializer_calling = false;
       }
 
       //Invoke by return value.
@@ -2746,7 +2773,7 @@ namespace kagami {
       
       //Pushing returning value to returning stack.
       frame->RefreshReturnStack(msg.GetObj());
-      //indicator+1
+      //indicator + 1
       frame->Stepping();
     }
 
