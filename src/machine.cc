@@ -760,8 +760,10 @@ namespace kagami {
 
   void Machine::FinishInitalizerCalling() {
     auto instance_obj = *obj_stack_.GetCurrent().Find(kStrMe);
+    instance_obj.SetDeliveringFlag();
     RecoverLastState();
     frame_stack_.top().RefreshReturnStack(instance_obj);
+    frame_stack_.top().initializer_calling = false;
   }
 
   bool Machine::IsTailRecursion(size_t idx, VMCode *code) {
@@ -878,7 +880,7 @@ namespace kagami {
 
           if (ptr != nullptr) obj.PackObject(*ptr);
           else {
-            frame.MakeError("Member is not found inside " + arg.option.domain);
+            frame.MakeError("Member '" + arg.GetData() + "' is not found inside " + arg.option.domain);
             return obj;
           }
         }
@@ -974,6 +976,7 @@ namespace kagami {
         }
 
         impl = &ptr->Cast<FunctionImpl>();
+        obj_map.emplace(NamedObject(kStrMe, obj));
         return true;
       }
 

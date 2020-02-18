@@ -47,6 +47,7 @@ namespace kagami {
     type_id_ = object.type_id_;
     mode_ = object.mode_;
     delivering_ = object.delivering_;
+    sub_container_ = object.sub_container_;
     return *this;
   }
 

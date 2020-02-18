@@ -684,6 +684,12 @@ namespace kagami {
       frame_->domain = Argument();
       return true;
     }
+    else if ((frame_->next.first == "=" || frame_->next.first == "<-") &&
+      frame_->last.first != ".") {
+      frame_->args.emplace_back(Argument(
+        frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+      return true;
+    }
     else {
       frame_->args.emplace_back(Argument(
         frame_->current.first, kArgumentObjectStack, kStringTypeIdentifier));
@@ -694,12 +700,6 @@ namespace kagami {
         frame_->domain = Argument();
       }
 
-      return true;
-    }
-
-    if (frame_->next.first == "=" || frame_->next.first == "<-") {
-      frame_->args.emplace_back(Argument(
-        frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
       return true;
     }
 

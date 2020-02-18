@@ -167,6 +167,17 @@ namespace kagami::management::type {
     else if (object.GetMode() == kObjectDelegator) {
       result = object;
     }
+    else if (object.IsSubContainer() && object.GetTypeId() != kTypeIdStruct) {
+      auto &instance_src = object.Cast<ObjectStruct>();
+      auto &base = instance_src.GetContent();
+      auto managed_instance = make_shared<ObjectStruct>();
+      for (auto &unit : base) {
+        auto copy = CreateObjectCopy(unit.second);
+        managed_instance->Add(unit.first, copy);
+      }
+      result = Object(managed_instance, object.GetTypeId());
+      result.SetContainerFlag();
+    }
     else if (it != GetObjectTraitsCollection().end()) {
       auto deliver = it->second.GetDeliveringImpl();
       result.PackContent(deliver(object.Get()), object.GetTypeId());

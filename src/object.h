@@ -202,6 +202,14 @@ namespace kagami {
       return delivering_;
     }
 
+    bool IsSubContainer() {
+      if (mode_ == kObjectRef) {
+        return static_cast<ObjectPointer>(real_dest_)->IsSubContainer();
+      }
+
+      return sub_container_;
+    }
+
     bool operator==(const Object &obj) = delete;
     bool operator==(const Object &&obj) = delete;
 
@@ -214,7 +222,6 @@ namespace kagami {
     bool Null() const { return ptr_ == nullptr && real_dest_ == nullptr; }
     ObjectMode GetMode() const { return mode_; }
     void SetContainerFlag() { sub_container_ = true; }
-    bool IsSubContainer() { return sub_container_; }
   };
 
   using ObjectArray = deque<Object>;
@@ -260,9 +267,6 @@ namespace kagami {
       }
     }
 
-    ObjectContainer(ObjectContainer *delegator) :
-      delegator_(delegator), prev_(nullptr) {}
-
     bool Empty() const {
       return base_.empty();
     }
@@ -294,6 +298,11 @@ namespace kagami {
     ObjectContainer &SetPreviousContainer(ObjectContainer *prev) {
       if (IsDelegated()) return delegator_->SetPreviousContainer(prev);
       prev_ = prev;
+      return *this;
+    }
+
+    ObjectContainer &SetDelegatedContainer(ObjectContainer *dest) {
+      delegator_ = dest;
       return *this;
     }
   };
@@ -390,7 +399,7 @@ namespace kagami {
 
     ObjectStack& SetDelegatedRoot(ObjectContainer& root) {
       if(!base_.empty()) base_.pop_front();
-      base_.push_front(ObjectContainer(&root));
+      base_.push_front(ObjectContainer().SetDelegatedContainer(&root));
       delegated_ = true;
       return *this;
     }
