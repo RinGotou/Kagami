@@ -170,7 +170,7 @@ namespace kagami::lexical {
       T(kStrCase           ,kKeywordCase),
       T(kStrWhen           ,kKeywordWhen),
       T(kStrTypeId         ,kKeywordTypeId),
-      T(kStrDir            ,kKeywordDir),
+      T(kStrMethodsCmd     ,kKeywordMethods),
       T(kStrHandle         ,kKeywordHandle),
       T(kStrWait           ,kKeywordWait),
       T(kStrLeave          ,kKeywordLeave),

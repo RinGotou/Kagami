@@ -110,6 +110,7 @@ namespace kagami {
     VMCode *dest_;
     string path_;
     bool inside_struct_;
+    size_t struct_member_fn_nest;
     stack<size_t> nest_;
     stack<size_t> nest_end_;
     stack<size_t> nest_origin_;
@@ -131,14 +132,16 @@ namespace kagami {
     VMCodeFactory() = delete;
     VMCodeFactory(string path, VMCode &dest, 
       string log, bool rtlog = false) :
-      dest_(&dest), path_(path), logger_(), is_logger_held_(true) {
+      dest_(&dest), path_(path), inside_struct_(false), struct_member_fn_nest(0),
+      logger_(), is_logger_held_(true) {
       logger_ = rtlog ?
         (StandardLogger *)new StandardRTLogger(log.data(), "a") :
         (StandardLogger *)new StandardCachedLogger(log.data(), "a");
     }
     VMCodeFactory(string path, VMCode &dest,
       StandardLogger *logger) :
-      dest_(&dest), path_(path), logger_(logger), is_logger_held_(false) {}
+      dest_(&dest), path_(path), inside_struct_(false), struct_member_fn_nest(0),
+      logger_(logger), is_logger_held_(false) {}
     
     bool Start();
   };

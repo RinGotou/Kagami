@@ -898,9 +898,15 @@ namespace kagami {
       anchorage.swap(line_parser.GetOutput());
       line_parser.Clear();
 
-      if (inside_struct_ && ast_root != kKeywordBind) {
-        AppendMessage("Invalid expression inside struct", kStateError,
-          logger_, msg.GetIndex());
+      if (inside_struct_) {
+        if (ast_root == kKeywordFn) struct_member_fn_nest += 1;
+
+        if (struct_member_fn_nest == 0 && ast_root != kKeywordBind) {
+          AppendMessage("Invalid expression inside struct", kStateError,
+            logger_, msg.GetIndex());
+          good = false;
+          break;
+        }
       }
 
       if (IsNestRoot(ast_root)) {
@@ -986,6 +992,10 @@ namespace kagami {
             dest_->AddJumpRecord(jump_stack_.top().nest, jump_stack_.top().jump_record);
           }
           jump_stack_.pop();
+        }
+
+        if (compare(nest_type_.top(), kKeywordFn) && inside_struct_) {
+          struct_member_fn_nest -= 1;
         }
 
         if (compare(nest_type_.top(), kKeywordStruct)) inside_struct_ = false;
