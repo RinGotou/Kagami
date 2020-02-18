@@ -214,6 +214,7 @@ namespace kagami {
     bool event_processing;
     bool initializer_calling;
     bool inside_initializer_calling;
+    Object assert_rc_copy;
     size_t jump_offset;
     size_t idx;
     string msg_string;
@@ -237,6 +238,7 @@ namespace kagami {
       event_processing(false),
       initializer_calling(false),
       inside_initializer_calling(false),
+      assert_rc_copy(),
       jump_offset(0),
       idx(0),
       msg_string(),
@@ -389,6 +391,7 @@ namespace kagami {
     void CommandHandle(ArgumentList &args);
     void CommandWait(ArgumentList &args);
     void CommandLeave(ArgumentList &args);
+    void DomainAssert(ArgumentList &args);
     void MachineCommands(Keyword token, ArgumentList &args, Request &request);
 
     void GenerateArgs(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);

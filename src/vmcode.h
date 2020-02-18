@@ -19,17 +19,24 @@ namespace kagami {
   struct ArgumentOption {
     bool optional_param;
     bool variable_param;
+    bool use_last_assert;
+    bool assert_chain_tail;
+
     string domain;
     ArgumentType domain_type;
 
-    ArgumentOption() : optional_param(false),
-    variable_param(false) {}
+    ArgumentOption() : 
+      optional_param(false),
+      variable_param(false),
+      use_last_assert(false),
+      assert_chain_tail(false) {}
   };
 
   struct RequestOption {
     bool void_call;
     bool local_object;
     bool ext_object;
+    bool use_last_assert;
     size_t nest;
     size_t nest_end;
     size_t escape_depth;
@@ -39,6 +46,7 @@ namespace kagami {
       void_call(false), 
       local_object(false), 
       ext_object(false),
+      use_last_assert(false),
       nest(0),
       nest_end(0),
       escape_depth(0),

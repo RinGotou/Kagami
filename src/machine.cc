@@ -763,7 +763,6 @@ namespace kagami {
     instance_obj.SetDeliveringFlag();
     RecoverLastState();
     frame_stack_.top().RefreshReturnStack(instance_obj);
-    frame_stack_.top().initializer_calling = false;
   }
 
   bool Machine::IsTailRecursion(size_t idx, VMCode *code) {
@@ -874,8 +873,20 @@ namespace kagami {
 
     //TODO:reconstruction
     if (arg.GetType() == kArgumentObjectStack) {
-      if (!arg.option.domain.empty()) {
-        if (arg.option.domain_type == kArgumentObjectStack) {
+      if (!arg.option.domain.empty() || arg.option.use_last_assert) {
+        if (arg.option.use_last_assert) {
+          auto &base = frame.assert_rc_copy.Cast<ObjectStruct>();
+          ptr = base.Find(arg.GetData());
+
+          if (ptr != nullptr) obj.PackObject(*ptr);
+          else {
+            frame.MakeError("Member '" + arg.GetData() + "' is not found");
+            return obj;
+          }
+
+          if (arg.option.assert_chain_tail) frame.assert_rc_copy = Object();
+        }
+        else if (arg.option.domain_type == kArgumentObjectStack) {
           ptr = obj_stack_.Find(arg.GetData(), arg.option.domain);
 
           if (ptr != nullptr) obj.PackObject(*ptr);
@@ -953,12 +964,11 @@ namespace kagami {
     auto id = command->first.GetInterfaceId();
     auto domain = command->first.GetInterfaceDomain();
     
-    //Object methods.
-    //In current developing processing, machine forced to querying built-in
-    //function. These code need to be rewritten when I work in class feature in
-    //the future.
-    if (domain.GetType() != kArgumentNull) {
-      Object obj = FetchObject(domain, true);
+    if (domain.GetType() != kArgumentNull || 
+      command->first.option.use_last_assert) {
+      Object obj = command->first.option.use_last_assert ?
+        frame.assert_rc_copy :
+        FetchObject(domain, true);
 
       if (frame.error) return false;
 
@@ -977,6 +987,7 @@ namespace kagami {
 
         impl = &ptr->Cast<FunctionImpl>();
         obj_map.emplace(NamedObject(kStrMe, obj));
+        if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
         return true;
       }
 
@@ -986,13 +997,16 @@ namespace kagami {
       }
 
       obj_map.emplace(NamedObject(kStrMe, obj));
+      if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
       return true;
     }
     //Plain bulit-in function and user-defined function
     //At first, Machine will querying in built-in function map,
     //and then try to fetch function object in heap.
     else {
-      if (impl = FindFunction(id); impl != nullptr) return true;
+      if (impl = FindFunction(id); impl != nullptr) {
+        return true;
+      }
 
       ObjectPointer ptr = obj_stack_.Find(id);
 
@@ -2173,6 +2187,11 @@ namespace kagami {
     hanging_ = false;
   }
 
+  void Machine::DomainAssert(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+    frame.assert_rc_copy = FetchObject(args[0]).Unpack();
+  }
+
   void Machine::MachineCommands(Keyword token, ArgumentList &args, Request &request) {
     auto &frame = frame_stack_.top();
 
@@ -2334,6 +2353,9 @@ namespace kagami {
       break;
     case kKeywordStruct:
       CommandStructBegin(args);
+      break;
+    case kKeywordDomainAssertCommand:
+      DomainAssert(args);
       break;
     default:
       break;
@@ -2577,16 +2599,17 @@ namespace kagami {
 
     //Refreshing loop tick state to make it work correctly.
     auto refresh_tick = [&]() -> void {
-      bool inside_initializer_calling = frame->initializer_calling;
       code = code_stack_.back();
       size = code->size();
       frame = &frame_stack_.top();
-      frame->inside_initializer_calling = inside_initializer_calling;
     };
 
     //Protect current runtime environment and load another function
     auto update_stack_frame = [&](FunctionImpl &func) -> void {
+      //block other event trigger while processing current event function
       bool event_processing = frame->event_processing;
+      bool inside_initializer_calling = frame->initializer_calling;
+      frame->initializer_calling = false;
       code_stack_.push_back(&func.GetCode());
       frame_stack_.push(RuntimeFrame(func.GetId()));
       obj_stack_.Push();
@@ -2596,6 +2619,7 @@ namespace kagami {
       refresh_tick();
       frame->jump_offset = func.GetOffset();
       frame->event_processing = event_processing;
+      frame->inside_initializer_calling = inside_initializer_calling;
     };
 
     //Convert current environment to next self-calling 

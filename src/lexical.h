@@ -70,6 +70,7 @@ namespace kagami {
     kKeywordApplyLayout,
     kKeywordOffensiveMode,
     kKeywordStruct,
+    kKeywordDomainAssertCommand,
     kKeywordNull
   };
 

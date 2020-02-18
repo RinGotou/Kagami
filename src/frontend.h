@@ -32,6 +32,7 @@ namespace kagami {
     bool local_object;
     bool ext_object;
     bool eol;
+    bool seek_last_assert;
     size_t idx;
     Token current;
     Token next;
@@ -46,6 +47,7 @@ namespace kagami {
       local_object(false),
       ext_object(false),
       eol(false),
+      seek_last_assert(false),
       idx(0),
       current(INVALID_TOKEN),
       next(INVALID_TOKEN),

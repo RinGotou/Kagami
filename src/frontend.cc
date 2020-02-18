@@ -360,8 +360,10 @@ namespace kagami {
   }
 
   void LineParser::DotExpr() {
-    frame_->domain = frame_->args.back();
-    frame_->args.pop_back();
+    if (!frame_->seek_last_assert) {
+      frame_->domain = frame_->args.back();
+      frame_->args.pop_back();
+    }
   }
 
   void LineParser::UnaryExpr() {
@@ -680,6 +682,8 @@ namespace kagami {
         frame_->domain.IsPlaceholder() ?
         Argument() : frame_->domain
       );
+      request.option.use_last_assert = frame_->seek_last_assert;
+      if (frame_->seek_last_assert) frame_->seek_last_assert = false;
       frame_->symbol.emplace_back(request);
       frame_->domain = Argument();
       return true;
@@ -694,9 +698,29 @@ namespace kagami {
       frame_->args.emplace_back(Argument(
         frame_->current.first, kArgumentObjectStack, kStringTypeIdentifier));
 
-      if (!frame_->domain.IsPlaceholder()) {
+      if (!frame_->domain.IsPlaceholder() || frame_->seek_last_assert) {
         frame_->args.back().option.domain = frame_->domain.GetData();
         frame_->args.back().option.domain_type = frame_->domain.GetType();
+
+        if (frame_->seek_last_assert) {
+          frame_->args.back().option.use_last_assert = true;
+          frame_->seek_last_assert = false;
+        }
+
+        if (frame_->next.first == ".") {
+          Request request(kKeywordDomainAssertCommand);
+          Command command;
+
+          command.first = request;
+          command.second.push_back(frame_->args.back());
+          frame_->args.pop_back();
+          action_base_.push_back(command);
+          frame_->seek_last_assert = true;
+        }
+        else {
+          frame_->args.back().option.assert_chain_tail = true;
+        }
+
         frame_->domain = Argument();
       }
 
