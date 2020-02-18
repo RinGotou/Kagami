@@ -912,6 +912,7 @@ namespace kagami {
     return obj;
   }
 
+  //deprecated
   bool Machine::_FetchFunctionImpl(FunctionImplPointer &impl, string id, string type_id) {
     auto &frame = frame_stack_.top();
 
@@ -943,7 +944,6 @@ namespace kagami {
     auto id = command->first.GetInterfaceId();
     auto domain = command->first.GetInterfaceDomain();
     
-
     //Object methods.
     //In current developing processing, machine forced to querying built-in
     //function. These code need to be rewritten when I work in class feature in
@@ -952,6 +952,23 @@ namespace kagami {
       Object obj = FetchObject(domain, true);
 
       if (frame.error) return false;
+
+      //find method in sub-container    
+      if (obj.IsSubContainer()) {
+        auto &base = obj.Cast<ObjectStruct>();
+        auto *ptr = base.Find(id);
+        if (ptr == nullptr) {
+          frame.MakeError("Method is not found - " + id);
+          return;
+        }
+        if (ptr->GetTypeId() != kTypeIdFunction) {
+          frame.MakeError(id + " is not a function object");
+          return;
+        }
+
+        impl = &ptr->Cast<FunctionImpl>();
+        return true;
+      }
 
       if (impl = FindFunction(id, obj.GetTypeId()); impl == nullptr) {
         frame.MakeError("Method is not found - " + id);
@@ -969,6 +986,25 @@ namespace kagami {
 
       ObjectPointer ptr = obj_stack_.Find(id);
 
+      if (ptr != nullptr) {
+        if (ptr->GetTypeId() == kTypeIdFunction) {
+          impl = &ptr->Cast<FunctionImpl>();
+          return true;
+        }
+        else if (ptr->IsSubContainer()) {
+          auto &base = ptr->Cast<ObjectStruct>();
+          auto *initializer_obj = base.Find(kStrInitializer);
+          
+          if (initializer_obj == nullptr) {
+            frame.MakeError("Struct doesn't have initializer");
+            return false;
+          }
+
+          impl = &initializer_obj->Cast<FunctionImpl>();
+        }
+      }
+
+      //deprecated block
       if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
         impl = &ptr->Cast<FunctionImpl>();
         return true;
@@ -1377,6 +1413,19 @@ namespace kagami {
     }
   }
 
+  void Machine::CommandStructBegin(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("struct identifier is missing");
+      return;
+    }
+
+    obj_stack_.Push();
+    auto id_obj = FetchObject(args[0]);
+    frame.struct_id = id_obj.Cast<string>();
+  }
+
   void Machine::CommandConditionEnd() {
     auto &frame = frame_stack_.top();
     frame.condition_stack.pop();
@@ -1437,6 +1486,21 @@ namespace kagami {
     }
   }
 
+  void Machine::CommandStructEnd() {
+    auto &frame = frame_stack_.top();
+    auto &base = obj_stack_.GetCurrent().GetContent();
+    auto managed_struct = make_shared<ObjectStruct>();
+
+    for (auto &unit : base) {
+      managed_struct->Add(unit.first, unit.second);
+    }
+
+    obj_stack_.Pop();
+    obj_stack_.CreateObject(frame.struct_id, Object(managed_struct, kTypeIdStruct));
+    frame.struct_id.clear();
+    frame.struct_id.shrink_to_fit();
+  }
+
   void Machine::CommandHash(ArgumentList &args) {
     auto &frame = frame_stack_.top();
     auto &obj = FetchObject(args[0]).Unpack();
@@ -1483,7 +1547,7 @@ namespace kagami {
         return;
       }
 
-      if (!local_value) {
+      if (!local_value && frame.struct_id.empty()) {
         ObjectPointer ptr = obj_stack_.Find(id);
 
         if (ptr != nullptr) {
@@ -1520,7 +1584,7 @@ namespace kagami {
         return;
       }
 
-      if (!local_value) {
+      if (!local_value && frame.struct_id.empty()) {
         ObjectPointer ptr = obj_stack_.Find(id);
 
         if (ptr != nullptr) {
@@ -2194,7 +2258,7 @@ namespace kagami {
     case kKeywordTypeId:
       CommandTypeId(args);
       break;
-    case kKeywordDir:
+    case kKeywordMethods:
       CommandMethods(args);
       break;
     case kKeywordExist:
@@ -2220,6 +2284,9 @@ namespace kagami {
       case kKeywordIf:
       case kKeywordCase:
         CommandConditionEnd();
+        break;
+      case kKeywordStruct:
+        CommandStructEnd();
         break;
       default:break;
       }
@@ -2256,6 +2323,9 @@ namespace kagami {
       break;
     case kKeywordOffensiveMode:
       CommandOffensiveMode(args);
+      break;
+    case kKeywordStruct:
+      CommandStructBegin(args);
       break;
     default:
       break;
@@ -2610,6 +2680,7 @@ namespace kagami {
       //error string will be generated in FetchFunctionImpl.
       if (command->first.type == kRequestComp) {
         if (!FetchFunctionImpl(impl, command, obj_map)) break;
+        //TODO:struct initializer calling
       }
 
       //Build object map for function call expressed by command

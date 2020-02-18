@@ -60,7 +60,7 @@ namespace kagami {
     kKeywordWhen,
     kKeywordTypeId,
     kKeywordExist,
-    kKeywordDir,
+    kKeywordMethods,
     kKeywordQuit,
     kKeywordHandle,
     kKeywordWait,
@@ -156,7 +156,7 @@ namespace kagami {
     kStrLess           = "<",
     kStrUserFunc       = "__func",
     kStrTypeId         = "typeid",
-    kStrDir            = "dir",
+    kStrMethodsCmd     = "methods",
     kStrExist          = "exist",
     kStrSwap           = "swap",
     kStrTrue           = "true",
@@ -166,6 +166,7 @@ namespace kagami {
     kStrLeftHandSide   = "__lhs",
     kStrTextureTable   = "__texture_table",
     kStrFontObjectHead = "__font_",
+    kStrInitializer    = "initializer",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);

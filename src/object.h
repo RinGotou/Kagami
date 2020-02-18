@@ -105,7 +105,7 @@ namespace kagami {
 
     Object(const Object &obj) :
       real_dest_(obj.real_dest_), mode_(obj.mode_), delivering_(obj.delivering_),
-      sub_container_(false), ptr_(obj.ptr_), type_id_(obj.type_id_) {}
+      sub_container_(obj.sub_container_), ptr_(obj.ptr_), type_id_(obj.type_id_) {}
 
     Object(const Object &&obj) noexcept :
       Object(obj) {}
@@ -113,12 +113,14 @@ namespace kagami {
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), ptr_(ptr), type_id_(type_id) {}
+      sub_container_(type_id == kTypeIdStruct), 
+      ptr_(ptr), type_id_(type_id) {}
 
     template <typename T>
     Object(T &t, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), ptr_(make_shared<T>(t)), type_id_(type_id) {}
+      sub_container_(type_id == kTypeIdStruct), 
+      ptr_(make_shared<T>(t)), type_id_(type_id) {}
 
     template <typename T>
     Object(T &&t, string type_id) :
@@ -127,7 +129,8 @@ namespace kagami {
     template <typename T>
     Object(T *ptr, string type_id) :
       real_dest_((void *)ptr), mode_(kObjectDelegator),  delivering_(false),
-      sub_container_(false), ptr_(nullptr), type_id_(type_id) {}
+      sub_container_(type_id == kTypeIdStruct), 
+      ptr_(nullptr), type_id_(type_id) {}
 
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
       real_dest_(ext_ptr), mode_(kObjectExternal), delivering_(false), 

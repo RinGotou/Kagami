@@ -216,6 +216,7 @@ namespace kagami {
     size_t idx;
     string msg_string;
     string function_scope;
+    string struct_id;
     stack<bool> condition_stack; //preserved
     stack<bool> scope_stack;
     stack<size_t> jump_stack;
@@ -236,6 +237,7 @@ namespace kagami {
       idx(0),
       msg_string(),
       function_scope(),
+      struct_id(),
       condition_stack(),
       jump_stack(),
       branch_jump_stack(),
@@ -323,7 +325,9 @@ namespace kagami {
     Object FetchFunctionObject(string id);
     Object FetchObject(Argument &arg, bool checking = false);
 
+    //deprecated
     bool _FetchFunctionImpl(FunctionImplPointer &impl, string id, string type_id);
+    
     bool FetchFunctionImpl(FunctionImplPointer &impl, CommandPointer &command,
       ObjectMap &obj_map);
 
@@ -339,9 +343,11 @@ namespace kagami {
     void CommandElse();
     void CommandWhen(ArgumentList &args);
     void CommandContinueOrBreak(Keyword token, size_t escape_depth);
+    void CommandStructBegin(ArgumentList &args);
     void CommandConditionEnd();
     void CommandLoopEnd(size_t nest);
     void CommandForEachEnd(size_t nest);
+    void CommandStructEnd();
 
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);
