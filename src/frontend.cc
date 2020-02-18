@@ -687,8 +687,14 @@ namespace kagami {
     else {
       frame_->args.emplace_back(Argument(
         frame_->current.first, kArgumentObjectStack, kStringTypeIdentifier));
-      frame_->args.back().option.domain = frame_->domain.GetData();
-      frame_->args.back().option.domain_type = frame_->domain.GetType();
+
+      if (!frame_->domain.IsPlaceholder()) {
+        frame_->args.back().option.domain = frame_->domain.GetData();
+        frame_->args.back().option.domain_type = frame_->domain.GetType();
+        frame_->domain = Argument();
+      }
+
+      return true;
     }
 
     if (frame_->next.first == "=" || frame_->next.first == "<-") {
@@ -697,18 +703,10 @@ namespace kagami {
       return true;
     }
 
-    
-    if (frame_->domain.GetType() != kArgumentNull) {
-      //TODO:argument domain appending
-      error_string_ = "Invalid expression";
-      return false;
-    }
-    else {
-      Argument arg(
-        frame_->current.first, kArgumentObjectStack, kStringTypeIdentifier);
-      frame_->args.emplace_back(arg);
-    }
-    
+    Argument arg(
+      frame_->current.first, kArgumentObjectStack, kStringTypeIdentifier);
+    frame_->args.emplace_back(arg);
+
     return true;
   }
 
@@ -901,7 +899,8 @@ namespace kagami {
       if (inside_struct_) {
         if (ast_root == kKeywordFn) struct_member_fn_nest += 1;
 
-        if (struct_member_fn_nest == 0 && ast_root != kKeywordBind) {
+        if (struct_member_fn_nest == 0 && 
+          !compare(ast_root, kKeywordBind, kKeywordEnd)) {
           AppendMessage("Invalid expression inside struct", kStateError,
             logger_, msg.GetIndex());
           good = false;
@@ -919,17 +918,16 @@ namespace kagami {
           cycle_escaper_.push(nest_.size() + 1);
         }
 
+        if (ast_root == kKeywordStruct) {
+          inside_struct_ = true;
+        }
+
         nest_.push(dest_->size());
         nest_end_.push(dest_->size() + anchorage.size() - 1);
         nest_origin_.push(it->first);
         nest_type_.push(ast_root);
         dest_->insert(dest_->end(), anchorage.begin(), anchorage.end());
         anchorage.clear();
-        continue;
-      }
-
-      if (ast_root == kKeywordStruct) {
-        inside_struct_ = true;
         continue;
       }
 

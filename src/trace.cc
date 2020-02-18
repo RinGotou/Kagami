@@ -7,6 +7,10 @@ namespace kagami {
     StandardLogger *std_logger, size_t index) {
     string buf;
 
+    if (index != 0) {
+      buf.append("(Line:" + to_string(index) + ")");
+    }
+
     switch (level) {
     case kStateError:  buf.append("Error:"); break;
     case kStateWarning:buf.append("Warning:"); break;

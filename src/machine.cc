@@ -144,7 +144,7 @@ namespace kagami {
     ObjectTraitsSetup(kTypeIdNull, ShallowDelivery)
       .InitConstructor(FunctionImpl([](ObjectMap &p)->Message {
         return Message().SetObject(Object());
-      }, kTypeIdNull, ""));
+      }, "", kTypeIdNull));
 
     EXPORT_CONSTANT(kTypeIdInt);
     EXPORT_CONSTANT(kTypeIdFloat);
@@ -755,6 +755,13 @@ namespace kagami {
     frame_stack_.pop();
     code_stack_.pop_back();
     obj_stack_.Pop();
+    frame_stack_.top().RefreshReturnStack();
+  }
+
+  void Machine::FinishInitalizerCalling() {
+    auto instance_obj = *obj_stack_.GetCurrent().Find(kStrMe);
+    RecoverLastState();
+    frame_stack_.top().RefreshReturnStack(instance_obj);
   }
 
   bool Machine::IsTailRecursion(size_t idx, VMCode *code) {
@@ -959,11 +966,11 @@ namespace kagami {
         auto *ptr = base.Find(id);
         if (ptr == nullptr) {
           frame.MakeError("Method is not found - " + id);
-          return;
+          return false;
         }
         if (ptr->GetTypeId() != kTypeIdFunction) {
           frame.MakeError(id + " is not a function object");
-          return;
+          return false;
         }
 
         impl = &ptr->Cast<FunctionImpl>();
@@ -1524,6 +1531,8 @@ namespace kagami {
     //Do not change the order!
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
+
+    if (frame.error) return;
 
     if (rhs.GetMode() == kObjectDelegator || lhs.GetMode() == kObjectDelegator) {
       frame.MakeError("Trying to assign a language key constant");
@@ -2565,9 +2574,11 @@ namespace kagami {
 
     //Refreshing loop tick state to make it work correctly.
     auto refresh_tick = [&]() -> void {
+      bool inside_initializer_calling = frame->initializer_calling;
       code = code_stack_.back();
       size = code->size();
       frame = &frame_stack_.top();
+      frame->inside_initializer_calling = inside_initializer_calling;
     };
 
     //Protect current runtime environment and load another function
@@ -2660,7 +2671,8 @@ namespace kagami {
       //return expression will be processed in Machine::CommandReturn
       if (frame->idx == size && frame_stack_.size() > 1) {
         //Bring saved environment back
-        RecoverLastState();
+        if (frame->inside_initializer_calling) FinishInitalizerCalling();
+        else RecoverLastState();
         //Update register data
         refresh_tick();
         if (!freezing_) {
@@ -2719,7 +2731,7 @@ namespace kagami {
         if (IsTailRecursion(frame->idx, &impl->GetCode())) tail_recursion();
         else if (IsTailCall(frame->idx)) tail_call(*impl);
         else update_stack_frame(*impl);
-        
+
         continue;
       }
       else if (impl->GetType() == kFunctionExternal) {
@@ -2742,13 +2754,6 @@ namespace kagami {
           interface_error = true;
           break;
         }
-      }
-
-      if (frame->initializer_calling) {
-        //TODO:pushing new struct instance into returning stack
-        auto returning_value = obj_map.at(kStrMe);
-        frame->RefreshReturnStack(returning_value);
-        frame->initializer_calling = false;
       }
 
       //Invoke by return value.

@@ -13,6 +13,7 @@ namespace kagami {
   void InitWindowComponents();
   void InitExtensionComponents();
   void InitExternalPointerComponents();
+  void InitStructComponents();
 
   const ComponentLoader kEmbeddedComponents[] = {
     InitConsoleComponents,
@@ -23,6 +24,7 @@ namespace kagami {
     InitSoundComponents,
     InitWindowComponents,
     InitExtensionComponents,
-    InitExternalPointerComponents
+    InitExternalPointerComponents,
+    InitStructComponents
   };
 }

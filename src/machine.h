@@ -213,6 +213,7 @@ namespace kagami {
     bool jump_from_end;
     bool event_processing;
     bool initializer_calling;
+    bool inside_initializer_calling;
     size_t jump_offset;
     size_t idx;
     string msg_string;
@@ -235,6 +236,7 @@ namespace kagami {
       jump_from_end(false),
       event_processing(false),
       initializer_calling(false),
+      inside_initializer_calling(false),
       jump_offset(0),
       idx(0),
       msg_string(),
@@ -320,6 +322,7 @@ namespace kagami {
 
   private:
     void RecoverLastState();
+    void FinishInitalizerCalling();
     bool IsTailRecursion(size_t idx, VMCode *code);
     bool IsTailCall(size_t idx);
 
