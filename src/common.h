@@ -85,7 +85,9 @@ namespace kagami {
   using std::tuple;
   using std::optional;
   
-  using namespace minatsuki;
+  using minatsuki::StandardLogger;
+  using minatsuki::StandardCachedLogger;
+  using minatsuki::StandardRTLogger;
   namespace fs = std::filesystem;
 
 #ifdef _WIN32

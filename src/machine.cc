@@ -932,7 +932,7 @@ namespace kagami {
     return obj;
   }
 
-  //deprecated
+  //deprecated.
   bool Machine::_FetchFunctionImpl(FunctionImplPointer &impl, string id, string type_id) {
     auto &frame = frame_stack_.top();
 
@@ -1229,6 +1229,20 @@ namespace kagami {
       return;
     }
 
+    auto empty = Invoke(container_obj, "empty");
+    if (frame.error) return;
+    if (!empty.HasObject() || empty.GetObj().GetTypeId() != kTypeIdBool) {
+      frame.MakeError("Invalid empty() implementation");
+      return;
+    }
+    else if (empty.GetObj().Cast<bool>()) {
+      frame.Goto(nest_end);
+      frame.final_cycle = true;
+      obj_stack_.Push(); //avoid error
+      frame.scope_stack.push(false);
+      return;
+    }
+
     auto iterator_obj = msg.GetObj();
     if (!type::CheckBehavior(iterator_obj, kIteratorBehavior)) {
       frame.MakeError("Invalid iterator object");
@@ -1496,7 +1510,7 @@ namespace kagami {
         frame.jump_stack.pop();
         obj_stack_.Pop();
       }
-      frame.scope_stack.pop();
+      if(!frame.scope_stack.empty()) frame.scope_stack.pop();
       frame.final_cycle = false;
     }
     else {
@@ -1663,6 +1677,15 @@ namespace kagami {
       base->emplace_back(Object(unit, kTypeIdString));
     }
 
+    if (obj.IsSubContainer()) {
+      auto &container = obj.Cast<ObjectStruct>().GetContent();
+      for (auto &unit : container) {
+        if (unit.second.GetTypeId() == kTypeIdFunction) {
+          base->emplace_back(unit.first);
+        }
+      }
+    }
+
     Object ret_obj(base, kTypeIdArray);
     frame.RefreshReturnStack(ret_obj);
   }
@@ -1685,7 +1708,18 @@ namespace kagami {
     }
 
     string str = str_obj.Cast<string>();
-    Object ret_obj(type::CheckMethod(str, obj.GetTypeId()), kTypeIdBool);
+    bool first_stage = type::CheckMethod(str, obj.GetTypeId());
+    bool second_stage = obj.IsSubContainer() ?
+      [&]() -> bool {
+      auto &container = obj.Cast<ObjectStruct>().GetContent();
+      for (auto &unit : container) {
+        if (unit.first == str) return true;
+      }
+      return false;
+    }() : false;
+
+
+    Object ret_obj(first_stage || second_stage, kTypeIdBool);
 
     frame.RefreshReturnStack(ret_obj);
   }

@@ -332,7 +332,7 @@ namespace kagami {
     Object FetchFunctionObject(string id);
     Object FetchObject(Argument &arg, bool checking = false);
 
-    //deprecated
+    //deprecated. Use a sub-machine to replace it.
     bool _FetchFunctionImpl(FunctionImplPointer &impl, string id, string type_id);
     
     bool FetchFunctionImpl(FunctionImplPointer &impl, CommandPointer &command,
