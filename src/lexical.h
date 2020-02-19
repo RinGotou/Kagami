@@ -168,6 +168,7 @@ namespace kagami {
     kStrTextureTable   = "__texture_table",
     kStrFontObjectHead = "__font_",
     kStrInitializer    = "initializer",
+    kStrStructId       = "__struct_id",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);

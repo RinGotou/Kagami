@@ -974,21 +974,30 @@ namespace kagami {
 
       //find method in sub-container    
       if (obj.IsSubContainer()) {
-        auto &base = obj.Cast<ObjectStruct>();
-        auto *ptr = base.Find(id);
-        if (ptr == nullptr) {
-          frame.MakeError("Method is not found - " + id);
-          return false;
-        }
-        if (ptr->GetTypeId() != kTypeIdFunction) {
-          frame.MakeError(id + " is not a function object");
-          return false;
-        }
+        impl = mgmt::FindFunction(id, obj.GetTypeId());
 
-        impl = &ptr->Cast<FunctionImpl>();
-        obj_map.emplace(NamedObject(kStrMe, obj));
-        if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
-        return true;
+        if (impl == nullptr) {
+          auto &base = obj.Cast<ObjectStruct>();
+          auto *ptr = base.Find(id);
+          if (ptr == nullptr) {
+            frame.MakeError("Method is not found - " + id);
+            return false;
+          }
+          if (ptr->GetTypeId() != kTypeIdFunction) {
+            frame.MakeError(id + " is not a function object");
+            return false;
+          }
+
+          impl = &ptr->Cast<FunctionImpl>();
+          obj_map.emplace(NamedObject(kStrMe, obj));
+          if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
+          return true;
+        }
+        else {
+          obj_map.emplace(NamedObject(kStrMe, obj));
+          if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
+          return true;
+        }
       }
 
       if (impl = mgmt::FindFunction(id, obj.GetTypeId()); impl == nullptr) {
@@ -1026,6 +1035,7 @@ namespace kagami {
 
           impl = &initializer_obj->Cast<FunctionImpl>();
           frame.initializer_calling = true;
+          frame.struct_base = *ptr;
           return true;
         }
       }
@@ -1528,6 +1538,8 @@ namespace kagami {
     for (auto &unit : base) {
       managed_struct->Add(unit.first, unit.second);
     }
+
+    managed_struct->Add(kStrStructId, Object(frame.struct_id));
 
     obj_stack_.Pop();
     obj_stack_.CreateObject(frame.struct_id, Object(managed_struct, kTypeIdStruct));
@@ -2566,16 +2578,17 @@ namespace kagami {
     frame.RefreshReturnStack(returning_slot);
   }
 
-  void Machine::GenerateStructInstance(string struct_id, ObjectMap &p) {
+  void Machine::GenerateStructInstance(ObjectMap &p) {
     using namespace type;
     auto &frame = frame_stack_.top();
-    auto *struct_def = obj_stack_.Find(struct_id);
 
-    auto &base = struct_def->Cast<ObjectStruct>().GetContent();
+    auto &base = frame.struct_base.Cast<ObjectStruct>().GetContent();
     auto managed_instance = make_shared<ObjectStruct>();
+    auto struct_id = base.at(kStrStructId).Cast<string>();
 
     for (auto &unit : base) {
       if (unit.first == kStrInitializer) continue;
+      if (unit.first == kStrStructId) continue;
 
       //create new object copy instead of RC copy
       managed_instance->Add(unit.first, CreateObjectCopy(unit.second));
@@ -2584,6 +2597,7 @@ namespace kagami {
     Object instance_obj(managed_instance, struct_id);
     instance_obj.SetContainerFlag();
     p.insert(NamedObject(kStrMe, instance_obj));
+    frame.struct_base = Object();
   }
 
   //for extension callback facilities
@@ -2776,7 +2790,7 @@ namespace kagami {
       GenerateArgs(*impl, command->second, obj_map);
 
       if (frame->initializer_calling) {
-        GenerateStructInstance(command->first.GetInterfaceId(), obj_map);
+        GenerateStructInstance(obj_map);
       }
 
       if (frame->error) {

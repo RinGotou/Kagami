@@ -214,6 +214,7 @@ namespace kagami {
     bool event_processing;
     bool initializer_calling;
     bool inside_initializer_calling;
+    Object struct_base;
     Object assert_rc_copy;
     size_t jump_offset;
     size_t idx;
@@ -401,7 +402,7 @@ namespace kagami {
     void LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id);
     void CallExtensionFunction(ObjectMap &p, FunctionImpl &impl);
 
-    void GenerateStructInstance(string struct_id, ObjectMap &p);
+    void GenerateStructInstance(ObjectMap &p);
   private:
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;
