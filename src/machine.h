@@ -194,10 +194,6 @@ namespace kagami {
   const string kForEachExceptions = "!iterator|!containter_keepalive";
 
   using CommandPointer = Command * ;
-  //struct EventHandlerMark {
-  //  Object window_ref;
-  //  Uint32 event_type;
-  //};
   using EventHandlerMark = pair<Uint32, Uint32>;
   using EventHandler = pair<EventHandlerMark, FunctionImpl>;
 

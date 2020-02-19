@@ -47,7 +47,7 @@ void HelpFile() {
 
 void Motto() {
   puts("\"Praying for next morning.\"");
-  puts(PRODUCT " Version " PRODUCT_VER " '"  CODENAME "'");
+  puts(PRODUCT "\nVersion " PRODUCT_VER " '"  CODENAME "'");
 }
 
 void Processing(Processor &processor) {

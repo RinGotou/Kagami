@@ -20,7 +20,13 @@ namespace kagami {
       .InitMethods({
         FunctionImpl(StructGetMembers, "", "members")
       });
+    ObjectTraitsSetup(kTypeIdModule, ShallowDelivery)
+      .InitMethods({
+      FunctionImpl(StructGetMembers, "", "members")
+      });
+
 
     EXPORT_CONSTANT(kTypeIdStruct);
+    EXPORT_CONSTANT(kTypeIdModule);
   }
 }

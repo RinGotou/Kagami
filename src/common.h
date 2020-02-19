@@ -48,7 +48,7 @@
 #include "dawn/src/dawn.sound.h"
 #include "minatsuki.log/src/minatsuki.log.h"
 
-#define PRODUCT     "Kagami Project Core"
+#define PRODUCT     "Kagami Project Core(KPC)"
 #define PRODUCT_VER "2.5"
 #define CODENAME    "Oratorio"
 #define AUTHOR      "Rin Gotou"
@@ -124,7 +124,7 @@ namespace kagami {
   const string kTypeIdIterator        = "iterator";
   const string kTypeIdPair            = "pair";
   const string kTypeIdTable           = "table";
-  const string kTypeIdStruct          = "struct";  //not implemented
+  const string kTypeIdStruct          = "struct";
   const string kTypeIdWindowEvent     = "window_event";
   const string kTypeIdWindow          = "window";
   const string kTypeIdElement         = "element";
