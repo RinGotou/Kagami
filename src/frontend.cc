@@ -566,12 +566,23 @@ namespace kagami {
     return good;
   }
 
-  bool LineParser::StructExpr() {
-    frame_->symbol.emplace_back(Request(kKeywordStruct));
+  bool LineParser::StructExpr(Terminator terminator) {
+    switch (terminator) {
+    case kTerminatorStruct:
+      frame_->symbol.emplace_back(Request(kKeywordStruct));
+      break;
+    case kTerminatorModule:
+      frame_->symbol.emplace_back(Request(kKeywordModule));
+      break;
+    default:
+      break;
+    }
+    
     frame_->symbol.emplace_back(Request());
     frame_->Eat();
 
     //TODO:inherit
+    //TODO:module
 
     if (frame_->current.second != kStringTypeIdentifier) {
       error_string_ = "Invalid struct identifier";
@@ -785,7 +796,8 @@ namespace kagami {
           state = FnExpr();
           break;
         case kTerminatorStruct:
-          state = StructExpr();
+        case kTerminatorModule:
+          state = StructExpr(value);
           break;
         case kTerminatorFor:
           state = ForEachExpr();

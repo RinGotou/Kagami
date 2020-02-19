@@ -79,7 +79,7 @@ namespace kagami {
     bool ArrayExpr();
     void BinaryExpr();
     bool FnExpr();
-    bool StructExpr();
+    bool StructExpr(Terminator terminator);
     bool ForEachExpr();
 
     bool OtherExpressions();

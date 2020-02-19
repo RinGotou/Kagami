@@ -70,6 +70,7 @@ namespace kagami {
     kKeywordApplyLayout,
     kKeywordOffensiveMode,
     kKeywordStruct,
+    kKeywordModule,
     kKeywordDomainAssertCommand,
     kKeywordNull
   };
@@ -88,6 +89,7 @@ namespace kagami {
     kTerminatorBinaryOperator,
     kTerminatorFn,
     kTerminatorStruct,
+    kTerminatorModule,
     kTerminatorFor,
     kTerminatorIn,
     kTerminatorArrow,
@@ -99,6 +101,7 @@ namespace kagami {
     kStrThisWindow     = "this_window",
     kStrImpl           = "impl",
     kStrStruct         = "struct",
+    kStrModule         = "module",
     kStrRootScope      = "!root",
     kStrLocal          = "local",
     kStrExt            = "ext",

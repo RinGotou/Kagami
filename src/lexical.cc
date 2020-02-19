@@ -45,6 +45,7 @@ namespace kagami::lexical {
     if (src == "}")   return kTerminatorRightCurBracket;
     if (src == "fn")  return kTerminatorFn;
     if (src == "struct") return kTerminatorStruct;
+    if (src == "module") return kTerminatorModule;
     if (src == "for") return kTerminatorFor;
     if (src == "in")  return kTerminatorIn;
     if (src == "<-")  return kTerminatorArrow;
@@ -179,7 +180,9 @@ namespace kagami::lexical {
       T(kStrUsingTable     ,kKeywordUsingTable),
       T(kStrApplyLayout    ,kKeywordApplyLayout),
       T(kStrOffensiveMode  ,kKeywordOffensiveMode),
-      T(kStrExist          ,kKeywordExist)
+      T(kStrExist          ,kKeywordExist),
+      T(kStrStruct         ,kKeywordStruct),
+      T(kStrModule         ,kKeywordModule)
     };
     return base;
   }
