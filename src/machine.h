@@ -348,10 +348,12 @@ namespace kagami {
     void CommandWhen(ArgumentList &args);
     void CommandContinueOrBreak(Keyword token, size_t escape_depth);
     void CommandStructBegin(ArgumentList &args);
+    void CommandModuleBegin(ArgumentList &args);
     void CommandConditionEnd();
     void CommandLoopEnd(size_t nest);
     void CommandForEachEnd(size_t nest);
     void CommandStructEnd();
+    void CommandModuleEnd();
 
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);

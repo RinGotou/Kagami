@@ -182,7 +182,8 @@ namespace kagami::lexical {
       T(kStrOffensiveMode  ,kKeywordOffensiveMode),
       T(kStrExist          ,kKeywordExist),
       T(kStrStruct         ,kKeywordStruct),
-      T(kStrModule         ,kKeywordModule)
+      T(kStrModule         ,kKeywordModule),
+      T(kStrInclude        ,kKeywordInclude)
     };
     return base;
   }

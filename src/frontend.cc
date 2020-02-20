@@ -14,11 +14,13 @@ namespace kagami {
       keyword == kKeywordReturn ||
       keyword == kKeywordWhen ||
       keyword == kKeywordStruct ||
+      keyword == kKeywordModule ||
       keyword == kKeywordCase;
   }
 
   inline bool IsStructExceptions(Keyword keyword) {
-    return keyword == kKeywordBind;
+    return keyword == kKeywordBind ||
+      keyword == kKeywordInclude;
   }
 
   inline bool IsNestRoot(Keyword keyword) {
@@ -27,6 +29,7 @@ namespace kagami {
       keyword == kKeywordFn ||
       keyword == kKeywordCase ||
       keyword == kKeywordStruct ||
+      keyword == kKeywordModule ||
       keyword == kKeywordFor;
   }
 
@@ -567,6 +570,16 @@ namespace kagami {
   }
 
   bool LineParser::StructExpr(Terminator terminator) {
+    if (frame_->last.second != kStringTypeNull) {
+      error_string_ = "Invalid struct/module definition";
+      return false;
+    }
+
+    if (tokens_.size() < 2) {
+      error_string_ = "Invalid struct/module definition head";
+      return false;
+    }
+
     switch (terminator) {
     case kTerminatorStruct:
       frame_->symbol.emplace_back(Request(kKeywordStruct));
@@ -581,17 +594,26 @@ namespace kagami {
     frame_->symbol.emplace_back(Request());
     frame_->Eat();
 
-    //TODO:inherit
-    //TODO:module
-
     if (frame_->current.second != kStringTypeIdentifier) {
       error_string_ = "Invalid struct identifier";
       return false;
     }
 
     frame_->args.emplace_back(Argument());
+    //struct identifier
     frame_->args.emplace_back(Argument(
       frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+
+    if (terminator == kTerminatorModule && frame_->next.second != kStringTypeNull) {
+      error_string_ = "Invalid argument in module definition";
+      return false;
+    }
+    else if (terminator == kTerminatorStruct && frame_->next.first == "<") {
+      //inheritance source struct
+      frame_->Eat();
+      frame_->args.emplace_back(Argument(
+        frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+    }
 
     return true;
   }
@@ -936,6 +958,18 @@ namespace kagami {
         if (ast_root == kKeywordFn) struct_member_fn_nest += 1;
 
         if (struct_member_fn_nest == 0 && 
+          !compare(ast_root, kKeywordBind, kKeywordEnd, kKeywordInclude)) {
+          AppendMessage("Invalid expression inside struct", kStateError,
+            logger_, msg.GetIndex());
+          good = false;
+          break;
+        }
+      }
+
+      if (inside_module_) {
+        if (ast_root == kKeywordFn) struct_member_fn_nest += 1;
+
+        if (struct_member_fn_nest == 0 &&
           !compare(ast_root, kKeywordBind, kKeywordEnd)) {
           AppendMessage("Invalid expression inside struct", kStateError,
             logger_, msg.GetIndex());
@@ -956,6 +990,10 @@ namespace kagami {
 
         if (ast_root == kKeywordStruct) {
           inside_struct_ = true;
+        }
+
+        if (ast_root == kKeywordModule) {
+          inside_module_ = true;
         }
 
         nest_.push(dest_->size());
@@ -1028,11 +1066,12 @@ namespace kagami {
           jump_stack_.pop();
         }
 
-        if (compare(nest_type_.top(), kKeywordFn) && inside_struct_) {
+        if (compare(nest_type_.top(), kKeywordFn) && (inside_struct_ || inside_module_)) {
           struct_member_fn_nest -= 1;
         }
 
         if (compare(nest_type_.top(), kKeywordStruct)) inside_struct_ = false;
+        if (compare(nest_type_.top(), kKeywordModule)) inside_module_ = false;
 
         nest_.pop();
         nest_end_.pop();

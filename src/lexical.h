@@ -72,6 +72,7 @@ namespace kagami {
     kKeywordStruct,
     kKeywordModule,
     kKeywordDomainAssertCommand,
+    kKeywordInclude, 
     kKeywordNull
   };
 
@@ -102,6 +103,7 @@ namespace kagami {
     kStrImpl           = "impl",
     kStrStruct         = "struct",
     kStrModule         = "module",
+    kStrInclude        = "include",
     kStrRootScope      = "!root",
     kStrLocal          = "local",
     kStrExt            = "ext",

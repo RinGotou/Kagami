@@ -1024,7 +1024,7 @@ namespace kagami {
           impl = &ptr->Cast<FunctionImpl>();
           return true;
         }
-        else if (ptr->IsSubContainer()) {
+        else if (ptr->IsSubContainer() && ptr->GetTypeId() == kTypeIdStruct) {
           auto &base = ptr->Cast<ObjectStruct>();
           auto *initializer_obj = base.Find(kStrInitializer);
           
@@ -1460,13 +1460,29 @@ namespace kagami {
   void Machine::CommandStructBegin(ArgumentList &args) {
     auto &frame = frame_stack_.top();
 
-    if (!EXPECTED_COUNT(1)) {
+    if (args.size() < 1) {
       frame.MakeError("struct identifier is missing");
       return;
     }
 
     obj_stack_.Push();
+    //TODO:get parent struct
     auto id_obj = FetchObject(args[0]);
+    frame.struct_id = id_obj.Cast<string>();
+    //TODO:inherit parent struct
+  }
+
+  void Machine::CommandModuleBegin(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("module identifier is missing");
+      return;
+    }
+
+    obj_stack_.Push();
+    auto id_obj = FetchObject(args[0]);
+    //Use struct_id slot
     frame.struct_id = id_obj.Cast<string>();
   }
 
@@ -1543,6 +1559,23 @@ namespace kagami {
 
     obj_stack_.Pop();
     obj_stack_.CreateObject(frame.struct_id, Object(managed_struct, kTypeIdStruct));
+    frame.struct_id.clear();
+    frame.struct_id.shrink_to_fit();
+  }
+
+  void Machine::CommandModuleEnd() {
+    auto &frame = frame_stack_.top();
+    auto &base = obj_stack_.GetCurrent().GetContent();
+    auto managed_module = make_shared<ObjectStruct>();
+
+    for (auto &unit : base) {
+      managed_module->Add(unit.first, unit.second);
+    }
+
+    managed_module->Add(kStrStructId, Object(frame.struct_id));
+
+    obj_stack_.Pop();
+    obj_stack_.CreateObject(frame.struct_id, Object(managed_module, kTypeIdStruct));
     frame.struct_id.clear();
     frame.struct_id.shrink_to_fit();
   }
