@@ -2394,6 +2394,9 @@ namespace kagami {
       case kKeywordStruct:
         CommandStructEnd();
         break;
+      case kKeywordModule:
+        CommandModuleEnd();
+        break;
       default:break;
       }
       break;
@@ -2432,6 +2435,9 @@ namespace kagami {
       break;
     case kKeywordStruct:
       CommandStructBegin(args);
+      break;
+    case kKeywordModule:
+      CommandModuleBegin(args);
       break;
     case kKeywordDomainAssertCommand:
       DomainAssert(args);
