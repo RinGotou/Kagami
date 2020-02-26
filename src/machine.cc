@@ -932,8 +932,7 @@ namespace kagami {
     return obj;
   }
 
-  //deprecated.
-  bool Machine::_FetchFunctionImpl(FunctionImplPointer &impl, string id, string type_id) {
+  bool Machine::FetchInvokingTarget(FunctionImplPointer &impl, string id, string type_id) {
     auto &frame = frame_stack_.top();
 
     //Modified version for function invoking
@@ -1116,8 +1115,8 @@ namespace kagami {
     FunctionImplPointer impl;
     auto &frame = frame_stack_.top();
 
-    if (bool found = _FetchFunctionImpl(impl, id, obj.GetTypeId()); !found) {
-      frame.MakeError("Method \"" + id + "\" is found in this type - " + obj.GetTypeId());
+    if (bool found = FetchInvokingTarget(impl, id, obj.GetTypeId()); !found) {
+      frame.MakeError("Method \"" + id + "\" is found in this type scope - " + obj.GetTypeId());
       return Message();
     }
 
@@ -1162,6 +1161,7 @@ namespace kagami {
     if (token == kKeywordIf) {
       frame.scope_stack.push(false);
       frame.condition_stack.push(state);
+      obj_stack_.Push();
       if (!state) {
         if (frame.branch_jump_stack.empty()) {
           frame.Goto(frame.jump_stack.top());
@@ -1499,6 +1499,7 @@ namespace kagami {
     frame.condition_stack.pop();
     frame.jump_stack.pop();
     frame.scope_stack.pop();
+    obj_stack_.Pop();
     while (!frame.branch_jump_stack.empty()) frame.branch_jump_stack.pop();
   }
 
@@ -1585,10 +1586,7 @@ namespace kagami {
         }
       }
 
-      auto *super_initalizer = super_base.Find(kStrInitializer);
-      if (super_initalizer != nullptr) {
-        managed_struct->Add(kStrSuperStructInitializer, *super_initalizer);
-      }
+      //TODO:create reference obejct of super struct
     }
 
     //TODO:copy module memebers
@@ -1640,7 +1638,6 @@ namespace kagami {
   }
 
   void Machine::CommandInclude(ArgumentList &args) {
-    //TODO:insert module id into !module_list
     auto &frame = frame_stack_.top();
     auto &base = obj_stack_.GetCurrent();
     auto module_obj = FetchObject(args[0]);
@@ -1663,9 +1660,13 @@ namespace kagami {
   }
 
   void Machine::CommandSuper(ArgumentList &args) {
-    //TODO:call initializer of super struct
     auto &frame = frame_stack_.top();
+    if (!frame.inside_initializer_calling) {
+      frame.MakeError("Invalid super struct intializer calling");
+      return;
+    }
 
+    //TODO:call initializer of super struct
   }
 
   void Machine::CommandHash(ArgumentList &args) {
@@ -2966,7 +2967,7 @@ namespace kagami {
       if (msg.IsInvokingMsg()) {
         //process invoking request in returning message
         auto invoking_req = BuildStringVector(msg.GetDetail());
-        if (!_FetchFunctionImpl(impl, invoking_req[0], invoking_req[1])) {
+        if (!FetchInvokingTarget(impl, invoking_req[0], invoking_req[1])) {
           break;
         }
 

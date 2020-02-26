@@ -176,6 +176,7 @@ namespace kagami {
     kStrInitializer    = "initializer",
     kStrStructId       = "__struct_id",
     kStrSuperStruct    = "!super_struct",
+    kStrSuperStructId  = "!super_struct_id",
     kStrSuperStructInitializer = "!super_initializer",
     kStrModuleList     = "!module_list",
     kStrSuper          = "super",

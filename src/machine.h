@@ -331,8 +331,8 @@ namespace kagami {
     Object FetchFunctionObject(string id);
     Object FetchObject(Argument &arg, bool checking = false);
 
-    //deprecated. Use a sub-machine to replace it.
-    bool _FetchFunctionImpl(FunctionImplPointer &impl, string id, string type_id);
+    //deprecated. use standard FetchFunctionImpl instead.
+    bool FetchInvokingTarget(FunctionImplPointer &impl, string id, string type_id);
     
     bool FetchFunctionImpl(FunctionImplPointer &impl, CommandPointer &command,
       ObjectMap &obj_map);
