@@ -217,6 +217,7 @@ namespace kagami {
     string msg_string;
     string function_scope;
     string struct_id;
+    string super_struct_id;
     stack<bool> condition_stack; //preserved
     stack<bool> scope_stack;
     stack<size_t> jump_stack;
@@ -241,6 +242,7 @@ namespace kagami {
       msg_string(),
       function_scope(),
       struct_id(),
+      super_struct_id(),
       condition_stack(),
       jump_stack(),
       branch_jump_stack(),
@@ -354,6 +356,8 @@ namespace kagami {
     void CommandForEachEnd(size_t nest);
     void CommandStructEnd();
     void CommandModuleEnd();
+    void CommandInclude(ArgumentList &args);
+    void CommandSuper(ArgumentList &args);
 
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);

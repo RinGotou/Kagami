@@ -1465,11 +1465,19 @@ namespace kagami {
       return;
     }
 
+    if (args.size() > 2) {
+      frame.MakeError("Too many arguments for struct definition");
+      return;
+    }
+
     obj_stack_.Push();
-    //TODO:get parent struct
+    auto super_struct_obj = args.size() == 2 ?
+      FetchObject(args[1]) : Object();
     auto id_obj = FetchObject(args[0]);
     frame.struct_id = id_obj.Cast<string>();
-    //TODO:inherit parent struct
+    if (!super_struct_obj.Null()) {
+      frame.super_struct_id = super_struct_obj.Cast<string>();
+    }
   }
 
   void Machine::CommandModuleBegin(ArgumentList &args) {
@@ -1550,9 +1558,60 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     auto &base = obj_stack_.GetCurrent().GetContent();
     auto managed_struct = make_shared<ObjectStruct>();
+    Object *super_struct = nullptr;
+
+    //TODO:inheritance implementation
+    if (!frame.super_struct_id.empty()) {
+      super_struct = obj_stack_.Find(frame.super_struct_id);
+      if (super_struct == nullptr) {
+        frame.MakeError("Invalid super struct");
+        return;
+      }
+
+      obj_stack_.CreateObject(kStrSuperStruct, *super_struct);
+    }
+
+    //TODO:copy members from super struct
+    if (super_struct != nullptr) {
+      auto &super_base = super_struct->Cast<ObjectStruct>();
+
+      for (auto &unit : super_base.GetContent()) {
+        if (compare(unit.first, kStrSuperStruct, kStrStructId)) continue;
+        if (unit.second.GetTypeId() != kTypeIdFunction) {
+          managed_struct->Add(unit.first, type::CreateObjectCopy(unit.second));
+        }
+        else {
+          managed_struct->Add(unit.first, unit.second);
+        }
+      }
+
+      auto *super_initalizer = super_base.Find(kStrInitializer);
+      if (super_initalizer != nullptr) {
+        managed_struct->Add(kStrSuperStructInitializer, *super_initalizer);
+      }
+    }
+
+    //TODO:copy module memebers
+    if (auto *module_list_obj = obj_stack_.GetCurrent().Find(kStrModuleList);
+      module_list_obj != nullptr) {
+      auto &module_list = module_list_obj->Cast<ObjectArray>();
+      for (auto it = module_list.begin(); it != module_list.end(); ++it) {
+        auto &module = it->Cast<ObjectStruct>().GetContent();
+        for (auto &unit : module) {
+          if (unit.first == kStrStructId) continue;
+
+          if (unit.second.GetTypeId() != kTypeIdFunction) {
+            managed_struct->Add(unit.first, type::CreateObjectCopy(unit.second));
+          }
+          else {
+            managed_struct->Add(unit.first, unit.second);
+          }
+        }
+      }
+    }
 
     for (auto &unit : base) {
-      managed_struct->Add(unit.first, unit.second);
+      managed_struct->Replace(unit.first, unit.second);
     }
 
     managed_struct->Add(kStrStructId, Object(frame.struct_id));
@@ -1578,6 +1637,35 @@ namespace kagami {
     obj_stack_.CreateObject(frame.struct_id, Object(managed_module, kTypeIdStruct));
     frame.struct_id.clear();
     frame.struct_id.shrink_to_fit();
+  }
+
+  void Machine::CommandInclude(ArgumentList &args) {
+    //TODO:insert module id into !module_list
+    auto &frame = frame_stack_.top();
+    auto &base = obj_stack_.GetCurrent();
+    auto module_obj = FetchObject(args[0]);
+
+    if (args.size() != 1) {
+      frame.MakeError("Invalid including declaration");
+      return;
+    }
+
+    if (auto *mod_list_obj = base.Find(kStrModuleList); mod_list_obj != nullptr) {
+      auto &mod_list = mod_list_obj->Cast<ObjectArray>();
+      mod_list.push_back(module_obj);
+    }
+    else {
+      auto managed_arr = make_shared<ObjectArray>();
+      base.Add(kStrModuleList, Object(managed_arr, kTypeIdArray));
+      auto &mod_list = base.Find(kStrModuleList)->Cast<ObjectArray>();
+      mod_list.push_back(module_obj);
+    }
+  }
+
+  void Machine::CommandSuper(ArgumentList &args) {
+    //TODO:call initializer of super struct
+    auto &frame = frame_stack_.top();
+
   }
 
   void Machine::CommandHash(ArgumentList &args) {
@@ -2442,6 +2530,10 @@ namespace kagami {
     case kKeywordDomainAssertCommand:
       DomainAssert(args);
       break;
+    case kKeywordInclude:
+      CommandInclude(args);
+      break;
+      //Super
     default:
       break;
     }

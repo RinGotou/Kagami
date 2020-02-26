@@ -247,6 +247,7 @@ namespace kagami {
     void BuildCache();
   public:
     bool Add(string id, Object source);
+    void Replace(string id, Object source);
     bool Dispose(string id);
     Object *Find(string id, bool forward_seeking = true);
     Object *FindWithDomain(string id, string domain, bool forward_seeking = true);

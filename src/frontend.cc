@@ -15,6 +15,7 @@ namespace kagami {
       keyword == kKeywordWhen ||
       keyword == kKeywordStruct ||
       keyword == kKeywordModule ||
+      keyword == kKeywordInclude ||
       keyword == kKeywordCase;
   }
 
@@ -610,7 +611,7 @@ namespace kagami {
     }
     else if (terminator == kTerminatorStruct && frame_->next.first == "<") {
       //inheritance source struct
-      frame_->Eat();
+      frame_->Eat(); frame_->Eat();
       frame_->args.emplace_back(Argument(
         frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
     }

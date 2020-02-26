@@ -183,7 +183,8 @@ namespace kagami::lexical {
       T(kStrExist          ,kKeywordExist),
       T(kStrStruct         ,kKeywordStruct),
       T(kStrModule         ,kKeywordModule),
-      T(kStrInclude        ,kKeywordInclude)
+      T(kStrInclude        ,kKeywordInclude),
+      T(kStrSuper          ,kKeywordSuper)
     };
     return base;
   }

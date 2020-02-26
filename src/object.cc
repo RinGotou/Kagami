@@ -98,12 +98,19 @@ namespace kagami {
     if (IsDelegated()) return delegator_->Add(id, source);
 
     if (CheckObject(id)) return false;
-    auto result = base_.insert(NamedObject(id, source));
+    auto result = base_.emplace(NamedObject(id, source));
     if (result.second) {
-      dest_map_.insert(make_pair(id, &result.first->second));
+      dest_map_.emplace(make_pair(id, &result.first->second));
     }
 
     return true;
+  }
+
+  void ObjectContainer::Replace(string id, Object source) {
+    if (IsDelegated()) delegator_->Replace(id, source);
+
+    base_[id] = source;
+    dest_map_[id] = &base_[id];
   }
 
   bool ObjectContainer::Dispose(string id) {

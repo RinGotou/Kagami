@@ -73,6 +73,7 @@ namespace kagami {
     kKeywordModule,
     kKeywordDomainAssertCommand,
     kKeywordInclude, 
+    kKeywordSuper,
     kKeywordNull
   };
 
@@ -174,6 +175,10 @@ namespace kagami {
     kStrFontObjectHead = "__font_",
     kStrInitializer    = "initializer",
     kStrStructId       = "__struct_id",
+    kStrSuperStruct    = "!super_struct",
+    kStrSuperStructInitializer = "!super_initializer",
+    kStrModuleList     = "!module_list",
+    kStrSuper          = "super",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);
