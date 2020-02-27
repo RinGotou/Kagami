@@ -333,7 +333,7 @@ namespace kagami {
 
     //deprecated. use standard FetchFunctionImpl instead.
     bool FetchInvokingTarget(FunctionImplPointer &impl, string id, string type_id);
-    
+
     bool FetchFunctionImpl(FunctionImplPointer &impl, CommandPointer &command,
       ObjectMap &obj_map);
 

@@ -1123,12 +1123,14 @@ namespace kagami {
     ObjectMap obj_map = args;
     obj_map.insert(NamedObject(kStrMe, obj));
 
-    if (impl->GetType() == kFunctionVMCode) {
-      Run(true, id, &impl->GetCode(), &obj_map, &impl->GetClosureRecord());
-      Object obj = frame_stack_.top().return_stack.top();
-      frame_stack_.top().return_stack.pop();
-      return Message().SetObject(obj);
-    }
+    //TODO:dispose old impl if user-defined function invoking
+
+    //if (impl->GetType() == kFunctionVMCode) {
+    //  Run(true, id, &impl->GetCode(), &obj_map, &impl->GetClosureRecord());
+    //  Object obj = frame_stack_.top().return_stack.top();
+    //  frame_stack_.top().return_stack.pop();
+    //  return Message().SetObject(obj);
+    //}
 
     auto activity = impl->GetActivity();
 
@@ -1161,6 +1163,7 @@ namespace kagami {
     if (token == kKeywordIf) {
       frame.scope_stack.push(false);
       frame.condition_stack.push(state);
+      //TODO:Refine scope creation
       obj_stack_.Push();
       if (!state) {
         if (frame.branch_jump_stack.empty()) {
@@ -1561,18 +1564,16 @@ namespace kagami {
     auto managed_struct = make_shared<ObjectStruct>();
     Object *super_struct = nullptr;
 
-    //TODO:inheritance implementation
+    //inheritance implementation
     if (!frame.super_struct_id.empty()) {
       super_struct = obj_stack_.Find(frame.super_struct_id);
       if (super_struct == nullptr) {
         frame.MakeError("Invalid super struct");
         return;
       }
-
-      obj_stack_.CreateObject(kStrSuperStruct, *super_struct);
     }
 
-    //TODO:copy members from super struct
+    //copy members from super struct
     if (super_struct != nullptr) {
       auto &super_base = super_struct->Cast<ObjectStruct>();
 
@@ -1586,10 +1587,11 @@ namespace kagami {
         }
       }
 
-      //TODO:create reference obejct of super struct
+      //create reference obejct of super struct
+      managed_struct->Add(kStrSuperStruct, Object().PackObject(*super_struct));
     }
 
-    //TODO:copy module memebers
+    //copy module memebers
     if (auto *module_list_obj = obj_stack_.GetCurrent().Find(kStrModuleList);
       module_list_obj != nullptr) {
       auto &module_list = module_list_obj->Cast<ObjectArray>();
@@ -2719,8 +2721,9 @@ namespace kagami {
     auto struct_id = base.at(kStrStructId).Cast<string>();
 
     for (auto &unit : base) {
-      if (unit.first == kStrInitializer) continue;
-      if (unit.first == kStrStructId) continue;
+      if (compare(unit.first, kStrInitializer, kStrStructId, kStrSuperStruct)) {
+        continue;
+      }
 
       //create new object copy instead of RC copy
       managed_instance->Add(unit.first, CreateObjectCopy(unit.second));
