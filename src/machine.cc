@@ -1049,7 +1049,9 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     auto &obj_list = obj_stack_.GetBase();
     auto &origin_code = *code_stack_.back();
-    size_t counter = 0, size = args.size(), nest = frame.idx;
+    size_t counter = 0;
+    size_t size = args.size();
+    size_t nest = frame.idx;
     bool optional = false, variable = false;
     ParameterPattern argument_mode = kParamFixed;
     vector<string> params;
