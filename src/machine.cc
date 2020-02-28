@@ -2753,14 +2753,11 @@ namespace kagami {
     frame.MakeError(msg);
   }
 
-  void Machine::Run(bool invoking, string id, VMCodePointer ptr, ObjectMap *p,
-    ObjectMap *closure_record) {
+  void Machine::Run() {
     if (code_stack_.empty()) return;
-    if (invoking) code_stack_.push_back(ptr);
 
     bool interface_error = false;
     bool invoking_error = false;
-    size_t stop_point = invoking ? frame_stack_.size() : 0;
     size_t script_idx = 0;
     Message msg;
     VMCode *code = code_stack_.back();
@@ -2771,13 +2768,6 @@ namespace kagami {
 
     frame_stack_.push(RuntimeFrame());
     obj_stack_.Push();
-
-    if (invoking) {
-      obj_stack_.CreateObject(kStrUserFunc, Object(id));
-      obj_stack_.MergeMap(*p);
-      obj_stack_.MergeMap(*closure_record);
-      frame_stack_.top().function_scope = id;
-    }
 
     RuntimeFrame *frame = &frame_stack_.top();
     size_t size = code->size();
@@ -2848,11 +2838,6 @@ namespace kagami {
       if (frame->warning) {
         AppendMessage(frame->msg_string, kStateWarning, logger_);
         frame->warning = false;
-      }
-
-      //stop at invoking point
-      if (invoking && frame_stack_.size() == stop_point) {
-        break;
       }
 
       //Draw all windows
@@ -2997,22 +2982,10 @@ namespace kagami {
     if (frame->error) {
       AppendMessage(frame->msg_string, kStateError,
         logger_, script_idx);
-      if (invoking) invoking_error = true;
     }
 
     if (interface_error) {
       AppendMessage(msg.GetDetail(), msg.GetLevel(), logger_, script_idx);
-      if (invoking) invoking_error = true;
-    }
-
-    if (!invoking || (invoking && frame_stack_.size() != stop_point)) {
-      obj_stack_.Pop();
-      frame_stack_.pop();
-      code_stack_.pop_back();
-    }
-
-    if (invoking && invoking_error) {
-      frame_stack_.top().MakeError("Invoking error is occurred.");
     }
 
     error_ = frame->error || interface_error || invoking_error;

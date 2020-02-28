@@ -470,9 +470,7 @@ namespace kagami {
       obj_stack_.SetDelegatedRoot(root);
     }
 
-    void Run(bool invoking = false, string id = "", 
-      VMCodePointer ptr = nullptr, ObjectMap *p = nullptr, 
-      ObjectMap *closure_record = nullptr);
+    void Run();
 
     bool ErrorOccurred() const {
       return error_;
