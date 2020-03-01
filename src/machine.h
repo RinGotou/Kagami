@@ -210,6 +210,7 @@ namespace kagami {
     bool event_processing;
     bool initializer_calling;
     bool inside_initializer_calling;
+    bool stop_point;
     Object struct_base;
     Object assert_rc_copy;
     size_t jump_offset;
@@ -236,6 +237,7 @@ namespace kagami {
       event_processing(false),
       initializer_calling(false),
       inside_initializer_calling(false),
+      stop_point(false),
       assert_rc_copy(),
       jump_offset(0),
       idx(0),
@@ -260,7 +262,7 @@ namespace kagami {
   struct _CustomError : std::exception {
   public:
     _CustomError(const char *msg) : 
-      std::exception(msg, 0) {}
+      std::exception(std::runtime_error(msg)) {}
   };
 
   class ConfigProcessor {
