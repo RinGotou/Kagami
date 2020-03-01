@@ -21,7 +21,7 @@ MacOS is NOT OFFICIAL SUPPORTED for now.
 
 ```
 # Archlinux/Manjaro Linux
-sudo pacman -Syyu sdl2 sdl2_image sdl2_mixer sdl2_ttf
+sudo pacman -S sdl2 sdl2_image sdl2_mixer sdl2_ttf
 
 # clone & build
 git clone https://github.com/kagami-project/kagami --depth=1
