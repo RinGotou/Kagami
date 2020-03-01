@@ -902,7 +902,7 @@ namespace kagami {
       }
 
       if (inside_comment_block) {
-        inside_comment_block = (buf == kStrCommentEnd);
+        inside_comment_block = !(buf == kStrCommentEnd);
         idx += 1;
         continue;
       }
