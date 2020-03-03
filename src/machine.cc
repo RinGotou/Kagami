@@ -933,7 +933,7 @@ namespace kagami {
   }
 
   bool Machine::FetchFunctionImplEx(FunctionImplPointer &dest, string id, string type_id,
-    Object *obj) {
+    Object *obj_ptr) {
     auto &frame = frame_stack_.top();
 
     //TODO:struct support is missing
@@ -953,6 +953,15 @@ namespace kagami {
       else if (Object *obj = obj_stack_.Find(type_id); obj != nullptr) {
         if (!obj->IsSubContainer()) METHOD_NOT_FOUND_MSG;
         auto &base = obj->Cast<ObjectStruct>();
+        auto *ptr = base.Find(id);
+
+        if (ptr == nullptr) METHOD_NOT_FOUND_MSG;
+        if (ptr->GetTypeId() != kTypeIdFunction) TYPE_ERROR_MSG;
+
+        dest = &ptr->Cast<FunctionImpl>();
+      }
+      else if (obj_ptr != nullptr && type_id == kTypeIdStruct) {
+        auto &base = obj_ptr->Cast<ObjectStruct>();
         auto *ptr = base.Find(id);
 
         if (ptr == nullptr) METHOD_NOT_FOUND_MSG;
@@ -1139,7 +1148,7 @@ namespace kagami {
     FunctionImplPointer impl;
     auto &frame = frame_stack_.top();
 
-    if (!FetchFunctionImplEx(impl, id, obj.GetTypeId())) return Message();
+    if (!FetchFunctionImplEx(impl, id, obj.GetTypeId(), &obj)) return Message();
 
     ObjectMap obj_map = args;
     obj_map.insert(NamedObject(kStrMe, obj));
@@ -2968,7 +2977,7 @@ namespace kagami {
         //process invoking request in returning message
         auto invoking_req = BuildStringVector(msg.GetDetail());
         auto obj = msg.GetObj();
-        if (!FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1])) 
+        if (!FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1], &obj)) 
           break;
 
         //not checked.for OOP feature in the future.
