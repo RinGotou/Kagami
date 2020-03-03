@@ -1150,6 +1150,13 @@ namespace kagami {
 
     if (!FetchFunctionImplEx(impl, id, obj.GetTypeId(), &obj)) return Message();
 
+    if (impl->GetType() == kFunctionVMCode) {
+
+    }
+    else if (impl->GetType() == kFunctionExternal) {
+      //TODO:?
+    }
+
     ObjectMap obj_map = args;
     obj_map.insert(NamedObject(kStrMe, obj));
 
@@ -2776,7 +2783,6 @@ namespace kagami {
     if (code_stack_.empty()) return;
 
     bool interface_error = false;
-    bool invoking_error = false;
     size_t script_idx = 0;
     Message msg;
     VMCode *code = code_stack_.back();
@@ -2980,7 +2986,7 @@ namespace kagami {
         if (!FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1], &obj)) 
           break;
 
-        //not checked.for OOP feature in the future.
+        //load user-defined method function
         if (impl->GetType() == kFunctionVMCode) {
           update_stack_frame(*impl);
         }
@@ -3007,6 +3013,6 @@ namespace kagami {
       AppendMessage(msg.GetDetail(), msg.GetLevel(), logger_, script_idx);
     }
 
-    error_ = frame->error || interface_error || invoking_error;
+    error_ = frame->error || interface_error;
   }
 }
