@@ -72,6 +72,7 @@ namespace kagami {
 
     vector<string> methods = management::type::GetMethods(obj.GetTypeId());
 
+    //TODO: add support of user-defined type
     if (!management::type::CheckMethod(kStrPrint, obj.GetTypeId())) {
       puts(MakeObjectString(obj).data());
       return Message();

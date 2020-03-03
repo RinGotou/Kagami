@@ -932,30 +932,49 @@ namespace kagami {
     return obj;
   }
 
-  bool Machine::FetchInvokingTarget(FunctionImplPointer &impl, string id, string type_id) {
+  bool Machine::FetchFunctionImplEx(FunctionImplPointer &dest, string id, string type_id) {
     auto &frame = frame_stack_.top();
 
-    //Modified version for function invoking
+#define METHOD_NOT_FOUND_MSG {                                           \
+      frame.MakeError("Method of " + type_id + " is not found - " + id); \
+      return false;                                                      \
+    }
+#define TYPE_ERROR_MSG {                                                 \
+      frame.MakeError(id + " is not a function object");                 \
+      return false;                                                      \
+    }
+
+    //with domain
     if (type_id != kTypeIdNull) {
-      if (impl = FindFunction(id, type_id); impl == nullptr) {
-        frame.MakeError("Method is not found - " + id);
-        return false;
-      }
+      if (dest = mgmt::FindFunction(id, type_id); dest != nullptr) return true;
+      else if (Object *obj = obj_stack_.Find(type_id); obj != nullptr) {
+        if (!obj->IsSubContainer()) METHOD_NOT_FOUND_MSG;
+        auto &base = obj->Cast<ObjectStruct>();
+        auto *ptr = base.Find(id);
 
-      return true;
+        if (ptr == nullptr) METHOD_NOT_FOUND_MSG;
+        if (ptr->GetTypeId() != kTypeIdFunction) TYPE_ERROR_MSG;
+
+        dest = &ptr->Cast<FunctionImpl>();
+      }
+      else METHOD_NOT_FOUND_MSG;
     }
+    //without domain
+    //Hint: No need to implement the behavior of initializer,
+    //just making error instead.
     else {
-      if (impl = FindFunction(id); impl != nullptr) return true;
-      ObjectPointer ptr = obj_stack_.Find(id);
-      if (ptr != nullptr && ptr->GetTypeId() == kTypeIdFunction) {
-        impl = &ptr->Cast<FunctionImpl>();
-        return true;
+      if (dest = mgmt::FindFunction(id); dest != nullptr) return true;
+      else if (auto *ptr = obj_stack_.Find(id); ptr != nullptr) {
+        if (ptr->GetTypeId() != kTypeIdFunction) TYPE_ERROR_MSG;
+        dest = &ptr->Cast<FunctionImpl>();
       }
-
-      frame.MakeError("Function is not found - " + id);
+      else METHOD_NOT_FOUND_MSG;
     }
 
-    return false;
+#undef METHOD_NOT_FOUND_MSG
+#undef TYPE_ERROR_MSG
+
+    return true;
   }
 
   bool Machine::FetchFunctionImpl(FunctionImplPointer &impl, CommandPointer &command, ObjectMap &obj_map) {
@@ -1117,22 +1136,10 @@ namespace kagami {
     FunctionImplPointer impl;
     auto &frame = frame_stack_.top();
 
-    if (bool found = FetchInvokingTarget(impl, id, obj.GetTypeId()); !found) {
-      frame.MakeError("Method \"" + id + "\" is found in this type scope - " + obj.GetTypeId());
-      return Message();
-    }
+    if (!FetchFunctionImplEx(impl, id, obj.GetTypeId())) return Message();
 
     ObjectMap obj_map = args;
     obj_map.insert(NamedObject(kStrMe, obj));
-
-    //TODO:dispose old impl if user-defined function invoking
-
-    //if (impl->GetType() == kFunctionVMCode) {
-    //  Run(true, id, &impl->GetCode(), &obj_map, &impl->GetClosureRecord());
-    //  Object obj = frame_stack_.top().return_stack.top();
-    //  frame_stack_.top().return_stack.pop();
-    //  return Message().SetObject(obj);
-    //}
 
     auto activity = impl->GetActivity();
 
@@ -2957,9 +2964,7 @@ namespace kagami {
       if (msg.IsInvokingMsg()) {
         //process invoking request in returning message
         auto invoking_req = BuildStringVector(msg.GetDetail());
-        if (!FetchInvokingTarget(impl, invoking_req[0], invoking_req[1])) {
-          break;
-        }
+        if (!FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1])) break;
 
         //not checked.for OOP feature in the future.
         if (impl->GetType() == kFunctionVMCode) {
