@@ -106,12 +106,19 @@ namespace kagami::management::type {
     return result;
   }
 
-  bool CheckMethod(string func_id, string domain) {
+  bool CheckMethod(string func_id, Object &obj) {
     bool result = false;
-    const auto it = GetObjectTraitsCollection().find(domain);
+    const auto it = GetObjectTraitsCollection().find(obj.GetTypeId());
 
     if (it != GetObjectTraitsCollection().end()) {
       result = find_in_vector(func_id, it->second.GetMethods());
+    }
+    else if (obj.IsSubContainer()) {
+      auto &base = obj.Cast<ObjectStruct>();
+      auto *ptr = base.Find(func_id);
+      if (ptr != nullptr) {
+        result = (ptr->GetTypeId() == kTypeIdFunction);
+      }
     }
 
     return result;

@@ -28,7 +28,7 @@ namespace kagami::management::type {
   }
 
   vector<string> GetMethods(string id);
-  bool CheckMethod(string func_id, string domain);
+  bool CheckMethod(string func_id, Object &obj);
   size_t GetHash(Object &obj);
   bool IsHashable(Object &obj);
   bool IsCopyable(Object &obj);
