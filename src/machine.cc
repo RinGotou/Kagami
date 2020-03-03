@@ -243,6 +243,9 @@ namespace kagami {
     if (!void_call) {
       return_stack.push(std::move(obj));
     }
+    if (stop_point) {
+      has_return_value_from_invoking = true;
+    }
   }
 
   void ConfigProcessor::ElementProcessing(ObjectTable &obj_table, string id, 
@@ -1147,22 +1150,40 @@ namespace kagami {
   Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
     FunctionImplPointer impl;
     auto &frame = frame_stack_.top();
+    Message result;
 
-    if (!FetchFunctionImplEx(impl, id, obj.GetTypeId(), &obj)) return Message();
-
-    if (impl->GetType() == kFunctionVMCode) {
-
-    }
-    else if (impl->GetType() == kFunctionExternal) {
-      //TODO:?
-    }
+    if (!FetchFunctionImplEx(impl, id, obj.GetTypeId(), &obj)) return result;
 
     ObjectMap obj_map = args;
     obj_map.insert(NamedObject(kStrMe, obj));
 
-    auto activity = impl->GetActivity();
+    if (impl->GetType() == kFunctionVMCode) {
+      frame.stop_point = true;
+      code_stack_.push_back(&impl->GetCode());
+      frame_stack_.push(RuntimeFrame(impl->GetId()));
+      obj_stack_.Push();
+      obj_stack_.CreateObject(kStrUserFunc, Object(impl->GetId()));
+      obj_stack_.MergeMap(obj_map);
+      obj_stack_.MergeMap(impl->GetClosureRecord());
+      Run(true);
+      if (frame.has_return_value_from_invoking) {
+        result.SetObject(frame.return_stack.top());
+        frame.return_stack.pop();
+      }
+      frame.stop_point = false;
+    }
+    else if (impl->GetType() == kFunctionExternal) {
+      frame.MakeError("External function isn't supported for now");
+    }
+    else if (impl->GetType() == kFunctionCXX) {
+      auto activity = impl->GetActivity();
+      result = activity(obj_map);
+    }
+    else {
+      frame.MakeError("Unknown function implementation (Internal error)");
+    }
 
-    return activity(obj_map);
+    return result;
   }
 
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
@@ -2779,7 +2800,7 @@ namespace kagami {
     frame.MakeError(msg);
   }
 
-  void Machine::Run() {
+  void Machine::Run(bool invoke) {
     if (code_stack_.empty()) return;
 
     size_t script_idx = 0;
@@ -2790,8 +2811,10 @@ namespace kagami {
     ObjectMap obj_map;
     SDL_Event event;
 
-    frame_stack_.push(RuntimeFrame());
-    obj_stack_.Push();
+    if (!invoke) {
+      frame_stack_.push(RuntimeFrame());
+      obj_stack_.Push();
+    }
 
     RuntimeFrame *frame = &frame_stack_.top();
     size_t size = code->size();
@@ -2856,6 +2879,8 @@ namespace kagami {
     // Main loop of virtual machine.
     // TODO:dispose return value in event function
     while (frame->idx < size || frame_stack_.size() > 1 || hanging_) {
+      //break at stop point.
+      if (frame->stop_point) break;
       //freeze mainloop to keep querying events
       freezing_ = (frame->idx >= size && hanging_ && frame_stack_.size() == 1);
 
@@ -2896,7 +2921,7 @@ namespace kagami {
         else RecoverLastState();
         //Update register data
         refresh_tick();
-        if (!freezing_) frame->Stepping();
+        if (!freezing_ && !frame->stop_point) frame->Stepping();
         continue;
       }
 
@@ -2912,7 +2937,7 @@ namespace kagami {
         
         if (command->first.GetKeywordValue() == kKeywordReturn) refresh_tick();
         if (frame->error) break;
-        frame->Stepping();
+        if (!frame->stop_point) frame->Stepping();
         continue;
       }
 
