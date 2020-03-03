@@ -244,6 +244,7 @@ namespace kagami {
       return_stack.push(std::move(obj));
     }
     if (stop_point) {
+      return_stack.push(std::move(obj));
       has_return_value_from_invoking = true;
     }
   }
@@ -2929,7 +2930,7 @@ namespace kagami {
       command = &(*code)[frame->idx];
       script_idx = command->first.idx;
       // dispose returning value
-      frame->void_call = command->first.option.void_call; 
+      frame->void_call = command->first.option.void_call;
 
       //Built-in machine commands.
       if (command->first.type == kRequestCommand) {

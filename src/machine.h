@@ -190,7 +190,7 @@ namespace kagami {
   using LogicBox = BinaryOpBox<bool, Tx, Tx, op>;
 
   const string kIteratorBehavior = "obj|step_forward|__compare";
-  const string kContainerBehavior = "head|tail";
+  const string kContainerBehavior = "head|tail|empty";
   const string kForEachExceptions = "!iterator|!containter_keepalive";
 
   using CommandPointer = Command * ;

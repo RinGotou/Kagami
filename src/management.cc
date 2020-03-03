@@ -205,6 +205,18 @@ namespace kagami::management::type {
       }
     }
 
+    if (obj.IsSubContainer()) {
+      result = true;
+      auto &base = obj.Cast<ObjectStruct>().GetContent();
+
+      for (auto &unit : sample) {
+        if (base.find(unit) == base.end()) {
+          result = false;
+          break;
+        }
+      }
+    }
+
     return result;
   }
 
