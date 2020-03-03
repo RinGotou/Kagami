@@ -333,7 +333,8 @@ namespace kagami {
     Object FetchFunctionObject(string id);
     Object FetchObject(Argument &arg, bool checking = false);
 
-    bool FetchFunctionImplEx(FunctionImplPointer &dest, string id, string type_id = kTypeIdNull);
+    bool FetchFunctionImplEx(FunctionImplPointer &dest, string id, string type_id = kTypeIdNull, 
+      Object *obj = nullptr);
 
     bool FetchFunctionImpl(FunctionImplPointer &impl, CommandPointer &command,
       ObjectMap &obj_map);

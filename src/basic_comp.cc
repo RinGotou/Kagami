@@ -73,12 +73,12 @@ namespace kagami {
     vector<string> methods = management::type::GetMethods(obj.GetTypeId());
 
     //TODO: add support of user-defined type
-    if (!management::type::CheckMethod(kStrPrint, obj.GetTypeId())) {
+    if (!management::type::CheckMethod(kStrPrint, obj)) {
       puts(MakeObjectString(obj).data());
       return Message();
     }
 
-    return MakeInvokePoint(kStrPrint, obj.GetTypeId());
+    return MakeInvokePoint(kStrPrint, obj.GetTypeId(), obj);
   }
 
   //Print object and switch to next line

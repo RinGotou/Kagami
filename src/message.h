@@ -14,7 +14,7 @@ namespace kagami {
     bool invoking_msg_;
     StateLevel level_;
     string detail_;
-    shared_ptr<void> object_;
+    optional<Object> obj_;
     size_t idx_;
 
   public:
@@ -22,13 +22,14 @@ namespace kagami {
       invoking_msg_(false),
       level_(kStateNormal), 
       detail_(""), 
+      obj_(std::nullopt),
       idx_(0) {}
 
     Message(const Message &msg) :
       invoking_msg_(msg.invoking_msg_),
       level_(msg.level_),
       detail_(msg.detail_),
-      object_(msg.object_),
+      obj_(msg.obj_),
       idx_(msg.idx_) {}
 
     Message(const Message &&msg) :
@@ -44,7 +45,7 @@ namespace kagami {
       invoking_msg_ = msg.invoking_msg_;
       level_ = msg.level_;
       detail_ = msg.detail_;
-      object_ = msg.object_;
+      obj_ = msg.obj_;
       idx_ = msg.idx_;
       return *this;
     }
@@ -56,49 +57,42 @@ namespace kagami {
     StateLevel GetLevel() const { return level_; }
     string GetDetail() const { return detail_; }
     size_t GetIndex() const { return idx_; }
-    bool HasObject() const { return object_ != nullptr; }
+    bool HasObject() const { return obj_.has_value(); }
+    //bool HasObject() const { return object_ != nullptr; }
     bool IsInvokingMsg() const { return invoking_msg_; }
 
     Object GetObj() const {
-      if (object_ == nullptr) return Object();
-      return *static_pointer_cast<Object>(object_);
+      if (!obj_.has_value()) return Object();
+      return obj_.value();
     }
 
     Message &SetObject(Object &object) {
-      object_ = make_shared<Object>(object);
-      return *this;
-    }
-
-    Message &SetObject(bool value) {
-      object_ = make_shared<Object>(
-        make_shared<bool>(value), kTypeIdBool
-      );
-      return *this;
-    }
-
-    Message &SetObject(int64_t value) {
-      object_ = make_shared<Object>(
-        make_shared<int64_t>(value), kTypeIdInt
-        );
-      return *this;
-    }
-
-    Message &SetObject(double value) {
-      object_ = make_shared<Object>(
-        make_shared<double>(value), kTypeIdFloat
-        );
-      return *this;
-    }
-
-    Message &SetObject(string value) {
-      object_ = make_shared<Object>(
-        make_shared<string>(value), kTypeIdString
-        );
+      obj_ = object;
       return *this;
     }
 
     Message &SetObject(Object &&object) {
       return this->SetObject(object);
+    }
+
+    Message &SetObject(bool value) {
+      obj_ = Object(value, kTypeIdBool);
+      return *this;
+    }
+
+    Message &SetObject(int64_t value) {
+      obj_ = Object(value, kTypeIdInt);
+      return *this;
+    }
+
+    Message &SetObject(double value) {
+      obj_ = Object(value, kTypeIdFloat);
+      return *this;
+    }
+
+    Message &SetObject(string value) {
+      obj_ = Object(value, kTypeIdString);
+      return *this;
     }
 
     Message &SetLevel(StateLevel level) {
@@ -116,16 +110,21 @@ namespace kagami {
       return *this;
     }
 
-    Message &SetInvokingSign() {
+    Message &SetInvokingSign(Object &obj) {
+      obj_ = obj;
       invoking_msg_ = true;
       return *this;
+    }
+
+    Message &SetInvokingSign(Object &&obj) {
+      return this->SetInvokingSign(obj);
     }
 
     void Clear() {
       level_ = kStateNormal;
       detail_.clear();
       detail_.shrink_to_fit();
-      object_.reset();
+      obj_.reset();
       idx_ = 0;
     }
   };

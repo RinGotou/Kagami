@@ -193,7 +193,7 @@ namespace kagami {
     }
   };
   
-  Message MakeInvokePoint(string id, string type_id = kTypeIdNull);
+  Message MakeInvokePoint(string id, string type_id, Object obj);
 
   using FunctionImplPointer = FunctionImpl *;
 }

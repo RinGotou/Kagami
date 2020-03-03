@@ -932,8 +932,11 @@ namespace kagami {
     return obj;
   }
 
-  bool Machine::FetchFunctionImplEx(FunctionImplPointer &dest, string id, string type_id) {
+  bool Machine::FetchFunctionImplEx(FunctionImplPointer &dest, string id, string type_id,
+    Object *obj) {
     auto &frame = frame_stack_.top();
+
+    //TODO:struct support is missing
 
 #define METHOD_NOT_FOUND_MSG {                                           \
       frame.MakeError("Method of " + type_id + " is not found - " + id); \
@@ -1853,7 +1856,7 @@ namespace kagami {
     }
 
     string str = str_obj.Cast<string>();
-    bool first_stage = type::CheckMethod(str, obj.GetTypeId());
+    bool first_stage = type::CheckMethod(str, obj);
     bool second_stage = obj.IsSubContainer() ?
       [&]() -> bool {
       auto &container = obj.Cast<ObjectStruct>().GetContent();
@@ -1930,7 +1933,7 @@ namespace kagami {
         }
       }
       else {
-        if (!type::CheckMethod(kStrGetStr, type_id)) {
+        if (!type::CheckMethod(kStrGetStr, obj)) {
           frame.MakeError("Invalid argument for convert()");
           return;
         }
@@ -2163,7 +2166,7 @@ namespace kagami {
         return;
       }
 
-      if (!CheckMethod(kStrCompare, lhs.GetTypeId())) {
+      if (!CheckMethod(kStrCompare, lhs)) {
         frame.MakeError("Can't operate with this operator.");
         return;
       }
@@ -2964,7 +2967,9 @@ namespace kagami {
       if (msg.IsInvokingMsg()) {
         //process invoking request in returning message
         auto invoking_req = BuildStringVector(msg.GetDetail());
-        if (!FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1])) break;
+        auto obj = msg.GetObj();
+        if (!FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1])) 
+          break;
 
         //not checked.for OOP feature in the future.
         if (impl->GetType() == kFunctionVMCode) {

@@ -110,7 +110,7 @@ namespace kagami::management::type {
     bool result = false;
     const auto it = GetObjectTraitsCollection().find(obj.GetTypeId());
 
-    if (it != GetObjectTraitsCollection().end()) {
+    if (it != GetObjectTraitsCollection().end() && obj.GetTypeId() != kTypeIdStruct) {
       result = find_in_vector(func_id, it->second.GetMethods());
     }
     else if (obj.IsSubContainer()) {
