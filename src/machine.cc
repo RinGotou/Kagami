@@ -2782,7 +2782,6 @@ namespace kagami {
   void Machine::Run() {
     if (code_stack_.empty()) return;
 
-    bool interface_error = false;
     size_t script_idx = 0;
     Message msg;
     VMCode *code = code_stack_.back();
@@ -2897,9 +2896,7 @@ namespace kagami {
         else RecoverLastState();
         //Update register data
         refresh_tick();
-        if (!freezing_) {
-          frame->Stepping();
-        }
+        if (!freezing_) frame->Stepping();
         continue;
       }
 
@@ -2914,12 +2911,7 @@ namespace kagami {
         MachineCommands(command->first.GetKeywordValue(), command->second, command->first);
         
         if (command->first.GetKeywordValue() == kKeywordReturn) refresh_tick();
-
-        if (frame->error) {
-          script_idx = command->first.idx;
-          break;
-        }
-
+        if (frame->error) break;
         frame->Stepping();
         continue;
       }
@@ -2940,11 +2932,7 @@ namespace kagami {
         GenerateStructInstance(obj_map);
       }
 
-      if (frame->error) {
-        //Get actual script index for error reporting
-        script_idx = command->first.idx;
-        break;
-      }
+      if (frame->error) break;
 
       //user-defined function invoking
       //Ceate new stack frame and push VMCode pointer to machine stack,
@@ -2958,13 +2946,7 @@ namespace kagami {
       }
       else if (impl->GetType() == kFunctionExternal) {
         CallExtensionFunction(obj_map, *impl);
-
-        if (frame->error) {
-          //Get actual script index for error reporting
-          script_idx = command->first.idx;
-          break;
-        }
-
+        if (frame->error) break;
         frame->Stepping();
         continue;
       }
@@ -2973,13 +2955,13 @@ namespace kagami {
         msg = impl->GetActivity()(obj_map);
 
         if (msg.GetLevel() == kStateError) {
-          interface_error = true;
+          frame->MakeError(msg.GetDetail());
           break;
         }
       }
 
       //Invoke by return value.
-      if (msg.IsInvokingMsg()) {
+      if (msg.IsInvokingRequest()) {
         //process invoking request in returning message
         auto invoking_req = BuildStringVector(msg.GetDetail());
         auto obj = msg.GetObj();
@@ -3009,10 +2991,6 @@ namespace kagami {
         logger_, script_idx);
     }
 
-    if (interface_error) {
-      AppendMessage(msg.GetDetail(), msg.GetLevel(), logger_, script_idx);
-    }
-
-    error_ = frame->error || interface_error;
+    error_ = frame->error;
   }
 }

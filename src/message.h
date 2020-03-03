@@ -59,7 +59,7 @@ namespace kagami {
     size_t GetIndex() const { return idx_; }
     bool HasObject() const { return obj_.has_value(); }
     //bool HasObject() const { return object_ != nullptr; }
-    bool IsInvokingMsg() const { return invoking_msg_; }
+    bool IsInvokingRequest() const { return invoking_msg_; }
 
     Object GetObj() const {
       if (!obj_.has_value()) return Object();
