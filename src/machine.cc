@@ -875,40 +875,53 @@ namespace kagami {
     ObjectPointer ptr = nullptr;
     Object obj;
 
-    //TODO:reconstruction
+#define OBJECT_DEAD_MSG {                           \
+      frame.MakeError("Referenced object is dead"); \
+      return obj;                                   \
+    }
+
+#define MEMBER_NOT_FOUND_MSG {                                                                   \
+      frame.MakeError("Member '" + arg.GetData() + "' is not found inside " + arg.option.domain);\
+      return obj;                                                                                \
+    }
+
     if (arg.GetType() == kArgumentObjectStack) {
       if (!arg.option.domain.empty() || arg.option.use_last_assert) {
         if (arg.option.use_last_assert) {
           auto &base = frame.assert_rc_copy.Cast<ObjectStruct>();
           ptr = base.Find(arg.GetData());
 
-          if (ptr != nullptr) obj.PackObject(*ptr);
-          else {
-            frame.MakeError("Member '" + arg.GetData() + "' is not found");
-            return obj;
+          if (ptr != nullptr) {
+            if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
+            obj.PackObject(*ptr);
           }
+          else MEMBER_NOT_FOUND_MSG
 
           if (arg.option.assert_chain_tail) frame.assert_rc_copy = Object();
         }
         else if (arg.option.domain_type == kArgumentObjectStack) {
           ptr = obj_stack_.Find(arg.GetData(), arg.option.domain);
 
-          if (ptr != nullptr) obj.PackObject(*ptr);
-          else {
-            frame.MakeError("Member '" + arg.GetData() + "' is not found inside " + arg.option.domain);
-            return obj;
+          if (ptr != nullptr) {
+            if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
+            obj.PackObject(*ptr);
           }
+          else MEMBER_NOT_FOUND_MSG
         }
         else if (arg.option.domain_type == kArgumentReturnStack) {
           auto &sub_container = return_stack.top().Cast<ObjectStruct>();
           ptr = sub_container.Find(arg.GetData());
           //keep object alive
-          if (ptr != nullptr) obj = *ptr;
+          if (ptr != nullptr) {
+            if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
+            obj = *ptr;
+          }
           return_stack.pop();
         }
       }
       else {
         if (ptr = obj_stack_.Find(arg.GetData()); ptr != nullptr) {
+          if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
           obj.PackObject(*ptr);
           return obj;
         }
@@ -925,11 +938,12 @@ namespace kagami {
     else if (arg.GetType() == kArgumentReturnStack) {
       if (!return_stack.empty()) {
         obj = return_stack.top();
+        if (!obj.IsAlive()) OBJECT_DEAD_MSG;
         obj.SetDeliveringFlag();
         if(!checking) return_stack.pop(); 
       }
       else {
-        frame.MakeError("Can't get object from stack.");
+        frame.MakeError("Can't get object from stack(Internal error)");
       }
     }
 

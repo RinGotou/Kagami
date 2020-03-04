@@ -262,10 +262,6 @@ namespace kagami {
     return Message().SetObject(Object(path_cls.extension().string(), kTypeIdString));
   }
 
-  Message IsObjectAlive(ObjectMap &p) {
-    return Message().SetObject(p["obj"].IsAlive());
-  }
-
   void InitConsoleComponents() {
     using management::CreateImpl;
 
@@ -288,6 +284,5 @@ namespace kagami {
     CreateImpl(FunctionImpl(CopyFSFile, "from|to", "copy_file"));
     CreateImpl(FunctionImpl(GetDirectoryContent, "path", "dir_content"));
     CreateImpl(FunctionImpl(GetFilenameExtension, "path", "filename_ext"));
-    CreateImpl(FunctionImpl(IsObjectAlive, "obj", "is_alive"));
   }
 }
