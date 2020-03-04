@@ -92,9 +92,13 @@ namespace kagami {
   namespace fs = std::filesystem;
 
 #ifdef _WIN32
-  const string kPlatformType   = "Windows";
+  const string kPlatformType = "Windows";
 #else
-  const string kPlatformType   = "Linux";
+#ifdef linux
+  const string kPlatformType = "Linux";
+#else
+  const string kPlatformType = "POSIX Platform";
+#endif
 #endif
 
   /* Plain Type Code */

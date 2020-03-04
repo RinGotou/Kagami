@@ -947,6 +947,9 @@ namespace kagami {
       }
     }
 
+#undef OBJECT_DEAD_MSG
+#undef MEMBER_NOT_FOUND_MSG
+
     return obj;
   }
 
