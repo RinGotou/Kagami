@@ -1173,7 +1173,7 @@ namespace kagami {
     if (!FetchFunctionImplEx(impl, id, obj.GetTypeId(), &obj)) return result;
 
     ObjectMap obj_map = args;
-    obj_map.insert(NamedObject(kStrMe, obj));
+    obj_map.emplace(NamedObject(kStrMe, obj));
 
     if (impl->GetType() == kFunctionVMCode) {
       result = CallVMCFunction(*impl, obj_map);
@@ -1762,20 +1762,39 @@ namespace kagami {
       return;
     }
 
-    //TODO:call initializer of super struct
     if (auto *ptr = base.Find(kStrSuperStruct, false); ptr != nullptr) {
       auto &super_struct = ptr->Cast<ObjectStruct>();
       auto *initializer = super_struct.Find(kStrInitializer);
       auto *ss_struct = super_struct.Find(kStrSuperStruct);
+      auto *instance = base.Find(kStrMe, false);
+
+      ObjectMap obj_map;
 
       if (initializer == nullptr) {
         frame.MakeError("Super struct doesn't have initalizer");
         return;
       }
 
-      for (int64_t index = args.size() - 1; index >= 0; index -= 1) {
-
+      if (initializer->GetTypeId() != kTypeIdFunction) {
+        frame.MakeError("Invalid initializer function");
+        return;
       }
+
+      auto &initializer_impl = initializer->Cast<FunctionImpl>();
+      auto &params = initializer_impl.GetParameters();
+      size_t pos = args.size() - 1;
+
+      GenerateArgs(initializer_impl, args, obj_map);
+      if (frame.error) return;
+
+      if (ss_struct != nullptr) {
+        Object ss_struct_ref;
+        ss_struct_ref.PackObject(*ss_struct);
+        obj_map.emplace(NamedObject(kStrSuperStruct, ss_struct_ref));
+      }
+
+      obj_map.emplace(NamedObject(kStrMe, *instance));
+      CallVMCFunction(initializer_impl, obj_map);
     }
     else {
       frame.MakeError("This struct doesn't have base struct");
@@ -2648,7 +2667,9 @@ namespace kagami {
     case kKeywordInclude:
       CommandInclude(args);
       break;
-      //Super
+    case kKeywordSuper:
+      CommandSuper(args);
+      break;
     default:
       break;
     }
