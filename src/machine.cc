@@ -1585,8 +1585,13 @@ namespace kagami {
       FetchObject(args[1]) : Object();
     auto id_obj = FetchObject(args[0]);
     frame.struct_id = id_obj.Cast<string>();
+
     if (!super_struct_obj.Null()) {
       frame.super_struct_id = super_struct_obj.Cast<string>();
+    }
+
+    if (auto *ptr = obj_stack_.Find(frame.struct_id); ptr != nullptr) {
+      frame.MakeError("Struct is existed: " + frame.struct_id);
     }
   }
 
