@@ -263,6 +263,7 @@ namespace kagami {
   struct _IgnoredException : std::exception {};
   struct _CustomError : std::exception {
   public:
+    //TODO:Memory Management
     _CustomError(const char *msg) : 
       std::exception(std::runtime_error(msg)) {}
   };

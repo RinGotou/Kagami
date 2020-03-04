@@ -1797,7 +1797,7 @@ namespace kagami {
       CallVMCFunction(initializer_impl, obj_map);
     }
     else {
-      frame.MakeError("This struct doesn't have base struct");
+      frame.MakeError("This struct doesn't have super struct");
       return;
     }
   }
