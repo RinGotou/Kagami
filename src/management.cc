@@ -87,6 +87,16 @@ namespace kagami::management {
     return Object();
   }
 
+  bool IsAlive(initializer_list<Object> &&objects) {
+    for (const auto &unit : objects) {
+      if (!unit.IsAlive()) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /////////////////////////////////////////////////////////////
 }
 

@@ -359,6 +359,10 @@ namespace kagami {
 
 
       if (auto ptr = obj_stack_.Find(font_obj_id); ptr != nullptr) {
+        if (!ptr->IsAlive()) {
+          throw _CustomError("Font object is dead");
+        }
+
         auto &font = ptr->Cast<dawn::Font>();
         auto managed_texture = make_shared<dawn::Texture>(
           text, font, window.GetRenderer(), color_key,
@@ -483,6 +487,10 @@ namespace kagami {
       }();
 
       if (auto ptr = obj_stack_.Find(font_obj_id); ptr != nullptr) {
+        if (!ptr->IsAlive()) {
+          throw _CustomError("Font object is dead");
+        }
+
         auto &font = ptr->Cast<dawn::Font>();
         auto managed_texture = make_shared<dawn::Texture>(
           text, font, window.GetRenderer(), color_key,
@@ -528,7 +536,7 @@ namespace kagami {
     auto *elem = window.GetElementById(target_elem_id);
 
     if (elem == nullptr) {
-      frame_stack_.top().MakeError("Element is not found - " + target_elem_id);
+      frame_stack_.top().MakeError("Element is not found: " + target_elem_id);
       return;
     }
 
@@ -596,6 +604,7 @@ namespace kagami {
       base.Add(kStrTextureTable, Object(ObjectTable(), kTypeIdTable));
       texture_table_obj = base.Find(kStrTextureTable);
     }
+
     auto &table = texture_table_obj->Cast<ObjectTable>();
 
     //TODO:specific error processing
@@ -623,6 +632,7 @@ namespace kagami {
       }();
       
       auto *obj = base.Find(id);
+      //No need to check life state
 
       auto managed_window = [&]()-> shared_ptr<void> {
         if (obj == nullptr) {
@@ -931,7 +941,7 @@ namespace kagami {
         }
 
         if (obj.Null()) {
-          frame.MakeError("Object is not found - " + arg.GetData());
+          frame.MakeError("Object is not found: " + arg.GetData());
         }
       }
     }
@@ -960,7 +970,7 @@ namespace kagami {
     //TODO:struct support is missing
 
 #define METHOD_NOT_FOUND_MSG {                                           \
-      frame.MakeError("Method of " + type_id + " is not found - " + id); \
+      frame.MakeError("Method of " + type_id + " is not found: " + id);  \
       return false;                                                      \
     }
 #define TYPE_ERROR_MSG {                                                 \
@@ -1031,7 +1041,7 @@ namespace kagami {
           auto &base = obj.Cast<ObjectStruct>();
           auto *ptr = base.Find(id);
           if (ptr == nullptr) {
-            frame.MakeError("Method is not found - " + id);
+            frame.MakeError("Method is not found: " + id);
             return false;
           }
           if (ptr->GetTypeId() != kTypeIdFunction) {
@@ -1071,6 +1081,11 @@ namespace kagami {
       ObjectPointer ptr = obj_stack_.Find(id);
 
       if (ptr != nullptr) {
+        if (!ptr->IsAlive()) {
+          frame.MakeError("Referenced object is dead: " + id);
+          return false;
+        }
+
         if (ptr->GetTypeId() == kTypeIdFunction) {
           impl = &ptr->Cast<FunctionImpl>();
           return true;
@@ -1091,7 +1106,7 @@ namespace kagami {
         }
       }
 
-      frame.MakeError("Function is not found - " + id);
+      frame.MakeError("Function is not found: " + id);
     }
 
     return false;
@@ -1481,7 +1496,7 @@ namespace kagami {
       }
 
       if (!lexical::IsPlainType(type_id)) {
-        frame.MakeError("Non-plain object is not supported for now");
+        frame.MakeError("Non-plain object is not supported");
         return;
       }
 
@@ -1763,6 +1778,11 @@ namespace kagami {
     }
 
     if (auto *ptr = base.Find(kStrSuperStruct, false); ptr != nullptr) {
+      if (!ptr->IsAlive()) {
+        frame.MakeError("Super struct object is dead");
+        return;
+      }
+
       auto &super_struct = ptr->Cast<ObjectStruct>();
       auto *initializer = super_struct.Find(kStrInitializer);
       auto *ss_struct = super_struct.Find(kStrSuperStruct);
@@ -1772,6 +1792,10 @@ namespace kagami {
 
       if (initializer == nullptr) {
         frame.MakeError("Super struct doesn't have initalizer");
+        return;
+      }
+      if (!initializer->IsAlive()) {
+        frame.MakeError("Initializer object is dead");
         return;
       }
 
@@ -1788,6 +1812,11 @@ namespace kagami {
       if (frame.error) return;
 
       if (ss_struct != nullptr) {
+        if (!ss_struct->IsAlive()) {
+          frame.MakeError("SS Struct is dead");
+          return;
+        }
+
         Object ss_struct_ref;
         ss_struct_ref.PackObject(*ss_struct);
         obj_map.emplace(NamedObject(kStrSuperStruct, ss_struct_ref));
@@ -1854,6 +1883,11 @@ namespace kagami {
         ObjectPointer ptr = obj_stack_.Find(id);
 
         if (ptr != nullptr) {
+          if (!ptr->IsAlive()) {
+            frame.MakeError("Referenced object is dead: " + id);
+            return;
+          }
+
           ptr->Unpack() = CreateObjectCopy(rhs);
           return;
         }
@@ -1891,6 +1925,11 @@ namespace kagami {
         ObjectPointer ptr = obj_stack_.Find(id);
 
         if (ptr != nullptr) {
+          if (!ptr->IsAlive()) {
+            frame.MakeError("Referenced object is dead: " + id);
+            return;
+          }
+
           ptr->Unpack() = rhs.Unpack();
           rhs.Unpack() = Object();
           return;
@@ -1932,7 +1971,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing  - dir(obj)");
+      frame.MakeError("Argument is missing: dir(obj)");
       return;
     }
 
@@ -1961,7 +2000,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(2)) {
-      frame.MakeError("Argument is missing  - exist(obj, id)");
+      frame.MakeError("Argument is missing: exist(obj, id)");
       return;
     }
 
@@ -1995,7 +2034,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing  - null_obj(obj)");
+      frame.MakeError("Argument is missing: null_obj(obj)");
       return;
     }
 
@@ -2007,7 +2046,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing  - destroy(obj)");
+      frame.MakeError("Argument is missing: destroy(obj)");
       return;
     }
 
@@ -2019,7 +2058,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing  - convert(obj)");
+      frame.MakeError("Argument is missing: convert(obj)");
       return;
     }
 
@@ -2069,7 +2108,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing  - load(obj)");
+      frame.MakeError("Argument is missing: load(obj)");
       return;
     }
 
@@ -2116,7 +2155,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(2)) {
-      frame.MakeError("Argument is misssing - using_table(obj, obj)");
+      frame.MakeError("Argument is misssing: using_table(obj, obj)");
       return;
     }
 
@@ -2156,7 +2195,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(2)) {
-      frame.MakeError("Argument is misssing - apply_layout(obj, obj)");
+      frame.MakeError("Argument is misssing: apply_layout(obj, obj)");
       return;
     }
 
@@ -2183,7 +2222,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is misssing - offensive_mode(obj, obj)");
+      frame.MakeError("Argument is misssing: offensive_mode(obj, obj)");
       return;
     }
 
@@ -2435,7 +2474,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing  - assert(bool_obj)");
+      frame.MakeError("Argument is missing: assert(bool_obj)");
       return;
     }
 
@@ -2455,7 +2494,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(3)) {
-      frame.MakeError("Argument is missing  - handle(win, event, func)");
+      frame.MakeError("Argument is missing: handle(win, event, func)");
       return;
     }
 

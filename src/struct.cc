@@ -12,6 +12,8 @@ namespace kagami {
     return Message().SetObject(Object(managed_array, kTypeIdArray));
   }
 
+  //TODO:Comparator
+
   void InitStructComponents() {
     using namespace mgmt;
     using namespace mgmt::type;

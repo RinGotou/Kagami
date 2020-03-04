@@ -14,6 +14,8 @@ namespace kagami::management {
   Object *CreateConstantObject(string id, Object &object);
   Object *CreateConstantObject(string id, Object &&object);
   Object GetConstantObject(string id);
+
+  bool IsAlive(initializer_list<Object> &&objects);
 }
 
 namespace kagami::management::type {

@@ -74,6 +74,8 @@ namespace kagami {
     kKeywordDomainAssertCommand,
     kKeywordInclude, 
     kKeywordSuper,
+    kKeywordIsBaseOf,
+    kKeywordIsModuleMixed,
     kKeywordNull
   };
 
@@ -176,8 +178,8 @@ namespace kagami {
     kStrInitializer    = "initializer",
     kStrStructId       = "__struct_id",
     kStrSuperStruct    = "!super_struct",
-    kStrSuperStructId  = "!super_struct_id",
-    kStrSuperStructInitializer = "!super_initializer",
+    kStrSuperStructId  = "!super_struct_id", //deprecated?
+    kStrSuperStructInitializer = "!super_initializer", //deprecated?
     kStrModuleList     = "!module_list",
     kStrSuper          = "super",
     kStrMe             = "me";
