@@ -2786,6 +2786,11 @@ namespace kagami {
     auto &base = frame.struct_base.Cast<ObjectStruct>().GetContent();
     auto managed_instance = make_shared<ObjectStruct>();
     auto struct_id = base.at(kStrStructId).Cast<string>();
+    auto super_struct = [&]() -> Object {
+      auto it = base.find(kStrSuperStruct);
+      if (it == base.end()) return Object();
+      return it->second;
+    }();
 
     for (auto &unit : base) {
       if (compare(unit.first, kStrInitializer, kStrStructId, kStrSuperStruct)) {
@@ -2794,6 +2799,10 @@ namespace kagami {
 
       //create new object copy instead of RC copy
       managed_instance->Add(unit.first, CreateObjectCopy(unit.second));
+    }
+
+    if (!super_struct.Null()) {
+      p.insert(NamedObject(kStrSuperStruct, super_struct));
     }
 
     Object instance_obj(managed_instance, struct_id);
