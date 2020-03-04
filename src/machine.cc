@@ -1176,19 +1176,7 @@ namespace kagami {
     obj_map.insert(NamedObject(kStrMe, obj));
 
     if (impl->GetType() == kFunctionVMCode) {
-      frame.stop_point = true;
-      code_stack_.push_back(&impl->GetCode());
-      frame_stack_.push(RuntimeFrame(impl->GetId()));
-      obj_stack_.Push();
-      obj_stack_.CreateObject(kStrUserFunc, Object(impl->GetId()));
-      obj_stack_.MergeMap(obj_map);
-      obj_stack_.MergeMap(impl->GetClosureRecord());
-      Run(true);
-      if (frame.has_return_value_from_invoking) {
-        result.SetObject(frame.return_stack.top());
-        frame.return_stack.pop();
-      }
-      frame.stop_point = false;
+      result = CallVMCFunction(*impl, obj_map);
     }
     else if (impl->GetType() == kFunctionExternal) {
       frame.MakeError("External function isn't supported for now");
@@ -1215,7 +1203,7 @@ namespace kagami {
 
     if (impl.GetType() != kFunctionVMCode) {
       frame.MakeError("Invalid function variant");
-      return Message();
+      return result;
     }
 
     frame.stop_point = true;
@@ -1229,7 +1217,7 @@ namespace kagami {
 
     if (error_) {
       frame.MakeError("Error occurred while calling user-defined function");
-      return Message();
+      return result;
     }
 
     if (frame.has_return_value_from_invoking) {
@@ -1238,7 +1226,7 @@ namespace kagami {
     }
     frame.stop_point = false;
 
-    return Message();
+    return result;
   }
 
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {

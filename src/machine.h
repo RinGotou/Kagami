@@ -343,13 +343,10 @@ namespace kagami {
 
     void ClosureCatching(ArgumentList &args, size_t nest_end, bool closure);
 
-    Message Invoke(Object obj, string id, ObjectMap &args);
-
-    Message Invoke(Object obj, string id, 
+    Message CallMethod(Object obj, string id, ObjectMap &args);
+    Message CallMethod(Object obj, string id,
       const initializer_list<NamedObject> &&args = {});
-
     Message CallVMCFunction(FunctionImpl &impl, ObjectMap &obj_map);
-
 
     void CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end);
     void CommandForEach(ArgumentList &args, size_t nest_end);
