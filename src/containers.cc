@@ -265,7 +265,7 @@ namespace kagami {
           FunctionImpl(ArrayGetElement, "index", "__at"),
           FunctionImpl(ArrayGetSize, "", "size"),
           FunctionImpl(ArrayPush, "object", "push"),
-          FunctionImpl(ArrayPop, "object", "pop"),
+          FunctionImpl(ArrayPop, "", "pop"),
           FunctionImpl(ArrayEmpty, "", "empty"),
           FunctionImpl(ArrayHead, "", "head"),
           FunctionImpl(ArrayTail, "", "tail"),
