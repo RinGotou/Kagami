@@ -1165,7 +1165,7 @@ namespace kagami {
     frame.Goto(nest_end + 1);
   }
 
-  Message Machine::Invoke(Object obj, string id, const initializer_list<NamedObject> &&args) {
+  Message Machine::CallMethod(Object obj, string id, ObjectMap &args) {
     FunctionImplPointer impl;
     auto &frame = frame_stack_.top();
     Message result;
@@ -1202,6 +1202,43 @@ namespace kagami {
     }
 
     return result;
+  }
+
+  Message Machine::CallMethod(Object obj, string id, const initializer_list<NamedObject> &&args) {
+    ObjectMap obj_map = args;
+    return CallMethod(obj, id, obj_map);
+  }
+
+  Message Machine::CallVMCFunction(FunctionImpl &impl, ObjectMap &obj_map) {
+    auto &frame = frame_stack_.top();
+    Message result;
+
+    if (impl.GetType() != kFunctionVMCode) {
+      frame.MakeError("Invalid function variant");
+      return Message();
+    }
+
+    frame.stop_point = true;
+    code_stack_.push_back(&impl.GetCode());
+    frame_stack_.push(RuntimeFrame(impl.GetId()));
+    obj_stack_.Push();
+    obj_stack_.CreateObject(kStrUserFunc, Object(impl.GetId()));
+    obj_stack_.MergeMap(obj_map);
+    obj_stack_.MergeMap(impl.GetClosureRecord());
+    Run(true);
+
+    if (error_) {
+      frame.MakeError("Error occurred while calling user-defined function");
+      return Message();
+    }
+
+    if (frame.has_return_value_from_invoking) {
+      result.SetObject(frame.return_stack.top());
+      frame.return_stack.pop();
+    }
+    frame.stop_point = false;
+
+    return Message();
   }
 
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
@@ -1302,14 +1339,14 @@ namespace kagami {
       return;
     }
 
-    auto msg = Invoke(container_obj, kStrHead);
+    auto msg = CallMethod(container_obj, kStrHead);
     if (frame.error) return;
     if (!msg.HasObject()) {
       frame.MakeError("Invalid returning value from iterator");
       return;
     }
 
-    auto empty = Invoke(container_obj, "empty");
+    auto empty = CallMethod(container_obj, "empty");
     if (frame.error) return;
     if (!empty.HasObject() || empty.GetObj().GetTypeId() != kTypeIdBool) {
       frame.MakeError("Invalid empty() implementation");
@@ -1329,7 +1366,7 @@ namespace kagami {
       return;
     }
 
-    auto unit = Invoke(iterator_obj, "obj").GetObj();
+    auto unit = CallMethod(iterator_obj, "obj").GetObj();
     if (frame.error) return;
 
     frame.scope_stack.push(true);
@@ -1346,17 +1383,17 @@ namespace kagami {
     auto container = *obj_stack_.GetCurrent().Find(kStrContainerKeepAliveSlot);
     ObjectMap obj_map;
 
-    auto tail = Invoke(container, kStrTail).GetObj();
+    auto tail = CallMethod(container, kStrTail).GetObj();
     if (frame.error) return;
     if (!type::CheckBehavior(tail, kIteratorBehavior)) {
       frame.MakeError("Invalid container object");
       return;
     }
 
-    Invoke(iterator, "step_forward");
+    CallMethod(iterator, "step_forward");
     if (frame.error) return;
 
-    auto result = Invoke(iterator, kStrCompare,
+    auto result = CallMethod(iterator, kStrCompare,
       { NamedObject(kStrRightHandSide,tail) }).GetObj();
     if (frame.error) return;
 
@@ -1370,7 +1407,7 @@ namespace kagami {
       frame.final_cycle = true;
     }
     else {
-      auto unit = Invoke(iterator, "obj").GetObj();
+      auto unit = CallMethod(iterator, "obj").GetObj();
       if (frame.error) return;
       obj_stack_.CreateObject(unit_id, unit);
     }
@@ -1730,12 +1767,32 @@ namespace kagami {
 
   void Machine::CommandSuper(ArgumentList &args) {
     auto &frame = frame_stack_.top();
+    auto &base = obj_stack_.GetCurrent();
+
     if (!frame.inside_initializer_calling) {
       frame.MakeError("Invalid super struct intializer calling");
       return;
     }
 
     //TODO:call initializer of super struct
+    if (auto *ptr = base.Find(kStrSuperStruct, false); ptr != nullptr) {
+      auto &super_struct = ptr->Cast<ObjectStruct>();
+      auto *initializer = super_struct.Find(kStrInitializer);
+      auto *ss_struct = super_struct.Find(kStrSuperStruct);
+
+      if (initializer == nullptr) {
+        frame.MakeError("Super struct doesn't have initalizer");
+        return;
+      }
+
+      for (int64_t index = args.size() - 1; index >= 0; index -= 1) {
+
+      }
+    }
+    else {
+      frame.MakeError("This struct doesn't have base struct");
+      return;
+    }
   }
 
   void Machine::CommandHash(ArgumentList &args) {
@@ -1993,7 +2050,7 @@ namespace kagami {
           return;
         }
 
-        auto ret_obj = Invoke(obj, kStrGetStr).GetObj();
+        auto ret_obj = CallMethod(obj, kStrGetStr).GetObj();
         if (frame.error) return;
       }
 
@@ -2226,7 +2283,7 @@ namespace kagami {
         return;
       }
 
-      Object obj = Invoke(lhs, kStrCompare,
+      Object obj = CallMethod(lhs, kStrCompare,
         { NamedObject(kStrRightHandSide, rhs) }).GetObj();
       if (frame.error) return;
 
@@ -3012,7 +3069,7 @@ namespace kagami {
         }
       }
 
-      //Invoke by return value.
+      //CallMethod by return value.
       if (msg.IsInvokingRequest()) {
         //process invoking request in returning message
         auto invoking_req = BuildStringVector(msg.GetDetail());
