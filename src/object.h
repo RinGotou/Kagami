@@ -94,18 +94,45 @@ namespace kagami {
     ObjectMode mode_;
     bool delivering_;
     bool sub_container_;
+    bool alive_;
     shared_ptr<void> ptr_;
     string type_id_;
+    unordered_set<ObjectPointer> ref_links_;
+
+  private:
+    void EraseRefLink() {
+      if (mode_ == kObjectRef && alive_) {
+        auto *obj = static_cast<ObjectPointer>(real_dest_);
+        obj->ref_links_.erase(this);
+      }
+    }
+
+    void EstablishRefLink() {
+      if (mode_ == kObjectRef && alive_) {
+        auto *obj = static_cast<ObjectPointer>(real_dest_);
+        obj->ref_links_.insert(this);
+      }
+    }
 
   public:
-    ~Object() {}
+    ~Object() {
+      EraseRefLink();
+
+      for (auto &unit : ref_links_) {
+        if (unit != nullptr) {
+          unit->alive_ = false;
+          unit->real_dest_ = nullptr;
+        }
+      }
+    }
 
     Object() : real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), ptr_(nullptr), type_id_(kTypeIdNull) {}
+      sub_container_(false), alive_(true), ptr_(nullptr), type_id_(kTypeIdNull) {}
 
     Object(const Object &obj) :
       real_dest_(obj.real_dest_), mode_(obj.mode_), delivering_(obj.delivering_),
-      sub_container_(obj.sub_container_), ptr_(obj.ptr_), type_id_(obj.type_id_) {}
+      sub_container_(obj.sub_container_), alive_(obj.alive_), 
+      ptr_(obj.ptr_), type_id_(obj.type_id_) { EstablishRefLink(); }
 
     Object(const Object &&obj) noexcept :
       Object(obj) {}
@@ -113,13 +140,13 @@ namespace kagami {
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(type_id == kTypeIdStruct), 
+      sub_container_(type_id == kTypeIdStruct), alive_(true),
       ptr_(ptr), type_id_(type_id) {}
 
     template <typename T>
     Object(T &t, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(type_id == kTypeIdStruct), 
+      sub_container_(type_id == kTypeIdStruct), alive_(true),
       ptr_(make_shared<T>(t)), type_id_(type_id) {}
 
     template <typename T>
@@ -129,17 +156,19 @@ namespace kagami {
     template <typename T>
     Object(T *ptr, string type_id) :
       real_dest_((void *)ptr), mode_(kObjectDelegator),  delivering_(false),
-      sub_container_(type_id == kTypeIdStruct), 
+      sub_container_(type_id == kTypeIdStruct), alive_(true),
       ptr_(nullptr), type_id_(type_id) {}
 
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
       real_dest_(ext_ptr), mode_(kObjectExternal), delivering_(false), 
-      sub_container_(false), ptr_(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)),
+      sub_container_(false), alive_(true),
+      ptr_(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)),
       type_id_(type_id) {}
 
     Object(string str) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), ptr_(make_shared<string>(str)), type_id_(kTypeIdString) {}
+      sub_container_(false), alive_(true),
+      ptr_(make_shared<string>(str)), type_id_(kTypeIdString) {}
 
     Object &operator=(const Object &object);
     Object &PackContent(shared_ptr<void> ptr, string type_id);
@@ -222,6 +251,7 @@ namespace kagami {
     bool Null() const { return ptr_ == nullptr && real_dest_ == nullptr; }
     ObjectMode GetMode() const { return mode_; }
     void SetContainerFlag() { sub_container_ = true; }
+    bool IsAlive() const { return alive_; }
   };
 
   using ObjectArray = deque<Object>;

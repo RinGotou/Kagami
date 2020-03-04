@@ -21,6 +21,7 @@
 #include <memory>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <deque>
 #include <stack>
 #include <type_traits>

@@ -78,10 +78,14 @@ namespace kagami {
 
     if (!object.IsRef()) {
       real_dest_ = &object;
+      alive_ = true;
     }
     else {
       real_dest_ = object.real_dest_;
+      alive_ = object.alive_;
     }
+
+    if (object.IsAlive()) EstablishRefLink();
 
     return *this;
   }
