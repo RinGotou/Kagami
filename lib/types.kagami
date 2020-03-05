@@ -17,7 +17,19 @@ fn is_plain_type(obj)
 end
 
 fn is_calculatable(obj)
-  return has_behavior(obj, 'to_int|to_float')
+  type_id = typeid(obj)
+  result = false
+  
+  case type_id
+  when kTypeIdInt, kTypeIdFloat
+    result = true
+  end
+  
+  if !result
+    result = has_behavior(obj, 'to_int|to_float')
+  end
+  
+  return result
 end
 
 fn is_comparable(obj)
