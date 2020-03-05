@@ -76,13 +76,9 @@ namespace kagami {
     kKeywordSuper,
     kKeywordIsBaseOf,
     kKeywordHasBehavior,
-    kKeywordIsCalculatable,
-    kKeywordHasInitializer,
-    kKeywordHasVariableParameter,
-    kKeywordHasOptionalParameter,
-    kKeywordIsComparable,
-    kKeywordIsAccessibleWithIndex,
-    kKeywordIsPlainType,
+    kKeywordIsVariableParam,
+    kKeywordIsOptionalParam,
+    kKeywordOptionalParamRange,
     kKeywordNull
   };
 
@@ -191,13 +187,9 @@ namespace kagami {
     kStrSuper          = "super",
     kStrIsBaseOf       = "is_base_of",
     kStrHasBehavior    = "has_behavior",
-    kStrIsCalculatable = "is_calculatable",
-    kStrHasInitializer = "has_initializer",
-    kStrHasVariableParameter = "has_variable_parameter",
-    kStrHasOptionalParameter = "has_optional_parameter",
-    kStrIsComparable   = "is_comparable",
-    kStrIsAccessibleWithIndex = "is_accessible_with_index",
-    kStrIsPlainType    = "is_plain_type",
+    kStrIsVariableParam = "is_variable_param",
+    kStrIsOptionalParam = "is_optional_param",
+    kStrOptionalParamRange = "optional_param_range",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);

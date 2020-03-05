@@ -187,13 +187,9 @@ namespace kagami::lexical {
       T(kStrSuper          ,kKeywordSuper),
       T(kStrIsBaseOf       ,kKeywordIsBaseOf),
       T(kStrHasBehavior    ,kKeywordHasBehavior),
-      T(kStrIsCalculatable ,kKeywordIsCalculatable),
-      T(kStrHasInitializer ,kKeywordHasInitializer),
-      T(kStrHasVariableParameter  ,kKeywordHasVariableParameter),
-      T(kStrHasOptionalParameter  ,kKeywordHasOptionalParameter),
-      T(kStrIsComparable   ,kKeywordIsComparable),
-      T(kStrIsAccessibleWithIndex ,kKeywordIsAccessibleWithIndex),
-      T(kStrIsPlainType    ,kKeywordIsPlainType)
+      T(kStrIsVariableParam ,kKeywordIsVariableParam),
+      T(kStrIsOptionalParam ,kKeywordIsOptionalParam),
+      T(kStrOptionalParamRange ,kKeywordOptionalParamRange)
     };
     return base;
   }

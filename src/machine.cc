@@ -33,7 +33,7 @@ namespace kagami {
         if (find_in_list(unit.first, nullable)) continue;
         else {
           result = false;
-          msg = "Argument \"" + unit.first + "\" is missing";
+          msg = "Argument missing: " + unit.first;
           break;
         }
       }
@@ -243,10 +243,10 @@ namespace kagami {
 
   void RuntimeFrame::RefreshReturnStack(Object obj) {
     if (!void_call) {
-      return_stack.push(std::move(obj));
+      return_stack.push(obj);
     }
     if (stop_point) {
-      return_stack.push(std::move(obj));
+      return_stack.push(obj);
       has_return_value_from_invoking = true;
     }
   }
@@ -771,7 +771,7 @@ namespace kagami {
     frame_stack_.pop();
     code_stack_.pop_back();
     obj_stack_.Pop();
-    frame_stack_.top().RefreshReturnStack();
+    frame_stack_.top().RefreshReturnStack(Object());
   }
 
   void Machine::FinishInitalizerCalling() {
@@ -1262,6 +1262,8 @@ namespace kagami {
     
     Object obj = FetchObject(args[0]);
 
+    if (frame.error) return;
+
     if (obj.GetTypeId() != kTypeIdBool) {
       frame.MakeError("Invalid state value type.");
       return;
@@ -1339,6 +1341,8 @@ namespace kagami {
     auto unit_id = FetchObject(args[0]).Cast<string>();
     auto container_obj = FetchObject(args[1]);
 
+    if (frame.error) return;
+
     if (!type::CheckBehavior(container_obj, kContainerBehavior)) {
       frame.MakeError("Invalid container object");
       return;
@@ -1384,6 +1388,8 @@ namespace kagami {
   void Machine::ForEachChecking(ArgumentList &args, size_t nest_end) {
     auto &frame = frame_stack_.top();
     auto unit_id = FetchObject(args[0]).Cast<string>();
+    if (frame.error) return;
+
     auto iterator = *obj_stack_.GetCurrent().Find(kStrIteratorObj);
     auto container = *obj_stack_.GetCurrent().Find(kStrContainerKeepAliveSlot);
     ObjectMap obj_map;
@@ -1433,6 +1439,8 @@ namespace kagami {
       code->FindJumpRecord(frame.idx + frame.jump_offset, frame.branch_jump_stack);
 
     Object obj = FetchObject(args[0]);
+    if (frame.error) return;
+
     string type_id = obj.GetTypeId();
 
     if (!lexical::IsPlainType(type_id)) {
@@ -1506,6 +1514,7 @@ namespace kagami {
 
       for (auto it = args.rbegin(); it != args.rend(); ++it) {
         Object obj = FetchObject(*it);
+        if (frame.error) return;
 
         if (obj.GetTypeId() != type_id) continue;
 
@@ -1586,6 +1595,7 @@ namespace kagami {
     auto super_struct_obj = args.size() == 2 ?
       FetchObject(args[1]) : Object();
     auto id_obj = FetchObject(args[0]);
+
     frame.struct_id = id_obj.Cast<string>();
 
     if (!super_struct_obj.Null()) {
@@ -1758,6 +1768,8 @@ namespace kagami {
     auto &base = obj_stack_.GetCurrent();
     auto module_obj = FetchObject(args[0]);
 
+    if (frame.error) return;
+
     if (args.size() != 1) {
       frame.MakeError("Invalid including declaration");
       return;
@@ -1840,7 +1852,9 @@ namespace kagami {
 
   void Machine::CommandHash(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    auto &obj = FetchObject(args[0]).Unpack();
+    auto obj = FetchObject(args[0]);
+
+    if (frame.error) return;
 
     if (type::IsHashable(obj)) {
       int64_t hash = type::GetHash(obj);
@@ -1855,6 +1869,8 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     auto &right = FetchObject(args[1]).Unpack();
     auto &left = FetchObject(args[0]).Unpack();
+
+    if (frame.error) return;
 
     left.swap(right);
   }
@@ -1915,6 +1931,8 @@ namespace kagami {
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
 
+    if (frame.error) return;
+
     if (lhs.IsRef()) {
       auto &real_lhs = lhs.Unpack();
       real_lhs = rhs.Unpack();
@@ -1962,6 +1980,7 @@ namespace kagami {
       for (auto &unit : args) {
         base->emplace_back(Object(FetchObject(unit).GetTypeId()));
       }
+      if (frame.error) return;
 
       Object obj(base, kTypeIdArray);
       frame.RefreshReturnStack(obj);
@@ -1978,11 +1997,13 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing: dir(obj)");
+      frame.MakeError("Argument mismatching: methods(obj)");
       return;
     }
 
     Object obj = FetchObject(args[0]);
+    if (frame.error) return;
+
     auto methods = type::GetMethods(obj.GetTypeId());
     ManagedArray base = make_shared<ObjectArray>();
 
@@ -2007,13 +2028,14 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(2)) {
-      frame.MakeError("Argument is missing: exist(obj, id)");
+      frame.MakeError("Argument mismatching: exist(obj, id)");
       return;
     }
 
     //Do not change the order
     auto str_obj = FetchObject(args[1]);
     auto obj = FetchObject(args[0]);
+    if (frame.error) return;
 
     if (str_obj.GetTypeId() != kTypeIdString) {
       frame.MakeError("Invalid method id");
@@ -2041,11 +2063,12 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing: null_obj(obj)");
+      frame.MakeError("Argument mismatching: null_obj(obj)");
       return;
     }
 
     Object obj = FetchObject(args[0]);
+    if (frame.error) return;
     frame.RefreshReturnStack(Object(obj.GetTypeId() == kTypeIdNull, kTypeIdBool));
   }
 
@@ -2053,11 +2076,12 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing: destroy(obj)");
+      frame.MakeError("Argument mismatching: destroy(obj)");
       return;
     }
 
     Object &obj = FetchObject(args[0]).Unpack();
+    if (frame.error) return;
     obj.swap(Object());
   }
 
@@ -2065,7 +2089,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing: convert(obj)");
+      frame.MakeError("Argument mismatching: convert(obj)");
       return;
     }
 
@@ -2075,6 +2099,8 @@ namespace kagami {
     }
     else {
       Object obj = FetchObject(args[0]);
+      if (frame.error) return;
+
       string type_id = obj.GetTypeId();
       Object ret_obj;
 
@@ -2115,11 +2141,12 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing: load(obj)");
+      frame.MakeError("Argument mismatching: load(obj)");
       return;
     }
 
     auto path_obj = FetchObject(args[0]);
+    if (frame.error) return;
 
     if (path_obj.GetTypeId() != kTypeIdString) {
       frame.MakeError("Invalid path");
@@ -2162,12 +2189,13 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(2)) {
-      frame.MakeError("Argument is misssing: using_table(obj, obj)");
+      frame.MakeError("Argument mismatching: using_table(obj, obj)");
       return;
     }
 
     auto window_obj = FetchObject(args[1]);
     auto path_obj = FetchObject(args[0]);
+    if (frame.error) return;
     
     if (path_obj.GetTypeId() != kTypeIdString) {
       frame.MakeError("Invalid table file path");
@@ -2202,12 +2230,13 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(2)) {
-      frame.MakeError("Argument is misssing: apply_layout(obj, obj)");
+      frame.MakeError("Argument mismatching: apply_layout(obj, obj)");
       return;
     }
 
     auto window_obj = FetchObject(args[1]);
     auto path_obj = FetchObject(args[0]);
+    if (frame.error) return;
 
     if (path_obj.GetTypeId() != kTypeIdString) {
       frame.MakeError("Invalid table file path");
@@ -2229,11 +2258,12 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is misssing: offensive_mode(obj, obj)");
+      frame.MakeError("Argument mismatching: offensive_mode(obj, obj)");
       return;
     }
 
     auto value_obj = FetchObject(args[0]);
+    if (frame.error) return;
 
     if (value_obj.GetTypeId() != kTypeIdBool) {
       frame.MakeError("Invalid boolean value");
@@ -2271,6 +2301,8 @@ namespace kagami {
 
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
+    if (frame.error) return;
+
     auto type_rhs = FindTypeCode(rhs.GetTypeId());
     auto type_lhs = FindTypeCode(lhs.GetTypeId());
 
@@ -2289,7 +2321,7 @@ namespace kagami {
 
     if (result_type == kPlainString) {
       if (IsIllegalStringOperator(op_code)) {
-        frame.RefreshReturnStack();
+        frame.RefreshReturnStack(Object());
         return;
       }
 
@@ -2319,6 +2351,8 @@ namespace kagami {
 
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
+    if (frame.error) return;
+
     auto type_rhs = FindTypeCode(rhs.GetTypeId());
     auto type_lhs = FindTypeCode(lhs.GetTypeId());
     bool result = false;
@@ -2327,12 +2361,12 @@ namespace kagami {
 
     if (!lexical::IsPlainType(lhs.GetTypeId())) {
       if (op_code != kKeywordEquals && op_code != kKeywordNotEqual) {
-        frame.RefreshReturnStack();
+        frame.RefreshReturnStack(Object());
         return;
       }
 
       if (!CheckMethod(kStrCompare, lhs)) {
-        frame.MakeError("Can't operate with this operator.");
+        frame.MakeError("Can't operate with this operator");
         return;
       }
 
@@ -2341,7 +2375,7 @@ namespace kagami {
       if (frame.error) return;
 
       if (obj.GetTypeId() != kTypeIdBool) {
-        frame.MakeError("Invalid behavior of compare().");
+        frame.MakeError("Invalid behavior of __compare()");
         return;
       }
 
@@ -2361,7 +2395,7 @@ namespace kagami {
 
     if (result_type == kPlainString) {
       if (IsIllegalStringOperator(op_code)) {
-        frame.RefreshReturnStack();
+        frame.RefreshReturnStack(Object());
         return;
       }
 
@@ -2390,6 +2424,7 @@ namespace kagami {
     }
 
     auto rhs = FetchObject(args[0]);
+    if (frame.error) return;
 
     if (rhs.GetTypeId() != kTypeIdBool) {
       frame.MakeError("Can't operate with this operator");
@@ -2418,6 +2453,7 @@ namespace kagami {
         base->emplace_back(FetchObject(unit));
       }
     }
+    if (frame.error) return;
 
     Object obj(base, kTypeIdArray);
     frame.RefreshReturnStack(obj);
@@ -2433,6 +2469,7 @@ namespace kagami {
 
     if (args.size() == 1) {
       Object ret_obj = FetchObject(args[0]).Unpack();
+      if (frame_stack_.top().error) return;
 
       auto *container = &obj_stack_.GetCurrent();
       while (container->Find(kStrUserFunc) == nullptr) {
@@ -2460,8 +2497,12 @@ namespace kagami {
     else {
       ManagedArray obj_array = make_shared<ObjectArray>();
       for (auto it = args.begin(); it != args.end(); ++it) {
-        obj_array->emplace_back(FetchObject(*it).Unpack());
+        auto obj = FetchObject(*it);
+        if (frame_stack_.top().error) return;
+
+        obj_array->emplace_back(obj.Unpack());
       }
+
       Object ret_obj(obj_array, kTypeIdArray);
 
       auto *container = &obj_stack_.GetCurrent();
@@ -2481,11 +2522,12 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(1)) {
-      frame.MakeError("Argument is missing: assert(bool_obj)");
+      frame.MakeError("Argument mismatching: assert(bool_obj)");
       return;
     }
 
     auto result_obj = FetchObject(args[0]);
+    if (frame.error) return;
 
     if (result_obj.GetTypeId() != kTypeIdBool) {
       frame.MakeError("Invalid object type for assertion.");
@@ -2501,13 +2543,14 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (!EXPECTED_COUNT(3)) {
-      frame.MakeError("Argument is missing: handle(win, event, func)");
+      frame.MakeError("Argument mismatching: handle(win, event, func)");
       return;
     }
 
     auto func = FetchObject(args[2]);
     auto event_type_obj = FetchObject(args[1]);
     auto window_obj = FetchObject(args[0]);
+    if (frame.error) return;
 
     auto window_id = window_obj.Cast<dawn::PlainWindow>().GetId();
     auto event_type = static_cast<Uint32>(event_type_obj.Cast<int64_t>());
@@ -2543,11 +2586,100 @@ namespace kagami {
     auto &frame = frame_stack_.top(); 
 
     if (!EXPECTED_COUNT(2)) {
-      frame.MakeError("Argument mismatching: is_base_of(base_obj, dest_obj)");
+      frame.MakeError("Argument mismatching: is_base_of(dest_obj, base_obj)");
       return;
     }
 
-    auto dest_obj = FetchObject(args[1]);
+    auto base_obj = FetchObject(args[1]);
+    auto dest_obj = FetchObject(args[0]);
+    if (frame.error) return;
+
+    if (!compare(kTypeIdStruct, dest_obj.GetTypeId(), base_obj.GetTypeId())) {
+      frame.MakeError("Invalid argument type(Required type is struct)");
+      return;
+    }
+
+    auto base_ptr = base_obj.Get();
+    auto &dest_struct = dest_obj.Cast<ObjectStruct>();
+    auto *super_struct_ref = dest_struct.Find(kStrSuperStruct);
+
+    if (super_struct_ref == nullptr) {
+      frame.RefreshReturnStack(Object(false, kTypeIdBool));
+      return;
+    }
+
+    if (!super_struct_ref->IsAlive()) {
+      frame.MakeError("Super struct object is dead");
+      return;
+    }
+
+    auto dest_ptr = super_struct_ref->Get();
+
+    frame.RefreshReturnStack(Object(dest_ptr == base_ptr, kTypeIdBool));
+  }
+
+  void Machine::CommandHasBehavior(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    auto behavior_obj = FetchObject(args[1]);
+    auto obj = FetchObject(args[0]);
+
+    if (frame.error) return;
+
+    auto result = type::CheckBehavior(obj, behavior_obj.Cast<string>());
+
+    frame.RefreshReturnStack(Object(result, kTypeIdBool));
+  }
+
+  template <ParameterPattern pattern>
+  void Machine::CommandCheckParameterPattern(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(1)) {
+      if constexpr (pattern == kParamAutoSize) {
+        frame.MakeError("Argument mismatching: is_variable_param(func)");
+      }
+      else if constexpr (pattern == kParamAutoFill) {
+        frame.MakeError("Argument mismatching: is_optional_param(func");
+      }
+
+      return;
+    }
+
+    auto func_obj = FetchObject(args[0]);
+    if (frame.error) return;
+
+    if (func_obj.GetTypeId() != kTypeIdFunction) {
+      frame.MakeError("Expected object type is function");
+      return;
+    }
+
+    auto &impl = func_obj.Cast<FunctionImpl>();
+
+    Object result(impl.GetType() == pattern, kTypeIdBool);
+    frame.RefreshReturnStack(result);
+  }
+
+  void Machine::CommandOptionalParamRange(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(1)) {
+      frame.MakeError("Argument mismatching: optional_param_range(obj)");
+    }
+
+    auto func_obj = FetchObject(args[0]);
+    if (frame.error) return;
+
+    if (func_obj.GetTypeId() != kTypeIdFunction) {
+      frame.MakeError("Expected object type is function");
+      return;
+    }
+
+    auto &impl = func_obj.Cast<FunctionImpl>();
+    auto size = impl.GetParamSize();
+    auto limit = impl.GetLimit();
+    Object result(static_cast<int64_t>(size - limit), kTypeIdInt);
+    frame.RefreshReturnStack(result);
   }
 
   void Machine::MachineCommands(Keyword token, ArgumentList &args, Request &request) {
@@ -2726,6 +2858,21 @@ namespace kagami {
       break;
     case kKeywordSuper:
       CommandSuper(args);
+      break;
+    case kKeywordIsBaseOf:
+      CommandIsBaseOf(args);
+      break;
+    case kKeywordHasBehavior:
+      CommandHasBehavior(args);
+      break;
+    case kKeywordIsVariableParam:
+      CommandCheckParameterPattern<kParamAutoSize>(args);
+      break;
+    case kKeywordIsOptionalParam:
+      CommandCheckParameterPattern<kParamAutoFill>(args);
+      break;
+    case kKeywordOptionalParamRange:
+      CommandOptionalParamRange(args);
       break;
     default:
       break;

@@ -255,7 +255,7 @@ namespace kagami {
     void AddJumpRecord(size_t target_idx);
     void MakeError(string str);
     void MakeWarning(string str);
-    void RefreshReturnStack(Object obj = Object());
+    void RefreshReturnStack(Object obj);
   };
 
   struct _IgnoredException : std::exception {};
@@ -403,13 +403,9 @@ namespace kagami {
 
     void CommandIsBaseOf(ArgumentList &args);
     void CommandHasBehavior(ArgumentList &args);
-    void CommandIsCalculatable(ArgumentList &args);
-    void CommandHasInitializer(ArgumentList &args);
-    void CommandHasVariableParameter(ArgumentList &args);
-    void CommandHasOptionalParameter(ArgumentList &args);
-    void CommandIsComparable(ArgumentList &args);
-    void CommandIsAccessibleWithIndex(ArgumentList &args);
-    void CommandIsPlainType(ArgumentList &args);
+    template <ParameterPattern pattern>
+    void CommandCheckParameterPattern(ArgumentList &args);
+    void CommandOptionalParamRange(ArgumentList &args);
 
     void MachineCommands(Keyword token, ArgumentList &args, Request &request);
 

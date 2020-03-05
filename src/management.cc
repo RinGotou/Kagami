@@ -220,7 +220,13 @@ namespace kagami::management::type {
       auto &base = obj.Cast<ObjectStruct>().GetContent();
 
       for (auto &unit : sample) {
-        if (base.find(unit) == base.end()) {
+        auto it = base.find(unit);
+        if (it == base.end()) {
+          result = false;
+          break;
+        }
+
+        if (it->second.GetTypeId() != kTypeIdFunction) {
           result = false;
           break;
         }
