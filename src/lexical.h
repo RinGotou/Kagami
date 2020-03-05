@@ -81,7 +81,6 @@ namespace kagami {
     kKeywordHasVariableParameter,
     kKeywordHasOptionalParameter,
     kKeywordIsComparable,
-    kKeywordIsPrintable,
     kKeywordIsAccessibleWithIndex,
     kKeywordIsPlainType,
     kKeywordNull
@@ -121,8 +120,6 @@ namespace kagami {
     kStrHash           = "hash",
     kStrIf             = "if",
     kStrFn             = "fn",
-    kStrIsBaseOf       = "is_base_of",
-    kStrHasBehavior    = "has_behavior",
     kStrNullObj        = "null_obj",
     kStrDestroy        = "destroy",
     kStrConvert        = "convert",
@@ -199,7 +196,6 @@ namespace kagami {
     kStrHasVariableParameter = "has_variable_parameter",
     kStrHasOptionalParameter = "has_optional_parameter",
     kStrIsComparable   = "is_comparable",
-    kStrIsPrintable    = "is_printable",
     kStrIsAccessibleWithIndex = "is_accessible_with_index",
     kStrIsPlainType    = "is_plain_type",
     kStrMe             = "me";

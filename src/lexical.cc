@@ -192,7 +192,6 @@ namespace kagami::lexical {
       T(kStrHasVariableParameter  ,kKeywordHasVariableParameter),
       T(kStrHasOptionalParameter  ,kKeywordHasOptionalParameter),
       T(kStrIsComparable   ,kKeywordIsComparable),
-      T(kStrIsPrintable    ,kKeywordIsPrintable),
       T(kStrIsAccessibleWithIndex ,kKeywordIsAccessibleWithIndex),
       T(kStrIsPlainType    ,kKeywordIsPlainType)
     };

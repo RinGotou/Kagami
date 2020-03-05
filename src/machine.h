@@ -8,8 +8,6 @@
     putc('\n', VM_STDOUT);                             \
   }
 
-#define EXPECTED_COUNT(_Count) (args.size() == _Count)
-
 namespace kagami {
   using Expect = pair<string, string>;
   using ExpectationList = initializer_list<Expect>;
@@ -402,6 +400,17 @@ namespace kagami {
     void CommandWait(ArgumentList &args);
     void CommandLeave(ArgumentList &args);
     void DomainAssert(ArgumentList &args);
+
+    void CommandIsBaseOf(ArgumentList &args);
+    void CommandHasBehavior(ArgumentList &args);
+    void CommandIsCalculatable(ArgumentList &args);
+    void CommandHasInitializer(ArgumentList &args);
+    void CommandHasVariableParameter(ArgumentList &args);
+    void CommandHasOptionalParameter(ArgumentList &args);
+    void CommandIsComparable(ArgumentList &args);
+    void CommandIsAccessibleWithIndex(ArgumentList &args);
+    void CommandIsPlainType(ArgumentList &args);
+
     void MachineCommands(Keyword token, ArgumentList &args, Request &request);
 
     void GenerateArgs(FunctionImpl &impl, ArgumentList &args, ObjectMap &obj_map);

@@ -1,5 +1,7 @@
 #include "machine.h"
 
+#define EXPECTED_COUNT(_Count) (args.size() == _Count)
+
 namespace kagami {
   using namespace management;
 
@@ -2535,6 +2537,17 @@ namespace kagami {
   void Machine::DomainAssert(ArgumentList &args) {
     auto &frame = frame_stack_.top();
     frame.assert_rc_copy = FetchObject(args[0]).Unpack();
+  }
+
+  void Machine::CommandIsBaseOf(ArgumentList &args) {
+    auto &frame = frame_stack_.top(); 
+
+    if (!EXPECTED_COUNT(2)) {
+      frame.MakeError("Argument mismatching: is_base_of(base_obj, dest_obj)");
+      return;
+    }
+
+    auto dest_obj = FetchObject(args[1]);
   }
 
   void Machine::MachineCommands(Keyword token, ArgumentList &args, Request &request) {
