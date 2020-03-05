@@ -413,6 +413,8 @@ namespace kagami {
     //void CallExtensionFunctionEx
 
     void GenerateStructInstance(ObjectMap &p);
+
+    void GenerateErrorMessages(size_t stop_index);
   private:
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;

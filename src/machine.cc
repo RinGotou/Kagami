@@ -2921,6 +2921,22 @@ namespace kagami {
     frame.struct_base = Object();
   }
 
+  void Machine::GenerateErrorMessages(size_t stop_index) {
+    //Under consideration
+    if (frame_stack_.top().error) {
+      //TODO:reporting function calling chain
+      AppendMessage(frame_stack_.top().msg_string, kStateError,
+        logger_, stop_index);
+    }
+
+    frame_stack_.pop();
+
+    while (!frame_stack_.empty()) {
+      if (frame_stack_.top().stop_point) break;
+      frame_stack_.pop();
+    }
+  }
+
   //for extension callback facilities
   bool Machine::PushObject(string id, Object object) {
     auto &frame = frame_stack_.top();
@@ -3149,6 +3165,7 @@ namespace kagami {
     }
 
     if (frame->error) {
+      //TODO:reporting function calling chain
       AppendMessage(frame->msg_string, kStateError,
         logger_, script_idx);
     }
