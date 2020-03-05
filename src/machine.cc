@@ -1226,6 +1226,7 @@ namespace kagami {
     frame.stop_point = true;
     code_stack_.push_back(&impl.GetCode());
     frame_stack_.push(RuntimeFrame(impl.GetId()));
+    frame_stack_.top().jump_offset = impl.GetOffset();
     obj_stack_.Push();
     obj_stack_.CreateObject(kStrUserFunc, Object(impl.GetId()));
     obj_stack_.MergeMap(obj_map);
@@ -2360,32 +2361,34 @@ namespace kagami {
     if (frame.error) return;
 
     if (!lexical::IsPlainType(lhs.GetTypeId())) {
-      if (op_code != kKeywordEquals && op_code != kKeywordNotEqual) {
+      if constexpr (op_code != kKeywordEquals && op_code != kKeywordNotEqual) {
         frame.RefreshReturnStack(Object());
-        return;
-      }
-
-      if (!CheckMethod(kStrCompare, lhs)) {
-        frame.MakeError("Can't operate with this operator");
-        return;
-      }
-
-      Object obj = CallMethod(lhs, kStrCompare,
-        { NamedObject(kStrRightHandSide, rhs) }).GetObj();
-      if (frame.error) return;
-
-      if (obj.GetTypeId() != kTypeIdBool) {
-        frame.MakeError("Invalid behavior of __compare()");
-        return;
-      }
-
-      if (op_code == kKeywordNotEqual) {
-        bool value = !obj.Cast<bool>();
-        frame.RefreshReturnStack(Object(value, kTypeIdBool));
       }
       else {
-        frame.RefreshReturnStack(obj);
+        if (!CheckMethod(kStrCompare, lhs)) {
+          frame.MakeError("Can't operate with this operator");
+          return;
+        }
+
+        //TODO:Test these code(for user-defined function)
+        Object obj = CallMethod(lhs, kStrCompare,
+          { NamedObject(kStrRightHandSide, rhs) }).GetObj();
+        if (frame.error) return;
+
+        if (obj.GetTypeId() != kTypeIdBool) {
+          frame.MakeError("Invalid behavior of __compare()");
+          return;
+        }
+
+        if (op_code == kKeywordNotEqual) {
+          bool value = !obj.Cast<bool>();
+          frame.RefreshReturnStack(Object(value, kTypeIdBool));
+        }
+        else {
+          frame.RefreshReturnStack(obj);
+        }
       }
+
       return;
     }
 

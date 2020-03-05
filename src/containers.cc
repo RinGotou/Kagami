@@ -256,6 +256,7 @@ namespace kagami {
   void InitContainerComponents() {
     using management::type::ObjectTraitsSetup;
 
+    //TODO:insert()
     ObjectTraitsSetup(kTypeIdArray, ArrayDelivery, ArrayHasher)
       .InitConstructor(
         FunctionImpl(NewArray, "size|init_value", "array", kParamAutoFill).SetLimit(0)

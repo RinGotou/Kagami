@@ -79,6 +79,7 @@ namespace kagami {
     kKeywordIsVariableParam,
     kKeywordIsOptionalParam,
     kKeywordOptionalParamRange,
+    kKeywordIsSameCopy,
     kKeywordNull
   };
 
