@@ -201,6 +201,16 @@ namespace kagami {
     return Message().SetObject(Object().PackObject(result));
   }
 
+  Message TableFindElement(ObjectMap &p) {
+    auto &table = p.Cast<ObjectTable>(kStrMe);
+    auto &key = p["key"];
+    auto it = table.find(key);
+    if (it != table.end()) {
+      return Message().SetObject(Object().PackObject(it->second));
+    }
+    return Message().SetObject(Object());
+  }
+
   Message TableEraseElement(ObjectMap &p) {
     auto &table = p.Cast<ObjectTable>(kStrMe);
     auto &key = p["key"];
@@ -304,6 +314,7 @@ namespace kagami {
         {
           FunctionImpl(TableInsert, "key|value", "insert"),
           FunctionImpl(TableGetElement, "key", "__at"),
+          FunctionImpl(TableFindElement, "key", "find"),
           FunctionImpl(TableEraseElement, "key", "erase"),
           FunctionImpl(TableEmpty, "", "empty"),
           FunctionImpl(TableSize, "", "size"),
