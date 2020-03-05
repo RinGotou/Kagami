@@ -5,8 +5,8 @@
 =end
 
 fn is_plain_type(obj)
-  type_id = typeid(obj)
-  result = false
+  local type_id = typeid(obj)
+  local result = false
   
   case type_id
   when kTypeIdInt, kTypeIdFloat, kTypeIdString, kTypeIdBool
@@ -17,8 +17,8 @@ fn is_plain_type(obj)
 end
 
 fn is_calculatable(obj)
-  type_id = typeid(obj)
-  result = false
+  local type_id = typeid(obj)
+  local result = false
   
   case type_id
   when kTypeIdInt, kTypeIdFloat
