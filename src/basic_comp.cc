@@ -192,21 +192,34 @@ namespace kagami {
 
   Message SetWorkingDir(ObjectMap &p) {
     auto tc_result = TypeChecking(
-      { Expect("dir", kTypeIdString) }, p);
+      { Expect("dir", kTypeIdString) }, p, { "dir" });
 
     if (TC_FAIL(tc_result)) return TC_ERROR(tc_result);
 
-    auto &dir = p.Cast<string>("dir");
-    bool result = management::runtime::SetWorkingDirectory(dir);
+    auto &dir_obj = p["dir"];
+    string dest_dir;
+
+    if (dir_obj.Null()) {
+      dest_dir = mgmt::runtime::GetScriptAbsolutePath();
+    }
+    else {
+      dest_dir = dir_obj.Cast<string>();
+    }
+
+    bool result = mgmt::runtime::SetWorkingDirectory(dest_dir);
     return Message().SetObject(result);
   }
 
   Message GetWorkingDir(ObjectMap &p) {
-    return Message().SetObject(management::runtime::GetWorkingDirectory());
+    return Message().SetObject(mgmt::runtime::GetWorkingDirectory());
   }
 
   Message GetScriptAbsolutePath(ObjectMap &p) {
     return Message().SetObject(mgmt::runtime::GetScriptAbsolutePath());
+  }
+
+  Message GetCoreAbsolutePath(ObjectMap &p) {
+    return Message().SetObject(mgmt::runtime::GetBinaryPath());
   }
 
   Message GetPlatform(ObjectMap &p) {
@@ -271,9 +284,10 @@ namespace kagami {
     CreateImpl(FunctionImpl(PrintLine, kStrMe, "println"));
     CreateImpl(FunctionImpl(SystemCommand, "command", "console"));
     CreateImpl(FunctionImpl(ThreadSleep, "milliseconds", "sleep"));
-    CreateImpl(FunctionImpl(SetWorkingDir, "dir", "setwd"));
-    CreateImpl(FunctionImpl(GetWorkingDir, "", "getwd"));
-    CreateImpl(FunctionImpl(GetScriptAbsolutePath, "", "get_script_path"));
+    CreateImpl(FunctionImpl(SetWorkingDir, "dir", "chdir", kParamAutoFill).SetLimit(0));
+    CreateImpl(FunctionImpl(GetWorkingDir, "", "current_directory"));
+    CreateImpl(FunctionImpl(GetScriptAbsolutePath, "", "boot_directory"));
+    CreateImpl(FunctionImpl(GetCoreAbsolutePath, "", "core_directory"));
     CreateImpl(FunctionImpl(GetPlatform, "", "get_platform"));
     CreateImpl(FunctionImpl(GetFunctionPointer, "library|id", "get_function_ptr"));
     CreateImpl(FunctionImpl(ExistFSObject, "path", "exist_fsobj"));

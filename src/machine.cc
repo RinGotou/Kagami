@@ -2154,6 +2154,8 @@ namespace kagami {
       return;
     }
 
+    //TODO:Smarter directory strategy
+
     string path = path_obj.Cast<string>();
     fs::path path_cls(path);
     string extension_name = lexical::ToLower(path_cls.extension().string());

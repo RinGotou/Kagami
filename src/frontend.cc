@@ -16,6 +16,7 @@ namespace kagami {
       keyword == kKeywordStruct ||
       keyword == kKeywordModule ||
       keyword == kKeywordInclude ||
+      keyword == kKeywordUsing ||
       keyword == kKeywordCase;
   }
 
