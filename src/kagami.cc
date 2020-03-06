@@ -9,7 +9,8 @@ using namespace minatsuki;
 using Processor = ArgumentProcessor<kHeadHorizon, kJoinerEqual>;
 
 void BootMainVMObject(string path, string log_path, bool real_time_log) {
-  VMCode &script_file = script::AppendBlankScript(path);
+  string absolute_path = fs::absolute(fs::path(path)).string();
+  VMCode &script_file = script::AppendBlankScript(absolute_path);
 
   {
     VMCodeFactory factory(path, script_file, log_path, real_time_log);

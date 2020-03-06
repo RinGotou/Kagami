@@ -2159,7 +2159,8 @@ namespace kagami {
     string extension_name = lexical::ToLower(path_cls.extension().string());
 
     if (extension_name == ".kagami") {
-      VMCode &script_file = management::script::AppendBlankScript(path);
+      string absolute_path = fs::absolute(fs::path(path)).string();
+      VMCode &script_file = management::script::AppendBlankScript(absolute_path);
 
       if (!script_file.empty()) return;
 
