@@ -166,9 +166,9 @@ namespace kagami {
   public:
     VMCode() : deque<Command>(), source_(nullptr) {}
     VMCode(VMCode *source) : deque<Command>(), source_(source) {}
-    VMCode(VMCode &rhs) : deque<Command>(rhs), source_(rhs.source_),
+    VMCode(const VMCode &rhs) : deque<Command>(rhs), source_(rhs.source_),
       jump_record_(rhs.jump_record_) {}
-    VMCode(VMCode &&rhs) : VMCode(rhs) {}
+    VMCode(const VMCode &&rhs) : VMCode(rhs) {}
 
     void AddJumpRecord(size_t index, list<size_t> record) {
       jump_record_.emplace(make_pair(index, record));

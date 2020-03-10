@@ -2662,7 +2662,7 @@ namespace kagami {
 
     auto &impl = func_obj.Cast<FunctionImpl>();
 
-    Object result(impl.GetType() == pattern, kTypeIdBool);
+    Object result(impl.GetPattern() == pattern, kTypeIdBool);
     frame.RefreshReturnStack(result);
   }
 

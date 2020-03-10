@@ -138,13 +138,13 @@ void InitFromConfigFile() {
     CloseStream();
   }
   catch (std::runtime_error &e) {
-    printf(e.what());
+    printf("%s\n", e.what());
   }
   catch (toml::syntax_error &e) {
-    printf(e.what());
+    printf("%s\n", e.what());
   }
   catch (toml::type_error &e) {
-    printf(e.what());
+    printf("%s\n", e.what());
   }
 }
 
