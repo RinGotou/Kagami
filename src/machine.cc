@@ -1026,11 +1026,6 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     auto id = command->first.GetInterfaceId();
     auto domain = command->first.GetInterfaceDomain();
-    
-#define METHOD_NOT_FOUND_MSG {                       \
-      frame.MakeError("Method is not found: " + id); \
-      return false;                                  \
-    }
 
     auto has_domain = domain.GetType() != kArgumentNull ||
       command->first.option.use_last_assert;
@@ -1051,7 +1046,10 @@ namespace kagami {
         if (impl == nullptr) {
           auto &base = obj.Cast<ObjectStruct>();
           auto *ptr = base.Find(id);
-          if (ptr == nullptr) METHOD_NOT_FOUND_MSG;
+          if (ptr == nullptr) {
+            frame.MakeError("Method is not found: " + id); 
+            return false;                                  
+          }
 
           if (ptr->GetTypeId() != kTypeIdFunction) {
             frame.MakeError(id + " is not a function object");
@@ -1062,23 +1060,30 @@ namespace kagami {
         }
       }
       else if (impl = mgmt::FindFunction(id, obj.GetTypeId());
-        impl == nullptr) METHOD_NOT_FOUND_MSG;
+        impl == nullptr) {
+        frame.MakeError("Method is not found: " + id);
+        return false;
+      }
 
       obj_map.emplace(NamedObject(kStrMe, obj));
       if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
-      return true;
     }
     //Plain bulit-in function and user-defined function
     //At first, Machine will querying in built-in function map,
     //and then try to fetch function object in heap.
     else {
-      if (impl = FindFunction(id); impl != nullptr) {
-        return true;
-      }
+      //CXX function from components
+      impl = FindFunction(id);
 
-      ObjectPointer ptr = obj_stack_.Find(id);
+      //not found,  try to find VMCode function
+      if (impl == nullptr) {
+        ObjectPointer ptr = obj_stack_.Find(id);
 
-      if (ptr != nullptr) {
+        if (ptr == nullptr) {
+          frame.MakeError("Function is not found: " + id);
+          return false;
+        }
+
         if (!ptr->IsAlive()) {
           frame.MakeError("Referenced object is dead: " + id);
           return false;
@@ -1086,12 +1091,11 @@ namespace kagami {
 
         if (ptr->GetTypeId() == kTypeIdFunction) {
           impl = &ptr->Cast<FunctionImpl>();
-          return true;
         }
         else if (ptr->IsSubContainer() && ptr->GetTypeId() == kTypeIdStruct) {
           auto &base = ptr->Cast<ObjectStruct>();
           auto *initializer_obj = base.Find(kStrInitializer);
-          
+
           if (initializer_obj == nullptr) {
             frame.MakeError("Struct doesn't have initializer");
             return false;
@@ -1100,15 +1104,16 @@ namespace kagami {
           impl = &initializer_obj->Cast<FunctionImpl>();
           frame.initializer_calling = true;
           frame.struct_base = *ptr;
-          return true;
+        }
+        else {
+          frame.MakeError("Not function object: " + id);
+          return false;
         }
       }
-
-      frame.MakeError("Function is not found: " + id);
     }
 #undef METHOD_NOT_FOUND_MSG
 
-    return false;
+    return true;
   }
 
   void Machine::ClosureCatching(ArgumentList &args, size_t nest_end, bool closure) {
