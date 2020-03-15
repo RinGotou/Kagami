@@ -1152,7 +1152,7 @@ namespace kagami {
       impl.SetLimit(params.size() - counter);
     }
 
-    //TODO:Object Selection
+    //TODO:Object Selection/Addressing
     if (closure) {
       ObjectMap scope_record;
       auto &base = obj_stack_.GetBase();
@@ -3145,7 +3145,6 @@ namespace kagami {
       size = code->size();
       frame = &frame_stack_.top();
     };
-
     //Protect current runtime environment and load another function
     auto update_stack_frame = [&](FunctionImpl &func) -> void {
       //block other event trigger while processing current event function
@@ -3163,7 +3162,6 @@ namespace kagami {
       frame->event_processing = event_processing;
       frame->inside_initializer_calling = inside_initializer_calling;
     };
-
     //Convert current environment to next self-calling 
     auto tail_recursion = [&]() -> void {
       bool event_processing = frame->event_processing;
@@ -3179,7 +3177,6 @@ namespace kagami {
       frame->jump_offset = jump_offset;
       frame->event_processing = event_processing;
     };
-
     //Convert current environment to next calling
     auto tail_call = [&](FunctionImpl &func) -> void {
       bool event_processing = frame->event_processing;
