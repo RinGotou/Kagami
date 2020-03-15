@@ -97,7 +97,7 @@ namespace kagami {
     bool alive_;
     shared_ptr<void> ptr_;
     string type_id_;
-    unordered_set<ObjectPointer> ref_links_;
+    set<ObjectPointer> ref_links_;
 
   private:
     void EraseRefLink() {
@@ -118,12 +118,15 @@ namespace kagami {
     ~Object() {
       EraseRefLink();
 
-      for (auto &unit : ref_links_) {
-        if (unit != nullptr) {
-          unit->alive_ = false;
-          unit->real_dest_ = nullptr;
+      if (mode_ != kObjectRef && !ref_links_.empty()) {
+        for (auto &unit : ref_links_) {
+          if (unit != nullptr) {
+            unit->alive_ = false;
+            unit->real_dest_ = nullptr;
+          }
         }
       }
+
     }
 
     Object() : real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),

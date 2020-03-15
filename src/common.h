@@ -32,6 +32,7 @@
 #include <filesystem>
 #include <tuple>
 #include <unordered_set>
+#include <set>
 #include <optional>
 
 #include "toml11/toml.hpp"
@@ -60,6 +61,7 @@ namespace kagami {
   using std::pair;
   using std::vector;
   using std::map;
+  using std::set;
   using std::unordered_map;
   using std::unordered_set;
   using std::deque;
