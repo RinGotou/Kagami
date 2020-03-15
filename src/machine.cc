@@ -3122,13 +3122,13 @@ namespace kagami {
   void Machine::Run(bool invoke) {
     if (code_stack_.empty()) return;
 
-    size_t script_idx = 0;
-    Message msg;
-    VMCode *code = code_stack_.back();
-    Command *command = nullptr;
+    size_t              script_idx = 0;
+    Message             msg;
+    VMCode              *code = code_stack_.back();
+    Command             *command = nullptr;
+    SDL_Event           event;
+    ObjectMap           obj_map;
     FunctionImplPointer impl;
-    ObjectMap obj_map;
-    SDL_Event event;
 
     if (!invoke) {
       frame_stack_.push(RuntimeFrame());
@@ -3195,12 +3195,46 @@ namespace kagami {
       frame->event_processing = event_processing;
     };
 
+    auto load_function_impl = [&](bool invoking_request) -> bool {
+      bool switch_to_next_loop = false;
+      switch (impl->GetType()) {
+      case kFunctionVMCode:
+        if (invoking_request) goto direct_load_vmcode;
+        if (IsTailRecursion(frame->idx, &impl->GetCode())) tail_recursion();
+        else if (IsTailCall(frame->idx)) tail_call(*impl);
+        else {
+        direct_load_vmcode:
+          update_stack_frame(*impl);
+        }
+        break;
+      case kFunctionExternal:
+        if (invoking_request) {
+          frame->MakeError("Unsupported feature");
+          break;
+        }
+        CallExtensionFunction(obj_map, *impl);
+        if (!frame->error) {
+          frame->Stepping();
+        }
+        break;
+      case kFunctionCXX:
+        msg = impl->GetActivity()(obj_map);
+        switch_to_next_loop = invoking_request;
+        break;
+      default:
+        break;
+      }
+
+      return switch_to_next_loop;
+    };
+
     // Main loop of virtual machine.
     // TODO:dispose return value in event function
     while (frame->idx < size || frame_stack_.size() > 1 || hanging_) {
       //break at stop point.
       if (frame->stop_point) break;
       //freeze mainloop to keep querying events
+      // hanging_ is the main event handler switch.
       freezing_ = (frame->idx >= size && hanging_ && frame_stack_.size() == 1);
 
       if (frame->warning) {
@@ -3233,7 +3267,6 @@ namespace kagami {
       }
 
       //switch to last stack frame when indicator reaches end of the block.
-      //return expression will be processed in Machine::CommandReturn
       if (frame->idx == size && frame_stack_.size() > 1) {
         //Bring saved environment back
         if (frame->inside_initializer_calling) FinishInitalizerCalling();
@@ -3304,6 +3337,7 @@ namespace kagami {
         }
       }
 
+      //TODO:Return value issue
       //CallMethod by return value.
       if (msg.IsInvokingRequest()) {
         //process invoking request in returning message
@@ -3319,6 +3353,11 @@ namespace kagami {
         else {
           //calling method.
           msg = impl->GetActivity()(obj_map);
+
+          if (msg.GetLevel() == kStateError) {
+            frame->MakeError(msg.GetDetail());
+            break;
+          }
           frame->Stepping();
         }
         continue;
