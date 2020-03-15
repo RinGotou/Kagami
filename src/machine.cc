@@ -3197,7 +3197,7 @@ namespace kagami {
     };
 
     auto load_function_impl = [&](bool invoking_request) -> bool {
-      bool switch_to_next_loop = false;
+      bool switch_to_next_tick = false;
       switch (impl->GetType()) {
       case kFunctionVMCode:
         //start new processing in next tick.
@@ -3208,7 +3208,7 @@ namespace kagami {
         direct_load_vmcode:
           update_stack_frame(*impl);
         }
-        switch_to_next_loop = true;
+        switch_to_next_tick = true;
         break;
       case kFunctionExternal:
         if (invoking_request) {
@@ -3218,18 +3218,59 @@ namespace kagami {
         CallExtensionFunction(obj_map, *impl);
         if (!frame->error) {
           frame->Stepping();
-          switch_to_next_loop = true;
+          switch_to_next_tick = true;
         }
         break;
       case kFunctionCXX:
         msg = impl->GetActivity()(obj_map);
-        switch_to_next_loop = invoking_request;
+        switch_to_next_tick = invoking_request;
         break;
       default:
         break;
       }
 
-      return switch_to_next_loop;
+      return switch_to_next_tick;
+    };
+
+    auto event_trigger_available = [&]() -> bool {
+      bool main_switch = !frame->event_processing;
+      if (!main_switch) return false;
+      //TODO:block all event trigger before wait() ? 
+      bool processing_before_wait = hanging_ && SDL_PollEvent(&event);
+      if (processing_before_wait) return true;
+      bool processing_after_wait = hanging_ && SDL_WaitEvent(&event);
+      return processing_after_wait;
+    };
+
+    auto load_event_trigger = [&]() -> bool {
+      bool switch_to_next_tick = false;
+      EventHandlerMark mark(event.window.windowID, event.type);
+      auto it = event_list_.find(mark);
+
+      if (it != event_list_.end()) {
+        obj_map.clear();
+        LoadEventInfo(event, obj_map, it->second, event.window.windowID);
+
+        if (frame->error) return switch_to_next_tick;
+
+        update_stack_frame(it->second);
+        refresh_tick();
+        frame->event_processing = true;
+        switch_to_next_tick = true;
+      }
+
+      if (!switch_to_next_tick && freezing_) switch_to_next_tick = true;
+      return switch_to_next_tick;
+    };
+
+    auto unpack_invoking_request = [&]() -> bool {
+      bool failed = false;
+
+      auto invoking_req = BuildStringVector(msg.GetDetail());
+      auto obj = msg.GetObj();
+      failed = FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1], &obj);
+
+      return failed;
     };
 
     // Main loop of virtual machine.
@@ -3251,23 +3292,9 @@ namespace kagami {
 
       //window event handler
       //cannot invoke new event inside a running event function
-      if ((hanging_ && !frame->event_processing && SDL_PollEvent(&event) != 0) 
-        || (freezing_ && SDL_WaitEvent(&event) != 0)) {
-        EventHandlerMark mark(event.window.windowID, event.type);
-        auto it = event_list_.find(mark);
-        if (it != event_list_.end()) {
-          obj_map.clear();
-          LoadEventInfo(event, obj_map, it->second, event.window.windowID);
-
-          if (frame->error) break;
-
-          update_stack_frame(it->second);
-          refresh_tick();
-          frame->event_processing = true;
-          continue;
-        }
-
-        if (freezing_) continue;
+      if (event_trigger_available()) {
+        next_tick = load_event_trigger();
+        if (next_tick) continue;
       }
 
       //switch to last stack frame when indicator reaches end of the block.
@@ -3282,10 +3309,9 @@ namespace kagami {
       }
 
       //load current command and refreshing indicators
-      command = &(*code)[frame->idx];
-      script_idx = command->first.idx;
-      // dispose returning value
-      frame->void_call = command->first.option.void_call;
+      command          = &(*code)[frame->idx];
+      script_idx       = command->first.idx;
+      frame->void_call = command->first.option.void_call; // dispose returning value
 
       //Built-in machine commands.
       if (command->first.type == kRequestCommand) {
@@ -3297,42 +3323,38 @@ namespace kagami {
         if (!frame->stop_point) frame->Stepping();
         continue;
       }
+      else {
+        //cleaning object map for user-defined function and C++ function
+        obj_map.clear();
 
-      //cleaning object map for user-defined function and C++ function
-      obj_map.clear();
-
-      //Query function(Interpreter built-in or user-defined)
-      //error string will be generated in FetchFunctionImpl.
-      if (command->first.type == kRequestFunction) {
-        if (!FetchFunctionImpl(impl, command, obj_map)) break;
-      }
-
-      //Build object map for function call expressed by command
-      GenerateArgs(*impl, command->second, obj_map);
-      if (frame->initializer_calling) GenerateStructInstance(obj_map);
-      if (frame->error) break;
-
-
-      next_tick = load_function_impl(false);
-      if (frame->error) break;
-      if (next_tick) continue;
-
-      //TODO:Return value issue
-      if (msg.IsInvokingRequest()) {
-        //process invoking request in returning message
-        auto invoking_req = BuildStringVector(msg.GetDetail());
-        auto obj = msg.GetObj();
-        if (!FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1], &obj)) {
-          break;
+        //Query function(Interpreter built-in or user-defined)
+        //error string will be generated in FetchFunctionImpl.
+        if (command->first.type == kRequestFunction) {
+          if (!FetchFunctionImpl(impl, command, obj_map)) break;
         }
 
-        next_tick = load_function_impl(true);
+        //Build object map for function call expressed by command
+        GenerateArgs(*impl, command->second, obj_map);
+        if (frame->initializer_calling) GenerateStructInstance(obj_map);
+        if (frame->error) break;
+
+
+        next_tick = load_function_impl(false);
         if (frame->error) break;
         if (next_tick) continue;
+
+        //TODO:Return value issue
+        if (msg.IsInvokingRequest()) {
+          if (!unpack_invoking_request()) break;
+
+          next_tick = load_function_impl(true);
+          if (frame->error) break;
+          if (next_tick) continue;
+        }
+
+        //Pushing returning value to returning stack.
+        frame->RefreshReturnStack(msg.GetObj());
       }
-      
-      //Pushing returning value to returning stack.
-      frame->RefreshReturnStack(msg.GetObj());
       //indicator + 1
       frame->Stepping();
     }
