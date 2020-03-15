@@ -3122,6 +3122,7 @@ namespace kagami {
   void Machine::Run(bool invoke) {
     if (code_stack_.empty()) return;
 
+    bool                next_tick;
     size_t              script_idx = 0;
     Message             msg;
     VMCode              *code = code_stack_.back();
@@ -3199,6 +3200,7 @@ namespace kagami {
       bool switch_to_next_loop = false;
       switch (impl->GetType()) {
       case kFunctionVMCode:
+        //start new processing in next tick.
         if (invoking_request) goto direct_load_vmcode;
         if (IsTailRecursion(frame->idx, &impl->GetCode())) tail_recursion();
         else if (IsTailCall(frame->idx)) tail_call(*impl);
@@ -3206,6 +3208,7 @@ namespace kagami {
         direct_load_vmcode:
           update_stack_frame(*impl);
         }
+        switch_to_next_loop = true;
         break;
       case kFunctionExternal:
         if (invoking_request) {
@@ -3215,6 +3218,7 @@ namespace kagami {
         CallExtensionFunction(obj_map, *impl);
         if (!frame->error) {
           frame->Stepping();
+          switch_to_next_loop = true;
         }
         break;
       case kFunctionCXX:
@@ -3285,7 +3289,8 @@ namespace kagami {
 
       //Built-in machine commands.
       if (command->first.type == kRequestCommand) {
-        MachineCommands(command->first.GetKeywordValue(), command->second, command->first);
+        MachineCommands(command->first.GetKeywordValue(), 
+          command->second, command->first);
         
         if (command->first.GetKeywordValue() == kKeywordReturn) refresh_tick();
         if (frame->error) break;
@@ -3304,63 +3309,26 @@ namespace kagami {
 
       //Build object map for function call expressed by command
       GenerateArgs(*impl, command->second, obj_map);
-
-      if (frame->initializer_calling) {
-        GenerateStructInstance(obj_map);
-      }
-
+      if (frame->initializer_calling) GenerateStructInstance(obj_map);
       if (frame->error) break;
 
-      //user-defined function invoking
-      //Ceate new stack frame and push VMCode pointer to machine stack,
-      //and start new processing in next tick.
-      if (impl->GetType() == kFunctionVMCode) {
-        if (IsTailRecursion(frame->idx, &impl->GetCode())) tail_recursion();
-        else if (IsTailCall(frame->idx)) tail_call(*impl);
-        else update_stack_frame(*impl);
 
-        continue;
-      }
-      else if (impl->GetType() == kFunctionExternal) {
-        CallExtensionFunction(obj_map, *impl);
-        if (frame->error) break;
-        frame->Stepping();
-        continue;
-      }
-      else if (impl->GetType() == kFunctionCXX) {
-        //calling C++ functions.
-        msg = impl->GetActivity()(obj_map);
-
-        if (msg.GetLevel() == kStateError) {
-          frame->MakeError(msg.GetDetail());
-          break;
-        }
-      }
+      next_tick = load_function_impl(false);
+      if (frame->error) break;
+      if (next_tick) continue;
 
       //TODO:Return value issue
-      //CallMethod by return value.
       if (msg.IsInvokingRequest()) {
         //process invoking request in returning message
         auto invoking_req = BuildStringVector(msg.GetDetail());
         auto obj = msg.GetObj();
-        if (!FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1], &obj)) 
+        if (!FetchFunctionImplEx(impl, invoking_req[0], invoking_req[1], &obj)) {
           break;
-
-        //load user-defined method function
-        if (impl->GetType() == kFunctionVMCode) {
-          update_stack_frame(*impl);
         }
-        else {
-          //calling method.
-          msg = impl->GetActivity()(obj_map);
 
-          if (msg.GetLevel() == kStateError) {
-            frame->MakeError(msg.GetDetail());
-            break;
-          }
-          frame->Stepping();
-        }
-        continue;
+        next_tick = load_function_impl(true);
+        if (frame->error) break;
+        if (next_tick) continue;
       }
       
       //Pushing returning value to returning stack.
