@@ -1027,8 +1027,15 @@ namespace kagami {
     auto id = command->first.GetInterfaceId();
     auto domain = command->first.GetInterfaceDomain();
     
-    if (domain.GetType() != kArgumentNull || 
-      command->first.option.use_last_assert) {
+#define METHOD_NOT_FOUND_MSG {                       \
+      frame.MakeError("Method is not found: " + id); \
+      return false;                                  \
+    }
+
+    auto has_domain = domain.GetType() != kArgumentNull ||
+      command->first.option.use_last_assert;
+
+    if (has_domain) {
       Object obj = command->first.option.use_last_assert ?
         frame.assert_rc_copy :
         FetchObject(domain, true);
@@ -1037,36 +1044,25 @@ namespace kagami {
 
       //find method in sub-container    
       if (obj.IsSubContainer()) {
+        //CXX function from components
         impl = mgmt::FindFunction(id, obj.GetTypeId());
 
+        //not found, try to find VMCode function
         if (impl == nullptr) {
           auto &base = obj.Cast<ObjectStruct>();
           auto *ptr = base.Find(id);
-          if (ptr == nullptr) {
-            frame.MakeError("Method is not found: " + id);
-            return false;
-          }
+          if (ptr == nullptr) METHOD_NOT_FOUND_MSG;
+
           if (ptr->GetTypeId() != kTypeIdFunction) {
             frame.MakeError(id + " is not a function object");
             return false;
           }
 
           impl = &ptr->Cast<FunctionImpl>();
-          obj_map.emplace(NamedObject(kStrMe, obj));
-          if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
-          return true;
-        }
-        else {
-          obj_map.emplace(NamedObject(kStrMe, obj));
-          if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
-          return true;
         }
       }
-
-      if (impl = mgmt::FindFunction(id, obj.GetTypeId()); impl == nullptr) {
-        frame.MakeError("Method is not found - " + id);
-        return false;
-      }
+      else if (impl = mgmt::FindFunction(id, obj.GetTypeId());
+        impl == nullptr) METHOD_NOT_FOUND_MSG;
 
       obj_map.emplace(NamedObject(kStrMe, obj));
       if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
@@ -1110,6 +1106,7 @@ namespace kagami {
 
       frame.MakeError("Function is not found: " + id);
     }
+#undef METHOD_NOT_FOUND_MSG
 
     return false;
   }
