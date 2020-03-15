@@ -938,9 +938,12 @@ namespace kagami {
           return obj;
         }
 
-        if (obj = GetConstantObject(arg.GetData()); obj.Null()) {
-          obj = FetchFunctionObject(arg.GetData());
+        if (ptr = GetConstantObject(arg.GetData()); ptr != nullptr) {
+          obj.PackObject(*ptr);
+          return obj;
         }
+
+        obj = FetchFunctionObject(arg.GetData());
 
         if (obj.Null()) {
           frame.MakeError("Object is not found: " + arg.GetData());

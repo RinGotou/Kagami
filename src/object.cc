@@ -37,6 +37,7 @@ namespace kagami {
   Object &Object::operator=(const Object &object) {
     if (object.mode_ == kObjectRef) {
       real_dest_ = object.real_dest_;
+      alive_ = object.alive_;
       ptr_.reset();
     }
     else {
@@ -68,6 +69,8 @@ namespace kagami {
     std::swap(mode_, obj.mode_);
     std::swap(delivering_, obj.delivering_);
     std::swap(real_dest_, obj.real_dest_);
+    std::swap(sub_container_, obj.sub_container_);
+    std::swap(alive_, obj.alive_);
     return *this;
   }
 
@@ -98,7 +101,7 @@ namespace kagami {
     }
   }
 
-  bool ObjectContainer::Add(string id, Object source) {
+  bool ObjectContainer::Add(string id, Object &source) {
     if (IsDelegated()) return delegator_->Add(id, source);
 
     if (CheckObject(id)) return false;
@@ -110,8 +113,27 @@ namespace kagami {
     return true;
   }
 
-  void ObjectContainer::Replace(string id, Object source) {
+  bool ObjectContainer::Add(string id, Object &&source) {
+    if (IsDelegated()) return delegator_->Add(id, std::move(source));
+
+    if (CheckObject(id)) return false;
+    auto result = base_.emplace(NamedObject(id, std::move(source)));
+    if (result.second) {
+      dest_map_.emplace(make_pair(id, &result.first->second));
+    }
+
+    return true;
+  }
+
+  void ObjectContainer::Replace(string id, Object &source) {
     if (IsDelegated()) delegator_->Replace(id, source);
+
+    base_[id] = source;
+    dest_map_[id] = &base_[id];
+  }
+
+  void ObjectContainer::Replace(string id, Object &&source) {
+    if (IsDelegated()) delegator_->Replace(id, std::move(source));
 
     base_[id] = source;
     dest_map_[id] = &base_[id];
@@ -275,7 +297,7 @@ namespace kagami {
     return ptr;
   }
 
-  bool ObjectStack::CreateObject(string id, Object obj) {
+  bool ObjectStack::CreateObject(string id, Object &obj) {
     if (base_.empty()) {
       if (prev_ == nullptr) {
         return false;
@@ -294,6 +316,25 @@ namespace kagami {
     return true;
   }
 
+  bool ObjectStack::CreateObject(string id, Object &&obj) {
+    if (base_.empty()) {
+      if (prev_ == nullptr) {
+        return false;
+      }
+      return prev_->CreateObject(id, std::move(obj));
+    }
+    auto &top = base_.back();
+
+    if (top.Find(id, false) == nullptr) {
+      top.Add(id, std::move(obj));
+    }
+    else {
+      return false;
+    }
+
+    return true;
+  }
+
   bool ObjectStack::DisposeObjectInCurrentScope(string id) {
     if (base_.empty()) return false;
     auto &scope = base_.back();
@@ -304,7 +345,7 @@ namespace kagami {
     if (base_.empty()) return false;
     bool result = false;
 
-    for (auto it = base_.rbegin(); it != base_.rend(); it++) {
+    for (auto it = base_.rbegin(); it != base_.rend(); ++it) {
       result = it->Dispose(id);
 
       if (result) break;

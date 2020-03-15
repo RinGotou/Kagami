@@ -71,20 +71,20 @@ namespace kagami::management {
     return result;
   }
 
-  Object *CreateConstantObject(string id, Object && object) {
-    return CreateConstantObject(id, object);
+  Object *CreateConstantObject(string id, Object &&object) {
+    ObjectContainer &base = GetConstantBase();
+
+    if (base.Find(id) != nullptr) return nullptr;
+
+    base.Add(id, std::move(object));
+    auto result = base.Find(id);
+    return result;
   }
 
-  Object GetConstantObject(string id) {
+  Object *GetConstantObject(string id) {
     ObjectContainer &base = GetConstantBase();
     auto ptr = base.Find(id);
-
-    if (ptr != nullptr) {
-      Object obj = type::CreateObjectCopy(*ptr);
-      return obj;
-    }
-
-    return Object();
+    return ptr;
   }
 
   bool IsAlive(initializer_list<Object> &&objects) {

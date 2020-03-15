@@ -365,7 +365,7 @@ namespace kagami::lexical {
     string str = target.substr(1, target.size() - 2);
     string output;
     bool escape = false;
-    for (size_t i = 0; i < str.size(); i++) {
+    for (size_t i = 0; i < str.size(); ++i) {
       if (str[i] == '\\' && !escape) {
         escape = true;
         continue;

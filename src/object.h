@@ -95,6 +95,7 @@ namespace kagami {
     bool delivering_;
     bool sub_container_;
     bool alive_;
+    bool move_it_;
     shared_ptr<void> ptr_;
     string type_id_;
     set<ObjectPointer> ref_links_;
@@ -130,11 +131,12 @@ namespace kagami {
     }
 
     Object() : real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), alive_(true), ptr_(nullptr), type_id_(kTypeIdNull) {}
+      sub_container_(false), alive_(true), move_it_(false),
+      ptr_(nullptr), type_id_(kTypeIdNull) {}
 
     Object(const Object &obj) :
       real_dest_(obj.real_dest_), mode_(obj.mode_), delivering_(obj.delivering_),
-      sub_container_(obj.sub_container_), alive_(obj.alive_), 
+      sub_container_(obj.sub_container_), alive_(obj.alive_), move_it_(false),
       ptr_(obj.ptr_), type_id_(obj.type_id_) { EstablishRefLink(); }
 
     Object(const Object &&obj) noexcept :
@@ -143,13 +145,13 @@ namespace kagami {
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(type_id == kTypeIdStruct), alive_(true),
+      sub_container_(type_id == kTypeIdStruct), alive_(true), move_it_(false),
       ptr_(ptr), type_id_(type_id) {}
 
     template <typename T>
     Object(T &t, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(type_id == kTypeIdStruct), alive_(true),
+      sub_container_(type_id == kTypeIdStruct), alive_(true), move_it_(false),
       ptr_(make_shared<T>(t)), type_id_(type_id) {}
 
     template <typename T>
@@ -159,18 +161,18 @@ namespace kagami {
     template <typename T>
     Object(T *ptr, string type_id) :
       real_dest_((void *)ptr), mode_(kObjectDelegator),  delivering_(false),
-      sub_container_(type_id == kTypeIdStruct), alive_(true),
+      sub_container_(type_id == kTypeIdStruct), alive_(true), move_it_(false),
       ptr_(nullptr), type_id_(type_id) {}
 
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
       real_dest_(ext_ptr), mode_(kObjectExternal), delivering_(false), 
-      sub_container_(false), alive_(true),
+      sub_container_(false), alive_(true), move_it_(false),
       ptr_(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)),
       type_id_(type_id) {}
 
     Object(string str) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), alive_(true),
+      sub_container_(false), alive_(true), move_it_(false),
       ptr_(make_shared<string>(str)), type_id_(kTypeIdString) {}
 
     Object &operator=(const Object &object);
@@ -279,8 +281,10 @@ namespace kagami {
 
     void BuildCache();
   public:
-    bool Add(string id, Object source);
-    void Replace(string id, Object source);
+    bool Add(string id, Object &source);
+    bool Add(string id, Object &&source);
+    void Replace(string id, Object &source);
+    void Replace(string id, Object &&source);
     bool Dispose(string id);
     Object *Find(string id, bool forward_seeking = true);
     Object *FindWithDomain(string id, string domain, bool forward_seeking = true);
@@ -476,7 +480,8 @@ namespace kagami {
     void MergeMap(ObjectMap &p);
     Object *Find(string id);
     Object *Find(string id, string domain);
-    bool CreateObject(string id, Object obj);
+    bool CreateObject(string id, Object &obj);
+    bool CreateObject(string id, Object &&obj);
     bool DisposeObjectInCurrentScope(string id);
     bool DisposeObject(string id);
   };
