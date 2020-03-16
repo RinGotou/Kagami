@@ -974,10 +974,6 @@ namespace kagami {
   }
 
   ObjectView Machine::FetchObjectView(Argument &arg, bool checking) {
-    if (arg.GetType() == kArgumentLiteral) {
-      return FetchLiteralObject(arg);
-    }
-
 #define OBJECT_DEAD_MSG {                           \
       frame.MakeError("Referenced object is dead"); \
       return ObjectView();                          \
@@ -993,7 +989,11 @@ namespace kagami {
     ObjectPointer ptr = nullptr;
     ObjectView view;
 
-    if (arg.GetType() == kArgumentObjectStack) {
+    if (arg.GetType() == kArgumentLiteral) {
+      view = FetchLiteralObject(arg);
+      view.source = ObjectViewSource::kSourceLiteral;
+    }
+    else if (arg.GetType() == kArgumentObjectStack) {
       if (!arg.option.domain.empty() || arg.option.use_last_assert) {
         if (arg.option.use_last_assert) {
           auto &base = frame.assert_rc_copy.Cast<ObjectStruct>();
@@ -1033,11 +1033,9 @@ namespace kagami {
         if (ptr = obj_stack_.Find(arg.GetData()); ptr != nullptr) {
           if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
           view = ObjectView(ptr);
-          return view;
         }
         else if (ptr = GetConstantObject(arg.GetData()); ptr != nullptr) {
           view = ObjectView(ptr);
-          return view;
         }
         else {
           auto obj = FetchFunctionObject(arg.GetData());
@@ -1050,6 +1048,7 @@ namespace kagami {
           }
         }
       }
+      view.source = ObjectViewSource::kSourceReference;
     }
     else if (arg.GetType() == kArgumentReturnStack) {
       if (!return_stack.empty()) {
@@ -1062,6 +1061,7 @@ namespace kagami {
       else {
         frame.MakeError("Can't get object from stack(Internal error)");
       }
+      view.source = ObjectViewSource::kSourceReference;
     }
 
 #undef OBJECT_DEAD_MSG
@@ -3382,7 +3382,9 @@ namespace kagami {
     // Main loop of virtual machine.
     // TODO:dispose return value in event function
     while (frame->idx < size || frame_stack_.size() > 1 || hanging_) {
-      if (!view_delegator_.empty()) view_delegator_.clear();
+      if (!view_delegator_.empty() && frame->idx % 10 == 0) {
+        view_delegator_.clear();
+      }
       //break at stop point.
       if (frame->stop_point) break;
       //freeze mainloop to keep querying events

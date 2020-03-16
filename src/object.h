@@ -259,6 +259,12 @@ namespace kagami {
     bool IsAlive() const { return alive_; }
   };
 
+  enum class ObjectViewSource {
+    kSourceReference,
+    kSourceLiteral,
+    kSourceNull
+  };
+
   class ObjectView {
   protected:
     enum class Type {
@@ -270,10 +276,14 @@ namespace kagami {
   protected:
     using ObjectCarrier = unique_ptr<Object>;
     using Value = variant<ObjectPointer, Object>;
+    using Source = ObjectViewSource;
 
   protected:
     Value value_;
     Type type_;
+
+  public:
+    Source source;
 
   public:
     ObjectView() :
