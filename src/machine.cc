@@ -918,7 +918,7 @@ namespace kagami {
             if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
             obj.PackObject(*ptr);
           }
-          else MEMBER_NOT_FOUND_MSG
+          else MEMBER_NOT_FOUND_MSG;
         }
         else if (arg.option.domain_type == kArgumentReturnStack) {
           auto &sub_container = return_stack.top().Cast<ObjectStruct>();
@@ -928,6 +928,7 @@ namespace kagami {
             if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
             obj = *ptr;
           }
+          else MEMBER_NOT_FOUND_MSG;
           return_stack.pop();
         }
       }
@@ -961,11 +962,103 @@ namespace kagami {
         frame.MakeError("Can't get object from stack(Internal error)");
       }
     }
+#undef OBJECT_DEAD_MSG
+#undef MEMBER_NOT_FOUND_MSG
+    return obj;
+  }
+
+  ObjectView Machine::FetchObjectView(Argument &arg, bool checking) {
+    if (arg.GetType() == kArgumentNormal) {
+      auto obj = FetchPlainObject(arg).SetDeliveringFlag();
+      return obj;
+    }
+
+#define OBJECT_DEAD_MSG {                           \
+      frame.MakeError("Referenced object is dead"); \
+      return ObjectView();                          \
+    }
+
+#define MEMBER_NOT_FOUND_MSG {                                                                   \
+      frame.MakeError("Member '" + arg.GetData() + "' is not found inside " + arg.option.domain);\
+      return ObjectView();                                                                       \
+    }
+
+    auto &frame = frame_stack_.top();
+    auto &return_stack = frame.return_stack;
+    ObjectPointer ptr = nullptr;
+    ObjectView view;
+
+    if (arg.GetType() == kArgumentObjectStack) {
+      if (!arg.option.domain.empty() || arg.option.use_last_assert) {
+        if (arg.option.use_last_assert) {
+          auto &base = frame.assert_rc_copy.Cast<ObjectStruct>();
+          ptr = base.Find(arg.GetData());
+
+          if (ptr != nullptr) {
+            if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
+            view = ObjectView(ptr);
+          }
+          else MEMBER_NOT_FOUND_MSG;
+
+          if (arg.option.assert_chain_tail) frame.assert_rc_copy = Object();
+        }
+        else if (arg.option.domain_type == kArgumentObjectStack) {
+          ptr = obj_stack_.Find(arg.GetData(), arg.option.domain);
+
+          if (ptr != nullptr) {
+            if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
+            view = ObjectView(ptr);
+          }
+          else MEMBER_NOT_FOUND_MSG;
+        }
+        else if (arg.option.domain_type == kArgumentReturnStack) {
+          auto &sub_container = return_stack.top().Cast<ObjectStruct>();
+          ptr = sub_container.Find(arg.GetData());
+          //keep object alive
+          if (ptr != nullptr) {
+            if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
+            view = ObjectView(*ptr);
+            return_stack.pop();
+          }
+          else MEMBER_NOT_FOUND_MSG;
+        }
+      }
+      else {
+        if (ptr = obj_stack_.Find(arg.GetData()); ptr != nullptr) {
+          if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
+          view = ObjectView(ptr);
+          return view;
+        }
+        else if (ptr = GetConstantObject(arg.GetData()); ptr == nullptr) {
+          view = ObjectView(ptr);
+          return view;
+        }
+        else {
+          auto obj = FetchFunctionObject(arg.GetData());
+          if (obj.Null()) {
+            frame.MakeError("Object is not found: " + arg.GetData());
+          }
+          else {
+            view = ObjectView(obj);
+          }
+        }
+      }
+    }
+    else if (arg.GetType() == kArgumentReturnStack) {
+      if (!return_stack.empty()) {
+        if (!return_stack.top().IsAlive()) OBJECT_DEAD_MSG;
+        view = ObjectView(return_stack.top());
+        view.Seek().SeekDeliveringFlag();
+        if (!checking) return_stack.pop();
+      }
+      else {
+        frame.MakeError("Can't get object from stack(Internal error)");
+      }
+    }
 
 #undef OBJECT_DEAD_MSG
 #undef MEMBER_NOT_FOUND_MSG
-
-    return obj;
+    return view;
   }
 
   bool Machine::FetchFunctionImplEx(FunctionImplPointer &dest, string id, string type_id,
@@ -1187,7 +1280,7 @@ namespace kagami {
     frame.Goto(nest_end + 1);
   }
 
-  Message Machine::CallMethod(Object obj, string id, ObjectMap &args) {
+  Message Machine::CallMethod(Object &obj, string id, ObjectMap &args) {
     FunctionImplPointer impl;
     auto &frame = frame_stack_.top();
     Message result;
@@ -1214,7 +1307,7 @@ namespace kagami {
     return result;
   }
 
-  Message Machine::CallMethod(Object obj, string id, const initializer_list<NamedObject> &&args) {
+  Message Machine::CallMethod(Object &obj, string id, const initializer_list<NamedObject> &&args) {
     ObjectMap obj_map = args;
     return CallMethod(obj, id, obj_map);
   }
@@ -1266,16 +1359,16 @@ namespace kagami {
       code->FindJumpRecord(frame.idx + frame.jump_offset, frame.branch_jump_stack);
     }
     
-    Object obj = FetchObject(args[0]);
+    ObjectView view = FetchObjectView(args[0]);
 
     if (frame.error) return;
 
-    if (obj.GetTypeId() != kTypeIdBool) {
+    if (view.Seek().GetTypeId() != kTypeIdBool) {
       frame.MakeError("Invalid state value type.");
       return;
     }
 
-    bool state = obj.Cast<bool>();
+    bool state = view.Seek().Cast<bool>();
 
     if (token == kKeywordIf) {
       frame.scope_stack.push(false);
@@ -1885,19 +1978,19 @@ namespace kagami {
     using namespace type;
     auto &frame = frame_stack_.top();
     //Do not change the order!
-    auto rhs = FetchObject(args[1]);
+    auto rhs = FetchObjectView(args[1]);
     auto lhs = FetchObject(args[0]);
 
     if (frame.error) return;
 
-    if (rhs.GetMode() == kObjectDelegator || lhs.GetMode() == kObjectDelegator) {
+    if (rhs.Seek().GetMode() == kObjectDelegator || lhs.GetMode() == kObjectDelegator) {
       frame.MakeError("Trying to assign a language key constant");
       return;
     }
 
     if (lhs.IsRef()) {
       auto &real_lhs = lhs.Unpack();
-      real_lhs = CreateObjectCopy(rhs);
+      real_lhs = CreateObjectCopy(rhs.Seek());
       return;
     }
     else {
@@ -1917,12 +2010,12 @@ namespace kagami {
             return;
           }
 
-          ptr->Unpack() = CreateObjectCopy(rhs);
+          ptr->Unpack() = CreateObjectCopy(rhs.Seek());
           return;
         }
       }
 
-      Object obj = CreateObjectCopy(rhs);
+      Object obj = CreateObjectCopy(rhs.Seek());
 
       if (!obj_stack_.CreateObject(id, obj)) {
         frame.MakeError("Object binding is failed");
@@ -2308,12 +2401,12 @@ namespace kagami {
       return;
     }
 
-    auto rhs = FetchObject(args[1]);
-    auto lhs = FetchObject(args[0]);
+    auto rhs = FetchObjectView(args[1]);
+    auto lhs = FetchObjectView(args[0]);
     if (frame.error) return;
 
-    auto type_rhs = FindTypeCode(rhs.GetTypeId());
-    auto type_lhs = FindTypeCode(lhs.GetTypeId());
+    auto type_rhs = FindTypeCode(rhs.Seek().GetTypeId());
+    auto type_lhs = FindTypeCode(lhs.Seek().GetTypeId());
 
     if (frame.error) return;
 
@@ -2324,8 +2417,8 @@ namespace kagami {
 
     auto result_type = kResultDynamicTraits.at(ResultTraitKey(type_lhs, type_rhs));
 
-#define RESULT_PROCESSING(_Type, _Func, _TypeId)                       \
-  _Type result = MathBox<_Type, op_code>().Do(_Func(lhs), _Func(rhs)); \
+#define RESULT_PROCESSING(_Type, _Func, _TypeId)                                     \
+  _Type result = MathBox<_Type, op_code>().Do(_Func(lhs.Seek()), _Func(rhs.Seek())); \
   frame.RefreshReturnStack(Object(result, _TypeId));
 
     if (result_type == kPlainString) {
@@ -2358,29 +2451,29 @@ namespace kagami {
       return;
     }
 
-    auto rhs = FetchObject(args[1]);
-    auto lhs = FetchObject(args[0]);
+    auto rhs = FetchObjectView(args[1]);
+    auto lhs = FetchObjectView(args[0]);
     if (frame.error) return;
 
-    auto type_rhs = FindTypeCode(rhs.GetTypeId());
-    auto type_lhs = FindTypeCode(lhs.GetTypeId());
+    auto type_rhs = FindTypeCode(rhs.Seek().GetTypeId());
+    auto type_lhs = FindTypeCode(lhs.Seek().GetTypeId());
     bool result = false;
 
     if (frame.error) return;
 
-    if (!lexical::IsPlainType(lhs.GetTypeId())) {
+    if (!lexical::IsPlainType(lhs.Seek().GetTypeId())) {
       if constexpr (op_code != kKeywordEquals && op_code != kKeywordNotEqual) {
         frame.RefreshReturnStack(Object());
       }
       else {
-        if (!CheckMethod(kStrCompare, lhs)) {
+        if (!CheckMethod(kStrCompare, lhs.Seek())) {
           frame.MakeError("Can't operate with this operator");
           return;
         }
 
         //TODO:Test these code(for user-defined function)
-        Object obj = CallMethod(lhs, kStrCompare,
-          { NamedObject(kStrRightHandSide, rhs) }).GetObj();
+        Object obj = CallMethod(lhs.Seek(), kStrCompare,
+          { NamedObject(kStrRightHandSide, rhs.Dump()) }).GetObj();
         if (frame.error) return;
 
         if (obj.GetTypeId() != kTypeIdBool) {
@@ -2401,8 +2494,8 @@ namespace kagami {
     }
 
     auto result_type = kResultDynamicTraits.at(ResultTraitKey(type_lhs, type_rhs));
-#define RESULT_PROCESSING(_Type, _Func)\
-  result = LogicBox<_Type, op_code>().Do(_Func(lhs), _Func(rhs));
+#define RESULT_PROCESSING(_Type, _Func) \
+  result = LogicBox<_Type, op_code>().Do(_Func(lhs.Seek()), _Func(rhs.Seek()));
 
     if (result_type == kPlainString) {
       if (IsIllegalStringOperator(op_code)) {

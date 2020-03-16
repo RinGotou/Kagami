@@ -333,6 +333,7 @@ namespace kagami {
     Object FetchPlainObject(Argument &arg);
     Object FetchFunctionObject(string id);
     Object FetchObject(Argument &arg, bool checking = false);
+    ObjectView FetchObjectView(Argument &arg, bool checking = false);
 
     bool FetchFunctionImplEx(FunctionImplPointer &dest, string id, string type_id = kTypeIdNull, 
       Object *obj_ptr = nullptr);
@@ -342,8 +343,8 @@ namespace kagami {
 
     void ClosureCatching(ArgumentList &args, size_t nest_end, bool closure);
 
-    Message CallMethod(Object obj, string id, ObjectMap &args);
-    Message CallMethod(Object obj, string id,
+    Message CallMethod(Object &obj, string id, ObjectMap &args);
+    Message CallMethod(Object &obj, string id,
       const initializer_list<NamedObject> &&args = {});
     Message CallVMCFunction(FunctionImpl &impl, ObjectMap &obj_map);
 

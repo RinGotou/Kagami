@@ -87,7 +87,6 @@ namespace kagami {
       ptr_(ptr), disposer_(disposer), type_id_(type_id) {}
   };
 
-  //TODO:delegator mode
   class Object {
   private:
     void *real_dest_;
@@ -95,7 +94,6 @@ namespace kagami {
     bool delivering_;
     bool sub_container_;
     bool alive_;
-    bool move_it_;
     shared_ptr<void> ptr_;
     string type_id_;
     set<ObjectPointer> ref_links_;
@@ -131,13 +129,15 @@ namespace kagami {
     }
 
     Object() : real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), alive_(true), move_it_(false),
-      ptr_(nullptr), type_id_(kTypeIdNull) {}
+      sub_container_(false), alive_(true), ptr_(nullptr), type_id_(kTypeIdNull),
+      ref_links_() {}
 
     Object(const Object &obj) :
       real_dest_(obj.real_dest_), mode_(obj.mode_), delivering_(obj.delivering_),
-      sub_container_(obj.sub_container_), alive_(obj.alive_), move_it_(false),
-      ptr_(obj.ptr_), type_id_(obj.type_id_) { EstablishRefLink(); }
+      sub_container_(obj.sub_container_), alive_(obj.alive_), 
+      ptr_(obj.ptr_), type_id_(obj.type_id_), ref_links_() {
+      EstablishRefLink(); 
+    }
 
     Object(const Object &&obj) noexcept :
       Object(obj) {}
@@ -145,14 +145,14 @@ namespace kagami {
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(type_id == kTypeIdStruct), alive_(true), move_it_(false),
-      ptr_(ptr), type_id_(type_id) {}
+      sub_container_(type_id == kTypeIdStruct), alive_(true),
+      ptr_(ptr), type_id_(type_id), ref_links_() {}
 
     template <typename T>
     Object(T &t, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(type_id == kTypeIdStruct), alive_(true), move_it_(false),
-      ptr_(make_shared<T>(t)), type_id_(type_id) {}
+      sub_container_(type_id == kTypeIdStruct), alive_(true),
+      ptr_(make_shared<T>(t)), type_id_(type_id), ref_links_() {}
 
     template <typename T>
     Object(T &&t, string type_id) :
@@ -161,19 +161,19 @@ namespace kagami {
     template <typename T>
     Object(T *ptr, string type_id) :
       real_dest_((void *)ptr), mode_(kObjectDelegator),  delivering_(false),
-      sub_container_(type_id == kTypeIdStruct), alive_(true), move_it_(false),
-      ptr_(nullptr), type_id_(type_id) {}
+      sub_container_(type_id == kTypeIdStruct), alive_(true),
+      ptr_(nullptr), type_id_(type_id), ref_links_() {}
 
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
       real_dest_(ext_ptr), mode_(kObjectExternal), delivering_(false), 
-      sub_container_(false), alive_(true), move_it_(false),
+      sub_container_(false), alive_(true),
       ptr_(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)),
-      type_id_(type_id) {}
+      type_id_(type_id), ref_links_() {}
 
     Object(string str) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), alive_(true), move_it_(false),
-      ptr_(make_shared<string>(str)), type_id_(kTypeIdString) {}
+      sub_container_(false), alive_(true),
+      ptr_(make_shared<string>(str)), type_id_(kTypeIdString), ref_links_() {}
 
     Object &operator=(const Object &object);
     Object &PackContent(shared_ptr<void> ptr, string type_id);
@@ -257,6 +257,52 @@ namespace kagami {
     ObjectMode GetMode() const { return mode_; }
     void SetContainerFlag() { sub_container_ = true; }
     bool IsAlive() const { return alive_; }
+  };
+
+  class ObjectView {
+  protected:
+    enum class Type {
+      kObjectViewRef, 
+      kObjectViewCarrier,
+      kObjectViewInvalid
+    };
+
+  protected:
+    using Value = variant<ObjectPointer, Object>;
+
+  protected:
+    Value value_;
+    Type type_;
+
+  public:
+    ObjectView() :
+      value_(ObjectPointer(nullptr)), type_(Type::kObjectViewInvalid) {}
+    ObjectView(const ObjectView &rhs) = default;
+    ObjectView(const ObjectView &&rhs) : ObjectView(rhs) {}
+    ObjectView(ObjectPointer ptr) :
+      value_(ptr), type_(Type::kObjectViewRef) {}
+    ObjectView(Object &obj) :
+      value_(obj), type_(Type::kObjectViewCarrier) {}
+    ObjectView(Object &&obj) :
+      value_(std::move(obj)), type_(Type::kObjectViewCarrier) {}
+
+    void operator=(const ObjectView &rhs) {
+      value_ = rhs.value_;
+      type_ = rhs.type_;
+    }
+
+    void operator=(const ObjectView &&rhs) { operator=(rhs); }
+    
+    constexpr Object &Seek() {
+      if (type_ == Type::kObjectViewRef) return *std::get<ObjectPointer>(value_);
+      return std::get<Object>(value_);
+    }
+
+    bool Valid() const {
+      return type_ != Type::kObjectViewInvalid;
+    }
+
+    Object Dump() { return Seek(); }
   };
 
   using ObjectArray = deque<Object>;
