@@ -828,11 +828,12 @@ namespace kagami {
   Object *Machine::FetchLiteralObject(Argument &arg) {
     auto type = arg.GetStringType();
     auto value = arg.GetData();
-    Object obj;
 
     if (auto it = literal_objects_.find(value); it != literal_objects_.end()) {
       return &it->second;
     }
+
+    Object obj;
 
     if (type == kStringTypeInt) {
       int64_t int_value;
@@ -1135,20 +1136,20 @@ namespace kagami {
       command->first.option.use_last_assert;
 
     if (has_domain) {
-      Object obj = command->first.option.use_last_assert ?
-        frame.assert_rc_copy :
-        FetchObject(domain, true);
+      auto view = command->first.option.use_last_assert ?
+        ObjectView(&frame.assert_rc_copy) :
+        FetchObjectView(domain, true);
 
       if (frame.error) return false;
 
       //find method in sub-container    
-      if (obj.IsSubContainer()) {
+      if (view.Seek().IsSubContainer()) {
         //CXX function from components
-        impl = mgmt::FindFunction(id, obj.GetTypeId());
+        impl = mgmt::FindFunction(id, view.Seek().GetTypeId());
 
         //not found, try to find VMCode function
         if (impl == nullptr) {
-          auto &base = obj.Cast<ObjectStruct>();
+          auto &base = view.Seek().Cast<ObjectStruct>();
           auto *ptr = base.Find(id);
           if (ptr == nullptr) {
             frame.MakeError("Method is not found: " + id); 
@@ -1163,13 +1164,13 @@ namespace kagami {
           impl = &ptr->Cast<FunctionImpl>();
         }
       }
-      else if (impl = mgmt::FindFunction(id, obj.GetTypeId());
+      else if (impl = mgmt::FindFunction(id, view.Seek().GetTypeId());
         impl == nullptr) {
         frame.MakeError("Method is not found: " + id);
         return false;
       }
 
-      obj_map.emplace(NamedObject(kStrMe, obj));
+      obj_map.emplace(NamedObject(kStrMe, view.Seek()));
       if (!frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
     }
     //Plain bulit-in function and user-defined function
@@ -1545,21 +1546,20 @@ namespace kagami {
     bool has_jump_list = 
       code->FindJumpRecord(frame.idx + frame.jump_offset, frame.branch_jump_stack);
 
-    Object obj = FetchObject(args[0]);
+    //Object obj = FetchObject(args[0]);
+    auto view = FetchObjectView(args[0]);
     if (frame.error) return;
 
-    string type_id = obj.GetTypeId();
+    string type_id = view.Seek().GetTypeId();
 
     if (!lexical::IsPlainType(type_id)) {
       frame.MakeError("Non-plain object is not supported for now");
       return;
     }
 
-    Object sample_obj = type::CreateObjectCopy(obj);
-
     frame.scope_stack.push(true);
     obj_stack_.Push();
-    obj_stack_.CreateObject(kStrCaseObj, sample_obj);
+    obj_stack_.CreateObject(kStrCaseObj, view.Seek());
     frame.condition_stack.push(false);
 
     if (has_jump_list) {
@@ -1617,13 +1617,13 @@ namespace kagami {
         return;
       }
 
-#define COMPARE_RESULT(_Type) (ptr->Cast<_Type>() == obj.Cast<_Type>())
+#define COMPARE_RESULT(_Type) (ptr->Cast<_Type>() == obj.Seek().Cast<_Type>())
 
       for (auto it = args.rbegin(); it != args.rend(); ++it) {
-        Object obj = FetchObject(*it);
+        auto obj = FetchObjectView(*it);
         if (frame.error) return;
 
-        if (obj.GetTypeId() != type_id) continue;
+        if (obj.Seek().GetTypeId() != type_id) continue;
 
         if (type_id == kTypeIdInt) {
           found = COMPARE_RESULT(int64_t);
@@ -2025,9 +2025,7 @@ namespace kagami {
         }
       }
 
-      Object obj = CreateObjectCopy(rhs.Seek());
-
-      if (!obj_stack_.CreateObject(id, obj)) {
+      if (!obj_stack_.CreateObject(id, CreateObjectCopy(rhs.Seek()))) {
         frame.MakeError("Object binding is failed");
         return;
       }
@@ -3386,9 +3384,8 @@ namespace kagami {
     // Main loop of virtual machine.
     // TODO:dispose return value in event function
     while (frame->idx < size || frame_stack_.size() > 1 || hanging_) {
-      if (!view_delegator_.empty() && frame->idx % 10 == 0) {
-        view_delegator_.clear();
-      }
+      view_delegator_.clear();
+      
       //break at stop point.
       if (frame->stop_point) break;
       //freeze mainloop to keep querying events
