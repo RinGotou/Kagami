@@ -251,10 +251,6 @@ namespace kagami {
     }
   }
 
-  bool RuntimeFrame::IsFromConstantBase() {
-    return is_constant_object;
-  }
-
   void ConfigProcessor::ElementProcessing(ObjectTable &obj_table, string id, 
     const toml::value &elem_def, dawn::PlainWindow &window) {
     optional<SDL_Color> color_key_value = std::nullopt;
@@ -829,10 +825,14 @@ namespace kagami {
     return result;
   }
 
-  Object Machine::FetchPlainObject(Argument &arg) {
+  Object *Machine::FetchLiteralObject(Argument &arg) {
     auto type = arg.GetStringType();
     auto value = arg.GetData();
     Object obj;
+
+    if (auto it = literal_objects_.find(value); it != literal_objects_.end()) {
+      return &it->second;
+    }
 
     if (type == kStringTypeInt) {
       int64_t int_value;
@@ -865,7 +865,8 @@ namespace kagami {
       }
     }
 
-    return obj;
+    auto cond = literal_objects_.emplace(NamedObject(value, obj));
+    return &cond.first->second;
   }
 
   Object Machine::FetchFunctionObject(string id) {
@@ -883,7 +884,8 @@ namespace kagami {
 
   Object Machine::FetchObject(Argument &arg, bool checking) {
     if (arg.GetType() == kArgumentLiteral) {
-      return FetchPlainObject(arg).SetDeliveringFlag();
+      auto obj = *FetchLiteralObject(arg);
+      return obj.SetDeliveringFlag();
     }
 
     auto &frame = frame_stack_.top();
@@ -973,8 +975,7 @@ namespace kagami {
 
   ObjectView Machine::FetchObjectView(Argument &arg, bool checking) {
     if (arg.GetType() == kArgumentLiteral) {
-      auto obj = FetchPlainObject(arg).SetDeliveringFlag();
-      return obj;
+      return FetchLiteralObject(arg);
     }
 
 #define OBJECT_DEAD_MSG {                           \
@@ -1033,7 +1034,7 @@ namespace kagami {
           view = ObjectView(ptr);
           return view;
         }
-        else if (ptr = GetConstantObject(arg.GetData()); ptr == nullptr) {
+        else if (ptr = GetConstantObject(arg.GetData()); ptr != nullptr) {
           view = ObjectView(ptr);
           return view;
         }
@@ -1982,11 +1983,6 @@ namespace kagami {
     using namespace type;
     auto &frame = frame_stack_.top();
 
-    if (args[0].GetType() == kArgumentLiteral) {
-      frame.MakeError("Can't modify a literal object");
-      return;
-    }
-
     //Do not change the order!
     auto rhs = FetchObjectView(args[1]);
     auto lhs = FetchObject(args[0]);
@@ -2036,6 +2032,7 @@ namespace kagami {
 
   void Machine::CommandDelivering(ArgumentList &args, bool local_value, bool ext_value) {
     auto &frame = frame_stack_.top();
+
     //Do not change the order!
     auto rhs = FetchObject(args[1]);
     auto lhs = FetchObject(args[0]);
@@ -2190,6 +2187,7 @@ namespace kagami {
     }
 
     Object &obj = FetchObject(args[0]).Unpack();
+
     if (frame.error) return;
     obj.swap(Object());
   }
@@ -2204,7 +2202,7 @@ namespace kagami {
 
     Argument &arg = args[0];
     if (arg.GetType() == kArgumentLiteral) {
-      FetchPlainObject(arg);
+      frame.RefreshReturnStack(*FetchLiteralObject(arg));
     }
     else {
       Object obj = FetchObject(args[0]);

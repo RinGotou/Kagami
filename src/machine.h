@@ -210,7 +210,6 @@ namespace kagami {
     bool inside_initializer_calling;
     bool stop_point;
     bool has_return_value_from_invoking;
-    bool is_constant_object;
     Object struct_base;
     Object assert_rc_copy;
     size_t jump_offset;
@@ -239,7 +238,6 @@ namespace kagami {
       inside_initializer_calling(false),
       stop_point(false),
       has_return_value_from_invoking(false),
-      is_constant_object(false),
       assert_rc_copy(),
       jump_offset(0),
       idx(0),
@@ -258,7 +256,6 @@ namespace kagami {
     void MakeError(string str);
     void MakeWarning(string str);
     void RefreshReturnStack(Object obj);
-    bool IsFromConstantBase();
   };
 
   struct _IgnoredException : std::exception {};
@@ -333,7 +330,7 @@ namespace kagami {
     bool IsTailRecursion(size_t idx, VMCode *code);
     bool IsTailCall(size_t idx);
 
-    Object FetchPlainObject(Argument &arg);
+    Object *FetchLiteralObject(Argument &arg);
     Object FetchFunctionObject(string id);
     Object FetchObject(Argument &arg, bool checking = false);
     ObjectView FetchObjectView(Argument &arg, bool checking = false);
@@ -428,6 +425,7 @@ namespace kagami {
     deque<VMCodePointer> code_stack_;
     stack<RuntimeFrame> frame_stack_;
     ObjectStack obj_stack_;
+    unordered_map<string, Object> literal_objects_;
     map<EventHandlerMark, FunctionImpl> event_list_;
     bool hanging_;
     bool freezing_;
