@@ -1497,21 +1497,21 @@ namespace kagami {
     auto unit_id = FetchObject(args[0]).Cast<string>();
     if (frame.error) return;
 
-    auto iterator = *obj_stack_.GetCurrent().Find(kStrIteratorObj);
-    auto container = *obj_stack_.GetCurrent().Find(kStrContainerKeepAliveSlot);
+    auto *iterator = obj_stack_.GetCurrent().Find(kStrIteratorObj);
+    auto *container = obj_stack_.GetCurrent().Find(kStrContainerKeepAliveSlot);
     ObjectMap obj_map;
 
-    auto tail = CallMethod(container, kStrTail).GetObj();
+    auto tail = CallMethod(*container, kStrTail).GetObj();
     if (frame.error) return;
     if (!type::CheckBehavior(tail, kIteratorBehavior)) {
       frame.MakeError("Invalid container object");
       return;
     }
 
-    CallMethod(iterator, "step_forward");
+    CallMethod(*iterator, "step_forward");
     if (frame.error) return;
 
-    auto result = CallMethod(iterator, kStrCompare,
+    auto result = CallMethod(*iterator, kStrCompare,
       { NamedObject(kStrRightHandSide,tail) }).GetObj();
     if (frame.error) return;
 
@@ -1525,7 +1525,7 @@ namespace kagami {
       frame.final_cycle = true;
     }
     else {
-      auto unit = CallMethod(iterator, "obj").GetObj();
+      auto unit = CallMethod(*iterator, "obj").GetObj();
       if (frame.error) return;
       obj_stack_.CreateObject(unit_id, unit);
     }
@@ -1988,22 +1988,23 @@ namespace kagami {
 
     //Do not change the order!
     auto rhs = FetchObjectView(args[1]);
-    auto lhs = FetchObject(args[0]);
+    auto lhs = FetchObjectView(args[0]);
 
     if (frame.error) return;
 
-    if (rhs.Seek().GetMode() == kObjectDelegator || lhs.GetMode() == kObjectDelegator) {
+    if (rhs.Seek().GetMode() == kObjectDelegator || 
+      lhs.Seek().GetMode() == kObjectDelegator) {
       frame.MakeError("Trying to assign a language key constant");
       return;
     }
 
-    if (lhs.IsRef()) {
-      auto &real_lhs = lhs.Unpack();
+    if (lhs.source == ObjectViewSource::kSourceReference) {
+      auto &real_lhs = lhs.Seek().Unpack();
       real_lhs = CreateObjectCopy(rhs.Seek());
       return;
     }
     else {
-      string id = lhs.Cast<string>();
+      string id = lhs.Seek().Cast<string>();
 
       if (lexical::GetStringType(id) != kStringTypeIdentifier) {
         frame.MakeError("Invalid object id");
@@ -3014,6 +3015,7 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     auto &params = impl.GetParameters();
     size_t pos = args.size() - 1;
+    ObjectView view;
 
     if (args.size() > params.size()) {
       frame.MakeError("Too many arguments");
@@ -3027,7 +3029,9 @@ namespace kagami {
 
 
     for (auto it = params.rbegin(); it != params.rend(); ++it) {
-      obj_map.emplace(NamedObject(*it, FetchObject(args[pos]).RemoveDeliveringFlag()));
+      view = FetchObjectView(args[pos]);
+      view.Seek().RemoveDeliveringFlag();
+      obj_map.emplace(NamedObject(*it, view.Seek()));
       pos -= 1;
     }
   }
