@@ -427,6 +427,7 @@ namespace kagami {
     ObjectStack obj_stack_;
     unordered_map<string, Object> literal_objects_;
     map<EventHandlerMark, FunctionImpl> event_list_;
+    deque<Object> view_delegator_;
     bool hanging_;
     bool freezing_;
     bool error_;

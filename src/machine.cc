@@ -1022,7 +1022,8 @@ namespace kagami {
           //keep object alive
           if (ptr != nullptr) {
             if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
-            view = ObjectView(*ptr);
+            view_delegator_.emplace_back(*ptr);
+            view = ObjectView(&view_delegator_.back());
             return_stack.pop();
           }
           else MEMBER_NOT_FOUND_MSG;
@@ -1044,7 +1045,8 @@ namespace kagami {
             frame.MakeError("Object is not found: " + arg.GetData());
           }
           else {
-            view = ObjectView(obj);
+            view_delegator_.emplace_back(std::move(obj));
+            view = ObjectView(&view_delegator_.back());
           }
         }
       }
@@ -1052,7 +1054,8 @@ namespace kagami {
     else if (arg.GetType() == kArgumentReturnStack) {
       if (!return_stack.empty()) {
         if (!return_stack.top().IsAlive()) OBJECT_DEAD_MSG;
-        view = ObjectView(return_stack.top());
+        view_delegator_.emplace_back(return_stack.top());
+        view = ObjectView(&view_delegator_.back());
         view.Seek().SeekDeliveringFlag();
         if (!checking) return_stack.pop();
       }
@@ -3379,6 +3382,7 @@ namespace kagami {
     // Main loop of virtual machine.
     // TODO:dispose return value in event function
     while (frame->idx < size || frame_stack_.size() > 1 || hanging_) {
+      if (!view_delegator_.empty()) view_delegator_.clear();
       //break at stop point.
       if (frame->stop_point) break;
       //freeze mainloop to keep querying events
