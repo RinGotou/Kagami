@@ -268,6 +268,7 @@ namespace kagami {
     };
 
   protected:
+    using ObjectCarrier = unique_ptr<Object>;
     using Value = variant<ObjectPointer, Object>;
 
   protected:
