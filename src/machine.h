@@ -210,6 +210,7 @@ namespace kagami {
     bool inside_initializer_calling;
     bool stop_point;
     bool has_return_value_from_invoking;
+    bool is_constant_object;
     Object struct_base;
     Object assert_rc_copy;
     size_t jump_offset;
@@ -238,6 +239,7 @@ namespace kagami {
       inside_initializer_calling(false),
       stop_point(false),
       has_return_value_from_invoking(false),
+      is_constant_object(false),
       assert_rc_copy(),
       jump_offset(0),
       idx(0),
@@ -256,6 +258,7 @@ namespace kagami {
     void MakeError(string str);
     void MakeWarning(string str);
     void RefreshReturnStack(Object obj);
+    bool IsFromConstantBase();
   };
 
   struct _IgnoredException : std::exception {};

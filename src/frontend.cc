@@ -485,7 +485,7 @@ namespace kagami {
     }
 
     frame_->args.emplace_back(
-      Argument(frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+      Argument(frame_->current.first, kArgumentLiteral, kStringTypeIdentifier));
 
     //Parameter segment
     while (!frame_->eol) {
@@ -553,7 +553,7 @@ namespace kagami {
         break;
       }
       else {
-        Argument arg(frame_->current.first, kArgumentNormal, kStringTypeIdentifier);
+        Argument arg(frame_->current.first, kArgumentLiteral, kStringTypeIdentifier);
         if (optional) {
           arg.option.optional_param = true;
           optional = false;
@@ -604,7 +604,7 @@ namespace kagami {
     frame_->args.emplace_back(Argument());
     //struct identifier
     frame_->args.emplace_back(Argument(
-      frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+      frame_->current.first, kArgumentLiteral, kStringTypeIdentifier));
 
     if (terminator == kTerminatorModule && frame_->next.second != kStringTypeNull) {
       error_string_ = "Invalid argument in module definition";
@@ -614,7 +614,7 @@ namespace kagami {
       //inheritance source struct
       frame_->Eat(); frame_->Eat();
       frame_->args.emplace_back(Argument(
-        frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+        frame_->current.first, kArgumentLiteral, kStringTypeIdentifier));
     }
 
     return true;
@@ -643,7 +643,7 @@ namespace kagami {
     }
 
     frame_->args.emplace_back(Argument(
-      frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+      frame_->current.first, kArgumentLiteral, kStringTypeIdentifier));
 
     
     if (frame_->Eat(); lexical::GetTerminatorCode(frame_->current.first) != kTerminatorIn) {
@@ -726,7 +726,7 @@ namespace kagami {
     else if ((frame_->next.first == "=" || frame_->next.first == "<-") &&
       frame_->last.first != ".") {
       frame_->args.emplace_back(Argument(
-        frame_->current.first, kArgumentNormal, kStringTypeIdentifier));
+        frame_->current.first, kArgumentLiteral, kStringTypeIdentifier));
       return true;
     }
     else {
@@ -771,7 +771,7 @@ namespace kagami {
 
   void LineParser::LiteralValue() {
     frame_->args.emplace_back(
-      Argument(frame_->current.first, kArgumentNormal, frame_->current.second));
+      Argument(frame_->current.first, kArgumentLiteral, frame_->current.second));
   }
 
 

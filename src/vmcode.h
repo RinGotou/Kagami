@@ -4,7 +4,7 @@
 
 namespace kagami {
   enum ArgumentType {
-    kArgumentNormal, 
+    kArgumentLiteral, 
     kArgumentObjectStack, 
     kArgumentReturnStack, 
     kArgumentNull
