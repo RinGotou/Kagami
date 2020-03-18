@@ -1164,10 +1164,18 @@ namespace kagami {
           impl = &ptr->Cast<FunctionImpl>();
         }
       }
-      else if (impl = mgmt::FindFunction(id, view.Seek().GetTypeId());
-        impl == nullptr) {
-        frame.MakeError("Method is not found: " + id);
-        return false;
+      else if (auto it = impl_cache_.find(frame.idx); it != impl_cache_.end()) {
+        impl = it->second;
+      }
+      else {
+        impl = mgmt::FindFunction(id, view.Seek().GetTypeId());
+        if (impl != nullptr) {
+          impl_cache_.emplace(std::make_pair(frame.idx, impl));
+        }
+        else {
+          frame.MakeError("Method is not found: " + id);
+          return false;
+        }
       }
 
       obj_map.emplace(NamedObject(kStrMe, view.Seek()));
@@ -1178,10 +1186,11 @@ namespace kagami {
     //and then try to fetch function object in heap.
     else {
       //CXX function from components
-      impl = FindFunction(id);
-
+      if (auto it = impl_cache_.find(frame.idx); it != impl_cache_.end()) {
+        impl = it->second;
+      }
       //not found,  try to find VMCode function
-      if (impl == nullptr) {
+      else if (impl = FindFunction(id); impl == nullptr) {
         ObjectPointer ptr = obj_stack_.Find(id);
 
         if (ptr == nullptr) {
@@ -1214,6 +1223,9 @@ namespace kagami {
           frame.MakeError("Not function object: " + id);
           return false;
         }
+      }
+      else {
+        impl_cache_.emplace(std::make_pair(frame.idx, impl));
       }
     }
 #undef METHOD_NOT_FOUND_MSG
@@ -2578,7 +2590,7 @@ namespace kagami {
       frame_stack_.top().MakeError("Unexpected return");
       return;
     }
-
+    impl_cache_.clear();
     bool dispose_return_value = frame_stack_.top().event_processing;
 
     if (args.size() == 1) {
@@ -3317,6 +3329,7 @@ namespace kagami {
           update_stack_frame(*impl);
         }
         switch_to_next_tick = true;
+        impl_cache_.clear();
         break;
       case kFunctionExternal:
         if (invoking_request) {
@@ -3414,6 +3427,7 @@ namespace kagami {
         else RecoverLastState();
         //Update register data
         refresh_tick();
+        impl_cache_.clear();
         if (!freezing_ && !frame->stop_point) frame->Stepping();
         continue;
       }
