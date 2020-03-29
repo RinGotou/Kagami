@@ -14,7 +14,10 @@ namespace kagami {
     bool invoking_msg_;
     StateLevel level_;
     string detail_;
-    optional<Object> obj_;
+    // wrapping with a shared pointer to reduce initializing costs,
+    // dirty codes...
+    // optional<Object> obj_;
+    shared_ptr<Object> obj_;
     size_t idx_;
 
   public:
@@ -22,7 +25,8 @@ namespace kagami {
       invoking_msg_(false),
       level_(kStateNormal), 
       detail_(""), 
-      obj_(std::nullopt),
+      //obj_(std::nullopt),
+      obj_(nullptr),
       idx_(0) {}
 
     Message(const Message &msg) :
@@ -57,17 +61,23 @@ namespace kagami {
     StateLevel GetLevel() const { return level_; }
     string GetDetail() const { return detail_; }
     size_t GetIndex() const { return idx_; }
-    bool HasObject() const { return obj_.has_value(); }
-    //bool HasObject() const { return object_ != nullptr; }
+    //bool HasObject() const { return obj_.has_value(); }
+    bool HasObject() const { return obj_ != nullptr; }
     bool IsInvokingRequest() const { return invoking_msg_; }
 
     Object GetObj() const {
-      if (!obj_.has_value()) return Object();
-      return obj_.value();
+      if (obj_ != nullptr) {
+        return *obj_;
+      }
+
+      return Object();
+      // if (!obj_.has_value()) return Object();
+      // return obj_.value();
     }
 
     Message &SetObject(Object &object) {
-      obj_ = object;
+      // obj_ = object;
+      obj_ = make_shared<Object>(object);
       return *this;
     }
 
@@ -76,22 +86,26 @@ namespace kagami {
     }
 
     Message &SetObject(bool value) {
-      obj_ = Object(value, kTypeIdBool);
+      //obj_ = Object(value, kTypeIdBool);
+      obj_ = make_shared<Object>(value, kTypeIdBool);
       return *this;
     }
 
     Message &SetObject(int64_t value) {
-      obj_ = Object(value, kTypeIdInt);
+      // obj_ = Object(value, kTypeIdInt);
+      obj_ = make_shared<Object>(value, kTypeIdInt);
       return *this;
     }
 
     Message &SetObject(double value) {
-      obj_ = Object(value, kTypeIdFloat);
+      // obj_ = Object(value, kTypeIdFloat);
+      obj_ = make_shared<Object>(value, kTypeIdFloat);
       return *this;
     }
 
     Message &SetObject(string value) {
-      obj_ = Object(value, kTypeIdString);
+      //obj_ = Object(value, kTypeIdString);
+      obj_ = make_shared<Object>(value, kTypeIdString);
       return *this;
     }
 
@@ -111,7 +125,8 @@ namespace kagami {
     }
 
     Message &SetInvokingSign(Object &obj) {
-      obj_ = obj;
+      // obj_ = obj;
+      obj_ = make_shared<Object>(obj);
       invoking_msg_ = true;
       return *this;
     }
