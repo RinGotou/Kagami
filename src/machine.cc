@@ -2280,8 +2280,9 @@ namespace kagami {
     fs::path path_cls(path);
     string extension_name = lexical::ToLower(path_cls.extension().string());
 
-    if (extension_name == ".kagami") {
+    if (extension_name == ".kagami" || extension_name.empty()) {
       string absolute_path = fs::absolute(fs::path(path)).string();
+      if (extension_name.empty()) absolute_path.append(".kagami");
       VMCode &script_file = management::script::AppendBlankScript(absolute_path);
 
       if (!script_file.empty()) return;
@@ -2306,6 +2307,9 @@ namespace kagami {
       ConfigProcessor config_proc(obj_stack_, frame_stack_, path_obj.Cast<string>());
       if (frame.error) return;
       config_proc.InitWindowFromConfig();
+    }
+    else {
+      frame.MakeError("Unknown file type");
     }
   }
 
