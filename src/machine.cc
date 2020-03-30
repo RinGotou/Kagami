@@ -601,14 +601,6 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     auto &base = obj_stack_.GetBase().front();
 
-    auto *texture_table_obj = base.Find(kStrTextureTable);
-    if (texture_table_obj == nullptr) {
-      base.Add(kStrTextureTable, Object(ObjectTable(), kTypeIdTable));
-      texture_table_obj = base.Find(kStrTextureTable);
-    }
-
-    auto &table = texture_table_obj->Cast<ObjectTable>();
-
     //TODO:specific error processing
     //TODO:Default font definition
     try {
@@ -650,6 +642,14 @@ namespace kagami {
       Object window_obj(managed_window, kTypeIdWindow);
       auto &window = *static_pointer_cast<dawn::PlainWindow>(managed_window);
       Object window_id_obj(int64_t(window.GetId()), kTypeIdInt);
+
+      auto *texture_table_obj = base.Find(kStrTextureTable + id);
+      if (texture_table_obj == nullptr) {
+        base.Add(kStrTextureTable + id, Object(ObjectTable(), kTypeIdTable));
+        texture_table_obj = base.Find(kStrTextureTable + id);
+      }
+
+      auto &table = texture_table_obj->Cast<ObjectTable>();
 
       window.RealTimeRefreshingMode(rtr_value.has_value() ? rtr_value.value() : true);
       window.SetWindowTitle(title);
@@ -3348,6 +3348,12 @@ namespace kagami {
         break;
       case kFunctionCXX:
         msg = impl->GetActivity()(obj_map);
+        if (msg.GetLevel() == kStateError) {
+          frame->MakeError(msg.GetDetail());
+        }
+        else if (msg.GetLevel() == kStateWarning) {
+          frame->MakeWarning(msg.GetDetail());
+        }
         switch_to_next_tick = invoking_request;
         break;
       default:
