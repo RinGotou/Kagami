@@ -1,7 +1,10 @@
-# Kagami Project
+# Kagami Project Core
 
 ## Intro
-It's a project of experimental scripting language. 
+It's the experimental implementaion of Kagami Scripting Language.
+- It's EXTREMELY SLOW while doing some CPU-intensive works.(Such as sorting. VERY SLOW!!!)
+- This impl will be replaced if new interpreter is ready to use.
+- This project may be renamed in the future.
 
 ## Build Binary
 ### Dependencies
@@ -17,7 +20,7 @@ them until I start working on them.
 
 ### Linux/BSD Platform
 gcc 8.0+ or clang 8.0+ are recommended, and you also need cmake/make to finish configurations.
-MacOS is NOT OFFICIAL SUPPORTED for now.
+MacOS is NOT OFFICIAL SUPPORTED for now and I don't have Apple device for testing.
 
 ```
 # Archlinux/Manjaro Linux
@@ -34,7 +37,7 @@ cmake .
 make
 ```
 ## Help me?
-You can post issues or create pull request.
+You can post issues or create pull request. 
 
 ## License
 BSD-2-Clause
