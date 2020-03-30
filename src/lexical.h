@@ -177,7 +177,7 @@ namespace kagami {
     kStrCompare        = "__compare",
     kStrRightHandSide  = "__rhs",
     kStrLeftHandSide   = "__lhs",
-    kStrTextureTable   = "__texture_table_",
+    kStrTextureTable   = "__texture_table",
     kStrFontObjectHead = "__font_",
     kStrInitializer    = "initializer",
     kStrStructId       = "__struct_id",
