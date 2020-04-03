@@ -223,7 +223,7 @@ namespace kagami {
     stack<bool> scope_stack;
     stack<size_t> jump_stack;
     stack<size_t> branch_jump_stack;
-    stack<Object> return_stack;
+    stack<MovableObject> return_stack;
 
     RuntimeFrame(string scope = kStrRootScope) :
       error(false),
@@ -260,6 +260,7 @@ namespace kagami {
     void MakeWarning(string str);
     void RefreshReturnStack(Object &obj);
     void RefreshReturnStack(Object &&obj);
+    void RefreshReturnStack(ObjectInfo &info, shared_ptr<void> &ptr);
   };
 
   struct _IgnoredException : std::exception {};
@@ -435,7 +436,7 @@ namespace kagami {
     unordered_map<string, Object> literal_objects_;
     unordered_map<size_t, FunctionImplPointer> impl_cache_;
     map<EventHandlerMark, FunctionImpl> event_list_;
-    deque<Object> view_delegator_;
+    deque<MovableObject> view_delegator_;
     bool hanging_;
     bool freezing_;
     bool error_;
