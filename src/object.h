@@ -168,10 +168,18 @@ namespace kagami {
       info_{nullptr, kObjectNormal, false, false, true, kTypeIdString},
       ref_links_(), shared_ptr<void>(make_shared<string>(str)) {}
 
+    Object(const ObjectInfo &info, const shared_ptr<void> ptr) :
+      info_(info), ref_links_(), shared_ptr<void>(ptr) {}
+
     Object &operator=(const Object &object);
     Object &PackContent(shared_ptr<void> ptr, string type_id);
     Object &swap(Object &obj);
     Object &PackObject(Object &object);
+
+    void Impact(ObjectInfo &&info, shared_ptr<void> ptr) {
+      info_ = info;
+      dynamic_cast<shared_ptr<void> *>(this)->operator=(ptr);
+    }
 
     shared_ptr<void> Get() {
       if (info_.mode == kObjectRef) {
@@ -241,6 +249,7 @@ namespace kagami {
     bool operator==(const Object &&obj) = delete;
 
     Object *GetRealDest() { return static_cast<ObjectPointer>(info_.real_dest); }
+    ObjectInfo &GetObjectInfoTable() { return info_; }
     void *GetExternalPointer() { return info_.real_dest; }
     Object &operator=(const Object &&object) { return operator=(object); }
     Object &swap(Object &&obj) { return swap(obj); }

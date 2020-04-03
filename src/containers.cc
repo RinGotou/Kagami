@@ -75,7 +75,8 @@ namespace kagami {
 
     if (idx >= size) return Message("Subscript is out of range", kStateError);
 
-    return Message().SetObject(Object().PackObject(base[idx]));
+    return Message().SetObjectRef(base[idx]);
+    //return Message().SetObject(Object().PackObject(base[idx]));
   }
 
   Message ArrayGetSize(ObjectMap &p) {
@@ -198,7 +199,8 @@ namespace kagami {
     auto &table = p.Cast<ObjectTable>(kStrMe);
     auto &dest_key = p["key"];
     auto &result = table[dest_key];
-    return Message().SetObject(Object().PackObject(result));
+    return Message().SetObjectRef(result);
+    //return Message().SetObject(Object().PackObject(result));
   }
 
   Message TableFindElement(ObjectMap &p) {
