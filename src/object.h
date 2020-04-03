@@ -412,7 +412,7 @@ namespace kagami {
 
   using ObjectStruct = ObjectContainer;
 
-  class ObjectMap : public map<string, Object> {
+  class ObjectMap : public unordered_map<string, Object> {
   public:
     using ComparingFunction = bool(*)(Object &);
 
@@ -420,10 +420,10 @@ namespace kagami {
     ObjectMap() {}
 
     ObjectMap(const ObjectMap &rhs) :
-      map<string, Object>(rhs) {}
+      unordered_map<string, Object>(rhs) {}
 
     ObjectMap(const ObjectMap &&rhs) :
-      map<string, Object>(rhs) {}
+      unordered_map<string, Object>(rhs) {}
 
     ObjectMap(const initializer_list<NamedObject> &rhs) {
       this->clear();
@@ -435,11 +435,11 @@ namespace kagami {
     ObjectMap(const initializer_list<NamedObject> &&rhs) :
       ObjectMap(rhs) {}
 
-    ObjectMap(const map<string, Object> &rhs) :
-      map<string, Object>(rhs) {}
+    ObjectMap(const unordered_map<string, Object> &rhs) :
+      unordered_map<string, Object>(rhs) {}
 
-    ObjectMap(const map<string, Object> &&rhs) :
-      map<string, Object>(rhs) {}
+    ObjectMap(const unordered_map<string, Object> &&rhs) :
+      unordered_map<string, Object>(rhs) {}
 
     ObjectMap &operator=(const initializer_list<NamedObject> &rhs);
     ObjectMap &operator=(const ObjectMap &rhs);
