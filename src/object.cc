@@ -35,57 +35,53 @@ namespace kagami {
   }
 
   Object &Object::operator=(const Object &object) {
-    if (object.mode_ == kObjectRef) {
-      real_dest_ = object.real_dest_;
-      alive_ = object.alive_;
-      reset();
-    }
-    else {
-      real_dest_ = nullptr;
+    info_ = object.info_;
+
+    if (info_.mode != kObjectRef) {
+      info_.real_dest = nullptr;
       dynamic_cast<shared_ptr<void> *>(this)->operator=(object);
     }
+    else {
+      reset();
+    }
 
-    type_id_ = object.type_id_;
-    mode_ = object.mode_;
-    delivering_ = object.delivering_;
-    sub_container_ = object.sub_container_;
     return *this;
   }
 
   Object &Object::PackContent(shared_ptr<void> ptr, string type_id) {
-    if (mode_ == kObjectRef) {
-      return static_cast<ObjectPointer>(real_dest_)
+    if (info_.mode == kObjectRef) {
+      return static_cast<ObjectPointer>(info_.real_dest)
         ->PackContent(ptr, type_id);
     }
 
     dynamic_cast<shared_ptr<void> *>(this)->operator=(ptr);
-    type_id_ = type_id;
+    info_.type_id = type_id;
     return *this;
   }
 
   Object &Object::swap(Object &obj) {
     dynamic_cast<shared_ptr<void> *>(this)->swap(obj);
-    std::swap(type_id_, obj.type_id_);
-    std::swap(mode_, obj.mode_);
-    std::swap(delivering_, obj.delivering_);
-    std::swap(real_dest_, obj.real_dest_);
-    std::swap(sub_container_, obj.sub_container_);
-    std::swap(alive_, obj.alive_);
+    std::swap(info_.type_id, obj.info_.type_id);
+    std::swap(info_.mode, obj.info_.mode);
+    std::swap(info_.delivering, obj.info_.delivering);
+    std::swap(info_.real_dest, obj.info_.real_dest);
+    std::swap(info_.sub_container, obj.info_.sub_container);
+    std::swap(info_.alive, obj.info_.alive);
     return *this;
   }
 
   Object &Object::PackObject(Object &object) {
     reset();
-    type_id_ = object.type_id_;
-    mode_ = kObjectRef;
+    info_.type_id = object.info_.type_id;
+    info_.mode = kObjectRef;
 
     if (!object.IsRef()) {
-      real_dest_ = &object;
-      alive_ = true;
+      info_.real_dest = &object;
+      info_.alive = true;
     }
     else {
-      real_dest_ = object.real_dest_;
-      alive_ = object.alive_;
+      info_.real_dest = object.info_.real_dest;
+      info_.alive = object.info_.alive;
     }
 
     if (object.IsAlive()) EstablishRefLink();
