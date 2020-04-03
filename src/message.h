@@ -75,6 +75,10 @@ namespace kagami {
       return Object();
     }
 
+    //ObjectInfo GetObjectInfo() const {
+    //  return 
+    //}
+
     Message &SetObject(Object &object) {
       slot_ = ObjectPrototype{ object.GetObjectInfoTable(), object.Get() };
       return *this;

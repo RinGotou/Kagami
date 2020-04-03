@@ -40,7 +40,6 @@ namespace kagami {
     if (info_.mode != kObjectRef) {
       info_.real_dest = nullptr;
       dynamic_cast<shared_ptr<void> *>(this)->operator=(object);
-      links_.emplace(ReferenceLinks());
     }
     else {
       reset();
@@ -57,7 +56,6 @@ namespace kagami {
 
     dynamic_cast<shared_ptr<void> *>(this)->operator=(ptr);
     info_.type_id = type_id;
-    links_.emplace(ReferenceLinks());
     return *this;
   }
 
@@ -86,7 +84,6 @@ namespace kagami {
       info_.alive = object.info_.alive;
     }
 
-    links_ = std::nullopt;
     if (object.IsAlive()) EstablishRefLink();
 
     return *this;

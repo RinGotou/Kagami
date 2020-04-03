@@ -143,7 +143,7 @@ namespace kagami {
     }
 
     Object(const Object &&obj) noexcept :
-      Object(obj) {}
+      info_(obj.info_), links_(std::nullopt), shared_ptr<void>(std::move(obj)) {}
 
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
@@ -264,6 +264,8 @@ namespace kagami {
     void SetContainerFlag() { info_.sub_container = true; }
     bool IsAlive() const { return info_.alive; }
   };
+
+  using MovableObject = unique_ptr<Object>;
 
   enum class ObjectViewSource {
     kSourceReference,

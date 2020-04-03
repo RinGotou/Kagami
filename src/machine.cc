@@ -241,7 +241,17 @@ namespace kagami {
     msg_string = str;
   }
 
-  void RuntimeFrame::RefreshReturnStack(Object obj) {
+  void RuntimeFrame::RefreshReturnStack(Object &obj) {
+    if (!void_call) {
+      return_stack.push(obj);
+    }
+    if (stop_point) {
+      return_stack.push(obj);
+      has_return_value_from_invoking = true;
+    }
+  }
+
+  void RuntimeFrame::RefreshReturnStack(Object &&obj) {
     if (!void_call) {
       return_stack.push(obj);
     }

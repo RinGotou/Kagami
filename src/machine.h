@@ -254,10 +254,12 @@ namespace kagami {
 
     void Stepping();
     void Goto(size_t taget_idx);
+
     void AddJumpRecord(size_t target_idx);
     void MakeError(string str);
     void MakeWarning(string str);
-    void RefreshReturnStack(Object obj);
+    void RefreshReturnStack(Object &obj);
+    void RefreshReturnStack(Object &&obj);
   };
 
   struct _IgnoredException : std::exception {};
