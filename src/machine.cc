@@ -261,7 +261,7 @@ namespace kagami {
     }
   }
 
-  void RuntimeFrame::RefreshReturnStack(ObjectInfo &info, shared_ptr<void> &ptr) {
+  void RuntimeFrame::RefreshReturnStack(const ObjectInfo &info, const shared_ptr<void> &ptr) {
     if (!void_call) {
       return_stack.push(make_unique<Object>(info, ptr));
     }
@@ -3519,7 +3519,8 @@ namespace kagami {
         }
 
         //Pushing returning value to returning stack.
-        frame->RefreshReturnStack(msg.GetObj());
+        if (msg.HasObject()) frame->RefreshReturnStack(msg.GetObjectInfo(), msg.GetPtr());
+        else frame->RefreshReturnStack(Object());
       }
       //indicator + 1
       frame->Stepping();

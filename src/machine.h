@@ -260,7 +260,7 @@ namespace kagami {
     void MakeWarning(string str);
     void RefreshReturnStack(Object &obj);
     void RefreshReturnStack(Object &&obj);
-    void RefreshReturnStack(ObjectInfo &info, shared_ptr<void> &ptr);
+    void RefreshReturnStack(const ObjectInfo &info, const shared_ptr<void> &ptr);
   };
 
   struct _IgnoredException : std::exception {};

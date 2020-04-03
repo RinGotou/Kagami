@@ -143,7 +143,9 @@ namespace kagami {
     }
 
     Object(const Object &&obj) noexcept :
-      info_(obj.info_), links_(std::nullopt), shared_ptr<void>(std::move(obj)) {}
+      info_(obj.info_), links_(std::nullopt), shared_ptr<void>(std::move(obj)) {
+      EstablishRefLink();
+    }
 
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
@@ -172,8 +174,10 @@ namespace kagami {
       info_{nullptr, kObjectNormal, false, false, true, kTypeIdString},
       links_(std::nullopt), shared_ptr<void>(make_shared<string>(str)) {}
 
-    Object(const ObjectInfo &info, const shared_ptr<void> ptr) :
-      info_(info), links_(std::nullopt), shared_ptr<void>(ptr) {}
+    Object(const ObjectInfo &info, const shared_ptr<void> &ptr) :
+      info_(info), links_(std::nullopt), shared_ptr<void>(ptr) {
+      EstablishRefLink();
+    }
 
     Object &operator=(const Object &object);
     Object &PackContent(shared_ptr<void> ptr, string type_id);

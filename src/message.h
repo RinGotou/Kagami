@@ -62,7 +62,6 @@ namespace kagami {
     StateLevel GetLevel() const { return level_; }
     string GetDetail() const { return detail_; }
     size_t GetIndex() const { return idx_; }
-    //bool HasObject() const { return obj_.has_value(); }
     bool HasObject() const { return slot_.has_value(); }
     bool IsInvokingRequest() const { return invoking_msg_; }
 
@@ -75,9 +74,13 @@ namespace kagami {
       return Object();
     }
 
-    //ObjectInfo GetObjectInfo() const {
-    //  return 
-    //}
+    const ObjectInfo &GetObjectInfo() const {
+      return slot_.value().info;
+    }
+
+    const shared_ptr<void> &GetPtr() const {
+      return slot_.value().ptr;
+    }
 
     Message &SetObject(Object &object) {
       slot_ = ObjectPrototype{ object.GetObjectInfoTable(), object.Get() };
