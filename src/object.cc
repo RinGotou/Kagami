@@ -38,11 +38,11 @@ namespace kagami {
     if (object.mode_ == kObjectRef) {
       real_dest_ = object.real_dest_;
       alive_ = object.alive_;
-      ptr_.reset();
+      reset();
     }
     else {
       real_dest_ = nullptr;
-      ptr_ = object.ptr_;
+      dynamic_cast<shared_ptr<void> *>(this)->operator=(object);
     }
 
     type_id_ = object.type_id_;
@@ -58,13 +58,13 @@ namespace kagami {
         ->PackContent(ptr, type_id);
     }
 
-    ptr_ = ptr;
+    dynamic_cast<shared_ptr<void> *>(this)->operator=(ptr);
     type_id_ = type_id;
     return *this;
   }
 
   Object &Object::swap(Object &obj) {
-    ptr_.swap(obj.ptr_);
+    dynamic_cast<shared_ptr<void> *>(this)->swap(obj);
     std::swap(type_id_, obj.type_id_);
     std::swap(mode_, obj.mode_);
     std::swap(delivering_, obj.delivering_);
@@ -75,7 +75,7 @@ namespace kagami {
   }
 
   Object &Object::PackObject(Object &object) {
-    ptr_.reset();
+    reset();
     type_id_ = object.type_id_;
     mode_ = kObjectRef;
 

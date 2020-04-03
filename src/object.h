@@ -87,14 +87,14 @@ namespace kagami {
       ptr_(ptr), disposer_(disposer), type_id_(type_id) {}
   };
 
-  class Object {
+  class Object : public shared_ptr<void> {
   private:
     void *real_dest_;
     ObjectMode mode_;
     bool delivering_;
     bool sub_container_;
     bool alive_;
-    shared_ptr<void> ptr_;
+    //shared_ptr<void> ptr_;
     string type_id_;
     set<ObjectPointer> ref_links_;
 
@@ -129,13 +129,13 @@ namespace kagami {
     }
 
     Object() : real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), alive_(true), ptr_(nullptr), type_id_(kTypeIdNull),
-      ref_links_() {}
+      sub_container_(false), alive_(true), type_id_(kTypeIdNull),
+      ref_links_(), shared_ptr<void>(nullptr) {}
 
     Object(const Object &obj) :
       real_dest_(obj.real_dest_), mode_(obj.mode_), delivering_(obj.delivering_),
-      sub_container_(obj.sub_container_), alive_(obj.alive_), 
-      ptr_(obj.ptr_), type_id_(obj.type_id_), ref_links_() {
+      sub_container_(obj.sub_container_), alive_(obj.alive_), type_id_(obj.type_id_), 
+      ref_links_(), shared_ptr<void>(obj) {
       EstablishRefLink(); 
     }
 
@@ -146,13 +146,13 @@ namespace kagami {
     Object(shared_ptr<T> ptr, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
       sub_container_(type_id == kTypeIdStruct), alive_(true),
-      ptr_(ptr), type_id_(type_id), ref_links_() {}
+      type_id_(type_id), ref_links_(), shared_ptr<void>(ptr) {}
 
     template <typename T>
     Object(T &t, string type_id) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
       sub_container_(type_id == kTypeIdStruct), alive_(true),
-      ptr_(make_shared<T>(t)), type_id_(type_id), ref_links_() {}
+      type_id_(type_id), ref_links_(), shared_ptr<void>(make_shared<T>(t)) {}
 
     template <typename T>
     Object(T &&t, string type_id) :
@@ -162,18 +162,17 @@ namespace kagami {
     Object(T *ptr, string type_id) :
       real_dest_((void *)ptr), mode_(kObjectDelegator),  delivering_(false),
       sub_container_(type_id == kTypeIdStruct), alive_(true),
-      ptr_(nullptr), type_id_(type_id), ref_links_() {}
+      type_id_(type_id), ref_links_(), shared_ptr<void>(nullptr) {}
 
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
       real_dest_(ext_ptr), mode_(kObjectExternal), delivering_(false), 
-      sub_container_(false), alive_(true),
-      ptr_(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)),
-      type_id_(type_id), ref_links_() {}
+      sub_container_(false), alive_(true), type_id_(type_id), ref_links_(),
+      shared_ptr<void>(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)) {}
 
     Object(string str) :
       real_dest_(nullptr), mode_(kObjectNormal), delivering_(false),
-      sub_container_(false), alive_(true),
-      ptr_(make_shared<string>(str)), type_id_(kTypeIdString), ref_links_() {}
+      sub_container_(false), alive_(true),type_id_(kTypeIdString), ref_links_(),
+      shared_ptr<void>(make_shared<string>(str)) {}
 
     Object &operator=(const Object &object);
     Object &PackContent(shared_ptr<void> ptr, string type_id);
@@ -185,7 +184,7 @@ namespace kagami {
         return static_cast<ObjectPointer>(real_dest_)->Get();
       }
 
-      return ptr_;
+      return *dynamic_cast<shared_ptr<void> *>(this);
     }
 
     Object &Unpack() {
@@ -205,7 +204,7 @@ namespace kagami {
         return *static_cast<Tx *>(real_dest_);
       }
 
-      return *std::static_pointer_cast<Tx>(ptr_);
+      return *std::static_pointer_cast<Tx>(*this);
     }
 
     Object &SetDeliveringFlag() {
@@ -253,7 +252,7 @@ namespace kagami {
     Object &swap(Object &&obj) { return swap(obj); }
     string GetTypeId() const { return type_id_; }
     bool IsRef() const { return mode_ == kObjectRef; }
-    bool Null() const { return ptr_ == nullptr && real_dest_ == nullptr; }
+    bool Null() const { return !this->operator bool() && real_dest_ == nullptr; }
     ObjectMode GetMode() const { return mode_; }
     void SetContainerFlag() { sub_container_ = true; }
     bool IsAlive() const { return alive_; }
