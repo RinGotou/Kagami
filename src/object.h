@@ -96,23 +96,29 @@ namespace kagami {
     string type_id;
   };
 
+  using ReferenceLinks = set<ObjectPointer>;
+
   class Object : public shared_ptr<void> {
   private:
     ObjectInfo info_;
-    set<ObjectPointer> ref_links_;
+    optional<ReferenceLinks> links_;
+    //set<ObjectPointer> ref_links_;
 
   private:
     void EraseRefLink() {
       if (info_.mode == kObjectRef && info_.alive) {
         auto *obj = static_cast<ObjectPointer>(info_.real_dest);
-        obj->ref_links_.erase(this);
+        obj->links_.value().erase(this);
       }
     }
 
     void EstablishRefLink() {
       if (info_.mode == kObjectRef && info_.alive) {
         auto *obj = static_cast<ObjectPointer>(info_.real_dest);
-        obj->ref_links_.insert(this);
+        obj->links_.value().insert(this);
+      }
+      else if (info_.mode != kObjectRef) {
+        links_.emplace(ReferenceLinks());
       }
     }
 
@@ -120,8 +126,8 @@ namespace kagami {
     ~Object() {
       EraseRefLink();
 
-      if (info_.mode != kObjectRef && !ref_links_.empty()) {
-        for (auto &unit : ref_links_) {
+      if (info_.mode != kObjectRef && links_.has_value() && !links_.value().empty()) {
+        for (auto &unit : links_.value()) {
           if (unit != nullptr) {
             unit->info_.alive = false;
             unit->info_.real_dest = nullptr;
@@ -131,10 +137,10 @@ namespace kagami {
     }
 
     Object() : info_{ nullptr, kObjectNormal, false, false, true, kTypeIdNull},
-      ref_links_(), shared_ptr<void>(nullptr) {}
+      links_(std::nullopt), shared_ptr<void>(nullptr) {}
 
     Object(const Object &obj) : 
-      info_(obj.info_), ref_links_(), shared_ptr<void>(obj) {
+      info_(obj.info_), links_(std::nullopt), shared_ptr<void>(obj) {
       EstablishRefLink();
     }
 
@@ -144,12 +150,12 @@ namespace kagami {
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
       info_{nullptr, kObjectNormal, false, type_id == kTypeIdStruct, true, type_id},
-      ref_links_(), shared_ptr<void>(ptr) {}
+      links_(ReferenceLinks()), shared_ptr<void>(ptr) {}
 
     template <typename T>
     Object(T &t, string type_id) :
       info_{nullptr, kObjectNormal, false, type_id == kTypeIdStruct, true, type_id},
-      ref_links_(), shared_ptr<void>(make_shared<T>(t)) {}
+      links_(ReferenceLinks()), shared_ptr<void>(make_shared<T>(t)) {}
 
     template <typename T>
     Object(T &&t, string type_id) :
@@ -158,18 +164,18 @@ namespace kagami {
     template <typename T>
     Object(T *ptr, string type_id) :
       info_{(void *)ptr, kObjectDelegator, false, type_id == kTypeIdStruct, true, type_id},
-      ref_links_(), shared_ptr<void>(nullptr) {}
+      links_(ReferenceLinks()), shared_ptr<void>(nullptr) {}
 
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
-      info_{ext_ptr, kObjectExternal, false, false, true, type_id}, ref_links_(),
+      info_{ext_ptr, kObjectExternal, false, false, true, type_id}, links_(ReferenceLinks()),
       shared_ptr<void>(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)) {}
 
     Object(string str) :
       info_{nullptr, kObjectNormal, false, false, true, kTypeIdString},
-      ref_links_(), shared_ptr<void>(make_shared<string>(str)) {}
+      links_(ReferenceLinks()), shared_ptr<void>(make_shared<string>(str)) {}
 
     Object(const ObjectInfo &info, const shared_ptr<void> ptr) :
-      info_(info), ref_links_(), shared_ptr<void>(ptr) {}
+      info_(info), links_(ReferenceLinks()), shared_ptr<void>(ptr) {}
 
     Object &operator=(const Object &object);
     Object &PackContent(shared_ptr<void> ptr, string type_id);

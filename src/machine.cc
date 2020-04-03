@@ -1369,7 +1369,7 @@ namespace kagami {
   void Machine::CommandIfOrWhile(Keyword token, ArgumentList &args, size_t nest_end) {
     auto &frame = frame_stack_.top();
     auto &code = code_stack_.front();
-
+    bool has_jump_record = false;
     if (!EXPECTED_COUNT(1)) {
       frame.MakeError("Argument for condition is missing");
       return;
@@ -1377,7 +1377,7 @@ namespace kagami {
 
     if (token == kKeywordIf || token == kKeywordWhile) {
       frame.AddJumpRecord(nest_end);
-      code->FindJumpRecord(frame.idx + frame.jump_offset, frame.branch_jump_stack);
+      has_jump_record = code->FindJumpRecord(frame.idx + frame.jump_offset, frame.branch_jump_stack);
     }
     
     ObjectView view = FetchObjectView(args[0]);
@@ -1392,18 +1392,25 @@ namespace kagami {
     bool state = view.Seek().Cast<bool>();
 
     if (token == kKeywordIf) {
-      frame.scope_stack.push(false);
-      frame.condition_stack.push(state);
-      //TODO:Refine scope creation
-      obj_stack_.Push();
+      auto create_env = [&]()->void {
+        frame.scope_stack.push(true);
+        frame.condition_stack.push(state);
+        obj_stack_.Push();
+      };
+
       if (!state) {
         if (frame.branch_jump_stack.empty()) {
           frame.Goto(frame.jump_stack.top());
+          frame.cancel_cleanup = true;
         }
         else {
+          create_env();
           frame.Goto(frame.branch_jump_stack.top());
           frame.branch_jump_stack.pop();
         }
+      }
+      else {
+        create_env();
       }
     }
     else if (token == kKeywordElif) {
@@ -1742,11 +1749,15 @@ namespace kagami {
 
   void Machine::CommandConditionEnd() {
     auto &frame = frame_stack_.top();
-    frame.condition_stack.pop();
+    if (!frame.cancel_cleanup) {
+      frame.condition_stack.pop();
+      frame.scope_stack.pop();
+      obj_stack_.Pop();
+      while (!frame.branch_jump_stack.empty()) frame.branch_jump_stack.pop();
+      frame.cancel_cleanup = false;
+    }
+
     frame.jump_stack.pop();
-    frame.scope_stack.pop();
-    obj_stack_.Pop();
-    while (!frame.branch_jump_stack.empty()) frame.branch_jump_stack.pop();
   }
 
   void Machine::CommandLoopEnd(size_t nest) {
