@@ -1,8 +1,6 @@
 #include "trace.h"
 
 namespace kagami {
-  //TODO:Remove index storage in Message class
-
   void AppendMessage(string msg, StateLevel level, 
     StandardLogger *std_logger, size_t index) {
     string buf;

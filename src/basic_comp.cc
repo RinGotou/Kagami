@@ -271,8 +271,8 @@ namespace kagami {
     auto tc = TypeChecking({ Expect("path", kTypeIdString) }, p);
     if (TC_FAIL(tc)) return TC_ERROR(tc);
 
-    fs::path path_cls(p.Cast<string>("path"));
-    return Message().SetObject(Object(path_cls.extension().string(), kTypeIdString));
+    fs::path value(p.Cast<string>("path"));
+    return Message().SetObject(Object(value.extension().string(), kTypeIdString));
   }
 
   void InitConsoleComponents() {

@@ -36,7 +36,7 @@ namespace kagami {
   template <>                                                \
   struct _ObjectTypeTrait<_TypeCode> { using Type = _Type; };
 
-  INIT_OBJECT_TYPE(kExtTypeNull, NullObjectType)
+    INIT_OBJECT_TYPE(kExtTypeNull, NullObjectType)
     INIT_OBJECT_TYPE(kExtTypeInt, int64_t)
     INIT_OBJECT_TYPE(kExtTypeFloat, double)
     INIT_OBJECT_TYPE(kExtTypeBool, int)

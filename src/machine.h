@@ -319,6 +319,9 @@ namespace kagami {
     void ApplyInterfaceLayout(dawn::PlainWindow &window);
   };
 
+  // TODO:Replace Message class with new message tunnel
+  //   (Keep Message class for frontend)
+
   class Machine {
   private:
     StandardLogger *logger_;
