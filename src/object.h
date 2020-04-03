@@ -115,10 +115,8 @@ namespace kagami {
     void EstablishRefLink() {
       if (info_.mode == kObjectRef && info_.alive) {
         auto *obj = static_cast<ObjectPointer>(info_.real_dest);
+        if(!obj->links_.has_value()) obj->links_.emplace(ReferenceLinks());
         obj->links_.value().insert(this);
-      }
-      else if (info_.mode != kObjectRef) {
-        links_.emplace(ReferenceLinks());
       }
     }
 
@@ -150,12 +148,12 @@ namespace kagami {
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
       info_{nullptr, kObjectNormal, false, type_id == kTypeIdStruct, true, type_id},
-      links_(ReferenceLinks()), shared_ptr<void>(ptr) {}
+      links_(std::nullopt), shared_ptr<void>(ptr) {}
 
     template <typename T>
     Object(T &t, string type_id) :
       info_{nullptr, kObjectNormal, false, type_id == kTypeIdStruct, true, type_id},
-      links_(ReferenceLinks()), shared_ptr<void>(make_shared<T>(t)) {}
+      links_(std::nullopt), shared_ptr<void>(make_shared<T>(t)) {}
 
     template <typename T>
     Object(T &&t, string type_id) :
@@ -164,18 +162,18 @@ namespace kagami {
     template <typename T>
     Object(T *ptr, string type_id) :
       info_{(void *)ptr, kObjectDelegator, false, type_id == kTypeIdStruct, true, type_id},
-      links_(ReferenceLinks()), shared_ptr<void>(nullptr) {}
+      links_(std::nullopt), shared_ptr<void>(nullptr) {}
 
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
-      info_{ext_ptr, kObjectExternal, false, false, true, type_id}, links_(ReferenceLinks()),
+      info_{ext_ptr, kObjectExternal, false, false, true, type_id}, links_(std::nullopt),
       shared_ptr<void>(make_shared<ExternalRCContainer>(ext_ptr, disposer, type_id)) {}
 
     Object(string str) :
       info_{nullptr, kObjectNormal, false, false, true, kTypeIdString},
-      links_(ReferenceLinks()), shared_ptr<void>(make_shared<string>(str)) {}
+      links_(std::nullopt), shared_ptr<void>(make_shared<string>(str)) {}
 
     Object(const ObjectInfo &info, const shared_ptr<void> ptr) :
-      info_(info), links_(ReferenceLinks()), shared_ptr<void>(ptr) {}
+      info_(info), links_(std::nullopt), shared_ptr<void>(ptr) {}
 
     Object &operator=(const Object &object);
     Object &PackContent(shared_ptr<void> ptr, string type_id);
