@@ -327,6 +327,8 @@ namespace kagami {
   // TODO:Replace Message class with new message tunnel
   //   (Keep Message class for frontend)
 
+  // TODO:Obejct view cache for object stack 
+
   class Machine {
   private:
     StandardLogger *logger_;
@@ -397,6 +399,9 @@ namespace kagami {
 
     template <Keyword op_code>
     void BinaryLogicOperatorImpl(ArgumentList &args);
+
+    void OperatorIncreasing(ArgumentList &args);
+    void OperatorDecreasing(ArgumentList &args);
 
     void OperatorLogicNot(ArgumentList &args);
 

@@ -69,7 +69,8 @@ namespace kagami::lexical {
     case kKeywordLess:
     case kKeywordAnd:
     case kKeywordOr:
-    case kKeywordNot:
+    case kKeywordIncrease:
+    case kKeywordDecrease:
       result = true;
       break;
     default:
@@ -160,6 +161,8 @@ namespace kagami::lexical {
       T(kStrAnd            ,kKeywordAnd),
       T(kStrOr             ,kKeywordOr),
       T(kStrNot            ,kKeywordNot),
+      T(kStrIncrease       ,kKeywordIncrease),
+      T(kStrDecrease       ,kKeywordDecrease),
       T(kStrLessOrEqual    ,kKeywordLessOrEqual),
       T(kStrGreaterOrEqual ,kKeywordGreaterOrEqual),
       T(kStrNotEqual       ,kKeywordNotEqual),
@@ -300,7 +303,7 @@ namespace kagami::lexical {
     static const unordered_set<string> symbols = {
       "+", "-", "*", "/", ">", ">=", "<", "<=", "<-",
       "!=", "&&", "||", "&", "|", "!", "(", ")", "{", "}", "=", "==",
-      "[", "]", ",", ".", "'", ";", "_"
+      "[", "]", ",", ".", "'", ";", "_", "-=", "+="
     };
 
     if (target.empty()) return false;

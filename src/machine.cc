@@ -2585,6 +2585,7 @@ namespace kagami {
       return;
     }
 
+    //TODO:ObjectView
     auto rhs = FetchObject(args[0]);
     if (frame.error) return;
 
@@ -2598,6 +2599,49 @@ namespace kagami {
     frame.RefreshReturnStack(Object(result, kTypeIdBool));
   }
 
+  void Machine::OperatorIncreasing(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(2)) {
+      frame.MakeError("Argument behind operator is missing");
+      return;
+    }
+
+    auto rhs = FetchObjectView(args[1]);
+    auto lhs = FetchObjectView(args[0]);
+
+    if (frame.error) return;
+
+    if (!compare(lhs.Seek().GetTypeId(), rhs.Seek().GetTypeId(), kTypeIdInt)) {
+      frame.MakeError("Unsupported type");
+      return;
+    }
+
+    auto &value = lhs.Seek().Cast<int64_t>();
+    value += rhs.Seek().Cast<int64_t>();
+  }
+
+  void Machine::OperatorDecreasing(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(2)) {
+      frame.MakeError("Argument behind operator is missing");
+      return;
+    }
+
+    auto rhs = FetchObjectView(args[1]);
+    auto lhs = FetchObjectView(args[0]);
+
+    if (frame.error) return;
+
+    if (!compare(lhs.Seek().GetTypeId(), rhs.Seek().GetTypeId(), kTypeIdInt)) {
+      frame.MakeError("Unsupported type");
+      return;
+    }
+
+    auto &value = lhs.Seek().Cast<int64_t>();
+    value -= rhs.Seek().Cast<int64_t>();
+  }
 
   void Machine::ExpList(ArgumentList &args) {
     auto &frame = frame_stack_.top();
@@ -2883,6 +2927,12 @@ namespace kagami {
       break;
     case kKeywordOr:
       BinaryLogicOperatorImpl<kKeywordOr>(args);
+      break;
+    case kKeywordIncrease:
+      OperatorIncreasing(args);
+      break;
+    case kKeywordDecrease:
+      OperatorDecreasing(args);
       break;
     case kKeywordNot:
       OperatorLogicNot(args);
