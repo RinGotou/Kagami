@@ -30,15 +30,19 @@ namespace kagami {
       slot_(std::nullopt),
       idx_(0) {}
 
-    Message(const Message &msg) :
+    Message(Message &msg) :
       invoking_msg_(msg.invoking_msg_),
       level_(msg.level_),
       detail_(msg.detail_),
       slot_(msg.slot_),
       idx_(msg.idx_) {}
 
-    Message(const Message &&msg) :
-      Message(msg) {}
+    Message(Message &&msg) :
+      invoking_msg_(msg.invoking_msg_),
+      level_(msg.level_),
+      detail_(std::forward<string>(msg.detail_)),
+      slot_(std::forward<optional<ObjectPrototype>>(msg.slot_)),
+      idx_(msg.idx_) {}
 
     Message(string detail, StateLevel level = kStateNormal) :
       invoking_msg_(false),

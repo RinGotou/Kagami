@@ -1075,7 +1075,7 @@ namespace kagami {
       if (!return_stack.empty()) {
         if (!return_stack.top()->IsAlive()) OBJECT_DEAD_MSG;
         MovableObject ptr(return_stack.top().release());
-        view_delegator_.emplace_back(MovableObject(ptr.release()));
+        view_delegator_.emplace_back(std::move(MovableObject(ptr.release())));
         view = ObjectView(view_delegator_.back().get());
         view.Seek().SeekDeliveringFlag();
         if (!checking) return_stack.pop();
