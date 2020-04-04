@@ -149,7 +149,7 @@ namespace kagami {
     return result;
   }
 
-  Object *ObjectContainer::Find(string id, bool forward_seeking) {
+  Object *ObjectContainer::Find(const string &id, bool forward_seeking) {
     if (IsDelegated()) return delegator_->Find(id, forward_seeking);
 
     if (base_.empty() && prev_ == nullptr) return nullptr;
@@ -175,8 +175,8 @@ namespace kagami {
     return ptr;
   }
 
-  Object *ObjectContainer::FindWithDomain(string id, string domain,
-    bool forward_seeking) {
+  Object *ObjectContainer::FindWithDomain(const string &id, 
+    const string &domain, bool forward_seeking) {
     if (IsDelegated()) return delegator_->FindWithDomain(id, domain, forward_seeking);
   
     if (base_.empty() && prev_ == nullptr) return nullptr;
@@ -271,7 +271,7 @@ namespace kagami {
     }
   }
 
-  Object *ObjectStack::Find(string id) {
+  Object *ObjectStack::Find(const string &id) {
     if (base_.empty() && prev_ == nullptr) return nullptr;
     ObjectPointer ptr = base_.back().Find(id);
 
@@ -282,7 +282,7 @@ namespace kagami {
     return ptr;
   }
 
-  Object *ObjectStack::Find(string id, string domain) {
+  Object *ObjectStack::Find(const string &id, const string &domain) {
     if (base_.empty() && prev_ == nullptr) return nullptr;
     ObjectPointer ptr = base_.back().FindWithDomain(id, domain);
 

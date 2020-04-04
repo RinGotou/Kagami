@@ -143,7 +143,7 @@ namespace kagami {
     }
 
     Object(const Object &&obj) noexcept :
-      info_(obj.info_), links_(std::nullopt), shared_ptr<void>(std::move(obj)) {
+      info_(std::move(obj.info_)), links_(std::nullopt), shared_ptr<void>(std::move(obj)) {
       EstablishRefLink();
     }
 
@@ -355,8 +355,8 @@ namespace kagami {
     void Replace(string id, Object &source);
     void Replace(string id, Object &&source);
     bool Dispose(string id);
-    Object *Find(string id, bool forward_seeking = true);
-    Object *FindWithDomain(string id, string domain, bool forward_seeking = true);
+    Object *Find(const string &id, bool forward_seeking = true);
+    Object *FindWithDomain(const string &id, const string &domain, bool forward_seeking = true);
     bool IsInside(Object *ptr);
     void ClearExcept(string exceptions);
 
@@ -548,8 +548,8 @@ namespace kagami {
     }
 
     void MergeMap(ObjectMap &p);
-    Object *Find(string id);
-    Object *Find(string id, string domain);
+    Object *Find(const string &id);
+    Object *Find(const string &id, const string &domain);
     bool CreateObject(string id, Object &obj);
     bool CreateObject(string id, Object &&obj);
     bool DisposeObjectInCurrentScope(string id);

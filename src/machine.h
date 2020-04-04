@@ -195,6 +195,9 @@ namespace kagami {
   using EventHandlerMark = pair<Uint32, Uint32>;
   using EventHandler = pair<EventHandlerMark, FunctionImpl>;
 
+  using ViewCache = pair<size_t, ObjectView>;
+  using ViewCachePool = unordered_map<size_t, ViewCache>;
+
   class RuntimeFrame {
   public:
     bool error;
@@ -326,8 +329,6 @@ namespace kagami {
 
   // TODO:Replace Message class with new message tunnel
   //   (Keep Message class for frontend)
-
-  // TODO:Obejct view cache for object stack 
 
   class Machine {
   private:

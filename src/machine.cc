@@ -253,10 +253,10 @@ namespace kagami {
 
   void RuntimeFrame::RefreshReturnStack(Object &&obj) {
     if (!void_call) {
-      return_stack.push(make_unique<Object>(obj));
+      return_stack.push(make_unique<Object>(std::move(obj)));
     }
     if (stop_point) {
-      return_stack.push(make_unique<Object>(obj));
+      return_stack.push(make_unique<Object>(std::move(obj)));
       has_return_value_from_invoking = true;
     }
   }
