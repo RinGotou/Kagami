@@ -2646,7 +2646,7 @@ namespace kagami {
   void Machine::ExpList(ArgumentList &args) {
     auto &frame = frame_stack_.top();
     if (!args.empty()) {
-      frame.RefreshReturnStack(FetchObject(args.back()));
+      frame.RefreshReturnStack(FetchObjectView(args.back()).Seek());
     }
   }
 

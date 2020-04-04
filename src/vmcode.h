@@ -83,9 +83,9 @@ namespace kagami {
       option.domain_type = type;
     }
 
-    auto GetData() { return data_; }
+    auto &GetData() { return data_; }
 
-    auto GetType() { return type_; }
+    auto &GetType() { return type_; }
 
     StringType GetStringType() { return token_type_; }
 

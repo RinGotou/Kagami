@@ -195,8 +195,8 @@ namespace kagami {
   using EventHandlerMark = pair<Uint32, Uint32>;
   using EventHandler = pair<EventHandlerMark, FunctionImpl>;
 
-  using ViewCache = pair<size_t, ObjectView>;
-  using ViewCachePool = unordered_map<size_t, ViewCache>;
+  //using ViewCache = pair<size_t, ObjectView>;
+  //using ViewCachePool = unordered_map<size_t, ViewCache>;
 
   class RuntimeFrame {
   public:
@@ -227,6 +227,7 @@ namespace kagami {
     stack<size_t> jump_stack;
     stack<size_t> branch_jump_stack;
     stack<MovableObject> return_stack;
+    //ViewCachePool view_cache;
 
     RuntimeFrame(string scope = kStrRootScope) :
       error(false),
