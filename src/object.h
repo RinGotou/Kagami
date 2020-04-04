@@ -525,15 +525,16 @@ namespace kagami {
       return true;
     }
 
-    ObjectStack &Push() {
+    ObjectStack &Push(bool inherit_last_scope = false) {
       if (base_.size() == 1 && delegated_) {
         delegated_ = false;
         return *this;
       }
 
       auto *prev = base_.empty() ? nullptr : &base_.back();
+      auto *base_scope = base_.empty() ? nullptr : &base_.front();
       base_.emplace_back(ObjectContainer());
-      base_.back().SetPreviousContainer(prev);
+      base_.back().SetPreviousContainer(inherit_last_scope ? prev : base_scope);
       return *this;
     }
 

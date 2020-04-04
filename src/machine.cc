@@ -1416,7 +1416,7 @@ namespace kagami {
       auto create_env = [&]()->void {
         frame.scope_stack.push(true);
         frame.condition_stack.push(state);
-        obj_stack_.Push();
+        obj_stack_.Push(true);
       };
 
       if (!state) {
@@ -1461,7 +1461,7 @@ namespace kagami {
     else if (token == kKeywordWhile) {
       if (!frame.jump_from_end) {
         frame.scope_stack.push(true);
-        obj_stack_.Push();
+        obj_stack_.Push(true);
       }
       else {
         frame.jump_from_end = false;
@@ -1512,7 +1512,7 @@ namespace kagami {
     else if (empty.GetObj().Cast<bool>()) {
       frame.Goto(nest_end);
       frame.final_cycle = true;
-      obj_stack_.Push(); //avoid error
+      obj_stack_.Push(true); //avoid error
       frame.scope_stack.push(false);
       return;
     }
@@ -1527,7 +1527,7 @@ namespace kagami {
     if (frame.error) return;
 
     frame.scope_stack.push(true);
-    obj_stack_.Push();
+    obj_stack_.Push(true);
     obj_stack_.CreateObject(kStrIteratorObj, iterator_obj);
     obj_stack_.CreateObject(kStrContainerKeepAliveSlot, container_obj);
     obj_stack_.CreateObject(unit_id, unit);
@@ -1598,7 +1598,7 @@ namespace kagami {
     }
 
     frame.scope_stack.push(true);
-    obj_stack_.Push();
+    obj_stack_.Push(true);
     obj_stack_.CreateObject(kStrCaseObj, view.Seek());
     frame.condition_stack.push(false);
 
@@ -1738,7 +1738,7 @@ namespace kagami {
       return;
     }
 
-    obj_stack_.Push();
+    obj_stack_.Push(true);
     auto super_struct_obj = args.size() == 2 ?
       FetchObject(args[1]) : Object();
     auto id_obj = FetchObject(args[0]);
@@ -1762,7 +1762,7 @@ namespace kagami {
       return;
     }
 
-    obj_stack_.Push();
+    obj_stack_.Push(true);
     auto id_obj = FetchObject(args[0]);
     //Use struct_id slot
     frame.struct_id = id_obj.Cast<string>();
