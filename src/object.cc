@@ -144,20 +144,6 @@ namespace kagami {
     dest_map_[id] = &base_[id];
   }
 
-  bool ObjectContainer::Dispose(string id) {
-    if (IsDelegated()) return delegator_->Dispose(id);
-
-    auto it = base_.find(id);
-    bool result = it != base_.end();
-
-    if (result) {
-      base_.erase(it);
-      dest_map_.erase(id);
-    }
-
-    return result;
-  }
-
   Object *ObjectContainer::Find(const string &id, bool forward_seeking) {
     if (IsDelegated()) return delegator_->Find(id, forward_seeking);
 
@@ -314,24 +300,5 @@ namespace kagami {
     auto &top = base_.back();
     
     return top.Add(id, std::move(obj));
-  }
-
-  bool ObjectStack::DisposeObjectInCurrentScope(string id) {
-    if (base_.empty()) return false;
-    auto &scope = base_.back();
-    return scope.Dispose(id);
-  }
-
-  bool ObjectStack::DisposeObject(string id) {
-    if (base_.empty()) return false;
-    bool result = false;
-
-    for (auto it = base_.rbegin(); it != base_.rend(); ++it) {
-      result = it->Dispose(id);
-
-      if (result) break;
-    }
-
-    return result;
   }
 }

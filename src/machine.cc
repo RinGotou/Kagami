@@ -243,30 +243,40 @@ namespace kagami {
 
   void RuntimeFrame::RefreshReturnStack(Object &obj) {
     if (!void_call) {
-      return_stack.push(new Object(obj));
+      return_stack.push_back(new Object(obj));
     }
     if (stop_point) {
-      return_stack.push(new Object(obj));
+      return_stack.push_back(new Object(obj));
       has_return_value_from_invoking = true;
     }
   }
 
   void RuntimeFrame::RefreshReturnStack(Object &&obj) {
     if (!void_call) {
-      return_stack.push(new Object(std::move(obj)));
+      return_stack.push_back(new Object(std::move(obj)));
     }
     if (stop_point) {
-      return_stack.push(new Object(std::move(obj)));
+      return_stack.push_back(new Object(std::move(obj)));
       has_return_value_from_invoking = true;
     }
   }
 
   void RuntimeFrame::RefreshReturnStack(const ObjectInfo &info, const shared_ptr<void> &ptr) {
     if (!void_call) {
-      return_stack.push(new Object(info, ptr));
+      return_stack.push_back(new Object(info, ptr));
     }
     if (stop_point) {
-      return_stack.push(new Object(info, ptr));
+      return_stack.push_back(new Object(info, ptr));
+      has_return_value_from_invoking = true;
+    }
+  }
+  
+  void RuntimeFrame::RefreshReturnStack(bool value) {
+    if (!void_call) {
+      return_stack.push_back(new Object(value, kTypeIdBool));
+    }
+    if (stop_point) {
+      return_stack.push_back(new Object(value, kTypeIdBool));
       has_return_value_from_invoking = true;
     }
   }
@@ -948,7 +958,7 @@ namespace kagami {
           else MEMBER_NOT_FOUND_MSG;
         }
         else if (arg.option.domain_type == kArgumentReturnStack) {
-          auto &sub_container = return_stack.top()->Cast<ObjectStruct>();
+          auto &sub_container = return_stack.back()->Cast<ObjectStruct>();
           ptr = sub_container.Find(arg.GetData());
           //keep object alive
           if (ptr != nullptr) {
@@ -956,7 +966,8 @@ namespace kagami {
             obj = *ptr;
           }
           else MEMBER_NOT_FOUND_MSG;
-          return_stack.pop();
+          delete return_stack.back();
+          return_stack.pop_back();
         }
       }
       else {
@@ -980,10 +991,13 @@ namespace kagami {
     }
     else if (arg.GetType() == kArgumentReturnStack) {
       if (!return_stack.empty()) {
-        obj = *return_stack.top();
+        obj = *return_stack.back();
         if (!obj.IsAlive()) OBJECT_DEAD_MSG;
         obj.SetDeliveringFlag();
-        if(!checking) return_stack.pop(); 
+        if (!checking) {
+          delete return_stack.back();
+          return_stack.pop_back();
+        }
       }
       else {
         frame.MakeError("Can't get object from stack(Internal error)");
@@ -1038,14 +1052,15 @@ namespace kagami {
           else MEMBER_NOT_FOUND_MSG;
         }
         else if (arg.option.domain_type == kArgumentReturnStack) {
-          auto &sub_container = return_stack.top()->Cast<ObjectStruct>();
+          auto &sub_container = return_stack.back()->Cast<ObjectStruct>();
           ptr = sub_container.Find(arg.GetData());
           //keep object alive
           if (ptr != nullptr) {
             if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
             view_delegator_.emplace_back(new Object(*ptr));
             view = ObjectView(view_delegator_.back());
-            return_stack.pop();
+            delete return_stack.back();
+            return_stack.pop_back();
           }
           else MEMBER_NOT_FOUND_MSG;
         }
@@ -1073,11 +1088,11 @@ namespace kagami {
     }
     else if (arg.GetType() == kArgumentReturnStack) {
       if (!return_stack.empty()) {
-        if (!return_stack.top()->IsAlive()) OBJECT_DEAD_MSG;
-        view_delegator_.emplace_back(return_stack.top());
+        if (!return_stack.back()->IsAlive()) OBJECT_DEAD_MSG;
+        view_delegator_.emplace_back(return_stack.back());
         view = ObjectView(view_delegator_.back());
         view.Seek().SeekDeliveringFlag();
-        if (!checking) return_stack.pop();
+        if (!checking) return_stack.pop_back();
       }
       else {
         frame.MakeError("Can't get object from stack(Internal error)");
@@ -1378,8 +1393,9 @@ namespace kagami {
     }
 
     if (frame.has_return_value_from_invoking) {
-      result.SetObject(*frame.return_stack.top());
-      frame.return_stack.pop();
+      result.SetObject(*frame.return_stack.back());
+      delete frame.return_stack.back();
+      frame.return_stack.pop_back();
     }
     frame.stop_point = false;
 
@@ -1792,7 +1808,10 @@ namespace kagami {
       }
       else {
         if (frame.activated_break) frame.activated_break = false;
-        while (!frame.return_stack.empty()) frame.return_stack.pop();
+        while (!frame.return_stack.empty()) {
+          delete frame.return_stack.back();
+          frame.return_stack.pop_back();
+        }
         frame.jump_stack.pop();
         obj_stack_.Pop();
       }
@@ -1801,7 +1820,10 @@ namespace kagami {
     }
     else {
       frame.Goto(nest);
-      while (!frame.return_stack.empty()) frame.return_stack.pop();
+      while (!frame.return_stack.empty()) {
+        delete frame.return_stack.back();
+        frame.return_stack.pop_back();
+      }
       obj_stack_.GetCurrent().Clear();
       frame.jump_from_end = true;
     }
@@ -2540,7 +2562,7 @@ namespace kagami {
 
         if (op_code == kKeywordNotEqual) {
           bool value = !obj.Cast<bool>();
-          frame.RefreshReturnStack(Object(value, kTypeIdBool));
+          frame.RefreshReturnStack(value);
         }
         else {
           frame.RefreshReturnStack(obj);
@@ -2572,7 +2594,7 @@ namespace kagami {
       RESULT_PROCESSING(bool, BoolProducer);
     }
 
-    frame.RefreshReturnStack(Object(result, kTypeIdBool));
+    frame.RefreshReturnStack(result);
 #undef RESULT_PROCESSING
   }
 

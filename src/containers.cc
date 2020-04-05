@@ -70,13 +70,12 @@ namespace kagami {
     if (TC_FAIL(tc)) return TC_ERROR(tc);
 
     ObjectArray &base = p.Cast<ObjectArray>(kStrMe);
-    size_t idx = p.Cast<int64_t>("index");
+    auto &idx = p.Cast<int64_t>("index");
     size_t size = base.size();
 
-    if (idx >= size) return Message("Subscript is out of range", kStateError);
+    if (size_t(idx) >= size) return Message("Subscript is out of range", kStateError);
 
     return Message().SetObjectRef(base[idx]);
-    //return Message().SetObject(Object().PackObject(base[idx]));
   }
 
   Message ArrayGetSize(ObjectMap &p) {
