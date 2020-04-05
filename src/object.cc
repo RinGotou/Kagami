@@ -91,6 +91,15 @@ namespace kagami {
 
   void ObjectContainer::BuildCache() {
     dest_map_.clear();
+
+    if (prev_ != nullptr) {
+      auto &cache = prev_->dest_map_;
+
+      for (auto it = cache.begin(); it != cache.end(); ++it) {
+        dest_map_.insert(*it);
+      }
+    }
+
     const auto begin = base_.begin(), end = base_.end();
     for (auto it = begin; it != end; ++it) {
       dest_map_.insert_or_assign(it->first, &it->second);
@@ -156,20 +165,10 @@ namespace kagami {
 
     ObjectPointer ptr = nullptr;
 
-    if (!base_.empty()) {
-      auto it = dest_map_.find(id);
+    auto it = dest_map_.find(id);
 
-      if (it != dest_map_.end()) {
-        ptr = it->second;
-      }
-      else {
-        if (prev_ != nullptr && forward_seeking) {
-          ptr = prev_->Find(id);
-        }
-      }
-    }
-    else if (prev_ != nullptr && forward_seeking) {
-      ptr = prev_->Find(id);
+    if (it != dest_map_.end()) {
+      ptr = it->second;
     }
 
     return ptr;
@@ -302,14 +301,7 @@ namespace kagami {
     }
     auto &top = base_.back();
 
-    if (top.Find(id, false) == nullptr) {
-      top.Add(id, obj);
-    }
-    else {
-      return false;
-    }
-
-    return true;
+    return top.Add(id, obj);
   }
 
   bool ObjectStack::CreateObject(string id, Object &&obj) {
@@ -320,15 +312,8 @@ namespace kagami {
       return prev_->CreateObject(id, std::move(obj));
     }
     auto &top = base_.back();
-
-    if (top.Find(id, false) == nullptr) {
-      top.Add(id, std::move(obj));
-    }
-    else {
-      return false;
-    }
-
-    return true;
+    
+    return top.Add(id, std::move(obj));
   }
 
   bool ObjectStack::DisposeObjectInCurrentScope(string id) {
