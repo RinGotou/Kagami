@@ -226,8 +226,7 @@ namespace kagami {
     stack<bool> scope_stack;
     stack<size_t> jump_stack;
     stack<size_t> branch_jump_stack;
-    stack<MovableObject> return_stack;
-    //ViewCachePool view_cache;
+    stack<ObjectPointer> return_stack;
 
     RuntimeFrame(string scope = kStrRootScope) :
       error(false),
@@ -443,7 +442,7 @@ namespace kagami {
     unordered_map<string, Object> literal_objects_;
     unordered_map<size_t, FunctionImplPointer> impl_cache_;
     map<EventHandlerMark, FunctionImpl> event_list_;
-    deque<MovableObject> view_delegator_;
+    deque<ObjectPointer> view_delegator_;
     bool hanging_;
     bool freezing_;
     bool error_;

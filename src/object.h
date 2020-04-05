@@ -378,13 +378,6 @@ namespace kagami {
       return base_.empty();
     }
 
-    ObjectContainer &operator=(ObjectContainer &mgr) {
-      if (IsDelegated()) return delegator_->operator=(mgr);
-
-      base_ = mgr.base_;
-      return *this;
-    }
-
     void Clear() {
       if (IsDelegated()) delegator_->Clear();
 
@@ -405,6 +398,15 @@ namespace kagami {
     ObjectContainer &SetPreviousContainer(ObjectContainer *prev) {
       if (IsDelegated()) return delegator_->SetPreviousContainer(prev);
       prev_ = prev;
+
+      if (prev_ != nullptr) {
+        auto &cache = prev_->dest_map_;
+
+        for (auto it = cache.begin(); it != cache.end(); ++it) {
+          dest_map_.insert(*it);
+        }
+      }
+
       return *this;
     }
 

@@ -93,7 +93,7 @@ namespace kagami {
     dest_map_.clear();
     const auto begin = base_.begin(), end = base_.end();
     for (auto it = begin; it != end; ++it) {
-      dest_map_.insert(make_pair(it->first, &it->second));
+      dest_map_.insert_or_assign(it->first, &it->second);
     }
   }
 
@@ -103,7 +103,7 @@ namespace kagami {
     if (CheckObject(id)) return false;
     auto result = base_.emplace(NamedObject(id, source));
     if (result.second) {
-      dest_map_.emplace(make_pair(id, &result.first->second));
+      dest_map_.insert_or_assign(id, &result.first->second);
     }
 
     return true;
@@ -115,7 +115,7 @@ namespace kagami {
     if (CheckObject(id)) return false;
     auto result = base_.emplace(NamedObject(id, std::move(source)));
     if (result.second) {
-      dest_map_.emplace(make_pair(id, &result.first->second));
+      dest_map_.insert_or_assign(id, &result.first->second);
     }
 
     return true;
