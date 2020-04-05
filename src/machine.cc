@@ -3490,7 +3490,7 @@ namespace kagami {
     // TODO:dispose return value in event function
     while (frame->idx < size || frame_stack_.size() > 1 || hanging_) {
       view_delegator_.clear();
-      
+
       //break at stop point.
       if (frame->stop_point) break;
       //freeze mainloop to keep querying events

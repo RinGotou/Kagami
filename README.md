@@ -3,6 +3,7 @@
 ## Intro
 It's the experimental implementaion of Kagami Scripting Language.
 - It's EXTREMELY SLOW while doing some CPU-intensive works.(Such as sorting. VERY SLOW!!!)
+- No heap management. This impl only contains a simple scope-based object storage.
 - This impl will be replaced if new interpreter is ready to use.
 - This project may be renamed in the future.
 
