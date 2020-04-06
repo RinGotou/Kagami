@@ -90,16 +90,12 @@ namespace kagami {
   }
 
   void ObjectContainer::BuildCache() {
-    dest_map_.clear();
-
     if (prev_ != nullptr) {
-      auto &cache = prev_->dest_map_;
-
-      for (auto it = cache.begin(); it != cache.end(); ++it) {
-        dest_map_.insert(*it);
-      }
+      if (prev_->dest_map_.empty()) dest_map_.clear();
+      else dest_map_ = prev_->dest_map_;
     }
 
+    dest_map_.rehash(dest_map_.size() + base_.size());
     const auto begin = base_.begin(), end = base_.end();
     for (auto it = begin; it != end; ++it) {
       dest_map_.insert_or_assign(it->first, &it->second);
@@ -113,6 +109,7 @@ namespace kagami {
     auto result = base_.emplace(NamedObject(id, source));
     if (result.second) {
       dest_map_.insert_or_assign(id, &result.first->second);
+      //dest_map_.rehash(dest_map_.size());
     }
 
     return true;
@@ -125,6 +122,7 @@ namespace kagami {
     auto result = base_.emplace(NamedObject(id, std::move(source)));
     if (result.second) {
       dest_map_.insert_or_assign(id, &result.first->second);
+      //dest_map_.rehash(dest_map_.size());
     }
 
     return true;
@@ -147,7 +145,7 @@ namespace kagami {
   Object *ObjectContainer::Find(const string &id, bool forward_seeking) {
     if (IsDelegated()) return delegator_->Find(id, forward_seeking);
 
-    if (base_.empty() && prev_ == nullptr) return nullptr;
+    //if (base_.empty() && prev_ == nullptr) return nullptr;
 
     ObjectPointer ptr = nullptr;
 

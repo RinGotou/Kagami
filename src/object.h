@@ -135,7 +135,7 @@ namespace kagami {
     }
 
     Object() : info_{ nullptr, kObjectNormal, false, false, true, kTypeIdNull},
-      links_(std::nullopt), shared_ptr<void>(nullptr) {}
+      links_(), shared_ptr<void>(nullptr) {}
 
     Object(const Object &obj) : 
       info_(obj.info_), links_(std::nullopt), shared_ptr<void>(obj) {
@@ -150,12 +150,13 @@ namespace kagami {
     template <typename T>
     Object(shared_ptr<T> ptr, string type_id) :
       info_{nullptr, kObjectNormal, false, type_id == kTypeIdStruct, true, type_id},
-      links_(std::nullopt), shared_ptr<void>(ptr) {}
+      links_(), shared_ptr<void>(ptr) {}
 
     template <typename T>
     Object(T &t, string type_id) :
       info_{nullptr, kObjectNormal, false, type_id == kTypeIdStruct, true, type_id},
-      links_(std::nullopt), shared_ptr<void>(make_shared<T>(t)) {}
+      links_(), 
+      shared_ptr<void>(make_shared<T>(t)) {}
 
     template <typename T>
     Object(T &&t, string type_id) :
@@ -164,7 +165,7 @@ namespace kagami {
     template <typename T>
     Object(T *ptr, string type_id) :
       info_{(void *)ptr, kObjectDelegator, false, type_id == kTypeIdStruct, true, type_id},
-      links_(std::nullopt), shared_ptr<void>(nullptr) {}
+      links_(), shared_ptr<void>(nullptr) {}
 
     Object(void *ext_ptr, ExternalMemoryDisposer disposer, string type_id) :
       info_{ext_ptr, kObjectExternal, false, false, true, type_id}, links_(std::nullopt),
@@ -172,7 +173,7 @@ namespace kagami {
 
     Object(string str) :
       info_{nullptr, kObjectNormal, false, false, true, kTypeIdString},
-      links_(std::nullopt), shared_ptr<void>(make_shared<string>(str)) {}
+      links_(), shared_ptr<void>(make_shared<string>(str)) {}
 
     Object(const ObjectInfo &info, const shared_ptr<void> &ptr) :
       info_(info), links_(std::nullopt), shared_ptr<void>(ptr) {
@@ -333,12 +334,24 @@ namespace kagami {
   using ObjectPair = pair<Object, Object>;
   using ManagedPair = shared_ptr<ObjectPair>;
 
+  struct PaulLarsonStringHash {
+    size_t operator()(std::string const &rhs) const {
+      static const size_t seed = 0;
+      size_t result = seed;
+      for (const auto &unit : rhs) {
+        result = result * 101;
+        result += static_cast<size_t>(unit);
+      }
+      return result;
+    }
+  };
+
   class ObjectContainer {
   private:
     ObjectContainer *delegator_;
     ObjectContainer *prev_;
     map<string, Object> base_;
-    unordered_map<string, Object *> dest_map_;
+    unordered_map<string, Object *, PaulLarsonStringHash> dest_map_;
 
     bool IsDelegated() const { 
       return delegator_ != nullptr; 
@@ -389,7 +402,7 @@ namespace kagami {
       return base_;
     }
 
-    unordered_map<string, Object *> &GetHashMap() {
+    unordered_map<string, Object *, PaulLarsonStringHash> &GetHashMap() {
       if (IsDelegated()) return delegator_->GetHashMap();
       return dest_map_;
     }
@@ -399,11 +412,7 @@ namespace kagami {
       prev_ = prev;
 
       if (prev_ != nullptr) {
-        auto &cache = prev_->dest_map_;
-
-        for (auto it = cache.begin(); it != cache.end(); ++it) {
-          dest_map_.insert(*it);
-        }
+        dest_map_ = prev_->dest_map_;
       }
 
       return *this;
@@ -417,7 +426,7 @@ namespace kagami {
 
   using ObjectStruct = ObjectContainer;
 
-  class ObjectMap : public unordered_map<string, Object> {
+  class ObjectMap : public unordered_map<string, Object, PaulLarsonStringHash> {
   public:
     using ComparingFunction = bool(*)(Object &);
 
@@ -425,10 +434,10 @@ namespace kagami {
     ObjectMap() {}
 
     ObjectMap(const ObjectMap &rhs) :
-      unordered_map<string, Object>(rhs) {}
+      unordered_map<string, Object, PaulLarsonStringHash>(rhs) {}
 
     ObjectMap(const ObjectMap &&rhs) :
-      unordered_map<string, Object>(rhs) {}
+      unordered_map<string, Object, PaulLarsonStringHash>(rhs) {}
 
     ObjectMap(const initializer_list<NamedObject> &rhs) {
       this->clear();
@@ -440,11 +449,11 @@ namespace kagami {
     ObjectMap(const initializer_list<NamedObject> &&rhs) :
       ObjectMap(rhs) {}
 
-    ObjectMap(const unordered_map<string, Object> &rhs) :
-      unordered_map<string, Object>(rhs) {}
+    ObjectMap(const unordered_map<string, Object, PaulLarsonStringHash> &rhs) :
+      unordered_map<string, Object, PaulLarsonStringHash>(rhs) {}
 
-    ObjectMap(const unordered_map<string, Object> &&rhs) :
-      unordered_map<string, Object>(rhs) {}
+    ObjectMap(const unordered_map<string, Object, PaulLarsonStringHash> &&rhs) :
+      unordered_map<string, Object, PaulLarsonStringHash>(rhs) {}
 
     ObjectMap &operator=(const initializer_list<NamedObject> &rhs);
     ObjectMap &operator=(const ObjectMap &rhs);

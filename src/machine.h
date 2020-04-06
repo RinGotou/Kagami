@@ -22,11 +22,11 @@ namespace kagami {
 
   using management::type::PlainComparator;
 
-  PlainType FindTypeCode(string type_id);
-  int64_t IntProducer(Object &obj);
-  double FloatProducer(Object &obj);
-  string StringProducer(Object &obj);
-  bool BoolProducer(Object &obj);
+  //PlainType FindTypeCode(string type_id);
+  //int64_t IntProducer(Object &obj);
+  //double FloatProducer(Object &obj);
+  //string StringProducer(Object &obj);
+  //bool BoolProducer(Object &obj);
   string ParseRawString(const string &src);
   void InitPlainTypesAndConstants();
   void ActivateComponents();

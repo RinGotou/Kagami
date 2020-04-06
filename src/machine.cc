@@ -51,7 +51,7 @@ namespace kagami {
   }
 
 
-  PlainType FindTypeCode(string type_id) {
+  inline PlainType FindTypeCode(string type_id) {
     PlainType type = kNotPlainType;
 
     if (type_id == kTypeIdInt) type = kPlainInt;
@@ -62,50 +62,69 @@ namespace kagami {
     return type;
   }
 
-  bool IsIllegalStringOperator(Keyword keyword) {
+  inline bool IsIllegalStringOperator(Keyword keyword) {
     return keyword != kKeywordPlus && 
       keyword != kKeywordNotEqual && 
       keyword != kKeywordEquals;
   }
 
-  int64_t IntProducer(Object &obj) {
+  inline int64_t IntProducer(Object &obj) {
     int64_t result = 0;
-    switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
-    case kPlainInt:result = obj.Cast<int64_t>(); break;
-    case kPlainFloat:result = static_cast<int64_t>(obj.Cast<double>()); break;
-    case kPlainBool:result = obj.Cast<bool>() ? 1 : 0; break;
-    default:break;
+
+    if (obj.GetTypeId() == kTypeIdInt) {
+      result = obj.Cast<int64_t>();
+    }
+    else {
+      switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
+      case kPlainFloat:result = static_cast<int64_t>(obj.Cast<double>()); break;
+      case kPlainBool:result = obj.Cast<bool>() ? 1 : 0; break;
+      default:break;
+      }
     }
 
     return result;
   }
 
-  double FloatProducer(Object &obj) {
+  inline double FloatProducer(Object &obj) {
     double result = 0;
-    switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
-    case kPlainFloat:result = obj.Cast<double>(); break;
-    case kPlainInt:result = static_cast<double>(obj.Cast<int64_t>()); break;
-    case kPlainBool:result = obj.Cast<bool>() ? 1.0 : 0.0; break;
-    default:break;
+
+    if (obj.GetTypeId() == kTypeIdFloat) {
+      result = obj.Cast<double>();
+    }
+    else {
+      switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
+      case kPlainInt:result = static_cast<double>(obj.Cast<int64_t>()); break;
+      case kPlainBool:result = obj.Cast<bool>() ? 1.0 : 0.0; break;
+      default:break;
+      }
     }
 
     return result;
   }
 
-  string StringProducer(Object &obj) {
+  inline string StringProducer(Object &obj) {
     string result;
-    switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
-    case kPlainInt:result = to_string(obj.Cast<int64_t>()); break;
-    case kPlainFloat:result = to_string(obj.Cast<double>()); break;
-    case kPlainBool:result = obj.Cast<bool>() ? kStrTrue : kStrFalse; break;
-    case kPlainString:result = obj.Cast<string>(); break;
-    default:break;
+
+    if (obj.GetTypeId() == kTypeIdString) {
+      result = obj.Cast<string>();
+    }
+    else {
+      switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
+      case kPlainFloat:result = to_string(obj.Cast<double>()); break;
+      case kPlainBool:result = obj.Cast<bool>() ? kStrTrue : kStrFalse; break;
+      case kPlainString:result = obj.Cast<string>(); break;
+      default:break;
+      }
     }
 
     return result;
   }
 
   bool BoolProducer(Object &obj) {
+    if (obj.GetTypeId() == kTypeIdBool) {
+      return obj.Cast<bool>();
+    }
+
     auto type = FindTypeCode(obj.GetTypeId());
     bool result = false;
 
