@@ -132,9 +132,9 @@ namespace kagami::lexical {
     return result;
   }
 
-  map<string, Keyword> &GetKeywordBase() {
+  unordered_map<string, Keyword> &GetKeywordBase() {
     using T = pair<string, Keyword>;
-    static map<string, Keyword> base = {
+    static unordered_map<string, Keyword> base = {
       T(kStrAssert         ,kKeywordAssert),
       T(kStrLocal          ,kKeywordLocal),
       T(kStrHash           ,kKeywordHash),
@@ -147,6 +147,9 @@ namespace kagami::lexical {
       T(kStrVersion        ,kKeywordVersion),
       T(kStrCodeNameCmd    ,kKeywordCodeName),
       T(kStrSwap           ,kKeywordSwap),
+      T(kStrSwapIf         ,kKeywordSwapIf),
+      T(kStrCSwapIf        ,kKeywordCSwapIf),
+      T(kStrObjectAt       ,kKeywordObjectAt),
       T(kStrIf             ,kKeywordIf),
       T(kStrFn             ,kKeywordFn),
       T(kStrEnd            ,kKeywordEnd),
@@ -157,7 +160,7 @@ namespace kagami::lexical {
       T(kStrMinus          ,kKeywordMinus),
       T(kStrTimes          ,kKeywordTimes),
       T(kStrDiv            ,kKeywordDivide),
-      T(kStrIs             ,kKeywordEquals),
+      T(kStrEquals         ,kKeywordEquals),
       T(kStrAnd            ,kKeywordAnd),
       T(kStrOr             ,kKeywordOr),
       T(kStrNot            ,kKeywordNot),

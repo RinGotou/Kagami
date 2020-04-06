@@ -22,11 +22,6 @@ namespace kagami {
 
   using management::type::PlainComparator;
 
-  //PlainType FindTypeCode(string type_id);
-  //int64_t IntProducer(Object &obj);
-  //double FloatProducer(Object &obj);
-  //string StringProducer(Object &obj);
-  //bool BoolProducer(Object &obj);
   string ParseRawString(const string &src);
   void InitPlainTypesAndConstants();
   void ActivateComponents();
@@ -195,9 +190,6 @@ namespace kagami {
   using EventHandlerMark = pair<Uint32, Uint32>;
   using EventHandler = pair<EventHandlerMark, FunctionImpl>;
 
-  //using ViewCache = pair<size_t, ObjectView>;
-  //using ViewCachePool = unordered_map<size_t, ViewCache>;
-
   class RuntimeFrame {
   public:
     bool error;
@@ -214,6 +206,9 @@ namespace kagami {
     bool stop_point;
     bool has_return_value_from_invoking;
     bool cancel_cleanup;
+    bool required_by_next_cond;
+    bool is_there_a_cond;
+    bool reserved_cond;
     Object struct_base;
     Object assert_rc_copy;
     size_t jump_offset;
@@ -243,6 +238,8 @@ namespace kagami {
       stop_point(false),
       has_return_value_from_invoking(false),
       cancel_cleanup(false),
+      required_by_next_cond(false),
+      reserved_cond(false),
       assert_rc_copy(),
       jump_offset(0),
       idx(0),
@@ -265,7 +262,31 @@ namespace kagami {
     void RefreshReturnStack(Object &&obj);
     void RefreshReturnStack(const ObjectInfo &info, const shared_ptr<void> &ptr);
     void RefreshReturnStack(bool value);
+
+    template <class T>
+    void RefreshReturnStack(T &value, string &type_id) {
+      if (!void_call) {
+        return_stack.push_back(new Object(value, type_id));
+      }
+      if (stop_point) {
+        return_stack.push_back(new Object(value, type_id));
+        has_return_value_from_invoking = true;
+      }
+    }
+
+    template <class T>
+    void RefreshReturnStack(T &&value, string &type_id) {
+      if (!void_call) {
+        return_stack.push_back(new Object(std::forward<T>(value), type_id));
+      }
+      if (stop_point) {
+        return_stack.push_back(new Object(std::forward<T>(value), type_id));
+        has_return_value_from_invoking = true;
+      }
+    }
   };
+
+  using FrameStack = stack<RuntimeFrame, vector<RuntimeFrame>>;
 
   struct _IgnoredException : std::exception {};
   struct _CustomError : std::exception {
@@ -287,7 +308,7 @@ namespace kagami {
 
   private:
     ObjectStack &obj_stack_;
-    stack<RuntimeFrame> &frame_stack_;
+    FrameStack &frame_stack_;
     toml::value toml_file_;
 
   private:
@@ -310,7 +331,7 @@ namespace kagami {
       const toml::value &elem_def, dawn::PlainWindow &window);
   public:
     ConfigProcessor() = delete;
-    ConfigProcessor(ObjectStack &obj_stack, stack<RuntimeFrame> &frames, string file) noexcept :
+    ConfigProcessor(ObjectStack &obj_stack, FrameStack &frames, string file) noexcept :
       obj_stack_(obj_stack), frame_stack_(frames), toml_file_() {
       try { toml_file_ = toml::parse(file); }
       catch (std::runtime_error &e) {
@@ -379,6 +400,9 @@ namespace kagami {
 
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);
+    void CommandSwapIf(ArgumentList &args);
+    void CommandCSwapIf(ArgumentList &args);
+    void CommandObjectAt(ArgumentList &args);
     void CommandBind(ArgumentList &args, bool local_value, bool ext_value);
     void CommandDelivering(ArgumentList &args, bool local_value, bool ext_value);
     void CommandTypeId(ArgumentList &args);
@@ -437,11 +461,17 @@ namespace kagami {
 
     void GenerateErrorMessages(size_t stop_index);
   private:
+    struct ImplCacheHash {
+      size_t operator()(size_t const &rhs) const {
+        return rhs;
+      }
+    };
+
     deque<VMCodePointer> code_stack_;
-    stack<RuntimeFrame> frame_stack_;
+    FrameStack frame_stack_;
     ObjectStack obj_stack_;
-    unordered_map<string, Object> literal_objects_;
-    unordered_map<size_t, FunctionImplPointer> impl_cache_;
+    unordered_map<string, Object, PaulLarsonStringHash> literal_objects_;
+    unordered_map<size_t, FunctionImplPointer, ImplCacheHash> impl_cache_;
     map<EventHandlerMark, FunctionImpl> event_list_;
     vector<ObjectPointer> view_delegator_;
     bool hanging_;

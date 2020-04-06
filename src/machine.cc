@@ -112,7 +112,7 @@ namespace kagami {
       switch (auto type = FindTypeCode(obj.GetTypeId()); type) {
       case kPlainFloat:result = to_string(obj.Cast<double>()); break;
       case kPlainBool:result = obj.Cast<bool>() ? kStrTrue : kStrFalse; break;
-      case kPlainString:result = obj.Cast<string>(); break;
+      case kPlainInt:result = to_string(obj.Cast<int64_t>()); break;
       default:break;
       }
     }
@@ -291,12 +291,18 @@ namespace kagami {
   }
   
   void RuntimeFrame::RefreshReturnStack(bool value) {
-    if (!void_call) {
-      return_stack.push_back(new Object(value, kTypeIdBool));
+    if (required_by_next_cond) {
+      is_there_a_cond = true;
+      reserved_cond = value;
     }
-    if (stop_point) {
-      return_stack.push_back(new Object(value, kTypeIdBool));
-      has_return_value_from_invoking = true;
+    else {
+      if (!void_call) {
+        return_stack.push_back(new Object(value, kTypeIdBool));
+      }
+      if (stop_point) {
+        return_stack.push_back(new Object(value, kTypeIdBool));
+        has_return_value_from_invoking = true;
+      }
     }
   }
 
@@ -1425,6 +1431,8 @@ namespace kagami {
     auto &frame = frame_stack_.top();
     auto &code = code_stack_.front();
     bool has_jump_record = false;
+    bool state = false;
+
     if (!EXPECTED_COUNT(1)) {
       frame.MakeError("Argument for condition is missing");
       return;
@@ -1435,16 +1443,22 @@ namespace kagami {
       has_jump_record = code->FindJumpRecord(frame.idx + frame.jump_offset, frame.branch_jump_stack);
     }
     
-    ObjectView view = FetchObjectView(args[0]);
-
-    if (frame.error) return;
-
-    if (view.Seek().GetTypeId() != kTypeIdBool) {
-      frame.MakeError("Invalid state value type.");
-      return;
+    if (frame.is_there_a_cond) {
+      state = frame.reserved_cond;
+      frame.is_there_a_cond = false;
     }
+    else {
+      ObjectView view = FetchObjectView(args[0]);
 
-    bool state = view.Seek().Cast<bool>();
+      if (frame.error) return;
+
+      if (view.Seek().GetTypeId() != kTypeIdBool) {
+        frame.MakeError("Invalid state value type.");
+        return;
+      }
+
+      state = view.Seek().Cast<bool>();
+    }
 
     if (token == kKeywordIf) {
       auto create_env = [&]()->void {
@@ -2058,12 +2072,191 @@ namespace kagami {
 
   void Machine::CommandSwap(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    auto &right = FetchObject(args[1]).Unpack();
-    auto &left = FetchObject(args[0]).Unpack();
+
+    if (args.size() == 2) {
+      auto &right = FetchObjectView(args[1]).Seek();
+      auto &left = FetchObjectView(args[0]).Seek();
+
+      if (frame.error) return;
+
+      left.swap(right);
+    }
+    else if (args.size() == 3) {
+      auto &right = FetchObjectView(args[2]).Seek();
+      auto &left = FetchObjectView(args[1]).Seek();
+      auto &container = FetchObjectView(args[0]).Seek();
+
+      if (frame.error) return;
+
+      if (!compare(right.GetTypeId(), left.GetTypeId(), kTypeIdInt)) {
+        frame.MakeError("Invalid index");
+        return;
+      }
+
+      auto container_type = container.GetTypeId();
+
+      if (container_type == kTypeIdArray) {
+        auto &base = container.Cast<ObjectArray>();
+        auto rhs_value = size_t(right.Cast<int64_t>());
+        auto lhs_value = size_t(left.Cast<int64_t>());
+
+        if (rhs_value >= base.size() || lhs_value >= base.size()) {
+          frame.MakeError("Index is out of range");
+          return;
+        }
+
+        base[lhs_value].swap(base[rhs_value]);
+      }
+      else if (container_type == kTypeIdTable) {
+        auto &base = container.Cast<ObjectTable>();
+
+        auto l_it = base.find(left);
+        auto r_it = base.find(right);
+        
+        if (l_it != base.end() && r_it != base.end()) {
+          l_it->second.swap(r_it->second);
+        }
+        else {
+          frame.MakeError("Object is not found in this table");
+        }
+      }
+    }
+    else {
+      frame.MakeError("Argument missing");
+    }
+
+  }
+
+  void Machine::CommandSwapIf(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(3)) {
+      frame.MakeError("Argument missing");
+      return;
+    }
+
+    
+    auto &right = FetchObjectView(args[1]).Seek();
+    auto &left = FetchObjectView(args[0]).Seek();
 
     if (frame.error) return;
 
-    left.swap(right);
+    if (frame.is_there_a_cond) {
+      if (frame.reserved_cond) {
+        left.swap(right);
+      }
+      frame.is_there_a_cond = false;
+    }
+    else {
+      auto &cond = FetchObjectView(args[2]).Seek();
+      if (cond.GetTypeId() != kTypeIdBool) {
+        frame.MakeError("Invalid condition value");
+        return;
+      }
+
+      if (cond.Cast<bool>()) left.swap(right);
+    }
+  }
+
+  void Machine::CommandCSwapIf(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(4)) {
+      frame.MakeError("Argument missing");
+      return;
+    }
+
+    auto &rhs = FetchObjectView(args[2]).Seek();
+    auto &lhs = FetchObjectView(args[1]).Seek();
+    auto &container = FetchObjectView(args[0]).Seek();
+
+    if (frame.error) return;
+
+    if (!compare(container.GetTypeId(), kTypeIdArray)) {
+      frame.MakeError("Unsupported container type (array only)");
+      return;
+    }
+
+    if (!compare(rhs.GetTypeId(), lhs.GetTypeId(), kTypeIdInt)) {
+      frame.MakeError("Invalid index");
+      return;
+    }
+
+
+    if (frame.is_there_a_cond) {
+      auto &base = container.Cast<ObjectArray>();
+      auto &lhs_obj = base[size_t(lhs.Cast<int64_t>())];
+      auto &rhs_obj = base[size_t(rhs.Cast<int64_t>())];
+
+      if (frame.reserved_cond) {
+        lhs_obj.swap(rhs_obj);
+      }
+      frame.is_there_a_cond = false;
+    }
+    else {
+      auto &condition = FetchObjectView(args[3]).Seek();
+      if (compare(condition.GetTypeId(), kTypeIdBool)) {
+        auto &base = container.Cast<ObjectArray>();
+        auto &lhs_obj = base[size_t(lhs.Cast<int64_t>())];
+        auto &rhs_obj = base[size_t(rhs.Cast<int64_t>())];
+
+        if (condition.Cast<bool>()) {
+          lhs_obj.swap(rhs_obj);
+        }
+      }
+      else {
+        frame.MakeError("Unsupported condition expression");
+      }
+    }
+  }
+  
+
+  void Machine::CommandObjectAt(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+
+    if (!EXPECTED_COUNT(2)) {
+      frame.MakeError("Argument missing");
+      return;
+    }
+
+    auto &container = FetchObjectView(args[1]).Seek();
+    auto &index = FetchObjectView(args[0]).Seek();
+    auto container_type = container.GetTypeId();
+
+    if (frame.error) return;
+
+    if (container_type == kTypeIdArray) {
+      if (index.GetTypeId() != kTypeIdInt) {
+        frame.MakeError("Invalid array index");
+        return;
+      }
+
+      auto &base = container.Cast<ObjectArray>();
+      auto &index_value = index.Cast<int64_t>();
+
+      if (base.size() < size_t(index_value)) {
+        frame.MakeError("Index is out of range");
+        return;
+      }
+
+      frame.RefreshReturnStack(
+        std::forward<Object>(Object().PackObject(base[index_value])));
+    }
+    else if (container_type == kTypeIdTable) {
+      auto &base = container.Cast<ObjectTable>();
+
+      auto it = base.find(index);
+      if (it != base.end()) {
+        frame.RefreshReturnStack(
+          std::forward<Object>(Object().PackObject(it->second)));
+      }
+      else {
+        frame.MakeError("Element is not found in this table");
+      }
+    }
+    else {
+      frame.MakeError("Unsupported container type");
+    }
   }
 
   void Machine::CommandBind(ArgumentList &args, bool local_value, bool ext_value) {
@@ -2579,13 +2772,9 @@ namespace kagami {
           return;
         }
 
-        if (op_code == kKeywordNotEqual) {
-          bool value = !obj.Cast<bool>();
-          frame.RefreshReturnStack(value);
-        }
-        else {
-          frame.RefreshReturnStack(obj);
-        }
+        bool value = obj.Cast<bool>();
+
+        frame.RefreshReturnStack(op_code == kKeywordNotEqual ? !value : value);
       }
 
       return;
@@ -2612,6 +2801,7 @@ namespace kagami {
     else if (result_type == kPlainBool) {
       RESULT_PROCESSING(bool, BoolProducer);
     }
+
 
     frame.RefreshReturnStack(result);
 #undef RESULT_PROCESSING
@@ -2686,7 +2876,15 @@ namespace kagami {
   void Machine::ExpList(ArgumentList &args) {
     auto &frame = frame_stack_.top();
     if (!args.empty()) {
-      frame.RefreshReturnStack(FetchObjectView(args.back()).Seek());
+      auto result_view = FetchObjectView(args.back());
+
+      if (result_view.Seek().GetTypeId() == kTypeIdBool) {
+        frame.is_there_a_cond = true;
+        frame.reserved_cond = result_view.Seek().Cast<bool>();
+      }
+      else {
+        frame.RefreshReturnStack(result_view.Seek());
+      }
     }
   }
 
@@ -2772,16 +2970,22 @@ namespace kagami {
       return;
     }
 
-    auto result_obj = FetchObject(args[0]);
-    if (frame.error) return;
-
-    if (result_obj.GetTypeId() != kTypeIdBool) {
-      frame.MakeError("Invalid object type for assertion.");
-      return;
+    if (frame.is_there_a_cond) {
+      if (frame.reserved_cond) frame.MakeError("User assertion failed.");
+      frame.is_there_a_cond = false;
     }
+    else {
+      auto &result_obj = FetchObjectView(args[0]).Seek();
+      if (frame.error) return;
 
-    if (!result_obj.Cast<bool>()) {
-      frame.MakeError("User assertion failed.");
+      if (result_obj.GetTypeId() != kTypeIdBool) {
+        frame.MakeError("Invalid object type for assertion.");
+        return;
+      }
+
+      if (!result_obj.Cast<bool>()) {
+        frame.MakeError("User assertion failed.");
+      }
     }
   }
 
@@ -3003,6 +3207,15 @@ namespace kagami {
       break;
     case kKeywordSwap:
       CommandSwap(args);
+      break;
+    case kKeywordSwapIf:
+      CommandSwapIf(args);
+      break;
+    case kKeywordCSwapIf:
+      CommandCSwapIf(args);
+      break;
+    case kKeywordObjectAt:
+      CommandObjectAt(args);
       break;
     case kKeywordBind:
       CommandBind(args, request.option.local_object,
@@ -3388,6 +3601,8 @@ namespace kagami {
     RuntimeFrame *frame = &frame_stack_.top();
     size_t size = code->size();
 
+    obj_map.reserve(10);
+
     //Refreshing loop tick state to make it work correctly.
     auto refresh_tick = [&]() -> void {
       code = code_stack_.back();
@@ -3526,6 +3741,21 @@ namespace kagami {
       return failed;
     };
 
+    auto is_required_by_cond = [&]() -> bool {
+      if (frame->idx >= size - 1) return false;
+      auto &next_cmd = (*code)[frame->idx + 1];
+      auto keyword_value = next_cmd.first.GetKeywordValue();
+      auto arg_type = next_cmd.second.size() > 0 ?
+        next_cmd.second.back().GetType() :
+        kArgumentNull;
+      return (keyword_value == kKeywordIf 
+        || keyword_value == kKeywordWhile
+        || keyword_value == kKeywordCSwapIf
+        || keyword_value == kKeywordSwapIf
+        || keyword_value == kKeywordAssert) 
+        && arg_type == kArgumentReturnStack;
+    };
+
     auto cleanup_cache = [&]() -> void {
       for (auto &unit : view_delegator_) delete unit;
       view_delegator_.clear();
@@ -3573,6 +3803,7 @@ namespace kagami {
       command          = &(*code)[frame->idx];
       script_idx       = command->first.idx;
       frame->void_call = command->first.option.void_call; // dispose returning value
+      frame->required_by_next_cond = is_required_by_cond();
 
       //Built-in machine commands.
       if (command->first.type == kRequestCommand) {

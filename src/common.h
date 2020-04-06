@@ -46,6 +46,8 @@
 #include <unistd.h>
 #endif
 
+#define USE_OLD_IMPL
+
 #include "dawn/src/dawn.ui.h"
 #include "dawn/src/dawn.sound.h"
 #include "minatsuki.log/src/minatsuki.log.h"

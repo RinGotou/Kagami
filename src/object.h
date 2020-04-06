@@ -96,13 +96,18 @@ namespace kagami {
     string type_id;
   };
 
-  using ReferenceLinks = set<ObjectPointer>;
+  struct ObjectPointerHash {
+    size_t operator()(ObjectPointer const &rhs) const {
+      return reinterpret_cast<size_t>(rhs);
+    }
+  };
+
+  using ReferenceLinks = unordered_set<ObjectPointer, ObjectPointerHash>;
 
   class Object : public shared_ptr<void> {
   private:
     ObjectInfo info_;
     optional<ReferenceLinks> links_;
-    //set<ObjectPointer> ref_links_;
 
   private:
     void EraseRefLink() {
@@ -160,7 +165,9 @@ namespace kagami {
 
     template <typename T>
     Object(T &&t, string type_id) :
-      Object(t, type_id) {}
+      info_{ nullptr, kObjectNormal, false, type_id == kTypeIdStruct, true, type_id },
+      links_(),
+      shared_ptr<void>(make_shared<T>(std::forward<T>(t))) {}
 
     template <typename T>
     Object(T *ptr, string type_id) :
@@ -194,7 +201,7 @@ namespace kagami {
       if (info_.mode == kObjectRef) {
         return static_cast<ObjectPointer>(info_.real_dest)->Get();
       }
-
+      
       return *dynamic_cast<shared_ptr<void> *>(this);
     }
 
@@ -215,7 +222,8 @@ namespace kagami {
         return *static_cast<Tx *>(info_.real_dest);
       }
 
-      return *std::static_pointer_cast<Tx>(*this);
+      return *static_cast<Tx *>(get());
+      //return *std::static_pointer_cast<Tx>(*this);
     }
 
     Object &SetDeliveringFlag() {
