@@ -297,58 +297,27 @@ namespace kagami {
 
   class ObjectView : virtual public _ObjectCommonBase {
   protected:
-    enum class Type {
-      kObjectViewRef, 
-      kObjectViewCarrier,
-      kObjectViewInvalid
-    };
-
-  protected:
-    using ObjectCarrier = unique_ptr<Object>;
-    using Value = variant<ObjectPointer, Object>;
+    using Value = ObjectPointer;
     using Source = ObjectViewSource;
 
   protected:
     Value value_;
-    Type type_;
 
   public:
     Source source;
 
   public:
-    ObjectView() :
-      value_(ObjectPointer(nullptr)), type_(Type::kObjectViewInvalid) {}
+    ObjectView() : value_(ObjectPointer(nullptr)) {}
     ObjectView(const ObjectView &rhs) = default;
     ObjectView(const ObjectView &&rhs) : ObjectView(rhs) {}
-    ObjectView(ObjectPointer ptr) :
-      value_(ptr), type_(Type::kObjectViewRef) {}
-    //ObjectView(Object &obj) :
-    //  value_(obj), type_(Type::kObjectViewCarrier) {}
-    //ObjectView(Object &&obj) :
-    //  value_(std::move(obj)), type_(Type::kObjectViewCarrier) {}
+    ObjectView(ObjectPointer ptr) : value_(ptr) {}
 
-    void operator=(const ObjectView &rhs) {
-      value_ = rhs.value_;
-      type_ = rhs.type_;
-    }
+    void operator=(const ObjectView &rhs) { value_ = rhs.value_; }
 
     bool IsObjectView() const override { return true; }
     void operator=(const ObjectView &&rhs) { operator=(rhs); }
-    
-    constexpr Object &Seek() {
-      if (type_ == Type::kObjectViewRef) return *std::get<ObjectPointer>(value_);
-      return std::get<Object>(value_);
-    }
-
-    bool IsAlive() const override {
-      if (type_ == Type::kObjectViewRef) return std::get<ObjectPointer>(value_)->IsAlive();
-      return std::get<Object>(value_).IsAlive();
-    }
-
-    bool Valid() const {
-      return type_ != Type::kObjectViewInvalid;
-    }
-
+    constexpr Object &Seek() { return *value_; }
+    bool IsAlive() const override { return value_->IsAlive(); }
     Object Dump() { return Seek(); }
   };
 
