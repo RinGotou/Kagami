@@ -473,7 +473,7 @@ namespace kagami {
     deque<VMCodePointer> code_stack_;
     FrameStack frame_stack_;
     ObjectStack obj_stack_;
-    unordered_map<string, Object, PaulLarsonStringHash> literal_objects_;
+    unordered_map<string, Object> literal_objects_;
     unordered_map<size_t, FunctionImplPointer, ImplCacheHash> impl_cache_;
     map<EventHandlerMark, FunctionImpl> event_list_;
     vector<ObjectCommonSlot> view_delegator_;

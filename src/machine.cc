@@ -894,45 +894,42 @@ namespace kagami {
     auto type = arg.GetStringType();
     auto value = arg.GetData();
 
-    if (auto it = literal_objects_.find(value); it != literal_objects_.end()) {
-      return &it->second;
-    }
+    auto &obj = literal_objects_[value];
 
-    Object obj;
-
-    if (type == kStringTypeInt) {
-      int64_t int_value;
-      from_chars(value.data(), value.data() + value.size(), int_value);
-      obj.PackContent(make_shared<int64_t>(int_value), kTypeIdInt);
-    }
-    else if (type == kStringTypeFloat) {
-      double float_value;
+    if (obj.Null()) {
+      if (type == kStringTypeInt) {
+        int64_t int_value;
+        from_chars(value.data(), value.data() + value.size(), int_value);
+        obj.PackContent(make_shared<int64_t>(int_value), kTypeIdInt);
+      }
+      else if (type == kStringTypeFloat) {
+        double float_value;
 #ifndef _MSC_VER
-      //dealing with issues of charconv implementation in low-version clang
-      float_value = stod(value);
+        //dealing with issues of charconv implementation in low-version clang
+        float_value = stod(value);
 #else
-      from_chars(value.data(), value.data() + value.size(), float_value);
+        from_chars(value.data(), value.data() + value.size(), float_value);
 #endif
-      obj.PackContent(make_shared<double>(float_value), kTypeIdFloat);
-    }
-    else {
-      switch (type) {
-      case kStringTypeBool:
-        obj.PackContent(make_shared<bool>(value == kStrTrue), kTypeIdBool);
-        break;
-      case kStringTypeString:
-        obj.PackContent(make_shared<string>(ParseRawString(value)), kTypeIdString);
-        break;
-      case kStringTypeIdentifier:
-        obj.PackContent(make_shared<string>(value), kTypeIdString);
-        break;
-      default:
-        break;
+        obj.PackContent(make_shared<double>(float_value), kTypeIdFloat);
+      }
+      else {
+        switch (type) {
+        case kStringTypeBool:
+          obj.PackContent(make_shared<bool>(value == kStrTrue), kTypeIdBool);
+          break;
+        case kStringTypeString:
+          obj.PackContent(make_shared<string>(ParseRawString(value)), kTypeIdString);
+          break;
+        case kStringTypeIdentifier:
+          obj.PackContent(make_shared<string>(value), kTypeIdString);
+          break;
+        default:
+          break;
+        }
       }
     }
 
-    auto cond = literal_objects_.emplace(NamedObject(value, obj));
-    return &cond.first->second;
+    return &obj;
   }
 
   Object Machine::FetchFunctionObject(string id) {
@@ -1064,8 +1061,14 @@ namespace kagami {
     ObjectView view;
 
     if (arg.GetType() == kArgumentLiteral) {
-      view = FetchLiteralObject(arg);
-      view.source = ObjectViewSource::kSourceLiteral;
+      if (arg.HasCachedView()) {
+        view = arg.GetCachedView();
+      }
+      else {
+        view = FetchLiteralObject(arg);
+        arg.SetCachedView(view);
+        view.source = ObjectViewSource::kSourceLiteral;
+      }
     }
     else if (arg.GetType() == kArgumentObjectStack) {
       if (!arg.option.domain.empty() || arg.option.use_last_assert) {
@@ -1561,8 +1564,9 @@ namespace kagami {
       return;
     }
 
-    auto unit_id = FetchObject(args[0]).Cast<string>();
-    auto container_obj = FetchObject(args[1]);
+    auto unit_id = FetchObjectView(args[0]).Seek().Cast<string>();
+    //keep alive
+    auto container_obj = FetchObjectView(args[1]).Seek();
 
     if (frame.error) return;
 
@@ -1610,7 +1614,7 @@ namespace kagami {
 
   void Machine::ForEachChecking(ArgumentList &args, size_t nest_end) {
     auto &frame = frame_stack_.top();
-    auto unit_id = FetchObject(args[0]).Cast<string>();
+    auto unit_id = FetchObjectView(args[0]).Seek().Cast<string>();
     if (frame.error) return;
 
     auto *iterator = obj_stack_.GetCurrent().Find(kStrIteratorObj);
@@ -1661,7 +1665,6 @@ namespace kagami {
     bool has_jump_list = 
       code->FindJumpRecord(frame.idx + frame.jump_offset, frame.branch_jump_stack);
 
-    //Object obj = FetchObject(args[0]);
     auto view = FetchObjectView(args[0]);
     if (frame.error) return;
 
@@ -1817,6 +1820,8 @@ namespace kagami {
     auto super_struct_obj = args.size() == 2 ?
       FetchObject(args[1]) : Object();
     auto id_obj = FetchObject(args[0]);
+
+    if (frame.error) return;
 
     frame.struct_id = id_obj.Cast<string>();
 
@@ -1998,9 +2003,11 @@ namespace kagami {
   void Machine::CommandInclude(ArgumentList &args) {
     auto &frame = frame_stack_.top();
     auto &base = obj_stack_.GetCurrent();
-    auto module_obj = FetchObject(args[0]);
+    auto module_view = FetchObjectView(args[0]);
 
     if (frame.error) return;
+
+    auto &module_obj = FetchObjectView(args[0]).Seek();
 
     if (args.size() != 1) {
       frame.MakeError("Invalid including declaration");
@@ -2084,12 +2091,12 @@ namespace kagami {
 
   void Machine::CommandHash(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    auto obj = FetchObject(args[0]);
+    auto obj = FetchObjectView(args[0]);
 
     if (frame.error) return;
 
-    if (type::IsHashable(obj)) {
-      int64_t hash = type::GetHash(obj);
+    if (type::IsHashable(obj.Seek())) {
+      int64_t hash = type::GetHash(obj.Seek());
       frame.RefreshReturnStack(Object(make_shared<int64_t>(hash), kTypeIdInt));
     }
     else {
@@ -2101,6 +2108,11 @@ namespace kagami {
     auto &frame = frame_stack_.top();
 
     if (args.size() == 2) {
+      if (args[0].GetType() == kArgumentLiteral || args[1].GetType() == kArgumentLiteral) {
+        frame.MakeError("Cannot modify a literal value");
+        return;
+      }
+
       auto &right = FetchObjectView(args[1]).Seek();
       auto &left = FetchObjectView(args[0]).Seek();
 
@@ -2162,6 +2174,10 @@ namespace kagami {
       return;
     }
 
+    if (args[0].GetType() == kArgumentLiteral || args[1].GetType() == kArgumentLiteral) {
+      frame.MakeError("Cannot modify a literal value");
+      return;
+    }
     
     auto &right = FetchObjectView(args[1]).Seek();
     auto &left = FetchObjectView(args[0]).Seek();
@@ -2291,6 +2307,12 @@ namespace kagami {
     using namespace type;
     auto &frame = frame_stack_.top();
 
+    if (args[0].GetType() == kArgumentLiteral &&
+      lexical::GetStringType(args[0].GetData(), true) != kStringTypeIdentifier) {
+      frame.MakeError("Cannot modify a literal value");
+      return;
+    }
+
     //Do not change the order!
     auto rhs = FetchObjectView(args[1]);
     auto lhs = FetchObjectView(args[0]);
@@ -2340,19 +2362,30 @@ namespace kagami {
   void Machine::CommandDelivering(ArgumentList &args, bool local_value, bool ext_value) {
     auto &frame = frame_stack_.top();
 
+    if (args[0].GetType() == kArgumentLiteral &&
+      lexical::GetStringType(args[0].GetData(), true) != kStringTypeIdentifier) {
+      frame.MakeError("Cannot modify a literal value");
+      return;
+    }
+
+    if (args[1].GetType() == kArgumentLiteral) {
+      frame.MakeError("Cannot modify a literal value");
+      return;
+    }
+
     //Do not change the order!
-    auto rhs = FetchObject(args[1]);
-    auto lhs = FetchObject(args[0]);
+    auto rhs = FetchObjectView(args[1]);
+    auto lhs = FetchObjectView(args[0]);
 
     if (frame.error) return;
 
-    if (lhs.IsRef()) {
-      auto &real_lhs = lhs.Unpack();
-      real_lhs = rhs.Unpack();
-      rhs.Unpack() = Object();
+    if (lhs.Seek().IsRef()) {
+      auto &real_lhs = lhs.Seek();
+      real_lhs = rhs.Seek();
+      rhs.Seek() = Object();
     }
     else {
-      string id = lhs.Cast<string>();
+      string id = lhs.Seek().Cast<string>();
 
       if (lexical::GetStringType(id) != kStringTypeIdentifier) {
         frame.MakeError("Invalid object id");
@@ -2368,14 +2401,14 @@ namespace kagami {
             return;
           }
 
-          ptr->Unpack() = rhs.Unpack();
-          rhs.Unpack() = Object();
+          ptr->Unpack() = rhs.Seek();
+          rhs.Seek() = Object();
           return;
         }
       }
 
-      Object obj = rhs.Unpack();
-      rhs.Unpack() = Object();
+      Object obj = rhs.Seek();
+      rhs.Seek() = Object();
 
       if (!obj_stack_.CreateObject(id, obj)) {
         frame.MakeError("Object delivering is failed");
@@ -2490,6 +2523,11 @@ namespace kagami {
 
     if (!EXPECTED_COUNT(1)) {
       frame.MakeError("Argument mismatching: destroy(obj)");
+      return;
+    }
+
+    if (args[0].GetType() == kArgumentLiteral) {
+      frame.MakeError("Cannot modify a literal value");
       return;
     }
 

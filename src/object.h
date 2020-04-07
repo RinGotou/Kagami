@@ -103,13 +103,7 @@ namespace kagami {
     string type_id;
   };
 
-  struct ObjectPointerHash {
-    size_t operator()(ObjectPointer const &rhs) const {
-      return reinterpret_cast<size_t>(rhs);
-    }
-  };
-
-  using ReferenceLinks = unordered_set<ObjectPointer, ObjectPointerHash>;
+  using ReferenceLinks = unordered_set<ObjectPointer>;
 
   class Object : public shared_ptr<void>, virtual public _ObjectCommonBase {
   private:
@@ -232,7 +226,6 @@ namespace kagami {
       }
 
       return *static_cast<Tx *>(get());
-      //return *std::static_pointer_cast<Tx>(*this);
     }
 
     Object &SetDeliveringFlag() {
@@ -307,7 +300,7 @@ namespace kagami {
     Source source;
 
   public:
-    ObjectView() : value_(ObjectPointer(nullptr)) {}
+    ObjectView() : value_(nullptr) {}
     ObjectView(const ObjectView &rhs) = default;
     ObjectView(const ObjectView &&rhs) : ObjectView(rhs) {}
     ObjectView(ObjectPointer ptr) : value_(ptr) {}
@@ -318,6 +311,7 @@ namespace kagami {
     void operator=(const ObjectView &&rhs) { operator=(rhs); }
     constexpr Object &Seek() { return *value_; }
     bool IsAlive() const override { return value_->IsAlive(); }
+    bool IsValid() const { return value_ != nullptr; }
     Object Dump() { return Seek(); }
   };
 
@@ -326,24 +320,12 @@ namespace kagami {
   using ObjectPair = pair<Object, Object>;
   using ManagedPair = shared_ptr<ObjectPair>;
 
-  struct PaulLarsonStringHash {
-    size_t operator()(std::string const &rhs) const {
-      static const size_t seed = 0;
-      size_t result = seed;
-      for (const auto &unit : rhs) {
-        result = result * 101;
-        result += static_cast<size_t>(unit);
-      }
-      return result;
-    }
-  };
-
   class ObjectContainer {
   private:
     ObjectContainer *delegator_;
     ObjectContainer *prev_;
     map<string, Object> base_;
-    unordered_map<string, Object *, PaulLarsonStringHash> dest_map_;
+    unordered_map<string, ObjectPointer> dest_map_;
 
     bool IsDelegated() const { 
       return delegator_ != nullptr; 
@@ -394,11 +376,6 @@ namespace kagami {
       return base_;
     }
 
-    unordered_map<string, Object *, PaulLarsonStringHash> &GetHashMap() {
-      if (IsDelegated()) return delegator_->GetHashMap();
-      return dest_map_;
-    }
-
     ObjectContainer &SetPreviousContainer(ObjectContainer *prev) {
       if (IsDelegated()) return delegator_->SetPreviousContainer(prev);
       prev_ = prev;
@@ -418,7 +395,7 @@ namespace kagami {
 
   using ObjectStruct = ObjectContainer;
 
-  class ObjectMap : public unordered_map<string, Object, PaulLarsonStringHash> {
+  class ObjectMap : public unordered_map<string, Object> {
   public:
     using ComparingFunction = bool(*)(Object &);
 
@@ -426,10 +403,10 @@ namespace kagami {
     ObjectMap() {}
 
     ObjectMap(const ObjectMap &rhs) :
-      unordered_map<string, Object, PaulLarsonStringHash>(rhs) {}
+      unordered_map<string, Object>(rhs) {}
 
     ObjectMap(const ObjectMap &&rhs) :
-      unordered_map<string, Object, PaulLarsonStringHash>(rhs) {}
+      unordered_map<string, Object>(rhs) {}
 
     ObjectMap(const initializer_list<NamedObject> &rhs) {
       this->clear();
@@ -441,11 +418,11 @@ namespace kagami {
     ObjectMap(const initializer_list<NamedObject> &&rhs) :
       ObjectMap(rhs) {}
 
-    ObjectMap(const unordered_map<string, Object, PaulLarsonStringHash> &rhs) :
-      unordered_map<string, Object, PaulLarsonStringHash>(rhs) {}
+    ObjectMap(const unordered_map<string, Object> &rhs) :
+      unordered_map<string, Object>(rhs) {}
 
-    ObjectMap(const unordered_map<string, Object, PaulLarsonStringHash> &&rhs) :
-      unordered_map<string, Object, PaulLarsonStringHash>(rhs) {}
+    ObjectMap(const unordered_map<string, Object> &&rhs) :
+      unordered_map<string, Object>(rhs) {}
 
     ObjectMap &operator=(const initializer_list<NamedObject> &rhs);
     ObjectMap &operator=(const ObjectMap &rhs);

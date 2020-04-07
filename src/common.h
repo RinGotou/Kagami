@@ -17,6 +17,7 @@
 
 #include <string>
 #include <utility>
+#include <array>
 #include <vector>
 #include <memory>
 #include <map>
@@ -61,6 +62,7 @@
 namespace kagami {
   using std::string;
   using std::pair;
+  using std::array;
   using std::vector;
   using std::map;
   using std::set;
@@ -113,6 +115,8 @@ namespace kagami {
     kPlainBool    = 4, 
     kNotPlainType = -1
   };
+
+  const size_t kMaxShortNameCacheSize = 5;
 
   //TODO:Port some object type to extension
   //int, float, bool, string, wstring, instream, outstream

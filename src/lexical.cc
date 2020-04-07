@@ -102,6 +102,7 @@ namespace kagami::lexical {
     int result;
     switch (token) {
     case kKeywordBind:
+    case kKeywordDelivering:
       result = 0;
       break;
     case kKeywordAnd:

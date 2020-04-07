@@ -109,7 +109,7 @@ namespace kagami {
     auto result = base_.emplace(NamedObject(id, source));
     if (result.second) {
       dest_map_.insert_or_assign(id, &result.first->second);
-      //dest_map_.rehash(dest_map_.size());
+      dest_map_.rehash(0);
     }
 
     return true;
@@ -122,7 +122,7 @@ namespace kagami {
     auto result = base_.emplace(NamedObject(id, std::move(source)));
     if (result.second) {
       dest_map_.insert_or_assign(id, &result.first->second);
-      //dest_map_.rehash(dest_map_.size());
+      dest_map_.rehash(0);
     }
 
     return true;
@@ -145,8 +145,6 @@ namespace kagami {
   Object *ObjectContainer::Find(const string &id, bool forward_seeking) {
     if (IsDelegated()) return delegator_->Find(id, forward_seeking);
 
-    //if (base_.empty() && prev_ == nullptr) return nullptr;
-
     ObjectPointer ptr = nullptr;
 
     auto it = dest_map_.find(id);
@@ -166,21 +164,10 @@ namespace kagami {
 
     ObjectPointer container_ptr = nullptr;
 
-    //Find sub-container
-    if (!base_.empty()) {
-      auto it = dest_map_.find(domain);
+    auto it = dest_map_.find(domain);
 
-      if (it != dest_map_.end()) {
-        container_ptr = it->second;
-      }
-      else {
-        if (prev_ != nullptr && forward_seeking) {
-          container_ptr = prev_->Find(id);
-        }
-      }
-    }
-    else if (prev_ != nullptr && forward_seeking) {
-      container_ptr = prev_->Find(id);
+    if (it != dest_map_.end()) {
+      container_ptr = it->second;
     }
 
     if (container_ptr == nullptr) return nullptr;
@@ -194,8 +181,8 @@ namespace kagami {
     if (IsDelegated()) return delegator_->IsInside(ptr);
 
     bool result = false;
-    for (const auto &unit : dest_map_) {
-      if (unit.second == ptr) result = true;
+    for (const auto &unit : base_) {
+      if (&unit.second == ptr) result = true;
     }
     return result;
   }
