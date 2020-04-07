@@ -7,8 +7,15 @@ namespace kagami {
   class ObjectMap;
   class Message;
 
+  struct _ObjectCommonBase {
+    virtual bool IsObjectView() const = 0;
+    virtual bool IsAlive() const = 0;
+    virtual ~_ObjectCommonBase() {}
+  };
+
   using GenericPointer = uintptr_t;
   using ObjectPointer = Object *;
+  using ObjectCommonSlot = _ObjectCommonBase *;
   using ObjectRef = Object &;
   using Comparator = bool(*)(Object &, Object &);
   using NamedObject = pair<string, Object>;
@@ -104,7 +111,7 @@ namespace kagami {
 
   using ReferenceLinks = unordered_set<ObjectPointer, ObjectPointerHash>;
 
-  class Object : public shared_ptr<void> {
+  class Object : public shared_ptr<void>, virtual public _ObjectCommonBase {
   private:
     ObjectInfo info_;
     optional<ReferenceLinks> links_;
@@ -192,6 +199,8 @@ namespace kagami {
     Object &swap(Object &obj);
     Object &PackObject(Object &object);
 
+    bool IsObjectView() const override { return false; }
+
     void Impact(ObjectInfo &&info, shared_ptr<void> ptr) {
       info_ = info;
       dynamic_cast<shared_ptr<void> *>(this)->operator=(ptr);
@@ -275,7 +284,7 @@ namespace kagami {
     bool Null() const { return !this->operator bool() && info_.real_dest == nullptr; }
     ObjectMode GetMode() const { return info_.mode; }
     void SetContainerFlag() { info_.sub_container = true; }
-    bool IsAlive() const { return info_.alive; }
+    bool IsAlive() const override { return info_.alive; }
   };
 
   using MovableObject = unique_ptr<Object>;
@@ -286,7 +295,7 @@ namespace kagami {
     kSourceNull
   };
 
-  class ObjectView {
+  class ObjectView : virtual public _ObjectCommonBase {
   protected:
     enum class Type {
       kObjectViewRef, 
@@ -313,21 +322,27 @@ namespace kagami {
     ObjectView(const ObjectView &&rhs) : ObjectView(rhs) {}
     ObjectView(ObjectPointer ptr) :
       value_(ptr), type_(Type::kObjectViewRef) {}
-    ObjectView(Object &obj) :
-      value_(obj), type_(Type::kObjectViewCarrier) {}
-    ObjectView(Object &&obj) :
-      value_(std::move(obj)), type_(Type::kObjectViewCarrier) {}
+    //ObjectView(Object &obj) :
+    //  value_(obj), type_(Type::kObjectViewCarrier) {}
+    //ObjectView(Object &&obj) :
+    //  value_(std::move(obj)), type_(Type::kObjectViewCarrier) {}
 
     void operator=(const ObjectView &rhs) {
       value_ = rhs.value_;
       type_ = rhs.type_;
     }
 
+    bool IsObjectView() const override { return true; }
     void operator=(const ObjectView &&rhs) { operator=(rhs); }
     
     constexpr Object &Seek() {
       if (type_ == Type::kObjectViewRef) return *std::get<ObjectPointer>(value_);
       return std::get<Object>(value_);
+    }
+
+    bool IsAlive() const override {
+      if (type_ == Type::kObjectViewRef) return std::get<ObjectPointer>(value_)->IsAlive();
+      return std::get<Object>(value_).IsAlive();
     }
 
     bool Valid() const {

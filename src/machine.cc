@@ -306,6 +306,16 @@ namespace kagami {
     }
   }
 
+  void RuntimeFrame::RefreshReturnStack(ObjectView &&view) {
+    if (!void_call) {
+      return_stack.push_back(new ObjectView(view));
+    }
+    if (stop_point) {
+      return_stack.push_back(new ObjectView(view));
+      has_return_value_from_invoking = true;
+    }
+  }
+
   void ConfigProcessor::ElementProcessing(ObjectTable &obj_table, string id, 
     const toml::value &elem_def, dawn::PlainWindow &window) {
     optional<SDL_Color> color_key_value = std::nullopt;
@@ -983,7 +993,9 @@ namespace kagami {
           else MEMBER_NOT_FOUND_MSG;
         }
         else if (arg.option.domain_type == kArgumentReturnStack) {
-          auto &sub_container = return_stack.back()->Cast<ObjectStruct>();
+          auto &sub_container = return_stack.back()->IsObjectView() ?
+            dynamic_cast<ObjectView *>(return_stack.back())->Seek().Cast<ObjectStruct>() :
+            dynamic_cast<ObjectPointer>(return_stack.back())->Cast<ObjectStruct>();
           ptr = sub_container.Find(arg.GetData());
           //keep object alive
           if (ptr != nullptr) {
@@ -1016,7 +1028,9 @@ namespace kagami {
     }
     else if (arg.GetType() == kArgumentReturnStack) {
       if (!return_stack.empty()) {
-        obj = *return_stack.back();
+        obj = return_stack.back()->IsObjectView() ?
+          dynamic_cast<ObjectView *>(return_stack.back())->Seek() :
+          *dynamic_cast<ObjectPointer>(return_stack.back());
         if (!obj.IsAlive()) OBJECT_DEAD_MSG;
         obj.SetDeliveringFlag();
         if (!checking) {
@@ -1077,13 +1091,15 @@ namespace kagami {
           else MEMBER_NOT_FOUND_MSG;
         }
         else if (arg.option.domain_type == kArgumentReturnStack) {
-          auto &sub_container = return_stack.back()->Cast<ObjectStruct>();
+          auto &sub_container = return_stack.back()->IsObjectView() ?
+            dynamic_cast<ObjectView *>(return_stack.back())->Seek().Cast<ObjectStruct>() :
+            dynamic_cast<ObjectPointer>(return_stack.back())->Cast<ObjectStruct>();
           ptr = sub_container.Find(arg.GetData());
           //keep object alive
           if (ptr != nullptr) {
             if (!ptr->IsAlive()) OBJECT_DEAD_MSG;
             view_delegator_.emplace_back(new Object(*ptr));
-            view = ObjectView(view_delegator_.back());
+            view = ObjectView(dynamic_cast<ObjectPointer>(view_delegator_.back()));
             delete return_stack.back();
             return_stack.pop_back();
           }
@@ -1105,7 +1121,7 @@ namespace kagami {
           }
           else {
             view_delegator_.emplace_back(new Object(obj));
-            view = ObjectView(view_delegator_.back());
+            view = ObjectView(dynamic_cast<ObjectPointer>(view_delegator_.back()));
           }
         }
       }
@@ -1115,8 +1131,15 @@ namespace kagami {
       if (!return_stack.empty()) {
         if (!return_stack.back()->IsAlive()) OBJECT_DEAD_MSG;
         view_delegator_.emplace_back(return_stack.back());
-        view = ObjectView(view_delegator_.back());
-        view.Seek().SeekDeliveringFlag();
+        if (view_delegator_.back()->IsObjectView()) {
+          view = *dynamic_cast<ObjectView *>(view_delegator_.back());
+        }
+        else {
+          view = ObjectView(
+            dynamic_cast<ObjectPointer>(view_delegator_.back()));
+          view.Seek().SeekDeliveringFlag();
+        }
+        
         if (!checking) return_stack.pop_back();
       }
       else {
@@ -1418,7 +1441,11 @@ namespace kagami {
     }
 
     if (frame.has_return_value_from_invoking) {
-      result.SetObject(*frame.return_stack.back());
+
+      frame.return_stack.back()->IsObjectView() ?
+        result.SetObjectRef(dynamic_cast<ObjectView *>(frame.return_stack.back())->Seek()) :
+        //not checked. SetObjectRef?
+        result.SetObject(*dynamic_cast<ObjectPointer>(frame.return_stack.back()));
       delete frame.return_stack.back();
       frame.return_stack.pop_back();
     }
@@ -2239,8 +2266,9 @@ namespace kagami {
         return;
       }
 
-      frame.RefreshReturnStack(
-        std::forward<Object>(Object().PackObject(base[index_value])));
+      frame.RefreshReturnStack(ObjectView(&base[index_value]));
+      //frame.RefreshReturnStack(
+      //  std::forward<Object>(Object().PackObject(base[index_value])));
     }
     else if (container_type == kTypeIdTable) {
       auto &base = container.Cast<ObjectTable>();
@@ -2875,7 +2903,10 @@ namespace kagami {
 
   void Machine::ExpList(ArgumentList &args) {
     auto &frame = frame_stack_.top();
-    if (!args.empty()) {
+    if (frame.is_there_a_cond) {
+      //DO NOTHING
+    }
+    else if (!args.empty()) {
       auto result_view = FetchObjectView(args.back());
 
       if (result_view.Seek().GetTypeId() == kTypeIdBool) {
@@ -3748,11 +3779,25 @@ namespace kagami {
       auto arg_type = next_cmd.second.size() > 0 ?
         next_cmd.second.back().GetType() :
         kArgumentNull;
-      return (keyword_value == kKeywordIf 
+      bool explist_optimization = false;
+
+      if (frame->idx < size - 2) {
+        auto &next2_cmd = (*code)[frame->idx + 2];
+        auto keyword_value2 = next2_cmd.first.GetKeywordValue();
+        auto arg_type2 = next2_cmd.second.size() > 0 ?
+          next2_cmd.second.back().GetType() :
+          kArgumentNull;
+        explist_optimization = (keyword_value == kKeywordExpList)
+          && (keyword_value2 == kKeywordWhile
+            || keyword_value2 == kKeywordIf);
+      }
+
+      return ((keyword_value == kKeywordIf 
         || keyword_value == kKeywordWhile
         || keyword_value == kKeywordCSwapIf
         || keyword_value == kKeywordSwapIf
         || keyword_value == kKeywordAssert) 
+         || explist_optimization)
         && arg_type == kArgumentReturnStack;
     };
 

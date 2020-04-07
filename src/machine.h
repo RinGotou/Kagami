@@ -209,6 +209,7 @@ namespace kagami {
     bool required_by_next_cond;
     bool is_there_a_cond;
     bool reserved_cond;
+    bool direct_delivering;
     Object struct_base;
     Object assert_rc_copy;
     size_t jump_offset;
@@ -221,7 +222,7 @@ namespace kagami {
     stack<bool> scope_stack;
     stack<size_t> jump_stack;
     stack<size_t> branch_jump_stack;
-    vector<ObjectPointer> return_stack;
+    vector<ObjectCommonSlot> return_stack;
 
     RuntimeFrame(string scope = kStrRootScope) :
       error(false),
@@ -240,6 +241,7 @@ namespace kagami {
       cancel_cleanup(false),
       required_by_next_cond(false),
       reserved_cond(false),
+      direct_delivering(false),
       assert_rc_copy(),
       jump_offset(0),
       idx(0),
@@ -262,6 +264,7 @@ namespace kagami {
     void RefreshReturnStack(Object &&obj);
     void RefreshReturnStack(const ObjectInfo &info, const shared_ptr<void> &ptr);
     void RefreshReturnStack(bool value);
+    void RefreshReturnStack(ObjectView &&view);
 
     template <class T>
     void RefreshReturnStack(T &value, string &type_id) {
@@ -473,7 +476,7 @@ namespace kagami {
     unordered_map<string, Object, PaulLarsonStringHash> literal_objects_;
     unordered_map<size_t, FunctionImplPointer, ImplCacheHash> impl_cache_;
     map<EventHandlerMark, FunctionImpl> event_list_;
-    vector<ObjectPointer> view_delegator_;
+    vector<ObjectCommonSlot> view_delegator_;
     bool hanging_;
     bool freezing_;
     bool error_;
