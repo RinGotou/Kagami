@@ -2253,7 +2253,6 @@ namespace kagami {
     }
   }
   
-
   void Machine::CommandObjectAt(ArgumentList &args) {
     auto &frame = frame_stack_.top();
 

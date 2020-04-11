@@ -35,6 +35,7 @@
 #include <unordered_set>
 #include <set>
 #include <optional>
+#include <mutex>
 
 #include "toml11/toml.hpp"
 
@@ -91,6 +92,8 @@ namespace kagami {
   using std::variant;
   using std::tuple;
   using std::optional;
+  using std::mutex;
+  using std::lock_guard;
   
   using minatsuki::StandardLogger;
   using minatsuki::StandardCachedLogger;

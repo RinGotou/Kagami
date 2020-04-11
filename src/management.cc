@@ -61,7 +61,10 @@ namespace kagami::management {
     return base;
   }
 
+  static mutex constant_creation_gate;
+
   Object *CreateConstantObject(string id, Object &object) {
+    lock_guard<mutex> guard(constant_creation_gate);
     ObjectContainer &base = GetConstantBase();
 
     if (base.Find(id) != nullptr) return nullptr;
@@ -72,6 +75,7 @@ namespace kagami::management {
   }
 
   Object *CreateConstantObject(string id, Object &&object) {
+    lock_guard<mutex> guard(constant_creation_gate);
     ObjectContainer &base = GetConstantBase();
 
     if (base.Find(id) != nullptr) return nullptr;
@@ -171,6 +175,8 @@ namespace kagami::management::type {
 
   //TODO:External/Delegator object processing
   Object CreateObjectCopy(Object &object) {
+    lock_guard<mutex> guard(object.GetMutex());
+
     if (object.GetDeliveringFlag()) {
       return object;
     }
@@ -203,7 +209,9 @@ namespace kagami::management::type {
     return result;
   }
 
-  bool CheckBehavior(Object obj, string method_str) {
+  bool CheckBehavior(Object &obj, string method_str) {
+    lock_guard<mutex> guard(obj.GetMutex());
+
     auto obj_methods = GetMethods(obj.GetTypeId());
     auto sample = BuildStringVector(method_str);
     bool result = true;
@@ -237,6 +245,9 @@ namespace kagami::management::type {
   }
 
   bool CompareObjects(Object &lhs, Object &rhs) {
+    lock_guard<mutex> lhs_guard(lhs.GetMutex());
+    lock_guard<mutex> rhs_guard(rhs.GetMutex());
+
     if (lhs.GetTypeId() != rhs.GetTypeId()) return false;
     auto &collection = GetObjectTraitsCollection();
     const auto it = collection.find(lhs.GetTypeId());
@@ -276,8 +287,11 @@ namespace kagami::management::type {
 }
 
 namespace kagami::management::script {
+  mutex script_storage_gate;
+
   auto &GetScriptStorage() {
     static ScriptStorage storage;
+    lock_guard<mutex> guard(script_storage_gate);
     return storage;
   }
 

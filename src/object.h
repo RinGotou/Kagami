@@ -109,6 +109,7 @@ namespace kagami {
   private:
     ObjectInfo info_;
     optional<ReferenceLinks> links_;
+    mutex gate_;
 
   private:
     void EraseRefLink() {
@@ -267,6 +268,7 @@ namespace kagami {
     bool operator==(const Object &obj) = delete;
     bool operator==(const Object &&obj) = delete;
 
+    mutex &GetMutex() { return gate_; }
     Object *GetRealDest() { return static_cast<ObjectPointer>(info_.real_dest); }
     ObjectInfo &GetObjectInfoTable() { return info_; }
     void *GetExternalPointer() { return info_.real_dest; }

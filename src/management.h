@@ -36,7 +36,7 @@ namespace kagami::management::type {
   bool IsCopyable(Object &obj);
   void CreateObjectTraits(string id, ObjectTraits temp);
   Object CreateObjectCopy(Object &object);
-  bool CheckBehavior(Object obj, string method_str);
+  bool CheckBehavior(Object &obj, string method_str);
   bool CompareObjects(Object &lhs, Object &rhs);
 
   class ObjectTraitsSetup {
