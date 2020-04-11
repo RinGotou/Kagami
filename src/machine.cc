@@ -2890,7 +2890,13 @@ namespace kagami {
 
     bool result = !rhs.Cast<bool>();
 
-    frame.RefreshReturnStack(Object(result, kTypeIdBool));
+    if (frame.required_by_next_cond) {
+      frame.reserved_cond = result;
+      frame.is_there_a_cond = true;
+    }
+    else {
+      frame.RefreshReturnStack(result);
+    }
   }
 
   void Machine::OperatorIncreasing(ArgumentList &args) {
@@ -3809,6 +3815,7 @@ namespace kagami {
     };
 
     auto is_required_by_cond = [&]() -> bool {
+      bool main_trigger = lexical::IsOperator(command->first.GetKeywordValue());
       if (frame->idx >= size - 1) return false;
       auto &next_cmd = (*code)[frame->idx + 1];
       auto keyword_value = next_cmd.first.GetKeywordValue();
@@ -3834,7 +3841,8 @@ namespace kagami {
         || keyword_value == kKeywordSwapIf
         || keyword_value == kKeywordAssert) 
          || explist_optimization)
-        && arg_type == kArgumentReturnStack;
+        && arg_type == kArgumentReturnStack
+        && main_trigger;
     };
 
     auto cleanup_cache = [&]() -> void {

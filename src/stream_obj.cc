@@ -16,6 +16,7 @@ namespace kagami {
     string path = p.Cast<string>("path");
 
     shared_ptr<InStream> ifs = make_shared<InStream>(path);
+    ifs->eof();
 
     return Message().SetObject(Object(ifs, kTypeIdInStream));
   }
