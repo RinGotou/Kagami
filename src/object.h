@@ -104,7 +104,8 @@ namespace kagami {
   };
 
   struct ViewCounter {
-
+    bool dead;
+    std::atomic_int32_t count;
   };
 
   using ReferenceLinks = unordered_set<ObjectPointer>;
@@ -112,6 +113,7 @@ namespace kagami {
   class Object : public shared_ptr<void>, virtual public _ObjectCommonBase {
   private:
     ObjectInfo info_;
+    ViewCounter *counter_;
     optional<ReferenceLinks> links_;
     mutex gate_;
 

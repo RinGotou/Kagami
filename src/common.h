@@ -36,6 +36,7 @@
 #include <set>
 #include <optional>
 #include <mutex>
+#include <atomic>
 
 #include "toml11/toml.hpp"
 
