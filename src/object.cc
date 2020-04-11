@@ -189,19 +189,23 @@ namespace kagami {
 
   void ObjectContainer::ClearExcept(string exceptions) {
     if (IsDelegated()) delegator_->ClearExcept(exceptions);
+    using Iterator = map<string, Object>::iterator;
 
-    map<string, Object> dest;
-    map<string, Object>::iterator it;
     auto obj_list = BuildStringVector(exceptions);
+    Iterator ready_to_del;
+    Iterator it = base_.begin();
 
-    for (auto &unit : obj_list) {
-      it = base_.find(unit);
-      if (it != base_.end()) {
-        dest.insert(*it);
+    while (it != base_.end()) {
+      if (!find_in_vector(it->first, obj_list)) {
+        ready_to_del = it;
+        ++it;
+        base_.erase(ready_to_del);
+        continue;
       }
+
+      ++it;
     }
 
-    base_.swap(dest);
     BuildCache();
   }
 

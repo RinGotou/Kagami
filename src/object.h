@@ -103,6 +103,10 @@ namespace kagami {
     string type_id;
   };
 
+  struct ViewCounter {
+
+  };
+
   using ReferenceLinks = unordered_set<ObjectPointer>;
 
   class Object : public shared_ptr<void>, virtual public _ObjectCommonBase {

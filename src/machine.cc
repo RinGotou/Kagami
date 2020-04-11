@@ -2379,9 +2379,9 @@ namespace kagami {
     if (frame.error) return;
 
     if (lhs.Seek().IsRef()) {
-      auto &real_lhs = lhs.Seek();
+      auto &real_lhs = lhs.Seek().Unpack();
       real_lhs = rhs.Seek();
-      rhs.Seek() = Object();
+      rhs.Seek().Unpack() = Object();
     }
     else {
       string id = lhs.Seek().Cast<string>();
@@ -2406,10 +2406,9 @@ namespace kagami {
         }
       }
 
-      Object obj = rhs.Seek();
-      rhs.Seek() = Object();
+      rhs.Seek().Unpack() = Object();
 
-      if (!obj_stack_.CreateObject(id, obj)) {
+      if (!obj_stack_.CreateObject(id, rhs.Seek().Unpack())) {
         frame.MakeError("Object delivering is failed");
         return;
       }
