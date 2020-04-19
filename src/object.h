@@ -462,12 +462,18 @@ namespace kagami {
     }
   };
 
+  // first - created, second - inherit_last_scope
+  using CreationInfo = pair<bool, bool>;
+
   class ObjectStack {
   private:
     using DataType = list<ObjectContainer>;
     ObjectContainer *root_container_;
     DataType base_;
     ObjectStack *prev_;
+    // For delaying scope creation
+    stack<CreationInfo, list<CreationInfo>> creation_info_;
+    // One-time trigger for avoiding confliction of global scope creation
     bool delegated_;
 
   public:
@@ -512,21 +518,45 @@ namespace kagami {
       return true;
     }
 
-    ObjectStack &Push(bool inherit_last_scope = false) {
+    ObjectStack &Push(bool inherit_last_scope = false, bool delay_creation = false) {
+      // if there's a delegated global scope and VM send a scope creation request,
+      // just ignore it and destroy trigger
       if (base_.size() == 1 && delegated_) {
         delegated_ = false;
         return *this;
       }
 
-      auto *prev = base_.empty() ? nullptr : &base_.back();
-      auto *base_scope = base_.empty() ? nullptr : &base_.front();
-      base_.emplace_back(ObjectContainer());
-      base_.back().SetPreviousContainer(inherit_last_scope ? prev : base_scope);
+      if (delay_creation) {
+        creation_info_.push(CreationInfo(false, inherit_last_scope));
+      }
+      else {
+        auto creation = [&](bool inherit_last_scope) -> void {
+          // previous container
+          auto *prev = base_.empty() ? nullptr : &base_.back();
+          // global(base) scope
+          auto *base_scope = base_.empty() ? nullptr : &base_.front();
+          base_.emplace_back(ObjectContainer());
+          // link previous container
+          base_.back().SetPreviousContainer(inherit_last_scope ? prev : base_scope);
+        };
+
+        if (!creation_info_.top().first) {
+          creation(creation_info_.top().second);
+          creation_info_.top().first = true;
+        }
+        creation(inherit_last_scope);
+        creation_info_.push(CreationInfo(true, inherit_last_scope));
+      }
+
+
       return *this;
     }
 
     ObjectStack &Pop() {
-      base_.pop_back();
+      if (creation_info_.top().first) {
+        base_.pop_back();
+      }
+      creation_info_.pop();
       return *this;
     }
 
