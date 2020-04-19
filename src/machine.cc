@@ -1496,7 +1496,7 @@ namespace kagami {
       auto create_env = [&]()->void {
         frame.scope_stack.push(true);
         frame.condition_stack.push(state);
-        obj_stack_.Push(true);
+        obj_stack_.Push(true, true);
       };
 
       if (!state) {

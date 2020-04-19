@@ -103,6 +103,7 @@ namespace kagami {
     string type_id;
   };
 
+  // No use in this time...
   struct ViewCounter {
     bool dead;
     std::atomic_int32_t count;
