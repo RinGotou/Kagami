@@ -1068,8 +1068,8 @@ namespace kagami {
       else {
         view = FetchLiteralObject(arg);
         arg.SetCachedView(view);
-        view.source = ObjectViewSource::kSourceLiteral;
       }
+      view.source = ObjectViewSource::kSourceLiteral;
     }
     else if (arg.GetType() == kArgumentObjectStack) {
       if (!arg.option.domain.empty() || arg.option.use_last_assert) {
@@ -1541,7 +1541,7 @@ namespace kagami {
     else if (token == kKeywordWhile) {
       if (!frame.jump_from_end) {
         frame.scope_stack.push(true);
-        obj_stack_.Push(true);
+        obj_stack_.Push(true, true);
       }
       else {
         frame.jump_from_end = false;
@@ -1870,7 +1870,8 @@ namespace kagami {
       if (frame.activated_continue) {
         frame.Goto(nest);
         frame.activated_continue = false;
-        obj_stack_.GetCurrent().Clear();
+        obj_stack_.ClearCurrent();
+        //obj_stack_.GetCurrent().Clear();
         frame.jump_from_end = true;
       }
       else {
@@ -1891,7 +1892,8 @@ namespace kagami {
         delete frame.return_stack.back();
         frame.return_stack.pop_back();
       }
-      obj_stack_.GetCurrent().Clear();
+      obj_stack_.ClearCurrent();
+      //obj_stack_.GetCurrent().Clear();
       frame.jump_from_end = true;
     }
   }

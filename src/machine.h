@@ -240,6 +240,7 @@ namespace kagami {
       has_return_value_from_invoking(false),
       cancel_cleanup(false),
       required_by_next_cond(false),
+      is_there_a_cond(false),
       reserved_cond(false),
       direct_delivering(false),
       assert_rc_copy(),
