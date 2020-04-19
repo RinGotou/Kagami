@@ -476,6 +476,22 @@ namespace kagami {
     // One-time trigger for avoiding confliction of global scope creation
     bool delegated_;
 
+  private:
+    void ScopeCreation(bool inherit_last_scope) {
+      // previous container
+      auto *prev = base_.empty() ? nullptr : &base_.back();
+      // global(base) scope
+      auto *base_scope = base_.empty() ? nullptr : &base_.front();
+      base_.emplace_back(ObjectContainer());
+      // link previous container
+      base_.back().SetPreviousContainer(inherit_last_scope ? prev : base_scope);
+    }
+
+    bool HasDelayedCreation() {
+      if (creation_info_.empty()) return false;
+      return !creation_info_.top().first;
+    }
+
   public:
     ObjectStack() :
       root_container_(nullptr),
@@ -498,23 +514,31 @@ namespace kagami {
     }
 
     ObjectStack& SetDelegatedRoot(ObjectContainer& root) {
+      // TODO: HasDelayedCreation()?
       if(!base_.empty()) base_.pop_front();
       base_.push_front(ObjectContainer().SetDelegatedContainer(&root));
       delegated_ = true;
       return *this;
     }
 
-    ObjectContainer &GetCurrent() { return base_.back(); }
+    ObjectContainer &GetCurrent() { 
+      if (HasDelayedCreation()) ScopeCreation(creation_info_.top().second);
+      return base_.back(); 
+    }
 
     bool ClearCurrent() {
-      if (base_.empty()) return false;
-      base_.back().Clear();
+      if (!HasDelayedCreation()) {
+        if (base_.empty()) return false;
+        base_.back().Clear();
+      }
       return true;
     }
 
     bool ClearCurrentExcept(string exceptions) {
-      if (base_.empty()) return false;
-      base_.back().ClearExcept(exceptions);
+      if (!HasDelayedCreation()) {
+        if (base_.empty()) return false;
+        base_.back().ClearExcept(exceptions);
+      }
       return true;
     }
 
@@ -530,37 +554,26 @@ namespace kagami {
         creation_info_.push(CreationInfo(false, inherit_last_scope));
       }
       else {
-        auto creation = [&](bool inherit_last_scope) -> void {
-          // previous container
-          auto *prev = base_.empty() ? nullptr : &base_.back();
-          // global(base) scope
-          auto *base_scope = base_.empty() ? nullptr : &base_.front();
-          base_.emplace_back(ObjectContainer());
-          // link previous container
-          base_.back().SetPreviousContainer(inherit_last_scope ? prev : base_scope);
-        };
-
-        if (!creation_info_.top().first) {
-          creation(creation_info_.top().second);
+        if (HasDelayedCreation()) {
+          ScopeCreation(creation_info_.top().second);
           creation_info_.top().first = true;
         }
-        creation(inherit_last_scope);
+        ScopeCreation(inherit_last_scope);
         creation_info_.push(CreationInfo(true, inherit_last_scope));
       }
-
-
       return *this;
     }
 
     ObjectStack &Pop() {
-      if (creation_info_.top().first) {
+      if (!HasDelayedCreation()) {
         base_.pop_back();
       }
-      creation_info_.pop();
+      if(!creation_info_.empty()) creation_info_.pop();
       return *this;
     }
 
     DataType &GetBase() {
+      if (HasDelayedCreation()) ScopeCreation(creation_info_.top().second);
       return base_;
     }
 

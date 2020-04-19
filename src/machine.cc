@@ -891,6 +891,7 @@ namespace kagami {
   }
 
   Object *Machine::FetchLiteralObject(Argument &arg) {
+    // TODO: Combine constant obejct storage
     auto type = arg.GetStringType();
     auto value = arg.GetData();
 
@@ -1320,6 +1321,7 @@ namespace kagami {
   }
 
   void Machine::ClosureCatching(ArgumentList &args, size_t nest_end, bool closure) {
+    //TODO: Fixing broken implementaion
     auto &frame = frame_stack_.top();
     auto &obj_list = obj_stack_.GetBase();
     auto &origin_code = *code_stack_.back();
@@ -1357,7 +1359,7 @@ namespace kagami {
       impl.SetLimit(params.size() - counter);
     }
 
-    //TODO:Object Selection/Addressing
+    //TODO: FIX HERE
     if (closure) {
       ObjectMap scope_record;
       auto &base = obj_stack_.GetBase();

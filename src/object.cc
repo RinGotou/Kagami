@@ -268,6 +268,11 @@ namespace kagami {
   }
 
   bool ObjectStack::CreateObject(string id, Object &obj) {
+    if (!creation_info_.empty() && !creation_info_.top().first) {
+      ScopeCreation(creation_info_.top().second);
+      creation_info_.top().first = true;
+    }
+
     if (base_.empty()) {
       if (prev_ == nullptr) {
         return false;
@@ -280,6 +285,11 @@ namespace kagami {
   }
 
   bool ObjectStack::CreateObject(string id, Object &&obj) {
+    if (!creation_info_.empty() && !creation_info_.top().first) {
+      ScopeCreation(creation_info_.top().second);
+      creation_info_.top().first = true;
+    }
+
     if (base_.empty()) {
       if (prev_ == nullptr) {
         return false;
