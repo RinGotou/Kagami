@@ -144,8 +144,15 @@ namespace kagami {
 
   Object *ObjectContainer::Find(const string &id, bool forward_seeking) {
     if (IsDelegated()) return delegator_->Find(id, forward_seeking);
-
     ObjectPointer ptr = nullptr;
+
+    //if (base_.size() < dest_map_.size() / 2) {
+    //  auto it = base_.find(id);
+    //  if (it != base_.end()) {
+    //    ptr = &it->second;
+    //    return ptr;
+    //  }
+    //}
 
     auto it = dest_map_.find(id);
 

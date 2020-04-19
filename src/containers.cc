@@ -195,6 +195,9 @@ namespace kagami {
   }
 
   Message TableGetElement(ObjectMap &p) {
+    // Ref: https://stackoverflow.com/questions/53149145/
+    // Seems nothing to worry about pointers to element
+
     auto &table = p.Cast<ObjectTable>(kStrMe);
     auto &dest_key = p["key"];
     auto &result = table[dest_key];
@@ -274,7 +277,7 @@ namespace kagami {
       )
       .InitMethods(
         {
-          FunctionImpl(ArrayGetElement, "index", "__at"),
+          FunctionImpl(ArrayGetElement, "index", kStrAt),
           FunctionImpl(ArrayGetSize, "", "size"),
           FunctionImpl(ArrayPush, "object", "push"),
           FunctionImpl(ArrayPop, "", "pop"),
@@ -314,7 +317,7 @@ namespace kagami {
       .InitMethods(
         {
           FunctionImpl(TableInsert, "key|value", "insert"),
-          FunctionImpl(TableGetElement, "key", "__at"),
+          FunctionImpl(TableGetElement, "key", kStrAt),
           FunctionImpl(TableFindElement, "key", "find"),
           FunctionImpl(TableEraseElement, "key", "erase"),
           FunctionImpl(TableEmpty, "", "empty"),

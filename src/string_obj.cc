@@ -148,7 +148,7 @@ namespace kagami {
       )
       .InitMethods(
         {
-          FunctionImpl(StringFamilyGetElement<string>, "index", "__at"),
+          FunctionImpl(StringFamilyGetElement<string>, "index", kStrAt),
           FunctionImpl(StringFamilySubStr<string>, "start|size", "substr"),
           FunctionImpl(GetStringFamilySize<string>, "", "size"),
           FunctionImpl(StringFamilyConverting<wstring, string>, "", "to_wide"),
@@ -165,7 +165,7 @@ namespace kagami {
       .InitMethods(
         {
           FunctionImpl(GetStringFamilySize<wstring>,  "", "size"),
-          FunctionImpl(StringFamilyGetElement<wstring>, "index", "__at"),
+          FunctionImpl(StringFamilyGetElement<wstring>, "index", kStrAt),
           FunctionImpl(WideStringPrint, "", "print"),
           FunctionImpl(StringFamilySubStr<wstring>, "start|size", "substr"),
           FunctionImpl(StringFamilyConverting<string, wstring>, "", "to_byte"),

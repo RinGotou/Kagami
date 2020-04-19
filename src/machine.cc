@@ -2093,6 +2093,29 @@ namespace kagami {
     }
   }
 
+  void Machine::CommandAttribute(ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+    bool error = false;
+
+    if (args.size() == 0) {
+      frame.MakeError("Expect one argrument at least");
+      return;
+    }
+
+    for (auto &unit : args) {
+      if (unit.GetType() != kArgumentObjectStack) {
+        error = true;
+        break;
+      }
+
+      obj_stack_.CreateObject(unit.GetData(), Object());
+    }
+
+    if (error) {
+      frame.MakeError("Invalid argument for attribute identifier");
+    }
+  }
+
   void Machine::CommandHash(ArgumentList &args) {
     auto &frame = frame_stack_.top();
     auto obj = FetchObjectView(args[0]);
@@ -2382,7 +2405,13 @@ namespace kagami {
 
     if (frame.error) return;
 
-    if (lhs.Seek().IsRef()) {
+    if (rhs.Seek().GetMode() == kObjectDelegator ||
+      lhs.Seek().GetMode() == kObjectDelegator) {
+      frame.MakeError("Trying to assign a language key constant");
+      return;
+    }
+
+    if (lhs.source == ObjectViewSource::kSourceReference) {
       auto &real_lhs = lhs.Seek().Unpack();
       real_lhs = rhs.Seek();
       rhs.Seek().Unpack() = Object();
@@ -3401,6 +3430,9 @@ namespace kagami {
     case kKeywordSuper:
       CommandSuper(args);
       break;
+    case kKeywordAttribute:
+      CommandAttribute(args);
+      break;
     case kKeywordIsBaseOf:
       CommandIsBaseOf(args);
       break;
@@ -3626,6 +3658,114 @@ namespace kagami {
     frame.struct_base = Object();
   }
 
+  bool Machine::BuiltinContainerAction(Command &command) {
+    auto &frame = frame_stack_.top();
+    auto id = command.first.GetInterfaceId();
+    auto domain = command.first.GetInterfaceDomain();
+    auto has_domain = domain.GetType() != kArgumentNull ||
+      command.first.option.use_last_assert;
+    auto &args = command.second;
+    bool wrapped = false;
+
+    if (!has_domain) return wrapped;
+
+    auto view = command.first.option.use_last_assert ?
+      ObjectView(&frame.assert_rc_copy) :
+      FetchObjectView(domain, true);
+    if (frame.error) return wrapped;
+
+    auto type_id = view.Seek().GetTypeId();
+
+    if (type_id == kTypeIdArray) {
+      if (id == kStrAt) {
+        if (args.size() != 1) {
+          frame.MakeError("Invalid array index");
+          return wrapped;
+        }
+
+        auto &base = view.Seek().Cast<ObjectArray>();
+        auto index_view = FetchObjectView(args[0]);
+
+        if (frame.error) { return wrapped; }
+
+        if (index_view.Seek().GetTypeId() != kTypeIdInt) {
+          frame.MakeError("Invalid array index type");
+          return wrapped;
+        }
+
+        int64_t index = index_view.Seek().Cast<int64_t>();
+        if (size_t(index) > base.size() - 1) {
+          frame.MakeError("Index is out of range");
+          return wrapped;
+        }
+
+        frame.RefreshReturnStack(ObjectView(&base[index]));
+        wrapped = true;
+      }
+      else if (id == kStrSize) {
+        if (args.size() != 0) {
+          frame.MakeError("Unknown argument for array.size()");
+          return wrapped;
+        }
+
+        auto &base = view.Seek().Cast<ObjectArray>();
+        frame.RefreshReturnStack(Object(int64_t(base.size()), kTypeIdInt));
+        wrapped = true;
+      }
+      else if (id == kStrEmpty) {
+        if (args.size() != 0) {
+          frame.MakeError("Unknown argument for array.empty()");
+          return wrapped;
+        }
+
+        auto &base = view.Seek().Cast<ObjectArray>();
+        frame.RefreshReturnStack(Object(int64_t(base.empty()), kTypeIdBool));
+        wrapped = true;
+      }
+    }
+    else if (type_id == kTypeIdTable) {
+      if (id == kStrAt) {
+        if (args.size() != 1) {
+          frame.MakeError("Invalid table index");
+          return wrapped;
+        }
+
+        auto &base = view.Seek().Cast<ObjectTable>();
+        auto index_view = FetchObjectView(args[0]);
+
+        if (frame.error) { return wrapped; }
+
+        auto &result = base[index_view.Seek()];
+        frame.RefreshReturnStack(ObjectView(&result));
+        wrapped = true;
+      }
+      else if (id == kStrSize) {
+        if (args.size() != 0) {
+          frame.MakeError("Unknown argument for array.size()");
+          return wrapped;
+        }
+
+        auto &base = view.Seek().Cast<ObjectTable>();
+        frame.RefreshReturnStack(Object(int64_t(base.size()), kTypeIdInt));
+        wrapped = true;
+      }
+      else if (id == kStrEmpty) {
+        if (args.size() != 0) {
+          frame.MakeError("Unknown argument for table.empty()");
+          return wrapped;
+        }
+
+        auto &base = view.Seek().Cast<ObjectTable>();
+        frame.RefreshReturnStack(Object(int64_t(base.empty()), kTypeIdBool));
+        wrapped = true;
+      }
+    }
+    //todo: more methods
+
+    if (wrapped && !frame.assert_rc_copy.Null()) frame.assert_rc_copy = Object();
+    return wrapped;
+  }
+
   void Machine::GenerateErrorMessages(size_t stop_index) {
     //Under consideration
     if (frame_stack_.top().error) {
@@ -3662,6 +3802,7 @@ namespace kagami {
     if (code_stack_.empty()) return;
 
     bool                next_tick;
+    bool                wrapped;
     size_t              script_idx = 0;
     Message             msg;
     VMCode              *code = code_stack_.back();
@@ -3909,13 +4050,22 @@ namespace kagami {
         continue;
       }
       else {
+        // TODO: method predictions
         //cleaning object map for user-defined function and C++ function
         obj_map.clear();
 
         //Query function(Interpreter built-in or user-defined)
         //error string will be generated in FetchFunctionImpl.
         if (command->first.type == kRequestFunction) {
-          if (!FetchFunctionImpl(impl, command, obj_map)) break;
+          wrapped = BuiltinContainerAction(*command);
+          if (frame->error) break;
+          if (wrapped) {
+            frame->Stepping();
+            continue;
+          }
+          else if (!FetchFunctionImpl(impl, command, obj_map)) {
+            break;
+          }
         }
 
         //Build object map for function call expressed by command

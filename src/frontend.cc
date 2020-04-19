@@ -17,11 +17,13 @@ namespace kagami {
       keyword == kKeywordModule ||
       keyword == kKeywordInclude ||
       keyword == kKeywordUsing ||
+      keyword == kKeywordAttribute ||
       keyword == kKeywordCase;
   }
 
   inline bool IsStructExceptions(Keyword keyword) {
     return keyword == kKeywordBind ||
+      keyword == kKeywordAttribute ||
       keyword == kKeywordInclude;
   }
 
@@ -392,7 +394,7 @@ namespace kagami {
   }
 
   bool LineParser::IndexExpr() {
-    Request request("__at", frame_->args.back());
+    Request request(kStrAt, frame_->args.back());
     frame_->symbol.emplace_back(request);
     frame_->symbol.emplace_back(Request());
     frame_->args.pop_back();
@@ -960,7 +962,7 @@ namespace kagami {
         if (ast_root == kKeywordFn) struct_member_fn_nest += 1;
 
         if (struct_member_fn_nest == 0 && 
-          !compare(ast_root, kKeywordBind, kKeywordEnd, kKeywordInclude)) {
+          !compare(ast_root, kKeywordBind, kKeywordEnd, kKeywordInclude, kKeywordAttribute)) {
           AppendMessage("Invalid expression inside struct", kStateError,
             logger_, msg.GetIndex());
           good = false;
@@ -972,7 +974,7 @@ namespace kagami {
         if (ast_root == kKeywordFn) struct_member_fn_nest += 1;
 
         if (struct_member_fn_nest == 0 &&
-          !compare(ast_root, kKeywordBind, kKeywordEnd)) {
+          !compare(ast_root, kKeywordBind, kKeywordEnd, kKeywordAttribute)) {
           AppendMessage("Invalid expression inside struct", kStateError,
             logger_, msg.GetIndex());
           good = false;

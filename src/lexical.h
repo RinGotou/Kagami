@@ -85,6 +85,7 @@ namespace kagami {
     kKeywordIsOptionalParam,
     kKeywordOptionalParamRange,
     kKeywordIsSameCopy,
+    kKeywordAttribute,
     kKeywordNull
   };
 
@@ -184,7 +185,10 @@ namespace kagami {
     kStrObjectAt       = "object_at",
     kStrTrue           = "true",
     kStrFalse          = "false",
+    kStrSize           = "size",
+    kStrEmpty          = "empty",
     kStrCompare        = "__compare",
+    kStrAt             = "__at",
     kStrRightHandSide  = "__rhs",
     kStrLeftHandSide   = "__lhs",
     kStrTextureTable   = "__texture_table",
@@ -201,6 +205,7 @@ namespace kagami {
     kStrIsVariableParam = "is_variable_param",
     kStrIsOptionalParam = "is_optional_param",
     kStrOptionalParamRange = "optional_param_range",
+    kStrAttribute          = "attribute",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);

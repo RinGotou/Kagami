@@ -196,7 +196,8 @@ namespace kagami::lexical {
       T(kStrHasBehavior    ,kKeywordHasBehavior),
       T(kStrIsVariableParam ,kKeywordIsVariableParam),
       T(kStrIsOptionalParam ,kKeywordIsOptionalParam),
-      T(kStrOptionalParamRange ,kKeywordOptionalParamRange)
+      T(kStrOptionalParamRange ,kKeywordOptionalParamRange),
+      T(kStrAttribute          ,kKeywordAttribute)
     };
     return base;
   }

@@ -401,6 +401,7 @@ namespace kagami {
     void CommandModuleEnd();
     void CommandInclude(ArgumentList &args);
     void CommandSuper(ArgumentList &args);
+    void CommandAttribute(ArgumentList &args);
 
     void CommandHash(ArgumentList &args);
     void CommandSwap(ArgumentList &args);
@@ -460,6 +461,7 @@ namespace kagami {
     void LoadEventInfo(SDL_Event &event, ObjectMap &obj_map, FunctionImpl &impl, Uint32 id);
     void CallExtensionFunction(ObjectMap &p, FunctionImpl &impl);
     //void CallExtensionFunctionEx
+    bool BuiltinContainerAction(Command &command);
 
     void GenerateStructInstance(ObjectMap &p);
 
