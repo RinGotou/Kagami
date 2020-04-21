@@ -11,14 +11,16 @@ namespace kagami {
     return keyword == kKeywordIf ||
       keyword == kKeywordElif ||
       keyword == kKeywordWhile ||
-      keyword == kKeywordReturn ||
       keyword == kKeywordWhen ||
       keyword == kKeywordStruct ||
       keyword == kKeywordModule ||
       keyword == kKeywordInclude ||
       keyword == kKeywordUsing ||
-      keyword == kKeywordAttribute ||
       keyword == kKeywordCase;
+  }
+
+  inline bool IsVariableExpression(Keyword keyword) {
+    return keyword == kKeywordReturn || keyword == kKeywordAttribute;
   }
 
   inline bool IsStructExceptions(Keyword keyword) {
@@ -698,6 +700,12 @@ namespace kagami {
 
       if (IsReservedKeyword(token)) {
         frame_->symbol.emplace_back(Request(token));
+        frame_->args.emplace_back(Argument());
+        return true;
+      }
+      else if (IsVariableExpression(token)) {
+        frame_->symbol.emplace_back(Request(token));
+        frame_->symbol.emplace_back(Request());
         frame_->args.emplace_back(Argument());
         return true;
       }

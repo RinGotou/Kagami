@@ -328,6 +328,7 @@ namespace kagami {
   using ManagedArray = shared_ptr<ObjectArray>;
   using ObjectPair = pair<Object, Object>;
   using ManagedPair = shared_ptr<ObjectPair>;
+  using ObjectCache = pair<string, ObjectPointer>;
 
   class ObjectContainer {
   private:
@@ -335,16 +336,18 @@ namespace kagami {
     ObjectContainer *prev_;
     map<string, Object> base_;
     unordered_map<string, ObjectPointer> dest_map_;
+    //vector<ObjectCache> recent_;
 
     bool IsDelegated() const { 
       return delegator_ != nullptr; 
     }
 
-    bool CheckObject(string id) {
+    bool CheckObject(string &id) {
       return (base_.find(id) != base_.end());
     }
 
     void BuildCache();
+    //void AppendRecent(string &id, ObjectPointer *ptr);
   public:
     bool Add(string id, Object &source);
     bool Add(string id, Object &&source);

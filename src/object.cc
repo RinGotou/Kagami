@@ -90,6 +90,7 @@ namespace kagami {
   }
 
   void ObjectContainer::BuildCache() {
+    //recent_.clear();
     if (prev_ != nullptr) {
       if (prev_->dest_map_.empty()) dest_map_.clear();
       else dest_map_ = prev_->dest_map_;
@@ -101,6 +102,10 @@ namespace kagami {
       dest_map_.insert_or_assign(it->first, &it->second);
     }
   }
+
+  //void ObjectContainer::AppendRecent(string &id, ObjectPointer *ptr) {
+
+  //}
 
   bool ObjectContainer::Add(string id, Object &source) {
     if (IsDelegated()) return delegator_->Add(id, source);
