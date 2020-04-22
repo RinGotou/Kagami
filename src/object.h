@@ -336,7 +336,7 @@ namespace kagami {
     ObjectContainer *prev_;
     map<string, Object> base_;
     unordered_map<string, ObjectPointer> dest_map_;
-    //vector<ObjectCache> recent_;
+    list<ObjectCache> recent_;
 
     bool IsDelegated() const { 
       return delegator_ != nullptr; 
@@ -347,7 +347,7 @@ namespace kagami {
     }
 
     void BuildCache();
-    //void AppendRecent(string &id, ObjectPointer *ptr);
+    void AppendRecent(const string &id, ObjectPointer ptr);
   public:
     bool Add(string id, Object &source);
     bool Add(string id, Object &&source);
@@ -391,11 +391,6 @@ namespace kagami {
     ObjectContainer &SetPreviousContainer(ObjectContainer *prev) {
       if (IsDelegated()) return delegator_->SetPreviousContainer(prev);
       prev_ = prev;
-
-      if (prev_ != nullptr) {
-        dest_map_ = prev_->dest_map_;
-      }
-
       return *this;
     }
 

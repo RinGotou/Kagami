@@ -90,22 +90,19 @@ namespace kagami {
   }
 
   void ObjectContainer::BuildCache() {
-    //recent_.clear();
-    if (prev_ != nullptr) {
-      if (prev_->dest_map_.empty()) dest_map_.clear();
-      else dest_map_ = prev_->dest_map_;
-    }
-
-    dest_map_.rehash(dest_map_.size() + base_.size());
+    recent_.clear();
+    dest_map_.clear();
     const auto begin = base_.begin(), end = base_.end();
     for (auto it = begin; it != end; ++it) {
       dest_map_.insert_or_assign(it->first, &it->second);
     }
   }
 
-  //void ObjectContainer::AppendRecent(string &id, ObjectPointer *ptr) {
-
-  //}
+  void ObjectContainer::AppendRecent(const string &id, ObjectPointer ptr) {
+    if (recent_.size() >= 5) recent_.pop_back();
+    if (recent_.front().first == id) return;
+    recent_.emplace_front(ObjectCache(id, ptr));
+  }
 
   bool ObjectContainer::Add(string id, Object &source) {
     if (IsDelegated()) return delegator_->Add(id, source);
@@ -151,18 +148,24 @@ namespace kagami {
     if (IsDelegated()) return delegator_->Find(id, forward_seeking);
     ObjectPointer ptr = nullptr;
 
-    //if (base_.size() < dest_map_.size() / 2) {
-    //  auto it = base_.find(id);
-    //  if (it != base_.end()) {
-    //    ptr = &it->second;
-    //    return ptr;
-    //  }
-    //}
+    if (!recent_.empty()) {
+      for (const auto &unit : recent_) {
+        if (unit.first == id) {
+          ptr = unit.second;
+        }
+      }
+    }
+
+    if (ptr != nullptr) return ptr;
 
     auto it = dest_map_.find(id);
 
     if (it != dest_map_.end()) {
       ptr = it->second;
+      AppendRecent(id, ptr);
+    }
+    else if (prev_ != nullptr && forward_seeking) {
+      ptr = prev_->Find(id, forward_seeking);
     }
 
     return ptr;
@@ -174,13 +177,7 @@ namespace kagami {
   
     if (base_.empty() && prev_ == nullptr) return nullptr;
 
-    ObjectPointer container_ptr = nullptr;
-
-    auto it = dest_map_.find(domain);
-
-    if (it != dest_map_.end()) {
-      container_ptr = it->second;
-    }
+    ObjectPointer container_ptr = Find(domain, true);
 
     if (container_ptr == nullptr) return nullptr;
     if (!container_ptr->IsSubContainer()) return nullptr;

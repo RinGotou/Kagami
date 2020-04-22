@@ -58,8 +58,8 @@
 #define PRODUCT     "Kagami Project Core(KPC)"
 #define PRODUCT_VER "2.5"
 #define CODENAME    "Oratorio"
-#define AUTHOR      "Rin Gotou"
-#define COPYRIGHT   "Copyright(c) 2020"
+#define AUTHOR      "Kagami Project Contributor(s)"
+#define COPYRIGHT   "Licensed under BSD-2. Copyright(c) 2020"
 
 namespace kagami {
   using std::string;

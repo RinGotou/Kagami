@@ -85,7 +85,7 @@ namespace kagami::management {
     return result;
   }
 
-  Object *GetConstantObject(string id) {
+  Object *GetConstantObject(string &id) {
     ObjectContainer &base = GetConstantBase();
     auto ptr = base.Find(id);
     return ptr;

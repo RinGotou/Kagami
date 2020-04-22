@@ -891,46 +891,47 @@ namespace kagami {
   }
 
   Object *Machine::FetchLiteralObject(Argument &arg) {
-    // TODO: Combine constant obejct storage
-    auto type = arg.GetStringType();
+    using namespace mgmt;
     auto value = arg.GetData();
 
-    auto &obj = literal_objects_[value];
+    auto *ptr = GetConstantObject(value);
 
-    if (obj.Null()) {
-      if (type == kStringTypeInt) {
-        int64_t int_value;
-        from_chars(value.data(), value.data() + value.size(), int_value);
-        obj.PackContent(make_shared<int64_t>(int_value), kTypeIdInt);
-      }
-      else if (type == kStringTypeFloat) {
-        double float_value;
+    if (ptr != nullptr) return ptr;
+
+    auto type = arg.GetStringType();
+    if (type == kStringTypeInt) {
+      int64_t int_value;
+      from_chars(value.data(), value.data() + value.size(), int_value);
+      ptr = CreateConstantObject(value, Object(int_value, kTypeIdInt));
+    }
+    else if (type == kStringTypeFloat) {
+      double float_value;
 #ifndef _MSC_VER
-        //dealing with issues of charconv implementation in low-version clang
-        float_value = stod(value);
+      //dealing with issues of charconv implementation in low-version clang
+      float_value = stod(value);
 #else
-        from_chars(value.data(), value.data() + value.size(), float_value);
+      from_chars(value.data(), value.data() + value.size(), float_value);
 #endif
-        obj.PackContent(make_shared<double>(float_value), kTypeIdFloat);
-      }
-      else {
-        switch (type) {
-        case kStringTypeBool:
-          obj.PackContent(make_shared<bool>(value == kStrTrue), kTypeIdBool);
-          break;
-        case kStringTypeString:
-          obj.PackContent(make_shared<string>(ParseRawString(value)), kTypeIdString);
-          break;
-        case kStringTypeIdentifier:
-          obj.PackContent(make_shared<string>(value), kTypeIdString);
-          break;
-        default:
-          break;
-        }
+      ptr = CreateConstantObject(value, Object(float_value, kTypeIdFloat));
+    }
+    else {
+      switch (type) {
+      case kStringTypeBool:
+        ptr = CreateConstantObject(value, Object(value == kStrTrue, kTypeIdBool));
+        break;
+      case kStringTypeString:
+        ptr = CreateConstantObject(value, Object(ParseRawString(value)));
+        break;
+        //for binding expression
+      case kStringTypeIdentifier:
+        ptr = CreateConstantObject(value, Object(value));
+        break;
+      default:
+        break;
       }
     }
 
-    return &obj;
+    return ptr;
   }
 
   Object Machine::FetchFunctionObject(string id) {
