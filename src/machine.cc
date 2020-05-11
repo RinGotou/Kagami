@@ -1322,6 +1322,7 @@ namespace kagami {
         || (keyword == kKeywordDomainAssertCommand && first_assert));
 
     if (!need_catching) return;
+    if (domain.GetData() == kStrThisWindow) return;
     
     auto view = req.option.use_last_assert ?
       ObjectView(&frame.assert_rc_copy) :
@@ -1333,18 +1334,51 @@ namespace kagami {
   }
 
   void Machine::CheckArgrumentList(FunctionImpl &impl, ArgumentList &args) {
+    auto &frame = frame_stack_.top();
+    string_view data;
+    ArgumentType type;
+    ObjectView view;
+    bool need_catching = false;
 
+    for (auto &unit : args) {
+      data = unit.GetData();
+      type = unit.GetType();
+
+      if (unit.option.domain_type == kArgumentObjectStack) {
+        view = ObjectView(obj_stack_.Find(unit.option.domain));
+      }
+      else if (type == kArgumentObjectStack) {
+        view = ObjectView(obj_stack_.Find(string(data)));
+      }
+      else {
+        continue;
+      }
+
+      if (!view.IsValid()) {
+        frame.MakeError("Object is not found: " + unit.option.domain);
+        break;
+      }
+
+      if (!view.IsAlive()) {
+        frame.MakeError("Object is dead: " + unit.option.domain);
+        break;
+      }
+
+      impl.AppendClosureRecord(data, type::CreateObjectCopy(view.Seek()));
+    }
   }
 
   void Machine::ClosureCatching(ArgumentList &args, size_t nest_end, bool closure) {
-    //TODO: Fixing broken implementaion
     auto &frame = frame_stack_.top();
     auto &obj_list = obj_stack_.GetBase();
     auto &origin_code = *code_stack_.back();
     size_t counter = 0;
     size_t size = args.size();
     size_t nest = frame.idx;
-    bool optional = false, variable = false;
+    bool optional = false;
+    bool variable = false;
+    bool not_assert_before = false;
+    bool first_assert = false;
     ParameterPattern argument_mode = kParamFixed;
     vector<string> params;
     VMCode code(&origin_code);
@@ -1375,41 +1409,14 @@ namespace kagami {
       impl.SetLimit(params.size() - counter);
     }
 
-    //TODO: new methods for variable catching
-    //new impl
     if (closure) {
       for (auto it = code.begin(); it != code.end(); ++it) {
-        // check request domain
-
-        // check arguments
-
-        // filling
+        first_assert = not_assert_before && it->first.GetKeywordValue() == kKeywordDomainAssertCommand;
+        not_assert_before = it->first.GetKeywordValue() != kKeywordDomainAssertCommand;
+        CheckDomainObject(impl, it->first, first_assert);
+        CheckArgrumentList(impl, it->second);
       }
     }
-
-    //deprecated
-    //if (closure) {
-    //  ObjectMap scope_record;
-    //  auto &base = obj_stack_.GetBase();
-    //  auto it = base.rbegin();
-    //  bool flag = false;
-
-    //  for (; it != base.rend(); ++it) {
-    //    if (flag) break;
-
-    //    if (it->Find(kStrUserFunc) != nullptr) flag = true;
-
-    //    for (auto &unit : it->GetContent()) {
-    //      if (unit.first == kStrThisWindow) continue;
-    //      if (scope_record.find(unit.first) == scope_record.end()) {
-    //        scope_record.insert(NamedObject(unit.first,
-    //          type::CreateObjectCopy(unit.second)));
-    //      }
-    //    }
-    //  }
-
-    //  impl.SetClosureRecord(scope_record);
-    //}
 
     obj_stack_.CreateObject(args[0].GetData(),
       Object(make_shared<FunctionImpl>(impl), kTypeIdFunction));

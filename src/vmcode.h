@@ -29,7 +29,9 @@ namespace kagami {
       optional_param(false),
       variable_param(false),
       use_last_assert(false),
-      assert_chain_tail(false) {}
+      assert_chain_tail(false),
+      domain(), 
+      domain_type(kArgumentNull) {}
   };
 
   struct RequestOption {
