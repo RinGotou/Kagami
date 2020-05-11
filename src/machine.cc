@@ -833,6 +833,16 @@ namespace kagami {
   }
 
   void Machine::RecoverLastState() {
+    ObjectView view(obj_stack_.GetCurrent().Find(kStrReturnValueConstrantObj));
+
+    if (view.IsValid()) { // no need to check alive state
+      string_view constraint_type(view.Seek().Cast<string>());
+      if (constraint_type != kTypeIdNull) {
+        frame_stack_.top().MakeError("Mismatched return value type: null");
+        return;
+      }
+    }
+
     frame_stack_.pop();
     code_stack_.pop_back();
     obj_stack_.Pop();
@@ -1425,7 +1435,7 @@ namespace kagami {
     }
 
     if (!return_value_constraint.empty()) {
-      impl.AppendClosureRecord(kStrReturnValueConstrant, Object(return_value_constraint));
+      impl.AppendClosureRecord(kStrReturnValueConstrantObj, Object(return_value_constraint));
     }
 
     obj_stack_.CreateObject(args[0].GetData(),
@@ -3061,7 +3071,7 @@ namespace kagami {
     }
     impl_cache_.clear();
     bool dispose_return_value = frame_stack_.top().event_processing;
-    ObjectPointer constraint_type_obj = obj_stack_.GetCurrent().Find(kStrReturnValueConstrant);
+    ObjectPointer constraint_type_obj = obj_stack_.GetCurrent().Find(kStrReturnValueConstrantObj);
     string constraint_type = constraint_type_obj == nullptr ?
       "" : constraint_type_obj->Cast<string>();
 
@@ -4091,6 +4101,8 @@ namespace kagami {
         //Bring saved environment back
         if (frame->inside_initializer_calling) FinishInitalizerCalling();
         else RecoverLastState();
+
+        if (frame->error) break;
         //Update register data
         refresh_tick();
         impl_cache_.clear();

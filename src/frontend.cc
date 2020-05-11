@@ -511,7 +511,7 @@ namespace kagami {
       }
       else if (frame_->current.first == ")") {
         inside_params = false;
-        if (frame_->next.first == kStrConstraint) {
+        if (frame_->next.first == kStrConstraintArrow) {
           //dispose right parenthesis
           frame_->Eat();
           if (frame_->next.second == kStringTypeNull) {

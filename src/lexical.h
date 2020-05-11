@@ -176,7 +176,7 @@ namespace kagami {
     kStrLess           = "<",
     kStrIncrease       = "+=",
     kStrDecrease       = "-=",
-    kStrConstraint     = "->",
+    kStrConstraintArrow = "->",
     kStrUserFunc       = "__func",
     kStrTypeId         = "typeid",
     kStrMethodsCmd     = "methods",
@@ -208,7 +208,7 @@ namespace kagami {
     kStrIsOptionalParam = "is_optional_param",
     kStrOptionalParamRange = "optional_param_range",
     kStrAttribute          = "attribute",
-    kStrReturnValueConstrant = "!rt_constaint",
+    kStrReturnValueConstrantObj = "!rt_constaint",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);

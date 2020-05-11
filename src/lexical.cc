@@ -197,7 +197,8 @@ namespace kagami::lexical {
       T(kStrIsVariableParam ,kKeywordIsVariableParam),
       T(kStrIsOptionalParam ,kKeywordIsOptionalParam),
       T(kStrOptionalParamRange ,kKeywordOptionalParamRange),
-      T(kStrAttribute          ,kKeywordAttribute)
+      T(kStrAttribute          ,kKeywordAttribute),
+      T(kStrConstraintArrow    , kKeywordConstaint)
     };
     return base;
   }
@@ -308,7 +309,7 @@ namespace kagami::lexical {
     static const unordered_set<string> symbols = {
       "+", "-", "*", "/", ">", ">=", "<", "<=", "<-",
       "!=", "&&", "||", "&", "|", "!", "(", ")", "{", "}", "=", "==",
-      "[", "]", ",", ".", "'", ";", "_", "-=", "+="
+      "[", "]", ",", ".", "'", ";", "_", "-=", "+=", "->"
     };
 
     if (target.empty()) return false;
