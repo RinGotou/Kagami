@@ -369,8 +369,9 @@ namespace kagami {
 
     Object *FetchLiteralObject(Argument &arg);
     Object FetchFunctionObject(string id);
-    Object FetchObject(Argument &arg, bool checking = false);
-    ObjectView FetchObjectView(Argument &arg, bool checking = false);
+    //deprecated
+    Object FetchObject(Argument &arg);
+    ObjectView FetchObjectView(Argument &arg);
 
     bool FetchFunctionImplEx(FunctionImplPointer &dest, string id, string type_id = kTypeIdNull, 
       Object *obj_ptr = nullptr);

@@ -947,7 +947,7 @@ namespace kagami {
     return obj;
   }
 
-  Object Machine::FetchObject(Argument &arg, bool checking) {
+  Object Machine::FetchObject(Argument &arg) {
     if (arg.GetType() == kArgumentLiteral) {
       auto obj = *FetchLiteralObject(arg);
       return obj.SetDeliveringFlag();
@@ -1032,10 +1032,8 @@ namespace kagami {
           *dynamic_cast<ObjectPointer>(return_stack.back());
         if (!obj.IsAlive()) OBJECT_DEAD_MSG;
         obj.SetDeliveringFlag();
-        if (!checking) {
-          delete return_stack.back();
-          return_stack.pop_back();
-        }
+        delete return_stack.back();
+        return_stack.pop_back();
       }
       else {
         frame.MakeError("Can't get object from stack(Internal error)");
@@ -1046,7 +1044,7 @@ namespace kagami {
     return obj;
   }
 
-  ObjectView Machine::FetchObjectView(Argument &arg, bool checking) {
+  ObjectView Machine::FetchObjectView(Argument &arg) {
 #define OBJECT_DEAD_MSG {                           \
       frame.MakeError("Referenced object is dead"); \
       return ObjectView();                          \
@@ -1139,7 +1137,7 @@ namespace kagami {
           view.Seek().SeekDeliveringFlag();
         }
         
-        if (!checking) return_stack.pop_back();
+        return_stack.pop_back();
       }
       else {
         frame.MakeError("Can't get object from stack(Internal error)");
@@ -1220,7 +1218,7 @@ namespace kagami {
     if (has_domain) {
       auto view = command->first.option.use_last_assert ?
         ObjectView(&frame.assert_rc_copy) :
-        FetchObjectView(domain, true); //reserved for argument generating
+        FetchObjectView(domain);
 
       if (frame.error) return false;
 
@@ -1327,7 +1325,7 @@ namespace kagami {
     
     auto view = req.option.use_last_assert ?
       ObjectView(&frame.assert_rc_copy) :
-      FetchObjectView(domain, true);
+      FetchObjectView(domain);
 
   }
 
@@ -1377,13 +1375,13 @@ namespace kagami {
     //TODO: FIX HERE
     //TODO: new methods for variable catching
     //new impl
-    for (auto it = code.begin(); it != code.end(); ++it) {
-      // check request domain
-      
-      // check arguments
+    //for (auto it = code.begin(); it != code.end(); ++it) {
+    //  // check request domain
+    //  
+    //  // check arguments
 
-      // filling
-    }
+    //  // filling
+    //}
 
 
     //deprecated
@@ -3698,7 +3696,7 @@ namespace kagami {
 
     auto view = command.first.option.use_last_assert ?
       ObjectView(&frame.assert_rc_copy) :
-      FetchObjectView(domain, true);
+      FetchObjectView(domain);
     if (frame.error) return wrapped;
 
     auto type_id = view.Seek().GetTypeId();

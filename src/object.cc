@@ -100,7 +100,7 @@ namespace kagami {
 
   void ObjectContainer::AppendRecent(const string &id, ObjectPointer ptr) {
     if (recent_.size() >= 5) recent_.pop_back();
-    if (recent_.front().first == id) return;
+    if (!recent_.empty() && recent_.front().first == id) return;
     recent_.emplace_front(ObjectCache(id, ptr));
   }
 
