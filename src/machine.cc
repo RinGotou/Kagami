@@ -1313,7 +1313,7 @@ namespace kagami {
     return true;
   }
 
-  void Machine::CheckDomainObject(Request &req, bool first_assert) {
+  void Machine::CheckDomainObject(FunctionImpl &impl, Request &req, bool first_assert) {
     auto &frame = frame_stack_.top();
     auto domain = req.GetInterfaceDomain();
     auto keyword = req.GetKeywordValue();
@@ -1327,9 +1327,12 @@ namespace kagami {
       ObjectView(&frame.assert_rc_copy) :
       FetchObjectView(domain);
 
+    if (frame.error) return;
+
+    impl.AppendClosureRecord(domain.GetData(), type::CreateObjectCopy(view.Seek()));
   }
 
-  void Machine::CheckArgrumentList(ArgumentList &args) {
+  void Machine::CheckArgrumentList(FunctionImpl &impl, ArgumentList &args) {
 
   }
 
@@ -1372,41 +1375,41 @@ namespace kagami {
       impl.SetLimit(params.size() - counter);
     }
 
-    //TODO: FIX HERE
     //TODO: new methods for variable catching
     //new impl
-    //for (auto it = code.begin(); it != code.end(); ++it) {
-    //  // check request domain
-    //  
-    //  // check arguments
+    if (closure) {
+      for (auto it = code.begin(); it != code.end(); ++it) {
+        // check request domain
 
-    //  // filling
-    //}
+        // check arguments
 
+        // filling
+      }
+    }
 
     //deprecated
-    if (closure) {
-      ObjectMap scope_record;
-      auto &base = obj_stack_.GetBase();
-      auto it = base.rbegin();
-      bool flag = false;
+    //if (closure) {
+    //  ObjectMap scope_record;
+    //  auto &base = obj_stack_.GetBase();
+    //  auto it = base.rbegin();
+    //  bool flag = false;
 
-      for (; it != base.rend(); ++it) {
-        if (flag) break;
+    //  for (; it != base.rend(); ++it) {
+    //    if (flag) break;
 
-        if (it->Find(kStrUserFunc) != nullptr) flag = true;
+    //    if (it->Find(kStrUserFunc) != nullptr) flag = true;
 
-        for (auto &unit : it->GetContent()) {
-          if (unit.first == kStrThisWindow) continue;
-          if (scope_record.find(unit.first) == scope_record.end()) {
-            scope_record.insert(NamedObject(unit.first,
-              type::CreateObjectCopy(unit.second)));
-          }
-        }
-      }
+    //    for (auto &unit : it->GetContent()) {
+    //      if (unit.first == kStrThisWindow) continue;
+    //      if (scope_record.find(unit.first) == scope_record.end()) {
+    //        scope_record.insert(NamedObject(unit.first,
+    //          type::CreateObjectCopy(unit.second)));
+    //      }
+    //    }
+    //  }
 
-      impl.SetClosureRecord(scope_record);
-    }
+    //  impl.SetClosureRecord(scope_record);
+    //}
 
     obj_stack_.CreateObject(args[0].GetData(),
       Object(make_shared<FunctionImpl>(impl), kTypeIdFunction));

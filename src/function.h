@@ -175,6 +175,11 @@ namespace kagami {
       return *this;
     }
 
+    FunctionImpl &AppendClosureRecord(string_view id, Object &&obj) {
+      record_.insert(NamedObject(id, obj));
+      return *this;
+    }
+
     ObjectMap &GetClosureRecord() {
       return record_;
     }

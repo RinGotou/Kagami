@@ -16,6 +16,7 @@
 #include <cstdlib>
 
 #include <string>
+#include <string_view>
 #include <utility>
 #include <array>
 #include <vector>
@@ -63,6 +64,7 @@
 
 namespace kagami {
   using std::string;
+  using std::string_view;
   using std::pair;
   using std::array;
   using std::vector;

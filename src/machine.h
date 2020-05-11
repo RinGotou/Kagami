@@ -379,8 +379,8 @@ namespace kagami {
     bool FetchFunctionImpl(FunctionImplPointer &impl, CommandPointer &command,
       ObjectMap &obj_map);
 
-    void CheckDomainObject(Request &req, bool first_assert);
-    void CheckArgrumentList(ArgumentList &args);
+    void CheckDomainObject(FunctionImpl &impl, Request &req, bool first_assert);
+    void CheckArgrumentList(FunctionImpl &impl, ArgumentList &args);
     void ClosureCatching(ArgumentList &args, size_t nest_end, bool closure);
 
     Message CallMethod(Object &obj, string id, ObjectMap &args);
