@@ -919,7 +919,7 @@ namespace kagami {
       case kStringTypeBool:
         ptr = CreateConstantObject(value, Object(value == kStrTrue, kTypeIdBool));
         break;
-      case kStringTypeString:
+      case kStringTypeLiteralStr:
         ptr = CreateConstantObject(value, Object(ParseRawString(value)));
         break;
         //for binding expression
@@ -1063,13 +1063,7 @@ namespace kagami {
     ObjectView view;
 
     if (arg.GetType() == kArgumentLiteral) {
-      if (arg.HasCachedView()) {
-        view = arg.GetCachedView();
-      }
-      else {
-        view = FetchLiteralObject(arg);
-        arg.SetCachedView(view);
-      }
+      view = FetchLiteralObject(arg);
       view.source = ObjectViewSource::kSourceLiteral;
     }
     else if (arg.GetType() == kArgumentObjectStack) {
@@ -1226,7 +1220,7 @@ namespace kagami {
     if (has_domain) {
       auto view = command->first.option.use_last_assert ?
         ObjectView(&frame.assert_rc_copy) :
-        FetchObjectView(domain, true);
+        FetchObjectView(domain, true); //reserved for argument generating
 
       if (frame.error) return false;
 
@@ -1321,6 +1315,26 @@ namespace kagami {
     return true;
   }
 
+  void Machine::CheckDomainObject(Request &req, bool first_assert) {
+    auto &frame = frame_stack_.top();
+    auto domain = req.GetInterfaceDomain();
+    auto keyword = req.GetKeywordValue();
+    auto need_catching = domain.GetType() == kArgumentObjectStack
+      && ((keyword != kKeywordDomainAssertCommand)
+        || (keyword == kKeywordDomainAssertCommand && first_assert));
+
+    if (!need_catching) return;
+    
+    auto view = req.option.use_last_assert ?
+      ObjectView(&frame.assert_rc_copy) :
+      FetchObjectView(domain, true);
+
+  }
+
+  void Machine::CheckArgrumentList(ArgumentList &args) {
+
+  }
+
   void Machine::ClosureCatching(ArgumentList &args, size_t nest_end, bool closure) {
     //TODO: Fixing broken implementaion
     auto &frame = frame_stack_.top();
@@ -1361,6 +1375,18 @@ namespace kagami {
     }
 
     //TODO: FIX HERE
+    //TODO: new methods for variable catching
+    //new impl
+    for (auto it = code.begin(); it != code.end(); ++it) {
+      // check request domain
+      
+      // check arguments
+
+      // filling
+    }
+
+
+    //deprecated
     if (closure) {
       ObjectMap scope_record;
       auto &base = obj_stack_.GetBase();

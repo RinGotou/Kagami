@@ -58,7 +58,6 @@ namespace kagami {
     string data_;
     ArgumentType type_;
     StringType token_type_;
-    ObjectView cached_; // for literal values only
 
   public:
     ArgumentOption option;
@@ -84,23 +83,10 @@ namespace kagami {
       option.domain_type = type;
     }
 
-    void SetCachedView(ObjectView &view) {
-      cached_ = view;
-    }
-
     auto &GetData() { return data_; }
-
     auto &GetType() { return type_; }
-
     StringType GetStringType() { return token_type_; }
-
-    bool HasCachedView() const { return cached_.IsValid(); }
-
-    ObjectView &GetCachedView() { return cached_; }
-
-    bool IsPlaceholder() const {
-      return type_ == kArgumentNull;
-    }
+    bool IsPlaceholder() const { return type_ == kArgumentNull; }
   };
 
   struct FunctionInfo {

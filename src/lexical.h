@@ -4,7 +4,7 @@
 namespace kagami {
   enum StringType {
     kStringTypeIdentifier,
-    kStringTypeString,
+    kStringTypeLiteralStr,
     kStringTypeInt,
     kStringTypeFloat,
     kStringTypeBool,

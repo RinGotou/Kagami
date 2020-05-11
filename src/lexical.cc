@@ -328,7 +328,7 @@ namespace kagami::lexical {
     else if (IsInteger(src))      type = kStringTypeInt;
     else if (IsFloat(src))        type = kStringTypeFloat;
     else if (IsBlank(src))        type = kStringTypeBlank;
-    else if (IsString(src))       type = kStringTypeString;
+    else if (IsString(src))       type = kStringTypeLiteralStr;
 
     if (!ignore_symbol_rule) {
       if (IsSymbol(src)) type = kStringTypeSymbol;
@@ -402,8 +402,10 @@ namespace kagami::lexical {
   }
 
   bool IsPlainType(string type_id) {
-    return type_id == kTypeIdInt || type_id == kTypeIdFloat ||
-      type_id == kTypeIdString || type_id == kTypeIdBool;
+    return type_id == kTypeIdInt ||
+      type_id == kTypeIdFloat ||
+      type_id == kTypeIdString || 
+      type_id == kTypeIdBool;
   }
 
   string ToUpper(string source) {

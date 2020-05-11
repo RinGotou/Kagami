@@ -202,7 +202,6 @@ namespace kagami {
     auto &dest_key = p["key"];
     auto &result = table[dest_key];
     return Message().SetObjectRef(result);
-    //return Message().SetObject(Object().PackObject(result));
   }
 
   Message TableFindElement(ObjectMap &p) {
@@ -210,7 +209,8 @@ namespace kagami {
     auto &key = p["key"];
     auto it = table.find(key);
     if (it != table.end()) {
-      return Message().SetObject(Object().PackObject(it->second));
+      return Message().SetObjectRef(it->second);
+      //return Message().SetObject(Object().PackObject(it->second));
     }
     return Message().SetObject(Object());
   }
