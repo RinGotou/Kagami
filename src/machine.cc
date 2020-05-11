@@ -1382,6 +1382,7 @@ namespace kagami {
     ParameterPattern argument_mode = kParamFixed;
     vector<string> params;
     VMCode code(&origin_code);
+    string return_value_constraint;
 
     for (size_t idx = nest + 1; idx < nest_end - frame.jump_offset; ++idx) {
       code.push_back(origin_code[idx]);
@@ -1389,6 +1390,11 @@ namespace kagami {
 
     for (size_t idx = 1; idx < size; idx += 1) {
       auto id = args[idx].GetData();
+
+      if (args[idx].option.is_constraint) {
+        return_value_constraint = id;
+        continue;
+      }
 
       if (args[idx].option.optional_param) {
         optional = true;
@@ -1416,6 +1422,10 @@ namespace kagami {
         CheckDomainObject(impl, it->first, first_assert);
         CheckArgrumentList(impl, it->second);
       }
+    }
+
+    if (!return_value_constraint.empty()) {
+      impl.AppendClosureRecord(kStrReturnValueConstrant, Object(return_value_constraint));
     }
 
     obj_stack_.CreateObject(args[0].GetData(),
@@ -3051,9 +3061,19 @@ namespace kagami {
     }
     impl_cache_.clear();
     bool dispose_return_value = frame_stack_.top().event_processing;
+    ObjectPointer constraint_type_obj = obj_stack_.GetCurrent().Find(kStrReturnValueConstrant);
+    string constraint_type = constraint_type_obj == nullptr ?
+      "" : constraint_type_obj->Cast<string>();
 
     if (args.size() == 1) {
+      //keep alive
       Object ret_obj = FetchObject(args[0]).Unpack();
+
+      if (!constraint_type.empty() && ret_obj.GetTypeId() != constraint_type) {
+        frame_stack_.top().MakeError("Mismatched return value type: " + constraint_type);
+        return;
+      }
+
       if (frame_stack_.top().error) return;
 
       auto *container = &obj_stack_.GetCurrent();
@@ -3068,6 +3088,11 @@ namespace kagami {
       }
     }
     else if (args.size() == 0) {
+      if (!constraint_type.empty() && constraint_type != kTypeIdNull) {
+        frame_stack_.top().MakeError("Mismatched return value type: null");
+        return;
+      }
+
       auto *container = &obj_stack_.GetCurrent();
       while (container->Find(kStrUserFunc) == nullptr) {
         obj_stack_.Pop();
@@ -3080,6 +3105,11 @@ namespace kagami {
       }
     }
     else {
+      if (!constraint_type.empty() && constraint_type != kTypeIdArray) {
+        frame_stack_.top().MakeError("Mismatched return value type: array");
+        return;
+      }
+
       ManagedArray obj_array = make_shared<ObjectArray>();
       for (auto it = args.begin(); it != args.end(); ++it) {
         auto obj = FetchObject(*it);

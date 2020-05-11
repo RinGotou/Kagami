@@ -21,6 +21,7 @@ namespace kagami {
     bool variable_param;
     bool use_last_assert;
     bool assert_chain_tail;
+    bool is_constraint; //for fnexpr
 
     string domain;
     ArgumentType domain_type;
@@ -30,6 +31,7 @@ namespace kagami {
       variable_param(false),
       use_last_assert(false),
       assert_chain_tail(false),
+      is_constraint(false),
       domain(), 
       domain_type(kArgumentNull) {}
   };

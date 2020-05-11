@@ -476,6 +476,7 @@ namespace kagami {
     frame_->args.emplace_back(Argument());
 
     auto invalid_param_pattern = [&]()->bool {
+      if (!inside_params) return true;
       return frame_->next.first == "," ||
         frame_->next.first == kStrOptional ||
         frame_->next.first == kStrVariable;
@@ -492,6 +493,7 @@ namespace kagami {
       Argument(frame_->current.first, kArgumentLiteral, kStringTypeIdentifier));
 
     //Parameter segment
+    //left parenthesis will be disposed in first loop
     while (!frame_->eol) {
       frame_->Eat();
 
@@ -509,6 +511,26 @@ namespace kagami {
       }
       else if (frame_->current.first == ")") {
         inside_params = false;
+        if (frame_->next.first == kStrConstraint) {
+          //dispose right parenthesis
+          frame_->Eat();
+          if (frame_->next.second == kStringTypeNull) {
+            error_string_ = "Invalid return value constraint";
+            return false;
+          }
+
+          //dispose right arrow
+          frame_->Eat();
+          if (frame_->current.second != kStringTypeIdentifier) {
+            error_string_ = "Invalid return value constraint";
+            return false;
+          }
+
+          Argument constaint_arg(frame_->current.first, kArgumentLiteral, kStringTypeIdentifier);
+          constaint_arg.option.is_constraint = true;
+          frame_->args.emplace_back(constaint_arg);
+        }
+
         ProduceVMCode();
         break;
       }

@@ -41,6 +41,7 @@ namespace kagami {
     kKeywordElse,
     kKeywordBind,
     kKeywordDelivering,
+    kKeywordConstaint,
     kKeywordWhile,
     kKeywordPlus,
     kKeywordMinus,
@@ -164,7 +165,7 @@ namespace kagami {
     kStrMinus          = "-",
     kStrTimes          = "*",
     kStrDiv            = "/",
-    kStrEquals             = "==",
+    kStrEquals         = "==",
     kStrAnd            = "&&",
     kStrOr             = "||",
     kStrNot            = "!",
@@ -175,6 +176,7 @@ namespace kagami {
     kStrLess           = "<",
     kStrIncrease       = "+=",
     kStrDecrease       = "-=",
+    kStrConstraint     = "->",
     kStrUserFunc       = "__func",
     kStrTypeId         = "typeid",
     kStrMethodsCmd     = "methods",
@@ -206,6 +208,7 @@ namespace kagami {
     kStrIsOptionalParam = "is_optional_param",
     kStrOptionalParamRange = "optional_param_range",
     kStrAttribute          = "attribute",
+    kStrReturnValueConstrant = "!rt_constaint",
     kStrMe             = "me";
 
   wstring s2ws(const string &s);
