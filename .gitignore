@@ -33,6 +33,9 @@
 *.out
 *.app
 
+# YouCompleteMe Config
+src/.ycm_extra_conf.py
+
 # Misc
 script.log
 event.log
