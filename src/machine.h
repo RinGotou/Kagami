@@ -353,9 +353,9 @@ namespace kagami {
     void ApplyInterfaceLayout(dawn::PlainWindow &window);
   };
 
-  // TODO:Replace Message class with new message tunnel
-  //   (Keep Message class for frontend)
-
+  //TODO: new argument generator and storage?
+  //TODO: spilt graphic implement, and add new event processing interface
+  //TODO: reserve hanging_ as a common event handler switch
   class Machine {
   private:
     StandardLogger *logger_;

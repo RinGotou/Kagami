@@ -2708,7 +2708,7 @@ namespace kagami {
 
       if (!script_file.empty()) return;
 
-      VMCodeFactory factory(path, script_file, logger_);
+      VMCodeFactory factory(absolute_path, script_file, logger_);
 
       if (factory.Start()) {
         Machine sub_machine(script_file, logger_);

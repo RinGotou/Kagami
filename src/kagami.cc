@@ -151,7 +151,18 @@ void InitFromConfigFile() {
 int main(int argc, char **argv) {
   namespace fs = std::filesystem;
   runtime::InformBinaryPathAndName(argv[0]);
-  //ActivateComponents();
+
+  ActivateComponents([&]()->bool {
+    auto state_code = dawn::EnvironmentSetup();
+    switch (state_code) {
+    case -1: puts("Failed: Loading SDL main components"); break;
+    case -2: puts("Failed: Loading SDL Audio components"); break;
+    case -3: puts("Failed: Opening Audio"); break;
+    }
+
+    if (state_code != 0) puts("Multimedia components are disabled.");
+    return state_code != 0;
+    }());
 
   if (fs::exists(fs::path("init.toml"))) {
     InitFromConfigFile();
@@ -169,19 +180,6 @@ int main(int argc, char **argv) {
     Pattern("vm_stdout" ,Option(true, true)),
     Pattern("vm_stdin"  ,Option(true, true))
   };
-
-
-  ActivateComponents([&]()->bool {
-    auto state_code = dawn::EnvironmentSetup();
-    switch (state_code) {
-    case -1: puts("Failed: Loading SDL main components"); break;
-    case -2: puts("Failed: Loading SDL Audio components"); break;
-    case -3: puts("Failed: Opening Audio"); break;
-    }
-
-    puts("Multimedia components are disabled.");
-    return state_code != 0;
-  }());
 
   if (argc <= 1) {
     HelpFile();
