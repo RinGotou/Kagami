@@ -36,19 +36,19 @@
 # YouCompleteMe Config
 src/.ycm_extra_conf.py
 
-# Misc
-script.log
-event.log
+# CMake output
 bin
+CMakeFiles
+cmake_install.cmake
+CMakeCache.txt
+Makefile
+src/CMakeFiles
+src/cmake_install.cmake
+src/Makefile
+
+# Visual Studio Misc
 vc140.pdb
 .vscode
 .vs
 vsproject
-CMakeFiles
-cmake_install.cmake
-CMakeCache.txt
-src/CMakeFiles
-src/cmake_install.cmake
-Makefile
-kagami
-src/Makefile
+
