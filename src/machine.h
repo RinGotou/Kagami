@@ -24,7 +24,7 @@ namespace kagami {
 
   string ParseRawString(const string &src);
   void InitPlainTypesAndConstants();
-  void ActivateComponents();
+  void ActivateComponents(bool enable_SDL_comp);
   void ReceiveError(void* vm, const char* msg);
 
   using ResultTraitKey = pair<PlainType, PlainType>;

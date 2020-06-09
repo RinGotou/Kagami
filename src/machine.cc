@@ -175,10 +175,14 @@ namespace kagami {
     CreateConstantObject("kCorePath", Object(runtime::GetBinaryPath()));
   }
 
-  void ActivateComponents() {
+  void ActivateComponents(bool enable_SDL_comp) {
     InitPlainTypesAndConstants();
-    for (const auto func : kEmbeddedComponents) {
-      func();
+
+    if (enable_SDL_comp) {
+      for (const auto func : kEmbeddedComponents) func();
+    }
+    else {
+      for (const auto func : kMinimalComponents) func();
     }
   }
 
