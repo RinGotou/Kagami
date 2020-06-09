@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
   namespace fs = std::filesystem;
   runtime::InformBinaryPathAndName(argv[0]);
 
-  ActivateComponents([&]()->bool {
+  ActivateComponents([&]() -> bool {
     auto state_code = dawn::EnvironmentSetup();
     switch (state_code) {
     case -1: puts("Failed: Loading SDL main components"); break;
