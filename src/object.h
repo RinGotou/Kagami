@@ -334,20 +334,11 @@ namespace kagami {
   private:
     ObjectContainer *delegator_;
     ObjectContainer *prev_;
-    map<string, Object> base_;
-    unordered_map<string, ObjectPointer> dest_map_;
-    list<ObjectCache> recent_;
+    unordered_map<string, Object> container_;
 
     bool IsDelegated() const { 
       return delegator_ != nullptr; 
     }
-
-    bool CheckObject(string &id) {
-      return (base_.find(id) != base_.end());
-    }
-
-    void BuildCache();
-    void AppendRecent(const string &id, ObjectPointer ptr);
   public:
     bool Add(string id, Object &source);
     bool Add(string id, Object &&source);
@@ -359,33 +350,28 @@ namespace kagami {
     void ClearExcept(string exceptions);
 
     ObjectContainer() : delegator_(nullptr),
-      prev_(nullptr), base_(), dest_map_() {}
+      prev_(nullptr), container_() {}
 
-    ObjectContainer(const ObjectContainer &&mgr) :
-    delegator_(mgr.delegator_), prev_(mgr.prev_) {}
+    ObjectContainer(const ObjectContainer &&rhs) :
+    delegator_(rhs.delegator_), prev_(rhs.prev_), container_() {}
 
-    ObjectContainer(const ObjectContainer &container) :
-      delegator_(container.delegator_), prev_(container.prev_) {
-      if (!container.base_.empty()) {
-        base_ = container.base_;
-        BuildCache();
-      }
+    ObjectContainer(const ObjectContainer &rhs) :
+      delegator_(rhs.delegator_), prev_(rhs.prev_) {
+      if (!rhs.container_.empty()) { container_ = rhs.container_; }
     }
 
     bool Empty() const {
-      return base_.empty();
+      return container_.empty();
     }
 
     void Clear() {
       if (IsDelegated()) delegator_->Clear();
-
-      base_.clear();
-      BuildCache();
+      container_.clear();
     }
 
-    map<string, Object> &GetContent() {
+    unordered_map<string, Object> &GetContent() {
       if (IsDelegated()) return delegator_->GetContent();
-      return base_;
+      return container_;
     }
 
     ObjectContainer &SetPreviousContainer(ObjectContainer *prev) {

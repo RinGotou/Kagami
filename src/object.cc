@@ -89,80 +89,40 @@ namespace kagami {
     return *this;
   }
 
-  void ObjectContainer::BuildCache() {
-    recent_.clear();
-    dest_map_.clear();
-    const auto begin = base_.begin(), end = base_.end();
-    for (auto it = begin; it != end; ++it) {
-      dest_map_.insert_or_assign(it->first, &it->second);
-    }
-  }
-
-  void ObjectContainer::AppendRecent(const string &id, ObjectPointer ptr) {
-    if (recent_.size() >= 5) recent_.pop_back();
-    if (!recent_.empty() && recent_.front().first == id) return;
-    recent_.emplace_front(ObjectCache(id, ptr));
-  }
-
   bool ObjectContainer::Add(string id, Object &source) {
     if (IsDelegated()) return delegator_->Add(id, source);
 
-    if (CheckObject(id)) return false;
-    auto result = base_.emplace(NamedObject(id, source));
-    if (result.second) {
-      dest_map_.insert_or_assign(id, &result.first->second);
-      dest_map_.rehash(0);
-    }
-
-    return true;
+    auto result = container_.try_emplace(id, source);
+    return result.second;
   }
 
   bool ObjectContainer::Add(string id, Object &&source) {
     if (IsDelegated()) return delegator_->Add(id, std::move(source));
 
-    if (CheckObject(id)) return false;
-    auto result = base_.emplace(NamedObject(id, std::move(source)));
-    if (result.second) {
-      dest_map_.insert_or_assign(id, &result.first->second);
-      dest_map_.rehash(0);
-    }
-
-    return true;
+    auto result = container_.try_emplace(id, source);
+    return result.second;
   }
 
   void ObjectContainer::Replace(string id, Object &source) {
     if (IsDelegated()) delegator_->Replace(id, source);
 
-    base_[id] = source;
-    dest_map_[id] = &base_[id];
+    container_.at(id) = source;
   }
 
   void ObjectContainer::Replace(string id, Object &&source) {
     if (IsDelegated()) delegator_->Replace(id, std::move(source));
 
-    base_[id] = source;
-    dest_map_[id] = &base_[id];
+    container_.at(id) = source;
   }
 
   Object *ObjectContainer::Find(const string &id, bool forward_seeking) {
     if (IsDelegated()) return delegator_->Find(id, forward_seeking);
     ObjectPointer ptr = nullptr;
 
-    if (!recent_.empty()) {
-      for (const auto &unit : recent_) {
-        if (unit.first == id) {
-          ptr = unit.second;
-        }
-      }
-    }
+    auto it = container_.find(id);
 
-    if (ptr != nullptr) return ptr;
-
-    auto it = dest_map_.find(id);
-
-    if (it != dest_map_.end()) {
-      ptr = it->second;
-      AppendRecent(id, ptr);
+    if (it != container_.end()) {
+      ptr = &it->second;
     }
     else if (prev_ != nullptr && forward_seeking) {
       ptr = prev_->Find(id, forward_seeking);
@@ -175,7 +135,7 @@ namespace kagami {
     const string &domain, bool forward_seeking) {
     if (IsDelegated()) return delegator_->FindWithDomain(id, domain, forward_seeking);
   
-    if (base_.empty() && prev_ == nullptr) return nullptr;
+    if (container_.empty() && prev_ == nullptr) return nullptr;
 
     ObjectPointer container_ptr = Find(domain, true);
 
@@ -189,8 +149,9 @@ namespace kagami {
   bool ObjectContainer::IsInside(Object *ptr) {
     if (IsDelegated()) return delegator_->IsInside(ptr);
 
+    //TODO: Replace with unordered_map::contains on C++20 target
     bool result = false;
-    for (const auto &unit : base_) {
+    for (const auto &unit : container_) {
       if (&unit.second == ptr) result = true;
     }
     return result;
@@ -198,24 +159,22 @@ namespace kagami {
 
   void ObjectContainer::ClearExcept(string exceptions) {
     if (IsDelegated()) delegator_->ClearExcept(exceptions);
-    using Iterator = map<string, Object>::iterator;
+    using Iterator = unordered_map<string, Object>::iterator;
 
     auto obj_list = BuildStringVector(exceptions);
     Iterator ready_to_del;
-    Iterator it = base_.begin();
+    Iterator it = container_.begin();
 
-    while (it != base_.end()) {
+    while (it != container_.end()) {
       if (!find_in_vector(it->first, obj_list)) {
         ready_to_del = it;
         ++it;
-        base_.erase(ready_to_del);
+        container_.erase(ready_to_del);
         continue;
       }
 
       ++it;
     }
-
-    BuildCache();
   }
 
   ObjectMap &ObjectMap::operator=(const initializer_list<NamedObject> &rhs) {
