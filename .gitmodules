@@ -7,9 +7,6 @@
 [submodule "src/sdl2-cmake-modules"]
 	path = src/sdl2-cmake-modules
 	url = https://github.com/ringotou/sdl2-cmake-modules
-[submodule "src/--force"]
-	path = src/--force
-	url = https://github.com/ToruNiina/toml11
 [submodule "src/toml11"]
 	path = src/toml11
 	url = https://github.com/ToruNiina/toml11
